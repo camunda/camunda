@@ -41,10 +41,14 @@ import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
 import org.apache.hc.client5.http.entity.mime.StringBody;
 import org.apache.hc.core5.http.ContentType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ExperimentalApi("https://github.com/camunda/issues/issues/841")
 public class CreateDocumentCommandImpl
     implements CreateDocumentCommandStep1, CreateDocumentCommandStep2 {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(CreateDocumentCommandImpl.class);
 
   private String documentId;
   private String storeId;
@@ -74,36 +78,46 @@ public class CreateDocumentCommandImpl
 
   @Override
   public ZeebeFuture<DocumentReferenceResponse> send() {
-    final MultipartEntityBuilder entityBuilder =
-        MultipartEntityBuilder.create().setContentType(ContentType.MULTIPART_FORM_DATA);
+    try {
+      final MultipartEntityBuilder entityBuilder =
+          MultipartEntityBuilder.create().setContentType(ContentType.MULTIPART_FORM_DATA);
 
-    final String name =
-        Optional.ofNullable((String) metadata.get(DocumentMetadata.JSON_PROPERTY_FILE_NAME))
-            .orElse("");
+      final String name =
+          Optional.ofNullable((String) metadata.get(DocumentMetadata.JSON_PROPERTY_FILE_NAME))
+              .orElse("");
 
-    entityBuilder.addBinaryBody("file", content, ContentType.DEFAULT_BINARY, name);
+      entityBuilder.addBinaryBody("file", content, ContentType.DEFAULT_BINARY, name);
 
-    final String metadataString = jsonMapper.toJson(metadata);
-    entityBuilder.addPart("metadata", new StringBody(metadataString, ContentType.APPLICATION_JSON));
+      final String metadataString = jsonMapper.toJson(metadata);
+      entityBuilder.addPart(
+          "metadata", new StringBody(metadataString, ContentType.APPLICATION_JSON));
 
-    final HttpZeebeFuture<DocumentReferenceResponse> result = new HttpZeebeFuture<>();
+      final HttpZeebeFuture<DocumentReferenceResponse> result = new HttpZeebeFuture<>();
 
-    final Map<String, String> queryParams = new HashMap<>();
-    if (documentId != null) {
-      queryParams.put("documentId", documentId);
+      final Map<String, String> queryParams = new HashMap<>();
+      if (documentId != null) {
+        queryParams.put("documentId", documentId);
+      }
+      if (storeId != null) {
+        queryParams.put("storeId", storeId);
+      }
+      httpClient.postMultipart(
+          "/documents",
+          queryParams,
+          entityBuilder,
+          httpRequestConfig.build(),
+          DocumentReference.class,
+          DocumentReferenceResponseImpl::new,
+          result);
+      return result;
+    } finally {
+      try {
+        content.close();
+      } catch (final Exception e) {
+        // log but otherwise ignore
+        LOGGER.warn("Failed to close content stream", e);
+      }
     }
-    if (storeId != null) {
-      queryParams.put("storeId", storeId);
-    }
-    httpClient.postMultipart(
-        "/documents",
-        queryParams,
-        entityBuilder,
-        httpRequestConfig.build(),
-        DocumentReference.class,
-        DocumentReferenceResponseImpl::new,
-        result);
-    return result;
   }
 
   @Override
