@@ -39,7 +39,7 @@ public class CircularBufferInputStream extends InputStream {
   private final int capacity;
   private int readPos = 0;
   private int writePos = 0;
-  private int available = 0;
+  private int availableData = 0;
   private boolean endOfStream = false;
   private IOException exception = null;
   private CapacityCallback capacityCallback;
@@ -64,15 +64,27 @@ public class CircularBufferInputStream extends InputStream {
     if (exception != null) {
       throw exception;
     }
-    if (data.limit() - data.position() > getAvailableSpace()) {
+    final int dataSize = data.remaining();
+    final int availableSpace = getAvailableSpace();
+    if (dataSize > availableSpace) {
       throw new IOException("Buffer is full");
     }
-    while (data.hasRemaining()) {
-      buffer[writePos] = data.get();
-      writePos = (writePos + 1) % capacity;
-      available++;
-      notifyAll(); // Notify any waiting readers
+
+    final int firstCopyLength = Math.min(dataSize, capacity - writePos);
+    data.get(buffer, writePos, firstCopyLength);
+    writePos = (writePos + firstCopyLength) % capacity;
+    availableData += firstCopyLength;
+
+    final int remaining = dataSize - firstCopyLength;
+    if (remaining > 0) {
+      // Wrap around
+      data.get(buffer, writePos, remaining);
+      writePos = (writePos + remaining) % capacity;
+      availableData += remaining;
     }
+
+    // Notify any waiting readers
+    notifyAll();
   }
 
   public synchronized void endOfStream() {
@@ -87,29 +99,22 @@ public class CircularBufferInputStream extends InputStream {
 
   @Override
   public synchronized int read() throws IOException {
-    while (available == 0) {
-      if (exception != null) {
-        throw exception;
-      }
-      if (endOfStream) {
-        return -1;
-      }
-      try { // buffer is empty, wait for data
-        wait();
-      } catch (final InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new IOException("Interrupted while reading", e);
-      }
+    if (canConsumeData()) {
+      return -1;
     }
+
     final int b = buffer[readPos] & 0xFF;
     readPos = (readPos + 1) % capacity;
-    available--;
-    notifyAll(); // Notify any waiting writers
+    availableData--;
+
+    // Notify any waiting writers
+    notifyAll();
 
     // Inform capacity callback
     if (capacityCallback != null) {
       capacityCallback.onCapacityAvailable(1);
     }
+
     return b;
   }
 
@@ -123,39 +128,58 @@ public class CircularBufferInputStream extends InputStream {
       return 0;
     }
 
-    while (available == 0) {
+    if (canConsumeData()) {
+      return -1;
+    }
+
+    int bytesRead = 0;
+    final int bytesToRead = Math.min(len, availableData);
+
+    final int firstCopyLength = Math.min(bytesToRead, capacity - readPos);
+    System.arraycopy(buffer, readPos, b, off, firstCopyLength);
+    readPos = (readPos + firstCopyLength) % capacity;
+    bytesRead += firstCopyLength;
+    availableData -= firstCopyLength;
+
+    final int remaining = bytesToRead - firstCopyLength;
+    if (remaining > 0) {
+      System.arraycopy(buffer, readPos, b, off + firstCopyLength, remaining);
+      readPos = (readPos + remaining) % capacity;
+      bytesRead += remaining;
+      availableData -= remaining;
+    }
+
+    // Notify any waiting writers
+    notifyAll();
+
+    // Inform capacity callback
+    if (capacityCallback != null) {
+      capacityCallback.onCapacityAvailable(bytesRead);
+    }
+
+    return bytesRead;
+  }
+
+  private boolean canConsumeData() throws IOException {
+    while (availableData == 0) {
       if (exception != null) {
         throw exception;
       }
       if (endOfStream) {
-        return -1;
+        return true;
       }
-      try { // buffer is empty, wait for data
+      try {
         wait();
       } catch (final InterruptedException e) {
         Thread.currentThread().interrupt();
         throw new IOException("Interrupted while reading", e);
       }
     }
-
-    int bytesRead = 0;
-    final int maxRead = Math.min(len, available);
-    for (int i = 0; i < maxRead; i++) {
-      b[off + i] = buffer[readPos];
-      readPos = (readPos + 1) % capacity;
-      bytesRead++;
-      available--;
-    }
-    notifyAll();
-
-    if (capacityCallback != null) {
-      capacityCallback.onCapacityAvailable(bytesRead);
-    }
-    return bytesRead;
+    return false;
   }
 
   public synchronized int getAvailableSpace() {
-    return capacity - available;
+    return capacity - availableData;
   }
 
   public interface CapacityCallback {
