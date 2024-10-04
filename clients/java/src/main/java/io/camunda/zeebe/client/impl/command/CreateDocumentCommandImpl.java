@@ -49,7 +49,7 @@ public class CreateDocumentCommandImpl
   private String documentId;
   private String storeId;
   private InputStream content;
-  private final DocumentMetadata metadata;
+  private final Map<String, Object> metadata;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
@@ -58,7 +58,7 @@ public class CreateDocumentCommandImpl
       final JsonMapper jsonMapper,
       final HttpClient httpClient,
       final ZeebeClientConfiguration configuration) {
-    metadata = new DocumentMetadata();
+    metadata = new HashMap<>();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
@@ -77,7 +77,10 @@ public class CreateDocumentCommandImpl
     final MultipartEntityBuilder entityBuilder =
         MultipartEntityBuilder.create().setContentType(ContentType.MULTIPART_FORM_DATA);
 
-    final String name = Optional.ofNullable(metadata.getFileName()).orElse("");
+    final String name =
+        Optional.ofNullable((String) metadata.get(DocumentMetadata.JSON_PROPERTY_FILE_NAME))
+            .orElse("");
+
     entityBuilder.addBinaryBody("file", content, ContentType.DEFAULT_BINARY, name);
 
     final String metadataString = jsonMapper.toJson(metadata);
@@ -138,20 +141,20 @@ public class CreateDocumentCommandImpl
 
   @Override
   public CreateDocumentCommandStep2 contentType(final String contentType) {
-    metadata.setContentType(contentType);
+    metadata.put(DocumentMetadata.JSON_PROPERTY_CONTENT_TYPE, contentType);
     return this;
   }
 
   @Override
   public CreateDocumentCommandStep2 fileName(final String name) {
-    metadata.setFileName(name);
+    metadata.put(DocumentMetadata.JSON_PROPERTY_FILE_NAME, name);
     return this;
   }
 
   @Override
   public CreateDocumentCommandStep2 timeToLive(final Duration timeToLive) {
     final ZonedDateTime expiresAt = ZonedDateTime.now().plus(timeToLive);
-    metadata.setExpiresAt(expiresAt.toString());
+    metadata.put(DocumentMetadata.JSON_PROPERTY_EXPIRES_AT, expiresAt.toString());
     return this;
   }
 

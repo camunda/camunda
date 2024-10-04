@@ -9,9 +9,11 @@ package io.camunda.zeebe.gateway.rest;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import io.atomix.cluster.messaging.MessagingException;
+import io.camunda.document.api.DocumentError.DocumentAlreadyExists;
 import io.camunda.document.api.DocumentError.DocumentNotFound;
 import io.camunda.document.api.DocumentError.InvalidInput;
 import io.camunda.document.api.DocumentError.OperationNotSupported;
+import io.camunda.document.api.DocumentError.StoreDoesNotExist;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.NotFoundException;
 import io.camunda.service.DocumentServices.DocumentException;
@@ -250,14 +252,39 @@ public class RestErrorMapper {
   }
 
   public static ProblemDetail mapDocumentHandlingExceptionToProblem(final DocumentException e) {
-    final var status =
-        switch (e.getDocumentError()) {
-          case final DocumentNotFound ignored -> HttpStatus.NOT_FOUND;
-          case final InvalidInput ignored -> HttpStatus.BAD_REQUEST;
-          case final OperationNotSupported ignored -> HttpStatus.NOT_IMPLEMENTED;
-          default -> HttpStatus.INTERNAL_SERVER_ERROR;
-        };
-    return createProblemDetail(status, e.getMessage(), e.getDocumentError().getClass().getName());
+    final String detail;
+    final HttpStatusCode status;
+    switch (e.getDocumentError()) {
+      case final DocumentNotFound notFound -> {
+        detail = String.format("Document with id '%s' not found", notFound.documentId());
+        status = HttpStatus.NOT_FOUND;
+      }
+      case final InvalidInput invalidInput -> {
+        detail = invalidInput.message();
+        status = HttpStatus.BAD_REQUEST;
+      }
+      case final DocumentAlreadyExists documentAlreadyExists -> {
+        detail =
+            String.format(
+                "Document with id '%s' already exists", documentAlreadyExists.documentId());
+        status = HttpStatus.CONFLICT;
+      }
+      case final StoreDoesNotExist storeDoesNotExist -> {
+        detail =
+            String.format(
+                "Document store with id '%s' does not exist", storeDoesNotExist.storeId());
+        status = HttpStatus.BAD_REQUEST;
+      }
+      case final OperationNotSupported operationNotSupported -> {
+        detail = operationNotSupported.message();
+        status = HttpStatus.METHOD_NOT_ALLOWED;
+      }
+      default -> {
+        detail = null;
+        status = HttpStatus.INTERNAL_SERVER_ERROR;
+      }
+    }
+    return createProblemDetail(status, detail, e.getDocumentError().getClass().getName());
   }
 
   public static ResponseEntity<Object> mapDocumentHandlingExceptionToResponse(
