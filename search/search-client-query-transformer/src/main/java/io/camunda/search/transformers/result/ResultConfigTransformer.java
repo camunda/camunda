@@ -38,9 +38,16 @@ public final class ResultConfigTransformer
                 Collectors.partitioningBy(
                     FieldFilter::include,
                     Collectors.mapping(FieldFilter::field, Collectors.toList())));
-    return new SearchSourceFilter.Builder()
-        .includes(includedVsExcludedMap.get(true))
-        .excludes(includedVsExcludedMap.get(false))
-        .build();
+    final List<String> includes = includedVsExcludedMap.get(true);
+    final List<String> excludes = includedVsExcludedMap.get(false);
+
+    final var builder = new SearchSourceFilter.Builder();
+    if (!includes.isEmpty()) {
+      builder.includes(includes);
+    }
+    if (!excludes.isEmpty()) {
+      builder.excludes(excludes);
+    }
+    return builder.build();
   }
 }

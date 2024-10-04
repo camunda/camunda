@@ -44,10 +44,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   @Override
   public void initialiseResources() {
     final var existingTemplateNames =
-        elasticsearchClient
-            .getMappings(
-                elasticsearchProperties.getIndexPrefix() + "*", MappingSource.INDEX_TEMPLATE)
-            .keySet();
+        elasticsearchClient.getMappings("*", MappingSource.INDEX_TEMPLATE).keySet();
     final var existingIndexNames =
         elasticsearchClient
             .getMappings(elasticsearchProperties.getIndexPrefix() + "*", MappingSource.INDEX)

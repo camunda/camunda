@@ -7,6 +7,8 @@
  */
 package io.camunda.search.entities;
 
+import java.util.List;
+
 public record DecisionInstanceEntity(
     long key,
     DecisionInstanceState state,
@@ -20,7 +22,9 @@ public record DecisionInstanceEntity(
     String decisionName,
     int decisionVersion,
     DecisionDefinitionType decisionType,
-    String result) {
+    String result,
+    List<DecisionInstanceInputEntity> evaluatedInputs,
+    List<DecisionInstanceOutputEntity> evaluatedOutputs) {
 
   public record DecisionInstanceInputEntity(String id, String name, String value) {}
 

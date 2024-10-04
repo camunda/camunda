@@ -114,7 +114,7 @@ public class DecisionInstanceQueryImpl
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         DecisionInstanceSearchQueryResponse.class,
-        SearchResponseMapper::toDecisionInstanceSearchResponse,
+        resp -> SearchResponseMapper.toDecisionInstanceSearchResponse(resp, jsonMapper),
         result);
     return result;
   }

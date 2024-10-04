@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import java.util.Optional;
 import org.agrona.DirectBuffer;
 
 public class DbUserState implements UserState, MutableUserState {
@@ -46,9 +47,9 @@ public class DbUserState implements UserState, MutableUserState {
   }
 
   @Override
-  public void create(final long key, final UserRecord user) {
+  public void create(final UserRecord user) {
     username.wrapBuffer(user.getUsernameBuffer());
-    userKey.wrapLong(key);
+    userKey.wrapLong(user.getUserKey());
     persistedUser.setUser(user);
 
     userByUserKeyColumnFamily.insert(userKey, persistedUser);
@@ -56,21 +57,31 @@ public class DbUserState implements UserState, MutableUserState {
   }
 
   @Override
-  public UserRecord getUser(final DirectBuffer username) {
+  public Optional<UserRecord> getUser(final DirectBuffer username) {
     this.username.wrapBuffer(username);
     final var key = userKeyByUsernameColumnFamily.get(this.username);
 
     if (key == null) {
-      return null;
+      return Optional.empty();
     }
 
-    final var user = userByUserKeyColumnFamily.get(key);
-    return user == null ? null : user.getUser().copy();
+    return getUser(key.inner().getValue());
   }
 
   @Override
-  public UserRecord getUser(final String username) {
+  public Optional<UserRecord> getUser(final String username) {
     return getUser(wrapString(username));
+  }
+
+  @Override
+  public Optional<UserRecord> getUser(final long userKey) {
+    this.userKey.wrapLong(userKey);
+    final var persistedUser = userByUserKeyColumnFamily.get(this.userKey);
+
+    if (persistedUser == null) {
+      return Optional.empty();
+    }
+    return Optional.of(persistedUser.getUser().copy());
   }
 
   @Override

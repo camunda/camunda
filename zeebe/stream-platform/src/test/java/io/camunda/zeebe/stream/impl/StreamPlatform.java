@@ -23,8 +23,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
-import io.camunda.zeebe.logstreams.util.SyncLogStream;
-import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
+import io.camunda.zeebe.logstreams.util.TestLogStream;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.stream.api.EmptyProcessingResult;
@@ -156,24 +155,23 @@ public final class StreamPlatform {
    */
   public LogContext createLogContext(final ListLogStorage logStorage, final int partitionId) {
     final var logStream =
-        SyncLogStream.builder()
+        TestLogStream.builder()
             .withLogName(STREAM_NAME + partitionId)
             .withLogStorage(logStorage)
             .withClock(clock)
             .withPartitionId(partitionId)
-            .withActorSchedulingService(actorScheduler)
             .build();
 
     logStorage.setPositionListener(logStream::setLastWrittenPosition);
     return new LogContext(logStream);
   }
 
-  public SynchronousLogStream getLogStream() {
+  public TestLogStream getLogStream() {
     return logContext.logStream();
   }
 
   public Stream<LoggedEvent> events() {
-    final SynchronousLogStream logStream = getLogStream();
+    final TestLogStream logStream = getLogStream();
 
     final LogStreamReader reader = logStream.newLogStreamReader();
     closeables.add(reader);
@@ -200,7 +198,7 @@ public final class StreamPlatform {
             });
   }
 
-  public Path createRuntimeFolder(final SynchronousLogStream stream) {
+  public Path createRuntimeFolder(final TestLogStream stream) {
     final Path rootDirectory = dataDirectory.resolve(stream.getLogName()).resolve("state");
 
     try {
@@ -224,22 +222,22 @@ public final class StreamPlatform {
   }
 
   public StreamProcessor startStreamProcessor() {
-    final SynchronousLogStream stream = getLogStream();
+    final TestLogStream stream = getLogStream();
     return buildStreamProcessor(stream, true);
   }
 
   public StreamProcessor startStreamProcessorNotAwaitOpening() {
-    final SynchronousLogStream stream = getLogStream();
+    final TestLogStream stream = getLogStream();
     return buildStreamProcessor(stream, false);
   }
 
   public StreamProcessor startStreamProcessorInReplayOnlyMode() {
-    final SynchronousLogStream stream = getLogStream();
+    final TestLogStream stream = getLogStream();
     return buildStreamProcessor(stream, false, StreamProcessorMode.REPLAY);
   }
 
   public StreamProcessor startStreamProcessorPaused() {
-    final SynchronousLogStream stream = getLogStream();
+    final TestLogStream stream = getLogStream();
     return buildStreamProcessor(
         stream, false, cfg -> cfg.streamProcessorMode(StreamProcessorMode.PROCESSING), true);
   }
@@ -253,12 +251,12 @@ public final class StreamPlatform {
   }
 
   public StreamProcessor buildStreamProcessor(
-      final SynchronousLogStream stream, final boolean awaitOpening) {
+      final TestLogStream stream, final boolean awaitOpening) {
     return buildStreamProcessor(stream, awaitOpening, defaultStreamProcessorMode);
   }
 
   public StreamProcessor buildStreamProcessor(
-      final SynchronousLogStream stream,
+      final TestLogStream stream,
       final boolean awaitOpening,
       final StreamProcessorMode processorMode) {
     return buildStreamProcessor(
@@ -266,14 +264,14 @@ public final class StreamPlatform {
   }
 
   public StreamProcessor buildStreamProcessor(
-      final SynchronousLogStream stream,
+      final TestLogStream stream,
       final boolean awaitOpening,
       final Consumer<StreamProcessorBuilder> processorConfiguration) {
     return buildStreamProcessor(stream, awaitOpening, processorConfiguration, false);
   }
 
   public StreamProcessor buildStreamProcessor(
-      final SynchronousLogStream stream,
+      final TestLogStream stream,
       final boolean awaitOpening,
       final Consumer<StreamProcessorBuilder> processorConfiguration,
       final boolean pauseOnStart) {
@@ -292,7 +290,7 @@ public final class StreamPlatform {
         StreamProcessor.builder()
             .meterRegistry(new SimpleMeterRegistry())
             .clock(StreamClock.controllable(clock))
-            .logStream(stream.getAsyncLogStream())
+            .logStream(stream)
             .zeebeDb(zeebeDb)
             .actorSchedulingService(actorScheduler)
             .commandResponseWriter(mockCommandResponseWriter)
@@ -368,7 +366,7 @@ public final class StreamPlatform {
     return processorContext.zeebeDb;
   }
 
-  public record LogContext(SynchronousLogStream logStream) implements AutoCloseable {
+  public record LogContext(TestLogStream logStream) implements AutoCloseable {
 
     public LogStreamWriter setupWriter() {
       return logStream.newLogStreamWriter();

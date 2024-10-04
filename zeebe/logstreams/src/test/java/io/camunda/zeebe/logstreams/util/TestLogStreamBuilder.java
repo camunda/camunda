@@ -12,53 +12,45 @@ import io.camunda.zeebe.logstreams.impl.flowcontrol.RateLimit;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
-import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import java.time.InstantSource;
 
-public final class SyncLogStreamBuilder implements LogStreamBuilder {
+public final class TestLogStreamBuilder implements LogStreamBuilder {
   private final LogStreamBuilder delegate;
 
-  SyncLogStreamBuilder() {
+  TestLogStreamBuilder() {
     this(LogStream.builder());
   }
 
-  SyncLogStreamBuilder(final LogStreamBuilder delegate) {
+  TestLogStreamBuilder(final LogStreamBuilder delegate) {
     this.delegate = delegate;
   }
 
   @Override
-  public SyncLogStreamBuilder withActorSchedulingService(
-      final ActorSchedulingService actorSchedulingService) {
-    delegate.withActorSchedulingService(actorSchedulingService);
-    return this;
-  }
-
-  @Override
-  public SyncLogStreamBuilder withMaxFragmentSize(final int maxFragmentSize) {
+  public TestLogStreamBuilder withMaxFragmentSize(final int maxFragmentSize) {
     delegate.withMaxFragmentSize(maxFragmentSize);
     return this;
   }
 
   @Override
-  public SyncLogStreamBuilder withLogStorage(final LogStorage logStorage) {
+  public TestLogStreamBuilder withLogStorage(final LogStorage logStorage) {
     delegate.withLogStorage(logStorage);
     return this;
   }
 
   @Override
-  public SyncLogStreamBuilder withPartitionId(final int partitionId) {
+  public TestLogStreamBuilder withPartitionId(final int partitionId) {
     delegate.withPartitionId(partitionId);
     return this;
   }
 
   @Override
-  public SyncLogStreamBuilder withLogName(final String logName) {
+  public TestLogStreamBuilder withLogName(final String logName) {
     delegate.withLogName(logName);
     return this;
   }
 
   @Override
-  public SyncLogStreamBuilder withClock(final InstantSource clock) {
+  public TestLogStreamBuilder withClock(final InstantSource clock) {
     delegate.withClock(clock);
     return this;
   }
@@ -76,7 +68,7 @@ public final class SyncLogStreamBuilder implements LogStreamBuilder {
   }
 
   @Override
-  public SyncLogStream build() {
-    return new SyncLogStream(delegate.build());
+  public TestLogStream build() {
+    return new TestLogStream(delegate.build());
   }
 }
