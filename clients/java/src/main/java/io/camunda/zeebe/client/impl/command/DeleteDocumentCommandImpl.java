@@ -15,6 +15,9 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNull;
+
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.DeleteDocumentCommandStep1;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
@@ -35,11 +38,16 @@ public class DeleteDocumentCommandImpl implements DeleteDocumentCommandStep1 {
   private String storeId;
 
   public DeleteDocumentCommandImpl(
-      final String documentId, final String storeId, final HttpClient client) {
+      final String documentId,
+      final String storeId,
+      final HttpClient client,
+      final ZeebeClientConfiguration configuration) {
+    ensureNotNull("documentId", documentId);
     this.documentId = documentId;
     this.client = client;
     this.storeId = storeId;
     requestConfig = client.newRequestConfig();
+    requestTimeout(configuration.getDefaultRequestTimeout());
   }
 
   @Override
@@ -62,7 +70,8 @@ public class DeleteDocumentCommandImpl implements DeleteDocumentCommandStep1 {
       queryParams.put("storeId", storeId);
     }
     final HttpZeebeFuture<DeleteDocumentResponse> result = new HttpZeebeFuture<>();
-    client.delete("/documents", queryParams, requestConfig.build(), result);
+    client.delete(
+        String.format("/documents/%s", documentId), queryParams, requestConfig.build(), result);
     return result;
   }
 }

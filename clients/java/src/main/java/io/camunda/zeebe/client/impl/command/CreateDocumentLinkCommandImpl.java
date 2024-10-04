@@ -15,6 +15,9 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNull;
+
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.CreateDocumentLinkCommandStep1;
@@ -44,12 +47,15 @@ public class CreateDocumentLinkCommandImpl implements CreateDocumentLinkCommandS
       final String documentId,
       final String storeId,
       final JsonMapper jsonMapper,
-      final HttpClient httpClient) {
+      final HttpClient httpClient,
+      final ZeebeClientConfiguration configuration) {
+    ensureNotNull("documentId", documentId);
     this.documentId = documentId;
     this.storeId = storeId;
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
+    requestTimeout(configuration.getDefaultRequestTimeout());
   }
 
   @Override
@@ -83,6 +89,7 @@ public class CreateDocumentLinkCommandImpl implements CreateDocumentLinkCommandS
     final HttpZeebeFuture<DocumentLinkResponse> result = new HttpZeebeFuture<>();
     httpClient.post(
         String.format("/documents/%s/links", documentId),
+        queryParams,
         jsonMapper.toJson(documentLinkRequest),
         httpRequestConfig.build(),
         DocumentLink.class,

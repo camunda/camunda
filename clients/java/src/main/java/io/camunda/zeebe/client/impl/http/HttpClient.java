@@ -155,6 +155,23 @@ public final class HttpClient implements AutoCloseable {
 
   public <HttpT, RespT> void postMultipart(
       final String path,
+      final MultipartEntityBuilder multipartBuilder,
+      final RequestConfig requestConfig,
+      final Class<HttpT> responseType,
+      final JsonResponseTransformer<HttpT, RespT> transformer,
+      final HttpZeebeFuture<RespT> result) {
+    postMultipart(
+        path,
+        Collections.emptyMap(),
+        multipartBuilder,
+        requestConfig,
+        responseType,
+        transformer,
+        result);
+  }
+
+  public <HttpT, RespT> void postMultipart(
+      final String path,
       final Map<String, String> queryParams,
       final MultipartEntityBuilder multipartBuilder,
       final RequestConfig requestConfig,
