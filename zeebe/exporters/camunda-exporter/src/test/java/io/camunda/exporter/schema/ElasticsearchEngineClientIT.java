@@ -174,7 +174,7 @@ public class ElasticsearchEngineClientIT {
             "alias",
             List.of(),
             "template_name",
-            "mappings-and-settings.json");
+            "/mappings-and-settings.json");
 
     elsEngineClient.createIndexTemplate(template, new IndexSettings(), true);
 

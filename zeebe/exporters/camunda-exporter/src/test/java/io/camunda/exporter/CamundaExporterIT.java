@@ -208,8 +208,9 @@ final class CamundaExporterIT {
       final var exporter1 = startExporter();
       final var exporter2 = startExporter();
 
-      when(index.getMappingsClasspathFilename()).thenReturn("mappings-added-property.json");
-      when(indexTemplate.getMappingsClasspathFilename()).thenReturn("mappings-added-property.json");
+      when(index.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
+      when(indexTemplate.getMappingsClasspathFilename())
+          .thenReturn("/mappings-added-property.json");
 
       // when
       exporter1.open(controller);
@@ -242,7 +243,8 @@ final class CamundaExporterIT {
 
       // when
       when(index.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
-      when(indexTemplate.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
+      when(indexTemplate.getMappingsClasspathFilename())
+          .thenReturn("/mappings-added-property.json");
 
       updatedExporter.open(controller);
 
@@ -299,7 +301,8 @@ final class CamundaExporterIT {
 
       // when
       when(index.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
-      when(indexTemplate.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
+      when(indexTemplate.getMappingsClasspathFilename())
+          .thenReturn("/mappings-added-property.json");
 
       exporter.open(controller);
 
