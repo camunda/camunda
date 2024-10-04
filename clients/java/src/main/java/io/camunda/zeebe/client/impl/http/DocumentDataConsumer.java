@@ -59,7 +59,7 @@ public class DocumentDataConsumer<T>
   private final CircularBufferInputStream inputStream;
   private FutureCallback<ApiEntity<T>> resultCallback;
   private final int maxCapacity;
-  private CapacityChannel capacityChannel;
+  private volatile CapacityChannel capacityChannel;
   private volatile boolean completed = false;
   private volatile boolean problemDetail = false;
 
