@@ -31,14 +31,14 @@ public class UserStateTest {
     userState = processingState.getUserState();
   }
 
-  @DisplayName("should return null if a user with the given username exists")
+  @DisplayName("should return empty optional if a user with the given username exists")
   @Test
-  void shouldReturnNullIfNoUserWithUsernameExists() {
+  void shouldReturnEmptyOptionalIfNoUserWithUsernameExists() {
     // when
     final var persistedUser = userState.getUser("username" + UUID.randomUUID());
 
     // then
-    assertThat(persistedUser).isNull();
+    assertThat(persistedUser).isEmpty();
   }
 
   @DisplayName("should create user if no user with the given username exists")
@@ -51,11 +51,12 @@ public class UserStateTest {
             .setName("U")
             .setPassword("P")
             .setEmail("email" + UUID.randomUUID());
-    userState.create(1L, user);
+    userState.create(user);
 
     // then
     final var persistedUser = userState.getUser(user.getUsername());
-    assertThat(persistedUser).isEqualTo(user);
+    assertThat(persistedUser).isPresent();
+    assertThat(persistedUser.get()).isEqualTo(user);
   }
 
   @DisplayName("should throw an exception when creating a user with a username that already exists")
@@ -65,14 +66,15 @@ public class UserStateTest {
     // given
     final UserRecord user =
         new UserRecord()
+            .setUserKey(2L)
             .setUsername(username)
             .setName("U")
             .setPassword("P")
             .setEmail("email" + UUID.randomUUID());
-    userState.create(2L, user);
+    userState.create(user);
 
     // when/then
-    assertThatThrownBy(() -> userState.create(2L, user))
+    assertThatThrownBy(() -> userState.create(user))
         .isInstanceOf(ZeebeDbInconsistentException.class)
         .hasMessage("Key DbLong{2} in ColumnFamily USERS already exists");
   }
@@ -84,24 +86,26 @@ public class UserStateTest {
     // given
     final UserRecord userOne =
         new UserRecord()
+            .setUserKey(1L)
             .setUsername(usernameOne)
             .setName("U")
             .setPassword("P")
             .setEmail("email" + UUID.randomUUID());
-    userState.create(3L, userOne);
+    userState.create(userOne);
 
     final var usernameTwo = "username" + UUID.randomUUID();
     final UserRecord userTwo =
         new UserRecord()
+            .setUserKey(2L)
             .setUsername(usernameTwo)
             .setName("U")
             .setPassword("P")
             .setEmail("email" + UUID.randomUUID());
-    userState.create(4L, userTwo);
+    userState.create(userTwo);
 
     // when
-    final var persistedUserOne = userState.getUser(usernameOne);
-    final var persistedUserTwo = userState.getUser(usernameTwo);
+    final var persistedUserOne = userState.getUser(usernameOne).get();
+    final var persistedUserTwo = userState.getUser(usernameTwo).get();
 
     // then
     assertThat(persistedUserOne).isNotEqualTo(persistedUserTwo);
@@ -113,16 +117,22 @@ public class UserStateTest {
   @DisplayName("should update a user")
   @Test
   void shouldUpdateAUser() {
+    final var userKey = 1L;
     final var username = "username" + UUID.randomUUID();
     final var name = "name" + UUID.randomUUID();
     final var password = "password" + UUID.randomUUID();
     final var email = "email" + UUID.randomUUID();
 
     final UserRecord user =
-        new UserRecord().setUsername(username).setName(name).setPassword(password).setEmail(email);
-    userState.create(5L, user);
+        new UserRecord()
+            .setUserKey(userKey)
+            .setUsername(username)
+            .setName(name)
+            .setPassword(password)
+            .setEmail(email);
+    userState.create(user);
 
-    final var persistedUserBeforeUpdate = userState.getUser(username);
+    final var persistedUserBeforeUpdate = userState.getUser(username).get();
     assertThat(persistedUserBeforeUpdate.getName()).isEqualTo(name);
     assertThat(persistedUserBeforeUpdate.getPassword()).isEqualTo(password);
     assertThat(persistedUserBeforeUpdate.getEmail()).isEqualTo(email);
@@ -137,9 +147,53 @@ public class UserStateTest {
 
     userState.updateUser(user);
 
-    final var persistedUserAfterUpdate = userState.getUser(username);
+    final var persistedUserAfterUpdate = userState.getUser(username).get();
     assertThat(persistedUserAfterUpdate.getName()).isEqualTo(updatedName);
     assertThat(persistedUserAfterUpdate.getPassword()).isEqualTo(updatedPassword);
     assertThat(persistedUserAfterUpdate.getEmail()).isEqualTo(updatedEmail);
+  }
+
+  @Test
+  void shouldReturnUserByKey() {
+    // given
+    final long userKey = 1L;
+    final var username = "username";
+    final var name = "Foo";
+    final var email = "foo@bar.com";
+    final var password = "password";
+    userState.create(
+        new UserRecord()
+            .setUserKey(userKey)
+            .setUsername(username)
+            .setName(name)
+            .setEmail(email)
+            .setPassword(password));
+
+    // when
+    final var persistedUser = userState.getUser(userKey);
+
+    // then
+    assertThat(persistedUser).isNotEmpty();
+    assertThat(persistedUser.get())
+        .extracting(
+            UserRecord::getUserKey,
+            UserRecord::getUsername,
+            UserRecord::getName,
+            UserRecord::getEmail,
+            UserRecord::getPassword)
+        .containsExactly(userKey, username, name, email, password);
+  }
+
+  @Test
+  void shouldReturnEmptyOptionalIfUserByKeyNotFound() {
+    // given
+    final var username = "username";
+    userState.create(new UserRecord().setUserKey(1L).setUsername(username));
+
+    // when
+    final var persistedUser = userState.getUser(2L);
+
+    // then
+    assertThat(persistedUser).isEmpty();
   }
 }

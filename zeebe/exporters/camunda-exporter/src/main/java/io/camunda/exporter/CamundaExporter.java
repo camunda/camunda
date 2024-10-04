@@ -141,7 +141,7 @@ public class CamundaExporter implements Exporter {
     if (configuration.elasticsearch.getRetention().isEnabled()) {
       searchEngineClient.putIndexLifeCyclePolicy(
           configuration.elasticsearch.getRetention().getPolicyName(),
-          configuration.elasticsearch.getRetention().getMininumAge());
+          configuration.elasticsearch.getRetention().getMinimumAge());
 
       final var lifecycleUpdate =
           Map.of(
@@ -163,9 +163,7 @@ public class CamundaExporter implements Exporter {
 
   private Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexTemplates(
       final IndexSchemaValidator schemaValidator, final SearchEngineClient searchEngineClient) {
-    final var currentTemplates =
-        searchEngineClient.getMappings(
-            configuration.elasticsearch.getIndexPrefix() + "*", MappingSource.INDEX_TEMPLATE);
+    final var currentTemplates = searchEngineClient.getMappings("*", MappingSource.INDEX_TEMPLATE);
 
     return schemaValidator.validateIndexMappings(
         currentTemplates,
