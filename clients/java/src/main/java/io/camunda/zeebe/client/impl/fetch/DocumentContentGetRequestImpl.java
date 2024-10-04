@@ -15,6 +15,9 @@
  */
 package io.camunda.zeebe.client.impl.fetch;
 
+import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNull;
+
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.fetch.DocumentContentGetRequest;
@@ -34,11 +37,16 @@ public class DocumentContentGetRequestImpl implements DocumentContentGetRequest 
   private final String storeId;
 
   public DocumentContentGetRequestImpl(
-      final HttpClient httpClient, final String documentId, final String storeId) {
+      final HttpClient httpClient,
+      final String documentId,
+      final String storeId,
+      final ZeebeClientConfiguration configuration) {
+    ensureNotNull("documentId", documentId);
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
     this.documentId = documentId;
     this.storeId = storeId;
+    requestTimeout(configuration.getDefaultRequestTimeout());
   }
 
   @Override

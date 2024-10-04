@@ -48,7 +48,6 @@ import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -250,7 +249,6 @@ public final class DeployResourceCommandImpl
     final HttpZeebeFuture<DeploymentEvent> result = new HttpZeebeFuture<>();
     httpClient.postMultipart(
         "/deployments",
-        Collections.emptyMap(),
         multipartEntityBuilder,
         httpRequestConfig.build(),
         DeploymentResponse.class,

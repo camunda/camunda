@@ -719,43 +719,47 @@ public final class ZeebeClientImpl implements ZeebeClient {
 
   @Override
   public CreateDocumentCommandStep1 newCreateDocumentCommand() {
-    return new CreateDocumentCommandImpl(jsonMapper, httpClient);
+    return new CreateDocumentCommandImpl(jsonMapper, httpClient, config);
   }
 
   @Override
   public DocumentContentGetRequest newDocumentContentGetRequest(final String documentId) {
-    return new DocumentContentGetRequestImpl(httpClient, documentId, null);
+    return new DocumentContentGetRequestImpl(httpClient, documentId, null, config);
   }
 
   @Override
   public DocumentContentGetRequest newDocumentContentGetRequest(
       final DocumentReferenceResponse documentReference) {
     return new DocumentContentGetRequestImpl(
-        httpClient, documentReference.getDocumentId(), documentReference.getStoreId());
+        httpClient, documentReference.getDocumentId(), documentReference.getStoreId(), config);
   }
 
   @Override
   public CreateDocumentLinkCommandStep1 newCreateDocumentLinkCommand(final String documentId) {
-    return new CreateDocumentLinkCommandImpl(documentId, null, jsonMapper, httpClient);
+    return new CreateDocumentLinkCommandImpl(documentId, null, jsonMapper, httpClient, config);
   }
 
   @Override
   public CreateDocumentLinkCommandStep1 newCreateDocumentLinkCommand(
       final DocumentReferenceResponse documentReference) {
     return new CreateDocumentLinkCommandImpl(
-        documentReference.getDocumentId(), documentReference.getStoreId(), jsonMapper, httpClient);
+        documentReference.getDocumentId(),
+        documentReference.getStoreId(),
+        jsonMapper,
+        httpClient,
+        config);
   }
 
   @Override
   public DeleteDocumentCommandStep1 newDeleteDocumentCommand(final String documentId) {
-    return new DeleteDocumentCommandImpl(documentId, null, httpClient);
+    return new DeleteDocumentCommandImpl(documentId, null, httpClient, config);
   }
 
   @Override
   public DeleteDocumentCommandStep1 newDeleteDocumentCommand(
       final DocumentReferenceResponse documentReference) {
     return new DeleteDocumentCommandImpl(
-        documentReference.getDocumentId(), documentReference.getStoreId(), httpClient);
+        documentReference.getDocumentId(), documentReference.getStoreId(), httpClient, config);
   }
 
   private JobClient newJobClient() {

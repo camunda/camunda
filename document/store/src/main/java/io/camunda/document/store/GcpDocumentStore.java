@@ -89,7 +89,7 @@ public class GcpDocumentStore implements DocumentStore {
 
   @Override
   public CompletableFuture<Either<DocumentError, DocumentLink>> createLink(
-      final String documentId, final Long durationInMillis) {
+      final String documentId, final long durationInMillis) {
     return CompletableFuture.supplyAsync(
         () -> createLinkInternal(documentId, durationInMillis), executor);
   }
@@ -152,17 +152,16 @@ public class GcpDocumentStore implements DocumentStore {
   }
 
   private Either<DocumentError, DocumentLink> createLinkInternal(
-      final String documentId, final Long durationInMillis) {
+      final String documentId, final long durationInMillis) {
     try {
       final Blob blob = storage.get(bucketName, documentId);
       if (blob == null) {
         return Either.left(new DocumentError.DocumentNotFound(documentId));
       }
-      final var timeToLive = durationInMillis == null ? DEFAULT_LINK_TTL_MILLIS : durationInMillis;
-      final var link = blob.signUrl(timeToLive, TimeUnit.MILLISECONDS);
+      final var link = blob.signUrl(durationInMillis, TimeUnit.MILLISECONDS);
       return Either.right(
           new DocumentLink(
-              link.toString(), ZonedDateTime.now().plus(Duration.ofMillis(timeToLive))));
+              link.toString(), ZonedDateTime.now().plus(Duration.ofMillis(durationInMillis))));
     } catch (final Exception e) {
       return Either.left(new UnknownDocumentError(e));
     }
