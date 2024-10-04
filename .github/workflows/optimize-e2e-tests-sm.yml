@@ -53,6 +53,8 @@ jobs:
       - name: "Parse pom.xml for versions"
         id: "pom_info"
         uses: YunaBraska/java-info-action@main
+        with:
+          work-dir: ./optimize
 
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
