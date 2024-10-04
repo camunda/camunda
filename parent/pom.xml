@@ -178,6 +178,7 @@
     <version.jwks-rsa>0.22.1</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
     <version.nimbus-jose-jwt>9.41.2</version.nimbus-jose-jwt>
+    <version.nimbus-sdk>9.43.4</version.nimbus-sdk>
     <version.keycloak>25.0.6</version.keycloak>
     <version.jna>5.15.0</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
@@ -244,7 +245,6 @@
     <skipTests>${quickly}</skipTests>
     <skipUTs>${skipTests}</skipUTs>
     <skipITs>${skipTests}</skipITs>
-    <cyclonedx.skip>${quickly}</cyclonedx.skip>
     <jacoco.skip>${skipUTs}</jacoco.skip>
 
     <!--
@@ -934,6 +934,11 @@
         <version>${version.spring-security}</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.nimbusds</groupId>
+        <artifactId>oauth2-oidc-sdk</artifactId>
+        <version>${version.nimbus-sdk}</version>
       </dependency>
 
       <dependency>

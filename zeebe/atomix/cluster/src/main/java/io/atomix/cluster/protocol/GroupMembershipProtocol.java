@@ -58,6 +58,21 @@ public interface GroupMembershipProtocol
       BootstrapService bootstrap, NodeDiscoveryService discovery, Member localMember);
 
   /**
+   * Joins the cluster.
+   *
+   * @param bootstrap the bootstrap service
+   * @param discovery the discovery service
+   * @param localMember the local member info
+   * @param actorSchedulerName the context value to set for actor-scheduler
+   * @return a future to be completed once the join is complete
+   */
+  CompletableFuture<Void> join(
+      BootstrapService bootstrap,
+      NodeDiscoveryService discovery,
+      Member localMember,
+      String actorSchedulerName);
+
+  /**
    * Leaves the cluster.
    *
    * @param localMember the local member info

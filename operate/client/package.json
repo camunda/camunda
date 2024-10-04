@@ -56,8 +56,7 @@
     "playwright": "playwright test",
     "start-visual-regression-docker": "docker run --rm --network host -v $(pwd):/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.47.2 /bin/bash",
     "start:visual-regression": "serve build/ -p 8081 -n -s -L",
-    "build:visual-regression": "cross-env REACT_APP_VERSION=0.0.0-SNAPSHOT yarn build",
-    "extract-sbom": "cross-env GENERATE_SOURCEMAP=false react-app-rewired build"
+    "build:visual-regression": "cross-env REACT_APP_VERSION=0.0.0-SNAPSHOT yarn build"
   },
   "jest": {
     "transformIgnorePatterns": [
