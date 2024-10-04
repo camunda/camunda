@@ -5,6 +5,7 @@
 			"analysis": {
 				"normalizer": {
 					"case_insensitive": {
+            "type": "custom",
 						"filter": "lowercase"
 					}
 				}

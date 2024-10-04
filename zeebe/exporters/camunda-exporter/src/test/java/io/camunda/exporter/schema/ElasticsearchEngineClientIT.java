@@ -166,6 +166,35 @@ public class ElasticsearchEngineClientIT {
   }
 
   @Test
+  void shouldCreateIndexTemplateIfSourceFileContainsSettings() throws IOException {
+    final var template =
+        SchemaTestUtil.mockIndexTemplate(
+            "index_name",
+            "index_pattern.*",
+            "alias",
+            List.of(),
+            "template_name",
+            "mappings-and-settings.json");
+
+    elsEngineClient.createIndexTemplate(template, new IndexSettings(), true);
+
+    final var createdTemplate =
+        elsClient.indices().getIndexTemplate(req -> req.name("template_name")).indexTemplates();
+
+    assertThat(createdTemplate.size()).isEqualTo(1);
+    assertThat(
+            createdTemplate
+                .getFirst()
+                .indexTemplate()
+                .template()
+                .settings()
+                .index()
+                .refreshInterval()
+                .time())
+        .isEqualTo("2s");
+  }
+
+  @Test
   void shouldUpdateSettingsWithPutSettingsRequest() throws IOException {
     final var index =
         SchemaTestUtil.mockIndex("index_name", "alias", "index_name", "mappings.json");

@@ -58,6 +58,8 @@ public class RestErrorMapper {
             yield RestErrorMapper.createProblemDetail(HttpStatus.CONFLICT, message, title);
           case INVALID_ARGUMENT:
             yield RestErrorMapper.createProblemDetail(HttpStatus.BAD_REQUEST, message, title);
+          case UNAUTHORIZED:
+            yield RestErrorMapper.createProblemDetail(HttpStatus.UNAUTHORIZED, message, title);
           default:
             {
               yield RestErrorMapper.createProblemDetail(

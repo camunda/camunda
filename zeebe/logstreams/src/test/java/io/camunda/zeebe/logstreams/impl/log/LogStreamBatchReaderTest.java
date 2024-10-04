@@ -41,7 +41,7 @@ public class LogStreamBatchReaderTest {
   public void setUp() {
     final var logStreamReader = readerRule.getLogStreamReader();
     batchReader = new LogStreamBatchReaderImpl(logStreamReader);
-    writer = logStreamRule.getLogStream().newSyncLogStreamWriter();
+    writer = logStreamRule.getLogStream().newBlockingLogStreamWriter();
   }
 
   @Test

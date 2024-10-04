@@ -39,6 +39,9 @@ public class VariableListViewEntity {
   private String tenantId;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
+  private String processInstanceId;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private ListViewJoinRelation join;
 
   public VariableListViewEntity() {}
@@ -53,6 +56,7 @@ public class VariableListViewEntity {
     setId(entity.getId());
     setPartitionId(entity.getPartitionId());
     setTenantId(entity.getTenantId());
+    setProcessInstanceKey(entity.getProcessInstanceId());
 
     // Set the join relation
     final ListViewJoinRelation joinRelation = new ListViewJoinRelation();
@@ -138,6 +142,15 @@ public class VariableListViewEntity {
 
   public VariableListViewEntity setTenantId(final String tenantId) {
     this.tenantId = tenantId;
+    return this;
+  }
+
+  public String getProcessInstanceId() {
+    return processInstanceId;
+  }
+
+  public VariableListViewEntity setProcessInstanceKey(final String processInstanceId) {
+    this.processInstanceId = processInstanceId;
     return this;
   }
 
