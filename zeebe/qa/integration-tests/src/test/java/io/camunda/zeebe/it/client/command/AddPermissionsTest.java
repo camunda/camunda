@@ -26,7 +26,6 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
@@ -46,7 +45,6 @@ public class AddPermissionsTest {
   }
 
   @Test
-  @Disabled("Feature is disabled for 8.6 as the feature releases in 8.7")
   void shouldAddPermissionsToOwner() {
     // given
     final long ownerKey = createUser();
@@ -76,7 +74,6 @@ public class AddPermissionsTest {
   }
 
   @Test
-  @Disabled("Feature is disabled for 8.6 as the feature releases in 8.7")
   void shouldRejectWhenOwnerNotFound() {
     // given
     final var nonExistingOwnerKey = 1L;
