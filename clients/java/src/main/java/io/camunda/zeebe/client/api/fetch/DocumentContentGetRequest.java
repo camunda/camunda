@@ -25,4 +25,12 @@ import java.io.InputStream;
  * <p>The document content is returned as an {@link InputStream}.
  */
 @ExperimentalApi("https://github.com/camunda/issues/issues/841")
-public interface DocumentContentGetRequest extends FinalCommandStep<InputStream> {}
+public interface DocumentContentGetRequest extends FinalCommandStep<InputStream> {
+
+  /**
+   * Sets the document store ID. If not set, the default document store is used.
+   *
+   * @param storeId optional document store ID
+   */
+  DocumentContentGetRequest storeId(String storeId);
+}

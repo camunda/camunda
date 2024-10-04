@@ -87,6 +87,6 @@ public class InMemoryDocumentStore implements DocumentStore {
     return CompletableFuture.completedFuture(
         Either.left(
             new OperationNotSupported(
-                "The in-memory document instance does not support creating links")));
+                "The in-memory document store does not support creating links")));
   }
 }

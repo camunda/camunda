@@ -25,12 +25,12 @@ public interface DocumentMetadata {
   /**
    * @return the full metadata of the document as a map
    */
-  Map<String, Object> getMetadata();
+  Map<String, Object> asMap();
 
   /**
    * @return the metadata value for the given key
    */
-  Object getMetadata(String key);
+  Object get(String key);
 
   /**
    * @return the content type of the document, if present in the metadata

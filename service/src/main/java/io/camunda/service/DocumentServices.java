@@ -9,6 +9,7 @@ package io.camunda.service;
 
 import io.camunda.document.api.DocumentCreationRequest;
 import io.camunda.document.api.DocumentError;
+import io.camunda.document.api.DocumentError.StoreDoesNotExist;
 import io.camunda.document.api.DocumentLink;
 import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.document.api.DocumentStoreRecord;
@@ -51,14 +52,21 @@ public class DocumentServices extends ApiServices<DocumentServices> {
         new DocumentCreationRequest(
             request.documentId, request.contentInputStream, request.metadata);
 
-    final DocumentStoreRecord storeRecord = getDocumentStore(request.storeId);
+    final DocumentStoreRecord storeRecord;
+    try {
+      storeRecord = getDocumentStore(request.storeId);
+    } catch (final IllegalArgumentException e) {
+      return CompletableFuture.failedFuture(
+          new DocumentException(new StoreDoesNotExist(request.storeId)));
+    }
+
     return storeRecord
         .instance()
         .createDocument(storeRequest)
         .thenApply(
             result -> {
               if (result.isLeft()) {
-                throw new DocumentException("Failed to create document", result.getLeft());
+                throw new DocumentException(result.getLeft());
               } else {
                 return new DocumentReferenceResponse(
                     result.get().documentId(), storeRecord.storeId(), result.get().metadata());
@@ -68,14 +76,20 @@ public class DocumentServices extends ApiServices<DocumentServices> {
 
   public InputStream getDocumentContent(final String documentId, final String storeId) {
 
-    final DocumentStoreRecord storeRecord = getDocumentStore(storeId);
+    final DocumentStoreRecord storeRecord;
+    try {
+      storeRecord = getDocumentStore(storeId);
+    } catch (final IllegalArgumentException e) {
+      throw new DocumentException(new StoreDoesNotExist(storeId));
+    }
+
     return storeRecord
         .instance()
         .getDocument(documentId)
         .thenApply(
             result -> {
               if (result.isLeft()) {
-                throw new DocumentException("Failed to get document", result.getLeft());
+                throw new DocumentException(result.getLeft());
               } else {
                 return result.get();
               }
@@ -85,14 +99,20 @@ public class DocumentServices extends ApiServices<DocumentServices> {
 
   public CompletableFuture<Void> deleteDocument(final String documentId, final String storeId) {
 
-    final DocumentStoreRecord storeRecord = getDocumentStore(storeId);
+    final DocumentStoreRecord storeRecord;
+    try {
+      storeRecord = getDocumentStore(storeId);
+    } catch (final IllegalArgumentException e) {
+      return CompletableFuture.failedFuture(new DocumentException(new StoreDoesNotExist(storeId)));
+    }
+
     return storeRecord
         .instance()
         .deleteDocument(documentId)
         .thenAccept(
             result -> {
               if (result.isLeft()) {
-                throw new DocumentException("Failed to delete document", result.getLeft());
+                throw new DocumentException(result.getLeft());
               }
             });
   }
@@ -100,7 +120,13 @@ public class DocumentServices extends ApiServices<DocumentServices> {
   public CompletableFuture<DocumentLink> createLink(
       final String documentId, final String storeId, final DocumentLinkParams params) {
 
-    final DocumentStoreRecord storeRecord = getDocumentStore(storeId);
+    final DocumentStoreRecord storeRecord;
+    try {
+      storeRecord = getDocumentStore(storeId);
+    } catch (final IllegalArgumentException e) {
+      return CompletableFuture.failedFuture(new DocumentException(new StoreDoesNotExist(storeId)));
+    }
+
     final long ttl = params.timeToLive().toMillis();
     return storeRecord
         .instance()
@@ -108,7 +134,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
         .thenApply(
             result -> {
               if (result.isLeft()) {
-                throw new DocumentException("Failed to create link", result.getLeft());
+                throw new DocumentException(result.getLeft());
               } else {
                 return result.get();
               }
@@ -138,12 +164,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
 
     private final DocumentError documentError;
 
-    public DocumentException(final String message, final DocumentError error) {
-      documentError = error;
-    }
-
-    public DocumentException(
-        final String message, final DocumentError error, final Throwable cause) {
+    public DocumentException(final DocumentError error) {
       documentError = error;
     }
 

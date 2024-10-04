@@ -80,7 +80,9 @@ public class CreateDocumentLinkCommandImpl implements CreateDocumentLinkCommandS
   @Override
   public ZeebeFuture<DocumentLinkResponse> send() {
     final DocumentLinkRequest documentLinkRequest = new DocumentLinkRequest();
-    documentLinkRequest.setTimeToLive(timeToLive.toMillis());
+    if (timeToLive != null) {
+      documentLinkRequest.setTimeToLive(timeToLive.toMillis());
+    }
 
     final Map<String, String> queryParams = new HashMap<>();
     if (storeId != null) {
