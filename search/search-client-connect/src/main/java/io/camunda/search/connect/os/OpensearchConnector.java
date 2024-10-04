@@ -14,6 +14,7 @@ import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.SecurityConfiguration;
 import io.camunda.search.connect.jackson.JacksonConfiguration;
 import io.camunda.search.connect.os.json.SearchRequestJacksonJsonpMapperWrapper;
+import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.search.connect.util.SecurityUtil;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -26,6 +27,7 @@ import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBu
 import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
 import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
 import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.http.HttpRequestInterceptor;
 import org.apache.hc.core5.util.Timeout;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -35,6 +37,7 @@ import org.opensearch.client.transport.aws.AwsSdk2TransportOptions;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
@@ -45,24 +48,44 @@ public final class OpensearchConnector {
 
   private final ConnectConfiguration configuration;
   private final ObjectMapper objectMapper;
+  private final PluginRepository pluginRepository;
+
+  private final AwsCredentialsProvider credentialsProvider;
 
   public OpensearchConnector(final ConnectConfiguration configuration) {
-    this(configuration, new JacksonConfiguration(configuration).createObjectMapper());
+    this(
+        configuration,
+        new JacksonConfiguration(configuration).createObjectMapper(),
+        DefaultCredentialsProvider.create(),
+        new PluginRepository());
   }
 
   public OpensearchConnector(
-      final ConnectConfiguration configuration, final ObjectMapper objectMapper) {
+      final ConnectConfiguration configuration,
+      final ObjectMapper objectMapper,
+      final AwsCredentialsProvider credentialsProvider,
+      final PluginRepository pluginRepository) {
     this.configuration = configuration;
     this.objectMapper = objectMapper;
+    this.credentialsProvider = credentialsProvider;
+    this.pluginRepository = pluginRepository;
   }
 
   public OpenSearchClient createClient() {
+    // Load plugins
+    pluginRepository.load(configuration.getInterceptorPlugins());
+
     final var transport = createTransport(configuration);
+
     return new OpenSearchClient(transport);
   }
 
   public OpenSearchAsyncClient createAsyncClient() {
+    // Load plugins
+    pluginRepository.load(configuration.getInterceptorPlugins());
+
     final var transport = createTransport(configuration);
+
     return new OpenSearchAsyncClient(transport);
   }
 
@@ -93,7 +116,8 @@ public final class OpensearchConnector {
 
     builder.setHttpClientConfigCallback(
         httpClientBuilder -> {
-          configureHttpClient(httpClientBuilder, configuration);
+          configureHttpClient(
+              httpClientBuilder, configuration, pluginRepository.asRequestInterceptor());
           return httpClientBuilder;
         });
 
@@ -110,12 +134,15 @@ public final class OpensearchConnector {
   }
 
   private boolean shouldCreateAWSBasedTransport() {
-    final var credentialsProvider = DefaultCredentialsProvider.create();
+    if (credentialsProvider == null) {
+      return false;
+    }
+
     try {
       credentialsProvider.resolveCredentials();
       LOGGER.info("AWS Credentials can be resolved. Use AWS Opensearch");
       return true;
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOGGER.warn("AWS not configured due to: {} ", e.getMessage());
       return false;
     }
@@ -125,14 +152,21 @@ public final class OpensearchConnector {
     try {
       final var uri = new URI(osConfig.getUrl());
       return new HttpHost(uri.getScheme(), uri.getHost(), uri.getPort());
-    } catch (URISyntaxException e) {
+    } catch (final URISyntaxException e) {
       throw new SearchClientConnectException("Error in url: " + osConfig.getUrl(), e);
     }
   }
 
   protected HttpAsyncClientBuilder configureHttpClient(
-      final HttpAsyncClientBuilder httpAsyncClientBuilder, final ConnectConfiguration osConfig) {
+      final HttpAsyncClientBuilder httpAsyncClientBuilder,
+      final ConnectConfiguration osConfig,
+      final HttpRequestInterceptor... interceptors) {
     setupAuthentication(httpAsyncClientBuilder, osConfig);
+
+    for (final HttpRequestInterceptor interceptor : interceptors) {
+      httpAsyncClientBuilder.addRequestInterceptorLast(interceptor);
+    }
+
     if (osConfig.getSecurity() != null && osConfig.getSecurity().isEnabled()) {
       setupSSLContext(httpAsyncClientBuilder, osConfig.getSecurity());
     }
@@ -190,7 +224,7 @@ public final class OpensearchConnector {
 
       httpAsyncClientBuilder.setConnectionManager(connectionManager);
 
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOGGER.error("Error in setting up SSLContext", e);
     }
   }
