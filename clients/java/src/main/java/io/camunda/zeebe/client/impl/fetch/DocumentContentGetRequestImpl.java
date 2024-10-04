@@ -34,7 +34,7 @@ public class DocumentContentGetRequestImpl implements DocumentContentGetRequest 
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
   private final String documentId;
-  private final String storeId;
+  private String storeId;
 
   public DocumentContentGetRequestImpl(
       final HttpClient httpClient,
@@ -71,5 +71,11 @@ public class DocumentContentGetRequestImpl implements DocumentContentGetRequest 
         is -> is,
         result);
     return result;
+  }
+
+  @Override
+  public DocumentContentGetRequest storeId(final String storeId) {
+    this.storeId = storeId;
+    return this;
   }
 }
