@@ -116,7 +116,7 @@ public class JwtAuthorizationTest {
             .withAudience(DEFAULT_AUDIENCE)
             .withSubject(DEFAULT_SUBJECT)
             .withClaim(USER_TOKEN_CLAIM_PREFIX + "usr", "usr1")
-            .withClaim(USER_TOKEN_CLAIM_PREFIX + "aud", "aud1")
+            .withClaim(USER_TOKEN_CLAIM_PREFIX + "sub", "sub1")
             .withClaim(USER_TOKEN_CLAIM_PREFIX + "groups", List.of("g1", "g2"))
             .sign(Algorithm.none());
 
