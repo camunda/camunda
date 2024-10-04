@@ -15,8 +15,8 @@
  */
 package io.camunda.zeebe.spring.client.properties;
 
-import io.camunda.zeebe.spring.client.properties.common.ApiProperties;
 import io.camunda.zeebe.spring.client.properties.common.AuthProperties;
+import io.camunda.zeebe.spring.client.properties.common.IdentityProperties;
 import io.camunda.zeebe.spring.client.properties.common.ZeebeClientProperties;
 import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -30,7 +30,7 @@ public class CamundaClientProperties {
   private String region;
   @NestedConfigurationProperty private List<String> tenantIds;
   @NestedConfigurationProperty private AuthProperties auth;
-  @NestedConfigurationProperty private ApiProperties identity;
+  @NestedConfigurationProperty private IdentityProperties identity;
   @NestedConfigurationProperty private ZeebeClientProperties zeebe;
 
   public ClientMode getMode() {
@@ -57,11 +57,11 @@ public class CamundaClientProperties {
     this.zeebe = zeebe;
   }
 
-  public ApiProperties getIdentity() {
+  public IdentityProperties getIdentity() {
     return identity;
   }
 
-  public void setIdentity(final ApiProperties identity) {
+  public void setIdentity(final IdentityProperties identity) {
     this.identity = identity;
   }
 

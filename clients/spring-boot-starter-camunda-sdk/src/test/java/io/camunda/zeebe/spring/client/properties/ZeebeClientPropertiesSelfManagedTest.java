@@ -33,7 +33,8 @@ public class ZeebeClientPropertiesSelfManagedTest {
     assertThat(properties.getMode()).isEqualTo(ClientMode.selfManaged);
     assertThat(properties.getZeebe().getGrpcAddress().toString())
         .isEqualTo("http://localhost:26500");
-    assertThat(properties.getZeebe().getBaseUrl().toString()).isEqualTo("http://localhost:8086");
+    assertThat(properties.getZeebe().getRestAddress().toString())
+        .isEqualTo("http://localhost:8086");
     assertThat(properties.getZeebe().isPreferRestOverGrpc()).isEqualTo(false);
     assertThat(properties.getZeebe().getEnabled()).isEqualTo(true);
     assertThat(properties.getZeebe().getAudience()).isEqualTo("zeebe-api");
