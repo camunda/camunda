@@ -286,6 +286,7 @@
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
       <version>${commons.io.version}</version>
+      <scope>test</scope>
     </dependency>
 
     <!-- Micrometer Prometheus registry  -->
@@ -578,6 +579,7 @@
       <scope>compile</scope>
     </dependency>
 
+    <!-- scope here is wider than test. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>org.opensearch.client</groupId>
       <artifactId>opensearch-rest-client</artifactId>
@@ -750,6 +752,7 @@
       <scope>compile</scope>
     </dependency>
 
+    <!-- scope here is wider than test. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>commons-collections</groupId>
       <artifactId>commons-collections</artifactId>
@@ -764,6 +767,7 @@
       <scope>compile</scope>
     </dependency>
 
+    <!-- scope here is wider than test. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>org.apache.tika</groupId>
       <artifactId>tika-core</artifactId>
@@ -898,6 +902,11 @@
           <ignoredNonTestScopedDependencies>
             <dep>com.fasterxml.jackson.datatype:jackson-datatype-jdk8</dep>
             <dep>com.fasterxml.jackson.datatype:jackson-datatype-jsr310</dep>
+            <dep>org.apache.httpcomponents:httpcore-nio</dep>
+            <dep>org.glassfish.jersey.core:jersey-client</dep>
+            <dep>org.apache.tika:tika-core</dep>
+            <dep>commons-collections:commons-collections</dep>
+            <dep>org.opensearch.client:opensearch-rest-client</dep>
           </ignoredNonTestScopedDependencies>
         </configuration>
       </plugin>
