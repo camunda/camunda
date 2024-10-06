@@ -111,7 +111,7 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     // given
 
     // when
-    startProtocol(member1);
+    startProtocol(member1, member1.id().toString());
 
     // then
     checkEvent(member1, MEMBER_ADDED, member1);
@@ -121,10 +121,10 @@ public class SwimProtocolTest extends ConcurrentTestCase {
   @Test
   public void shouldReceiveMultipleEventsOnTwoNodeCluster() throws Exception {
     // given
-    startProtocol(member1);
+    startProtocol(member1, member1.id().toString());
 
     // when
-    startProtocol(member2);
+    startProtocol(member2, member2.id().toString());
 
     // then
     checkEvent(member2, MEMBER_ADDED, member2);
@@ -139,11 +139,11 @@ public class SwimProtocolTest extends ConcurrentTestCase {
   @Test
   public void shouldReceiveMultipleEventsOnThreeNodeCluster() throws Exception {
     // given
-    startProtocol(member1);
-    startProtocol(member2);
+    startProtocol(member1, member1.id().toString());
+    startProtocol(member2, member2.id().toString());
 
     // when
-    startProtocol(member3);
+    startProtocol(member3, member3.id().toString());
 
     // then
     checkEvent(member2, MEMBER_ADDED, member2);
@@ -165,9 +165,9 @@ public class SwimProtocolTest extends ConcurrentTestCase {
   @Test
   public void shouldRemoveNodeOnPartition() throws Exception {
     // Start a node and check its events.
-    startProtocol(member1);
-    startProtocol(member2);
-    startProtocol(member3);
+    startProtocol(member1, member1.id().toString());
+    startProtocol(member2, member2.id().toString());
+    startProtocol(member3, member3.id().toString());
 
     awaitMembers(member3, member1, member2, member3);
     awaitMembers(member2, member1, member2, member3);
@@ -189,9 +189,9 @@ public class SwimProtocolTest extends ConcurrentTestCase {
   @Test
   public void testSwimProtocol() throws Exception {
     // Start a node and check its events.
-    startProtocol(member1);
-    startProtocol(member2);
-    startProtocol(member3);
+    startProtocol(member1, member1.id().toString());
+    startProtocol(member2, member2.id().toString());
+    startProtocol(member3, member3.id().toString());
 
     awaitMembers(member3, member1, member2, member3);
     awaitMembers(member2, member1, member2, member3);
@@ -247,8 +247,8 @@ public class SwimProtocolTest extends ConcurrentTestCase {
   @Test
   public void shouldRemoveOldMemberVersions() throws InterruptedException {
     // given
-    startProtocol(member1);
-    startProtocol(member2);
+    startProtocol(member1, member1.id().toString());
+    startProtocol(member2, member2.id().toString());
 
     awaitMembers(member2, member1, member2);
     awaitMembers(member1, member1, member2);
@@ -259,7 +259,7 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     stopProtocol(member2);
     final Member member =
         member(member2.id().id(), member2.address().host(), member2.address().port(), version2);
-    startProtocol(member);
+    startProtocol(member, "member2-" + member2.id().id());
 
     // then - verify that version 1 is removed and version 2 is added.
     Awaitility.await()
@@ -271,9 +271,9 @@ public class SwimProtocolTest extends ConcurrentTestCase {
   @Test
   public void shouldSynchronizePeriodically() throws InterruptedException {
     // given
-    startProtocol(member1);
-    startProtocol(member2);
-    final SwimMembershipProtocol protocol3 = startProtocol(member3);
+    startProtocol(member1, member1.id().toString());
+    startProtocol(member2, member2.id().toString());
+    final SwimMembershipProtocol protocol3 = startProtocol(member3, member3.id().toString());
 
     // wait for all nodes to know about each other
     checkEvents(
@@ -339,12 +339,15 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     return false;
   }
 
-  private SwimMembershipProtocol startProtocol(final Member member) {
-    return startProtocol(member, UnaryOperator.identity());
+  private SwimMembershipProtocol startProtocol(
+      final Member member, final String actorSchedulerName) {
+    return startProtocol(member, UnaryOperator.identity(), actorSchedulerName);
   }
 
   private SwimMembershipProtocol startProtocol(
-      final Member member, final UnaryOperator<SwimMembershipProtocolConfig> configurator) {
+      final Member member,
+      final UnaryOperator<SwimMembershipProtocolConfig> configurator,
+      final String actorSchedulerName) {
     final SwimMembershipProtocol protocol =
         new SwimMembershipProtocol(
             configurator.apply(
@@ -365,7 +368,7 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     provider.join(bootstrap, member).join();
     final NodeDiscoveryService discovery =
         new DefaultNodeDiscoveryService(bootstrap, member, provider).start().join();
-    protocol.join(bootstrap, discovery, member).join();
+    protocol.join(bootstrap, discovery, member, actorSchedulerName).join();
     protocols.put(member.id(), protocol);
     return protocol;
   }

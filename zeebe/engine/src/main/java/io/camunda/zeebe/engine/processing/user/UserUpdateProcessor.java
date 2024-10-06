@@ -48,7 +48,7 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
     final var username = command.getValue().getUsernameBuffer();
     final var persistedUser = userState.getUser(username);
 
-    if (persistedUser == null) {
+    if (persistedUser.isEmpty()) {
       final var rejectionMessage =
           "Expected to update user with username %s, but a user with this username does not exist"
               .formatted(command.getValue().getUsername());
@@ -58,7 +58,7 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
       return;
     }
 
-    final var updatedUser = overlayUser(persistedUser, command.getValue());
+    final var updatedUser = overlayUser(persistedUser.get(), command.getValue());
 
     final long key = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(key, UserIntent.UPDATED, updatedUser);

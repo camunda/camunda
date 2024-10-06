@@ -39,7 +39,6 @@ public class AuthorizationController {
   public CompletableFuture<ResponseEntity<Object>> patchAuthorization(
       @PathVariable final long ownerKey,
       @RequestBody final AuthorizationPatchRequest authorizationPatchRequest) {
-
     return RequestMapper.toAuthorizationPatchRequest(ownerKey, authorizationPatchRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::patchAuthorization);
   }

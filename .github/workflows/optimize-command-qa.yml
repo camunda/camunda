@@ -131,7 +131,7 @@ jobs:
             fi
 
             if [ "${{ steps.parse-args.outputs.arg1 }}" == 'verified' ]; then
-              if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'qa:verified') }}" == "true" ]; then
+              if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'qa/verified') }}" == "true" ]; then
                 echo "Issue is already verified"
                 exit 1
               fi
@@ -152,7 +152,7 @@ jobs:
               exit 1
             fi
 
-            if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'qa:notVerified') }}" == "true" ]; then
+            if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'qa/notVerified') }}" == "true" ]; then
               echo "Issue is already marked as 'not verified'"
               exit 1
             fi
@@ -244,15 +244,15 @@ jobs:
           labels_to_add=""
           labels_to_remove=""
           if [ "${{ steps.parse-args.outputs.arg1 }}" == 'skip' ]; then
-            labels_to_add="qa:notNeeded"
-            labels_to_remove="qa:pendingVerification,qa:verified"
+            labels_to_add="qa/notNeeded"
+            labels_to_remove="qa/pendingVerification,qa/verified"
           elif [ "${{ steps.parse-args.outputs.arg1 }}" == 'verified' ]; then
-            labels_to_add="qa:verified"
-            labels_to_remove="qa:pendingVerification"
+            labels_to_add="qa/verified"
+            labels_to_remove="qa/pendingVerification"
           elif [ "${{ steps.parse-args.outputs.arg1 }}" == 'not' ] &&
                [ "${{ steps.parse-args.outputs.arg2 }}" == 'verified' ]; then
-            labels_to_add="qa:notVerified"
-            labels_to_remove="qa:pendingVerification"
+            labels_to_add="qa/notVerified"
+            labels_to_remove="qa/pendingVerification"
           fi
 
           echo "labels_to_add=${labels_to_add}" >> "$GITHUB_OUTPUT"

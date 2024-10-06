@@ -7,13 +7,13 @@
  */
 package io.camunda.operate.schema.opensearch;
 
-import static io.camunda.operate.schema.templates.IncidentTemplate.KEY;
-import static io.camunda.operate.schema.templates.IncidentTemplate.PROCESS_INSTANCE_KEY;
-import static io.camunda.operate.schema.templates.ListViewTemplate.BPMN_PROCESS_ID;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_KEY;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.*;
 import static io.camunda.operate.util.LambdaExceptionUtil.rethrowConsumer;
+import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.KEY;
+import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.PROCESS_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_KEY;
 
 import io.camunda.operate.exceptions.MigrationException;
 import io.camunda.operate.property.MigrationProperties;
@@ -54,25 +54,25 @@ public class OpensearchReindexWithQueryAndScriptPlan implements ReindexWithQuery
   }
 
   @Override
-  public ReindexWithQueryAndScriptPlan setSrcIndex(String srcIndex) {
+  public ReindexWithQueryAndScriptPlan setSrcIndex(final String srcIndex) {
     this.srcIndex = srcIndex;
     return this;
   }
 
   @Override
-  public ReindexWithQueryAndScriptPlan setDstIndex(String dstIndex) {
+  public ReindexWithQueryAndScriptPlan setDstIndex(final String dstIndex) {
     this.dstIndex = dstIndex;
     return this;
   }
 
   @Override
-  public ReindexWithQueryAndScriptPlan setSteps(List<Step> steps) {
+  public ReindexWithQueryAndScriptPlan setSteps(final List<Step> steps) {
     this.steps = steps;
     return this;
   }
 
   @Override
-  public ReindexWithQueryAndScriptPlan setListViewIndexName(String listViewIndexName) {
+  public ReindexWithQueryAndScriptPlan setListViewIndexName(final String listViewIndexName) {
     this.listViewIndexName = listViewIndexName;
     return this;
   }
@@ -86,7 +86,8 @@ public class OpensearchReindexWithQueryAndScriptPlan implements ReindexWithQuery
         .build();
   }
 
-  private Map<String, Tuple<String, String>> getBpmnProcessIds(Set<Long> processInstanceKeys) {
+  private Map<String, Tuple<String, String>> getBpmnProcessIds(
+      final Set<Long> processInstanceKeys) {
     final var request =
         searchRequestBuilder(listViewIndexName + "*")
             .query(longTerms(KEY, processInstanceKeys))
@@ -158,7 +159,7 @@ public class OpensearchReindexWithQueryAndScriptPlan implements ReindexWithQuery
       if (!processInstanceKeys.isEmpty()) {
         reindexPart(processInstanceKeys);
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new MigrationException(e.getMessage(), e);
     }
   }
@@ -176,7 +177,7 @@ public class OpensearchReindexWithQueryAndScriptPlan implements ReindexWithQuery
     }
   }
 
-  private void reindexPart(Set<Long> processInstanceKeys) {
+  private void reindexPart(final Set<Long> processInstanceKeys) {
     final Map<String, Tuple<String, String>> bpmnProcessIdsMap =
         getBpmnProcessIds(processInstanceKeys);
     LOGGER.debug(

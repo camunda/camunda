@@ -13,7 +13,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.camunda.operate.schema.templates.JobTemplate;
 import io.camunda.operate.util.j5templates.MockMvcManager;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
@@ -23,6 +22,7 @@ import io.camunda.operate.webapp.rest.dto.ListenerResponseDto;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
 import io.camunda.operate.webapp.security.UserService;
+import io.camunda.webapps.schema.descriptors.operate.template.JobTemplate;
 import io.camunda.webapps.schema.entities.operate.JobEntity;
 import io.camunda.webapps.schema.entities.operate.ListenerEventType;
 import io.camunda.webapps.schema.entities.operate.ListenerState;

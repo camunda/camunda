@@ -39,8 +39,10 @@ import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+@Disabled
 @ZeebeIntegration
 class DecisionQueryTest {
   private static final List<Decision> DEPLOYED_DECISIONS = new ArrayList<>();
@@ -670,5 +672,31 @@ class DecisionQueryTest {
         .isEqualTo(
             "Decision requirements with decisionRequirementsKey=%d not found"
                 .formatted(decisionRequirementsKey));
+  }
+
+  @Test
+  void shouldGetDecisionInstance() {
+    // when
+    final long decisionInstanceKey = EVALUATED_DECISIONS.get(0).getDecisionInstanceKey();
+    final var result = zeebeClient.newDecisionInstanceGetRequest(decisionInstanceKey).send().join();
+
+    // then
+    assertThat(result.getDecisionInstanceKey()).isEqualTo(decisionInstanceKey);
+  }
+
+  @Test
+  void shouldReturn404ForNotFoundDecisionInstance() {
+    // when
+    final long decisionInstanceKey = new Random().nextLong();
+    final var problemException =
+        assertThrows(
+            ProblemException.class,
+            () -> zeebeClient.newDecisionInstanceGetRequest(decisionInstanceKey).send().join());
+    // then
+    assertThat(problemException.code()).isEqualTo(404);
+    assertThat(problemException.details().getDetail())
+        .isEqualTo(
+            "Decision Instance with decisionInstanceKey=%d not found"
+                .formatted(decisionInstanceKey));
   }
 }

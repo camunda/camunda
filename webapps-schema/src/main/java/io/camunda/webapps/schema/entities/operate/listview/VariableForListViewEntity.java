@@ -7,7 +7,7 @@
  */
 package io.camunda.webapps.schema.entities.operate.listview;
 
-import io.camunda.webapps.schema.descriptors.operate.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.OperateZeebeEntity;
 import java.util.Objects;
 

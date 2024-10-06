@@ -15,16 +15,26 @@
  */
 package io.camunda.zeebe.client.impl.search.response;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.api.response.EvaluatedDecisionInput;
+import io.camunda.zeebe.client.api.response.MatchedDecisionRule;
 import io.camunda.zeebe.client.api.search.response.DecisionDefinitionType;
 import io.camunda.zeebe.client.api.search.response.DecisionInstance;
 import io.camunda.zeebe.client.api.search.response.DecisionInstanceState;
+import io.camunda.zeebe.client.impl.response.EvaluatedDecisionInputImpl;
+import io.camunda.zeebe.client.impl.response.MatchedDecisionRuleImpl;
 import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionTypeEnum;
+import io.camunda.zeebe.client.protocol.rest.DecisionInstanceGetQueryResponse;
 import io.camunda.zeebe.client.protocol.rest.DecisionInstanceItem;
 import io.camunda.zeebe.client.protocol.rest.DecisionInstanceStateEnum;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class DecisionInstanceImpl implements DecisionInstance {
 
+  @JsonIgnore private final JsonMapper jsonMapper;
   private final long decisionInstanceKey;
   private final DecisionInstanceState state;
   private final String evaluationDate;
@@ -37,9 +47,12 @@ public class DecisionInstanceImpl implements DecisionInstance {
   private final int decisionDefinitionVersion;
   private final DecisionDefinitionType decisionDefinitionType;
   private final String tenantId;
+  private final List<EvaluatedDecisionInput> evaluatedInputs;
+  private final List<MatchedDecisionRule> matchedRules;
 
-  public DecisionInstanceImpl(final DecisionInstanceItem item) {
+  public DecisionInstanceImpl(final DecisionInstanceItem item, final JsonMapper jsonMapper) {
     this(
+        jsonMapper,
         item.getDecisionInstanceKey(),
         toDecisionInstanceState(item.getState()),
         item.getEvaluationDate(),
@@ -51,10 +64,37 @@ public class DecisionInstanceImpl implements DecisionInstance {
         item.getDecisionDefinitionName(),
         item.getDecisionDefinitionVersion(),
         toDecisionDefinitionType(item.getDecisionDefinitionType()),
-        item.getTenantId());
+        item.getTenantId(),
+        null,
+        null);
   }
 
   public DecisionInstanceImpl(
+      final DecisionInstanceGetQueryResponse item, final JsonMapper jsonMapper) {
+    this(
+        jsonMapper,
+        item.getDecisionInstanceKey(),
+        toDecisionInstanceState(item.getState()),
+        item.getEvaluationDate(),
+        item.getEvaluationFailure(),
+        item.getProcessDefinitionKey(),
+        item.getProcessInstanceKey(),
+        item.getDecisionDefinitionKey(),
+        item.getDecisionDefinitionId(),
+        item.getDecisionDefinitionName(),
+        item.getDecisionDefinitionVersion(),
+        toDecisionDefinitionType(item.getDecisionDefinitionType()),
+        item.getTenantId(),
+        item.getEvaluatedInputs().stream()
+            .map(input -> new EvaluatedDecisionInputImpl(input, jsonMapper))
+            .collect(Collectors.toList()),
+        item.getMatchedRules().stream()
+            .map(rule -> new MatchedDecisionRuleImpl(rule, jsonMapper))
+            .collect(Collectors.toList()));
+  }
+
+  public DecisionInstanceImpl(
+      final JsonMapper jsonMapper,
       final long decisionInstanceKey,
       final DecisionInstanceState state,
       final String evaluationDate,
@@ -66,7 +106,10 @@ public class DecisionInstanceImpl implements DecisionInstance {
       final String decisionDefinitionName,
       final int decisionDefinitionVersion,
       final DecisionDefinitionType decisionDefinitionType,
-      final String tenantId) {
+      final String tenantId,
+      final List<EvaluatedDecisionInput> evaluatedInputs,
+      final List<MatchedDecisionRule> matchedRules) {
+    this.jsonMapper = jsonMapper;
     this.decisionInstanceKey = decisionInstanceKey;
     this.state = state;
     this.evaluationDate = evaluationDate;
@@ -79,6 +122,8 @@ public class DecisionInstanceImpl implements DecisionInstance {
     this.decisionDefinitionVersion = decisionDefinitionVersion;
     this.decisionDefinitionType = decisionDefinitionType;
     this.tenantId = tenantId;
+    this.evaluatedInputs = evaluatedInputs;
+    this.matchedRules = matchedRules;
   }
 
   private static DecisionDefinitionType toDecisionDefinitionType(
@@ -180,6 +225,21 @@ public class DecisionInstanceImpl implements DecisionInstance {
   }
 
   @Override
+  public List<EvaluatedDecisionInput> getEvaluatedInputs() {
+    return evaluatedInputs;
+  }
+
+  @Override
+  public List<MatchedDecisionRule> getMatchedRules() {
+    return matchedRules;
+  }
+
+  @Override
+  public String toJson() {
+    return jsonMapper.toJson(this);
+  }
+
+  @Override
   public int hashCode() {
     return Objects.hash(
         decisionInstanceKey,
@@ -193,7 +253,9 @@ public class DecisionInstanceImpl implements DecisionInstance {
         decisionDefinitionName,
         decisionDefinitionVersion,
         decisionDefinitionType,
-        tenantId);
+        tenantId,
+        evaluatedInputs,
+        matchedRules);
   }
 
   @Override
@@ -205,17 +267,19 @@ public class DecisionInstanceImpl implements DecisionInstance {
       return false;
     }
     final DecisionInstanceImpl that = (DecisionInstanceImpl) o;
-    return Objects.equals(decisionInstanceKey, that.decisionInstanceKey)
+    return decisionInstanceKey == that.decisionInstanceKey
+        && decisionKey == that.decisionKey
+        && decisionDefinitionVersion == that.decisionDefinitionVersion
         && state == that.state
         && Objects.equals(evaluationDate, that.evaluationDate)
         && Objects.equals(evaluationFailure, that.evaluationFailure)
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(processInstanceKey, that.processInstanceKey)
-        && Objects.equals(decisionKey, that.decisionKey)
         && Objects.equals(decisionDefinitionId, that.decisionDefinitionId)
         && Objects.equals(decisionDefinitionName, that.decisionDefinitionName)
-        && Objects.equals(decisionDefinitionVersion, that.decisionDefinitionVersion)
         && decisionDefinitionType == that.decisionDefinitionType
-        && Objects.equals(tenantId, that.tenantId);
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(evaluatedInputs, that.evaluatedInputs)
+        && Objects.equals(matchedRules, that.matchedRules);
   }
 }
