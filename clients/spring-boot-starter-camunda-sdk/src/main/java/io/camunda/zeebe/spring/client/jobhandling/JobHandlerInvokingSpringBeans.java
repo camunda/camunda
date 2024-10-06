@@ -98,6 +98,11 @@ public class JobHandlerInvokingSpringBeans implements JobHandler {
         command.executeAsyncWithMetrics(
             MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_COMPLETED, job.getType());
       }
+    } catch (UnretriableErrorException e) {
+      if (!workerValue.getAutoComplete()) {
+        throw e;
+      }
+      // TODO: Send a fail command and set the retries to 0.
     } catch (final ZeebeBpmnError bpmnError) {
       LOG.trace("Catched BPMN error on {}", job);
       final CommandWrapper command =
