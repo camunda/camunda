@@ -430,6 +430,7 @@
       <scope>test</scope>
     </dependency>
 
+    <!-- scope here is wider than test. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>com.fasterxml.jackson.datatype</groupId>
       <artifactId>jackson-datatype-jdk8</artifactId>
@@ -640,6 +641,7 @@
       <scope>compile</scope>
     </dependency>
 
+    <!-- scope here is wider than test. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>com.fasterxml.jackson.datatype</groupId>
       <artifactId>jackson-datatype-jsr310</artifactId>
@@ -654,6 +656,7 @@
       <scope>compile</scope>
     </dependency>
 
+    <!-- scope here is wider than test. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpcore-nio</artifactId>
@@ -717,6 +720,7 @@
       <scope>compile</scope>
     </dependency>
 
+    <!-- scope here is wider than test. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>org.glassfish.jersey.core</groupId>
       <artifactId>jersey-client</artifactId>
@@ -724,6 +728,7 @@
       <scope>compile</scope>
     </dependency>
 
+    <!-- this is necessary. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>org.eclipse.angus</groupId>
       <artifactId>jakarta.mail</artifactId>
@@ -884,12 +889,15 @@
             <dep>org.springframework.boot:spring-boot-starter-jetty</dep>
             <dep>org.springframework.boot:spring-boot-starter-jersey</dep>
             <dep>io.micrometer:micrometer-registry-prometheus</dep>
+            <dep>org.apache.httpcomponents.core5:httpcore5</dep>
+            <dep>org.eclipse.angus:jakarta.mail</dep>
 
             <!-- test dependencies -->
             <dep>org.springframework.boot:spring-boot-starter-test</dep>
-
           </ignoredUnusedDeclaredDependencies>
           <ignoredNonTestScopedDependencies>
+            <dep>com.fasterxml.jackson.datatype:jackson-datatype-jdk8</dep>
+            <dep>com.fasterxml.jackson.datatype:jackson-datatype-jsr310</dep>
           </ignoredNonTestScopedDependencies>
         </configuration>
       </plugin>
