@@ -8,9 +8,9 @@
 package io.camunda.search.es.transformers.source;
 
 import co.elastic.clients.elasticsearch.core.search.SourceConfig;
+import io.camunda.search.clients.source.SearchSourceConfig;
 import io.camunda.search.es.transformers.ElasticsearchTransformer;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
-import io.camunda.search.source.SearchSourceConfig;
 
 public final class SourceConfigTransformer
     extends ElasticsearchTransformer<SearchSourceConfig, SourceConfig> {

@@ -7,8 +7,8 @@
  */
 package io.camunda.search.os.transformers.search;
 
-import io.camunda.search.core.SearchQueryHit;
-import io.camunda.search.core.SearchQueryResponse;
+import io.camunda.search.clients.core.SearchQueryHit;
+import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.search.os.transformers.OpensearchTransformer;
 import io.camunda.search.os.transformers.OpensearchTransformers;
 import java.util.ArrayList;

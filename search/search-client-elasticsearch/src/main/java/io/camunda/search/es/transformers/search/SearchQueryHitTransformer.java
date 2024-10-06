@@ -9,7 +9,7 @@ package io.camunda.search.es.transformers.search;
 
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch.core.search.Hit;
-import io.camunda.search.core.SearchQueryHit;
+import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.es.transformers.ElasticsearchTransformer;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import java.util.List;

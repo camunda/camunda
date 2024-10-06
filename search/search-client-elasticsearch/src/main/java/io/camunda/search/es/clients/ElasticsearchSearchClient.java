@@ -12,12 +12,12 @@ import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import io.camunda.search.clients.DocumentBasedSearchClient;
-import io.camunda.search.core.SearchQueryRequest;
-import io.camunda.search.core.SearchQueryResponse;
+import io.camunda.search.clients.core.SearchQueryRequest;
+import io.camunda.search.clients.core.SearchQueryResponse;
+import io.camunda.search.clients.transformers.SearchTransfomer;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import io.camunda.search.es.transformers.search.SearchResponseTransformer;
 import io.camunda.search.exception.SearchQueryExecutionException;
-import io.camunda.search.transformers.SearchTransfomer;
 import java.io.IOException;
 
 public class ElasticsearchSearchClient implements DocumentBasedSearchClient, AutoCloseable {

@@ -9,8 +9,8 @@ package io.camunda.search.es.transformers.query;
 
 import co.elastic.clients.elasticsearch._types.query_dsl.ExistsQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
+import io.camunda.search.clients.query.SearchExistsQuery;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
-import io.camunda.search.query.SearchExistsQuery;
 
 public final class ExistsQueryTransformer
     extends QueryOptionTransformer<SearchExistsQuery, ExistsQuery> {

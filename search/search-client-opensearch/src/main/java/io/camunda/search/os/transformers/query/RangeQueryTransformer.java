@@ -7,8 +7,8 @@
  */
 package io.camunda.search.os.transformers.query;
 
+import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.os.transformers.OpensearchTransformers;
-import io.camunda.search.query.SearchRangeQuery;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch._types.query_dsl.RangeQuery;

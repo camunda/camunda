@@ -7,9 +7,9 @@
  */
 package io.camunda.search.os.transformers.source;
 
+import io.camunda.search.clients.source.SearchSourceFilter;
 import io.camunda.search.os.transformers.OpensearchTransformer;
 import io.camunda.search.os.transformers.OpensearchTransformers;
-import io.camunda.search.source.SearchSourceFilter;
 import java.util.List;
 import org.opensearch.client.opensearch.core.search.SourceFilter;
 

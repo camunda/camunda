@@ -7,18 +7,18 @@
  */
 package io.camunda.search.clients;
 
+import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.clients.transformers.ServiceTransformers;
+import io.camunda.search.clients.transformers.filter.AuthenticationTransformer;
+import io.camunda.search.clients.transformers.filter.FilterTransformer;
+import io.camunda.search.clients.transformers.query.SearchQueryResultTransformer;
+import io.camunda.search.clients.transformers.query.TypedSearchQueryTransformer;
 import io.camunda.search.exception.SearchQueryExecutionException;
 import io.camunda.search.filter.FilterBase;
-import io.camunda.search.query.SearchQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TypedSearchQuery;
 import io.camunda.search.security.auth.Authentication;
 import io.camunda.search.sort.SortOption;
-import io.camunda.search.transformers.ServiceTransformers;
-import io.camunda.search.transformers.filter.AuthenticationTransformer;
-import io.camunda.search.transformers.filter.FilterTransformer;
-import io.camunda.search.transformers.query.SearchQueryResultTransformer;
-import io.camunda.search.transformers.query.TypedSearchQueryTransformer;
 
 public final class SearchClientBasedQueryExecutor {
 

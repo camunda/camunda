@@ -7,11 +7,11 @@
  */
 package io.camunda.search.clients;
 
-import static io.camunda.search.core.RequestBuilders.searchRequest;
+import static io.camunda.search.clients.core.RequestBuilders.searchRequest;
 
-import io.camunda.search.core.SearchQueryRequest;
-import io.camunda.search.core.SearchQueryRequest.Builder;
-import io.camunda.search.core.SearchQueryResponse;
+import io.camunda.search.clients.core.SearchQueryRequest;
+import io.camunda.search.clients.core.SearchQueryRequest.Builder;
+import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.util.ObjectBuilder;
 import java.util.function.Function;
 

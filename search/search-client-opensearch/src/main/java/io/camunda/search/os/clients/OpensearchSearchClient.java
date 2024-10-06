@@ -8,12 +8,12 @@
 package io.camunda.search.os.clients;
 
 import io.camunda.search.clients.DocumentBasedSearchClient;
-import io.camunda.search.core.SearchQueryRequest;
-import io.camunda.search.core.SearchQueryResponse;
+import io.camunda.search.clients.core.SearchQueryRequest;
+import io.camunda.search.clients.core.SearchQueryResponse;
+import io.camunda.search.clients.transformers.SearchTransfomer;
 import io.camunda.search.exception.SearchQueryExecutionException;
 import io.camunda.search.os.transformers.OpensearchTransformers;
 import io.camunda.search.os.transformers.search.SearchResponseTransformer;
-import io.camunda.search.transformers.SearchTransfomer;
 import java.io.IOException;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;

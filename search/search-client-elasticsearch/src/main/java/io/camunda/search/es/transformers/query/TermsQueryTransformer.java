@@ -10,9 +10,9 @@ package io.camunda.search.es.transformers.query;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQueryField;
+import io.camunda.search.clients.query.SearchTermsQuery;
+import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
-import io.camunda.search.query.SearchTermsQuery;
-import io.camunda.search.types.TypedValue;
 import java.util.List;
 import java.util.stream.Collectors;
 

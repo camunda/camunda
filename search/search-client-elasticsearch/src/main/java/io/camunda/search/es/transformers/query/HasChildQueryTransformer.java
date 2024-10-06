@@ -10,8 +10,8 @@ package io.camunda.search.es.transformers.query;
 import co.elastic.clients.elasticsearch._types.query_dsl.ChildScoreMode;
 import co.elastic.clients.elasticsearch._types.query_dsl.HasChildQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
+import io.camunda.search.clients.query.SearchHasChildQuery;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
-import io.camunda.search.query.SearchHasChildQuery;
 
 public final class HasChildQueryTransformer
     extends QueryOptionTransformer<SearchHasChildQuery, HasChildQuery> {

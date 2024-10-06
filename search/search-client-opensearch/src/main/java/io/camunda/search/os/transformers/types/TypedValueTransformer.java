@@ -7,9 +7,9 @@
  */
 package io.camunda.search.os.transformers.types;
 
+import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.os.transformers.OpensearchTransformer;
 import io.camunda.search.os.transformers.OpensearchTransformers;
-import io.camunda.search.types.TypedValue;
 import org.opensearch.client.opensearch._types.FieldValue;
 
 public final class TypedValueTransformer extends OpensearchTransformer<TypedValue, FieldValue> {

@@ -7,6 +7,7 @@
  */
 package io.camunda.search.clients;
 
+import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
@@ -31,7 +32,6 @@ import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.search.security.auth.Authentication;
-import io.camunda.search.transformers.ServiceTransformers;
 
 public class SearchClients
     implements AuthorizationSearchClient,

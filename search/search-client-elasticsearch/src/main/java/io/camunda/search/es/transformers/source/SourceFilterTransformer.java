@@ -8,9 +8,9 @@
 package io.camunda.search.es.transformers.source;
 
 import co.elastic.clients.elasticsearch.core.search.SourceFilter;
+import io.camunda.search.clients.source.SearchSourceFilter;
 import io.camunda.search.es.transformers.ElasticsearchTransformer;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
-import io.camunda.search.source.SearchSourceFilter;
 import java.util.List;
 
 public final class SourceFilterTransformer
