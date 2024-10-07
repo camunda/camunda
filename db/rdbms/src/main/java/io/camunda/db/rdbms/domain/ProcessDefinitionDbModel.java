@@ -7,7 +7,7 @@
  */
 package io.camunda.db.rdbms.domain;
 
-public record ProcessDefinitionModel(
+public record ProcessDefinitionDbModel(
     Long processDefinitionKey,
     String bpmnProcessId,
     String name,

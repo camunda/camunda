@@ -10,7 +10,7 @@
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="io.camunda.db.rdbms.sql.ProcessDefinitionMapper">
   <select id="findOne" parameterType="hashMap"
-    resultType="io.camunda.db.rdbms.domain.ProcessDefinitionModel">
+    resultType="io.camunda.db.rdbms.domain.ProcessDefinitionDbModel">
     SELECT PROCESS_DEFINITION_KEY,
            BPMN_PROCESS_ID,
            NAME,
@@ -24,7 +24,7 @@
 
   <insert
     id="insert"
-    parameterType="io.camunda.db.rdbms.domain.ProcessDefinitionModel"
+    parameterType="io.camunda.db.rdbms.domain.ProcessDefinitionDbModel"
     flushCache="true">
     INSERT INTO PROCESS_DEFINITION (PROCESS_DEFINITION_KEY, BPMN_PROCESS_ID, NAME, TENANT_ID, VERSION_TAG, VERSION)
     VALUES (#{processDefinitionKey}, #{bpmnProcessId}, #{name}, #{tenantId}, #{versionTag}, #{version})

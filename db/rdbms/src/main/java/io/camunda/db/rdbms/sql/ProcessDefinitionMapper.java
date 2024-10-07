@@ -7,12 +7,12 @@
  */
 package io.camunda.db.rdbms.sql;
 
-import io.camunda.db.rdbms.domain.ProcessDefinitionModel;
+import io.camunda.db.rdbms.domain.ProcessDefinitionDbModel;
 import java.util.Map;
 
 public interface ProcessDefinitionMapper {
 
-  void insert(ProcessDefinitionModel processDeployment);
+  void insert(ProcessDefinitionDbModel processDeployment);
 
-  ProcessDefinitionModel findOne(Map<String, Object> parameters);
+  ProcessDefinitionDbModel findOne(Map<String, Object> parameters);
 }
