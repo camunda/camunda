@@ -22,5 +22,7 @@ jobs:
           distribution: "adopt"
           java-version: "21"
           cache: "maven"
-      - name: Run analysis
+      - name: Build artifact
+        run: mvn clean install -DskipTests -Dskip.docker -PrunAssembly -f optimize -T4C
+      - name: Run dependency analysis
         run: mvn -f optimize/pom.xml dependency:analyze -DskipTests -DskipDocker
