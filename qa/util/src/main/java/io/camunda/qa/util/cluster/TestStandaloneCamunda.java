@@ -50,10 +50,10 @@ import org.testcontainers.utility.DockerImageName;
 public final class TestStandaloneCamunda extends TestSpringApplication<TestStandaloneCamunda>
     implements TestGateway<TestStandaloneCamunda> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(TestStandaloneCamunda.class);
-  private static final DockerImageName ELASTIC_IMAGE =
+  public static final DockerImageName ELASTIC_IMAGE =
       DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
           .withTag(RestClient.class.getPackage().getImplementationVersion());
+  private static final Logger LOGGER = LoggerFactory.getLogger(TestStandaloneCamunda.class);
   private static final String RECORDING_EXPORTER_ID = "recordingExporter";
   private final ElasticsearchContainer esContainer =
       new ElasticsearchContainer(ELASTIC_IMAGE)
