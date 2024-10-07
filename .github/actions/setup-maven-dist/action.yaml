@@ -1,7 +1,11 @@
 ---
 name: Setup Maven Distribution
 
+<<<<<<< HEAD
 description: Install Maven using a well-known GitHub action (stCarolas/setup-maven) or the mvnw wrapper.
+=======
+description: Maven install relying on either the mvnw wrapper or a well-known GitHub action (stCarolas/setup-maven)
+>>>>>>> 1ef5ac06888 (ci: add a new setup-maven-dist composite action to abstract maven install)
 
 inputs:
   maven-version:
