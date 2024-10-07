@@ -86,7 +86,7 @@ public class ElasticsearchEngineClientIT {
             "alias",
             Collections.emptyList(),
             "template_name",
-            "mappings.json");
+            "/mappings.json");
 
     final var settings = new IndexSettings();
     elsEngineClient.createIndexTemplate(indexTemplate, settings, true);
@@ -97,7 +97,7 @@ public class ElasticsearchEngineClientIT {
 
     assertThat(indexTemplates.size()).isEqualTo(1);
     validateMappings(
-        indexTemplates.getFirst().indexTemplate().template().mappings(), "mappings.json");
+        indexTemplates.getFirst().indexTemplate().template().mappings(), "/mappings.json");
   }
 
   @Test
@@ -105,7 +105,7 @@ public class ElasticsearchEngineClientIT {
     // given
     final var qualifiedIndexName = "full_name";
     final var descriptor =
-        SchemaTestUtil.mockIndex(qualifiedIndexName, "alias", "index_name", "mappings.json");
+        SchemaTestUtil.mockIndex(qualifiedIndexName, "alias", "index_name", "/mappings.json");
 
     // when
     elsEngineClient.createIndex(descriptor);
@@ -114,13 +114,13 @@ public class ElasticsearchEngineClientIT {
     final var index =
         elsClient.indices().get(req -> req.index(qualifiedIndexName)).get(qualifiedIndexName);
 
-    validateMappings(index.mappings(), "mappings.json");
+    validateMappings(index.mappings(), "/mappings.json");
   }
 
   @Test
   void shouldRetrieveAllIndexMappingsWithImplementationAgnosticReturnType() {
     final var index =
-        SchemaTestUtil.mockIndex("index_qualified_name", "alias", "index_name", "mappings.json");
+        SchemaTestUtil.mockIndex("index_qualified_name", "alias", "index_name", "/mappings.json");
 
     elsEngineClient.createIndex(index);
 
@@ -145,7 +145,7 @@ public class ElasticsearchEngineClientIT {
   void shouldRetrieveAllIndexTemplateMappingsWithImplementationAgnosticReturnType() {
     final var template =
         SchemaTestUtil.mockIndexTemplate(
-            "index_name", "index_pattern.*", "alias", List.of(), "template_name", "mappings.json");
+            "index_name", "index_pattern.*", "alias", List.of(), "template_name", "/mappings.json");
 
     elsEngineClient.createIndexTemplate(template, new IndexSettings(), true);
 
@@ -174,7 +174,7 @@ public class ElasticsearchEngineClientIT {
             "alias",
             List.of(),
             "template_name",
-            "mappings-and-settings.json");
+            "/mappings-and-settings.json");
 
     elsEngineClient.createIndexTemplate(template, new IndexSettings(), true);
 
@@ -197,7 +197,7 @@ public class ElasticsearchEngineClientIT {
   @Test
   void shouldUpdateSettingsWithPutSettingsRequest() throws IOException {
     final var index =
-        SchemaTestUtil.mockIndex("index_name", "alias", "index_name", "mappings.json");
+        SchemaTestUtil.mockIndex("index_name", "alias", "index_name", "/mappings.json");
 
     elsEngineClient.createIndex(index);
 

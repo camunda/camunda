@@ -7,8 +7,6 @@
  */
 package io.camunda.operate.store.opensearch;
 
-import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TREE_PATH;
-import static io.camunda.operate.schema.templates.ListViewTemplate.*;
 import static io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations.TERMS_AGG_SIZE;
 import static io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations.TOPHITS_AGG_SIZE;
 import static io.camunda.operate.store.opensearch.client.sync.OpenSearchRetryOperation.UPDATE_RETRY_COUNT;
@@ -21,19 +19,21 @@ import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.withTenantCheck;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.QueryType.ALL;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
+import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.TREE_PATH;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.*;
 import static java.util.function.UnaryOperator.identity;
 
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.schema.indices.ProcessIndex;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.OperationTemplate;
-import io.camunda.operate.schema.templates.ProcessInstanceDependant;
-import io.camunda.operate.schema.templates.TemplateDescriptor;
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.TreePath;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
@@ -452,7 +452,7 @@ public class OpensearchProcessStore implements ProcessStore {
             .filter(template -> !(template instanceof OperationTemplate))
             .toList();
     for (final ProcessInstanceDependant template : processInstanceDependantsWithoutOperation) {
-      final String indexName = ((TemplateDescriptor) template).getAlias();
+      final String indexName = ((IndexTemplateDescriptor) template).getAlias();
       count +=
           richOpenSearchClient
               .doc()

@@ -66,9 +66,10 @@ public class ElasticsearchSchemaManagerIT {
             "alias",
             Collections.emptyList(),
             "template_name",
-            "mappings.json");
+            "/mappings.json");
 
-    final var index = SchemaTestUtil.mockIndex("full_name", "alias", "index_name", "mappings.json");
+    final var index =
+        SchemaTestUtil.mockIndex("full_name", "alias", "index_name", "/mappings.json");
 
     final var schemaManager =
         new ElasticsearchSchemaManager(
@@ -98,9 +99,10 @@ public class ElasticsearchSchemaManagerIT {
             "alias",
             Collections.emptyList(),
             "template_name",
-            "mappings.json");
+            "/mappings.json");
 
-    final var index = SchemaTestUtil.mockIndex("full_name", "alias", "index_name", "mappings.json");
+    final var index =
+        SchemaTestUtil.mockIndex("full_name", "alias", "index_name", "/mappings.json");
 
     final var schemaManager =
         new ElasticsearchSchemaManager(
@@ -125,7 +127,7 @@ public class ElasticsearchSchemaManagerIT {
             "alias",
             Collections.emptyList(),
             "template_name",
-            "mappings.json");
+            "/mappings.json");
     final var schemaManager =
         new ElasticsearchSchemaManager(
             searchEngineClient, Set.of(), Set.of(indexTemplate), new ElasticsearchProperties());
@@ -133,7 +135,7 @@ public class ElasticsearchSchemaManagerIT {
     schemaManager.initialiseResources();
 
     // when
-    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("mappings-added-property.json");
+    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
 
     final Map<IndexDescriptor, Set<IndexMappingProperty>> schemasToChange =
         Map.of(indexTemplate, Set.of());
@@ -148,14 +150,14 @@ public class ElasticsearchSchemaManagerIT {
             .getFirst();
 
     validateMappings(
-        template.indexTemplate().template().mappings(), "mappings-added-property.json");
+        template.indexTemplate().template().mappings(), "/mappings-added-property.json");
   }
 
   @Test
   void shouldAppendToIndexMappingsWithNewProperties() throws IOException {
     // given
     final var index =
-        SchemaTestUtil.mockIndex("index_name", "alias", "index_name", "mappings.json");
+        SchemaTestUtil.mockIndex("index_name", "alias", "index_name", "/mappings.json");
 
     final var schemaManager =
         new ElasticsearchSchemaManager(
@@ -185,7 +187,7 @@ public class ElasticsearchSchemaManagerIT {
   void shouldReadIndexMappingsFileCorrectly() {
     // given
     final var index =
-        SchemaTestUtil.mockIndex("index_name", "alias", "index_name", "mappings.json");
+        SchemaTestUtil.mockIndex("index_name", "alias", "index_name", "/mappings.json");
 
     final var schemaManager =
         new ElasticsearchSchemaManager(

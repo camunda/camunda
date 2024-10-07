@@ -10,8 +10,8 @@ package io.camunda.operate.archiver;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import io.camunda.operate.Metrics;
-import io.camunda.operate.schema.templates.ListViewTemplate;
-import io.camunda.operate.schema.templates.ProcessInstanceDependant;
+import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;

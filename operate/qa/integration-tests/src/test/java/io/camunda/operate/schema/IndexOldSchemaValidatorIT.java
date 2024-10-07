@@ -22,14 +22,13 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.TestElasticsearchSchemaManager;
 import io.camunda.operate.qa.util.TestOpensearchSchemaManager;
-import io.camunda.operate.schema.indices.IndexDescriptor;
-import io.camunda.operate.schema.indices.ProcessIndex;
-import io.camunda.operate.schema.indices.UserIndex;
-import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchIndexOperations;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
+import io.camunda.operate.util.IndexPrefixHolder;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -58,10 +57,8 @@ import org.springframework.test.context.junit4.SpringRunner;
       OperateDateTimeFormatter.class,
       JacksonConfig.class,
       OperateDateTimeFormatter.class,
-      // Assume we have only 3 indices:
-      ProcessIndex.class,
-      UserIndex.class,
-      IncidentTemplate.class
+      io.camunda.operate.util.IndexTemplateDescriptorsConfigurator.class,
+      IndexPrefixHolder.class
     })
 public class IndexOldSchemaValidatorIT {
 

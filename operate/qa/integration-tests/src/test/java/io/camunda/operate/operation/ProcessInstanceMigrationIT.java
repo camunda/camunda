@@ -10,11 +10,11 @@ package io.camunda.operate.operation;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.util.j5templates.OperateZeebeSearchAbstractIT;
 import io.camunda.operate.webapp.rest.dto.operation.MigrationPlanDto;
 import io.camunda.operate.webapp.rest.dto.operation.MigrationPlanDto.MappingInstruction;
 import io.camunda.operate.webapp.zeebe.operation.MigrateProcessInstanceHandler;
+import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.FlowNodeType;
 import java.io.IOException;

@@ -3,7 +3,7 @@
 name: Optimize Bug report
 about: Report a problem about Optimize and help us fix it.
 title: ""
-labels: ["kind/bug", "qa:pendingVerification", "component/optimize"]
+labels: ["kind/bug", "qa/pendingVerification", "component/optimize"]
 assignees: ""
 
 ---

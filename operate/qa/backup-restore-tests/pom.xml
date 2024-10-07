@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>operate-qa</artifactId>
-    <version>8.6.0-SNAPSHOT</version>
+    <version>8.7.0-SNAPSHOT</version>
   </parent>
   <artifactId>operate-qa-backup-restore-tests</artifactId>
 
@@ -56,6 +56,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-schema</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>webapps-schema</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

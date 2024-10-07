@@ -80,9 +80,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   @SuppressWarnings("unchecked")
   public IndexMapping readIndex(final IndexDescriptor indexDescriptor) {
     try (final var mappingsStream =
-        Thread.currentThread()
-            .getContextClassLoader()
-            .getResourceAsStream(indexDescriptor.getMappingsClasspathFilename())) {
+        getClass().getResourceAsStream(indexDescriptor.getMappingsClasspathFilename())) {
       final var nestedType = new TypeReference<Map<String, Map<String, Object>>>() {};
       final Map<String, Object> mappings =
           MAPPER.readValue(mappingsStream, nestedType).get("mappings");
