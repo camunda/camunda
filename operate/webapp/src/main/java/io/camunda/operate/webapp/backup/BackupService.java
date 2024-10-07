@@ -12,12 +12,12 @@ import io.camunda.operate.schema.backup.Prio1Backup;
 import io.camunda.operate.schema.backup.Prio2Backup;
 import io.camunda.operate.schema.backup.Prio3Backup;
 import io.camunda.operate.schema.backup.Prio4Backup;
-import io.camunda.operate.schema.indices.IndexDescriptor;
-import io.camunda.operate.schema.templates.TemplateDescriptor;
 import io.camunda.operate.webapp.management.dto.GetBackupStateResponseDto;
 import io.camunda.operate.webapp.management.dto.TakeBackupRequestDto;
 import io.camunda.operate.webapp.management.dto.TakeBackupResponseDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -149,28 +149,28 @@ public class BackupService {
                 .map(index -> ((IndexDescriptor) index).getFullQualifiedName())
                 .toArray(String[]::new),
             prio2BackupTemplates.stream()
-                .map(index -> ((TemplateDescriptor) index).getFullQualifiedName())
+                .map(index -> ((IndexTemplateDescriptor) index).getFullQualifiedName())
                 .toArray(String[]::new),
             // dated indices
             prio2BackupTemplates.stream()
                 .map(
                     index ->
                         new String[] {
-                          ((TemplateDescriptor) index).getFullQualifiedName() + "*",
-                          "-" + ((TemplateDescriptor) index).getFullQualifiedName()
+                          ((IndexTemplateDescriptor) index).getFullQualifiedName() + "*",
+                          "-" + ((IndexTemplateDescriptor) index).getFullQualifiedName()
                         })
                 .flatMap(Arrays::stream)
                 .toArray(String[]::new),
             prio3BackupTemplates.stream()
-                .map(index -> ((TemplateDescriptor) index).getFullQualifiedName())
+                .map(index -> ((IndexTemplateDescriptor) index).getFullQualifiedName())
                 .toArray(String[]::new),
             // dated indices
             prio3BackupTemplates.stream()
                 .map(
                     index ->
                         new String[] {
-                          ((TemplateDescriptor) index).getFullQualifiedName() + "*",
-                          "-" + ((TemplateDescriptor) index).getFullQualifiedName()
+                          ((IndexTemplateDescriptor) index).getFullQualifiedName() + "*",
+                          "-" + ((IndexTemplateDescriptor) index).getFullQualifiedName()
                         })
                 .flatMap(Arrays::stream)
                 .toArray(String[]::new),

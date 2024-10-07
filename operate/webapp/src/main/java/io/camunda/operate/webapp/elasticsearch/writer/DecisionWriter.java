@@ -7,10 +7,10 @@
  */
 package io.camunda.operate.webapp.elasticsearch.writer;
 
-import io.camunda.operate.schema.indices.DecisionIndex;
-import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
-import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.store.DecisionStore;
+import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
+import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
+import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
 import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +31,7 @@ public class DecisionWriter implements io.camunda.operate.webapp.writer.Decision
   @Autowired private DecisionStore decisionStore;
 
   @Override
-  public long deleteDecisionRequirements(long decisionRequirementsKey) throws IOException {
+  public long deleteDecisionRequirements(final long decisionRequirementsKey) throws IOException {
     return decisionStore.deleteDocuments(
         decisionRequirementsIndex.getAlias(),
         DecisionRequirementsIndex.KEY,
@@ -39,7 +39,7 @@ public class DecisionWriter implements io.camunda.operate.webapp.writer.Decision
   }
 
   @Override
-  public long deleteDecisionDefinitionsFor(long decisionRequirementsKey) throws IOException {
+  public long deleteDecisionDefinitionsFor(final long decisionRequirementsKey) throws IOException {
     return decisionStore.deleteDocuments(
         decisionIndex.getAlias(),
         DecisionIndex.DECISION_REQUIREMENTS_KEY,
@@ -47,7 +47,7 @@ public class DecisionWriter implements io.camunda.operate.webapp.writer.Decision
   }
 
   @Override
-  public long deleteDecisionInstancesFor(long decisionRequirementsKey) throws IOException {
+  public long deleteDecisionInstancesFor(final long decisionRequirementsKey) throws IOException {
     return decisionStore.deleteDocuments(
         decisionInstanceTemplate.getAlias(),
         DecisionInstanceTemplate.DECISION_REQUIREMENTS_KEY,

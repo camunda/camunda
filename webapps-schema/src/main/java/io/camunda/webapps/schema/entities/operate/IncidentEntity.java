@@ -38,7 +38,7 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
 
   private String treePath;
 
-  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  private String tenantId = DEFAULT_TENANT_ID;
 
   private Long position;
 

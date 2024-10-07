@@ -17,7 +17,7 @@ public class DecisionDefinitionEntity extends OperateZeebeEntity<DecisionDefinit
   private int version;
   private String decisionRequirementsId;
   private long decisionRequirementsKey;
-  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  private String tenantId = DEFAULT_TENANT_ID;
 
   public String getDecisionId() {
     return decisionId;

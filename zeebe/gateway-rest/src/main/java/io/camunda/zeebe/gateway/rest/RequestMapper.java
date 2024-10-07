@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
+import static io.camunda.zeebe.auth.api.JwtAuthorizationBuilder.USER_TOKEN_CLAIM_PREFIX;
 import static io.camunda.zeebe.gateway.rest.validator.AuthorizationRequestValidator.validateAuthorizationAssignRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ClockValidator.validateClockPinRequest;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentLinkParams;
@@ -102,6 +103,7 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.multipart.MultipartFile;
 
 public class RequestMapper {
@@ -419,10 +421,18 @@ public class RequestMapper {
 
     final var requestAuthentication = SecurityContextHolder.getContext().getAuthentication();
 
-    if (requestAuthentication != null
-        && requestAuthentication.getPrincipal()
-            instanceof final CamundaUser authenticatedPrincipal) {
-      token.withClaim(Authorization.AUTHORIZED_USER_KEY, authenticatedPrincipal.getUserKey());
+    if (requestAuthentication != null) {
+
+      if (requestAuthentication.getPrincipal()
+          instanceof final CamundaUser authenticatedPrincipal) {
+        token.withClaim(Authorization.AUTHORIZED_USER_KEY, authenticatedPrincipal.getUserKey());
+      }
+
+      if (requestAuthentication instanceof final JwtAuthenticationToken jwtAuthenticationToken) {
+        jwtAuthenticationToken
+            .getTokenAttributes()
+            .forEach((key, value) -> token.withClaim(USER_TOKEN_CLAIM_PREFIX + key, value));
+      }
     }
 
     return new Builder().token(token.build()).tenants(authorizedTenants).build();

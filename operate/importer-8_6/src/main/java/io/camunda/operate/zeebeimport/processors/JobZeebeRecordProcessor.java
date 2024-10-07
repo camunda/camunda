@@ -7,14 +7,14 @@
  */
 package io.camunda.operate.zeebeimport.processors;
 
-import static io.camunda.operate.schema.templates.JobTemplate.*;
-import static io.camunda.operate.schema.templates.TemplateDescriptor.POSITION;
 import static io.camunda.operate.util.LambdaExceptionUtil.rethrowConsumer;
+import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.POSITION;
+import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.*;
 
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.schema.templates.JobTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.DateUtil;
+import io.camunda.webapps.schema.descriptors.operate.template.JobTemplate;
 import io.camunda.webapps.schema.entities.operate.JobEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
