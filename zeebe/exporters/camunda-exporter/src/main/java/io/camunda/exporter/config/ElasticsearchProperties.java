@@ -12,7 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ElasticsearchProperties {
-  private boolean createSchema;
+  private boolean createSchema = true;
   private ConnectConfiguration connect = new ConnectConfiguration();
   private IndexSettings defaultSettings = new IndexSettings();
   private Map<String, Integer> replicasByIndexName = new HashMap<>();

@@ -250,7 +250,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   }
 
   private InputStream getResourceAsStream(final String classpathFileName) {
-    return Thread.currentThread().getContextClassLoader().getResourceAsStream(classpathFileName);
+    return getClass().getResourceAsStream(classpathFileName);
   }
 
   private PutIndexTemplateRequest putIndexTemplateRequest(
@@ -295,6 +295,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
       return new CreateIndexRequest.Builder()
           .index(indexDescriptor.getFullQualifiedName())
+          .settings(s -> s.numberOfReplicas("0"))
           .aliases(indexDescriptor.getAlias(), a -> a.isWriteIndex(false))
           .mappings(
               deserializeJson(IndexTemplateSummary._DESERIALIZER, templateMappings).mappings())
