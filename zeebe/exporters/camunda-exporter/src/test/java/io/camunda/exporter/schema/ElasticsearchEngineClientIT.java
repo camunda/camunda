@@ -14,7 +14,6 @@ import static org.mockito.Mockito.*;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
-import io.camunda.exporter.schema.ElasticsearchEngineClient.MappingSource;
 import io.camunda.exporter.utils.TestSupport;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;

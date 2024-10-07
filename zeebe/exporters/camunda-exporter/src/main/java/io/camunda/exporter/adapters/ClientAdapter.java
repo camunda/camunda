@@ -7,6 +7,9 @@
  */
 package io.camunda.exporter.adapters;
 
+import io.camunda.exporter.ExporterResourceProvider;
+import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.schema.SchemaManager;
 import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
@@ -16,6 +19,9 @@ public interface ClientAdapter {
   void createClient(final ConnectConfiguration config);
 
   SearchEngineClient createSearchEngineClient();
+
+  SchemaManager createSchemaManager(
+      final ExporterResourceProvider provider, final ExporterConfiguration configuration);
 
   BatchRequest createBatchRequest();
 

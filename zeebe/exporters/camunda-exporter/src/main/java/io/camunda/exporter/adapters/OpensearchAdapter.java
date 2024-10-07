@@ -7,6 +7,9 @@
  */
 package io.camunda.exporter.adapters;
 
+import io.camunda.exporter.ExporterResourceProvider;
+import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.schema.SchemaManager;
 import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.OpensearchBatchRequest;
@@ -29,6 +32,14 @@ public class OpensearchAdapter implements ClientAdapter {
   @Override
   public SearchEngineClient createSearchEngineClient() {
     // FIXME add search engine client implementation for opensearch and use it here
+    return null;
+  }
+
+  @Override
+  public SchemaManager createSchemaManager(
+      final ExporterResourceProvider provider, final ExporterConfiguration configuration) {
+
+    // FIXME add SchemaManager implementation for opensearch and use it here
     return null;
   }
 

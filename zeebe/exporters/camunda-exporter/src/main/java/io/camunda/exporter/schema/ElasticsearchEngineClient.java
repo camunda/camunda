@@ -329,9 +329,4 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
           e);
     }
   }
-
-  public enum MappingSource {
-    INDEX,
-    INDEX_TEMPLATE
-  }
 }

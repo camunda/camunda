@@ -16,15 +16,13 @@ import io.camunda.exporter.adapters.ElasticsearchAdapter;
 import io.camunda.exporter.adapters.OpensearchAdapter;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.AuthorizationRecordValueExportHandler;
 import io.camunda.exporter.handlers.UserRecordValueExportHandler;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
-import io.camunda.exporter.schema.ElasticsearchEngineClient.MappingSource;
-import io.camunda.exporter.schema.ElasticsearchSchemaManager;
 import io.camunda.exporter.schema.IndexMappingProperty;
 import io.camunda.exporter.schema.IndexSchemaValidator;
+import io.camunda.exporter.schema.MappingSource;
 import io.camunda.exporter.schema.SchemaManager;
 import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.store.BatchRequest;
@@ -90,7 +88,7 @@ public class CamundaExporter implements Exporter {
     this.controller = controller;
     clientAdapter.createClient(configuration.getConnect());
     final var searchEngineClient = clientAdapter.createSearchEngineClient();
-    final var schemaManager = createSchemaManager(searchEngineClient);
+    final var schemaManager = clientAdapter.createSchemaManager(provider, configuration);
     final var schemaValidator = new IndexSchemaValidator(schemaManager);
 
     schemaStartup(schemaManager, schemaValidator, searchEngineClient);
@@ -132,7 +130,7 @@ public class CamundaExporter implements Exporter {
       try (final var ignored = metrics.measureFlushDuration()) {
         flush();
         metrics.stopFlushLatencyMeasurement();
-      } catch (final ElasticsearchExporterException e) {
+      } catch (final ExporterException e) {
         metrics.recordFailedFlush();
         throw e;
       }
@@ -189,14 +187,6 @@ public class CamundaExporter implements Exporter {
             .collect(Collectors.toSet()));
   }
 
-  private SchemaManager createSchemaManager(final SearchEngineClient searchEngineClient) {
-    return new ElasticsearchSchemaManager(
-        searchEngineClient,
-        provider.getIndexDescriptors(),
-        provider.getIndexTemplateDescriptors(),
-        configuration);
-  }
-
   private boolean shouldFlush() {
     // FIXME should compare against both batch size and memory limit
     return writer.getBatchSize() >= configuration.getBulk().getSize();
@@ -234,7 +224,7 @@ public class CamundaExporter implements Exporter {
       writer.flush(batchRequest);
 
     } catch (final PersistenceException ex) {
-      throw new ElasticsearchExporterException(ex.getMessage(), ex);
+      throw new ExporterException(ex.getMessage(), ex);
     }
   }
 
