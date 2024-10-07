@@ -233,7 +233,8 @@ public final class EngineProcessors {
         commandDistributionBehavior,
         authCheckBehavior);
 
-    ScalingProcessors.addScalingProcessors(typedRecordProcessors, writers, keyGenerator);
+    ScalingProcessors.addScalingProcessors(
+        typedRecordProcessors, writers, keyGenerator, processingState);
 
     return typedRecordProcessors;
   }
