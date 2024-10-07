@@ -21,6 +21,7 @@ import io.camunda.exporter.utils.ElasticsearchScriptBuilder;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import java.io.IOException;
+import java.util.Objects;
 
 public class ElasticsearchAdapter implements ClientAdapter {
   private ElasticsearchClient client;
@@ -34,6 +35,8 @@ public class ElasticsearchAdapter implements ClientAdapter {
 
   @Override
   public SearchEngineClient createSearchEngineClient() {
+    Objects.requireNonNull(
+        client, "ElasticsearchClient must be created before creating search engine client");
     searchEngineClient = new ElasticsearchEngineClient(client);
     return searchEngineClient;
   }
@@ -54,12 +57,15 @@ public class ElasticsearchAdapter implements ClientAdapter {
 
   @Override
   public BatchRequest createBatchRequest() {
+    Objects.requireNonNull(
+        client, "ElasticsearchClient must be created before creating batch request");
     return new ElasticsearchBatchRequest(
         client, new BulkRequest.Builder(), new ElasticsearchScriptBuilder());
   }
 
   @Override
   public void close() throws IOException {
+    Objects.requireNonNull(client, "No ElasticsearchClient instance to close");
     client._transport().close();
   }
 }
