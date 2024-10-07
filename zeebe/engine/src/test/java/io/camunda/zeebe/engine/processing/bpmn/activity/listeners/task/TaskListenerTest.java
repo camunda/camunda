@@ -16,6 +16,9 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
+import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
+import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
@@ -36,9 +39,13 @@ import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.FormMetadataValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.UnaryOperator;
+import java.util.stream.Stream;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -48,23 +55,23 @@ public class TaskListenerTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   private static final String PROCESS_ID = "process";
-  private static final String FORM_ID_1 = "Form_0w7r08e";
-  private static final String TEST_FORM_1 = "/form/test-form-1.form";
   private static final String USER_TASK_KEY_HEADER_NAME =
       Protocol.RESERVED_HEADER_NAME_PREFIX + "userTaskKey";
+
+  private static final String LISTENER_TYPE = "my_listener";
+  private static final String USER_TASK_ELEMENT_ID = "my_user_task";
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldCompleteProcessWithCompleteTaskListenerJobs() {
+  public void shouldCompleteProcessWhenAllCompleteTaskListenersAreExecuted() {
     // given
-    final BpmnModelInstance modelInstance =
-        createProcessWithCompleteTaskListeners("listener_1", "listener_2", "listener_3");
-
-    ENGINE.deployment().withXmlResource(modelInstance).deploy();
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcessWithCompleteTaskListeners(
+                LISTENER_TYPE, LISTENER_TYPE + "_2", LISTENER_TYPE + "_3"));
 
     // when
     ENGINE
@@ -73,8 +80,7 @@ public class TaskListenerTest {
         .withVariable("foo_var", "bar")
         .withAction("my_custom_action")
         .complete();
-
-    completeJobs(processInstanceKey, "listener_1", "listener_2", "listener_3");
+    completeJobs(processInstanceKey, LISTENER_TYPE, LISTENER_TYPE + "_2", LISTENER_TYPE + "_3");
 
     // then
     assertThatProcessInstanceCompleted(processInstanceKey);
@@ -87,7 +93,7 @@ public class TaskListenerTest {
                 .limit(3))
         .extracting(Record::getValue)
         .extracting(JobRecordValue::getType)
-        .containsExactly("listener_1", "listener_2", "listener_3");
+        .containsExactly(LISTENER_TYPE, LISTENER_TYPE + "_2", LISTENER_TYPE + "_3");
 
     assertThat(
             RecordingExporter.userTaskRecords(UserTaskIntent.COMPLETED)
@@ -116,20 +122,16 @@ public class TaskListenerTest {
   @Test
   public void shouldRetryTaskListenerWhenListenerJobFailed() {
     // given
-    final BpmnModelInstance modelInstance =
-        createProcessWithCompleteTaskListeners("listener_1", "listener_2");
-
-    ENGINE.deployment().withXmlResource(modelInstance).deploy();
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcessWithCompleteTaskListeners(LISTENER_TYPE, LISTENER_TYPE + "_2"));
 
     ENGINE.userTask().ofInstance(processInstanceKey).complete();
 
     // when: fail listener job with retries
-    ENGINE.job().ofInstance(processInstanceKey).withType("listener_1").withRetries(1).fail();
-    // complete failed listener job
-    ENGINE.job().ofInstance(processInstanceKey).withType("listener_1").complete();
-    // complete remaining listeners
-    ENGINE.job().ofInstance(processInstanceKey).withType("listener_2").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType(LISTENER_TYPE).withRetries(1).fail();
+    // complete failed and remaining listeners job
+    completeJobs(processInstanceKey, LISTENER_TYPE, LISTENER_TYPE + "_2");
 
     // then: assert the listener job was completed after the failure
     assertThat(records().betweenProcessInstance(processInstanceKey))
@@ -153,18 +155,21 @@ public class TaskListenerTest {
   @Test
   public void shouldCreateIncidentForListenerWhenNoRetriesLeftAndProceedWithRemainingListeners() {
     // given
-    final BpmnModelInstance modelInstance =
-        createProcessWithCompleteTaskListeners("listener_1", "listener_2", "listener_3");
-
-    ENGINE.deployment().withXmlResource(modelInstance).deploy();
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcessWithCompleteTaskListeners(
+                LISTENER_TYPE, LISTENER_TYPE + "_2", LISTENER_TYPE + "_3"));
 
     ENGINE.userTask().ofInstance(processInstanceKey).complete();
-
-    ENGINE.job().ofInstance(processInstanceKey).withType("listener_1").complete();
+    completeJobs(processInstanceKey, LISTENER_TYPE);
 
     // when: fail 2nd listener job with no retries
-    ENGINE.job().ofInstance(processInstanceKey).withType("listener_2").withRetries(0).fail();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(LISTENER_TYPE + "_2")
+        .withRetries(0)
+        .fail();
 
     // then: incident created
     final Record<IncidentRecordValue> incident =
@@ -180,15 +185,13 @@ public class TaskListenerTest {
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
-        .withType("listener_2")
+        .withType(LISTENER_TYPE + "_2")
         .withRetries(1)
         .updateRetries();
     ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
 
-    // complete failed listener job
-    ENGINE.job().ofInstance(processInstanceKey).withType("listener_2").complete();
-    // complete remaining listeners
-    ENGINE.job().ofInstance(processInstanceKey).withType("listener_3").complete();
+    // complete failed and remaining listener job
+    completeJobs(processInstanceKey, LISTENER_TYPE + "_2", LISTENER_TYPE + "_3");
 
     // assert the listener job was completed after the failure
     assertThat(records().betweenProcessInstance(processInstanceKey))
@@ -218,29 +221,19 @@ public class TaskListenerTest {
 
   @Test
   public void shouldEvaluateExpressionsForTaskListeners() {
-    final BpmnModelInstance modelInstance =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .userTask(
-                "my_user_task",
-                t ->
-                    t.zeebeUserTask()
-                        .zeebeAssignee("foo")
-                        .zeebeTaskListener(
-                            l ->
-                                l.complete()
-                                    .typeExpression("\"listener_1_\"+my_var")
-                                    .retriesExpression("5+3")))
-            .endEvent()
-            .done();
-
-    ENGINE.deployment().withXmlResource(modelInstance).deploy();
     final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("my_var", "abc").create();
+        createProcessInstance(
+            createProcessWithZeebeUserTask(
+                t ->
+                    t.zeebeTaskListener(
+                        l ->
+                            l.complete()
+                                .typeExpression("\"listener_1_\"+my_var")
+                                .retriesExpression("5+3"))),
+            Map.of("my_var", "abc"));
 
     // when
     ENGINE.userTask().ofInstance(processInstanceKey).complete();
-
     completeJobs(processInstanceKey, "listener_1_abc");
 
     // then
@@ -261,12 +254,10 @@ public class TaskListenerTest {
   }
 
   @Test
-  public void shouldAllowSubsequentListenersHaveAccessProducedByThePreviousListener() {
-    final BpmnModelInstance modelInstance =
-        createProcessWithCompleteTaskListeners("listener_1", "listener_2");
-
-    ENGINE.deployment().withXmlResource(modelInstance).deploy();
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+  public void shouldMakeVariablesFromPreviousTaskListenersAvailableToSubsequentListeners() {
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcessWithCompleteTaskListeners(LISTENER_TYPE, LISTENER_TYPE + "_2"));
 
     ENGINE.userTask().ofInstance(processInstanceKey).complete();
 
@@ -274,39 +265,31 @@ public class TaskListenerTest {
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
-        .withType("listener_1")
+        .withType(LISTENER_TYPE)
         .withVariable("listener_1_var", "foo")
         .complete();
 
     // then: `listener_1_var` variable accessible in subsequent TL
-    final Optional<JobRecordValue> jobActivated =
-        ENGINE.jobs().withType("listener_2").activate().getValue().getJobs().stream()
-            .filter(job -> job.getProcessInstanceKey() == processInstanceKey)
-            .findFirst();
-
-    assertThat(jobActivated)
-        .hasValueSatisfying(
-            job -> assertThat(job.getVariables()).contains(entry("listener_1_var", "foo")));
+    final var jobActivated = activateJob(processInstanceKey, LISTENER_TYPE + "_2");
+    assertThat(jobActivated.getVariables()).contains(entry("listener_1_var", "foo"));
   }
 
   @Test
-  public void shouldRestrictTaskListenerVariablesToOwningElementScope() {
+  public void shouldNotExposeTaskListenerVariablesOutsideUserTaskScope() {
     // given: deploy process with a user task having complete TL and service task following it
-    final BpmnModelInstance modelInstance =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .userTask(
-                "my_user_task",
-                t ->
-                    t.zeebeUserTask()
-                        .zeebeAssignee("foo")
-                        .zeebeTaskListener(l -> l.complete().type("my_listener")))
-            .serviceTask(
-                "subsequent_service_task", tb -> tb.zeebeJobType("subsequent_service_task"))
-            .endEvent()
-            .done();
-    ENGINE.deployment().withXmlResource(modelInstance).deploy();
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcess(
+                p ->
+                    p.userTask(
+                            USER_TASK_ELEMENT_ID,
+                            t ->
+                                t.zeebeUserTask()
+                                    .zeebeAssignee("foo")
+                                    .zeebeTaskListener(l -> l.complete().type(LISTENER_TYPE)))
+                        .serviceTask(
+                            "subsequent_service_task",
+                            tb -> tb.zeebeJobType("subsequent_service_task"))));
 
     ENGINE.userTask().ofInstance(processInstanceKey).complete();
 
@@ -314,41 +297,33 @@ public class TaskListenerTest {
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
-        .withType("my_listener")
+        .withType(LISTENER_TYPE)
         .withVariable("my_listener_var", "bar")
         .complete();
 
     // then: assert the variable 'my_listener_var' is not accessible in the subsequent element
-    final var subsequentServiceTaskJob =
-        ENGINE.jobs().withType("subsequent_service_task").activate().getValue().getJobs().stream()
-            .filter(job -> job.getProcessInstanceKey() == processInstanceKey)
-            .findFirst();
-
-    assertThat(subsequentServiceTaskJob)
-        .hasValueSatisfying(
-            job -> assertThat(job.getVariables()).doesNotContainKey("my_listener_var"));
-    ENGINE.job().ofInstance(processInstanceKey).withType("subsequent_service_task").complete();
+    final var subsequentServiceTaskJob = activateJob(processInstanceKey, "subsequent_service_task");
+    assertThat(subsequentServiceTaskJob.getVariables()).doesNotContainKey("my_listener_var");
+    completeJobs(processInstanceKey, "subsequent_service_task");
   }
 
   @Test
-  public void shouldAllowTaskListenerVariablesUseInUserTaskOutputMappings() {
+  public void shouldAllowTaskListenerVariablesInUserTaskOutputMappings() {
     // given: deploy process with a user task having complete TL and service task following it
-    final BpmnModelInstance modelInstance =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .userTask(
-                "my_user_task",
-                t ->
-                    t.zeebeUserTask()
-                        .zeebeAssignee("foo")
-                        .zeebeTaskListener(l -> l.complete().type("my_listener"))
-                        .zeebeOutput("=my_listener_var+\"_abc\"", "userTaskOutput"))
-            .serviceTask(
-                "subsequent_service_task", tb -> tb.zeebeJobType("subsequent_service_task"))
-            .endEvent()
-            .done();
-    ENGINE.deployment().withXmlResource(modelInstance).deploy();
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcess(
+                p ->
+                    p.userTask(
+                            USER_TASK_ELEMENT_ID,
+                            t ->
+                                t.zeebeUserTask()
+                                    .zeebeAssignee("foo")
+                                    .zeebeTaskListener(l -> l.complete().type(LISTENER_TYPE))
+                                    .zeebeOutput("=my_listener_var+\"_abc\"", "userTaskOutput"))
+                        .serviceTask(
+                            "subsequent_service_task",
+                            tb -> tb.zeebeJobType("subsequent_service_task"))));
 
     ENGINE.userTask().ofInstance(processInstanceKey).complete();
 
@@ -356,94 +331,61 @@ public class TaskListenerTest {
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
-        .withType("my_listener")
+        .withType(LISTENER_TYPE)
         .withVariable("my_listener_var", "bar")
         .complete();
 
     // then: assert the variable 'userTaskOutput' is accessible in the subsequent element
-    final var subsequentServiceTaskJob =
-        ENGINE.jobs().withType("subsequent_service_task").activate().getValue().getJobs().stream()
-            .filter(job -> job.getProcessInstanceKey() == processInstanceKey)
-            .findFirst();
-
-    assertThat(subsequentServiceTaskJob)
-        .hasValueSatisfying(
-            job -> assertThat(job.getVariables()).containsEntry("userTaskOutput", "bar_abc"));
-    ENGINE.job().ofInstance(processInstanceKey).withType("subsequent_service_task").complete();
+    final var subsequentServiceTaskJob = activateJob(processInstanceKey, "subsequent_service_task");
+    assertThat(subsequentServiceTaskJob.getVariables()).containsEntry("userTaskOutput", "bar_abc");
+    completeJobs(processInstanceKey, "subsequent_service_task");
   }
 
   @Test
-  public void shouldCreateTaskListenerJobWithUserTaskHeaders() {
-    final var form = deployForm(TEST_FORM_1);
-    final BpmnModelInstance modelInstance =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .userTask(
-                "my_user_task",
+  public void shouldIncludeConfiguredUserTaskDataInCompleteTaskListenerJobHeaders() {
+    final var form = deployForm("/form/test-form-1.form");
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcessWithZeebeUserTask(
                 t ->
-                    t.zeebeUserTask()
-                        .zeebeAssignee("admin")
+                    t.zeebeAssignee("admin")
                         .zeebeCandidateUsers("user_A, user_B")
                         .zeebeCandidateGroups("group_A, group_C, group_F")
-                        .zeebeFormId(FORM_ID_1)
+                        .zeebeFormId("Form_0w7r08e")
                         .zeebeDueDate("2095-09-18T10:31:10+02:00")
-                        .zeebeTaskListener(l -> l.complete().type("my_listener")))
-            .endEvent()
-            .done();
-
-    ENGINE.deployment().withXmlResource(modelInstance).deploy();
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+                        .zeebeTaskListener(l -> l.complete().type(LISTENER_TYPE))));
 
     // when
     final var userTaskRecordValue = ENGINE.userTask().ofInstance(processInstanceKey).complete();
 
     // then
-    final Optional<JobRecordValue> activatedListenerJob =
-        ENGINE.jobs().withType("my_listener").activate().getValue().getJobs().stream()
-            .filter(job -> job.getProcessInstanceKey() == processInstanceKey)
-            .findFirst();
+    final var activatedListenerJob = activateJob(processInstanceKey, LISTENER_TYPE);
 
-    assertThat(activatedListenerJob)
-        .hasValueSatisfying(
-            job ->
-                assertThat(job.getCustomHeaders())
-                    .containsOnly(
-                        entry(
-                            Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME,
-                            "[\"group_A\",\"group_C\",\"group_F\"]"),
-                        entry(
-                            Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME,
-                            "[\"user_A\",\"user_B\"]"),
-                        entry(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "admin"),
-                        entry(Protocol.USER_TASK_DUE_DATE_HEADER_NAME, "2095-09-18T10:31:10+02:00"),
-                        entry(
-                            Protocol.USER_TASK_FORM_KEY_HEADER_NAME,
-                            Objects.toString(form.getFormKey())),
-                        entry(
-                            USER_TASK_KEY_HEADER_NAME,
-                            String.valueOf(userTaskRecordValue.getKey()))));
+    assertThat(activatedListenerJob.getCustomHeaders())
+        .containsOnly(
+            entry(
+                Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME,
+                "[\"group_A\",\"group_C\",\"group_F\"]"),
+            entry(Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME, "[\"user_A\",\"user_B\"]"),
+            entry(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "admin"),
+            entry(Protocol.USER_TASK_DUE_DATE_HEADER_NAME, "2095-09-18T10:31:10+02:00"),
+            entry(Protocol.USER_TASK_FORM_KEY_HEADER_NAME, Objects.toString(form.getFormKey())),
+            entry(USER_TASK_KEY_HEADER_NAME, String.valueOf(userTaskRecordValue.getKey())));
+    completeJobs(processInstanceKey, LISTENER_TYPE);
   }
 
   @Test
-  public void shouldCreateCompleteTaskListenerJobWithRecentUserTaskDataAfterTaskUpdateInHeaders() {
-    final BpmnModelInstance modelInstance =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .userTask(
-                "my_user_task",
+  public void shouldUseUpdatedUserTaskDataInCompleteTaskListenerJobHeadersAfterTaskUpdate() {
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcessWithZeebeUserTask(
                 t ->
-                    t.zeebeUserTask()
-                        .zeebeAssignee("admin")
+                    t.zeebeAssignee("admin")
                         .zeebeCandidateUsers("user_A, user_B")
                         .zeebeCandidateGroups("group_A, group_C, group_F")
                         .zeebeDueDate("2085-09-21T11:22:33+02:00")
                         .zeebeFollowUpDate("2095-09-21T11:22:33+02:00")
-                        .zeebeTaskListener(l -> l.complete().type("my_listener")))
-            .endEvent()
-            .done();
-
-    ENGINE.deployment().withXmlResource(modelInstance).deploy();
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+                        .zeebeTaskListener(l -> l.complete().type(LISTENER_TYPE))));
 
     final var changes =
         new UserTaskRecord()
@@ -457,28 +399,16 @@ public class TaskListenerTest {
     final var userTaskRecordValue = ENGINE.userTask().ofInstance(processInstanceKey).complete();
 
     // then
-    final Optional<JobRecordValue> activatedListenerJob =
-        ENGINE.jobs().withType("my_listener").activate().getValue().getJobs().stream()
-            .filter(job -> job.getProcessInstanceKey() == processInstanceKey)
-            .findFirst();
-
-    assertThat(activatedListenerJob)
-        .hasValueSatisfying(
-            job ->
-                assertThat(job.getCustomHeaders())
-                    .containsOnly(
-                        entry(
-                            Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME,
-                            "[\"group_J\",\"group_R\"]"),
-                        entry(Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME, "[\"user_T\"]"),
-                        entry(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "admin"),
-                        entry(Protocol.USER_TASK_DUE_DATE_HEADER_NAME, "2087-09-21T11:22:33+02:00"),
-                        entry(
-                            Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME,
-                            "2097-09-21T11:22:33+02:00"),
-                        entry(
-                            USER_TASK_KEY_HEADER_NAME,
-                            String.valueOf(userTaskRecordValue.getKey()))));
+    final var activatedListenerJob = activateJob(processInstanceKey, LISTENER_TYPE);
+    assertThat(activatedListenerJob.getCustomHeaders())
+        .containsOnly(
+            entry(Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME, "[\"group_J\",\"group_R\"]"),
+            entry(Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME, "[\"user_T\"]"),
+            entry(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "admin"),
+            entry(Protocol.USER_TASK_DUE_DATE_HEADER_NAME, "2087-09-21T11:22:33+02:00"),
+            entry(Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME, "2097-09-21T11:22:33+02:00"),
+            entry(USER_TASK_KEY_HEADER_NAME, String.valueOf(userTaskRecordValue.getKey())));
+    completeJobs(processInstanceKey, LISTENER_TYPE);
   }
 
   private void assertThatProcessInstanceCompleted(final long processInstanceKey) {
@@ -492,25 +422,57 @@ public class TaskListenerTest {
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
-  private BpmnModelInstance createProcessWithCompleteTaskListeners(String... listenerTypes) {
+  private BpmnModelInstance createProcessWithZeebeUserTask(
+      final UnaryOperator<UserTaskBuilder> userTaskBuilderFunction) {
     return Bpmn.createExecutableProcess(PROCESS_ID)
         .startEvent()
-        .userTask(
-            "my_user_task",
-            t -> {
-              t.zeebeUserTask().zeebeAssignee("foo");
-              for (String listenerType : listenerTypes) {
-                t.zeebeTaskListener(l -> l.complete().type(listenerType));
-              }
-            })
+        .userTask(USER_TASK_ELEMENT_ID, t -> userTaskBuilderFunction.apply(t.zeebeUserTask()))
         .endEvent()
         .done();
+  }
+
+  private BpmnModelInstance createProcess(
+      final Function<StartEventBuilder, AbstractFlowNodeBuilder<?, ?>> processBuilderFunction) {
+    return processBuilderFunction
+        .apply(Bpmn.createExecutableProcess(PROCESS_ID).startEvent())
+        .endEvent()
+        .done();
+  }
+
+  private BpmnModelInstance createProcessWithCompleteTaskListeners(final String... listenerTypes) {
+    return createProcessWithZeebeUserTask(
+        taskBuilder -> {
+          Stream.of(listenerTypes)
+              .forEach(type -> taskBuilder.zeebeTaskListener(l -> l.complete().type(type)));
+          return taskBuilder;
+        });
+  }
+
+  private long createProcessInstance(final BpmnModelInstance modelInstance) {
+    return createProcessInstance(modelInstance, Collections.emptyMap());
+  }
+
+  private long createProcessInstance(
+      final BpmnModelInstance modelInstance, final Map<String, Object> processVariables) {
+    ENGINE.deployment().withXmlResource(modelInstance).deploy();
+    return ENGINE
+        .processInstance()
+        .ofBpmnProcessId(PROCESS_ID)
+        .withVariables(processVariables)
+        .create();
   }
 
   private void completeJobs(long processInstanceKey, String... jobTypes) {
     for (String jobType : jobTypes) {
       ENGINE.job().ofInstance(processInstanceKey).withType(jobType).complete();
     }
+  }
+
+  private JobRecordValue activateJob(long processInstanceKey, String jobType) {
+    return ENGINE.jobs().withType(jobType).activate().getValue().getJobs().stream()
+        .filter(job -> job.getProcessInstanceKey() == processInstanceKey)
+        .findFirst()
+        .orElseThrow(() -> new AssertionError("No job found with type " + jobType));
   }
 
   private FormMetadataValue deployForm(final String formPath) {
