@@ -127,10 +127,15 @@ public class ElasticsearchConnector {
 
     // And create the API client
     elasticsearchClient = new ElasticsearchClient(transport);
-    if (!checkHealth(elasticsearchClient)) {
-      LOGGER.warn("Elasticsearch cluster is not accessible");
+
+    if (operateProperties.isHealthCheckEnabled()) {
+      if (!checkHealth(elasticsearchClient)) {
+        LOGGER.warn("Elasticsearch cluster is not accessible");
+      } else {
+        LOGGER.debug("Elasticsearch connection was successfully created.");
+      }
     } else {
-      LOGGER.debug("Elasticsearch connection was successfully created.");
+      LOGGER.warn("Elasticsearch cluster health check is disabled.");
     }
     return elasticsearchClient;
   }
@@ -207,10 +212,14 @@ public class ElasticsearchConnector {
         new RestHighLevelClientBuilder(restClientBuilder.build())
             .setApiCompatibilityMode(true)
             .build();
-    if (!checkHealth(esClient)) {
-      LOGGER.warn("Elasticsearch cluster is not accessible");
+    if (operateProperties.isHealthCheckEnabled()) {
+      if (!checkHealth(esClient)) {
+        LOGGER.warn("Elasticsearch cluster is not accessible");
+      } else {
+        LOGGER.debug("Elasticsearch connection was successfully created.");
+      }
     } else {
-      LOGGER.debug("Elasticsearch connection was successfully created.");
+      LOGGER.warn("Elasticsearch cluster health check is disabled.");
     }
     return esClient;
   }
@@ -222,7 +231,7 @@ public class ElasticsearchConnector {
     setupAuthentication(httpAsyncClientBuilder, elsConfig);
 
     LOGGER.trace("Attempt to load interceptor plugins");
-    for (HttpRequestInterceptor interceptor : interceptors) {
+    for (final HttpRequestInterceptor interceptor : interceptors) {
       httpAsyncClientBuilder.addInterceptorLast(interceptor);
     }
 

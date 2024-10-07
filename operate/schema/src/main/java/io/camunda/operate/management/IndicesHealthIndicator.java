@@ -7,6 +7,7 @@
  */
 package io.camunda.operate.management;
 
+import io.camunda.operate.property.OperateProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,7 @@ public class IndicesHealthIndicator implements HealthIndicator {
   private static final Logger LOGGER = LoggerFactory.getLogger(IndicesHealthIndicator.class);
 
   @Autowired private IndicesCheck indicesCheck;
+  @Autowired private OperateProperties properties;
 
   @Override
   public Health getHealth(final boolean includeDetails) {
@@ -29,10 +31,18 @@ public class IndicesHealthIndicator implements HealthIndicator {
   @Override
   public Health health() {
     LOGGER.debug("Indices check is called");
-    if (indicesCheck.isHealthy() && indicesCheck.indicesArePresent()) {
+    if (isClusterHealthy() && indicesCheck.indicesArePresent()) {
       return Health.up().build();
     } else {
       return Health.down().build();
     }
+  }
+
+  private boolean isClusterHealthy() {
+    if (!properties.isHealthCheckEnabled()) {
+      LOGGER.warn("Cluster health check is disabled.");
+      return true;
+    }
+    return indicesCheck.isHealthy();
   }
 }
