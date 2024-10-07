@@ -64,7 +64,8 @@
     <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter"/>
     <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
       <foreach collection="sort.orderings" open="ORDER BY " separator=", " item="item">
-        ${item.field} ${item.order}
+        <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.processInstanceSortMapper"/>
+        ${item.order}
       </foreach>
     </if>
     ${paging.after}
@@ -131,6 +132,41 @@
     </if>
   </sql>
 
+  <sql id="processInstanceSortMapper">
+    <choose>
+      <when test='item.field == "bpmnProcessId"'>
+        BPMN_PROCESS_ID
+      </when>
+      <when test='item.field == "processName"'>
+        NAME
+      </when>
+      <when test='item.field == "processVersion"'>
+        VERSION
+      </when>
+      <when test='item.field == "processVersionTag"'>
+        VERSION_TAG
+      </when>
+      <when test='item.field == "processDefinitionKey"'>
+        PROCESS_DEFINITION_KEY
+      </when>
+      <when test='item.field == "parentProcessInstanceKey"'>
+        PARENT_PROCESS_INSTANCE_KEY
+      </when>
+      <when test='item.field == "startDate"'>
+        START_DATE
+      </when>
+      <when test='item.field == "endDate"'>
+        END_DATE
+      </when>
+      <when test='item.field == "tenantId"'>
+        TENANT_ID
+      </when>
+      <otherwise>
+        ${field}
+      </otherwise>
+    </choose>
+  </sql>
+
   <!-- TODO: Find better way to automatically type the constructor parameters -->
   <resultMap id="searchResultMap" type="io.camunda.search.entities.ProcessInstanceEntity">
     <constructor>
@@ -143,9 +179,9 @@
       <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="PARENT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="PARENT_ELEMENT_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="TREE_PATH" javaType="java.lang.String" typeHandler="io.camunda.db.rdbms.sql.typehandler.OffsetDateTimeToStringTypeHandler" />
-      <arg column="START_DATE" javaType="java.lang.String" typeHandler="io.camunda.db.rdbms.sql.typehandler.OffsetDateTimeToStringTypeHandler" />
-      <arg column="END_DATE" javaType="java.lang.String"/>
+      <arg column="TREE_PATH" javaType="java.lang.String"/>
+      <arg column="START_DATE" javaType="java.lang.String" typeHandler="io.camunda.db.rdbms.sql.typehandler.OffsetDateTimeToStringTypeHandler"/>
+      <arg column="END_DATE" javaType="java.lang.String" typeHandler="io.camunda.db.rdbms.sql.typehandler.OffsetDateTimeToStringTypeHandler"/>
       <arg column="STATE" javaType="io.camunda.search.entities.ProcessInstanceEntity$ProcessInstanceState"/>
       <arg column="INCIDENT" javaType="java.lang.Boolean"/>
       <arg column="TENANT_ID" javaType="java.lang.String"/>

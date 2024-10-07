@@ -9,7 +9,6 @@ package io.camunda.search.rdbms;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.domain.ProcessInstanceDbFilter;
-import io.camunda.search.ProcessDefinitionSearchClient;
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
 import io.camunda.search.clients.DecisionInstanceSearchClient;
@@ -17,6 +16,7 @@ import io.camunda.search.clients.DecisionRequirementSearchClient;
 import io.camunda.search.clients.FlowNodeInstanceSearchClient;
 import io.camunda.search.clients.FormSearchClient;
 import io.camunda.search.clients.IncidentSearchClient;
+import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.clients.UserTaskSearchClient;
@@ -46,7 +46,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
-import io.camunda.search.security.auth.Authentication;
+import io.camunda.security.auth.SecurityContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,7 +74,7 @@ public class RdbmsSearchClient
 
   @Override
   public SearchQueryResult<ProcessInstanceEntity> searchProcessInstances(
-      final ProcessInstanceQuery query, final Authentication authentication) {
+      final ProcessInstanceQuery query, final SecurityContext securityContext) {
     LOG.debug("[RDBMS Search Client] Search for processInstance: {}", query);
 
     final var searchResult =
@@ -94,71 +94,68 @@ public class RdbmsSearchClient
   }
 
   @Override
-  public void close() throws Exception {
-  }
-
-  @Override
   public SearchQueryResult<AuthorizationEntity> searchAuthorizations(
-      final AuthorizationQuery filter, final Authentication authentication) {
+      final AuthorizationQuery filter, final SecurityContext securityContext) {
     return null;
   }
 
   @Override
   public SearchQueryResult<DecisionDefinitionEntity> searchDecisionDefinitions(
-      final DecisionDefinitionQuery filter, final Authentication authentication) {
+      final DecisionDefinitionQuery filter, final SecurityContext securityContext) {
     return null;
   }
 
   @Override
   public SearchQueryResult<DecisionInstanceEntity> searchDecisionInstances(
-      final DecisionInstanceQuery filter, final Authentication authentication) {
+      final DecisionInstanceQuery filter, final SecurityContext securityContext) {
     return null;
   }
 
   @Override
   public SearchQueryResult<DecisionRequirementsEntity> searchDecisionRequirements(
-      final DecisionRequirementsQuery filter, final Authentication authentication) {
+      final DecisionRequirementsQuery filter, final SecurityContext securityContext) {
     return null;
   }
 
   @Override
   public SearchQueryResult<FlowNodeInstanceEntity> searchFlowNodeInstances(
-      final FlowNodeInstanceQuery filter, final Authentication authentication) {
+      final FlowNodeInstanceQuery filter, final SecurityContext securityContext) {
     return null;
   }
 
   @Override
   public SearchQueryResult<FormEntity> searchForms(
-      final FormQuery filter, final Authentication authentication) {
+      final FormQuery filter, final SecurityContext securityContext) {
     return null;
   }
 
   @Override
   public SearchQueryResult<IncidentEntity> searchIncidents(
-      final IncidentQuery filter, final Authentication authentication) {
+      final IncidentQuery filter, final SecurityContext securityContext) {
     return null;
   }
 
   @Override
   public SearchQueryResult<UserEntity> searchUsers(
-      final UserQuery filter, final Authentication authentication) {
+      final UserQuery filter, final SecurityContext securityContext) {
     return null;
   }
 
   @Override
   public SearchQueryResult<UserTaskEntity> searchUserTasks(
-      final UserTaskQuery filter, final Authentication authentication) {
+      final UserTaskQuery filter, final SecurityContext securityContext) {
     return null;
   }
 
   @Override
   public SearchQueryResult<VariableEntity> searchVariables(
-      final VariableQuery filter, final Authentication authentication) {
+      final VariableQuery filter, final SecurityContext securityContext) {
     return null;
   }
 
   @Override
-  public SearchQueryResult<ProcessDefinitionEntity> searchProcessDefinitions(final ProcessDefinitionQuery filter, final Authentication authentication) {
+  public SearchQueryResult<ProcessDefinitionEntity> searchProcessDefinitions(
+      final ProcessDefinitionQuery filter, final SecurityContext securityContext) {
     return null;
   }
 }
