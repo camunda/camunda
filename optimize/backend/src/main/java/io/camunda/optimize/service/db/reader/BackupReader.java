@@ -11,6 +11,7 @@ import co.elastic.clients.elasticsearch.snapshot.SnapshotInfo;
 import java.util.List;
 import java.util.Map;
 
+// test
 public interface BackupReader {
 
   void validateRepositoryExistsOrFail();
