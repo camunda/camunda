@@ -25,7 +25,7 @@ public interface ProcessDefinitionFilter extends SearchRequestFilter {
    * @param processDefinitionKey the key of the process definition
    * @return the updated filter
    */
-  ProcessDefinitionFilter processDefinitionKey(final Long processDefinitionKey);
+  ProcessDefinitionFilter processDefinitionKey(final long processDefinitionKey);
 
   /**
    * Filters process definitions by the specified name.
@@ -49,7 +49,7 @@ public interface ProcessDefinitionFilter extends SearchRequestFilter {
    * @param version the version of the process definition
    * @return the updated filter
    */
-  ProcessDefinitionFilter version(final Integer version);
+  ProcessDefinitionFilter version(final int version);
 
   /**
    * Filters process definitions by the specified version tag.

@@ -20,7 +20,7 @@ public interface ProcessDefinition {
   /**
    * @return the key of the process definition
    */
-  Long getProcessDefinitionKey();
+  long getProcessDefinitionKey();
 
   /**
    * @return the name of the process definition
@@ -35,7 +35,7 @@ public interface ProcessDefinition {
   /**
    * @return the version of the process definition
    */
-  Integer getVersion();
+  int getVersion();
 
   /**
    * @return the version tag of the process definition

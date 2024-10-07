@@ -30,7 +30,7 @@ public class ProcessDefinitionFilterImpl
   }
 
   @Override
-  public ProcessDefinitionFilter processDefinitionKey(final Long processDefinitionKey) {
+  public ProcessDefinitionFilter processDefinitionKey(final long processDefinitionKey) {
     filter.setProcessDefinitionKey(processDefinitionKey);
     return this;
   }
@@ -48,7 +48,7 @@ public class ProcessDefinitionFilterImpl
   }
 
   @Override
-  public ProcessDefinitionFilter version(final Integer version) {
+  public ProcessDefinitionFilter version(final int version) {
     filter.setVersion(version);
     return this;
   }

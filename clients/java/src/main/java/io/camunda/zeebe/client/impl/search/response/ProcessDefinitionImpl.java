@@ -15,10 +15,11 @@
  */
 package io.camunda.zeebe.client.impl.search.response;
 
+import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.search.response.ProcessDefinition;
 import io.camunda.zeebe.client.protocol.rest.ProcessDefinitionItem;
 
-public class ProcessDefinitionImpl implements ProcessDefinition {
+public class ProcessDefinitionImpl implements ProcessDefinition, Process {
 
   private final Long processDefinitionKey;
   private final String name;
@@ -39,7 +40,7 @@ public class ProcessDefinitionImpl implements ProcessDefinition {
   }
 
   @Override
-  public Long getProcessDefinitionKey() {
+  public long getProcessDefinitionKey() {
     return processDefinitionKey;
   }
 
@@ -54,7 +55,7 @@ public class ProcessDefinitionImpl implements ProcessDefinition {
   }
 
   @Override
-  public Integer getVersion() {
+  public int getVersion() {
     return version;
   }
 
@@ -71,5 +72,10 @@ public class ProcessDefinitionImpl implements ProcessDefinition {
   @Override
   public String getTenantId() {
     return tenantId;
+  }
+
+  @Override
+  public String getBpmnProcessId() {
+    return processDefinitionId;
   }
 }
