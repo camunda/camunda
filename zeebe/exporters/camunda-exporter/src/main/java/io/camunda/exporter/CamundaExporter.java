@@ -10,28 +10,27 @@ package io.camunda.exporter;
 import static io.camunda.zeebe.protocol.record.ValueType.AUTHORIZATION;
 import static io.camunda.zeebe.protocol.record.ValueType.USER;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.util.VisibleForTesting;
+import io.camunda.exporter.adapters.ClientAdapter;
+import io.camunda.exporter.adapters.ElasticsearchAdapter;
+import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.AuthorizationRecordValueExportHandler;
 import io.camunda.exporter.handlers.UserRecordValueExportHandler;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
-import io.camunda.exporter.schema.ElasticsearchEngineClient;
 import io.camunda.exporter.schema.ElasticsearchEngineClient.MappingSource;
 import io.camunda.exporter.schema.ElasticsearchSchemaManager;
 import io.camunda.exporter.schema.IndexMappingProperty;
 import io.camunda.exporter.schema.IndexSchemaValidator;
 import io.camunda.exporter.schema.SchemaManager;
 import io.camunda.exporter.schema.SearchEngineClient;
-import io.camunda.exporter.store.ElasticsearchBatchRequest;
+import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.ExporterBatchWriter;
-import io.camunda.exporter.utils.ElasticsearchScriptBuilder;
-import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.zeebe.exporter.api.Exporter;
+import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Context.RecordFilter;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -50,7 +49,7 @@ public class CamundaExporter implements Exporter {
 
   private Controller controller;
   private ExporterConfiguration configuration;
-  private ElasticsearchClient client;
+  private ClientAdapter clientAdapter;
   private ExporterBatchWriter writer;
   private long lastPosition = -1;
   private final ExporterResourceProvider provider;
@@ -69,6 +68,15 @@ public class CamundaExporter implements Exporter {
   public void configure(final Context context) {
     configuration = context.getConfiguration().instantiate(ExporterConfiguration.class);
     provider.init(configuration);
+    switch (ConnectionTypes.from(configuration.getConnect().getType())) {
+      case ELASTICSEARCH:
+        clientAdapter = new ElasticsearchAdapter();
+        break;
+      case OPENSEARCH:
+      default:
+        throw new ExporterException(
+            "Unsupported database type: " + configuration.getConnect().getType());
+    }
     // TODO validate configuration
     context.setFilter(new ElasticsearchRecordFilter());
     metrics = new CamundaExporterMetrics(context.getMeterRegistry());
@@ -78,8 +86,8 @@ public class CamundaExporter implements Exporter {
   @Override
   public void open(final Controller controller) {
     this.controller = controller;
-    client = createClient();
-    final var searchEngineClient = new ElasticsearchEngineClient(client);
+    clientAdapter.createClient(configuration.getConnect());
+    final var searchEngineClient = clientAdapter.createSearchEngineClient();
     final var schemaManager = createSchemaManager(searchEngineClient);
     final var schemaValidator = new IndexSchemaValidator(schemaManager);
 
@@ -101,7 +109,7 @@ public class CamundaExporter implements Exporter {
     }
 
     try {
-      client._transport().close();
+      clientAdapter.close();
     } catch (final Exception e) {
       LOG.warn("Failed to close elasticsearch client", e);
     }
@@ -187,11 +195,6 @@ public class CamundaExporter implements Exporter {
         configuration);
   }
 
-  private ElasticsearchClient createClient() {
-    final var connector = new ElasticsearchConnector(configuration.getConnect());
-    return connector.createClient();
-  }
-
   private boolean shouldFlush() {
     // FIXME should compare against both batch size and memory limit
     return writer.getBatchSize() >= configuration.getBulk().getSize();
@@ -225,10 +228,9 @@ public class CamundaExporter implements Exporter {
       // TODO revisit the need to pass the BulkRequestBuilder and the ElasticsearchScriptBuilder as
       // params here
       metrics.recordBulkSize(writer.getBatchSize());
-      final ElasticsearchBatchRequest batchRequest =
-          new ElasticsearchBatchRequest(
-              client, new BulkRequest.Builder(), new ElasticsearchScriptBuilder());
+      final BatchRequest batchRequest = clientAdapter.createBatchRequest();
       writer.flush(batchRequest);
+
     } catch (final PersistenceException ex) {
       throw new ElasticsearchExporterException(ex.getMessage(), ex);
     }
