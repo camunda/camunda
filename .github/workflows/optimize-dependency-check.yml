@@ -1,0 +1,26 @@
+name: Optimize Dependency Analysis
+env:
+  JAVA_VERSION: "21"
+on:
+  push:
+    branches:
+      - main
+  pull_request: { }
+  merge_group: { }
+  workflow_dispatch: { }
+  workflow_call: { }
+jobs:
+  dependency-analysis:
+    name: Dependency Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+      - name: Setup Java
+        uses: actions/setup-java@b36c23c0d998641eff861008f374ee103c25ac73 # v4
+        with:
+          distribution: "adopt"
+          java-version: "21"
+          cache: "maven"
+      - name: Run analysis
+        run: mvn -f optimize/pom.xml dependency:analyze -DskipTests -DskipDocker
