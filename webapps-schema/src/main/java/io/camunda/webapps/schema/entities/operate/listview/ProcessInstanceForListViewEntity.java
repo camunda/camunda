@@ -7,7 +7,7 @@
  */
 package io.camunda.webapps.schema.entities.operate.listview;
 
-import static io.camunda.webapps.schema.descriptors.operate.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.webapps.schema.entities.operate.OperateZeebeEntity;
@@ -39,7 +39,7 @@ public class ProcessInstanceForListViewEntity
 
   private boolean incident;
 
-  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  private String tenantId = DEFAULT_TENANT_ID;
 
   private ListViewJoinRelation joinRelation =
       new ListViewJoinRelation(PROCESS_INSTANCE_JOIN_RELATION);

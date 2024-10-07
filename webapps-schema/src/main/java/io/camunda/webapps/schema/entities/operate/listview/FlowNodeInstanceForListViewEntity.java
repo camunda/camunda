@@ -8,7 +8,7 @@
 package io.camunda.webapps.schema.entities.operate.listview;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.webapps.schema.descriptors.operate.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.FlowNodeState;
 import io.camunda.webapps.schema.entities.operate.FlowNodeType;
 import io.camunda.webapps.schema.entities.operate.OperateZeebeEntity;

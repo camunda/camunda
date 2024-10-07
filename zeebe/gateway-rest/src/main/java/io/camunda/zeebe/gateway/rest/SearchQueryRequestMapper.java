@@ -27,6 +27,7 @@ import io.camunda.search.filter.FilterBase;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.filter.IncidentFilter;
+import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.UserFilter;
 import io.camunda.search.filter.UserTaskFilter;
@@ -38,6 +39,7 @@ import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.IncidentQuery;
+import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.TypedSearchQueryBuilder;
@@ -49,6 +51,7 @@ import io.camunda.search.sort.DecisionInstanceSort;
 import io.camunda.search.sort.DecisionRequirementsSort;
 import io.camunda.search.sort.FlowNodeInstanceSort;
 import io.camunda.search.sort.IncidentSort;
+import io.camunda.search.sort.ProcessDefinitionSort;
 import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.search.sort.SortOption;
 import io.camunda.search.sort.SortOptionBuilders;
@@ -72,6 +75,21 @@ import org.springframework.http.ProblemDetail;
 public final class SearchQueryRequestMapper {
 
   private SearchQueryRequestMapper() {}
+
+  public static Either<ProblemDetail, ProcessDefinitionQuery> toProcessDefinitionQuery(
+      final ProcessDefinitionSearchQueryRequest request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.processDefinitionSearchQuery().build());
+    }
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        toSearchQuerySort(
+            request.getSort(),
+            SortOptionBuilders::processDefinition,
+            SearchQueryRequestMapper::applyProcessDefinitionSortField);
+    final var filter = toProcessDefinitionFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::processDefinitionSearchQuery);
+  }
 
   public static Either<ProblemDetail, ProcessInstanceQuery> toProcessInstanceQuery(
       final ProcessInstanceSearchQueryRequest request) {
@@ -286,6 +304,25 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::incidentSearchQuery);
   }
 
+  private static ProcessDefinitionFilter toProcessDefinitionFilter(
+      final ProcessDefinitionFilterRequest filter) {
+    final var builder = FilterBuilders.processDefinition();
+    Optional.ofNullable(filter)
+        .ifPresent(
+            f -> {
+              Optional.ofNullable(f.getProcessDefinitionKey())
+                  .ifPresent(builder::processDefinitionKeys);
+              Optional.ofNullable(f.getName()).ifPresent(builder::names);
+              Optional.ofNullable(f.getResourceName()).ifPresent(builder::resourceNames);
+              Optional.ofNullable(f.getVersion()).ifPresent(builder::versions);
+              Optional.ofNullable(f.getVersionTag()).ifPresent(builder::versionTags);
+              Optional.ofNullable(f.getProcessDefinitionId())
+                  .ifPresent(builder::processDefinitionIds);
+              Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
+            });
+    return builder.build();
+  }
+
   private static ProcessInstanceFilter toProcessInstanceFilter(
       final ProcessInstanceFilterRequest filter) {
     final var builder = FilterBuilders.processInstance();
@@ -462,6 +499,26 @@ public final class SearchQueryRequestMapper {
         case "endDate" -> builder.endDate();
         case "state" -> builder.state();
         case "incident" -> builder.incident();
+        case "tenantId" -> builder.tenantId();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
+  private static List<String> applyProcessDefinitionSortField(
+      final String field, final ProcessDefinitionSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case "processDefinitionKey" -> builder.processDefinitionKey();
+        case "name" -> builder.name();
+        case "resourceName" -> builder.resourceName();
+        case "version" -> builder.version();
+        case "versionTag" -> builder.versionTag();
+        case "processDefinitionId" -> builder.processDefinitionId();
         case "tenantId" -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }

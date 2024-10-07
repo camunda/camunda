@@ -7,13 +7,12 @@
  */
 package io.camunda.operate.webapp.api.v1.dao.elasticsearch;
 
-import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.api.v1.dao.ProcessInstanceDao;
 import io.camunda.operate.webapp.api.v1.entities.*;
@@ -22,6 +21,7 @@ import io.camunda.operate.webapp.api.v1.exceptions.ClientException;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.writer.ProcessInstanceWriter;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;

@@ -114,14 +114,14 @@ final class CamundaExporterIT {
             "template_alias",
             Collections.emptyList(),
             "template_name",
-            "mappings.json");
+            "/mappings.json");
 
     index =
         SchemaTestUtil.mockIndex(
             config.elasticsearch.getIndexPrefix() + "qualified_name",
             "alias",
             "index_name",
-            "mappings.json");
+            "/mappings.json");
   }
 
   @Test
@@ -208,8 +208,9 @@ final class CamundaExporterIT {
       final var exporter1 = startExporter();
       final var exporter2 = startExporter();
 
-      when(index.getMappingsClasspathFilename()).thenReturn("mappings-added-property.json");
-      when(indexTemplate.getMappingsClasspathFilename()).thenReturn("mappings-added-property.json");
+      when(index.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
+      when(indexTemplate.getMappingsClasspathFilename())
+          .thenReturn("/mappings-added-property.json");
 
       // when
       exporter1.open(controller);
@@ -221,7 +222,7 @@ final class CamundaExporterIT {
 
       validateMappings(
           indices.result().get(index.getFullQualifiedName()).mappings(),
-          "mappings-added-property.json");
+          "/mappings-added-property.json");
       validateMappings(
           indexTemplates.indexTemplates().stream()
               .filter(template -> template.name().equals(indexTemplate.getTemplateName()))
@@ -230,7 +231,7 @@ final class CamundaExporterIT {
               .indexTemplate()
               .template()
               .mappings(),
-          "mappings-added-property.json");
+          "/mappings-added-property.json");
     }
 
     @Test
@@ -241,13 +242,14 @@ final class CamundaExporterIT {
       final var oldExporter = startExporter();
 
       // when
-      when(index.getMappingsClasspathFilename()).thenReturn("mappings-added-property.json");
-      when(indexTemplate.getMappingsClasspathFilename()).thenReturn("mappings-added-property.json");
+      when(index.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
+      when(indexTemplate.getMappingsClasspathFilename())
+          .thenReturn("/mappings-added-property.json");
 
       updatedExporter.open(controller);
 
-      when(index.getMappingsClasspathFilename()).thenReturn("mappings.json");
-      when(indexTemplate.getMappingsClasspathFilename()).thenReturn("mappings.json");
+      when(index.getMappingsClasspathFilename()).thenReturn("/mappings.json");
+      when(indexTemplate.getMappingsClasspathFilename()).thenReturn("/mappings.json");
 
       oldExporter.open(controller);
 
@@ -257,7 +259,7 @@ final class CamundaExporterIT {
 
       validateMappings(
           indices.result().get(index.getFullQualifiedName()).mappings(),
-          "mappings-added-property.json");
+          "/mappings-added-property.json");
       validateMappings(
           indexTemplates.indexTemplates().stream()
               .filter(template -> template.name().equals(indexTemplate.getTemplateName()))
@@ -266,7 +268,7 @@ final class CamundaExporterIT {
               .indexTemplate()
               .template()
               .mappings(),
-          "mappings-added-property.json");
+          "/mappings-added-property.json");
     }
   }
 
@@ -285,10 +287,10 @@ final class CamundaExporterIT {
 
       validateMappings(
           Objects.requireNonNull(indices.result().get(index.getFullQualifiedName()).mappings()),
-          "mappings.json");
+          "/mappings.json");
       validateMappings(
           indexTemplates.indexTemplates().get(0).indexTemplate().template().mappings(),
-          "mappings.json");
+          "/mappings.json");
     }
 
     @Test
@@ -298,8 +300,9 @@ final class CamundaExporterIT {
       final var exporter = startExporter();
 
       // when
-      when(index.getMappingsClasspathFilename()).thenReturn("mappings-added-property.json");
-      when(indexTemplate.getMappingsClasspathFilename()).thenReturn("mappings-added-property.json");
+      when(index.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
+      when(indexTemplate.getMappingsClasspathFilename())
+          .thenReturn("/mappings-added-property.json");
 
       exporter.open(controller);
 
@@ -310,10 +313,10 @@ final class CamundaExporterIT {
 
       validateMappings(
           indices.result().get(index.getFullQualifiedName()).mappings(),
-          "mappings-added-property.json");
+          "/mappings-added-property.json");
       validateMappings(
           indexTemplates.indexTemplates().getFirst().indexTemplate().template().mappings(),
-          "mappings-added-property.json");
+          "/mappings-added-property.json");
     }
 
     @Test
@@ -329,7 +332,7 @@ final class CamundaExporterIT {
       // when
       final var newIndex =
           SchemaTestUtil.mockIndex(
-              "new_index_qualified", "new_alias", "new_index", "mappings-added-property.json");
+              "new_index_qualified", "new_alias", "new_index", "/mappings-added-property.json");
       final var newIndexTemplate =
           SchemaTestUtil.mockIndexTemplate(
               "new_template_name",
@@ -337,7 +340,7 @@ final class CamundaExporterIT {
               "new_template_alias",
               Collections.emptyList(),
               "new_template_name",
-              "mappings-added-property.json");
+              "/mappings-added-property.json");
 
       when(resourceProvider.getIndexDescriptors()).thenReturn(Set.of(index, newIndex));
       when(resourceProvider.getIndexTemplateDescriptors())
@@ -351,7 +354,7 @@ final class CamundaExporterIT {
 
       validateMappings(
           indices.result().get(newIndex.getFullQualifiedName()).mappings(),
-          "mappings-added-property.json");
+          "/mappings-added-property.json");
       validateMappings(
           indexTemplates.indexTemplates().stream()
               .filter(template -> template.name().equals("new_template_name"))
@@ -360,7 +363,7 @@ final class CamundaExporterIT {
               .indexTemplate()
               .template()
               .mappings(),
-          "mappings-added-property.json");
+          "/mappings-added-property.json");
     }
 
     @Test

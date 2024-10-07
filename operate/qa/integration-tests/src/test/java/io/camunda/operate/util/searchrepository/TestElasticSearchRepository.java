@@ -7,10 +7,10 @@
  */
 package io.camunda.operate.util.searchrepository;
 
-import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.util.ElasticsearchUtil.requestOptions;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
@@ -22,9 +22,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import java.io.IOException;

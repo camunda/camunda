@@ -37,7 +37,7 @@ public final class ActorSchedulerConfiguration {
     final var cpuThreads = schedulerConfiguration.cpuThreads();
     final var ioThreads = schedulerConfiguration.ioThreads();
     final var metricsEnabled = schedulerConfiguration.metricsEnabled();
-    final var prefix = schedulerConfiguration.prefix();
+    final var prefix = schedulerConfiguration.schedulerPrefix();
     final var nodeId = schedulerConfiguration.nodeId();
 
     final var scheduler =
@@ -55,5 +55,9 @@ public final class ActorSchedulerConfiguration {
   }
 
   public record SchedulerConfiguration(
-      int cpuThreads, int ioThreads, boolean metricsEnabled, String prefix, String nodeId) {}
+      int cpuThreads,
+      int ioThreads,
+      boolean metricsEnabled,
+      String schedulerPrefix,
+      String nodeId) {}
 }

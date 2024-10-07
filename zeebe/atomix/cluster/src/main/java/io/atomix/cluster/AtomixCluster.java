@@ -102,23 +102,35 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
   protected final ThreadContext threadContext = new SingleThreadContext("atomix-cluster-%d");
   private final AtomicBoolean started = new AtomicBoolean();
 
-  public AtomixCluster(final ClusterConfig config, final Version version) {
-    this(config, version, buildMessagingService(config), buildUnicastService(config));
+  public AtomixCluster(
+      final ClusterConfig config, final Version version, final String actorSchedulerName) {
+    this(
+        config,
+        version,
+        buildMessagingService(config, actorSchedulerName),
+        buildUnicastService(config, actorSchedulerName),
+        actorSchedulerName);
   }
 
   protected AtomixCluster(
       final ClusterConfig config,
       final Version version,
       final ManagedMessagingService messagingService,
-      final ManagedUnicastService unicastService) {
+      final ManagedUnicastService unicastService,
+      final String actorSchedulerName) {
+
     this.messagingService =
-        messagingService != null ? messagingService : buildMessagingService(config);
-    this.unicastService = unicastService != null ? unicastService : buildUnicastService(config);
+        messagingService != null
+            ? messagingService
+            : buildMessagingService(config, actorSchedulerName);
+    this.unicastService =
+        unicastService != null ? unicastService : buildUnicastService(config, actorSchedulerName);
 
     discoveryProvider = buildLocationProvider(config);
     membershipProtocol = buildMembershipProtocol(config);
     membershipService =
-        buildClusterMembershipService(config, this, discoveryProvider, membershipProtocol, version);
+        buildClusterMembershipService(
+            config, this, discoveryProvider, membershipProtocol, version, actorSchedulerName);
     communicationService =
         buildClusterMessagingService(
             getMembershipService(), getMessagingService(), getUnicastService());
@@ -286,15 +298,23 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
   }
 
   /** Builds a default messaging service. */
-  protected static ManagedMessagingService buildMessagingService(final ClusterConfig config) {
+  protected static ManagedMessagingService buildMessagingService(
+      final ClusterConfig config, final String actorSchedulerName) {
     return new NettyMessagingService(
-        config.getClusterId(), config.getNodeConfig().getAddress(), config.getMessagingConfig());
+        config.getClusterId(),
+        config.getNodeConfig().getAddress(),
+        config.getMessagingConfig(),
+        actorSchedulerName);
   }
 
   /** Builds a default unicast service. */
-  protected static ManagedUnicastService buildUnicastService(final ClusterConfig config) {
+  protected static ManagedUnicastService buildUnicastService(
+      final ClusterConfig config, final String actorSchedulerName) {
     return new NettyUnicastService(
-        config.getClusterId(), config.getNodeConfig().getAddress(), config.getMessagingConfig());
+        config.getClusterId(),
+        config.getNodeConfig().getAddress(),
+        config.getMessagingConfig(),
+        actorSchedulerName);
   }
 
   /** Builds a member location provider. */
@@ -320,7 +340,8 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
       final BootstrapService bootstrapService,
       final NodeDiscoveryProvider discoveryProvider,
       final GroupMembershipProtocol membershipProtocol,
-      final Version version) {
+      final Version version,
+      final String actorSchedulerName) {
     // If the local node has not be configured, create a default node.
     final Member localMember =
         Member.builder()
@@ -333,6 +354,7 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
             .build();
     return new DefaultClusterMembershipService(
         localMember,
+        actorSchedulerName,
         version,
         new DefaultNodeDiscoveryService(bootstrapService, localMember, discoveryProvider),
         bootstrapService,

@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.user;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 
+import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -36,17 +37,19 @@ public class UpdateUserMultiPartitionTest {
   public void shouldDistributeUserUpdateCommand() {
     final var username = UUID.randomUUID().toString();
 
-    ENGINE
-        .user()
-        .newUser(username)
-        .withName("Foo Bar")
-        .withEmail("foo@bar.com")
-        .withPassword("password")
-        .create();
+    final var userRecord =
+        ENGINE
+            .user()
+            .newUser(username)
+            .withName("Foo Bar")
+            .withEmail("foo@bar.com")
+            .withPassword("password")
+            .create();
 
     ENGINE
         .user()
-        .updateUser(username)
+        .updateUser(userRecord.getKey())
+        .withUsername(userRecord.getValue().getUsername())
         .withName("Bar Foo")
         .withEmail("bar@foo.com")
         .withPassword("password")
@@ -94,5 +97,36 @@ public class UpdateUserMultiPartitionTest {
           .extracting(Record::getIntent)
           .containsSubsequence(UserIntent.UPDATE, UserIntent.UPDATED);
     }
+  }
+
+  @Test
+  public void shouldDistributeInIdentityQueue() {
+    final var username = UUID.randomUUID().toString();
+    // when
+    final var userRecord =
+        ENGINE
+            .user()
+            .newUser(username)
+            .withName("Foo Bar")
+            .withEmail("foo@bar.com")
+            .withPassword("password")
+            .create();
+
+    ENGINE
+        .user()
+        .updateUser(userRecord.getKey())
+        .withUsername(userRecord.getValue().getUsername())
+        .withName("Bar Foo")
+        .withEmail("bar@foo.com")
+        .withPassword("password")
+        .update();
+
+    // then
+    assertThat(
+            RecordingExporter.commandDistributionRecords()
+                .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 2)
+                .withIntent(CommandDistributionIntent.ENQUEUED))
+        .extracting(r -> r.getValue().getQueueId())
+        .containsOnly(DistributionQueue.IDENTITY.getQueueId());
   }
 }

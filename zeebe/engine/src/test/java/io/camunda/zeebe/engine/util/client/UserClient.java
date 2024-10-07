@@ -26,12 +26,12 @@ public final class UserClient {
     return new UserCreationClient(writer, username);
   }
 
-  public UpdateUserClient updateUser(final String username) {
-    return new UpdateUserClient(writer, username);
+  public UpdateUserClient updateUser(final Long userKey) {
+    return new UpdateUserClient(writer, userKey);
   }
 
-  public UpdateUserClient updateUser(final String username, final UserRecord userRecord) {
-    return new UpdateUserClient(writer, username, userRecord);
+  public UpdateUserClient updateUser(final long userKey, final UserRecord userRecord) {
+    return new UpdateUserClient(writer, userKey, userRecord);
   }
 
   public static class UserCreationClient {
@@ -110,17 +110,22 @@ public final class UserClient {
     private final UserRecord userRecord;
     private Function<Long, Record<UserRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public UpdateUserClient(final CommandWriter writer, final String username) {
+    public UpdateUserClient(final CommandWriter writer, final long userKey) {
       this.writer = writer;
       userRecord = new UserRecord();
-      userRecord.setUsername(username);
+      userRecord.setUserKey(userKey);
     }
 
     public UpdateUserClient(
-        final CommandWriter writer, final String username, final UserRecord userRecord) {
+        final CommandWriter writer, final long userKey, final UserRecord userRecord) {
       this.writer = writer;
       this.userRecord = userRecord;
-      this.userRecord.setUsername(username);
+      this.userRecord.setUserKey(userKey);
+    }
+
+    public UpdateUserClient withUsername(final String username) {
+      userRecord.setUsername(username);
+      return this;
     }
 
     public UpdateUserClient withName(final String name) {

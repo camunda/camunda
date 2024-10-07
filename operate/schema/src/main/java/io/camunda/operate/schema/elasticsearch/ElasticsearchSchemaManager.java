@@ -16,11 +16,11 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.IndexMapping;
 import io.camunda.operate.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.operate.schema.SchemaManager;
-import io.camunda.operate.schema.indices.AbstractIndexDescriptor;
-import io.camunda.operate.schema.indices.IndexDescriptor;
-import io.camunda.operate.schema.templates.TemplateDescriptor;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchJSONUtil;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.index.AbstractIndexDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -71,7 +71,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   @Autowired protected RetryElasticsearchClient retryElasticsearchClient;
   @Autowired protected OperateProperties operateProperties;
   @Autowired private List<AbstractIndexDescriptor> indexDescriptors;
-  @Autowired private List<TemplateDescriptor> templateDescriptors;
+  @Autowired private List<IndexTemplateDescriptor> templateDescriptors;
 
   @Autowired
   @Qualifier("operateObjectMapper")
@@ -123,7 +123,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
 
   @Override
   public void createTemplate(
-      final TemplateDescriptor templateDescriptor, final String templateClasspathResource) {
+      final IndexTemplateDescriptor templateDescriptor, final String templateClasspathResource) {
     final PutComposableIndexTemplateRequest request =
         prepareComposableTemplateRequest(templateDescriptor, templateClasspathResource);
     putIndexTemplate(request);
@@ -217,10 +217,12 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   public void updateSchema(final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields) {
     for (final Map.Entry<IndexDescriptor, Set<IndexMappingProperty>> indexNewFields :
         newFields.entrySet()) {
-      if (indexNewFields.getKey() instanceof TemplateDescriptor) {
+      if (indexNewFields.getKey() instanceof IndexTemplateDescriptor) {
         LOGGER.info(
-            "Update template: " + ((TemplateDescriptor) indexNewFields.getKey()).getTemplateName());
-        final TemplateDescriptor templateDescriptor = (TemplateDescriptor) indexNewFields.getKey();
+            "Update template: "
+                + ((IndexTemplateDescriptor) indexNewFields.getKey()).getTemplateName());
+        final IndexTemplateDescriptor templateDescriptor =
+            (IndexTemplateDescriptor) indexNewFields.getKey();
         final PutComposableIndexTemplateRequest request =
             prepareComposableTemplateRequest(templateDescriptor, null);
         putIndexTemplate(request, true);
@@ -328,12 +330,12 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     createIndex(indexDescriptor, indexDescriptor.getSchemaClasspathFilename());
   }
 
-  private void createTemplate(final TemplateDescriptor templateDescriptor) {
+  private void createTemplate(final IndexTemplateDescriptor templateDescriptor) {
     createTemplate(templateDescriptor, null);
   }
 
   private PutComposableIndexTemplateRequest prepareComposableTemplateRequest(
-      final TemplateDescriptor templateDescriptor, final String templateClasspathResource) {
+      final IndexTemplateDescriptor templateDescriptor, final String templateClasspathResource) {
     final String templateResourceName =
         templateClasspathResource != null
             ? templateClasspathResource
@@ -354,7 +356,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   }
 
   private void overrideTemplateSettings(
-      final Map<String, Object> templateConfig, final TemplateDescriptor templateDescriptor) {
+      final Map<String, Object> templateConfig, final IndexTemplateDescriptor templateDescriptor) {
     final Settings indexSettings = getIndexSettings(templateDescriptor.getIndexName());
     final Map<String, Object> settings =
         (Map<String, Object>) templateConfig.getOrDefault("settings", new HashMap<>());
@@ -367,7 +369,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   }
 
   private Template getTemplateFrom(
-      final TemplateDescriptor templateDescriptor, final String templateFilename) {
+      final IndexTemplateDescriptor templateDescriptor, final String templateFilename) {
     // Easiest way to create Template from json file: create 'old' request ang retrieve needed info
     final Map<String, Object> templateConfig =
         ElasticsearchJSONUtil.readJSONFileToMap(templateFilename);

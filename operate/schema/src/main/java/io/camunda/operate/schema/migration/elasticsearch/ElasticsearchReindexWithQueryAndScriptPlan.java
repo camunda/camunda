@@ -7,12 +7,12 @@
  */
 package io.camunda.operate.schema.migration.elasticsearch;
 
-import static io.camunda.operate.schema.templates.IncidentTemplate.KEY;
-import static io.camunda.operate.schema.templates.IncidentTemplate.PROCESS_INSTANCE_KEY;
-import static io.camunda.operate.schema.templates.ListViewTemplate.BPMN_PROCESS_ID;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_KEY;
 import static io.camunda.operate.util.ElasticsearchUtil.scroll;
 import static io.camunda.operate.util.LambdaExceptionUtil.rethrowConsumer;
+import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.KEY;
+import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.PROCESS_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_KEY;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
