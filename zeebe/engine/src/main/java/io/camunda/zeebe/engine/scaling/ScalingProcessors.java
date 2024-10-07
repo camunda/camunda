@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.scaling;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -20,8 +21,11 @@ public final class ScalingProcessors {
   public static void addScalingProcessors(
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
-      final KeyGenerator keyGenerator) {
+      final KeyGenerator keyGenerator,
+      final ProcessingState processingState) {
     typedRecordProcessors.onCommand(
-        ValueType.SCALE, ScaleIntent.SCALE_UP, new ScaleUpProcessor(keyGenerator, writers));
+        ValueType.SCALE,
+        ScaleIntent.SCALE_UP,
+        new ScaleUpProcessor(keyGenerator, writers, processingState.getRoutingState()));
   }
 }
