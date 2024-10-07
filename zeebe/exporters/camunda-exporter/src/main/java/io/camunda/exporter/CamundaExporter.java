@@ -138,6 +138,7 @@ public class CamundaExporter implements Exporter {
         break;
       case OPENSEARCH:
         clientAdapter = new OpensearchAdapter();
+        break;
       default:
         throw new ExporterException(
             "Unsupported database type: " + configuration.getConnect().getType());
