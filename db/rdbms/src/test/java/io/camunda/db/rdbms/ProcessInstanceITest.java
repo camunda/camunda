@@ -14,6 +14,7 @@ import io.camunda.db.rdbms.domain.ProcessInstanceDbFilter;
 import io.camunda.db.rdbms.domain.ProcessInstanceDbModel;
 import io.camunda.db.rdbms.fixtures.ProcessDefinitionFixtures;
 import io.camunda.db.rdbms.fixtures.ProcessInstanceFixtures;
+import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -114,6 +115,54 @@ public class ProcessInstanceITest {
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(20);
     assertThat(searchResult.hits()).hasSize(5);
+  }
+
+  @Test
+  public void shouldFindAllProcessInstancePageIsNull() {
+    createAndSaveRandomProcessInstances();
+
+    var searchResult = rdbmsService.getProcessInstanceRdbmsService().search(new ProcessInstanceDbFilter(
+        new ProcessInstanceFilter.Builder().build(),
+        ProcessInstanceSort.of(b -> b),
+        null
+    ));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(20);
+    assertThat(searchResult.hits()).hasSize(20);
+  }
+
+  @Test
+  public void shouldFindAllProcessInstancePageValuesAreNull() {
+    createAndSaveRandomProcessInstances();
+
+    var searchResult = rdbmsService.getProcessInstanceRdbmsService().search(new ProcessInstanceDbFilter(
+        new ProcessInstanceFilter.Builder().build(),
+        ProcessInstanceSort.of(b -> b),
+        SearchQueryPage.of(b -> b.from(null).size(null))
+    ));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(20);
+    assertThat(searchResult.hits()).hasSize(20);
+  }
+
+  @Test
+  public void shouldFindAllProcessInstanceSortedByEndDate() {
+    createAndSaveRandomProcessInstances();
+
+    var searchResult = rdbmsService.getProcessInstanceRdbmsService().search(new ProcessInstanceDbFilter(
+        new ProcessInstanceFilter.Builder().build(),
+        ProcessInstanceSort.of(b -> b.endDate().asc()),
+        SearchQueryPage.of(b -> b.from(0).size(20))
+    ));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(20);
+    assertThat(searchResult.hits()).hasSize(20);
+    final OffsetDateTime firstHit = OffsetDateTime.parse(searchResult.hits().getFirst().endDate());
+    final OffsetDateTime lastHit = OffsetDateTime.parse(searchResult.hits().getLast().endDate());
+    assertThat(firstHit).isBefore(lastHit);
   }
 
   @Test
