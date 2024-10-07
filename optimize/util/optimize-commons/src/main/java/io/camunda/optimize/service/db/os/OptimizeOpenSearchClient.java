@@ -71,7 +71,6 @@ import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
 import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
 import org.opensearch.client.opensearch.core.DeleteRequest;
 import org.opensearch.client.opensearch.core.DeleteResponse;
-import org.opensearch.client.opensearch.core.ExistsRequest;
 import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.core.IndexRequest;
@@ -99,6 +98,7 @@ import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
 import org.opensearch.client.opensearch.indices.DeleteIndexRequest.Builder;
 import org.opensearch.client.opensearch.indices.DeleteIndexResponse;
+import org.opensearch.client.opensearch.indices.ExistsRequest;
 import org.opensearch.client.opensearch.indices.GetAliasRequest;
 import org.opensearch.client.opensearch.indices.GetAliasResponse;
 import org.opensearch.client.opensearch.indices.GetMappingRequest;
@@ -370,12 +370,12 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   }
 
   @Override
-  public boolean exists(final String indexName) throws IOException {
-    final ExistsRequest existsRequest =
-        new ExistsRequest.Builder()
-            .index(indexNameService.getOptimizeIndexAliasForIndex(indexName))
-            .build();
-    return openSearchClient.exists(existsRequest).value();
+  public final boolean exists(final String indexName) throws IOException {
+    return exists(ExistsRequest.of(b -> b.index(List.of(convertToPrefixedAliasName(indexName)))));
+  }
+
+  private boolean exists(final ExistsRequest existsRequest) throws IOException {
+    return openSearchClient.indices().exists(existsRequest).value();
   }
 
   @Override
