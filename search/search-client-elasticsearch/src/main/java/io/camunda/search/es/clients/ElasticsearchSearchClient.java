@@ -12,6 +12,7 @@ import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import io.camunda.search.DocumentCamundaSearchClient;
+import io.camunda.search.ProcessDefinitionSearchClient;
 import io.camunda.search.SearchClientBasedQueryExecutor;
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
@@ -33,6 +34,7 @@ import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
@@ -47,6 +49,7 @@ import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.FormQuery;
 import io.camunda.search.query.IncidentQuery;
+import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserQuery;
@@ -67,6 +70,7 @@ public class ElasticsearchSearchClient
         FormSearchClient,
         IncidentSearchClient,
         ProcessInstanceSearchClient,
+        ProcessDefinitionSearchClient,
         UserTaskSearchClient,
         UserSearchClient,
         VariableSearchClient {
@@ -160,6 +164,14 @@ public class ElasticsearchSearchClient
     final var executor =
         new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(), authentication);
     return executor.search(filter, ProcessInstanceEntity.class);
+  }
+
+  @Override
+  public SearchQueryResult<ProcessDefinitionEntity> searchProcessDefinitions(
+      final ProcessDefinitionQuery filter, final Authentication authentication) {
+    final var executor =
+        new SearchClientBasedQueryExecutor(this, ServiceTransformers.newInstance(), authentication);
+    return executor.search(filter, ProcessDefinitionEntity.class);
   }
 
   @Override

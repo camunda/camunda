@@ -121,7 +121,7 @@ public final class ExporterRule implements TestRule {
         new ExporterDirectorContext()
             .id(EXPORTER_PROCESSOR_ID)
             .name(PROCESSOR_NAME)
-            .logStream(stream.getAsyncLogStream())
+            .logStream(stream)
             .clock(StreamClock.system())
             .zeebeDb(capturedZeebeDb)
             .exporterMode(exporterMode)

@@ -15,15 +15,15 @@ import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBu
 
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.indices.DecisionIndex;
-import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
-import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.reader.DecisionReader;
 import io.camunda.operate.webapp.rest.dto.DecisionRequestDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
+import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
 import java.util.HashMap;
 import java.util.List;
@@ -54,7 +54,7 @@ public class OpensearchDecisionReader implements DecisionReader {
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 
   @Override
-  public String getDiagram(Long decisionDefinitionKey) {
+  public String getDiagram(final Long decisionDefinitionKey) {
     record DecisionRequirementsIdRecord(Long decisionRequirementsKey) {}
     final var request =
         searchRequestBuilder(decisionIndex.getAlias())
@@ -84,7 +84,7 @@ public class OpensearchDecisionReader implements DecisionReader {
   }
 
   @Override
-  public DecisionDefinitionEntity getDecision(Long decisionDefinitionKey) {
+  public DecisionDefinitionEntity getDecision(final Long decisionDefinitionKey) {
     final var request =
         searchRequestBuilder(decisionIndex.getAlias())
             .query(withTenantCheck(term(DecisionIndex.KEY, decisionDefinitionKey)));
@@ -103,7 +103,7 @@ public class OpensearchDecisionReader implements DecisionReader {
 
   @Override
   public Map<String, List<DecisionDefinitionEntity>> getDecisionsGrouped(
-      DecisionRequestDto request) {
+      final DecisionRequestDto request) {
     final var tenantsGroupsAggName = "group_by_tenantId";
     final var groupsAggName = "group_by_decisionId";
     final var decisionsAggName = "decisions";
@@ -171,7 +171,7 @@ public class OpensearchDecisionReader implements DecisionReader {
     return result;
   }
 
-  private Query buildQuery(String tenantId) {
+  private Query buildQuery(final String tenantId) {
     Query decisionIdQuery = null;
     if (permissionsService != null) {
       final var allowed = permissionsService.getDecisionsWithPermission(IdentityPermission.READ);

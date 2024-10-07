@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.util;
 
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
-import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
+import io.camunda.zeebe.logstreams.util.TestLogStream;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
@@ -27,14 +27,14 @@ public final class ProcessingExporterTransistor implements StreamProcessorLifecy
 
   private LogStreamReader logStreamReader;
   private TypedRecordImpl typedEvent;
-  private final SynchronousLogStream synchronousLogStream;
+  private final TestLogStream logStream;
   private final ExecutorService executorService;
 
   /** The recording exporter instance is needed in order to use the Exporter#export method. */
   private final RecordingExporter recordingExporter;
 
-  public ProcessingExporterTransistor(final SynchronousLogStream synchronousLogStream) {
-    this.synchronousLogStream = synchronousLogStream;
+  public ProcessingExporterTransistor(final TestLogStream testLogStream) {
+    logStream = testLogStream;
     executorService = Executors.newSingleThreadExecutor();
     recordingExporter = new RecordingExporter();
   }
@@ -45,9 +45,8 @@ public final class ProcessingExporterTransistor implements StreamProcessorLifecy
         () -> {
           final int partitionId = context.getPartitionId();
           typedEvent = new TypedRecordImpl(partitionId);
-          final var asyncLogStream = synchronousLogStream.getAsyncLogStream();
-          asyncLogStream.registerRecordAvailableListener(this::onNewEventCommitted);
-          logStreamReader = synchronousLogStream.newLogStreamReader();
+          logStream.registerRecordAvailableListener(this::onNewEventCommitted);
+          logStreamReader = logStream.newLogStreamReader();
           exportEvents();
         });
   }

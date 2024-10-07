@@ -42,7 +42,7 @@ jobs:
     env:
       DOCKER_IMAGE_TEAM: registry.camunda.cloud/team-optimize/optimize
       DOCKER_IMAGE_DOCKER_HUB: camunda/optimize
-      DOCKER_INTERNAL_IMAGE_DOCKER_HUB: europe-west1-docker.pkg.dev/team-infosec/optimize-8
+      DOCKER_INTERNAL_IMAGE_DOCKER_HUB: europe-west1-docker.pkg.dev/team-infosec/camunda/optimize-8
       DOCKER_LATEST_TAG: latest
     strategy:
       fail-fast: true
@@ -70,10 +70,6 @@ jobs:
           echo "BRANCH: ${{ inputs.BRANCH }}"
           echo "DOCKER_LATEST: ${{ inputs.DOCKER_LATEST }}"
           echo "IS_DRY_RUN: ${{ inputs.IS_DRY_RUN }}"
-
-      - name: "Read Java / Version Info"
-        id: "pom-info"
-        uses: YunaBraska/java-info-action@main
 
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
@@ -169,6 +165,11 @@ jobs:
         with:
           ref: ${{ env.BRANCH }}
           fetch-depth: 0
+
+      
+      - name: "Read Java / Version Info"
+        id: "pom-info"
+        uses: YunaBraska/java-info-action@main
 
       - name: Configure GitHub user
         run: |

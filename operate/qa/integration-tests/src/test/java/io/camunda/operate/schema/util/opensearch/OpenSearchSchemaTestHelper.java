@@ -16,11 +16,11 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.IndexMapping;
 import io.camunda.operate.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.operate.schema.SchemaManager;
-import io.camunda.operate.schema.indices.AbstractIndexDescriptor;
-import io.camunda.operate.schema.indices.IndexDescriptor;
-import io.camunda.operate.schema.templates.TemplateDescriptor;
 import io.camunda.operate.schema.util.SchemaTestHelper;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.index.AbstractIndexDescriptor;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -65,7 +65,7 @@ public class OpenSearchSchemaTestHelper implements SchemaTestHelper {
   }
 
   @Override
-  public IndexMapping getTemplateMappings(final TemplateDescriptor template) {
+  public IndexMapping getTemplateMappings(final IndexTemplateDescriptor template) {
     try {
       final String templateName = template.getTemplateName();
 
@@ -102,7 +102,7 @@ public class OpenSearchSchemaTestHelper implements SchemaTestHelper {
       final String indexName,
       final String indexSchemaFilename) {
     schemaManager.createIndex(
-        new AbstractIndexDescriptor() {
+        new AbstractIndexDescriptor(properties.getOpensearch().getIndexPrefix(), false) {
           @Override
           public String getIndexName() {
             return indexDescriptor.getIndexName();

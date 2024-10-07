@@ -15,8 +15,10 @@ import io.camunda.search.connect.SearchClientConnectException;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.SecurityConfiguration;
 import io.camunda.search.connect.jackson.JacksonConfiguration;
+import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.search.connect.util.SecurityUtil;
 import org.apache.http.HttpHost;
+import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.config.RequestConfig.Builder;
@@ -33,19 +35,29 @@ public final class ElasticsearchConnector {
 
   private final ConnectConfiguration configuration;
   private final ObjectMapper objectMapper;
+  private final PluginRepository pluginRepository;
 
   public ElasticsearchConnector(final ConnectConfiguration configuration) {
-    this(configuration, new JacksonConfiguration(configuration).createObjectMapper());
+    this(
+        configuration,
+        new JacksonConfiguration(configuration).createObjectMapper(),
+        new PluginRepository());
   }
 
   public ElasticsearchConnector(
-      final ConnectConfiguration configuration, final ObjectMapper objectMapper) {
+      final ConnectConfiguration configuration,
+      final ObjectMapper objectMapper,
+      final PluginRepository pluginRepository) {
     this.configuration = configuration;
     this.objectMapper = objectMapper;
+    this.pluginRepository = pluginRepository;
   }
 
   public ElasticsearchClient createClient() {
     LOGGER.debug("Creating Elasticsearch Client ...");
+
+    // Load plugins
+    pluginRepository.load(configuration.getInterceptorPlugins());
 
     // create rest client
     final var restClient = createRestClient(configuration);
@@ -68,7 +80,9 @@ public final class ElasticsearchConnector {
     final var restClient =
         restClientBuilder
             .setHttpClientConfigCallback(
-                httpClientBuilder -> configureHttpClient(httpClientBuilder, configuration))
+                httpClientBuilder ->
+                    configureHttpClient(
+                        httpClientBuilder, configuration, pluginRepository.asRequestInterceptor()))
             .build();
 
     return restClient;
@@ -76,12 +90,18 @@ public final class ElasticsearchConnector {
 
   protected HttpAsyncClientBuilder configureHttpClient(
       final HttpAsyncClientBuilder httpAsyncClientBuilder,
-      final ConnectConfiguration configuration) {
+      final ConnectConfiguration configuration,
+      final HttpRequestInterceptor... interceptors) {
     setupAuthentication(httpAsyncClientBuilder, configuration);
     final var security = configuration.getSecurity();
     if (security != null && security.isEnabled()) {
       setupSSLContext(httpAsyncClientBuilder, security);
     }
+
+    for (final HttpRequestInterceptor interceptor : interceptors) {
+      httpAsyncClientBuilder.addInterceptorLast(interceptor);
+    }
+
     return httpAsyncClientBuilder;
   }
 

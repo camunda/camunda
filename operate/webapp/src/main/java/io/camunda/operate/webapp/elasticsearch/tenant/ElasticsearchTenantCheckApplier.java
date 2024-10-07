@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.elasticsearch.tenant;
 
-import static io.camunda.operate.schema.indices.IndexDescriptor.TENANT_ID;
+import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.TENANT_ID;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 import io.camunda.operate.conditions.ElasticsearchCondition;

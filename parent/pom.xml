@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-bom</artifactId>
-    <version>8.6.0-SNAPSHOT</version>
+    <version>8.7.0-SNAPSHOT</version>
     <relativePath>../bom/pom.xml</relativePath>
   </parent>
 
@@ -77,7 +77,7 @@
     <version.msgpack>0.9.8</version.msgpack>
     <version.netty>4.1.114.Final</version.netty>
     <version.objenesis>3.4</version.objenesis>
-    <version.opensearch>2.9.0</version.opensearch>
+    <version.opensearch>2.14.0</version.opensearch>
     <version.opensearch.testcontainers>2.1.0</version.opensearch.testcontainers>
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>3.25.5</version.protobuf>
@@ -178,6 +178,7 @@
     <version.jwks-rsa>0.22.1</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
     <version.nimbus-jose-jwt>9.41.2</version.nimbus-jose-jwt>
+    <version.nimbus-sdk>9.43.4</version.nimbus-sdk>
     <version.keycloak>25.0.6</version.keycloak>
     <version.jna>5.15.0</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
@@ -229,7 +230,7 @@
     <extension.version.os-maven-plugin>1.7.1</extension.version.os-maven-plugin>
 
     <!-- version against which backwards compatibility is checked -->
-    <backwards.compat.version>8.5.0</backwards.compat.version>
+    <backwards.compat.version>8.6.0</backwards.compat.version>
     <ignored.changes.file>ignored-changes.json</ignored.changes.file>
 
     <!--
@@ -244,7 +245,6 @@
     <skipTests>${quickly}</skipTests>
     <skipUTs>${skipTests}</skipUTs>
     <skipITs>${skipTests}</skipITs>
-    <cyclonedx.skip>${quickly}</cyclonedx.skip>
     <jacoco.skip>${skipUTs}</jacoco.skip>
 
     <!--
@@ -595,13 +595,13 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>operate-importer-8_5</artifactId>
+        <artifactId>operate-importer-8_6</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>operate-importer-8_6</artifactId>
+        <artifactId>operate-importer-8_7</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -731,13 +731,13 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>tasklist-importer-850</artifactId>
+        <artifactId>tasklist-importer-860</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>tasklist-importer-860</artifactId>
+        <artifactId>tasklist-importer-870</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -934,6 +934,11 @@
         <version>${version.spring-security}</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.nimbusds</groupId>
+        <artifactId>oauth2-oidc-sdk</artifactId>
+        <version>${version.nimbus-sdk}</version>
       </dependency>
 
       <dependency>

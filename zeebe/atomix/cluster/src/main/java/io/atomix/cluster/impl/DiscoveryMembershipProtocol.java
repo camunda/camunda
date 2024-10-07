@@ -90,6 +90,15 @@ public final class DiscoveryMembershipProtocol
   }
 
   @Override
+  public CompletableFuture<Void> join(
+      final BootstrapService bootstrap,
+      final NodeDiscoveryService discovery,
+      final Member localMember,
+      final String actorSchedulerName) {
+    return join(bootstrap, discovery, localMember);
+  }
+
+  @Override
   public CompletableFuture<Void> leave(final Member localMember) {
     if (started.compareAndSet(true, false)) {
       LOGGER.info("Stopped discovery membership protocol");

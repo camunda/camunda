@@ -12,10 +12,10 @@ import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBu
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.schema.templates.SequenceFlowTemplate;
 import io.camunda.operate.store.SequenceFlowStore;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.store.opensearch.dsl.RequestDSL;
+import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.entities.operate.SequenceFlowEntity;
 import java.util.List;
 import org.opensearch.client.opensearch._types.SortOrder;
