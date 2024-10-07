@@ -25,6 +25,8 @@ jobs:
       - name: "Parse pom.xml for versions"
         id: "pom_info"
         uses: YunaBraska/java-info-action@main
+        with:
+          work-dir: ./optimize
 
       - name: Setup NodeJS
         uses: actions/setup-node@0a44ba7841725637a19e28fa30b79a866c81b0a6 # v4

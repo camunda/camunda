@@ -22,7 +22,11 @@ export default function ReportErrorNotice({error}) {
   );
 }
 
-function formatError({status, message}) {
+function formatError({
+  status,
+  message = t('apiErrors.reportEvaluationError'),
+  title = t('report.errorNotice'),
+}) {
   if (status === 403) {
     return {
       type: 'info',
@@ -33,7 +37,7 @@ function formatError({status, message}) {
 
   return {
     type: 'error',
-    title: t('report.errorNotice'),
-    message: message || t('apiErrors.reportEvaluationError'),
+    title,
+    message,
   };
 }
