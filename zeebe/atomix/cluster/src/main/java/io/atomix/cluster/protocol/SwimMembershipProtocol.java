@@ -62,7 +62,6 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
 /** SWIM group membership protocol implementation. */
 public class SwimMembershipProtocol
@@ -100,11 +99,8 @@ public class SwimMembershipProtocol
   private final List<SwimMember> randomMembers = Lists.newCopyOnWriteArrayList();
   private final Map<MemberId, ImmutableMember> updates = new LinkedHashMap<>();
   private final List<SwimMember> syncMembers = new ArrayList<>();
-  private final ScheduledExecutorService swimScheduler =
-      Executors.newSingleThreadScheduledExecutor(
-          namedThreads("atomix-cluster-heartbeat-sender", LOGGER));
-  private final ExecutorService eventExecutor =
-      Executors.newSingleThreadExecutor(namedThreads("atomix-cluster-events", LOGGER));
+  private final ScheduledExecutorService swimScheduler;
+  private final ExecutorService eventExecutor;
   private final AtomicInteger probeCounter = new AtomicInteger();
   private NodeDiscoveryService discoveryService;
   private BootstrapService bootstrapService;
@@ -127,8 +123,16 @@ public class SwimMembershipProtocol
   private final SwimMembershipProtocolMetrics swimMembershipProtocolMetrics =
       new SwimMembershipProtocolMetrics();
 
-  SwimMembershipProtocol(final SwimMembershipProtocolConfig config) {
+  SwimMembershipProtocol(
+      final SwimMembershipProtocolConfig config, final String actorSchedulerName) {
     this.config = config;
+
+    swimScheduler =
+        Executors.newSingleThreadScheduledExecutor(
+            namedThreads("atomix-cluster-heartbeat-sender", LOGGER, actorSchedulerName));
+    eventExecutor =
+        Executors.newSingleThreadExecutor(
+            namedThreads("atomix-cluster-events", LOGGER, actorSchedulerName));
   }
 
   /**
@@ -158,15 +162,6 @@ public class SwimMembershipProtocol
   @Override
   public CompletableFuture<Void> join(
       final BootstrapService bootstrap, final NodeDiscoveryService discovery, final Member member) {
-    return join(bootstrap, discovery, member, "");
-  }
-
-  @Override
-  public CompletableFuture<Void> join(
-      final BootstrapService bootstrap,
-      final NodeDiscoveryService discovery,
-      final Member member,
-      final String actorSchedulerName) {
     if (started.compareAndSet(false, true)) {
       bootstrapService = bootstrap;
       discoveryService = discovery;
@@ -192,9 +187,6 @@ public class SwimMembershipProtocol
       LOGGER.debug("Nodes from discovery service {}", discoveryService.getNodes());
 
       registerHandlers();
-
-      swimScheduler.execute(() -> MDC.put("actor-scheduler", actorSchedulerName));
-      eventExecutor.execute(() -> MDC.put("actor-scheduler", actorSchedulerName));
 
       scheduleGossip();
       scheduleProbe();
@@ -897,8 +889,9 @@ public class SwimMembershipProtocol
     }
 
     @Override
-    public GroupMembershipProtocol newProtocol(final SwimMembershipProtocolConfig config) {
-      return new SwimMembershipProtocol(config);
+    public GroupMembershipProtocol newProtocol(
+        final SwimMembershipProtocolConfig config, final String actorSchedulerName) {
+      return new SwimMembershipProtocol(config, actorSchedulerName);
     }
   }
 
