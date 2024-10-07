@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import io.camunda.exporter.config.ElasticsearchProperties;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.utils.TestSupport;
 import io.camunda.search.connect.es.ElasticsearchConnector;
@@ -41,8 +40,8 @@ public class ElasticsearchSchemaManagerIT {
   public static void init() {
     // Create the low-level client
     final var config = new ExporterConfiguration();
-    config.elasticsearch.getConnect().setUrl(CONTAINER.getHttpHostAddress());
-    elsClient = new ElasticsearchConnector(config.elasticsearch.getConnect()).createClient();
+    config.getConnect().setUrl(CONTAINER.getHttpHostAddress());
+    elsClient = new ElasticsearchConnector(config.getConnect()).createClient();
 
     searchEngineClient = new ElasticsearchEngineClient(elsClient);
   }
@@ -55,7 +54,7 @@ public class ElasticsearchSchemaManagerIT {
 
   @Test
   void shouldInheritDefaultSettingsIfNoIndexSpecificSettings() throws IOException {
-    final var properties = new ElasticsearchProperties();
+    final var properties = new ExporterConfiguration();
     properties.getDefaultSettings().setNumberOfReplicas(10);
     properties.getDefaultSettings().setNumberOfShards(10);
 
@@ -86,7 +85,7 @@ public class ElasticsearchSchemaManagerIT {
 
   @Test
   void shouldUseIndexSpecificSettingsIfSpecified() throws IOException {
-    final var properties = new ElasticsearchProperties();
+    final var properties = new ExporterConfiguration();
     properties.getDefaultSettings().setNumberOfReplicas(10);
     properties.getDefaultSettings().setNumberOfShards(10);
     properties.setReplicasByIndexName(Map.of("index_name", 5));
@@ -130,7 +129,7 @@ public class ElasticsearchSchemaManagerIT {
             "/mappings.json");
     final var schemaManager =
         new ElasticsearchSchemaManager(
-            searchEngineClient, Set.of(), Set.of(indexTemplate), new ElasticsearchProperties());
+            searchEngineClient, Set.of(), Set.of(indexTemplate), new ExporterConfiguration());
 
     schemaManager.initialiseResources();
 
@@ -161,7 +160,7 @@ public class ElasticsearchSchemaManagerIT {
 
     final var schemaManager =
         new ElasticsearchSchemaManager(
-            searchEngineClient, Set.of(index), Set.of(), new ElasticsearchProperties());
+            searchEngineClient, Set.of(index), Set.of(), new ExporterConfiguration());
 
     schemaManager.initialiseResources();
 
@@ -191,7 +190,7 @@ public class ElasticsearchSchemaManagerIT {
 
     final var schemaManager =
         new ElasticsearchSchemaManager(
-            searchEngineClient, Set.of(), Set.of(), new ElasticsearchProperties());
+            searchEngineClient, Set.of(), Set.of(), new ExporterConfiguration());
 
     // when
     final var indexMapping = schemaManager.readIndex(index);

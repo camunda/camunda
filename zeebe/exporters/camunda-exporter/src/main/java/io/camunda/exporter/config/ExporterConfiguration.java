@@ -7,13 +7,169 @@
  */
 package io.camunda.exporter.config;
 
+import io.camunda.search.connect.configuration.ConnectConfiguration;
+import java.util.HashMap;
+import java.util.Map;
+
 public class ExporterConfiguration {
-  public final BulkConfiguration bulk = new BulkConfiguration();
-  public final ElasticsearchProperties elasticsearch = new ElasticsearchProperties();
+
+  private ConnectConfiguration connect = new ConnectConfiguration();
+  private IndexSettings defaultSettings = new IndexSettings();
+  private BulkConfiguration bulk = new BulkConfiguration();
+  private RetentionConfiguration retention = new RetentionConfiguration();
+  private Map<String, Integer> replicasByIndexName = new HashMap<>();
+  private Map<String, Integer> shardsByIndexName = new HashMap<>();
+  private boolean createSchema;
+
+  public ConnectConfiguration getConnect() {
+    return connect;
+  }
+
+  public void setConnect(final ConnectConfiguration connect) {
+    this.connect = connect;
+  }
+
+  public IndexSettings getDefaultSettings() {
+    return defaultSettings;
+  }
+
+  public void setDefaultSettings(final IndexSettings defaultSettings) {
+    this.defaultSettings = defaultSettings;
+  }
+
+  public BulkConfiguration getBulk() {
+    return bulk;
+  }
+
+  public void setBulk(final BulkConfiguration bulk) {
+    this.bulk = bulk;
+  }
+
+  public RetentionConfiguration getRetention() {
+    return retention;
+  }
+
+  public void setRetention(final RetentionConfiguration retention) {
+    this.retention = retention;
+  }
+
+  public Map<String, Integer> getReplicasByIndexName() {
+    return replicasByIndexName;
+  }
+
+  public void setReplicasByIndexName(final Map<String, Integer> replicasByIndexName) {
+    this.replicasByIndexName = replicasByIndexName;
+  }
+
+  public Map<String, Integer> getShardsByIndexName() {
+    return shardsByIndexName;
+  }
+
+  public void setShardsByIndexName(final Map<String, Integer> shardsByIndexName) {
+    this.shardsByIndexName = shardsByIndexName;
+  }
+
+  public boolean isCreateSchema() {
+    return createSchema;
+  }
+
+  public void setCreateSchema(final boolean createSchema) {
+    this.createSchema = createSchema;
+  }
 
   @Override
   public String toString() {
-    return "ExporterConfiguration{" + "bulk=" + bulk + ", elasticsearch=" + elasticsearch + '}';
+    return "ExporterConfiguration{"
+        + "connect="
+        + connect
+        + ", defaultSettings="
+        + defaultSettings
+        + ", bulk="
+        + bulk
+        + ", retention="
+        + retention
+        + ", replicasByIndexName="
+        + replicasByIndexName
+        + ", shardsByIndexName="
+        + shardsByIndexName
+        + ", createSchema="
+        + createSchema
+        + '}';
+  }
+
+  public static final class IndexSettings {
+    private Integer numberOfShards = 1;
+    private Integer numberOfReplicas = 0;
+
+    public Integer getNumberOfShards() {
+      return numberOfShards;
+    }
+
+    public void setNumberOfShards(final Integer numberOfShards) {
+      this.numberOfShards = numberOfShards;
+    }
+
+    public Integer getNumberOfReplicas() {
+      return numberOfReplicas;
+    }
+
+    public void setNumberOfReplicas(final Integer numberOfReplicas) {
+      this.numberOfReplicas = numberOfReplicas;
+    }
+
+    @Override
+    public String toString() {
+      return "IndexSettings{"
+          + "numberOfShards="
+          + numberOfShards
+          + ", numberOfReplicas="
+          + numberOfReplicas
+          + '}';
+    }
+  }
+
+  public static final class RetentionConfiguration {
+    private boolean enabled = false;
+    private String minimumAge = "30d";
+    private String policyName;
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(final boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    public String getMinimumAge() {
+      return minimumAge;
+    }
+
+    public void setMinimumAge(final String minimumAge) {
+      this.minimumAge = minimumAge;
+    }
+
+    public String getPolicyName() {
+      return policyName;
+    }
+
+    public void setPolicyName(final String policyName) {
+      this.policyName = policyName;
+    }
+
+    @Override
+    public String toString() {
+      return "RetentionConfiguration{"
+          + "enabled="
+          + enabled
+          + ", minimumAge='"
+          + minimumAge
+          + '\''
+          + ", policyName='"
+          + policyName
+          + '\''
+          + '}';
+    }
   }
 
   public static class BulkConfiguration {

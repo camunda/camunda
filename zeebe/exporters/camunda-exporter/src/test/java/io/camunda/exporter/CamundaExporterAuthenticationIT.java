@@ -40,10 +40,10 @@ public class CamundaExporterAuthenticationIT {
 
   @BeforeEach
   void beforeEach() {
-    CONFIG.elasticsearch.getConnect().setUsername("elastic");
-    CONFIG.elasticsearch.getConnect().setPassword(ELASTIC_PASSWORD);
-    CONFIG.elasticsearch.getConnect().setUrl(CONTAINER.getHttpHostAddress());
-    CONFIG.elasticsearch.setCreateSchema(true);
+    CONFIG.getConnect().setUsername("elastic");
+    CONFIG.getConnect().setPassword(ELASTIC_PASSWORD);
+    CONFIG.getConnect().setUrl(CONTAINER.getHttpHostAddress());
+    CONFIG.setCreateSchema(true);
   }
 
   @Test
@@ -66,7 +66,7 @@ public class CamundaExporterAuthenticationIT {
   void shouldFailToAuthenticateForWrongCredentials() {
     // given
     final var exporter = new CamundaExporter();
-    CONFIG.elasticsearch.getConnect().setPassword("123");
+    CONFIG.getConnect().setPassword("123");
 
     final var context =
         new ExporterTestContext()

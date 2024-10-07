@@ -22,7 +22,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
 
   @Override
   public void init(final ExporterConfiguration configuration) {
-    operateIndexPrefix = configuration.elasticsearch.getIndexPrefix();
+    operateIndexPrefix = configuration.getConnect().getIndexPrefix();
   }
 
   @Override

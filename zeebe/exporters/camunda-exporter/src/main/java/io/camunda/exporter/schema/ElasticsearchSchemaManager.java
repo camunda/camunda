@@ -9,8 +9,8 @@ package io.camunda.exporter.schema;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.exporter.config.ElasticsearchProperties;
-import io.camunda.exporter.config.ElasticsearchProperties.IndexSettings;
+import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.exporter.schema.ElasticsearchEngineClient.MappingSource;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
@@ -28,17 +28,17 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   private final SearchEngineClient elasticsearchClient;
   private final Set<IndexDescriptor> indexDescriptors;
   private final Set<IndexTemplateDescriptor> indexTemplateDescriptors;
-  private final ElasticsearchProperties elasticsearchProperties;
+  private final ExporterConfiguration config;
 
   public ElasticsearchSchemaManager(
       final SearchEngineClient elasticsearchClient,
       final Set<IndexDescriptor> indexDescriptors,
       final Set<IndexTemplateDescriptor> indexTemplateDescriptors,
-      final ElasticsearchProperties elasticsearchProperties) {
+      final ExporterConfiguration config) {
     this.elasticsearchClient = elasticsearchClient;
     this.indexDescriptors = indexDescriptors;
     this.indexTemplateDescriptors = indexTemplateDescriptors;
-    this.elasticsearchProperties = elasticsearchProperties;
+    this.config = config;
   }
 
   @Override
@@ -47,7 +47,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
         elasticsearchClient.getMappings("*", MappingSource.INDEX_TEMPLATE).keySet();
     final var existingIndexNames =
         elasticsearchClient
-            .getMappings(elasticsearchProperties.getIndexPrefix() + "*", MappingSource.INDEX)
+            .getMappings(config.getConnect().getIndexPrefix() + "*", MappingSource.INDEX)
             .keySet();
     indexTemplateDescriptors.stream()
         .filter(descriptor -> !existingTemplateNames.contains(descriptor.getTemplateName()))
@@ -106,17 +106,16 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   private void createIndexTemplate(
       final IndexTemplateDescriptor templateDescriptor, final boolean create) {
     final var templateReplicas =
-        elasticsearchProperties
+        config
             .getReplicasByIndexName()
             .getOrDefault(
                 templateDescriptor.getIndexName(),
-                elasticsearchProperties.getDefaultSettings().getNumberOfReplicas());
+                config.getDefaultSettings().getNumberOfReplicas());
     final var templateShards =
-        elasticsearchProperties
+        config
             .getShardsByIndexName()
             .getOrDefault(
-                templateDescriptor.getIndexName(),
-                elasticsearchProperties.getDefaultSettings().getNumberOfShards());
+                templateDescriptor.getIndexName(), config.getDefaultSettings().getNumberOfShards());
 
     final var settings = new IndexSettings();
     settings.setNumberOfShards(templateShards);

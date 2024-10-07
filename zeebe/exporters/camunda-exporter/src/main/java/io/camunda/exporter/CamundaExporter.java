@@ -136,7 +136,7 @@ public class CamundaExporter implements Exporter {
       final SchemaManager schemaManager,
       final IndexSchemaValidator schemaValidator,
       final SearchEngineClient searchEngineClient) {
-    if (!configuration.elasticsearch.isCreateSchema()) {
+    if (!configuration.isCreateSchema()) {
       LOG.info(
           "Will not make any changes to indices and index templates as [createSchema] is false");
       return;
@@ -152,10 +152,10 @@ public class CamundaExporter implements Exporter {
     schemaManager.updateSchema(newIndexProperties);
     schemaManager.updateSchema(newIndexTemplateProperties);
 
-    if (configuration.elasticsearch.getRetention().isEnabled()) {
+    if (configuration.getRetention().isEnabled()) {
       searchEngineClient.putIndexLifeCyclePolicy(
-          configuration.elasticsearch.getRetention().getPolicyName(),
-          configuration.elasticsearch.getRetention().getMinimumAge());
+          configuration.getRetention().getPolicyName(),
+          configuration.getRetention().getMinimumAge());
     }
   }
 
@@ -163,7 +163,7 @@ public class CamundaExporter implements Exporter {
       final IndexSchemaValidator schemaValidator, final SearchEngineClient searchEngineClient) {
     final var currentIndices =
         searchEngineClient.getMappings(
-            configuration.elasticsearch.getIndexPrefix() + "*", MappingSource.INDEX);
+            configuration.getConnect().getIndexPrefix() + "*", MappingSource.INDEX);
 
     return schemaValidator.validateIndexMappings(currentIndices, provider.getIndexDescriptors());
   }
@@ -184,17 +184,17 @@ public class CamundaExporter implements Exporter {
         searchEngineClient,
         provider.getIndexDescriptors(),
         provider.getIndexTemplateDescriptors(),
-        configuration.elasticsearch);
+        configuration);
   }
 
   private ElasticsearchClient createClient() {
-    final var connector = new ElasticsearchConnector(configuration.elasticsearch.getConnect());
+    final var connector = new ElasticsearchConnector(configuration.getConnect());
     return connector.createClient();
   }
 
   private boolean shouldFlush() {
     // FIXME should compare against both batch size and memory limit
-    return writer.getBatchSize() >= configuration.bulk.getSize();
+    return writer.getBatchSize() >= configuration.getBulk().getSize();
   }
 
   private ExporterBatchWriter createBatchWriter() {
@@ -207,7 +207,7 @@ public class CamundaExporter implements Exporter {
 
   private void scheduleDelayedFlush() {
     controller.scheduleCancellableTask(
-        Duration.ofSeconds(configuration.bulk.getDelay()), this::flushAndReschedule);
+        Duration.ofSeconds(configuration.getBulk().getDelay()), this::flushAndReschedule);
   }
 
   private void flushAndReschedule() {
