@@ -36,18 +36,26 @@ public class ScaleUpProcessor implements TypedRecordProcessor<ScaleRecord> {
   }
 
   @Override
-  public void processRecord(final TypedRecord<ScaleRecord> record) {
+  public void processRecord(final TypedRecord<ScaleRecord> command) {
+    final var scaleUp = command.getValue();
+
     if (!routingState.isInitialized()) {
       final var reason =
           "Routing state is not initialized, partition scaling is probably disabled.";
-      rejectionWriter.appendRejection(record, RejectionType.INVALID_STATE, reason);
-      responseWriter.writeRejectionOnCommand(record, RejectionType.INVALID_STATE, reason);
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, reason);
+      return;
+    }
+
+    if (scaleUp.desiredPartitionCount() < scaleUp.currentPartitionCount()) {
+      final var reason = "Desired partition count must be greater than current partition count";
+      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_ARGUMENT, reason);
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, reason);
       return;
     }
 
     final var scalingKey = keyGenerator.nextKey();
-    responseWriter.writeEventOnCommand(
-        scalingKey, ScaleIntent.SCALING_UP, record.getValue(), record);
+    responseWriter.writeEventOnCommand(scalingKey, ScaleIntent.SCALING_UP, scaleUp, command);
 
     stateWriter.appendFollowUpEvent(scalingKey, ScaleIntent.SCALED_UP, new ScaleRecord());
   }
