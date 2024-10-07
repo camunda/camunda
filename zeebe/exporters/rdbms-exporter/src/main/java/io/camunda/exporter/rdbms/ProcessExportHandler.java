@@ -7,8 +7,8 @@
  */
 package io.camunda.exporter.rdbms;
 
-import io.camunda.db.rdbms.domain.ProcessDefinitionModel;
-import io.camunda.db.rdbms.service.ProcessRdbmsService;
+import io.camunda.db.rdbms.domain.ProcessDefinitionDbModel;
+import io.camunda.db.rdbms.service.ProcessDefinitionRdbmsService;
 import io.camunda.operate.zeebeimport.util.XMLUtil;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.zeebe.protocol.Protocol;
@@ -22,10 +22,10 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
 
   private static final Logger LOG = LoggerFactory.getLogger(ProcessExportHandler.class);
 
-  private final ProcessRdbmsService processRdbmsService;
+  private final ProcessDefinitionRdbmsService processDefinitionRdbmsService;
 
-  public ProcessExportHandler(final ProcessRdbmsService processRdbmsService) {
-    this.processRdbmsService = processRdbmsService;
+  public ProcessExportHandler(final ProcessDefinitionRdbmsService processDefinitionRdbmsService) {
+    this.processDefinitionRdbmsService = processDefinitionRdbmsService;
   }
 
   @Override
@@ -40,10 +40,10 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
   @Override
   public void export(final Record<Process> record) {
     final Process value = record.getValue();
-    processRdbmsService.save(map(value));
+    processDefinitionRdbmsService.save(map(value));
   }
 
-  private ProcessDefinitionModel map(final Process value) {
+  private ProcessDefinitionDbModel map(final Process value) {
     String processName = null;
     try {
       final var xml =
@@ -54,7 +54,7 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
       LOG.debug("Unable to parse XML diagram", e);
     }
 
-    return new ProcessDefinitionModel(
+    return new ProcessDefinitionDbModel(
         value.getProcessDefinitionKey(),
         value.getBpmnProcessId(),
         processName,

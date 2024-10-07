@@ -11,19 +11,24 @@
 <mapper namespace="io.camunda.db.rdbms.sql.ProcessInstanceMapper">
   <select id="findOne" parameterType="java.lang.Long"
     resultMap="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchResultMap">
-    SELECT PROCESS_INSTANCE_KEY,
-           BPMN_PROCESS_ID,
-           PROCESS_DEFINITION_KEY,
-           STATE,
-           START_DATE,
-           END_DATE,
-           TENANT_ID,
-           PARENT_PROCESS_INSTANCE_KEY,
-           PARENT_ELEMENT_INSTANCE_KEY,
-           ELEMENT_ID,
-           VERSION
-    FROM PROCESS_INSTANCE
-    LEFT JOIN PROCESS_DEFINITION pd ON (pi.PROCESS_DEFINITION_KEY = pd.PROCESS_DEFINITION_KEY)
+    SELECT pi.PROCESS_INSTANCE_KEY,
+           pi.BPMN_PROCESS_ID,
+           pi.PROCESS_DEFINITION_KEY,
+           pi.STATE,
+           pi.START_DATE,
+           pi.END_DATE,
+           pi.TENANT_ID,
+           NULL           as TREE_PATH,
+           NULL           as ROOT_PROCESS_INSTANCE_KEY,
+           NULL           as INCIDENT,
+           pi.PARENT_PROCESS_INSTANCE_KEY,
+           pi.PARENT_ELEMENT_INSTANCE_KEY,
+           pi.ELEMENT_ID,
+           pi.VERSION,
+           pd.NAME        AS PROCESS_DEFINITION_NAME,
+           pd.VERSION_TAG AS PROCESS_DEFINITION_VERSION_TAG
+    FROM PROCESS_INSTANCE pi
+           LEFT JOIN PROCESS_DEFINITION pd ON (pi.PROCESS_DEFINITION_KEY = pd.PROCESS_DEFINITION_KEY)
     WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
   </select>
 
@@ -37,22 +42,23 @@
 
   <!-- default search statement for databases supporting LIMIT/OFFSET-->
   <select id="search" parameterType="io.camunda.db.rdbms.domain.ProcessInstanceDbFilter" resultMap="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchResultMap">
-    SELECT pi.PROCESS_INSTANCE_KEY,
-    pi.BPMN_PROCESS_ID,
-    pi.PROCESS_DEFINITION_KEY,
-    pi.STATE,
-    pi.START_DATE,
-    pi.END_DATE,
-    pi.TENANT_ID,
-    NULL as TREE_PATH,
-    NULL as ROOT_PROCESS_INSTANCE_KEY,
-    NULL as INCIDENT,
-    pi.PARENT_PROCESS_INSTANCE_KEY,
-    pi.PARENT_ELEMENT_INSTANCE_KEY,
-    pi.ELEMENT_ID,
-    pi.VERSION,
-    pd.NAME AS PROCESS_DEFINITION_NAME,
-    pd.VERSION_TAG AS PROCESS_DEFINITION_VERSION_TAG
+    SELECT
+      pi.PROCESS_INSTANCE_KEY,
+      pi.BPMN_PROCESS_ID,
+      pi.PROCESS_DEFINITION_KEY,
+      pi.STATE,
+      pi.START_DATE,
+      pi.END_DATE,
+      pi.TENANT_ID,
+      NULL as TREE_PATH,
+      NULL as ROOT_PROCESS_INSTANCE_KEY,
+      NULL as INCIDENT,
+      pi.PARENT_PROCESS_INSTANCE_KEY,
+      pi.PARENT_ELEMENT_INSTANCE_KEY,
+      pi.ELEMENT_ID,
+      pi.VERSION,
+      pd.NAME AS PROCESS_DEFINITION_NAME,
+      pd.VERSION_TAG AS PROCESS_DEFINITION_VERSION_TAG
     FROM PROCESS_INSTANCE pi
         LEFT JOIN PROCESS_DEFINITION pd ON (pi.PROCESS_DEFINITION_KEY = pd.PROCESS_DEFINITION_KEY)
     <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter"/>
@@ -70,6 +76,10 @@
     <if test="filter.processInstanceKeys != null and !filter.processInstanceKeys.isEmpty()">
       AND PROCESS_INSTANCE_KEY IN
       <foreach collection="filter.processInstanceKeys" item="value" open="(" separator=", " close=")">#{value}</foreach>
+    </if>
+    <if test="filter.processDefinitionIds != null and !filter.processDefinitionIds.isEmpty()">
+      AND pi.BPMN_PROCESS_ID IN
+      <foreach collection="filter.processDefinitionIds" item="value" open="(" separator=", " close=")">#{value}</foreach>
     </if>
     <if test="filter.processDefinitionKeys != null and !filter.processDefinitionKeys.isEmpty()">
       AND pi.PROCESS_DEFINITION_KEY IN
@@ -107,10 +117,6 @@
     </if>
 
     <!-- process definition filters -->
-    <if test="filter.processDefinitionIds != null and !filter.processDefinitionIds.isEmpty()">
-      AND pd.BPMN_PROCESS_ID IN
-      <foreach collection="filter.processDefinitionIds" item="value" open="(" separator=", " close=")">#{value}</foreach>
-    </if>
     <if test="filter.processDefinitionNames != null and !filter.processDefinitionNames.isEmpty()">
       AND pd.NAME IN
       <foreach collection="filter.processDefinitionNames" item="value" open="(" separator=", " close=")">#{value}</foreach>
@@ -137,8 +143,8 @@
       <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="PARENT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="PARENT_ELEMENT_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="TREE_PATH" javaType="java.lang.String"/>
-      <arg column="START_DATE" javaType="java.lang.String"/>
+      <arg column="TREE_PATH" javaType="java.lang.String" typeHandler="io.camunda.db.rdbms.sql.typehandler.OffsetDateTimeToStringTypeHandler" />
+      <arg column="START_DATE" javaType="java.lang.String" typeHandler="io.camunda.db.rdbms.sql.typehandler.OffsetDateTimeToStringTypeHandler" />
       <arg column="END_DATE" javaType="java.lang.String"/>
       <arg column="STATE" javaType="io.camunda.search.entities.ProcessInstanceEntity$ProcessInstanceState"/>
       <arg column="INCIDENT" javaType="java.lang.Boolean"/>
