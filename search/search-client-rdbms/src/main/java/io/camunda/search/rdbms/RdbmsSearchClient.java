@@ -9,7 +9,6 @@ package io.camunda.search.rdbms;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.domain.ProcessInstanceDbFilter;
-import io.camunda.search.ProcessDefinitionSearchClient;
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
 import io.camunda.search.clients.DecisionInstanceSearchClient;
@@ -17,6 +16,7 @@ import io.camunda.search.clients.DecisionRequirementSearchClient;
 import io.camunda.search.clients.FlowNodeInstanceSearchClient;
 import io.camunda.search.clients.FormSearchClient;
 import io.camunda.search.clients.IncidentSearchClient;
+import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.clients.UserTaskSearchClient;
@@ -91,10 +91,6 @@ public class RdbmsSearchClient
         searchResult.total(),
         searchResult.hits(),
         null);
-  }
-
-  @Override
-  public void close() throws Exception {
   }
 
   @Override
