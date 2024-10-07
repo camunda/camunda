@@ -43,6 +43,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -106,6 +107,11 @@ import org.opensearch.client.opensearch.indices.GetMappingResponse;
 import org.opensearch.client.opensearch.indices.RolloverRequest;
 import org.opensearch.client.opensearch.indices.RolloverResponse;
 import org.opensearch.client.opensearch.indices.rollover.RolloverConditions;
+import org.opensearch.client.opensearch.snapshot.CreateSnapshotRequest;
+import org.opensearch.client.opensearch.snapshot.CreateSnapshotResponse;
+import org.opensearch.client.opensearch.snapshot.GetRepositoryRequest;
+import org.opensearch.client.opensearch.snapshot.GetSnapshotRequest;
+import org.opensearch.client.opensearch.snapshot.GetSnapshotResponse;
 import org.opensearch.client.opensearch.tasks.GetTasksResponse;
 import org.opensearch.client.opensearch.tasks.ListRequest;
 import org.opensearch.client.opensearch.tasks.ListResponse;
@@ -1025,5 +1031,23 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
             format("Error while trying to read Opensearch task (ID: %s) progress!", taskId), e);
       }
     }
+  }
+
+  public void verifyRepositoryExists(final GetRepositoryRequest getRepositoriesRequest)
+      throws IOException, OpenSearchException {
+    openSearchClient.snapshot().getRepository(getRepositoriesRequest);
+  }
+
+  public GetSnapshotResponse getSnapshots(final GetSnapshotRequest getSnapshotRequest)
+      throws IOException {
+    return openSearchClient.getSnapshots(getSnapshotRequest);
+  }
+
+  public CompletableFuture<CreateSnapshotResponse> triggerSnapshotAsync(
+      final CreateSnapshotRequest createSnapshotRequest) {
+    return safe(
+        () -> openSearchAsyncClient.snapshot().create(createSnapshotRequest),
+        e -> "Failed to triger snapshot creation!",
+        log);
   }
 }
