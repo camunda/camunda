@@ -265,10 +265,10 @@ public final class SearchQueryRequestMapper {
     ofNullable(filter.getIsTruncated()).ifPresent(builder::isTruncated);
 
     if (filter.getName() != null || filter.getValue() != null) {
-      final VariableValueFilter VariableValueFilter =
+      final VariableValueFilter variableValueFilter =
           new VariableValueFilter.Builder().name(filter.getName()).eq(filter.getValue()).build();
 
-      builder.variable(VariableValueFilter);
+      builder.variable(variableValueFilter);
     }
 
     return builder.build();

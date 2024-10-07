@@ -8,7 +8,6 @@
 package io.camunda.search.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
-import static io.camunda.search.clients.query.SearchQueryBuilders.exists;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
@@ -42,14 +41,13 @@ public class VariableFilterTransformer implements FilterTransformer<VariableFilt
     final var variableKeyQuery = getVariableKeyQuery(filter.variableKeys());
     final var tenantIdQuery = getTenantIdQuery(filter.tenantIds());
     final var isTruncatedQuery = getIsTruncatedQuery(filter.isTruncated());
-    final SearchQuery typeQuery = exists("scopeKey"); // Focus only in variables
+
     return and(
         variablesQuery,
         scopeKeyQuery,
         processInstanceKeyQuery,
         variableKeyQuery,
         tenantIdQuery,
-        typeQuery,
         isTruncatedQuery);
   }
 
