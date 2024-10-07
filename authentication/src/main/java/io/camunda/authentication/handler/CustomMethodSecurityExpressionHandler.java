@@ -10,19 +10,12 @@ package io.camunda.authentication.handler;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import org.aopalliance.intercept.MethodInvocation;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionOperations;
 import org.springframework.security.authentication.AuthenticationTrustResolver;
 import org.springframework.security.authentication.AuthenticationTrustResolverImpl;
 import org.springframework.security.core.Authentication;
-import org.springframework.stereotype.Component;
 
-@Component
-@ConditionalOnProperty(
-    name = {"zeebe.broker.gateway.enable", "camunda.rest.enabled"},
-    havingValue = "true",
-    matchIfMissing = true)
 public class CustomMethodSecurityExpressionHandler extends DefaultMethodSecurityExpressionHandler {
   private final AuthenticationTrustResolver trustResolver = new AuthenticationTrustResolverImpl();
   private final AuthorizationServices<AuthorizationRecord> authorizationServices;
