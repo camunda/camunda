@@ -20,6 +20,7 @@ import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.OperationEntity;
+import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceReference;
 import io.camunda.search.entities.UserEntity;
@@ -44,6 +45,8 @@ import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.OperationItem;
 import io.camunda.zeebe.gateway.protocol.rest.ProblemDetail;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionItem;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceItem;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceReferenceItem;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResponse;
@@ -62,6 +65,17 @@ import java.util.stream.Collectors;
 public final class SearchQueryResponseMapper {
 
   private SearchQueryResponseMapper() {}
+
+  public static ProcessDefinitionSearchQueryResponse toProcessDefinitionSearchQueryResponse(
+      final SearchQueryResult<ProcessDefinitionEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new ProcessDefinitionSearchQueryResponse()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toProcessDefinitions)
+                .orElseGet(Collections::emptyList));
+  }
 
   public static ProcessInstanceSearchQueryResponse toProcessInstanceSearchQueryResponse(
       final SearchQueryResult<ProcessInstanceEntity> result) {
@@ -168,6 +182,22 @@ public final class SearchQueryResponseMapper {
         .totalItems(result.total())
         .lastSortValues(
             ofNullable(result.sortValues()).map(Arrays::asList).orElseGet(Collections::emptyList));
+  }
+
+  private static List<ProcessDefinitionItem> toProcessDefinitions(
+      final List<ProcessDefinitionEntity> processDefinitions) {
+    return processDefinitions.stream().map(SearchQueryResponseMapper::toProcessDefinition).toList();
+  }
+
+  public static ProcessDefinitionItem toProcessDefinition(final ProcessDefinitionEntity entity) {
+    return new ProcessDefinitionItem()
+        .processDefinitionKey(entity.key())
+        .name(entity.name())
+        .resourceName(entity.resourceName())
+        .version(entity.version())
+        .versionTag(entity.versionTag())
+        .processDefinitionId(entity.bpmnProcessId())
+        .tenantId(entity.tenantId());
   }
 
   private static List<ProcessInstanceItem> toProcessInstances(

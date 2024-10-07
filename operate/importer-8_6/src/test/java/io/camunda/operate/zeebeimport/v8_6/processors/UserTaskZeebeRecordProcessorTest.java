@@ -15,7 +15,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.store.BatchRequest;
-import io.camunda.operate.zeebeimport.processors.UserTaskZeebeRecordProcessor;
 import io.camunda.webapps.schema.descriptors.operate.template.UserTaskTemplate;
 import io.camunda.webapps.schema.entities.operate.UserTaskEntity;
 import io.camunda.zeebe.protocol.record.Record;
