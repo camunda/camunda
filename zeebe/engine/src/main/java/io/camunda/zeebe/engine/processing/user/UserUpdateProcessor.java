@@ -46,7 +46,8 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
 
   @Override
   public void processNewCommand(final TypedRecord<UserRecord> command) {
-    final var persistedUser = userState.getUser(command.getValue().getUserKey());
+    final long userKey = command.getValue().getUserKey();
+    final var persistedUser = userState.getUser(userKey);
 
     if (persistedUser.isEmpty()) {
       final var rejectionMessage =
@@ -60,10 +61,10 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
 
     final var updatedUser = overlayUser(persistedUser.get(), command.getValue());
 
-    final long key = keyGenerator.nextKey();
-    stateWriter.appendFollowUpEvent(key, UserIntent.UPDATED, updatedUser);
-    responseWriter.writeEventOnCommand(key, UserIntent.UPDATED, updatedUser, command);
+    stateWriter.appendFollowUpEvent(userKey, UserIntent.UPDATED, updatedUser);
+    responseWriter.writeEventOnCommand(userKey, UserIntent.UPDATED, updatedUser, command);
 
+    final long key = keyGenerator.nextKey();
     distributionBehavior
         .withKey(key)
         .inQueue(DistributionQueue.IDENTITY.getQueueId())
@@ -72,7 +73,8 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
 
   @Override
   public void processDistributedCommand(final TypedRecord<UserRecord> command) {
-    stateWriter.appendFollowUpEvent(command.getKey(), UserIntent.UPDATED, command.getValue());
+    stateWriter.appendFollowUpEvent(
+        command.getValue().getUserKey(), UserIntent.UPDATED, command.getValue());
 
     distributionBehavior.acknowledgeCommand(command);
   }
