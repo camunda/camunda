@@ -10,7 +10,7 @@ package io.camunda.db.rdbms;
 import io.camunda.db.rdbms.queue.ExecutionQueue;
 import io.camunda.db.rdbms.service.ExporterPositionRdbmsService;
 import io.camunda.db.rdbms.service.ProcessInstanceRdbmsService;
-import io.camunda.db.rdbms.service.ProcessRdbmsService;
+import io.camunda.db.rdbms.service.ProcessDefinitionRdbmsService;
 import io.camunda.db.rdbms.service.VariableRdbmsService;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.Properties;
 import javax.sql.DataSource;
 import liquibase.integration.spring.MultiTenantSpringLiquibase;
-import org.apache.commons.logging.Log;
 import org.apache.ibatis.mapping.VendorDatabaseIdProvider;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.type.JdbcType;
@@ -31,7 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 @Configuration
@@ -129,9 +127,9 @@ public class RdbmsConfiguration {
   }
 
   @Bean
-  public ProcessRdbmsService processDeploymentRdbmsService(
+  public ProcessDefinitionRdbmsService processDeploymentRdbmsService(
       final ExecutionQueue executionQueue, final ProcessDefinitionMapper processDefinitionMapper) {
-    return new ProcessRdbmsService(executionQueue, processDefinitionMapper);
+    return new ProcessDefinitionRdbmsService(executionQueue, processDefinitionMapper);
   }
 
   @Bean
@@ -151,12 +149,12 @@ public class RdbmsConfiguration {
       final ExecutionQueue executionQueue,
       final ExporterPositionRdbmsService exporterPositionRdbmsService,
       final VariableRdbmsService variableRdbmsService,
-      final ProcessRdbmsService processRdbmsService,
+      final ProcessDefinitionRdbmsService processDefinitionRdbmsService,
       final ProcessInstanceRdbmsService processInstanceRdbmsService) {
     return new RdbmsService(
         executionQueue,
         exporterPositionRdbmsService,
-        processRdbmsService,
+        processDefinitionRdbmsService,
         processInstanceRdbmsService,
         variableRdbmsService);
   }
