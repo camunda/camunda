@@ -38,10 +38,10 @@ public class ScaleUpProcessor implements TypedRecordProcessor<ScaleRecord> {
   @Override
   public void processRecord(final TypedRecord<ScaleRecord> record) {
     if (!routingState.isInitialized()) {
-      rejectionWriter.appendRejection(
-          record,
-          RejectionType.INVALID_STATE,
-          "Routing state is not initialized, partition scaling is probably disabled.");
+      final var reason =
+          "Routing state is not initialized, partition scaling is probably disabled.";
+      rejectionWriter.appendRejection(record, RejectionType.INVALID_STATE, reason);
+      responseWriter.writeRejectionOnCommand(record, RejectionType.INVALID_STATE, reason);
       return;
     }
 
