@@ -13,6 +13,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.USER;
 import co.elastic.clients.util.VisibleForTesting;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.adapters.ElasticsearchAdapter;
+import io.camunda.exporter.adapters.OpensearchAdapter;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.ElasticsearchExporterException;
@@ -73,6 +74,7 @@ public class CamundaExporter implements Exporter {
         clientAdapter = new ElasticsearchAdapter();
         break;
       case OPENSEARCH:
+        clientAdapter = new OpensearchAdapter();
       default:
         throw new ExporterException(
             "Unsupported database type: " + configuration.getConnect().getType());
