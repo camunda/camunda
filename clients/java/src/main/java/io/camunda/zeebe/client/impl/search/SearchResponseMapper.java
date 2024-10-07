@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.search;
 
+import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.search.response.DecisionDefinition;
 import io.camunda.zeebe.client.api.search.response.DecisionInstance;
 import io.camunda.zeebe.client.api.search.response.DecisionRequirements;
@@ -117,10 +118,11 @@ public final class SearchResponseMapper {
   }
 
   public static SearchQueryResponse<DecisionInstance> toDecisionInstanceSearchResponse(
-      final DecisionInstanceSearchQueryResponse response) {
+      final DecisionInstanceSearchQueryResponse response, final JsonMapper jsonMapper) {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<DecisionInstance> instances =
-        toSearchResponseInstances(response.getItems(), DecisionInstanceImpl::new);
+        toSearchResponseInstances(
+            response.getItems(), item -> new DecisionInstanceImpl(item, jsonMapper));
     return new SearchQueryResponseImpl<>(instances, page);
   }
 

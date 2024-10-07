@@ -98,7 +98,7 @@ public class ElasticsearchProperties {
 
   public static final class RetentionConfiguration {
     private boolean enabled = false;
-    private String mininumAge = "30d";
+    private String minimumAge = "30d";
     private String policyName;
 
     public boolean isEnabled() {
@@ -109,12 +109,12 @@ public class ElasticsearchProperties {
       this.enabled = enabled;
     }
 
-    public String getMininumAge() {
-      return mininumAge;
+    public String getMinimumAge() {
+      return minimumAge;
     }
 
-    public void setMininumAge(final String mininumAge) {
-      this.mininumAge = mininumAge;
+    public void setMinimumAge(final String minimumAge) {
+      this.minimumAge = minimumAge;
     }
 
     public String getPolicyName() {

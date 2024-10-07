@@ -15,11 +15,12 @@ import io.camunda.zeebe.logstreams.impl.log.LoggedEventImpl;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.logstreams.util.LogStreamReaderRule;
 import io.camunda.zeebe.logstreams.util.LogStreamRule;
-import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
 import io.camunda.zeebe.logstreams.util.TestEntry;
+import io.camunda.zeebe.logstreams.util.TestLogStream;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import org.agrona.DirectBuffer;
@@ -40,7 +41,7 @@ public final class LogStreamWriterTest {
 
   @Before
   public void setUp() {
-    final SynchronousLogStream logStream = logStreamRule.getLogStream();
+    final TestLogStream logStream = logStreamRule.getLogStream();
     writer = logStream.newLogStreamWriter();
   }
 
@@ -134,7 +135,7 @@ public final class LogStreamWriterTest {
     final long firstPosition = tryWrite(TestEntry.ofKey(123L));
 
     // when
-    final SynchronousLogStream logStream = logStreamRule.getLogStream();
+    final TestLogStream logStream = logStreamRule.getLogStream();
     writer = logStream.newLogStreamWriter();
     final long secondPosition = tryWrite(TestEntry.ofKey(124L));
 
@@ -153,7 +154,7 @@ public final class LogStreamWriterTest {
     // when
     writer = null;
 
-    final SynchronousLogStream logStream = logStreamRule.getLogStream();
+    final TestLogStream logStream = logStreamRule.getLogStream();
     writer = logStream.newLogStreamWriter();
     final long secondPosition = tryWrite(TestEntry.ofKey(124L));
 
@@ -226,7 +227,7 @@ public final class LogStreamWriterTest {
   @Test
   public void shouldWriteEventWithTimestampFromClock() {
     // given
-    logStreamRule.getClock().setCurrentTime(123456789L);
+    logStreamRule.getClock().delegate = () -> Instant.ofEpochMilli(123456789L);
     final long position = tryWrite(TestEntry.ofDefaults());
 
     // when

@@ -44,10 +44,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   @Override
   public void initialiseResources() {
     final var existingTemplateNames =
-        elasticsearchClient
-            .getMappings(
-                elasticsearchProperties.getIndexPrefix() + "*", MappingSource.INDEX_TEMPLATE)
-            .keySet();
+        elasticsearchClient.getMappings("*", MappingSource.INDEX_TEMPLATE).keySet();
     final var existingIndexNames =
         elasticsearchClient
             .getMappings(elasticsearchProperties.getIndexPrefix() + "*", MappingSource.INDEX)
@@ -83,9 +80,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   @SuppressWarnings("unchecked")
   public IndexMapping readIndex(final IndexDescriptor indexDescriptor) {
     try (final var mappingsStream =
-        Thread.currentThread()
-            .getContextClassLoader()
-            .getResourceAsStream(indexDescriptor.getMappingsClasspathFilename())) {
+        getClass().getResourceAsStream(indexDescriptor.getMappingsClasspathFilename())) {
       final var nestedType = new TypeReference<Map<String, Map<String, Object>>>() {};
       final Map<String, Object> mappings =
           MAPPER.readValue(mappingsStream, nestedType).get("mappings");

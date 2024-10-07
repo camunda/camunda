@@ -36,6 +36,7 @@ import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.signal.SignalBroadcastProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.AuthorizableDistributionProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContext;
@@ -285,15 +286,20 @@ public final class EngineProcessors {
     // on deployment partition CREATE Command is received and processed
     // it will cause a distribution to other partitions
     final var processor =
-        new DeploymentCreateProcessor(
+        new AuthorizableDistributionProcessor<>(
             processingState,
-            bpmnBehaviors,
             writers,
-            keyGenerator,
-            featureFlags,
-            distributionBehavior,
             config,
-            clock);
+            new DeploymentCreateProcessor(
+                processingState,
+                bpmnBehaviors,
+                writers,
+                keyGenerator,
+                featureFlags,
+                distributionBehavior,
+                config,
+                clock));
+
     typedRecordProcessors.onCommand(ValueType.DEPLOYMENT, CREATE, processor);
 
     // periodically retries deployment distribution

@@ -15,6 +15,10 @@
  */
 package io.camunda.zeebe.client.api.search.response;
 
+import io.camunda.zeebe.client.api.response.EvaluatedDecisionInput;
+import io.camunda.zeebe.client.api.response.MatchedDecisionRule;
+import java.util.List;
+
 public interface DecisionInstance {
 
   /**
@@ -76,4 +80,19 @@ public interface DecisionInstance {
    * @return the tenant id of the decision instance
    */
   String getTenantId();
+
+  /**
+   * @return the decision inputs that were evaluated within this decision instance
+   */
+  List<EvaluatedDecisionInput> getEvaluatedInputs();
+
+  /**
+   * @return the decision rules that matched within this decision instance
+   */
+  List<MatchedDecisionRule> getMatchedRules();
+
+  /**
+   * @return the entity encoded as JSON
+   */
+  String toJson();
 }

@@ -43,6 +43,7 @@ import io.camunda.zeebe.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.fetch.DecisionDefinitionGetRequest;
 import io.camunda.zeebe.client.api.fetch.DecisionDefinitionGetXmlRequest;
+import io.camunda.zeebe.client.api.fetch.DecisionInstanceGetRequest;
 import io.camunda.zeebe.client.api.fetch.DecisionRequirementsGetRequest;
 import io.camunda.zeebe.client.api.fetch.DecisionRequirementsGetXmlRequest;
 import io.camunda.zeebe.client.api.fetch.ProcessInstanceGetRequest;
@@ -920,10 +921,33 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * warning is removed, anything described below may not yet have taken effect, and the interface
    * and its description are subject to change.</strong>
    *
-   * @return
+   * @return a builder for the decision instance query
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   DecisionInstanceQuery newDecisionInstanceQuery();
+
+  /**
+   * Retrieves a decision instance by key.
+   *
+   * <pre>
+   * long decisionInstanceKey = ...;
+   *
+   * zeebeClient
+   * .newDecisionInstanceGetQuery(decisionInstanceKey)
+   * .send();
+   * </pre>
+   *
+   * <p><strong>Experimental: This method is under development, and as such using it may have no
+   * effect on the client builder when called. The respective API on compatible clusters is not
+   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
+   * warning is removed, anything described below may not yet have taken effect, and the interface
+   * and its description are subject to change.</strong>
+   *
+   * @param decisionInstanceKey
+   * @return a builder for the request to get a decision instance
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
+  DecisionInstanceGetRequest newDecisionInstanceGetRequest(long decisionInstanceKey);
 
   /*
    * Executes a search request to query decision definitions.

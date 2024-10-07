@@ -39,6 +39,13 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
       {
           "items": [
               {
+                  "processDefinitionKey": 1,
+                  "name": "Complex process",
+                  "processDefinitionId": "complexProcess",
+                  "resourceName": "complexProcess.bpmn",
+                  "version": 5,
+                  "versionTag": "alpha",
+                  "tenantId": "<default>"
               }
           ],
           "page": {

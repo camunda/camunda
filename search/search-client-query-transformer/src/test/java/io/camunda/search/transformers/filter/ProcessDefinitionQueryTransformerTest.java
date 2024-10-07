@@ -52,7 +52,7 @@ public final class ProcessDefinitionQueryTransformerTest extends AbstractTransfo
   }
 
   @Test
-  public void shouldQueryById() {
+  public void shouldQueryByProcessDefinitionId() {
     final var filter =
         FilterBuilders.processDefinition(f -> f.processDefinitionIds("complexProcess"));
 

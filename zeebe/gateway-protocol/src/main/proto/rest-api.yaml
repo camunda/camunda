@@ -1482,6 +1482,59 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
 
+  /decision-instances/{decisionInstanceKey}:
+    get:
+      tags:
+        - Decision instance
+      summary: Get decision instance by key (alpha)
+      description: |
+        Returns a decision instance.
+
+        :::note
+        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
+      parameters:
+        - name: decisionInstanceKey
+          in: path
+          required: true
+          description: The assigned key of the decision instance, which acts as a unique identifier for this decision instance.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: >
+            The decision instance is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DecisionInstanceGetQueryResponse"
+        "400":
+          description: >
+            The decision instance request failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: >
+            The decision instance with the given key was not found.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+
 
   /decision-definitions/evaluation:
     post:
@@ -2410,7 +2463,7 @@ components:
           description: Version tag of this process definition.
           type: string
         processDefinitionId:
-          description: BPMN process id of this process definition.
+          description:  Process defintion id of this process definition.
           type: string
         tenantId:
           description: Tenant id of this process definition.
@@ -2445,7 +2498,7 @@ components:
           description: Version tag of this process definition.
           type: string
         processDefinitionId:
-          description: Id of this process definition.
+          description: Process definition id of this process definition.
           type: string
         tenantId:
           description: Tenant id of this process definition.
@@ -3956,6 +4009,24 @@ components:
         tenantId:
           type: string
           description: The tenant ID of the decision instance.
+
+    DecisionInstanceGetQueryResponse:
+      allOf:
+        - $ref: '#/components/schemas/DecisionInstanceItem'
+        - type: object
+          properties:
+            evaluatedInputs:
+              type: array
+              items:
+                $ref: "#/components/schemas/EvaluatedDecisionInputItem"
+              description: |
+                The evaluated inputs of the decision instance.
+            matchedRules:
+              type: array
+              items:
+                $ref: "#/components/schemas/MatchedDecisionRuleItem"
+              description: |
+                The matched rules of the decision instance.
 
     DecisionDefinitionTypeEnum:
       enum:
