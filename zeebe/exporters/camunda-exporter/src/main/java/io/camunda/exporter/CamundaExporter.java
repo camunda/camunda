@@ -13,7 +13,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.USER;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.util.VisibleForTesting;
-import io.camunda.exporter.config.ElasticsearchExporterConfiguration;
+import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.AuthorizationRecordValueExportHandler;
@@ -49,7 +49,7 @@ public class CamundaExporter implements Exporter {
   private static final Logger LOG = LoggerFactory.getLogger(CamundaExporter.class);
 
   private Controller controller;
-  private ElasticsearchExporterConfiguration configuration;
+  private ExporterConfiguration configuration;
   private ElasticsearchClient client;
   private ExporterBatchWriter writer;
   private long lastPosition = -1;
@@ -67,8 +67,7 @@ public class CamundaExporter implements Exporter {
 
   @Override
   public void configure(final Context context) {
-    configuration =
-        context.getConfiguration().instantiate(ElasticsearchExporterConfiguration.class);
+    configuration = context.getConfiguration().instantiate(ExporterConfiguration.class);
     provider.init(configuration);
     // TODO validate configuration
     context.setFilter(new ElasticsearchRecordFilter());

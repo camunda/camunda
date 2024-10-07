@@ -25,7 +25,7 @@ import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.api.model.Ports;
-import io.camunda.exporter.config.ElasticsearchExporterConfiguration;
+import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.entities.AuthorizationEntity;
 import io.camunda.exporter.entities.UserEntity;
 import io.camunda.exporter.exceptions.ElasticsearchExporterException;
@@ -76,8 +76,7 @@ final class CamundaExporterIT {
   @Container
   private static final ElasticsearchContainer CONTAINER = TestSupport.createDefaultContainer();
 
-  private final ElasticsearchExporterConfiguration config =
-      new ElasticsearchExporterConfiguration();
+  private final ExporterConfiguration config = new ExporterConfiguration();
   private final ExporterTestController controller = new ExporterTestController();
   private final ProtocolFactory factory = new ProtocolFactory();
   private IndexDescriptor index;

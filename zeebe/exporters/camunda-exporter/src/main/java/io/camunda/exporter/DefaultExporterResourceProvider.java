@@ -7,7 +7,7 @@
  */
 package io.camunda.exporter;
 
-import io.camunda.exporter.config.ElasticsearchExporterConfiguration;
+import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.util.Set;
@@ -21,7 +21,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   private String operateIndexPrefix;
 
   @Override
-  public void init(final ElasticsearchExporterConfiguration configuration) {
+  public void init(final ExporterConfiguration configuration) {
     operateIndexPrefix = configuration.elasticsearch.getIndexPrefix();
   }
 

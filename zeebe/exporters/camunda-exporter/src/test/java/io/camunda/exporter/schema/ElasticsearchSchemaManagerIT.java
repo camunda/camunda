@@ -12,8 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import io.camunda.exporter.config.ElasticsearchExporterConfiguration;
 import io.camunda.exporter.config.ElasticsearchProperties;
+import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.utils.TestSupport;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
@@ -40,7 +40,7 @@ public class ElasticsearchSchemaManagerIT {
   @BeforeAll
   public static void init() {
     // Create the low-level client
-    final var config = new ElasticsearchExporterConfiguration();
+    final var config = new ExporterConfiguration();
     config.elasticsearch.getConnect().setUrl(CONTAINER.getHttpHostAddress());
     elsClient = new ElasticsearchConnector(config.elasticsearch.getConnect()).createClient();
 

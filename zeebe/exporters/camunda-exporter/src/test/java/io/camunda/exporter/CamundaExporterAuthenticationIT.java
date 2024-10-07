@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
-import io.camunda.exporter.config.ElasticsearchExporterConfiguration;
+import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.utils.TestSupport;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
@@ -27,8 +27,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 public class CamundaExporterAuthenticationIT {
 
   private static final String ELASTIC_PASSWORD = "PASSWORD";
-  private static final ElasticsearchExporterConfiguration CONFIG =
-      new ElasticsearchExporterConfiguration();
+  private static final ExporterConfiguration CONFIG = new ExporterConfiguration();
 
   @Container
   private static final ElasticsearchContainer CONTAINER =
