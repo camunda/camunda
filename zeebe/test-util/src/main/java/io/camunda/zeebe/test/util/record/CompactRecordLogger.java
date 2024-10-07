@@ -48,6 +48,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordVa
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
@@ -152,6 +153,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.MESSAGE_CORRELATION, this::summarizeMessageCorrelation);
     valueLoggers.put(ValueType.CLOCK, this::summarizeClock);
     valueLoggers.put(ValueType.ROLE, this::summarizeRole);
+    valueLoggers.put(ValueType.TENANT, this::summarizeTenant);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -888,6 +890,18 @@ public class CompactRecordLogger {
     return builder.toString();
   }
 
+  private String summarizeTenant(final Record<?> record) {
+    final var value = (TenantRecordValue) record.getValue();
+
+    return "tenantKey: "
+        + value.getTenantKey()
+        + ", tenantId: "
+        + value.getTenantId()
+        + ", name: "
+        + value.getName()
+        + ", entityKey: "
+        + value.getEntityKey();
+  }
   private String formatPinnedTime(final long time) {
     final var dateTime = Instant.ofEpochMilli(time).atZone(ZoneId.systemDefault());
     return "%s (timestamp: %d)".formatted(shortenDateTime(dateTime), time);
