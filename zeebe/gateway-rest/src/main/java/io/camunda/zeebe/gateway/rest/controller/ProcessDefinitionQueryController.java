@@ -19,6 +19,8 @@ import jakarta.validation.ValidationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -66,6 +68,26 @@ public class ProcessDefinitionQueryController {
               HttpStatus.INTERNAL_SERVER_ERROR,
               e.getMessage(),
               "Failed to execute Process definition Search Query");
+      return RestErrorMapper.mapProblemToResponse(problemDetail);
+    }
+  }
+
+  @GetMapping(
+      path = "/{processDefinitionKey}",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public ResponseEntity<Object> getByKey(
+      @PathVariable("processDefinitionKey") final Long processDefinitionKey) {
+    try {
+      // Success case: Return the left side with the ProcessDefinitionEntity wrapped in
+      // ResponseEntity
+      return ResponseEntity.ok()
+          .body(
+              SearchQueryResponseMapper.toProcessDefinition(
+                  processDefinitionServices.getByKey(processDefinitionKey)));
+    } catch (final Exception exc) {
+      // Error case: Return the right side with ProblemDetail
+      final var problemDetail =
+          RestErrorMapper.mapErrorToProblem(exc, RestErrorMapper.DEFAULT_REJECTION_MAPPER);
       return RestErrorMapper.mapProblemToResponse(problemDetail);
     }
   }

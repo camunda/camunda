@@ -39,4 +39,8 @@ public class ProcessDefinitionServices
     return new ProcessDefinitionServices(
         brokerClient, processDefinitionSearchClient, authentication);
   }
+
+  public ProcessDefinitionEntity getByKey(final long processDefinitionKey) {
+    return null;
+  }
 }
