@@ -107,7 +107,7 @@ public class AuthorizationStateTest {
     // given
     final var ownerKey = 1L;
     final var resourceType1 = AuthorizationResourceType.DEPLOYMENT;
-    final var resourceType2 = AuthorizationResourceType.JOB;
+    final var resourceType2 = AuthorizationResourceType.PROCESS_DEFINITION;
     final var permissionType = PermissionType.CREATE;
     authorizationState.createOrAddPermission(
         ownerKey, resourceType1, permissionType, List.of("foo"));
