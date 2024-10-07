@@ -28,13 +28,13 @@ import com.github.dockerjava.api.model.Ports;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.entities.AuthorizationEntity;
 import io.camunda.exporter.entities.UserEntity;
-import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.exporter.schema.SchemaTestUtil;
 import io.camunda.exporter.utils.TestSupport;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.zeebe.exporter.api.Exporter;
+import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
@@ -513,7 +513,7 @@ final class CamundaExporterIT {
       final Record<UserRecordValue> record = factory.generateRecord(ValueType.USER);
 
       Assertions.assertThatThrownBy(() -> exporter.export(record))
-          .isInstanceOf(ElasticsearchExporterException.class)
+          .isInstanceOf(ExporterException.class)
           .hasMessageContaining("Connection refused");
 
       // starts the container on the same port again
