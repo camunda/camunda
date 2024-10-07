@@ -52,8 +52,7 @@ public class AuthorizableCommandProcessor<T extends UnifiedRecordValue, Resource
         .getAuthorizationRequest(command, controller)
         .map(
             authorizationRequest -> {
-              if (authorizationCheckBehavior.isAuthorized(
-                  command, authorizationRequest, authorizationRequest.getResourceIds())) {
+              if (authorizationCheckBehavior.isAuthorized(command, authorizationRequest)) {
                 final Resource resource = authorizationRequest.getResource().orElseThrow();
                 return delegate.onCommand(command, controller, resource);
               } else {
