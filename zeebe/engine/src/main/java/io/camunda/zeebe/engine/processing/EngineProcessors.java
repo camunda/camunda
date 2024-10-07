@@ -226,7 +226,8 @@ public final class EngineProcessors {
         commandDistributionBehavior,
         config);
 
-    ScalingProcessors.addScalingProcessors(typedRecordProcessors, writers, keyGenerator);
+    ScalingProcessors.addScalingProcessors(
+        typedRecordProcessors, writers, keyGenerator, processingState);
 
     return typedRecordProcessors;
   }
