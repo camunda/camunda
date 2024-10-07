@@ -10,12 +10,22 @@ package io.camunda.db.rdbms.domain;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.sort.ProcessInstanceSort;
-import java.util.Collection;
-import java.util.List;
 
 public record ProcessInstanceDbFilter(
     ProcessInstanceFilter filter,
     ProcessInstanceSort sort,
     SearchQueryPage page
 ) {
+
+  public ProcessInstanceDbFilter withProcessInstanceFilter(ProcessInstanceFilter filter) {
+    return new ProcessInstanceDbFilter(filter, this.sort, this.page);
+  }
+
+  public ProcessInstanceDbFilter withProcessInstanceSort(ProcessInstanceSort sort) {
+    return new ProcessInstanceDbFilter(this.filter, sort, this.page);
+  }
+
+  public ProcessInstanceDbFilter withPage(SearchQueryPage page) {
+    return new ProcessInstanceDbFilter(this.filter, this.sort, page);
+  }
 }

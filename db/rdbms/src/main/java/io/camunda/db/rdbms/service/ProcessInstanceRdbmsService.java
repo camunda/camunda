@@ -14,6 +14,7 @@ import io.camunda.db.rdbms.queue.ExecutionQueue;
 import io.camunda.db.rdbms.queue.QueueItem;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.page.SearchQueryPage;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -65,11 +66,26 @@ public class ProcessInstanceRdbmsService {
   }
 
   public SearchResult search(ProcessInstanceDbFilter filter) {
-    LOG.trace("[RDBMS DB] Search for process instance with filter {}", filter);
-    final var totalHits = processInstanceMapper.count(filter);
-    final var hits = processInstanceMapper.search(filter);
+    var sanitizedFilter = sanitizeFilter(filter);
+    LOG.trace("[RDBMS DB] Search for process instance with filter {}", sanitizedFilter);
+    final var totalHits = processInstanceMapper.count(sanitizedFilter);
+    final var hits = processInstanceMapper.search(sanitizedFilter);
     return new SearchResult(hits, totalHits);
   }
 
-  public record SearchResult(List<ProcessInstanceEntity> hits, Integer total) {}
+  private ProcessInstanceDbFilter sanitizeFilter(ProcessInstanceDbFilter filter) {
+    var sanitizedFilter = filter;
+
+    if (sanitizedFilter.page() == null) {
+      sanitizedFilter = sanitizedFilter.withPage(new SearchQueryPage.Builder().build());
+    } else {
+      sanitizedFilter = sanitizedFilter.withPage(sanitizedFilter.page().sanitize());
+    }
+
+    return sanitizedFilter;
+  }
+
+  public record SearchResult(List<ProcessInstanceEntity> hits, Integer total) {
+
+  }
 }

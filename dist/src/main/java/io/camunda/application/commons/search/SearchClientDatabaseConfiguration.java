@@ -9,6 +9,8 @@ package io.camunda.application.commons.search;
 
 import io.camunda.application.commons.search.SearchClientDatabaseConfiguration.SearchClientProperties;
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.search.clients.DocumentBasedSearchClient;
+import io.camunda.search.clients.SearchClients;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
@@ -16,6 +18,7 @@ import io.camunda.search.es.clients.ElasticsearchSearchClient;
 import io.camunda.search.os.clients.OpensearchSearchClient;
 import io.camunda.search.rdbms.RdbmsSearchClient;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -30,7 +33,8 @@ public class SearchClientDatabaseConfiguration {
 
   @Bean
   @ConditionalOnProperty(prefix = "camunda.database", name = "type", havingValue = "elasticsearch", matchIfMissing = true)
-  public ElasticsearchSearchClient elasticsearchSearchClient(final SearchClientProperties configuration) {
+  public ElasticsearchSearchClient elasticsearchSearchClient(
+      final SearchClientProperties configuration) {
     final var connector = new ElasticsearchConnector(configuration);
     final var elasticsearch = connector.createClient();
     return new ElasticsearchSearchClient(elasticsearch);
@@ -48,6 +52,12 @@ public class SearchClientDatabaseConfiguration {
   @ConditionalOnProperty(prefix = "camunda.database", name = "type", havingValue = "rdbms")
   public RdbmsSearchClient rdbmsSearchClient(final RdbmsService rdbmsService) {
     return new RdbmsSearchClient(rdbmsService);
+  }
+
+  @Bean
+  @ConditionalOnBean(DocumentBasedSearchClient.class)
+  public SearchClients searchClients(final DocumentBasedSearchClient searchClient) {
+    return new SearchClients(searchClient);
   }
 
   @ConfigurationProperties("camunda.database")

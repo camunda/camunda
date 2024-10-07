@@ -10,8 +10,11 @@ package io.camunda.search.page;
 import io.camunda.util.ObjectBuilder;
 import java.util.function.Function;
 
-public final record SearchQueryPage(
+public record SearchQueryPage(
     Integer from, Integer size, Object[] searchAfter, Object[] searchBefore) {
+
+  public static Integer DEFAULT_FROM = 0;
+  public static Integer DEFAULT_SIZE = 100;
 
   public boolean isNextPage() {
     return searchAfter != null || !isPreviousPage();
@@ -30,14 +33,26 @@ public final record SearchQueryPage(
     return null;
   }
 
+  public SearchQueryPage sanitize() {
+    var newFrom = (this.from == null) ? DEFAULT_FROM : Math.max( 0, Math.min(SearchQueryPage.DEFAULT_FROM, this.from));
+    var newSize = (this.size == null) ? DEFAULT_SIZE : Math.max( 0, Math.min(SearchQueryPage.DEFAULT_SIZE, this.size));
+
+    return new SearchQueryPage.Builder()
+        .from(newFrom)
+        .size(newSize)
+        .searchAfter(this.searchAfter)
+        .searchBefore(this.searchBefore)
+        .build();
+  }
+
   public static SearchQueryPage of(final Function<Builder, ObjectBuilder<SearchQueryPage>> fn) {
     return SearchQueryPageBuilders.page(fn);
   }
 
   public static final class Builder implements ObjectBuilder<SearchQueryPage> {
 
-    private Integer from;
-    private Integer size;
+    private Integer from = DEFAULT_FROM;
+    private Integer size = DEFAULT_SIZE;
     private Object[] searchAfter;
     private Object[] searchBefore;
 
