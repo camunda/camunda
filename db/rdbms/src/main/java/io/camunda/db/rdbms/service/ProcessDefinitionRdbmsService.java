@@ -7,7 +7,7 @@
  */
 package io.camunda.db.rdbms.service;
 
-import io.camunda.db.rdbms.domain.ProcessDefinitionModel;
+import io.camunda.db.rdbms.domain.ProcessDefinitionDbModel;
 import io.camunda.db.rdbms.queue.ContextType;
 import io.camunda.db.rdbms.queue.ExecutionQueue;
 import io.camunda.db.rdbms.queue.QueueItem;
@@ -18,21 +18,21 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ProcessRdbmsService {
+public class ProcessDefinitionRdbmsService {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ProcessRdbmsService.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ProcessDefinitionRdbmsService.class);
 
   private final ExecutionQueue executionQueue;
   private final ProcessDefinitionMapper processDefinitionMapper;
-  private final HashMap<CacheKey, ProcessDefinitionModel> cache = new HashMap<>();
+  private final HashMap<CacheKey, ProcessDefinitionDbModel> cache = new HashMap<>();
 
-  public ProcessRdbmsService(
+  public ProcessDefinitionRdbmsService(
       final ExecutionQueue executionQueue, final ProcessDefinitionMapper processDefinitionMapper) {
     this.executionQueue = executionQueue;
     this.processDefinitionMapper = processDefinitionMapper;
   }
 
-  public void save(final ProcessDefinitionModel processDefinition) {
+  public void save(final ProcessDefinitionDbModel processDefinition) {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.PROCESS_DEFINITION,
@@ -41,7 +41,7 @@ public class ProcessRdbmsService {
             processDefinition));
   }
 
-  public Optional<ProcessDefinitionModel> findOne(
+  public Optional<ProcessDefinitionDbModel> findOne(
       final Long processDefinitionKey, final long version) {
     final var cacheKey = new CacheKey(processDefinitionKey, version);
     if (!cache.containsKey(cacheKey)) {
