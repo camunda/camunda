@@ -14,6 +14,15 @@ public final class SearchQueryBuilders {
 
   private SearchQueryBuilders() {}
 
+  public static ProcessDefinitionQuery.Builder processDefinitionSearchQuery() {
+    return new ProcessDefinitionQuery.Builder();
+  }
+
+  public static ProcessDefinitionQuery processDefinitionSearchQuery(
+      final Function<ProcessDefinitionQuery.Builder, ObjectBuilder<ProcessDefinitionQuery>> fn) {
+    return fn.apply(processDefinitionSearchQuery()).build();
+  }
+
   public static ProcessInstanceQuery.Builder processInstanceSearchQuery() {
     return new ProcessInstanceQuery.Builder();
   }
