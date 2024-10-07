@@ -99,6 +99,7 @@ import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
 import org.opensearch.client.opensearch.indices.DeleteIndexRequest.Builder;
 import org.opensearch.client.opensearch.indices.DeleteIndexResponse;
+import org.opensearch.client.opensearch.indices.ExistsRequest;
 import org.opensearch.client.opensearch.indices.GetAliasRequest;
 import org.opensearch.client.opensearch.indices.GetAliasResponse;
 import org.opensearch.client.opensearch.indices.GetMappingRequest;
@@ -372,6 +373,15 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
           String.format("Could not retrieve index names for alias {%s}.", aliasName);
       throw new OptimizeRuntimeException(message, e);
     }
+  }
+
+  @Override
+  public final boolean exists(final String indexName) throws IOException {
+    return exists(ExistsRequest.of(b -> b.index(List.of(convertToPrefixedAliasName(indexName)))));
+  }
+
+  private boolean exists(final ExistsRequest existsRequest) throws IOException {
+    return openSearchClient.indices().exists(existsRequest).value();
   }
 
   @Override

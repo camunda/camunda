@@ -13,21 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.protocol.record.value;
+package io.camunda.zeebe.client.api.search.query;
 
-public enum AuthorizationResourceType {
-  AUTHORIZATION,
-  MAPPING_RULE,
-  MESSAGE,
-  BATCH,
-  APPLICATION,
-  SYSTEM,
-  TENANT,
-  DEPLOYMENT,
-  PROCESS_DEFINITION,
-  DECISION_REQUIREMENTS_DEFINITION,
-  DECISION_DEFINITION,
-  GROUP,
-  USER,
-  ROLE
-}
+import io.camunda.zeebe.client.api.search.filter.ProcessDefinitionFilter;
+import io.camunda.zeebe.client.api.search.response.ProcessDefinition;
+import io.camunda.zeebe.client.api.search.sort.ProcessDefinitionSort;
+
+public interface ProcessDefinitionQuery
+    extends TypedSearchQueryRequest<
+            ProcessDefinitionFilter, ProcessDefinitionSort, ProcessDefinitionQuery>,
+        FinalSearchQueryStep<ProcessDefinition> {}

@@ -7,26 +7,19 @@
  */
 package io.camunda.optimize.upgrade.plan.factories;
 
-import io.camunda.optimize.service.metadata.PreviousVersion;
-import io.camunda.optimize.service.metadata.Version;
 import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import io.camunda.optimize.upgrade.plan.UpgradePlan;
 import io.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class CurrentVersionNoOperationUpgradePlanFactory implements UpgradePlanFactory {
-
-  public UpgradePlan createUpgradePlan() {
-    return UpgradePlanBuilder.createUpgradePlan()
-        .fromVersion(PreviousVersion.PREVIOUS_VERSION_MAJOR_MINOR)
-        .toVersion(Version.VERSION)
-        .build();
-  }
+public class Upgrade86to87PlanFactory implements UpgradePlanFactory {
 
   @Override
   public UpgradePlan createUpgradePlan(final UpgradeExecutionDependencies dependencies) {
-    return createUpgradePlan();
+    validateOptimizeModeAndFailIfC7DataPresent(
+        dependencies.databaseClient(), dependencies.indexNameService());
+    return UpgradePlanBuilder.createUpgradePlan().fromVersion("8.6").toVersion("8.7.0").build();
   }
 
   @Override
