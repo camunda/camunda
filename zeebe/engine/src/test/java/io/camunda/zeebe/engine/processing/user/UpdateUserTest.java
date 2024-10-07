@@ -15,7 +15,6 @@ import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -108,8 +107,11 @@ public class UpdateUserTest {
         .getValue();
 
     Assertions.assertThat(
-            RecordingExporter.userRecords(UserIntent.UPDATED).collect(Collectors.toList()))
-        .allMatch(record -> record.getKey() == userRecord.getKey());
+            RecordingExporter.userRecords(UserIntent.UPDATED)
+                .filter(record -> record.getKey() == userRecord.getKey())
+                .limit(1)
+                .getFirst())
+        .isNotNull();
     ;
   }
 }
