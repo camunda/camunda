@@ -17,10 +17,8 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-@Disabled
 @ZeebeIntegration
 public class StandaloneCamundaTest {
 
