@@ -12,7 +12,7 @@ import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.security.auth.Authentication;
 
-public interface DecisionRequirementSearchClient extends AutoCloseable {
+public interface DecisionRequirementSearchClient {
 
   SearchQueryResult<DecisionRequirementsEntity> searchDecisionRequirements(
       DecisionRequirementsQuery filter, Authentication authentication);

@@ -44,19 +44,21 @@ public record ProcessInstanceQuery(
     private ProcessInstanceSort sort;
     private ProcessInstanceQueryResultConfig resultConfig;
 
+    @Override
     public Builder filter(final ProcessInstanceFilter value) {
       filter = value;
+      return this;
+    }
+
+    @Override
+    public Builder sort(final ProcessInstanceSort value) {
+      sort = value;
       return this;
     }
 
     public Builder filter(
         final Function<ProcessInstanceFilter.Builder, ObjectBuilder<ProcessInstanceFilter>> fn) {
       return filter(FilterBuilders.processInstance(fn));
-    }
-
-    public Builder sort(final ProcessInstanceSort value) {
-      sort = value;
-      return this;
     }
 
     public Builder sort(
