@@ -18715,7 +18715,8 @@
                 ]
               },
               "links": [],
-              "unit": "dtdurations"
+              "unit": "dtdurations",
+              "decimals": 0
             },
             "overrides": []
           },
