@@ -18,5 +18,15 @@ public interface MutableRoutingState extends RoutingState {
    */
   void initializeRoutingInfo(int partitionCount);
 
+  /**
+   * Creates a new desired state by copying the current state and using the given partitions.
+   * Message correlation is not modified and only copied from the current state.
+   */
   void setDesiredPartitions(Set<Integer> partitions);
+
+  /**
+   * Copies the desired state to the current state. The desired state must be set via {@link
+   * #setDesiredPartitions(Set)} before calling this method.
+   */
+  void arriveAtDesiredState();
 }
