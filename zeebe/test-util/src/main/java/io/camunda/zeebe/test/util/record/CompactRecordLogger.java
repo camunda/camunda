@@ -894,10 +894,15 @@ public class CompactRecordLogger {
     final var value = (TenantRecordValue) record.getValue();
 
     final StringBuilder builder = new StringBuilder("Tenant[");
-    builder.append("Key=").append(shortenKey(value.getTenantKey()))
-        .append(", Id=").append(formatId(value.getTenantId()))
-        .append(", Name=").append(formatId(value.getName()))
-        .append(", EntityKey=").append(shortenKey(value.getEntityKey()))
+    builder
+        .append("Key=")
+        .append(shortenKey(value.getTenantKey()))
+        .append(", Id=")
+        .append(formatId(value.getTenantId()))
+        .append(", Name=")
+        .append(formatId(value.getName()))
+        .append(", EntityKey=")
+        .append(shortenKey(value.getEntityKey()))
         .append("]");
 
     return builder.toString();
