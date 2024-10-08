@@ -92,7 +92,7 @@ public class RdbmsSearchClient
                         ? null
                         : query.filter().processDefinitionIds().getFirst(),
                     null,
-                    new Paging(query.page().size(), query.page().from()),
+                    Paging.createWithDefaults(query.page().size(), query.page().from()),
                     List.of(
                         new SortFieldEntry(
                             ProcessInstanceSortField.START_DATE, SortDirection.DESC))));
