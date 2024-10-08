@@ -42,7 +42,7 @@ jobs:
     env:
       DOCKER_IMAGE_TEAM: registry.camunda.cloud/team-optimize/optimize
       DOCKER_IMAGE_DOCKER_HUB: camunda/optimize
-      DOCKER_LATEST_TAG: 8-latest
+      DOCKER_LATEST_TAG: latest
     strategy:
       fail-fast: true
     steps:
@@ -196,10 +196,8 @@ jobs:
       - name: Remove tag for RC release
         if: env.IS_RC == 'true' || failure()
         run: |
-          if [ $(git tag -l "$TAG") ]; then
-            git tag -d ${TAG}
-            git push origin :refs/tags/${TAG}
-          fi
+          git tag -d ${TAG}
+          git push origin :refs/tags/${TAG}
 
       - name: Create a GitHub release
         if: ${{ env.IS_RC == 'false' && env.DRY_RUN == 'false' }}

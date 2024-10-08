@@ -12,9 +12,7 @@ import io.camunda.optimize.service.metadata.Version;
 import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import io.camunda.optimize.upgrade.plan.UpgradePlan;
 import io.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 public class CurrentVersionNoOperationUpgradePlanFactory implements UpgradePlanFactory {
 
   public UpgradePlan createUpgradePlan() {
@@ -27,10 +25,5 @@ public class CurrentVersionNoOperationUpgradePlanFactory implements UpgradePlanF
   @Override
   public UpgradePlan createUpgradePlan(final UpgradeExecutionDependencies dependencies) {
     return createUpgradePlan();
-  }
-
-  @Override
-  public void logErrorMessage(final String message) {
-    log.error(message);
   }
 }

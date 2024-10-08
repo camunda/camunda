@@ -75,11 +75,7 @@ function ReportRenderer(props) {
     if (hasOpensearchError) {
       return (
         <ReportErrorNotice
-          error={{
-            ...error,
-            title: t('apiErrors.reportNotSupportedForOpenSearch'),
-            message: null,
-          }}
+          error={{...error, message: t('apiErrors.reportNotSupportedForOpenSearch')}}
         />
       );
     }

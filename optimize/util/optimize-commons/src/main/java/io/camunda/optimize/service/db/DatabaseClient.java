@@ -54,8 +54,6 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
 
   public abstract Set<String> getAllIndicesForAlias(final String aliasName) throws IOException;
 
-  public abstract boolean exists(final String indexName) throws IOException;
-
   public abstract boolean triggerRollover(final String indexAliasName, final int maxIndexSizeGB);
 
   public abstract void deleteIndex(final String indexAlias);
@@ -90,14 +88,6 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
       final String engineAlias);
 
   public abstract DatabaseType getDatabaseVendor();
-
-  public long countWithoutPrefixWithExistsCheck(final String unprefixedIndex) throws IOException {
-    if (exists(unprefixedIndex)) {
-      return countWithoutPrefix(unprefixedIndex);
-    }
-    log.debug("Index {} does not exist, returning a document count of 0.", unprefixedIndex);
-    return 0;
-  }
 
   public String[] convertToPrefixedAliasNames(final String[] indices) {
     return Arrays.stream(indices).map(this::convertToPrefixedAliasName).toArray(String[]::new);
