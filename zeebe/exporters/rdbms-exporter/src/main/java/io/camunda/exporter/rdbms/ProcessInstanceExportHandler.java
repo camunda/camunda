@@ -7,9 +7,9 @@
  */
 package io.camunda.exporter.rdbms;
 
-import io.camunda.db.rdbms.domain.ProcessInstanceModel;
-import io.camunda.db.rdbms.domain.ProcessInstanceModel.State;
+import io.camunda.db.rdbms.domain.ProcessInstanceDbModel;
 import io.camunda.db.rdbms.service.ProcessInstanceRdbmsService;
+import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -47,11 +47,11 @@ public class ProcessInstanceExportHandler
       processInstanceRdbmsService.create(map(record));
     } else if (record.getIntent().equals(ProcessInstanceIntent.ELEMENT_COMPLETED)) {
       processInstanceRdbmsService.update(
-          new ProcessInstanceModel(
+          new ProcessInstanceDbModel(
               value.getProcessInstanceKey(),
               value.getBpmnProcessId(),
               value.getProcessDefinitionKey(),
-              State.COMPLETED,
+              ProcessInstanceState.COMPLETED,
               null,
               DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())),
               value.getTenantId(),
@@ -61,11 +61,11 @@ public class ProcessInstanceExportHandler
               value.getVersion()));
     } else if (record.getIntent().equals(ProcessInstanceIntent.ELEMENT_TERMINATED)) {
       processInstanceRdbmsService.update(
-          new ProcessInstanceModel(
+          new ProcessInstanceDbModel(
               value.getProcessInstanceKey(),
               value.getBpmnProcessId(),
               value.getProcessDefinitionKey(),
-              State.CANCELED,
+              ProcessInstanceState.CANCELED,
               null,
               DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())),
               value.getTenantId(),
@@ -84,13 +84,13 @@ public class ProcessInstanceExportHandler
     }
   }
 
-  private ProcessInstanceModel map(final Record<ProcessInstanceRecordValue> record) {
+  private ProcessInstanceDbModel map(final Record<ProcessInstanceRecordValue> record) {
     final var value = record.getValue();
-    return new ProcessInstanceModel(
+    return new ProcessInstanceDbModel(
         value.getProcessInstanceKey(),
         value.getBpmnProcessId(),
         value.getProcessDefinitionKey(),
-        State.ACTIVE,
+        ProcessInstanceState.ACTIVE,
         DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())),
         null,
         value.getTenantId(),

@@ -17,7 +17,7 @@
         http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-latest.xsd">
 
   <changeSet id="create_process_deployment_table" author="cthiel">
-    <createTable tableName="PROCESS_DEPLOYMENT">
+    <createTable tableName="PROCESS_DEFINITION">
       <column name="PROCESS_DEFINITION_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
       </column>
