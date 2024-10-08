@@ -141,8 +141,6 @@ public class OpensearchExporterConfiguration {
         return index.user;
       case AUTHORIZATION:
         return index.authorization;
-      case TENANT:
-        return index.tenant;
       default:
         return false;
     }
@@ -212,7 +210,6 @@ public class OpensearchExporterConfiguration {
     public boolean user = true;
 
     public boolean authorization = true;
-    public boolean tenant = true;
 
     // index settings
     private Integer numberOfShards = null;
@@ -318,8 +315,6 @@ public class OpensearchExporterConfiguration {
           + user
           + ", authorization="
           + authorization
-          + ", tenant="
-          + tenant
           + '}';
     }
   }
