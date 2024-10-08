@@ -51,7 +51,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>operate-schema</artifactId>
+      <artifactId>webapps-schema</artifactId>
     </dependency>
 
     <dependency>

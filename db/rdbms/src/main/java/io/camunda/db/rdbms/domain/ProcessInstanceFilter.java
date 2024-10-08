@@ -8,9 +8,26 @@
 package io.camunda.db.rdbms.domain;
 
 import java.util.Collection;
+import java.util.List;
 
 public record ProcessInstanceFilter(
-    String bpmnProcessId, VariableFilter variable, Integer limit, Integer offset) {
+    String bpmnProcessId, VariableFilter variable, Paging paging, List<SortFieldEntry> sortFields) {
 
   public record VariableFilter(String name, Collection<String> values) {}
+
+  public enum ProcessInstanceSortField implements SortField {
+    PROCESS_INSTANCE_KEY("PROCESS_INSTANCE_KEY"),
+    START_DATE("START_DATE");
+
+    private final String fieldName;
+
+    ProcessInstanceSortField(final String fieldName) {
+      this.fieldName = fieldName;
+    }
+
+    @Override
+    public String getFieldName() {
+      return this.fieldName;
+    }
+  }
 }
