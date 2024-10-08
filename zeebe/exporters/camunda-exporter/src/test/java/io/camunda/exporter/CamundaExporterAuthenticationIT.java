@@ -31,7 +31,7 @@ public class CamundaExporterAuthenticationIT {
 
   @Container
   private static final ElasticsearchContainer CONTAINER =
-      TestSupport.createDefaultContainer()
+      TestSupport.createDefeaultElasticsearchContainer()
           .withPassword(ELASTIC_PASSWORD)
           .withEnv("xpack.security.enabled", "true");
 

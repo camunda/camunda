@@ -29,7 +29,7 @@ public final class TestSupport {
    * <p>Additionally, security is explicitly disabled to avoid having tons of warning printed out.
    */
   @SuppressWarnings("resource")
-  public static ElasticsearchContainer createDefaultContainer() {
+  public static ElasticsearchContainer createDefeaultElasticsearchContainer() {
     return new ElasticsearchContainer(ELASTIC_IMAGE)
         // use JVM option files to avoid overwriting default options set by the ES container class
         .withClasspathResourceMapping(
