@@ -2880,7 +2880,7 @@ components:
     IncidentFilterRequest:
       type: object
       properties:
-        key:
+        incidentKey:
           type: integer
           format: int64
           description: The assigned key, which acts as a unique identifier for this incident.
@@ -2890,7 +2890,7 @@ components:
           description: The process definition key associated to this incident.
         processDefinitionId:
           type: string
-          description: The bpmn process id associated to this incident.
+          description: The process definition id associated to this incident.
         processInstanceKey:
           type: integer
           format: int64
@@ -2955,7 +2955,7 @@ components:
     IncidentItem:
       type: object
       properties:
-        key:
+        incidentKey:
           type: integer
           format: int64
           description: The assigned key, which acts as a unique identifier for this incident.
@@ -2965,7 +2965,7 @@ components:
           description: The process definition key associated to this incident.
         processDefinitionId:
           type: string
-          description: The bpmn process id associated to this incident.
+          description: The definition process id associated to this incident.
         processInstanceKey:
           type: integer
           format: int64

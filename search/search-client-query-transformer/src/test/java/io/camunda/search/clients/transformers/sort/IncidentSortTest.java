@@ -23,10 +23,10 @@ public class IncidentSortTest extends AbstractSortTransformerTest {
 
   private static Stream<Arguments> provideSortParameters() {
     return Stream.of(
-        new TestArguments("key", SortOrder.ASC, s -> s.key().asc()),
+        new TestArguments("key", SortOrder.ASC, s -> s.incidentKey().asc()),
         new TestArguments(
             "processDefinitionKey", SortOrder.ASC, s -> s.processDefinitionKey().asc()),
-        new TestArguments("bpmnProcessId", SortOrder.ASC, s -> s.bpmnProcessId().asc()),
+        new TestArguments("bpmnProcessId", SortOrder.ASC, s -> s.processDefinitionId().asc()),
         new TestArguments("processInstanceKey", SortOrder.ASC, s -> s.processInstanceKey().asc()),
         new TestArguments("errorType", SortOrder.ASC, s -> s.errorType().asc()),
         new TestArguments("errorMessage", SortOrder.ASC, s -> s.errorMessage().asc()),

@@ -320,7 +320,7 @@ public final class SearchQueryResponseMapper {
 
   public static IncidentItem toIncident(final IncidentEntity t) {
     return new IncidentItem()
-        .key(t.key())
+        .incidentKey(t.key())
         .processDefinitionKey(t.processDefinitionKey())
         .processDefinitionId(t.bpmnProcessId())
         .processInstanceKey(t.processInstanceKey())

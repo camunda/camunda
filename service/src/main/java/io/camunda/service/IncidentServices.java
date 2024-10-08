@@ -53,7 +53,7 @@ public class IncidentServices
 
   public IncidentEntity getByKey(final Long key) {
     final SearchQueryResult<IncidentEntity> result =
-        search(SearchQueryBuilders.incidentSearchQuery().filter(f -> f.keys(key)).build());
+        search(SearchQueryBuilders.incidentSearchQuery().filter(f -> f.incidentKeys(key)).build());
     if (result.total() < 1) {
       throw new NotFoundException(String.format("Incident with key %d not found", key));
     } else if (result.total() > 1) {

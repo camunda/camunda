@@ -25,7 +25,7 @@ public final class IncidentQueryTransformerTest extends AbstractTransformerTest 
 
   @Test
   public void shouldQueryByIncidentKey() {
-    final var filter = FilterBuilders.incident(f -> f.keys(1L));
+    final var filter = FilterBuilders.incident(f -> f.incidentKeys(1L));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -61,7 +61,7 @@ public final class IncidentQueryTransformerTest extends AbstractTransformerTest 
 
   @Test
   public void shouldQueryByBpmnProcessId() {
-    final var filter = FilterBuilders.incident(f -> f.bpmnProcessIds("complexProcess"));
+    final var filter = FilterBuilders.incident(f -> f.processDefinitionIds("complexProcess"));
 
     // when
     final var searchRequest = transformQuery(filter);
