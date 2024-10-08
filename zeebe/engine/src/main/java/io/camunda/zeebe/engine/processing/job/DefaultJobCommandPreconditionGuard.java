@@ -32,14 +32,16 @@ final class DefaultJobCommandPreconditionGuard {
   }
 
   public boolean onCommand(
-      final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
+      final TypedRecord<JobRecord> command,
+      final CommandControl<JobRecord> commandControl,
+      final JobRecord jobFromState) {
     final long jobKey = command.getKey();
     final State jobState = state.getState(jobKey);
 
     preconditionChecker
         .check(jobState, jobKey)
         .ifRightOrLeft(
-            ok -> acceptCommand.accept(command, commandControl),
+            ok -> acceptCommand.accept(command, commandControl, jobFromState),
             violation -> commandControl.reject(violation.getLeft(), violation.getRight()));
 
     return true;
