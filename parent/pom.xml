@@ -2727,8 +2727,10 @@
                   <dep>io.camunda:camunda-authentication</dep>
                   <dep>org.skyscreamer:jsonassert</dep>
                   <dep>org.springframework:spring-webflux</dep>
+                  <dep>org.springframework:spring-tx</dep>
                   <dep>org.springframework.boot:spring-boot-starter-data-jdbc</dep>
                   <dep>org.mockito:mockito-core</dep>
+                  <dep>org.assertj:assertj-core</dep>
                   <dep>io.camunda:rdbms-exporter</dep>
                 </ignoredUnusedDeclaredDependencies>
                 <ignoredNonTestScopedDependencies>

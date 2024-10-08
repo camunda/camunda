@@ -23,14 +23,10 @@ import org.springframework.context.annotation.Configuration;
 public class SearchClientDatabaseConfiguration {
 
   @Bean
-  public RdbmsSearchClient rdbmsSearchClient(
-      final RdbmsService rdbmsService) {
+  public RdbmsSearchClient rdbmsSearchClient(final RdbmsService rdbmsService) {
     return new RdbmsSearchClient(rdbmsService);
   }
 
   @ConfigurationProperties("camunda.database")
-  public static final class SearchClientProperties extends ConnectConfiguration {
-
-  }
-
+  public static final class SearchClientProperties extends ConnectConfiguration {}
 }
