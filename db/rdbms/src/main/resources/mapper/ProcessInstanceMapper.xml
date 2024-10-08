@@ -29,27 +29,12 @@
   <select id="count">
     SELECT COUNT(*)
     FROM PROCESS_INSTANCE pi
-    <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter" />
+    <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter"/>
   </select>
 
   <!-- default search statement for databases supporting LIMIT/OFFSET-->
-  <select id="search" parameterType="io.camunda.db.rdbms.domain.ProcessInstanceFilter"
-    resultType="io.camunda.db.rdbms.domain.ProcessInstanceModel">
-    <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.search0" />
-    LIMIT #{paging.pageSize} OFFSET #{paging.offset}
-  </select>
-
-  <!-- Oracle pages with rownum and not limit/offset -->
-  <select id="search" databaseId="oracle" parameterType="io.camunda.db.rdbms.domain.ProcessInstanceFilter"
-    resultType="io.camunda.db.rdbms.domain.ProcessInstanceModel">
-    SELECT t.*, rownum FROM (
-    <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.search0"/>
-    ) t
-    WHERE rownum >= #{paging.offset} AND rownum &lt; (#{paging.offset} + #{paging.pageSize})
-  </select>
-
-
-  <sql id="search0">
+  <select id="search" parameterType="io.camunda.db.rdbms.domain.ProcessInstanceFilter" resultType="io.camunda.db.rdbms.domain.ProcessInstanceModel">
+    ${paging.before}
     SELECT pi.PROCESS_INSTANCE_KEY,
     pi.BPMN_PROCESS_ID,
     pi.PROCESS_DEFINITION_KEY,
@@ -62,13 +47,14 @@
     pi.ELEMENT_ID,
     pi.VERSION
     FROM PROCESS_INSTANCE pi
-    <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter" />
+    <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter"/>
     <if test="sortFields != null &amp;&amp; !sortFields.isEmpty()">
-        <foreach collection="sortFields" open="ORDER BY " separator=", " item="item">
-          ${item.field.fieldName} ${item.direction}
-        </foreach>
+      <foreach collection="sortFields" open="ORDER BY " separator=", " item="item">
+        ${item.field.fieldName} ${item.direction}
+      </foreach>
     </if>
-  </sql>
+    ${paging.after}
+  </select>
 
   <sql id="searchFilter">
     WHERE 1 = 1
@@ -88,7 +74,7 @@
     flushCache="true">
     INSERT INTO PROCESS_INSTANCE (PROCESS_INSTANCE_KEY, BPMN_PROCESS_ID, PROCESS_DEFINITION_KEY, STATE, START_DATE, END_DATE, TENANT_ID, PARENT_PROCESS_INSTANCE_KEY, PARENT_ELEMENT_INSTANCE_KEY,
                                   VERSION)
-    VALUES (#{processInstanceKey}, #{bpmnProcessId}, #{processDefinitionKey}, #{state}, #{startDate}, #{endDate}, #{tenantId}, #{parentProcessInstanceKey}, #{parentElementInstanceKey}, #{version})
+    VALUES (#{processInstanceKey}, #{bpmnProcessId}, #{processDefinitionKey}, #{state}, #{startDate, jdbcType=TIMESTAMP}, #{endDate, jdbcType=TIMESTAMP}, #{tenantId}, #{parentProcessInstanceKey}, #{parentElementInstanceKey}, #{version})
   </insert>
 
   <update
