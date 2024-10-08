@@ -54,6 +54,7 @@ Refer to https://docs.camunda.io/docs/guides/getting-started-java-spring/ for he
 
 -------------------------------------------
 ```
+
 ## Important Notice: C8SM Run + Spring SDK Authentication Issue
 
 We are currently addressing an issue with Camunda 8.6 that affects authentication for the Spring Boot SDK and C8SM Run. This issue may prevent successful API access and process deployment in 8.6.
