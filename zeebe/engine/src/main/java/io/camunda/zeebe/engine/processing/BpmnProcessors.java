@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnStreamProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreatio
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateWithResultProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationMigrateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceModificationModifyProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.AuthorizableCommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -65,7 +67,8 @@ public final class BpmnProcessors {
       final CommandDistributionBehavior commandDistributionBehavior,
       final int partitionId,
       final RoutingInfo routingInfo,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final EngineConfiguration config) {
     final MutableProcessMessageSubscriptionState subscriptionState =
         processingState.getProcessMessageSubscriptionState();
     final var keyGenerator = processingState.getKeyGenerator();
@@ -96,7 +99,12 @@ public final class BpmnProcessors {
         keyGenerator,
         writers);
     addProcessInstanceCreationStreamProcessors(
-        typedRecordProcessors, processingState, writers, bpmnBehaviors, processEngineMetrics);
+        typedRecordProcessors,
+        processingState,
+        writers,
+        bpmnBehaviors,
+        processEngineMetrics,
+        config);
     addProcessInstanceModificationStreamProcessors(
         typedRecordProcessors, processingState, writers, bpmnBehaviors);
     addProcessInstanceMigrationStreamProcessors(
@@ -206,7 +214,8 @@ public final class BpmnProcessors {
       final MutableProcessingState processingState,
       final Writers writers,
       final BpmnBehaviors bpmnBehaviors,
-      final ProcessEngineMetrics metrics) {
+      final ProcessEngineMetrics metrics,
+      final EngineConfiguration config) {
     final MutableElementInstanceState elementInstanceState =
         processingState.getElementInstanceState();
     final KeyGenerator keyGenerator = processingState.getKeyGenerator();
@@ -215,13 +224,18 @@ public final class BpmnProcessors {
         new ProcessInstanceCreationCreateProcessor(
             processingState.getProcessState(), keyGenerator, writers, bpmnBehaviors, metrics);
     typedRecordProcessors.onCommand(
-        ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATE, createProcessor);
+        ValueType.PROCESS_INSTANCE_CREATION,
+        ProcessInstanceCreationIntent.CREATE,
+        new AuthorizableCommandProcessor<>(processingState, config, createProcessor));
 
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_CREATION,
         ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT,
-        new ProcessInstanceCreationCreateWithResultProcessor(
-            createProcessor, elementInstanceState));
+        new AuthorizableCommandProcessor<>(
+            processingState,
+            config,
+            new ProcessInstanceCreationCreateWithResultProcessor(
+                createProcessor, elementInstanceState)));
   }
 
   private static void addProcessInstanceModificationStreamProcessors(

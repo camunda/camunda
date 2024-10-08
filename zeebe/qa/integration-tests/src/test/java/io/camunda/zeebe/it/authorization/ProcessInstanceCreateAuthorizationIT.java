@@ -22,7 +22,6 @@ import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import java.time.Duration;
 import java.util.List;
@@ -40,7 +39,7 @@ import org.testcontainers.utility.DockerImageName;
 @AutoCloseResources
 @Testcontainers
 @TestInstance(Lifecycle.PER_CLASS)
-final class DeploymentCreateAuthorizationIT {
+public class ProcessInstanceCreateAuthorizationIT {
   private static final DockerImageName ELASTIC_IMAGE =
       DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
           .withTag(RestClient.class.getPackage().getImplementationVersion());
@@ -61,9 +60,12 @@ final class DeploymentCreateAuthorizationIT {
           .withEnv("xpack.ml.enabled", "false")
           .withEnv("action.destructive_requires_name", "false");
 
+  private static final String PROCESS_ID = "processId";
+
   @TestZeebe private TestStandaloneBroker zeebe;
   private ZeebeClient defaultUserClient;
-  private ZeebeClient client;
+  private ZeebeClient authorizedUserClient;
+  private ZeebeClient unauthorizedUserClient;
 
   @BeforeAll
   void beforeAll() throws Exception {
@@ -81,75 +83,123 @@ final class DeploymentCreateAuthorizationIT {
     zeebe.start();
     defaultUserClient = createClientWithAuthorization(zeebe, "demo", "demo");
     awaitUserExistsInElasticsearch(CONTAINER.getHttpHostAddress(), "demo");
-  }
+    defaultUserClient
+        .newDeployResourceCommand()
+        .addProcessModel(
+            Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done(), "process.xml")
+        .send()
+        .join();
 
-  @Test
-  void shouldBeAuthorizedToDeployWithDefaultUser() {
-    // given
-    final var processId = Strings.newRandomValidBpmnId();
-
-    // when then
-    final var deploymentEvent =
-        defaultUserClient
-            .newDeployResourceCommand()
-            .addProcessModel(
-                Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(),
-                "process.bpmn")
-            .send()
-            .join();
-    assertThat(deploymentEvent.getProcesses().getFirst().getBpmnProcessId()).isEqualTo(processId);
-  }
-
-  @Test
-  void shouldBeAuthorizedToDeployWithPermissions() throws Exception {
-    // given
-    final var processId = Strings.newRandomValidBpmnId();
-    client =
+    authorizedUserClient =
         createUserWithPermissions(
             zeebe,
             defaultUserClient,
             CONTAINER.getHttpHostAddress(),
             "foo",
             "password",
-            new Permissions(ResourceTypeEnum.DEPLOYMENT, PermissionTypeEnum.CREATE, List.of("*")));
-
-    // when
-    final var deploymentEvent =
-        client
-            .newDeployResourceCommand()
-            .addProcessModel(
-                Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(),
-                "process.bpmn")
-            .send()
-            .join();
-
-    // then
-    assertThat(deploymentEvent.getProcesses().getFirst().getBpmnProcessId()).isEqualTo(processId);
+            new Permissions(
+                ResourceTypeEnum.PROCESS_DEFINITION,
+                PermissionTypeEnum.CREATE,
+                List.of(PROCESS_ID)));
+    unauthorizedUserClient =
+        createUserWithPermissions(
+            zeebe, defaultUserClient, CONTAINER.getHttpHostAddress(), "bar", "password");
   }
 
   @Test
-  void shouldBeUnAuthorizedToDeployWithPermissions() throws Exception {
-    // given
-    final var processId = Strings.newRandomValidBpmnId();
-    client =
-        createUserWithPermissions(
-            zeebe, defaultUserClient, CONTAINER.getHttpHostAddress(), "bar", "password");
+  void shouldBeAuthorizedToCreateInstanceWithDefaultUser() {
+    // when then
+    final var processInstanceEvent =
+        defaultUserClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(PROCESS_ID)
+            .latestVersion()
+            .send()
+            .join();
+    assertThat(processInstanceEvent.getBpmnProcessId()).isEqualTo(PROCESS_ID);
+  }
 
+  @Test
+  void shouldBeAuthorizedToCreateInstanceWithResultWithDefaultUser() {
+    // when then
+    final var processInstanceResult =
+        defaultUserClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(PROCESS_ID)
+            .latestVersion()
+            .withResult()
+            .send()
+            .join();
+    assertThat(processInstanceResult.getBpmnProcessId()).isEqualTo(PROCESS_ID);
+  }
+
+  @Test
+  void shouldBeAuthorizedToCreateInstanceWithUser() {
+    // given we use the authorizedUserClient
+    // when then
+    final var processInstanceEvent =
+        authorizedUserClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(PROCESS_ID)
+            .latestVersion()
+            .send()
+            .join();
+    assertThat(processInstanceEvent.getBpmnProcessId()).isEqualTo(PROCESS_ID);
+  }
+
+  @Test
+  void shouldBeAuthorizedToCreateInstanceWithResultWithUser() {
+    // given we use the authorizedUserClient
+    // when then
+    final var processInstanceResult =
+        authorizedUserClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(PROCESS_ID)
+            .latestVersion()
+            .withResult()
+            .send()
+            .join();
+    assertThat(processInstanceResult.getBpmnProcessId()).isEqualTo(PROCESS_ID);
+  }
+
+  @Test
+  void shouldBeUnauthorizedToCreateInstanceIfNoPermissions() {
+    // given we use the unauthorizedUserClient
     // when
-    final var deployFuture =
-        client
-            .newDeployResourceCommand()
-            .addProcessModel(
-                Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(),
-                "process.bpmn")
+    final var createFuture =
+        unauthorizedUserClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(PROCESS_ID)
+            .latestVersion()
             .send();
 
     // then
-    assertThatThrownBy(deployFuture::join)
+    assertThatThrownBy(createFuture::join)
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("title: UNAUTHORIZED")
         .hasMessageContaining("status: 401")
         .hasMessageContaining(
-            "Unauthorized to perform operation 'CREATE' on resource 'DEPLOYMENT'");
+            "Unauthorized to perform operation 'CREATE' on resource 'PROCESS_DEFINITION'");
+  }
+
+  @Test
+  void shouldBeUnauthorizedToCreateInstanceWithResultIfNoPermissions() {
+    // given we use the unauthorizedUserClient
+    // when
+    final var createFuture =
+        unauthorizedUserClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(PROCESS_ID)
+            .latestVersion()
+            .withResult()
+            .send();
+
+    // then
+    assertThatThrownBy(createFuture::join)
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("title: UNAUTHORIZED")
+        .hasMessageContaining("status: 401")
+        .hasMessageContaining(
+            "Unauthorized to perform operation 'CREATE' on resource 'PROCESS_DEFINITION'");
   }
 }

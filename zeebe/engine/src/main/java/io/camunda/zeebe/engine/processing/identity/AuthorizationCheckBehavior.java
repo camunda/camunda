@@ -16,6 +16,8 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 public final class AuthorizationCheckBehavior {
@@ -35,27 +37,6 @@ public final class AuthorizationCheckBehavior {
   }
 
   /**
-   * Checks if a user is Authorized to perform an action on a resource. The user key is taken from
-   * the authorizations of the command.
-   *
-   * <p>This method does not take a Map of resource identifiers to check for. The user is considered
-   * authorized if it is the default user, or if it has a wildcard permission for the provided
-   * resource type and permission type. If you want to check for specific resource identifiers, use
-   * {@link #isAuthorized(TypedRecord, AuthorizationResourceType, PermissionType, Set)}
-   *
-   * @param command the command to check authorization for
-   * @param resourceType the type of resource to check authorization for
-   * @param permissionType the type of permission to check authorization for (CRUD)
-   * @return true if the user is authorized, false otherwise
-   */
-  public <T extends UnifiedRecordValue> boolean isAuthorized(
-      final TypedRecord<T> command,
-      final AuthorizationResourceType resourceType,
-      final PermissionType permissionType) {
-    return isAuthorized(command, resourceType, permissionType, Set.of());
-  }
-
-  /**
    * Checks if a user is Authorized to perform an action on a resource. The user key is taken from *
    * the authorizations of the command.
    *
@@ -68,16 +49,12 @@ public final class AuthorizationCheckBehavior {
    * </ul>
    *
    * @param command the command to check authorization for
-   * @param resourceType the type of resource to check authorization for
-   * @param permissionType the type of permission to check authorization for (CRUD)
-   * @param requiredResourceIdentifiers the resource identifiers to check for
+   * @param authorizationRequest the authorization request to check authorization for. This contains
+   *     the resource type and permission type
    * @return true if the user is authorized, false otherwise
    */
   public <T extends UnifiedRecordValue> boolean isAuthorized(
-      final TypedRecord<T> command,
-      final AuthorizationResourceType resourceType,
-      final PermissionType permissionType,
-      final Set<String> requiredResourceIdentifiers) {
+      final TypedRecord<T> command, final AuthorizationRequest<?> authorizationRequest) {
     if (!engineConfig.isEnableAuthorization()) {
       return true;
     }
@@ -86,14 +63,7 @@ public final class AuthorizationCheckBehavior {
     if (userKey == null) {
       return false;
     }
-    return isAuthorized(userKey, resourceType, permissionType, requiredResourceIdentifiers);
-  }
 
-  private boolean isAuthorized(
-      final long userKey,
-      final AuthorizationResourceType resourceType,
-      final PermissionType permissionType,
-      final Set<String> requiredResourceIdentifiers) {
     final var userOptional = userState.getUser(userKey);
     if (userOptional.isEmpty()) {
       return false;
@@ -106,12 +76,15 @@ public final class AuthorizationCheckBehavior {
     }
 
     final var authorizedResourceIdentifiers =
-        getAuthorizedResourceIdentifiers(userKey, resourceType, permissionType);
+        getAuthorizedResourceIdentifiers(
+            userKey,
+            authorizationRequest.getResourceType(),
+            authorizationRequest.getPermissionType());
 
     // Check if authorizations contain a resource identifier that matches the required resource
     // identifiers
-    return hasWildcardPermission(authorizedResourceIdentifiers)
-        || hasRequiredPermission(requiredResourceIdentifiers, authorizedResourceIdentifiers);
+    return hasRequiredPermission(
+        authorizationRequest.getResourceIds(), authorizedResourceIdentifiers);
   }
 
   private Set<String> getAuthorizedResourceIdentifiers(
@@ -122,13 +95,50 @@ public final class AuthorizationCheckBehavior {
     return authorizationState.getResourceIdentifiers(userKey, resourceType, permissionType);
   }
 
-  private boolean hasWildcardPermission(final Set<String> authorizedResourceIdentifiers) {
-    return authorizedResourceIdentifiers.stream().anyMatch(WILDCARD_PERMISSION::equals);
-  }
-
   private boolean hasRequiredPermission(
       final Set<String> requiredResourceIdentifiers,
       final Set<String> authorizedResourceIdentifiers) {
     return authorizedResourceIdentifiers.stream().anyMatch(requiredResourceIdentifiers::contains);
+  }
+
+  public static final class AuthorizationRequest<Resource> {
+    private final AuthorizationResourceType resourceType;
+    private final PermissionType permissionType;
+    private Resource resource;
+    private final Set<String> resourceIds;
+
+    public AuthorizationRequest(
+        final AuthorizationResourceType resourceType, final PermissionType permissionType) {
+      this.resourceType = resourceType;
+      this.permissionType = permissionType;
+      resourceIds = new HashSet<>();
+      resourceIds.add(WILDCARD_PERMISSION);
+    }
+
+    public AuthorizationResourceType getResourceType() {
+      return resourceType;
+    }
+
+    public PermissionType getPermissionType() {
+      return permissionType;
+    }
+
+    public Optional<Resource> getResource() {
+      return Optional.ofNullable(resource);
+    }
+
+    public AuthorizationRequest<Resource> setResource(final Resource resource) {
+      this.resource = resource;
+      return this;
+    }
+
+    public AuthorizationRequest<Resource> addResourceId(final String resourceId) {
+      resourceIds.add(resourceId);
+      return this;
+    }
+
+    public Set<String> getResourceIds() {
+      return resourceIds;
+    }
   }
 }

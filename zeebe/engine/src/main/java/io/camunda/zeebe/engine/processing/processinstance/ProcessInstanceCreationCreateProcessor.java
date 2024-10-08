@@ -18,7 +18,10 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
-import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.streamprocessor.AuthorizableCommandProcessor.Authorizable;
+import io.camunda.zeebe.engine.processing.streamprocessor.AuthorizableCommandProcessor.Rejection;
+import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor.CommandControl;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -34,7 +37,9 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
@@ -44,7 +49,7 @@ import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 public final class ProcessInstanceCreationCreateProcessor
-    implements CommandProcessor<ProcessInstanceCreationRecord> {
+    implements Authorizable<ProcessInstanceCreationRecord, DeployedProcess> {
 
   private static final String ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED =
       "Expected at least a bpmnProcessId or a key greater than -1, but none given";
@@ -97,17 +102,30 @@ public final class ProcessInstanceCreationCreateProcessor
   }
 
   @Override
-  public boolean onCommand(
+  public Either<Rejection, AuthorizationRequest<DeployedProcess>> getAuthorizationRequest(
       final TypedRecord<ProcessInstanceCreationRecord> command,
       final CommandControl<ProcessInstanceCreationRecord> controller) {
+    return getProcess(command.getValue())
+        .map(
+            process ->
+                new AuthorizationRequest<DeployedProcess>(
+                        AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.CREATE)
+                    .setResource(process)
+                    .addResourceId(bufferAsString(process.getBpmnProcessId())));
+  }
+
+  @Override
+  public boolean onCommand(
+      final TypedRecord<ProcessInstanceCreationRecord> command,
+      final CommandControl<ProcessInstanceCreationRecord> controller,
+      final DeployedProcess deployedProcess) {
 
     final ProcessInstanceCreationRecord record = command.getValue();
 
-    getProcess(record)
-        .flatMap(process -> validateCommand(command.getValue(), process))
+    validateCommand(command.getValue(), deployedProcess)
         .ifRightOrLeft(
             process -> createProcessInstance(controller, record, process),
-            rejection -> controller.reject(rejection.type, rejection.reason));
+            rejection -> controller.reject(rejection.type(), rejection.reason()));
 
     return true;
   }
@@ -401,8 +419,6 @@ public final class ProcessInstanceCreationCreateProcessor
           elementActivationBehavior.activateElement(processInstance, element);
         });
   }
-
-  private record Rejection(RejectionType type, String reason) {}
 
   private record ElementIdAndType(String elementId, BpmnElementType elementType) {}
 }

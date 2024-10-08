@@ -9,23 +9,19 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 /**
  * This processor decorates processors where authorization checks are required, taking care of the
  * authorization checks for them. If the authorization check fails, the processor will reject the
  * command and write a rejection response back to the client.
- *
- * <p>This decorator should be used for processors that do not require a resource from the state to
- * determine which resourceIds it is permitted for.
  */
 public final class AuthorizableDistributionProcessor<T extends UnifiedRecordValue>
     implements DistributedTypedRecordProcessor<T> {
@@ -54,13 +50,12 @@ public final class AuthorizableDistributionProcessor<T extends UnifiedRecordValu
   public void processNewCommand(final TypedRecord<T> command) {
     final var authorizationRequest = delegate.getAuthorizationRequest();
 
-    if (authorizationCheckBehavior.isAuthorized(
-        command, authorizationRequest.resourceType(), authorizationRequest.permissionType())) {
+    if (authorizationCheckBehavior.isAuthorized(command, authorizationRequest)) {
       delegate.processNewCommand(command);
     } else {
       final var errorMessage =
           UNAUTHORIZED_ERROR_MESSAGE.formatted(
-              authorizationRequest.permissionType(), authorizationRequest.resourceType());
+              authorizationRequest.getPermissionType(), authorizationRequest.getResourceType());
       rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, errorMessage);
     }
@@ -80,11 +75,8 @@ public final class AuthorizableDistributionProcessor<T extends UnifiedRecordValu
     return delegate.tryHandleError(command, error);
   }
 
-  public record AuthorizationRequest(
-      AuthorizationResourceType resourceType, PermissionType permissionType) {}
-
   public interface Authorizable<T extends UnifiedRecordValue> {
-    AuthorizationRequest getAuthorizationRequest();
+    AuthorizationRequest<?> getAuthorizationRequest();
 
     void processNewCommand(final TypedRecord<T> command);
 
