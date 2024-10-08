@@ -12,10 +12,7 @@ import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.sort.ProcessInstanceSort;
 
 public record ProcessInstanceDbFilter(
-    ProcessInstanceFilter filter,
-    ProcessInstanceSort sort,
-    SearchQueryPage page
-) {
+    ProcessInstanceFilter filter, ProcessInstanceSort sort, SearchQueryPage page) {
 
   public ProcessInstanceDbFilter withProcessInstanceFilter(ProcessInstanceFilter filter) {
     return new ProcessInstanceDbFilter(filter, this.sort, this.page);

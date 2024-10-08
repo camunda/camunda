@@ -9,8 +9,8 @@ package io.camunda.db.rdbms;
 
 import io.camunda.db.rdbms.queue.ExecutionQueue;
 import io.camunda.db.rdbms.service.ExporterPositionRdbmsService;
-import io.camunda.db.rdbms.service.ProcessInstanceRdbmsService;
 import io.camunda.db.rdbms.service.ProcessDefinitionRdbmsService;
+import io.camunda.db.rdbms.service.ProcessInstanceRdbmsService;
 import io.camunda.db.rdbms.service.VariableRdbmsService;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
@@ -35,7 +35,7 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 @Configuration
 public class RdbmsConfiguration {
 
-  private static Logger LOGGER = LoggerFactory.getLogger(RdbmsConfiguration.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(RdbmsConfiguration.class);
 
   @Bean
   public MultiTenantSpringLiquibase customerLiquibase(final DataSource dataSource) {
@@ -159,12 +159,12 @@ public class RdbmsConfiguration {
         variableRdbmsService);
   }
 
-  private Properties getVendorProperties(String vendorId) throws IOException {
+  private Properties getVendorProperties(final String vendorId) throws IOException {
     final Properties properties = new Properties();
     final var file = "db/vendor-properties/" + vendorId + ".properties";
-    final var propertiesInputStream = this.getClass().getClassLoader().getResourceAsStream(file);
+    final var propertiesInputStream = getClass().getClassLoader().getResourceAsStream(file);
     if (propertiesInputStream != null) {
-      properties.load(this.getClass().getClassLoader().getResourceAsStream(file));
+      properties.load(getClass().getClassLoader().getResourceAsStream(file));
     } else {
       LOGGER.debug("No vendor properties found for databaseId {}", vendorId);
     }

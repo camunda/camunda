@@ -44,8 +44,7 @@ public class RdbmsExporter implements Exporter {
   public void configure(final Context context) {
     partitionId = context.getPartitionId();
 
-              registerHandler();
-
+    registerHandler();
 
     LOG.info("[RDBMS Exporter] RDBMS Exporter configured!");
   }
