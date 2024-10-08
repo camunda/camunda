@@ -2678,7 +2678,7 @@ final class JsonSerializableToJsonTest {
         """
         {
           "roleKey": 1,
-          "name": "role,
+          "name": "role",
           "entityKey": 2
         }
         """
@@ -2693,10 +2693,10 @@ final class JsonSerializableToJsonTest {
         {
           "roleKey": 1,
           "name": "",
-          "entityKey": -1L
+          "entityKey": -1
         }
         """
-      },
+      }
     };
   }
 
