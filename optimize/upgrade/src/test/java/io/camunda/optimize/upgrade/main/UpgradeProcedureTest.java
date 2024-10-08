@@ -19,12 +19,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.optimize.service.db.DatabaseClient;
+import io.camunda.optimize.service.db.schema.IndexLookupUtil;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.metadata.PreviousVersion;
 import io.camunda.optimize.service.metadata.Version;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
-import io.camunda.optimize.upgrade.db.index.IndexLookupUtil;
 import io.camunda.optimize.upgrade.db.indices.UserTestIndex;
 import io.camunda.optimize.upgrade.es.indices.UserTestIndexES;
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;

@@ -8,10 +8,10 @@
 package io.camunda.optimize.upgrade.migrate313to86.indices.db;
 
 import io.camunda.optimize.service.db.schema.DynamicIndexable;
+import io.camunda.optimize.service.db.schema.IndexLookupUtil;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
-import io.camunda.optimize.upgrade.db.index.IndexLookupUtil;
 import io.camunda.optimize.upgrade.migrate313to86.indices.es.OnboardingStateIndexV2ES;
 import io.camunda.optimize.upgrade.migrate313to86.indices.es.ProcessInstanceArchiveIndexV8ES;
 import io.camunda.optimize.upgrade.migrate313to86.indices.es.SettingsIndexV2ES;

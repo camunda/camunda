@@ -216,11 +216,11 @@ jobs:
         with:
           secrets: ${{ toJSON(secrets) }}
 
-    - name: "Read Java / Version Info"
-      id: "pom-info"
-      uses: YunaBraska/java-info-action@main
-      with:
-        work-dir: ./optimize
+      - name: "Read Java / Version Info"
+        id: "pom-info"
+        uses: YunaBraska/java-info-action@main
+        with:
+          work-dir: ./optimize
 
       - name: Expose Parsed Elastic Version
         run: |
