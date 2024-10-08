@@ -15,11 +15,8 @@ import org.testcontainers.junit.jupiter.Container;
 
 class PostgresRdbmsExporterITest extends RdbmsExporterITest {
 
-  @Container
-  @ServiceConnection
-  static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(
-      "postgres:16-alpine"
-  );
+  @Container @ServiceConnection
+  static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
 
   @BeforeAll
   static void beforeAll() {
@@ -30,5 +27,4 @@ class PostgresRdbmsExporterITest extends RdbmsExporterITest {
   static void afterAll() {
     postgres.stop();
   }
-
 }

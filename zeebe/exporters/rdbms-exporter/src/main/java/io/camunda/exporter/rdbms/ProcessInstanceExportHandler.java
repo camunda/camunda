@@ -17,11 +17,13 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import java.time.Instant;
 
-public class ProcessInstanceExportHandler implements RdbmsExportHandler<ProcessInstanceRecordValue> {
+public class ProcessInstanceExportHandler
+    implements RdbmsExportHandler<ProcessInstanceRecordValue> {
 
   private final ProcessInstanceRdbmsService processInstanceRdbmsService;
 
-  public ProcessInstanceExportHandler(final ProcessInstanceRdbmsService processInstanceRdbmsService) {
+  public ProcessInstanceExportHandler(
+      final ProcessInstanceRdbmsService processInstanceRdbmsService) {
     this.processInstanceRdbmsService = processInstanceRdbmsService;
   }
 
@@ -40,49 +42,50 @@ public class ProcessInstanceExportHandler implements RdbmsExportHandler<ProcessI
   }
 
   private void exportProcessInstance(final Record<ProcessInstanceRecordValue> record) {
-    var value = record.getValue();
+    final var value = record.getValue();
     if (record.getIntent().equals(ProcessInstanceIntent.ELEMENT_ACTIVATING)) {
       processInstanceRdbmsService.create(map(record));
     } else if (record.getIntent().equals(ProcessInstanceIntent.ELEMENT_COMPLETED)) {
-      processInstanceRdbmsService.update(new ProcessInstanceModel(
-          value.getProcessInstanceKey(),
-          value.getBpmnProcessId(),
-          value.getProcessDefinitionKey(),
-          State.COMPLETED,
-          null,
-          DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())),
-          value.getTenantId(),
-          value.getParentProcessInstanceKey(),
-          value.getParentElementInstanceKey(),
-          null,
-          value.getVersion()
-      ));
+      processInstanceRdbmsService.update(
+          new ProcessInstanceModel(
+              value.getProcessInstanceKey(),
+              value.getBpmnProcessId(),
+              value.getProcessDefinitionKey(),
+              State.COMPLETED,
+              null,
+              DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())),
+              value.getTenantId(),
+              value.getParentProcessInstanceKey(),
+              value.getParentElementInstanceKey(),
+              null,
+              value.getVersion()));
     } else if (record.getIntent().equals(ProcessInstanceIntent.ELEMENT_TERMINATED)) {
-      processInstanceRdbmsService.update(new ProcessInstanceModel(
-          value.getProcessInstanceKey(),
-          value.getBpmnProcessId(),
-          value.getProcessDefinitionKey(),
-          State.CANCELED,
-          null,
-          DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())),
-          value.getTenantId(),
-          value.getParentProcessInstanceKey(),
-          value.getParentElementInstanceKey(),
-          null,
-          value.getVersion()
-      ));
+      processInstanceRdbmsService.update(
+          new ProcessInstanceModel(
+              value.getProcessInstanceKey(),
+              value.getBpmnProcessId(),
+              value.getProcessDefinitionKey(),
+              State.CANCELED,
+              null,
+              DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())),
+              value.getTenantId(),
+              value.getParentProcessInstanceKey(),
+              value.getParentElementInstanceKey(),
+              null,
+              value.getVersion()));
     }
   }
 
   private void exportFlowNode(final Record<ProcessInstanceRecordValue> record) {
-    var value = record.getValue();
+    final var value = record.getValue();
     if (record.getIntent().equals(ProcessInstanceIntent.ELEMENT_COMPLETED)) {
-      processInstanceRdbmsService.updateCurrentElementId(value.getProcessInstanceKey(), value.getElementId());
+      processInstanceRdbmsService.updateCurrentElementId(
+          value.getProcessInstanceKey(), value.getElementId());
     }
   }
 
   private ProcessInstanceModel map(final Record<ProcessInstanceRecordValue> record) {
-    var value = record.getValue();
+    final var value = record.getValue();
     return new ProcessInstanceModel(
         value.getProcessInstanceKey(),
         value.getBpmnProcessId(),
@@ -94,7 +97,6 @@ public class ProcessInstanceExportHandler implements RdbmsExportHandler<ProcessI
         value.getParentProcessInstanceKey(),
         value.getParentElementInstanceKey(),
         null,
-        value.getVersion()
-    );
+        value.getVersion());
   }
 }

@@ -18,18 +18,19 @@ public class ExporterPositionRdbmsService {
   private final ExecutionQueue executionQueue;
   private final ExporterPositionMapper exporterPositionMapper;
 
-  public ExporterPositionRdbmsService(final ExecutionQueue executionQueue, final ExporterPositionMapper exporterPositionMapper) {
+  public ExporterPositionRdbmsService(
+      final ExecutionQueue executionQueue, final ExporterPositionMapper exporterPositionMapper) {
     this.executionQueue = executionQueue;
     this.exporterPositionMapper = exporterPositionMapper;
   }
 
   public void create(final ExporterPositionModel variable) {
-    executionQueue.executeInQueue(new QueueItem(
-        ContextType.EXPORTER_POSITION,
-        variable.partitionId(),
-        "io.camunda.db.rdbms.sql.ExporterPositionMapper.insert",
-        variable
-    ));
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.EXPORTER_POSITION,
+            variable.partitionId(),
+            "io.camunda.db.rdbms.sql.ExporterPositionMapper.insert",
+            variable));
   }
 
   public void createWithoutQueue(final ExporterPositionModel positionModel) {
@@ -37,16 +38,15 @@ public class ExporterPositionRdbmsService {
   }
 
   public void update(final ExporterPositionModel variable) {
-    executionQueue.executeInQueue(new QueueItem(
-        ContextType.EXPORTER_POSITION,
-        variable.partitionId(),
-        "io.camunda.db.rdbms.sql.ExporterPositionMapper.update",
-        variable
-    ));
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.EXPORTER_POSITION,
+            variable.partitionId(),
+            "io.camunda.db.rdbms.sql.ExporterPositionMapper.update",
+            variable));
   }
 
   public ExporterPositionModel findOne(final Long key) {
     return exporterPositionMapper.findOne(key);
   }
-
 }
