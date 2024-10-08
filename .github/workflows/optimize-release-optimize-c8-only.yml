@@ -42,7 +42,7 @@ jobs:
     env:
       DOCKER_IMAGE_TEAM: registry.camunda.cloud/team-optimize/optimize
       DOCKER_IMAGE_DOCKER_HUB: camunda/optimize
-      DOCKER_LATEST_TAG: latest
+      DOCKER_LATEST_TAG: 8-latest
     strategy:
       fail-fast: true
     steps:
