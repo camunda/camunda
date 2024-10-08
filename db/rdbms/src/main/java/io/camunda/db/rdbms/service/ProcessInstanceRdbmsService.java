@@ -15,7 +15,6 @@ import io.camunda.db.rdbms.queue.QueueItem;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import java.util.List;
 import java.util.Map;
-import org.apache.ibatis.session.RowBounds;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,13 +66,7 @@ public class ProcessInstanceRdbmsService {
   public SearchResult search(ProcessInstanceFilter filter) {
     LOG.trace("[RDBMS DB] Search for process instance with filter {}", filter);
     final var totalHits = processInstanceMapper.count(filter);
-    final var hits =
-        processInstanceMapper.search(
-            filter,
-            new RowBounds(
-                filter.offset() != null ? filter.offset() : RowBounds.NO_ROW_OFFSET,
-                filter.limit() != null ? filter.limit() : RowBounds.NO_ROW_LIMIT));
-
+    final var hits = processInstanceMapper.search(filter);
     return new SearchResult(hits, totalHits);
   }
 

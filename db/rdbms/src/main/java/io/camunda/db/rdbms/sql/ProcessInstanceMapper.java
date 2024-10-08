@@ -10,7 +10,6 @@ package io.camunda.db.rdbms.sql;
 import io.camunda.db.rdbms.domain.ProcessInstanceFilter;
 import io.camunda.db.rdbms.domain.ProcessInstanceModel;
 import java.util.List;
-import org.apache.ibatis.session.RowBounds;
 
 public interface ProcessInstanceMapper {
   void insert(ProcessInstanceModel processInstance);
@@ -19,5 +18,5 @@ public interface ProcessInstanceMapper {
 
   Integer count(ProcessInstanceFilter filter);
 
-  List<ProcessInstanceModel> search(ProcessInstanceFilter filter, RowBounds rowBounds);
+  List<ProcessInstanceModel> search(ProcessInstanceFilter filter);
 }

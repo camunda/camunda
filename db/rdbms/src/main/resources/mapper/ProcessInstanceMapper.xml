@@ -32,8 +32,24 @@
     <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter" />
   </select>
 
+  <!-- default search statement for databases supporting LIMIT/OFFSET-->
   <select id="search" parameterType="io.camunda.db.rdbms.domain.ProcessInstanceFilter"
     resultType="io.camunda.db.rdbms.domain.ProcessInstanceModel">
+    <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.search0" />
+    LIMIT #{paging.pageSize} OFFSET #{paging.offset}
+  </select>
+
+  <!-- Oracle pages with rownum and not limit/offset -->
+  <select id="search" databaseId="oracle" parameterType="io.camunda.db.rdbms.domain.ProcessInstanceFilter"
+    resultType="io.camunda.db.rdbms.domain.ProcessInstanceModel">
+    SELECT t.*, rownum FROM (
+    <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.search0"/>
+    ) t
+    WHERE rownum >= #{paging.offset} AND rownum &lt; (#{paging.offset} + #{paging.pageSize})
+  </select>
+
+
+  <sql id="search0">
     SELECT pi.PROCESS_INSTANCE_KEY,
     pi.BPMN_PROCESS_ID,
     pi.PROCESS_DEFINITION_KEY,
@@ -47,7 +63,12 @@
     pi.VERSION
     FROM PROCESS_INSTANCE pi
     <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter" />
-  </select>
+    <if test="sortFields != null &amp;&amp; !sortFields.isEmpty()">
+        <foreach collection="sortFields" open="ORDER BY " separator=", " item="item">
+          ${item.field.fieldName} ${item.direction}
+        </foreach>
+    </if>
+  </sql>
 
   <sql id="searchFilter">
     WHERE 1 = 1
@@ -56,9 +77,7 @@
     </if>
     <if test="variable != null">
       AND pi.PROCESS_INSTANCE_KEY IN (SELECT v.PROCESS_INSTANCE_KEY FROM VARIABLE v WHERE v.VAR_NAME = #{variable.name} AND v.VAR_VALUE IN
-      <foreach collection="variable.values" item="variableValue" open="(" separator=", " close=")">
-        CAST(#{variableValue} as VARCHAR)
-      </foreach>
+      <foreach collection="variable.values" item="variableValue" open="(" separator=", " close=")">#{variableValue}</foreach>
       )
     </if>
   </sql>
