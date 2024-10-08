@@ -393,10 +393,6 @@
       <artifactId>jmh-generator-annprocess</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-db-rdbms</artifactId>
-    </dependency>
   </dependencies>
 
   <build>

@@ -165,5 +165,4 @@ public class CamundaServicesConfiguration {
       final BrokerClient brokerClient, final FormSearchClient formSearchClient) {
     return new FormServices(brokerClient, formSearchClient, null);
   }
-
 }

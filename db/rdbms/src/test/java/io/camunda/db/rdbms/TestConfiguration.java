@@ -15,9 +15,8 @@ public class TestConfiguration {
 
   @Bean
   public ActorScheduler actorScheduler() {
-    var scheduler = ActorScheduler.newActorScheduler().build();
+    final var scheduler = ActorScheduler.newActorScheduler().build();
     scheduler.start();
     return scheduler;
   }
-
 }

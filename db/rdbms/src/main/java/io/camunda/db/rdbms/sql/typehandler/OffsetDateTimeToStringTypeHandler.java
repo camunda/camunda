@@ -17,7 +17,6 @@ import org.apache.ibatis.type.JdbcType;
 
 /**
  * @since 3.4.5
- *
  * @author Tomas Rohovsky
  */
 public class OffsetDateTimeToStringTypeHandler extends BaseTypeHandler<String> {
@@ -50,5 +49,4 @@ public class OffsetDateTimeToStringTypeHandler extends BaseTypeHandler<String> {
 
     return offsetDateTime.toString();
   }
-
 }

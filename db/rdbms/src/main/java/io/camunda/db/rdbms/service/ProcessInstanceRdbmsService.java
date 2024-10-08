@@ -65,15 +65,15 @@ public class ProcessInstanceRdbmsService {
     return processInstanceMapper.findOne(processInstanceKey);
   }
 
-  public SearchResult search(ProcessInstanceDbFilter filter) {
-    var sanitizedFilter = sanitizeFilter(filter);
+  public SearchResult search(final ProcessInstanceDbFilter filter) {
+    final var sanitizedFilter = sanitizeFilter(filter);
     LOG.trace("[RDBMS DB] Search for process instance with filter {}", sanitizedFilter);
     final var totalHits = processInstanceMapper.count(sanitizedFilter);
     final var hits = processInstanceMapper.search(sanitizedFilter);
     return new SearchResult(hits, totalHits);
   }
 
-  private ProcessInstanceDbFilter sanitizeFilter(ProcessInstanceDbFilter filter) {
+  private ProcessInstanceDbFilter sanitizeFilter(final ProcessInstanceDbFilter filter) {
     var sanitizedFilter = filter;
 
     if (sanitizedFilter.page() == null) {
@@ -85,7 +85,5 @@ public class ProcessInstanceRdbmsService {
     return sanitizedFilter;
   }
 
-  public record SearchResult(List<ProcessInstanceEntity> hits, Integer total) {
-
-  }
+  public record SearchResult(List<ProcessInstanceEntity> hits, Integer total) {}
 }
