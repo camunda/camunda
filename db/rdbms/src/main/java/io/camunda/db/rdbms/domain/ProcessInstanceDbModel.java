@@ -21,5 +21,4 @@ public record ProcessInstanceDbModel(
     Long parentProcessInstanceKey,
     Long parentElementInstanceKey,
     String elementId,
-    int version) {
-}
+    int version) {}

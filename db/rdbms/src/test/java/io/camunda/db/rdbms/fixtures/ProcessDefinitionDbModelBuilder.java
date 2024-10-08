@@ -10,57 +10,50 @@ package io.camunda.db.rdbms.fixtures;
 import io.camunda.db.rdbms.domain.ProcessDefinitionDbModel;
 
 public class ProcessDefinitionDbModelBuilder {
-    private Long processDefinitionKey;
-    private String bpmnProcessId;
-    private String name;
-    private String tenantId;
-    private String versionTag;
-    private int version;
+  private Long processDefinitionKey;
+  private String bpmnProcessId;
+  private String name;
+  private String tenantId;
+  private String versionTag;
+  private int version;
 
-    // Public constructor to initialize the builder
-    public ProcessDefinitionDbModelBuilder() {
-    }
+  // Public constructor to initialize the builder
+  public ProcessDefinitionDbModelBuilder() {}
 
-    // Builder methods for each field
-    public ProcessDefinitionDbModelBuilder processDefinitionKey(Long processDefinitionKey) {
-        this.processDefinitionKey = processDefinitionKey;
-        return this;
-    }
+  // Builder methods for each field
+  public ProcessDefinitionDbModelBuilder processDefinitionKey(Long processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
+    return this;
+  }
 
-    public ProcessDefinitionDbModelBuilder bpmnProcessId(String bpmnProcessId) {
-        this.bpmnProcessId = bpmnProcessId;
-        return this;
-    }
+  public ProcessDefinitionDbModelBuilder bpmnProcessId(String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
+    return this;
+  }
 
-    public ProcessDefinitionDbModelBuilder name(String name) {
-        this.name = name;
-        return this;
-    }
+  public ProcessDefinitionDbModelBuilder name(String name) {
+    this.name = name;
+    return this;
+  }
 
-    public ProcessDefinitionDbModelBuilder tenantId(String tenantId) {
-        this.tenantId = tenantId;
-        return this;
-    }
+  public ProcessDefinitionDbModelBuilder tenantId(String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
 
-    public ProcessDefinitionDbModelBuilder versionTag(String versionTag) {
-        this.versionTag = versionTag;
-        return this;
-    }
+  public ProcessDefinitionDbModelBuilder versionTag(String versionTag) {
+    this.versionTag = versionTag;
+    return this;
+  }
 
-    public ProcessDefinitionDbModelBuilder version(int version) {
-        this.version = version;
-        return this;
-    }
+  public ProcessDefinitionDbModelBuilder version(int version) {
+    this.version = version;
+    return this;
+  }
 
-    // Build method to create the record
-    public ProcessDefinitionDbModel build() {
-        return new ProcessDefinitionDbModel(
-            processDefinitionKey,
-            bpmnProcessId,
-            name,
-            tenantId,
-            versionTag,
-            version
-        );
-    }
+  // Build method to create the record
+  public ProcessDefinitionDbModel build() {
+    return new ProcessDefinitionDbModel(
+        processDefinitionKey, bpmnProcessId, name, tenantId, versionTag, version);
+  }
 }

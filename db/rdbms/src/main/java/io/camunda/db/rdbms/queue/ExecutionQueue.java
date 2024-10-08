@@ -74,7 +74,7 @@ public class ExecutionQueue extends Actor {
         final var entry = queue.peek();
         LOG.trace("[RDBMS Execution Queue] Executing entry: {}", entry);
         session.update(entry.statementId(), entry.parameter());
-        queue.poll();
+        queue.remove();
 
         if (queue.isEmpty() && !postFlushListeners.isEmpty() && !preFlushListenersCalled) {
           LOG.debug("[RDBMS Execution Queue] Call pre flush listeners");

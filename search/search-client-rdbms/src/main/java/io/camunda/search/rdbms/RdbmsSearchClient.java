@@ -52,17 +52,17 @@ import org.slf4j.LoggerFactory;
 
 public class RdbmsSearchClient
     implements AuthorizationSearchClient,
-    DecisionDefinitionSearchClient,
-    DecisionInstanceSearchClient,
-    DecisionRequirementSearchClient,
-    FlowNodeInstanceSearchClient,
-    FormSearchClient,
-    IncidentSearchClient,
-    ProcessInstanceSearchClient,
-    ProcessDefinitionSearchClient,
-    UserTaskSearchClient,
-    UserSearchClient,
-    VariableSearchClient {
+        DecisionDefinitionSearchClient,
+        DecisionInstanceSearchClient,
+        DecisionRequirementSearchClient,
+        FlowNodeInstanceSearchClient,
+        FormSearchClient,
+        IncidentSearchClient,
+        ProcessInstanceSearchClient,
+        ProcessDefinitionSearchClient,
+        UserTaskSearchClient,
+        UserSearchClient,
+        VariableSearchClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsSearchClient.class);
 
@@ -80,17 +80,9 @@ public class RdbmsSearchClient
     final var searchResult =
         rdbmsService
             .getProcessInstanceRdbmsService()
-            .search(
-                new ProcessInstanceDbFilter(
-                    query.filter(),
-                    query.sort(),
-                    query.page()
-                ));
+            .search(new ProcessInstanceDbFilter(query.filter(), query.sort(), query.page()));
 
-    return new SearchQueryResult<>(
-        searchResult.total(),
-        searchResult.hits(),
-        null);
+    return new SearchQueryResult<>(searchResult.total(), searchResult.hits(), null);
   }
 
   @Override
@@ -154,7 +146,8 @@ public class RdbmsSearchClient
   }
 
   @Override
-  public SearchQueryResult<ProcessDefinitionEntity> searchProcessDefinitions(final ProcessDefinitionQuery filter, final Authentication authentication) {
+  public SearchQueryResult<ProcessDefinitionEntity> searchProcessDefinitions(
+      final ProcessDefinitionQuery filter, final Authentication authentication) {
     return null;
   }
 }

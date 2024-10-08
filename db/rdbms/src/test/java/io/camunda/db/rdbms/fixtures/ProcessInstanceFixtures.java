@@ -18,22 +18,23 @@ public final class ProcessInstanceFixtures {
   private static final Random RANDOM = new Random(System.nanoTime());
   private static final OffsetDateTime NOW = OffsetDateTime.now();
 
-  private ProcessInstanceFixtures() {
-  }
+  private ProcessInstanceFixtures() {}
 
-  public static ProcessInstanceDbModel createRandomized(Function<ProcessInstanceDbModelBuilder, ProcessInstanceDbModelBuilder> builderFunction) {
-    var builder = new ProcessInstanceDbModelBuilder()
-        .processInstanceKey(RANDOM.nextLong())
-        .processDefinitionKey(RANDOM.nextLong())
-        .bpmnProcessId("process-" + RANDOM.nextInt(1000))
-        .parentProcessInstanceKey(RANDOM.nextLong())
-        .parentElementInstanceKey(RANDOM.nextLong())
-        .startDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
-        .endDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
-        .version(RANDOM.nextInt(20))
-        .tenantId("tenant-" + RANDOM.nextInt(1000));
+  public static ProcessInstanceDbModel createRandomized(
+      final Function<ProcessInstanceDbModelBuilder, ProcessInstanceDbModelBuilder>
+          builderFunction) {
+    final var builder =
+        new ProcessInstanceDbModelBuilder()
+            .processInstanceKey(RANDOM.nextLong())
+            .processDefinitionKey(RANDOM.nextLong())
+            .bpmnProcessId("process-" + RANDOM.nextInt(1000))
+            .parentProcessInstanceKey(RANDOM.nextLong())
+            .parentElementInstanceKey(RANDOM.nextLong())
+            .startDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
+            .endDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
+            .version(RANDOM.nextInt(20))
+            .tenantId("tenant-" + RANDOM.nextInt(1000));
 
     return builderFunction.apply(builder).build();
   }
-
 }

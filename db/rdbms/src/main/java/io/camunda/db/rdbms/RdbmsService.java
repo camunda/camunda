@@ -9,8 +9,8 @@ package io.camunda.db.rdbms;
 
 import io.camunda.db.rdbms.queue.ExecutionQueue;
 import io.camunda.db.rdbms.service.ExporterPositionRdbmsService;
-import io.camunda.db.rdbms.service.ProcessInstanceRdbmsService;
 import io.camunda.db.rdbms.service.ProcessDefinitionRdbmsService;
+import io.camunda.db.rdbms.service.ProcessInstanceRdbmsService;
 import io.camunda.db.rdbms.service.VariableRdbmsService;
 
 /** A holder for all rdbms services */

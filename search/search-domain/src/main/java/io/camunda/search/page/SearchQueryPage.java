@@ -13,8 +13,8 @@ import java.util.function.Function;
 public record SearchQueryPage(
     Integer from, Integer size, Object[] searchAfter, Object[] searchBefore) {
 
-  public static Integer DEFAULT_FROM = 0;
-  public static Integer DEFAULT_SIZE = 100;
+  public static final Integer DEFAULT_FROM = 0;
+  public static final Integer DEFAULT_SIZE = 100;
 
   public boolean isNextPage() {
     return searchAfter != null || !isPreviousPage();
@@ -34,14 +34,16 @@ public record SearchQueryPage(
   }
 
   public SearchQueryPage sanitize() {
-    var newFrom = (this.from == null) ? DEFAULT_FROM : Math.max( 0, Math.min(SearchQueryPage.DEFAULT_FROM, this.from));
-    var newSize = (this.size == null) ? DEFAULT_SIZE : Math.max( 0, Math.min(SearchQueryPage.DEFAULT_SIZE, this.size));
+    final var newFrom =
+        (from == null) ? DEFAULT_FROM : Math.max(0, Math.min(SearchQueryPage.DEFAULT_FROM, from));
+    final var newSize =
+        (size == null) ? DEFAULT_SIZE : Math.max(0, Math.min(SearchQueryPage.DEFAULT_SIZE, size));
 
     return new SearchQueryPage.Builder()
         .from(newFrom)
         .size(newSize)
-        .searchAfter(this.searchAfter)
-        .searchBefore(this.searchBefore)
+        .searchAfter(searchAfter)
+        .searchBefore(searchBefore)
         .build();
   }
 

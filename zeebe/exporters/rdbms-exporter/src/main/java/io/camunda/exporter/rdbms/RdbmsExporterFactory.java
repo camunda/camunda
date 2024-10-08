@@ -12,7 +12,7 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterFactory;
 import io.camunda.zeebe.broker.exporter.repo.ExporterInstantiationException;
 import io.camunda.zeebe.exporter.api.Exporter;
 
-public class RdbmsExporterFactory  implements ExporterFactory {
+public class RdbmsExporterFactory implements ExporterFactory {
 
   private final RdbmsService rdbmsService;
 

@@ -135,35 +135,32 @@
   <sql id="processInstanceSortMapper">
     <choose>
       <when test='item.field == "bpmnProcessId"'>
-        BPMN_PROCESS_ID
+        pi.BPMN_PROCESS_ID
       </when>
       <when test='item.field == "processName"'>
-        NAME
+        pd.NAME
       </when>
       <when test='item.field == "processVersion"'>
-        VERSION
+        pi.VERSION
       </when>
       <when test='item.field == "processVersionTag"'>
-        VERSION_TAG
+        pd.VERSION_TAG
       </when>
       <when test='item.field == "processDefinitionKey"'>
-        PROCESS_DEFINITION_KEY
+        pi.PROCESS_DEFINITION_KEY
       </when>
       <when test='item.field == "parentProcessInstanceKey"'>
-        PARENT_PROCESS_INSTANCE_KEY
+        pi.PARENT_PROCESS_INSTANCE_KEY
       </when>
       <when test='item.field == "startDate"'>
-        START_DATE
+        pi.START_DATE
       </when>
       <when test='item.field == "endDate"'>
-        END_DATE
+        pi.END_DATE
       </when>
       <when test='item.field == "tenantId"'>
-        TENANT_ID
+        pi.TENANT_ID
       </when>
-      <otherwise>
-        ${field}
-      </otherwise>
     </choose>
   </sql>
 
