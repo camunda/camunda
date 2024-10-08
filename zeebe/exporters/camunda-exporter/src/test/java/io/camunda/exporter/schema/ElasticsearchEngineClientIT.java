@@ -211,6 +211,25 @@ public class ElasticsearchEngineClientIT {
   }
 
   @Test
+  void shouldSetReplicasAndShardsFromConfigurationDuringIndexCreation() throws IOException {
+    final var index =
+        SchemaTestUtil.mockIndex("index_name", "alias", "index_name", "/mappings.json");
+
+    final var settings = new IndexSettings();
+    settings.setNumberOfReplicas(5);
+    settings.setNumberOfShards(10);
+    elsEngineClient.createIndex(index, settings);
+
+    final var indices = elsClient.indices().get(req -> req.index("index_name"));
+
+    assertThat(indices.result().size()).isEqualTo(1);
+    assertThat(indices.result().get("index_name").settings().index().numberOfReplicas())
+        .isEqualTo("5");
+    assertThat(indices.result().get("index_name").settings().index().numberOfShards())
+        .isEqualTo("10");
+  }
+
+  @Test
   void shouldCreateIndexLifeCyclePolicy() throws IOException {
     elsEngineClient.putIndexLifeCyclePolicy("policy_name", "20d");
 
