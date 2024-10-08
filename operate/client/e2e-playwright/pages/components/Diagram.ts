@@ -12,11 +12,15 @@ export class Diagram {
   private page: Page;
   readonly diagram: Locator;
   readonly popover: Locator;
+  readonly resetDiagramZoomButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
     this.diagram = this.page.getByTestId('diagram');
     this.popover = this.page.getByTestId('popover');
+    this.resetDiagramZoomButton = this.page.getByRole('button', {
+      name: /Reset diagram zoom/i,
+    });
   }
 
   async moveCanvasHorizontally(dx: number) {

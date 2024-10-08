@@ -34,6 +34,7 @@ const MigrationConfirmationModal: React.FC<Props> = ({
       onRequestClose={() => setOpen(false)}
       preventCloseOnClickOutside
       onRequestSubmit={onSubmit}
+      shouldSubmitOnEnter={!isDisabled}
     >
       <MigrationDetails />
 
