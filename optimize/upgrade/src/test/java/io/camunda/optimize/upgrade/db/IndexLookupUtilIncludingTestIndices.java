@@ -5,19 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.upgrade.migrate313to86.indices.db;
+package io.camunda.optimize.upgrade.db;
 
 import io.camunda.optimize.service.db.schema.DynamicIndexable;
 import io.camunda.optimize.service.db.schema.IndexLookupUtil;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
-import io.camunda.optimize.upgrade.migrate313to86.indices.es.OnboardingStateIndexV2ES;
-import io.camunda.optimize.upgrade.migrate313to86.indices.es.ProcessInstanceArchiveIndexV8ES;
-import io.camunda.optimize.upgrade.migrate313to86.indices.es.SettingsIndexV2ES;
-import io.camunda.optimize.upgrade.migrate313to86.indices.os.OnboardingStateIndexV2OS;
-import io.camunda.optimize.upgrade.migrate313to86.indices.os.ProcessInstanceArchiveIndexV8OS;
-import io.camunda.optimize.upgrade.migrate313to86.indices.os.SettingsIndexV2OS;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -61,21 +55,12 @@ public class IndexLookupUtilIncludingTestIndices {
   private static Map<String, Function<String, IndexMappingCreator>>
       createOpensearchIndexFunctionLookupMap() {
     Map<String, Function<String, IndexMappingCreator>> lookupMap = new HashMap<>();
-    lookupMap.put(
-        OnboardingStateIndexV2ES.class.getSimpleName(), index -> new OnboardingStateIndexV2OS());
-    lookupMap.put(SettingsIndexV2ES.class.getSimpleName(), index -> new SettingsIndexV2OS());
     return lookupMap;
   }
 
   private static Map<String, Function<String, IndexMappingCreator>>
       createElasticsearchIndexFunctionLookupMap() {
     Map<String, Function<String, IndexMappingCreator>> lookupMap = new HashMap<>();
-    lookupMap.put(
-        OnboardingStateIndexV2OS.class.getSimpleName(), index -> new OnboardingStateIndexV2ES());
-    lookupMap.put(SettingsIndexV2OS.class.getSimpleName(), index -> new SettingsIndexV2ES());
-    lookupMap.put(
-        ProcessInstanceArchiveIndexV8OS.class.getSimpleName(),
-        ProcessInstanceArchiveIndexV8ES::new);
     return lookupMap;
   }
 

@@ -48,7 +48,7 @@ import io.camunda.optimize.upgrade.es.indices.UserTestUpdatedMappingIndexES;
 import io.camunda.optimize.upgrade.es.indices.UserTestWithTemplateIndexES;
 import io.camunda.optimize.upgrade.es.indices.UserTestWithTemplateUpdatedMappingIndexES;
 import io.camunda.optimize.upgrade.main.UpgradeProcedure;
-import io.camunda.optimize.upgrade.migrate313to86.indices.db.IndexLookupUtilIncludingTestIndices;
+import io.camunda.optimize.upgrade.db.IndexLookupUtilIncludingTestIndices;
 import io.camunda.optimize.upgrade.os.indices.RenameFieldTestIndexOS;
 import io.camunda.optimize.upgrade.os.indices.UserTestIndexOS;
 import io.camunda.optimize.upgrade.os.indices.UserTestUpdatedMappingIndexOS;
