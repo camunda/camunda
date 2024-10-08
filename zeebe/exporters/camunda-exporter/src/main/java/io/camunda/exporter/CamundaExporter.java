@@ -10,28 +10,24 @@ package io.camunda.exporter;
 import static io.camunda.zeebe.protocol.record.ValueType.AUTHORIZATION;
 import static io.camunda.zeebe.protocol.record.ValueType.USER;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.util.VisibleForTesting;
-import io.camunda.exporter.config.ElasticsearchExporterConfiguration;
-import io.camunda.exporter.exceptions.ElasticsearchExporterException;
+import io.camunda.exporter.adapters.ClientAdapter;
+import io.camunda.exporter.config.ConnectionTypes;
+import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.AuthorizationRecordValueExportHandler;
 import io.camunda.exporter.handlers.UserRecordValueExportHandler;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
-import io.camunda.exporter.schema.ElasticsearchEngineClient;
-import io.camunda.exporter.schema.ElasticsearchEngineClient.MappingSource;
-import io.camunda.exporter.schema.ElasticsearchSchemaManager;
 import io.camunda.exporter.schema.IndexMappingProperty;
 import io.camunda.exporter.schema.IndexSchemaValidator;
+import io.camunda.exporter.schema.MappingSource;
 import io.camunda.exporter.schema.SchemaManager;
 import io.camunda.exporter.schema.SearchEngineClient;
-import io.camunda.exporter.store.ElasticsearchBatchRequest;
+import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.ExporterBatchWriter;
-import io.camunda.exporter.utils.ElasticsearchScriptBuilder;
-import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.zeebe.exporter.api.Exporter;
+import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Context.RecordFilter;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -49,8 +45,8 @@ public class CamundaExporter implements Exporter {
   private static final Logger LOG = LoggerFactory.getLogger(CamundaExporter.class);
 
   private Controller controller;
-  private ElasticsearchExporterConfiguration configuration;
-  private ElasticsearchClient client;
+  private ExporterConfiguration configuration;
+  private ClientAdapter clientAdapter;
   private ExporterBatchWriter writer;
   private long lastPosition = -1;
   private final ExporterResourceProvider provider;
@@ -67,10 +63,14 @@ public class CamundaExporter implements Exporter {
 
   @Override
   public void configure(final Context context) {
-    configuration =
-        context.getConfiguration().instantiate(ElasticsearchExporterConfiguration.class);
+    configuration = context.getConfiguration().instantiate(ExporterConfiguration.class);
     provider.init(configuration);
     // TODO validate configuration
+    ConnectionTypes.from(
+        configuration
+            .getConnect()
+            .getType()); // this is here to validate the type, it will throw early if the type is
+    // not supported
     context.setFilter(new ElasticsearchRecordFilter());
     metrics = new CamundaExporterMetrics(context.getMeterRegistry());
     LOG.debug("Exporter configured with {}", configuration);
@@ -79,9 +79,9 @@ public class CamundaExporter implements Exporter {
   @Override
   public void open(final Controller controller) {
     this.controller = controller;
-    client = createClient();
-    final var searchEngineClient = new ElasticsearchEngineClient(client);
-    final var schemaManager = createSchemaManager(searchEngineClient);
+    clientAdapter = ClientAdapter.of(configuration);
+    final var searchEngineClient = clientAdapter.getSearchEngineClient();
+    final var schemaManager = clientAdapter.createSchemaManager(provider);
     final var schemaValidator = new IndexSchemaValidator(schemaManager);
 
     schemaStartup(schemaManager, schemaValidator, searchEngineClient);
@@ -102,7 +102,7 @@ public class CamundaExporter implements Exporter {
     }
 
     try {
-      client._transport().close();
+      clientAdapter.close();
     } catch (final Exception e) {
       LOG.warn("Failed to close elasticsearch client", e);
     }
@@ -123,7 +123,7 @@ public class CamundaExporter implements Exporter {
       try (final var ignored = metrics.measureFlushDuration()) {
         flush();
         metrics.stopFlushLatencyMeasurement();
-      } catch (final ElasticsearchExporterException e) {
+      } catch (final ExporterException e) {
         metrics.recordFailedFlush();
         throw e;
       }
@@ -137,7 +137,7 @@ public class CamundaExporter implements Exporter {
       final SchemaManager schemaManager,
       final IndexSchemaValidator schemaValidator,
       final SearchEngineClient searchEngineClient) {
-    if (!configuration.elasticsearch.isCreateSchema()) {
+    if (!configuration.isCreateSchema()) {
       LOG.info(
           "Will not make any changes to indices and index templates as [createSchema] is false");
       return;
@@ -153,10 +153,10 @@ public class CamundaExporter implements Exporter {
     schemaManager.updateSchema(newIndexProperties);
     schemaManager.updateSchema(newIndexTemplateProperties);
 
-    if (configuration.elasticsearch.getRetention().isEnabled()) {
+    if (configuration.getRetention().isEnabled()) {
       searchEngineClient.putIndexLifeCyclePolicy(
-          configuration.elasticsearch.getRetention().getPolicyName(),
-          configuration.elasticsearch.getRetention().getMinimumAge());
+          configuration.getRetention().getPolicyName(),
+          configuration.getRetention().getMinimumAge());
     }
   }
 
@@ -164,7 +164,7 @@ public class CamundaExporter implements Exporter {
       final IndexSchemaValidator schemaValidator, final SearchEngineClient searchEngineClient) {
     final var currentIndices =
         searchEngineClient.getMappings(
-            configuration.elasticsearch.getIndexPrefix() + "*", MappingSource.INDEX);
+            configuration.getConnect().getIndexPrefix() + "*", MappingSource.INDEX);
 
     return schemaValidator.validateIndexMappings(currentIndices, provider.getIndexDescriptors());
   }
@@ -180,22 +180,9 @@ public class CamundaExporter implements Exporter {
             .collect(Collectors.toSet()));
   }
 
-  private SchemaManager createSchemaManager(final SearchEngineClient searchEngineClient) {
-    return new ElasticsearchSchemaManager(
-        searchEngineClient,
-        provider.getIndexDescriptors(),
-        provider.getIndexTemplateDescriptors(),
-        configuration.elasticsearch);
-  }
-
-  private ElasticsearchClient createClient() {
-    final var connector = new ElasticsearchConnector(configuration.elasticsearch.getConnect());
-    return connector.createClient();
-  }
-
   private boolean shouldFlush() {
     // FIXME should compare against both batch size and memory limit
-    return writer.getBatchSize() >= configuration.bulk.getSize();
+    return writer.getBatchSize() >= configuration.getBulk().getSize();
   }
 
   private ExporterBatchWriter createBatchWriter() {
@@ -208,7 +195,7 @@ public class CamundaExporter implements Exporter {
 
   private void scheduleDelayedFlush() {
     controller.scheduleCancellableTask(
-        Duration.ofSeconds(configuration.bulk.getDelay()), this::flushAndReschedule);
+        Duration.ofSeconds(configuration.getBulk().getDelay()), this::flushAndReschedule);
   }
 
   private void flushAndReschedule() {
@@ -226,12 +213,11 @@ public class CamundaExporter implements Exporter {
       // TODO revisit the need to pass the BulkRequestBuilder and the ElasticsearchScriptBuilder as
       // params here
       metrics.recordBulkSize(writer.getBatchSize());
-      final ElasticsearchBatchRequest batchRequest =
-          new ElasticsearchBatchRequest(
-              client, new BulkRequest.Builder(), new ElasticsearchScriptBuilder());
+      final BatchRequest batchRequest = clientAdapter.createBatchRequest();
       writer.flush(batchRequest);
+
     } catch (final PersistenceException ex) {
-      throw new ElasticsearchExporterException(ex.getMessage(), ex);
+      throw new ExporterException(ex.getMessage(), ex);
     }
   }
 
