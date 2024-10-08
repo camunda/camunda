@@ -193,7 +193,9 @@
 
     <version.javassist>3.30.2-GA</version.javassist>
 
-    <version.mybatis>3.0.4</version.mybatis>
+    <version.mybatisSpring>3.0.4</version.mybatisSpring>
+    <version.mybatis>3.5.16</version.mybatis>
+    <mybatis-spring-boot-starter.version>3.0.3</mybatis-spring-boot-starter.version>
 
     <!--    VERIFY WHETHER OPERATE WORKS WITH MOCKITO 5.11 -->
     <!--    <mockito.version>5.5.0</mockito.version>-->
@@ -1141,8 +1143,20 @@
       </dependency>
 
       <dependency>
+        <groupId>org.mybatis.spring.boot</groupId>
+        <artifactId>mybatis-spring-boot-starter</artifactId>
+        <version>${mybatis-spring-boot-starter.version}</version>
+      </dependency>
+
+      <dependency>
         <groupId>org.mybatis</groupId>
         <artifactId>mybatis-spring</artifactId>
+        <version>${version.mybatisSpring}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.mybatis</groupId>
+        <artifactId>mybatis</artifactId>
         <version>${version.mybatis}</version>
       </dependency>
 
@@ -2709,12 +2723,17 @@
                   <dep>org.openjdk.jmh:jmh-generator-annprocess</dep>
                   <dep>com.h2database:h2</dep>
                   <dep>org.postgresql:postgresql</dep>
+                  <dep>org.mariadb.jdbc:mariadb-java-client</dep>
                   <dep>io.camunda:camunda-authentication</dep>
                   <dep>org.skyscreamer:jsonassert</dep>
                   <dep>org.springframework:spring-webflux</dep>
+                  <dep>org.springframework.boot:spring-boot-starter-data-jdbc</dep>
+                  <dep>org.mockito:mockito-core</dep>
+                  <dep>io.camunda:rdbms-exporter</dep>
                 </ignoredUnusedDeclaredDependencies>
                 <ignoredNonTestScopedDependencies>
                   <dep>io.camunda:zeebe-cluster-config</dep>
+                  <dep>io.camunda:zeebe-scheduler</dep>
                   <dep>org.springframework:spring-core</dep>
                 </ignoredNonTestScopedDependencies>
               </configuration>

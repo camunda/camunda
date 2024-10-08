@@ -7,7 +7,6 @@
  */
 package io.camunda.exporter.rdbms;
 
-
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 
@@ -16,5 +15,4 @@ public interface RdbmsExportHandler<T extends RecordValue> {
   boolean canExport(Record<T> record);
 
   void export(Record<T> record);
-
 }

@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ProcessExportHandler implements RdbmsExportHandler<Process> {
+
   private static final Logger LOG = LoggerFactory.getLogger(ProcessExportHandler.class);
 
   private final ProcessRdbmsService processRdbmsService;
@@ -29,9 +30,11 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
 
   @Override
   public boolean canExport(final Record<Process> record) {
-    // We get this Record on each partition, but just the one where the command was executed should export it!
+    // We get this Record on each partition, but just the one where the command was executed should
+    // export it!
     final int originalPartitionId = Protocol.decodePartitionId(record.getKey());
-    return record.getIntent() == ProcessIntent.CREATED && originalPartitionId == record.getPartitionId();
+    return record.getIntent() == ProcessIntent.CREATED
+        && originalPartitionId == record.getPartitionId();
   }
 
   @Override
@@ -43,9 +46,10 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
   private ProcessDefinitionModel map(final Process value) {
     String processName = null;
     try {
-      var xml = new XMLUtil().extractDiagramData(value.getResource(), value.getBpmnProcessId());
+      final var xml =
+          new XMLUtil().extractDiagramData(value.getResource(), value.getBpmnProcessId());
       processName = xml.map(ProcessEntity::getName).orElse(null);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       // skip
       LOG.debug("Unable to parse XML diagram", e);
     }
@@ -56,7 +60,6 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
         processName,
         value.getTenantId(),
         value.getVersionTag(),
-        value.getVersion()
-    );
+        value.getVersion());
   }
 }

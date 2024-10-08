@@ -33,7 +33,8 @@ public class VariableExportHandler implements RdbmsExportHandler<VariableRecordV
     final VariableRecordValue value = record.getValue();
     if (record.getIntent() == VariableIntent.CREATED) {
       variableRdbmsService.create(map(record.getKey(), value));
-    } else if (record.getIntent() == VariableIntent.UPDATED || record.getIntent() == VariableIntent.MIGRATED) {
+    } else if (record.getIntent() == VariableIntent.UPDATED
+        || record.getIntent() == VariableIntent.MIGRATED) {
       variableRdbmsService.update(map(record.getKey(), value));
     }
   }
@@ -46,7 +47,6 @@ public class VariableExportHandler implements RdbmsExportHandler<VariableRecordV
         value.getName(),
         value.getValue(),
         false,
-        value.getTenantId()
-    );
+        value.getTenantId());
   }
 }
