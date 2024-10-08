@@ -41,6 +41,7 @@ import io.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConn
 import io.camunda.optimize.test.it.extension.DatabaseIntegrationTestExtension;
 import io.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import io.camunda.optimize.test.it.extension.MockServerUtil;
+import io.camunda.optimize.upgrade.db.IndexLookupUtilIncludingTestIndices;
 import io.camunda.optimize.upgrade.es.index.UpdateLogEntryIndex;
 import io.camunda.optimize.upgrade.es.indices.RenameFieldTestIndexES;
 import io.camunda.optimize.upgrade.es.indices.UserTestIndexES;
@@ -48,7 +49,6 @@ import io.camunda.optimize.upgrade.es.indices.UserTestUpdatedMappingIndexES;
 import io.camunda.optimize.upgrade.es.indices.UserTestWithTemplateIndexES;
 import io.camunda.optimize.upgrade.es.indices.UserTestWithTemplateUpdatedMappingIndexES;
 import io.camunda.optimize.upgrade.main.UpgradeProcedure;
-import io.camunda.optimize.upgrade.db.IndexLookupUtilIncludingTestIndices;
 import io.camunda.optimize.upgrade.os.indices.RenameFieldTestIndexOS;
 import io.camunda.optimize.upgrade.os.indices.UserTestIndexOS;
 import io.camunda.optimize.upgrade.os.indices.UserTestUpdatedMappingIndexOS;
