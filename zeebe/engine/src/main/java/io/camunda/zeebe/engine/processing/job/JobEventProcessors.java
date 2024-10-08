@@ -72,11 +72,14 @@ public final class JobEventProcessors {
         .onCommand(
             ValueType.JOB,
             JobIntent.THROW_ERROR,
-            new JobThrowErrorProcessor(
+            new AuthorizableCommandProcessor<>(
                 processingState,
-                bpmnBehaviors.eventPublicationBehavior(),
-                keyGenerator,
-                jobMetrics))
+                config,
+                new JobThrowErrorProcessor(
+                    processingState,
+                    bpmnBehaviors.eventPublicationBehavior(),
+                    keyGenerator,
+                    jobMetrics)))
         .onCommand(
             ValueType.JOB,
             JobIntent.TIME_OUT,
