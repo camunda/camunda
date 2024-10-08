@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.mutable;
 
 import io.camunda.zeebe.engine.state.immutable.RoutingState;
+import java.util.Set;
 
 public interface MutableRoutingState extends RoutingState {
 
@@ -16,4 +17,6 @@ public interface MutableRoutingState extends RoutingState {
    * is already available, this method does nothing.
    */
   void initializeRoutingInfo(int partitionCount);
+
+  void setDesiredPartitions(Set<Integer> partitions);
 }

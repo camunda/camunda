@@ -55,6 +55,7 @@ public class ScaleUpProcessor implements TypedRecordProcessor<ScaleRecord> {
     }
 
     final var scalingKey = keyGenerator.nextKey();
+    stateWriter.appendFollowUpEvent(scalingKey, ScaleIntent.SCALING_UP, scaleUp);
     responseWriter.writeEventOnCommand(scalingKey, ScaleIntent.SCALING_UP, scaleUp, command);
 
     stateWriter.appendFollowUpEvent(scalingKey, ScaleIntent.SCALED_UP, new ScaleRecord());
