@@ -62,7 +62,8 @@ public interface Intent {
           MessageCorrelationIntent.class,
           UserIntent.class,
           ClockIntent.class,
-          AuthorizationIntent.class);
+          AuthorizationIntent.class,
+          RoleIntent.class);
   short NULL_VAL = 255;
   Intent UNKNOWN = UnknownIntent.UNKNOWN;
 
