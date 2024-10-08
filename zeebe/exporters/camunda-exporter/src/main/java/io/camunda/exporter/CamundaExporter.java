@@ -18,6 +18,7 @@ import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.AuthorizationRecordValueExportHandler;
 import io.camunda.exporter.handlers.UserRecordValueExportHandler;
+import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.schema.ElasticsearchEngineClient;
 import io.camunda.exporter.schema.ElasticsearchEngineClient.MappingSource;
 import io.camunda.exporter.schema.ElasticsearchSchemaManager;
@@ -53,6 +54,7 @@ public class CamundaExporter implements Exporter {
   private ExporterBatchWriter writer;
   private long lastPosition = -1;
   private final ExporterResourceProvider provider;
+  private CamundaExporterMetrics metrics;
 
   public CamundaExporter() {
     this(new DefaultExporterResourceProvider());
@@ -70,6 +72,7 @@ public class CamundaExporter implements Exporter {
     provider.init(configuration);
     // TODO validate configuration
     context.setFilter(new ElasticsearchRecordFilter());
+    metrics = new CamundaExporterMetrics(context.getMeterRegistry());
     LOG.debug("Exporter configured with {}", configuration);
   }
 
@@ -109,10 +112,21 @@ public class CamundaExporter implements Exporter {
 
   @Override
   public void export(final Record<?> record) {
+    if (writer.getBatchSize() == 0) {
+      metrics.startFlushLatencyMeasurement();
+    }
+
     writer.addRecord(record);
     lastPosition = record.getPosition();
+
     if (shouldFlush()) {
-      flush();
+      try (final var ignored = metrics.measureFlushDuration()) {
+        flush();
+        metrics.stopFlushLatencyMeasurement();
+      } catch (final ElasticsearchExporterException e) {
+        metrics.recordFailedFlush();
+        throw e;
+      }
       // Update the record counters only after the flush was successful. If the synchronous flush
       // fails then the exporter will be invoked with the same record again.
       updateLastExportedPosition();
@@ -211,6 +225,7 @@ public class CamundaExporter implements Exporter {
     try {
       // TODO revisit the need to pass the BulkRequestBuilder and the ElasticsearchScriptBuilder as
       // params here
+      metrics.recordBulkSize(writer.getBatchSize());
       final ElasticsearchBatchRequest batchRequest =
           new ElasticsearchBatchRequest(
               client, new BulkRequest.Builder(), new ElasticsearchScriptBuilder());
