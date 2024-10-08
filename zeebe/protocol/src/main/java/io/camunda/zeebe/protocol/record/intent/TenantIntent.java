@@ -16,16 +16,16 @@
 package io.camunda.zeebe.protocol.record.intent;
 
 public enum TenantIntent implements Intent {
-  CREATE(1),
-  CREATED(2),
-  UPDATE(3),
-  UPDATED(4),
-  DELETE(5),
-  DELETED(6),
-  ADD_ENTITY(7),
-  ENTITY_ADDED(8),
-  REMOVE_ENTITY(9),
-  ENTITY_REMOVED(10);
+  CREATE(0),
+  CREATED(1),
+  UPDATE(2),
+  UPDATED(3),
+  DELETE(4),
+  DELETED(5),
+  ADD_ENTITY(6),
+  ENTITY_ADDED(7),
+  REMOVE_ENTITY(8),
+  ENTITY_REMOVED(9);
 
   private final short value;
 
