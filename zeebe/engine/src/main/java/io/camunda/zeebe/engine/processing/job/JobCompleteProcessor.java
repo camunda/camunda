@@ -59,7 +59,7 @@ public final class JobCompleteProcessor implements Authorizable<JobRecord, JobRe
       return Either.left(
           new Rejection(
               RejectionType.NOT_FOUND,
-              String.format(NO_JOB_FOUND_MESSAGE, command.getIntent(), command.getKey())));
+              String.format(NO_JOB_FOUND_MESSAGE, "complete", command.getKey())));
     }
 
     final var authorizationRequest =

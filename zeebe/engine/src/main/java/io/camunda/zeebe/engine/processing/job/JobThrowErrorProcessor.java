@@ -97,7 +97,7 @@ public class JobThrowErrorProcessor implements Authorizable<JobRecord, JobRecord
       return Either.left(
           new Rejection(
               RejectionType.NOT_FOUND,
-              String.format(NO_JOB_FOUND_MESSAGE, command.getIntent(), command.getKey())));
+              String.format(NO_JOB_FOUND_MESSAGE, "throw an error for", command.getKey())));
     }
 
     final var authorizationRequest =
