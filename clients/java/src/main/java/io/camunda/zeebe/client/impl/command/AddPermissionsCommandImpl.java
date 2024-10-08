@@ -97,7 +97,7 @@ public class AddPermissionsCommandImpl
   @Override
   public ZeebeFuture<AddPermissionsResponse> send() {
     final HttpZeebeFuture<AddPermissionsResponse> result = new HttpZeebeFuture<>();
-    httpClient.post(path, jsonMapper.toJson(request), httpRequestConfig.build(), result);
+    httpClient.patch(path, jsonMapper.toJson(request), httpRequestConfig.build(), result);
     return result;
   }
 }
