@@ -45,6 +45,7 @@ tar -czf camunda8-run-$CAMUNDA_VERSION-$architecture.tar.gz \
   -C ../ \
   c8run/start.sh \
   c8run/shutdown.sh \
+  c8run/endpoints.txt \
   c8run/README.md \
   c8run/connectors-application.properties \
   c8run/"$connectorsFileName" \
