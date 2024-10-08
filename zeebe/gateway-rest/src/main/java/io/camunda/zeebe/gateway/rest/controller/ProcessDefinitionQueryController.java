@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static io.camunda.zeebe.gateway.rest.Loggers.REST_LOGGER;
+import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
+
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryRequest;
@@ -16,6 +19,7 @@ import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import jakarta.validation.ValidationException;
+import java.nio.charset.StandardCharsets;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -89,6 +93,24 @@ public class ProcessDefinitionQueryController {
       final var problemDetail =
           RestErrorMapper.mapErrorToProblem(exc, RestErrorMapper.DEFAULT_REJECTION_MAPPER);
       return RestErrorMapper.mapProblemToResponse(problemDetail);
+    }
+  }
+
+  @GetMapping(
+      path = "/{processDefinitionKey}/xml",
+      produces = {MediaType.TEXT_XML_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public ResponseEntity<String> getProcessDefinitionXml(
+      @PathVariable("processDefinitionKey") final long processDefinitionKey) {
+    try {
+      return ResponseEntity.ok()
+          .contentType(new MediaType(MediaType.TEXT_XML, StandardCharsets.UTF_8))
+          .body(
+              processDefinitionServices
+                  .withAuthentication(RequestMapper.getAuthentication())
+                  .getProcessDefinitionXml(processDefinitionKey));
+    } catch (final Exception e) {
+      REST_LOGGER.debug("An exception occurred in getProcessDefinitionXml.", e);
+      return mapErrorToResponse(e);
     }
   }
 }

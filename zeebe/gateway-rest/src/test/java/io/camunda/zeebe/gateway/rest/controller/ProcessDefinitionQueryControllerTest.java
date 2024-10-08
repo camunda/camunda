@@ -37,7 +37,14 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
 
   static final ProcessDefinitionEntity PROCESS_DEFINITION_ENTITY =
       new ProcessDefinitionEntity(
-          23L, "Complex process", "complexProcess", "complexProcess.bpmn", 5, "alpha", "<default>");
+          23L,
+          "Complex process",
+          "complexProcess",
+          "<xml/>",
+          "complexProcess.bpmn",
+          5,
+          "alpha",
+          "<default>");
   static final String PROCESS_DEFINITION_ENTITY_JSON =
       """
       {
@@ -81,6 +88,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
                       1L,
                       "Complex process",
                       "complexProcess",
+                      "<xml/>",
                       "complexProcess.bpmn",
                       5,
                       "alpha",
@@ -162,5 +170,23 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
 
     // Verify that the service was called with the valid key
     verify(processDefinitionServices).getByKey(23L);
+  }
+
+  @Test
+  public void shouldGetProcessDefinitionXml() {
+    // given
+    when(processDefinitionServices.getProcessDefinitionXml(23L)).thenReturn("<xml/>");
+    // when / then
+    webClient
+        .get()
+        .uri(PROCESS_DEFINITION_URL + "23/xml")
+        .accept(MediaType.TEXT_XML)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .xml("<xml/>");
+    // Verify that the service was called with the valid key
+    verify(processDefinitionServices).getProcessDefinitionXml(23L);
   }
 }

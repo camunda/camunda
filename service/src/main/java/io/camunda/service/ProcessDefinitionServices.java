@@ -60,4 +60,15 @@ public class ProcessDefinitionServices
       return result.items().stream().findFirst().orElseThrow();
     }
   }
+
+  public String getProcessDefinitionXml(final Long processDefinitionKey) {
+    final var processDefinition = getByKey(processDefinitionKey);
+    final var xml = processDefinition.bpmnXml();
+    if (xml == null) {
+      throw new NotFoundException(
+          String.format(
+              "Process Definition with key %d does not have a BPMN XML", processDefinitionKey));
+    }
+    return xml;
+  }
 }
