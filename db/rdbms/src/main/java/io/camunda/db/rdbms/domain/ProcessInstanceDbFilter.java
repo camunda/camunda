@@ -7,7 +7,15 @@
  */
 package io.camunda.db.rdbms.domain;
 
-public interface SortField {
+import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.sort.ProcessInstanceSort;
+import java.util.Collection;
+import java.util.List;
 
-  String getFieldName();
+public record ProcessInstanceDbFilter(
+    ProcessInstanceFilter filter,
+    ProcessInstanceSort sort,
+    SearchQueryPage page
+) {
 }

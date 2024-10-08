@@ -8,13 +8,8 @@
 package io.camunda.search.rdbms;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.domain.Paging;
-import io.camunda.db.rdbms.domain.ProcessDefinitionModel;
-import io.camunda.db.rdbms.domain.ProcessInstanceFilter;
-import io.camunda.db.rdbms.domain.ProcessInstanceFilter.ProcessInstanceSortField;
-import io.camunda.db.rdbms.domain.ProcessInstanceModel.State;
-import io.camunda.db.rdbms.domain.SortDirection;
-import io.camunda.db.rdbms.domain.SortFieldEntry;
+import io.camunda.db.rdbms.domain.ProcessInstanceDbFilter;
+import io.camunda.search.ProcessDefinitionSearchClient;
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
 import io.camunda.search.clients.DecisionInstanceSearchClient;
@@ -33,8 +28,8 @@ import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
-import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
@@ -45,30 +40,29 @@ import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.FormQuery;
 import io.camunda.search.query.IncidentQuery;
+import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.search.security.auth.Authentication;
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class RdbmsSearchClient
     implements AuthorizationSearchClient,
-        DecisionDefinitionSearchClient,
-        DecisionInstanceSearchClient,
-        DecisionRequirementSearchClient,
-        FlowNodeInstanceSearchClient,
-        FormSearchClient,
-        IncidentSearchClient,
-        ProcessInstanceSearchClient,
-        UserTaskSearchClient,
-        UserSearchClient,
-        VariableSearchClient {
+    DecisionDefinitionSearchClient,
+    DecisionInstanceSearchClient,
+    DecisionRequirementSearchClient,
+    FlowNodeInstanceSearchClient,
+    FormSearchClient,
+    IncidentSearchClient,
+    ProcessInstanceSearchClient,
+    ProcessDefinitionSearchClient,
+    UserTaskSearchClient,
+    UserSearchClient,
+    VariableSearchClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsSearchClient.class);
 
@@ -87,57 +81,20 @@ public class RdbmsSearchClient
         rdbmsService
             .getProcessInstanceRdbmsService()
             .search(
-                new ProcessInstanceFilter(
-                    (query.filter().processDefinitionIds().isEmpty())
-                        ? null
-                        : query.filter().processDefinitionIds().getFirst(),
-                    null,
-                    Paging.createWithDefaults(query.page().size(), query.page().from()),
-                    List.of(
-                        new SortFieldEntry(
-                            ProcessInstanceSortField.START_DATE, SortDirection.DESC))));
+                new ProcessInstanceDbFilter(
+                    query.filter(),
+                    query.sort(),
+                    query.page()
+                ));
 
     return new SearchQueryResult<>(
         searchResult.total(),
-        searchResult.hits().stream()
-            .map(
-                pi -> {
-                  final var processDefinition =
-                      rdbmsService
-                          .getProcessDeploymentRdbmsService()
-                          .findOne(pi.processDefinitionKey(), pi.version());
-                  return new ProcessInstanceEntity(
-                      pi.processInstanceKey(),
-                      pi.bpmnProcessId(),
-                      processDefinition
-                          .map(ProcessDefinitionModel::name)
-                          .orElse(pi.bpmnProcessId()),
-                      pi.version(),
-                      null,
-                      pi.processDefinitionKey(),
-                      null,
-                      pi.parentProcessInstanceKey(),
-                      pi.parentElementInstanceKey(),
-                      null,
-                      pi.startDate().toString(),
-                      Optional.ofNullable(pi.endDate()).map(OffsetDateTime::toString).orElse(null),
-                      mapState(pi.state()),
-                      null,
-                      pi.tenantId());
-                })
-            .toList(),
+        searchResult.hits(),
         null);
   }
 
   @Override
-  public void close() throws Exception {}
-
-  private ProcessInstanceEntity.ProcessInstanceState mapState(State state) {
-    return switch (state) {
-      case ACTIVE -> ProcessInstanceState.ACTIVE;
-      case COMPLETED -> ProcessInstanceState.COMPLETED;
-      case CANCELED -> ProcessInstanceState.CANCELED;
-    };
+  public void close() throws Exception {
   }
 
   @Override
@@ -197,6 +154,11 @@ public class RdbmsSearchClient
   @Override
   public SearchQueryResult<VariableEntity> searchVariables(
       final VariableQuery filter, final Authentication authentication) {
+    return null;
+  }
+
+  @Override
+  public SearchQueryResult<ProcessDefinitionEntity> searchProcessDefinitions(final ProcessDefinitionQuery filter, final Authentication authentication) {
     return null;
   }
 }
