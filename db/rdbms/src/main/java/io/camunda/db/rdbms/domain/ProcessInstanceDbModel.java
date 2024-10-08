@@ -7,13 +7,14 @@
  */
 package io.camunda.db.rdbms.domain;
 
+import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import java.time.OffsetDateTime;
 
-public record ProcessInstanceModel(
+public record ProcessInstanceDbModel(
     Long processInstanceKey,
     String bpmnProcessId,
     Long processDefinitionKey,
-    State state,
+    ProcessInstanceState state,
     OffsetDateTime startDate,
     OffsetDateTime endDate,
     String tenantId,
@@ -21,10 +22,4 @@ public record ProcessInstanceModel(
     Long parentElementInstanceKey,
     String elementId,
     int version) {
-
-  public enum State {
-    ACTIVE,
-    COMPLETED,
-    CANCELED
-  }
 }

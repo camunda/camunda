@@ -7,12 +7,13 @@
  */
 package io.camunda.db.rdbms.service;
 
-import io.camunda.db.rdbms.domain.ProcessInstanceFilter;
-import io.camunda.db.rdbms.domain.ProcessInstanceModel;
+import io.camunda.db.rdbms.domain.ProcessInstanceDbFilter;
+import io.camunda.db.rdbms.domain.ProcessInstanceDbModel;
 import io.camunda.db.rdbms.queue.ContextType;
 import io.camunda.db.rdbms.queue.ExecutionQueue;
 import io.camunda.db.rdbms.queue.QueueItem;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
+import io.camunda.search.entities.ProcessInstanceEntity;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -31,7 +32,7 @@ public class ProcessInstanceRdbmsService {
     this.processInstanceMapper = processInstanceMapper;
   }
 
-  public void create(final ProcessInstanceModel processInstance) {
+  public void create(final ProcessInstanceDbModel processInstance) {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.PROCESS_INSTANCE,
@@ -40,7 +41,7 @@ public class ProcessInstanceRdbmsService {
             processInstance));
   }
 
-  public void update(final ProcessInstanceModel processInstance) {
+  public void update(final ProcessInstanceDbModel processInstance) {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.PROCESS_INSTANCE,
@@ -58,17 +59,17 @@ public class ProcessInstanceRdbmsService {
             Map.of("processInstanceKey", processInstanceKey, "elementId", elementId)));
   }
 
-  public ProcessInstanceModel findOne(final Long processInstanceKey) {
+  public ProcessInstanceEntity findOne(final Long processInstanceKey) {
     LOG.trace("[RDBMS DB] Search for process instance with key {}", processInstanceKey);
     return processInstanceMapper.findOne(processInstanceKey);
   }
 
-  public SearchResult search(ProcessInstanceFilter filter) {
+  public SearchResult search(ProcessInstanceDbFilter filter) {
     LOG.trace("[RDBMS DB] Search for process instance with filter {}", filter);
     final var totalHits = processInstanceMapper.count(filter);
     final var hits = processInstanceMapper.search(filter);
     return new SearchResult(hits, totalHits);
   }
 
-  public record SearchResult(List<ProcessInstanceModel> hits, Integer total) {}
+  public record SearchResult(List<ProcessInstanceEntity> hits, Integer total) {}
 }
