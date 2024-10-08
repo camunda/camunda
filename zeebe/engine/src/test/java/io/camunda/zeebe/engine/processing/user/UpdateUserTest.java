@@ -108,10 +108,10 @@ public class UpdateUserTest {
 
     Assertions.assertThat(
             RecordingExporter.userRecords(UserIntent.UPDATED)
-                .filter(record -> record.getKey() == userRecord.getKey())
+                .withUserKey(userRecord.getKey())
                 .limit(1)
-                .getFirst())
-        .isNotNull();
-    ;
+                .getFirst()
+                .getKey())
+        .isEqualTo(userRecord.getKey());
   }
 }
