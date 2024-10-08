@@ -155,6 +155,12 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>org.opensearch</groupId>
+      <artifactId>opensearch-testcontainers</artifactId>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
   <build>
