@@ -872,7 +872,6 @@ public class CompactRecordLogger {
     return "to %s".formatted(clockValue);
   }
 
-
   private String summarizeRole(final Record<?> record) {
     final var value = (RoleRecordValue) record.getValue();
 
