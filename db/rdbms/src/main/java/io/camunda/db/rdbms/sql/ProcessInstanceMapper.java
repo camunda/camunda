@@ -18,5 +18,6 @@ public interface ProcessInstanceMapper {
   ProcessInstanceModel findOne(Long processInstanceKey);
 
   Integer count(ProcessInstanceFilter filter);
+
   List<ProcessInstanceModel> search(ProcessInstanceFilter filter, RowBounds rowBounds);
 }
