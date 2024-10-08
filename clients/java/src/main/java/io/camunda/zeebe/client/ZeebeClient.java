@@ -58,6 +58,7 @@ import io.camunda.zeebe.client.api.search.query.IncidentQuery;
 import io.camunda.zeebe.client.api.search.query.ProcessDefinitionQuery;
 import io.camunda.zeebe.client.api.search.query.ProcessInstanceQuery;
 import io.camunda.zeebe.client.api.search.query.UserTaskQuery;
+import io.camunda.zeebe.client.api.search.query.VariableQuery;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
@@ -1131,6 +1132,5 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the variable query
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
-  UserTaskQuery newUserTaskQuery();
-
+  VariableQuery newVariableQuery();
 }

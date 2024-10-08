@@ -16,10 +16,8 @@
 
 package io.camunda.zeebe.client.api.search.query;
 
-import io.camunda.zeebe.client.api.search.filter.UserTaskFilter;
 import io.camunda.zeebe.client.api.search.filter.VariableFilter;
-import io.camunda.zeebe.client.api.search.response.UserTask;
-import io.camunda.zeebe.client.api.search.sort.UserTaskSort;
+import io.camunda.zeebe.client.api.search.response.Variable;
 import io.camunda.zeebe.client.api.search.sort.VariableSort;
 
 public interface VariableQuery

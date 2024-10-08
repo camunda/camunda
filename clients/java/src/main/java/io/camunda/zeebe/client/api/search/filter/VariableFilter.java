@@ -33,7 +33,7 @@ public interface VariableFilter extends SearchRequestFilter {
    * @param value the value of the variable
    * @return the updated filter
    */
-  VariableFilter value(final Object value);
+  VariableFilter value(final String value);
 
   /**
    * Filters variables by the specified name.
@@ -45,9 +45,9 @@ public interface VariableFilter extends SearchRequestFilter {
 
   /**
    * Filters variables by the specified scope key.
+   *
    * @param scopeKey
    * @return
-   *
    * @param scopeKey the scope key of the variable
    * @return the updated filter
    */
@@ -76,6 +76,4 @@ public interface VariableFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   VariableFilter isTruncated(final Boolean isTruncated);
-
-
 }
