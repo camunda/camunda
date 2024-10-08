@@ -80,17 +80,9 @@ public class RdbmsSearchClient
     final var searchResult =
         rdbmsService
             .getProcessInstanceRdbmsService()
-            .search(
-                new ProcessInstanceDbFilter(
-                    query.filter(),
-                    query.sort(),
-                    query.page()
-                ));
+            .search(new ProcessInstanceDbFilter(query.filter(), query.sort(), query.page()));
 
-    return new SearchQueryResult<>(
-        searchResult.total(),
-        searchResult.hits(),
-        null);
+    return new SearchQueryResult<>(searchResult.total(), searchResult.hits(), null);
   }
 
   @Override

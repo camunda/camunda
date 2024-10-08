@@ -32,9 +32,12 @@ import org.springframework.context.annotation.Configuration;
 @EnableConfigurationProperties(SearchClientProperties.class)
 public class SearchClientDatabaseConfiguration {
 
-
   @Bean
-  @ConditionalOnProperty(prefix = "camunda.database", name = "type", havingValue = "elasticsearch", matchIfMissing = true)
+  @ConditionalOnProperty(
+      prefix = "camunda.database",
+      name = "type",
+      havingValue = "elasticsearch",
+      matchIfMissing = true)
   public ElasticsearchSearchClient elasticsearchSearchClient(
       final SearchClientProperties configuration) {
     final var connector = new ElasticsearchConnector(configuration);
@@ -72,7 +75,5 @@ public class SearchClientDatabaseConfiguration {
   }
   
   @ConfigurationProperties("camunda.database")
-  public static final class SearchClientProperties extends ConnectConfiguration {
-
-  }
+  public static final class SearchClientProperties extends ConnectConfiguration {}
 }
