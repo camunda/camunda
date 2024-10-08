@@ -72,7 +72,7 @@ public class VariableFilterTransformer implements FilterTransformer<VariableFilt
   }
 
   private SearchQuery getProcessInstanceKeyQuery(final List<Long> processInstanceKey) {
-    return longTerms("processInstanceId", processInstanceKey);
+    return longTerms("processInstanceKey", processInstanceKey);
   }
 
   private SearchQuery getVariableKeyQuery(final List<Long> variableKeys) {

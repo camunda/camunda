@@ -51,7 +51,7 @@ public final record VariableSort(List<FieldSorting> orderings) implements SortOp
     }
 
     public Builder processInstanceKey() {
-      currentOrdering = new FieldSorting("processInstanceId", null);
+      currentOrdering = new FieldSorting("processInstanceKey", null);
       return this;
     }
 

@@ -168,7 +168,7 @@ public class VariableSortTest extends AbstractSortTransformerTest {
         sort.stream()
             .anyMatch(
                 s ->
-                    s.field().field().equals("processInstanceId")
+                    s.field().field().equals("processInstanceKey")
                         && s.field().order().equals(SortOrder.DESC));
 
     assertThat(sortByProcessInstanceKeyConditionCheck).isTrue();
