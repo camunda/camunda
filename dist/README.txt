@@ -53,3 +53,17 @@ docker-compose up -d mariabb
 
 Run camunda with `rdbmsMariaDB` profile
 
+# With Postgres:
+
+## Prerequisites:
+
+Start Postgres docker container:
+
+```
+docker-compose up -d oracle
+```
+
+## Start Camunda:
+
+Run camunda with `rdbmsOracle` profile
+

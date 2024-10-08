@@ -24,7 +24,7 @@
       <column name="BPMN_PROCESS_ID" type="VARCHAR(200)" />
       <column name="NAME" type="VARCHAR(200)" />
       <column name="TENANT_ID" type="VARCHAR(200)" />
-      <column name="VERSION" type="TINYINT" />
+      <column name="VERSION" type="SMALLINT" />
       <column name="VERSION_TAG" type="VARCHAR(200)" />
     </createTable>
   </changeSet>
@@ -43,14 +43,14 @@
       <column name="PARENT_PROCESS_INSTANCE_KEY" type="BIGINT" />
       <column name="PARENT_ELEMENT_INSTANCE_KEY" type="BIGINT" />
       <column name="ELEMENT_ID" type="VARCHAR(255)" />
-      <column name="VERSION" type="TINYINT" />
+      <column name="VERSION" type="SMALLINT" />
     </createTable>
   </changeSet>
 
   <changeSet id="create_variable_table" author="pwunderlich">
     <createTable tableName="VARIABLE">
       <column name="VAR_KEY" type="BIGINT">
-        <constraints primaryKey="true" unique="true"/>
+        <constraints primaryKey="true"/>
       </column>
       <column name="PROCESS_INSTANCE_KEY" type="BIGINT" />
       <column name="SCOPE_KEY" type="BIGINT" />

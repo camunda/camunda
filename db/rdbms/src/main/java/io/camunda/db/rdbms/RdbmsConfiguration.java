@@ -17,19 +17,26 @@ import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import java.io.IOException;
 import java.util.Properties;
 import javax.sql.DataSource;
 import liquibase.integration.spring.MultiTenantSpringLiquibase;
+import org.apache.commons.logging.Log;
 import org.apache.ibatis.mapping.VendorDatabaseIdProvider;
 import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.type.JdbcType;
 import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.mapper.MapperFactoryBean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 @Configuration
 public class RdbmsConfiguration {
+
+  private static Logger LOGGER = LoggerFactory.getLogger(RdbmsConfiguration.class);
 
   @Bean
   public MultiTenantSpringLiquibase customerLiquibase(final DataSource dataSource) {
@@ -46,19 +53,26 @@ public class RdbmsConfiguration {
     vendorProperties.put("H2", "h2");
     vendorProperties.put("PostgreSQL", "postgresql");
     vendorProperties.put("Oracle", "oracle");
+    vendorProperties.put("MariaDB", "mariadb");
+    vendorProperties.put("MySQL", "mariadb");
     vendorProperties.put("SQL Server", "sqlserver");
     final var databaseIdProvider = new VendorDatabaseIdProvider();
     databaseIdProvider.setProperties(vendorProperties);
 
+    final var configuration = new org.apache.ibatis.session.Configuration();
+    configuration.setJdbcTypeForNull(JdbcType.NULL);
+
     final SqlSessionFactoryBean factoryBean = new SqlSessionFactoryBean();
+    factoryBean.setConfiguration(configuration);
     factoryBean.setDataSource(dataSource);
     factoryBean.setDatabaseIdProvider(databaseIdProvider);
     factoryBean.addMapperLocations(
         new PathMatchingResourcePatternResolver().getResources("classpath*:mapper/*.xml"));
 
-    final Properties p = new Properties();
-    p.put("paging.before", "");
-    p.put("paging.after", "LIMIT #{paging.pageSize}, OFFSET #{paging.offset}");
+    // load vendor specific template variables
+    final var databaseId = databaseIdProvider.getDatabaseId(dataSource);
+    LOGGER.info("Detected databaseId: {}", databaseId);
+    final Properties p = getVendorProperties(databaseIdProvider.getDatabaseId(dataSource));
 
     factoryBean.setConfigurationProperties(p);
     return factoryBean.getObject();
@@ -143,5 +157,17 @@ public class RdbmsConfiguration {
         processRdbmsService,
         processInstanceRdbmsService,
         variableRdbmsService);
+  }
+
+  private Properties getVendorProperties(String vendorId) throws IOException {
+    final Properties properties = new Properties();
+    final var file = "db/vendor-properties/" + vendorId + ".properties";
+    final var propertiesInputStream = this.getClass().getClassLoader().getResourceAsStream(file);
+    if (propertiesInputStream != null) {
+      properties.load(this.getClass().getClassLoader().getResourceAsStream(file));
+    } else {
+      LOGGER.debug("No vendor properties found for databaseId {}", vendorId);
+    }
+    return properties;
   }
 }

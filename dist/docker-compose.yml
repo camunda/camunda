@@ -30,3 +30,23 @@ services:
       MARIADB_PASSWORD: demo
     ports:
       - "3306:3306"
+
+      # Name of the Docker Compose service
+  oracle:
+    # Docker Hub image (feel free to change the tag "latest" to any other available one)
+    image: gvenzl/oracle-free:latest
+    # Forward Oracle port to localhost
+    ports:
+      - "1521:1521"
+    # Provide passwords and other environment variables to the container
+    environment:
+      ORACLE_PASSWORD: sys_user_password
+      APP_USER: camunda
+      APP_USER_PASSWORD: demo
+    # Customize healthcheck script options for startup
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
