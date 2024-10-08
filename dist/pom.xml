@@ -283,6 +283,11 @@
     </dependency>
 
     <dependency>
+      <groupId>org.mariadb.jdbc</groupId>
+      <artifactId>mariadb-java-client</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
     </dependency>
@@ -451,20 +456,6 @@
       <artifactId>netty-buffer</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>org.liquibase</groupId>
-      <artifactId>liquibase-core</artifactId>
-      <!-- TODO version to dependency management-->
-      <version>4.29.1</version>
-    </dependency>
-
-    <dependency>
-      <groupId>com.h2database</groupId>
-      <artifactId>h2</artifactId>
-      <!-- TODO version to dependency management-->
-      <version>2.3.232</version>
-    </dependency>
-
     <!-- Following are used for generating models from open api spec   -->
     <dependency>
       <groupId>jakarta.validation</groupId>
@@ -624,12 +615,6 @@
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers</artifactId>
       <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.mybatis</groupId>
-      <artifactId>mybatis</artifactId>
-      <version>3.5.15</version>
-      <scope>compile</scope>
     </dependency>
 
   </dependencies>

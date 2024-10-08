@@ -20,27 +20,28 @@ public class VariableRdbmsService {
   private final ExecutionQueue executionQueue;
   private final VariableMapper variableMapper;
 
-  public VariableRdbmsService(final ExecutionQueue executionQueue, final VariableMapper variableMapper) {
+  public VariableRdbmsService(
+      final ExecutionQueue executionQueue, final VariableMapper variableMapper) {
     this.executionQueue = executionQueue;
     this.variableMapper = variableMapper;
   }
 
   public void create(final VariableModel variable) {
-    executionQueue.executeInQueue(new QueueItem(
-        ContextType.VARIABLE,
-        variable.key(),
-        "io.camunda.db.rdbms.sql.VariableMapper.insert",
-        variable
-    ));
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.VARIABLE,
+            variable.key(),
+            "io.camunda.db.rdbms.sql.VariableMapper.insert",
+            variable));
   }
 
   public void update(final VariableModel variable) {
-    executionQueue.executeInQueue(new QueueItem(
-        ContextType.VARIABLE,
-        variable.key(),
-        "io.camunda.db.rdbms.sql.VariableMapper.update",
-        variable
-    ));
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.VARIABLE,
+            variable.key(),
+            "io.camunda.db.rdbms.sql.VariableMapper.update",
+            variable));
   }
 
   public VariableModel findOne(final Long key) {
@@ -50,5 +51,4 @@ public class VariableRdbmsService {
   public List<VariableModel> findByProcessInstanceKey(final Long processInstanceKey) {
     return variableMapper.find(new VariableFilter(processInstanceKey));
   }
-
 }

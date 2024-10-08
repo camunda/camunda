@@ -22,7 +22,7 @@
         <constraints primaryKey="true"/>
       </column>
       <column name="EXPORTER" type="VARCHAR(200)" />
-      <column name="LAST_EXPORTED_POSITION" type="NUMBER" />
+      <column name="LAST_EXPORTED_POSITION" type="BIGINT" />
       <column name="CREATED" type="DATETIME" />
       <column name="LAST_UPDATED" type="DATETIME" />
     </createTable>

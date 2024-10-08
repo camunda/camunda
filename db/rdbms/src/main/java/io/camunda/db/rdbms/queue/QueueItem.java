@@ -7,11 +7,4 @@
  */
 package io.camunda.db.rdbms.queue;
 
-public record QueueItem(
-    ContextType contextType,
-    Object id,
-    String statementId,
-    Object parameter
-) {
-
-}
+public record QueueItem(ContextType contextType, Object id, String statementId, Object parameter) {}
