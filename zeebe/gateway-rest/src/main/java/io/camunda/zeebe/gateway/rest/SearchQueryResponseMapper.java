@@ -526,7 +526,7 @@ public final class SearchQueryResponseMapper {
         .name(variableEntity.name())
         .value(variableEntity.value())
         .fullValue(variableEntity.fullValue())
-        .processInstanceKey(variableEntity.processInstanceId())
+        .processInstanceKey(variableEntity.processInstanceKey())
         .tenantId(variableEntity.tenantId())
         .isTruncated(variableEntity.isPreview())
         .scopeKey(variableEntity.scopeKey());

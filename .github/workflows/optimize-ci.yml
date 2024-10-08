@@ -76,6 +76,8 @@ jobs:
       - name: "Read Java / Version Info"
         id: "pom-info"
         uses: YunaBraska/java-info-action@main
+        with:
+          work-dir: ./optimize
       - name: Start Elasticsearch - Old
         uses: ./.github/actions/compose
         with:
@@ -97,7 +99,7 @@ jobs:
       - name: Install
         uses: ./.github/actions/run-maven
         with:
-          parameters: install -Dskip.fe.build -Dskip.docker -DskipTests -pl optimize -am
+          parameters: -f optimize/pom.xml install -Dskip.fe.build -Dskip.docker -DskipTests -PrunAssembly
       - name: Verify optimize/qa/schema-integrity-tests
         uses: ./.github/actions/run-maven
         with:
@@ -137,6 +139,8 @@ jobs:
       - name: "Read Java / Version Info"
         id: "pom-info"
         uses: YunaBraska/java-info-action@main
+        with:
+          work-dir: ./optimize
       - name: Start OpenSearch - Old
         uses: ./.github/actions/compose
         with:
@@ -158,7 +162,7 @@ jobs:
       - name: Install
         uses: ./.github/actions/run-maven
         with:
-          parameters: install -Dskip.fe.build -Dskip.docker -DskipTests -pl optimize -am
+          parameters: -f optimize/pom.xml install -Dskip.fe.build -Dskip.docker -DskipTests -PrunAssembly
       - name: Verify optimize/qa/schema-integrity-tests
         uses: ./.github/actions/run-maven
         with:
@@ -216,6 +220,8 @@ jobs:
     - name: "Read Java / Version Info"
       id: "pom-info"
       uses: YunaBraska/java-info-action@main
+      with:
+        work-dir: ./optimize
 
     - name: Expose Parsed Elastic Version
       run: |
@@ -295,6 +301,8 @@ jobs:
       - name: "Read Java / Version Info"
         id: "pom-info"
         uses: YunaBraska/java-info-action@main
+        with:
+          work-dir: ./optimize
 
       - name: Expose Parsed OpenSearch Version
         run: echo "OPENSEARCH_VERSION=${{ steps.pom-info.outputs.x_opensearch_test_version }}" >> "$GITHUB_ENV"
@@ -376,6 +384,8 @@ jobs:
       - name: "Read Java / Version Info"
         id: "pom-info"
         uses: YunaBraska/java-info-action@main
+        with:
+          work-dir: ./optimize
 
       - name: Expose Parsed OpenSearch Version
         run: echo "OPENSEARCH_VERSION=${{ steps.pom-info.outputs.x_opensearch_test_version }}" >> "$GITHUB_ENV"

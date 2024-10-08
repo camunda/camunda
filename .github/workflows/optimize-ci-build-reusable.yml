@@ -57,7 +57,7 @@ jobs:
         id: pom-info
         uses: YunaBraska/java-info-action@72dd3fb638d774fb4353d99d2bb3fddddd084789 # 2.1.0
         with:
-          work-dir: 'optimize'
+          work-dir: ./optimize
 
       #########################################################################
       # Docker login and image tagging

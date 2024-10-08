@@ -7,7 +7,7 @@
  */
 package io.camunda.service;
 
-import io.camunda.search.ProcessDefinitionSearchClient;
+import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
