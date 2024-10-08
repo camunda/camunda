@@ -538,7 +538,7 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldSetRestAddressFromSetterWithClientBuilder() throws URISyntaxException {
     // given
-    final URI restAddress = new URI("localhost:9090");
+    final URI restAddress = new URI("http://localhost:9090");
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.restAddress(restAddress);
 
@@ -552,7 +552,7 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldSetRestAddressPortFromPropertyWithClientBuilder() throws URISyntaxException {
     // given
-    final URI restAddress = new URI("localhost:9090");
+    final URI restAddress = new URI("http://localhost:9090");
     final Properties properties = new Properties();
     properties.setProperty(REST_ADDRESS, restAddress.toString());
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
@@ -568,7 +568,7 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldSetRestAddressPortFromEnvVarWithClientBuilder() throws URISyntaxException {
     // given
-    final URI restAddress = new URI("localhost:9090");
+    final URI restAddress = new URI("http://localhost:9090");
     Environment.system().put(REST_ADDRESS_VAR, restAddress.toString());
 
     // when
