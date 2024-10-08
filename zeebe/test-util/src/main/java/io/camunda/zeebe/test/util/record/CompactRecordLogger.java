@@ -893,14 +893,14 @@ public class CompactRecordLogger {
   private String summarizeTenant(final Record<?> record) {
     final var value = (TenantRecordValue) record.getValue();
 
-    return "tenantKey: "
-        + value.getTenantKey()
-        + ", tenantId: "
-        + value.getTenantId()
-        + ", name: "
-        + value.getName()
-        + ", entityKey: "
-        + value.getEntityKey();
+    final StringBuilder builder = new StringBuilder("Tenant[");
+    builder.append("Key=").append(shortenKey(value.getTenantKey()))
+        .append(", Id=").append(formatId(value.getTenantId()))
+        .append(", Name=").append(formatId(value.getName()))
+        .append(", EntityKey=").append(shortenKey(value.getEntityKey()))
+        .append("]");
+
+    return builder.toString();
   }
   private String formatPinnedTime(final long time) {
     final var dateTime = Instant.ofEpochMilli(time).atZone(ZoneId.systemDefault());
