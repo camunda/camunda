@@ -15,13 +15,16 @@ import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ProcessRdbmsService {
 
+  private static final Logger LOG = LoggerFactory.getLogger(ProcessRdbmsService.class);
+
   private final ExecutionQueue executionQueue;
   private final ProcessDefinitionMapper processDefinitionMapper;
-  private final HashMap<Pair<Long, Long>, ProcessDefinitionModel> cache = new HashMap<>();
+  private final HashMap<CacheKey, ProcessDefinitionModel> cache = new HashMap<>();
 
   public ProcessRdbmsService(
       final ExecutionQueue executionQueue, final ProcessDefinitionMapper processDefinitionMapper) {
@@ -40,17 +43,20 @@ public class ProcessRdbmsService {
 
   public Optional<ProcessDefinitionModel> findOne(
       final Long processDefinitionKey, final long version) {
-    if (!cache.containsKey(Pair.of(processDefinitionKey, version))) {
+    final var cacheKey = new CacheKey(processDefinitionKey, version);
+    if (!cache.containsKey(cacheKey)) {
       final var result =
           processDefinitionMapper.findOne(
               Map.of("processDefinitionKey", processDefinitionKey, "version", version));
 
       if (result != null) {
-        cache.put(Pair.of(processDefinitionKey, version), result);
+        cache.put(cacheKey, result);
         return Optional.of(result);
       }
     }
 
-    return Optional.ofNullable(cache.get(Pair.of(processDefinitionKey, version)));
+    return Optional.ofNullable(cache.get(cacheKey));
   }
+
+  private record CacheKey(Long processDefinitionKey, Long version) {}
 }
