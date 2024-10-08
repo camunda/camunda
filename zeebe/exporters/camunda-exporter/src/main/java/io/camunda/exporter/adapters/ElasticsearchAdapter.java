@@ -18,36 +18,28 @@ import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.ElasticsearchBatchRequest;
 import io.camunda.exporter.utils.ElasticsearchScriptBuilder;
-import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import java.io.IOException;
-import java.util.Objects;
 
-public class ElasticsearchAdapter implements ClientAdapter {
-  private ElasticsearchClient client;
-  private ElasticsearchEngineClient searchEngineClient;
+class ElasticsearchAdapter implements ClientAdapter {
+  private final ExporterConfiguration configuration;
+  private final ElasticsearchClient client;
+  private final ElasticsearchEngineClient searchEngineClient;
 
-  @Override
-  public void createClient(final ConnectConfiguration config) {
-    final var connector = new ElasticsearchConnector(config);
+  ElasticsearchAdapter(final ExporterConfiguration configuration) {
+    this.configuration = configuration;
+    final var connector = new ElasticsearchConnector(configuration.getConnect());
     client = connector.createClient();
+    searchEngineClient = new ElasticsearchEngineClient(client);
   }
 
   @Override
-  public SearchEngineClient createSearchEngineClient() {
-    Objects.requireNonNull(
-        client, "ElasticsearchClient must be created before creating search engine client");
-    searchEngineClient = new ElasticsearchEngineClient(client);
+  public SearchEngineClient getSearchEngineClient() {
     return searchEngineClient;
   }
 
   @Override
-  public SchemaManager createSchemaManager(
-      final ExporterResourceProvider provider, final ExporterConfiguration configuration) {
-    if (searchEngineClient == null) {
-      createSearchEngineClient();
-    }
-
+  public SchemaManager createSchemaManager(final ExporterResourceProvider provider) {
     return new ElasticsearchSchemaManager(
         searchEngineClient,
         provider.getIndexDescriptors(),
@@ -57,15 +49,12 @@ public class ElasticsearchAdapter implements ClientAdapter {
 
   @Override
   public BatchRequest createBatchRequest() {
-    Objects.requireNonNull(
-        client, "ElasticsearchClient must be created before creating batch request");
     return new ElasticsearchBatchRequest(
         client, new BulkRequest.Builder(), new ElasticsearchScriptBuilder());
   }
 
   @Override
   public void close() throws IOException {
-    Objects.requireNonNull(client, "No ElasticsearchClient instance to close");
     client._transport().close();
   }
 }

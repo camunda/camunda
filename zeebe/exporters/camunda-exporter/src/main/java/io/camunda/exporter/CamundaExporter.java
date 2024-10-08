@@ -12,8 +12,6 @@ import static io.camunda.zeebe.protocol.record.ValueType.USER;
 
 import co.elastic.clients.util.VisibleForTesting;
 import io.camunda.exporter.adapters.ClientAdapter;
-import io.camunda.exporter.adapters.ElasticsearchAdapter;
-import io.camunda.exporter.adapters.OpensearchAdapter;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
@@ -67,8 +65,12 @@ public class CamundaExporter implements Exporter {
   public void configure(final Context context) {
     configuration = context.getConfiguration().instantiate(ExporterConfiguration.class);
     provider.init(configuration);
-    createClientAdapter();
     // TODO validate configuration
+    ConnectionTypes.from(
+        configuration
+            .getConnect()
+            .getType()); // this is here to validate the type, it will throw early if the type is
+    // not supported
     context.setFilter(new ElasticsearchRecordFilter());
     metrics = new CamundaExporterMetrics(context.getMeterRegistry());
     LOG.debug("Exporter configured with {}", configuration);
@@ -77,9 +79,9 @@ public class CamundaExporter implements Exporter {
   @Override
   public void open(final Controller controller) {
     this.controller = controller;
-    clientAdapter.createClient(configuration.getConnect());
-    final var searchEngineClient = clientAdapter.createSearchEngineClient();
-    final var schemaManager = clientAdapter.createSchemaManager(provider, configuration);
+    clientAdapter = ClientAdapter.of(configuration);
+    final var searchEngineClient = clientAdapter.getSearchEngineClient();
+    final var schemaManager = clientAdapter.createSchemaManager(provider);
     final var schemaValidator = new IndexSchemaValidator(schemaManager);
 
     schemaStartup(schemaManager, schemaValidator, searchEngineClient);
@@ -128,20 +130,6 @@ public class CamundaExporter implements Exporter {
       // Update the record counters only after the flush was successful. If the synchronous flush
       // fails then the exporter will be invoked with the same record again.
       updateLastExportedPosition();
-    }
-  }
-
-  private void createClientAdapter() {
-    switch (ConnectionTypes.from(configuration.getConnect().getType())) {
-      case ELASTICSEARCH:
-        clientAdapter = new ElasticsearchAdapter();
-        break;
-      case OPENSEARCH:
-        clientAdapter = new OpensearchAdapter();
-        break;
-      default:
-        throw new ExporterException(
-            "Unsupported database type: " + configuration.getConnect().getType());
     }
   }
 

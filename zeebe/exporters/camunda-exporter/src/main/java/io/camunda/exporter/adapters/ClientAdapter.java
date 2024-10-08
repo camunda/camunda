@@ -8,20 +8,25 @@
 package io.camunda.exporter.adapters;
 
 import io.camunda.exporter.ExporterResourceProvider;
+import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.schema.SchemaManager;
 import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.search.connect.configuration.ConnectConfiguration;
 import java.io.IOException;
 
 public interface ClientAdapter {
-  void createClient(final ConnectConfiguration config);
 
-  SearchEngineClient createSearchEngineClient();
+  static ClientAdapter of(final ExporterConfiguration configuration) {
+    return switch (ConnectionTypes.from(configuration.getConnect().getType())) {
+      case ELASTICSEARCH -> new ElasticsearchAdapter(configuration);
+      case OPENSEARCH -> new OpensearchAdapter(configuration);
+    };
+  }
 
-  SchemaManager createSchemaManager(
-      final ExporterResourceProvider provider, final ExporterConfiguration configuration);
+  SearchEngineClient getSearchEngineClient();
+
+  SchemaManager createSchemaManager(final ExporterResourceProvider provider);
 
   BatchRequest createBatchRequest();
 
