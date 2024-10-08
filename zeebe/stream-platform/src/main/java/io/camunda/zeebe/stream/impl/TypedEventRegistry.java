@@ -100,6 +100,7 @@ public final class TypedEventRegistry {
     registry.put(ValueType.USER, UserRecord.class);
     registry.put(ValueType.CLOCK, ClockRecord.class);
     registry.put(ValueType.AUTHORIZATION, AuthorizationRecord.class);
+    registry.put(ValueType.TENANT, AuthorizationRecord.class);
 
     EVENT_REGISTRY = Collections.unmodifiableMap(registry);
 
