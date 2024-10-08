@@ -44,7 +44,6 @@ public class OverwriteConfigurationsTest {
 
     // then
     assertThat(configuration.getElasticSearchConfiguration().getConnectionNodes()).hasSize(1);
-
     assertThat(configuration.getElasticSearchConfiguration().getConnectionNodes().get(0).getHost())
         .isEqualTo("foo");
   }

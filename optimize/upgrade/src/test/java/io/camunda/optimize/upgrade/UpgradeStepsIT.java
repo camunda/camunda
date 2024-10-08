@@ -7,16 +7,16 @@
  */
 package io.camunda.optimize.upgrade;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.INDEX_SUFFIX_PRE_ROLLOVER;
 import static io.camunda.optimize.util.SuppressionConstants.SAME_PARAM_VALUE;
-import static io.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import io.camunda.optimize.dto.optimize.query.MetadataDto;
+import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
-import io.camunda.optimize.service.db.schema.index.MetadataIndex;
-import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import io.camunda.optimize.upgrade.db.indices.UserTestDto;
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
-import io.camunda.optimize.upgrade.indices.RenameFieldTestIndex;
 import io.camunda.optimize.upgrade.plan.UpgradePlan;
 import io.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import io.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
@@ -28,23 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import lombok.SneakyThrows;
-import org.assertj.core.groups.Tuple;
-import org.elasticsearch.action.admin.indices.alias.Alias;
-import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
-import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.GetAliasesResponse;
-import org.elasticsearch.client.indices.CreateIndexRequest;
-import org.elasticsearch.client.indices.GetIndexRequest;
-import org.elasticsearch.client.indices.GetIndexResponse;
-import org.elasticsearch.client.indices.GetMappingsRequest;
-import org.elasticsearch.client.indices.GetMappingsResponse;
-import org.elasticsearch.client.indices.IndexTemplatesExistRequest;
-import org.elasticsearch.cluster.metadata.AliasMetadata;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.xcontent.XContentType;
 import org.junit.jupiter.api.Test;
 
 public class UpgradeStepsIT extends AbstractUpgradeIT {
@@ -60,7 +43,8 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
         UpgradePlanBuilder.createUpgradePlan()
             .fromVersion(FROM_VERSION)
             .toVersion(TO_VERSION)
-            .addUpgradeStep(new CreateIndexStep(TEST_INDEX_WITH_UPDATED_MAPPING_V2))
+            .addUpgradeStep(
+                applyLookupSkip(new CreateIndexStep(TEST_INDEX_WITH_UPDATED_MAPPING_V2)))
             .build();
 
     // when
@@ -68,22 +52,11 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
     // then
     final String versionedIndexName =
-        indexNameService.getOptimizeIndexNameWithVersionForAllIndicesOf(
-            TEST_INDEX_WITH_UPDATED_MAPPING_V2);
-    assertThat(
-            prefixAwareClient
-                .getHighLevelClient()
-                .indices()
-                .exists(
-                    new GetIndexRequest(versionedIndexName)
-                        .features(GetIndexRequest.Feature.MAPPINGS),
-                    prefixAwareClient.requestOptions()))
-        .isTrue();
-    final GetAliasesResponse alias =
-        getAliasesForAlias(
-            indexNameService.getOptimizeIndexAliasForIndex(
-                TEST_INDEX_WITH_UPDATED_MAPPING_V2.getIndexName()));
-    assertThatIndexIsSetAsWriteIndex(versionedIndexName, alias);
+        getIndexNameService()
+            .getOptimizeIndexNameWithVersionForAllIndicesOf(TEST_INDEX_WITH_UPDATED_MAPPING_V2);
+
+    assertThat(databaseIntegrationTestExtension.indexExists(versionedIndexName, true)).isTrue();
+    assertThatIndexIsSetAsWriteIndex(TEST_INDEX_WITH_UPDATED_MAPPING_V2);
   }
 
   @Test
@@ -93,29 +66,14 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
         UpgradePlanBuilder.createUpgradePlan()
             .fromVersion(FROM_VERSION)
             .toVersion(TO_VERSION)
-            .addUpgradeStep(new CreateIndexStep(TEST_INDEX_WITH_TEMPLATE_V1))
+            .addUpgradeStep(applyLookupSkip(new CreateIndexStep(TEST_INDEX_WITH_TEMPLATE_V1)))
             .build();
 
     // when
     upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
-    final String versionedIndexName =
-        indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_WITH_TEMPLATE_V1);
-    assertThat(
-            prefixAwareClient
-                .getHighLevelClient()
-                .indices()
-                .exists(
-                    new GetIndexRequest(versionedIndexName)
-                        .features(GetIndexRequest.Feature.MAPPINGS),
-                    prefixAwareClient.requestOptions()))
-        .isTrue();
-    final GetAliasesResponse alias =
-        getAliasesForAlias(
-            indexNameService.getOptimizeIndexAliasForIndex(
-                TEST_INDEX_WITH_TEMPLATE_V1.getIndexName()));
-    assertThatIndexIsSetAsWriteIndex(versionedIndexName, alias);
+    assertThatIndexIsSetAsWriteIndex(TEST_INDEX_WITH_TEMPLATE_V1);
   }
 
   @SneakyThrows
@@ -126,15 +84,20 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
         UpgradePlanBuilder.createUpgradePlan()
             .fromVersion(FROM_VERSION)
             .toVersion(TO_VERSION)
-            .addUpgradeStep(new CreateIndexStep(TEST_INDEX_V1))
-            .addUpgradeStep(new UpdateIndexStep(TEST_INDEX_WITH_UPDATED_MAPPING_V2))
+            .addUpgradeStep(applyLookupSkip(new CreateIndexStep(TEST_INDEX_V1)))
+            .addUpgradeStep(
+                applyLookupSkip(new UpdateIndexStep(TEST_INDEX_WITH_UPDATED_MAPPING_V2)))
             .build();
 
     // when
     upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
-    assertThat(prefixAwareClient.exists(TEST_INDEX_WITH_UPDATED_MAPPING_V2)).isTrue();
+    assertThat(
+            databaseIntegrationTestExtension.indexExists(
+                getIndexNameService()
+                    .getOptimizeIndexNameWithVersion(TEST_INDEX_WITH_UPDATED_MAPPING_V2)))
+        .isTrue();
   }
 
   @SneakyThrows
@@ -142,26 +105,28 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
   public void executeUpdateIndexStep_preexistingIndexWithoutAliasWriteIndexFlag() {
     // given
     final String aliasForIndex =
-        indexNameService.getOptimizeIndexAliasForIndex(TEST_INDEX_V1.getIndexName());
+        getIndexNameService().getOptimizeIndexAliasForIndex(TEST_INDEX_V1.getIndexName());
     createIndexWithoutWriteIndexFlagOnAlias(aliasForIndex);
 
     UpgradePlan upgradePlan =
         UpgradePlanBuilder.createUpgradePlan()
             .fromVersion(FROM_VERSION)
             .toVersion(TO_VERSION)
-            .addUpgradeStep(new UpdateIndexStep(TEST_INDEX_WITH_UPDATED_MAPPING_V2))
+            .addUpgradeStep(
+                applyLookupSkip(new UpdateIndexStep(TEST_INDEX_WITH_UPDATED_MAPPING_V2)))
             .build();
 
     // when
     upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
-    assertThat(prefixAwareClient.exists(TEST_INDEX_WITH_UPDATED_MAPPING_V2)).isTrue();
+    assertThat(
+            databaseIntegrationTestExtension.indexExists(
+                getIndexNameService()
+                    .getOptimizeIndexNameWithVersion(TEST_INDEX_WITH_UPDATED_MAPPING_V2)))
+        .isTrue();
     // even though not being set before the writeIndex flag is now set
-    final GetAliasesResponse alias = getAliasesForAlias(aliasForIndex);
-    assertThatIndexIsSetAsWriteIndex(
-        indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_WITH_UPDATED_MAPPING_V2),
-        alias);
+    assertThatIndexIsSetAsWriteIndex(TEST_INDEX_WITH_UPDATED_MAPPING_V2);
   }
 
   @SneakyThrows
@@ -172,17 +137,24 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
         UpgradePlanBuilder.createUpgradePlan()
             .fromVersion(FROM_VERSION)
             .toVersion(TO_VERSION)
-            .addUpgradeStep(new CreateIndexStep(TEST_INDEX_WITH_TEMPLATE_V1))
-            .addUpgradeStep(new UpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2))
+            .addUpgradeStep(applyLookupSkip(new CreateIndexStep(TEST_INDEX_WITH_TEMPLATE_V1)))
+            .addUpgradeStep(
+                applyLookupSkip(new UpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2)))
             .build();
 
     // when
     upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
-    assertThat(prefixAwareClient.exists(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2)).isTrue();
+    assertThat(
+            databaseIntegrationTestExtension.indexExists(
+                getIndexNameService()
+                    .getOptimizeIndexNameWithVersion(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2)))
+        .isTrue();
 
-    final Map<String, Object> mappingFields = getMappingFields();
+    final Map<String, ?> mappingFields =
+        databaseIntegrationTestExtension.getMappingFields(
+            TEST_INDEX_WITH_UPDATED_MAPPING_V2.getIndexName());
     assertThat(mappingFields).containsKey("email");
   }
 
@@ -192,30 +164,34 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
       executeUpdateIndexFromTemplateStep_preexistingIndexWasNotFromTemplateAndLackedAliasWriteIndexFlag() {
     // given
     final String aliasForIndex =
-        indexNameService.getOptimizeIndexAliasForIndex(TEST_INDEX_V1.getIndexName());
+        getIndexNameService().getOptimizeIndexAliasForIndex(TEST_INDEX_V1.getIndexName());
     createIndexWithoutWriteIndexFlagOnAlias(aliasForIndex);
 
     UpgradePlan upgradePlan =
         UpgradePlanBuilder.createUpgradePlan()
             .fromVersion(FROM_VERSION)
             .toVersion(TO_VERSION)
-            .addUpgradeStep(new UpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2))
+            .addUpgradeStep(
+                applyLookupSkip(new UpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2)))
             .build();
 
     // when
     upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
-    assertThat(prefixAwareClient.exists(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2)).isTrue();
+    assertThat(
+            databaseIntegrationTestExtension.indexExists(
+                getIndexNameService()
+                    .getOptimizeIndexNameWithVersion(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2)))
+        .isTrue();
 
-    final Map<String, Object> mappingFields = getMappingFields();
+    final Map<String, ?> mappingFields =
+        databaseIntegrationTestExtension.getMappingFields(
+            TEST_INDEX_WITH_UPDATED_MAPPING_V2.getIndexName());
     assertThat(mappingFields).containsKey("email");
 
     // even though not being set before the writeIndex flag is now set
-    assertThatIndexIsSetAsWriteIndex(
-        indexNameService.getOptimizeIndexNameWithVersion(
-            TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2),
-        getAliasesForAlias(aliasForIndex));
+    assertThatIndexIsSetAsWriteIndex(TEST_INDEX_WITH_UPDATED_MAPPING_V2, INDEX_SUFFIX_PRE_ROLLOVER);
   }
 
   @SneakyThrows
@@ -224,47 +200,40 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
       executeUpdateIndexFromTemplateStep_preexistingIndexWasNotFromTemplateAndHadWriteAndReadAlias() {
     // given
     final String aliasForIndex =
-        indexNameService.getOptimizeIndexAliasForIndex(TEST_INDEX_V1.getIndexName());
+        getIndexNameService().getOptimizeIndexAliasForIndex(TEST_INDEX_V1.getIndexName());
     final String readOnlyAliasForIndex =
-        indexNameService.getOptimizeIndexAliasForIndex("im-read-only");
+        getIndexNameService().getOptimizeIndexAliasForIndex("im-read-only");
 
-    final CreateIndexRequest request =
-        new CreateIndexRequest(indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V1));
-    request.alias(new Alias(aliasForIndex).writeIndex(true));
-    request.alias(new Alias(readOnlyAliasForIndex).writeIndex(false));
-    request.mapping(TEST_INDEX_V1.getSource());
-    prefixAwareClient
-        .getHighLevelClient()
-        .indices()
-        .create(request, prefixAwareClient.requestOptions());
+    Map<String, Boolean> aliases =
+        Map.of(
+            aliasForIndex, true,
+            readOnlyAliasForIndex, false);
+
+    databaseIntegrationTestExtension.createIndex(
+        getIndexNameService().getOptimizeIndexNameWithVersion(TEST_INDEX_V1),
+        aliases,
+        (DefaultIndexMappingCreator) TEST_INDEX_V1);
 
     UpgradePlan upgradePlan =
         UpgradePlanBuilder.createUpgradePlan()
             .fromVersion(FROM_VERSION)
             .toVersion(TO_VERSION)
-            .addUpgradeStep(new UpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2))
+            .addUpgradeStep(
+                applyLookupSkip(new UpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2)))
             .build();
 
     // when
     upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
-    assertThat(prefixAwareClient.exists(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2)).isTrue();
+    assertThat(
+            databaseIntegrationTestExtension.indexExists(
+                getIndexNameService()
+                    .getOptimizeIndexNameWithVersion(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2)))
+        .isTrue();
 
-    final String versionedIndexName =
-        indexNameService.getOptimizeIndexNameWithVersion(
-            TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
-    assertThatIndexIsSetAsWriteIndex(versionedIndexName, getAliasesForAlias(aliasForIndex));
-
-    assertThat(getAliasesForAlias(readOnlyAliasForIndex).getAliases())
-        .hasSize(1)
-        .extractingByKey(versionedIndexName)
-        .satisfies(
-            aliasMetaData ->
-                assertThat(aliasMetaData)
-                    .hasSize(1)
-                    .extracting(AliasMetadata::writeIndex)
-                    .containsExactly(false));
+    assertThatIndexIsSetAsWriteIndex(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
+    assertThat(databaseIntegrationTestExtension.isAliasReadOnly(readOnlyAliasForIndex)).isTrue();
   }
 
   @SneakyThrows
@@ -275,18 +244,19 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
         UpgradePlanBuilder.createUpgradePlan()
             .fromVersion(FROM_VERSION)
             .toVersion(INTERMEDIATE_VERSION)
-            .addUpgradeStep(new CreateIndexStep(TEST_INDEX_WITH_TEMPLATE_V1))
+            .addUpgradeStep(applyLookupSkip(new CreateIndexStep(TEST_INDEX_WITH_TEMPLATE_V1)))
             .build();
 
     upgradeProcedure.performUpgrade(buildIndexPlan);
 
-    prefixAwareClient.triggerRollover(TEST_INDEX_WITH_TEMPLATE_V1.getIndexName(), 0);
+    getPrefixAwareClient().triggerRollover(TEST_INDEX_WITH_TEMPLATE_V1.getIndexName(), 0);
 
     UpgradePlan upgradePlan =
         UpgradePlanBuilder.createUpgradePlan()
             .fromVersion(INTERMEDIATE_VERSION)
             .toVersion(TO_VERSION)
-            .addUpgradeStep(new UpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2))
+            .addUpgradeStep(
+                applyLookupSkip(new UpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2)))
             .build();
 
     // when update index after rollover
@@ -295,29 +265,26 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     // then optimize-users write alias points to updated users index
     final String expectedSuffixAfterRollover = "-000002";
     final String indexAlias =
-        indexNameService.getOptimizeIndexAliasForIndex(
-            TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName());
-    final Map<String, Set<AliasMetadata>> aliasMap = getAliasMap(indexAlias);
+        getIndexNameService()
+            .getOptimizeIndexAliasForIndex(
+                TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName());
+    final Map<String, Set<String>> aliasMap = getAliasMap(indexAlias);
     final List<String> indicesWithWriteAlias =
-        aliasMap.entrySet().stream()
-            .filter(e -> e.getValue().removeIf(AliasMetadata::writeIndex))
-            .map(Map.Entry::getKey)
-            .toList();
-    final Map<String, Object> mappingFields = getMappingFields();
+        databaseIntegrationTestExtension.getAllIndicesWithWriteAlias(
+            TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName());
+    final Map<String, ?> mappingFields =
+        databaseIntegrationTestExtension.getMappingFields(
+            TEST_INDEX_WITH_UPDATED_MAPPING_V2.getIndexName());
     assertThat(mappingFields).containsKey("email");
     assertThat(aliasMap.keySet()).hasSize(2);
     assertThat(indicesWithWriteAlias).hasSize(1);
     assertThat(indicesWithWriteAlias.get(0)).contains(expectedSuffixAfterRollover);
+
     // old template is gone
     assertThat(
-            prefixAwareClient
-                .getHighLevelClient()
-                .indices()
-                .existsTemplate(
-                    new IndexTemplatesExistRequest(
-                        indexNameService.getOptimizeIndexTemplateNameWithVersion(
-                            TEST_INDEX_WITH_TEMPLATE_V1)),
-                    prefixAwareClient.requestOptions()))
+            databaseIntegrationTestExtension.templateExists(
+                getIndexNameService()
+                    .getOptimizeIndexTemplateNameWithVersion(TEST_INDEX_WITH_TEMPLATE_V1)))
         .isFalse();
   }
 
@@ -328,7 +295,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
         UpgradePlanBuilder.createUpgradePlan()
             .fromVersion(FROM_VERSION)
             .toVersion(TO_VERSION)
-            .addUpgradeStep(new CreateIndexStep(TEST_INDEX_V2))
+            .addUpgradeStep(applyLookupSkip(new CreateIndexStep(TEST_INDEX_V2)))
             .addUpgradeStep(buildInsertTestIndexDataStep(UpgradeStepsIT.TEST_INDEX_V1))
             .build();
 
@@ -336,14 +303,17 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
-    final SearchResponse searchResponse =
-        prefixAwareClient.search(new SearchRequest(TEST_INDEX_V2.getIndexName()));
+    List<UserTestDto> result =
+        databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
+            TEST_INDEX_V2.getIndexName(), UserTestDto.class);
 
-    assertThat(searchResponse.getHits())
+    assertThat(result)
         .hasSize(1)
-        .extracting(SearchHit::getSourceAsMap)
-        .extracting("username", "password")
-        .containsExactly(new Tuple("admin", "admin"));
+        .allSatisfy(
+            user -> {
+              assertThat(user.getUsername()).isEqualTo("admin");
+              assertThat(user.getPassword()).isEqualTo("admin");
+            });
   }
 
   @Test
@@ -353,7 +323,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
         UpgradePlanBuilder.createUpgradePlan()
             .fromVersion(FROM_VERSION)
             .toVersion(TO_VERSION)
-            .addUpgradeStep(new CreateIndexStep(TEST_INDEX_V2))
+            .addUpgradeStep(applyLookupSkip(new CreateIndexStep(TEST_INDEX_V2)))
             .addUpgradeStep(buildInsertTestIndexDataStep(UpgradeStepsIT.TEST_INDEX_V1))
             .addUpgradeStep(buildUpdateTestIndexDataStep(UpgradeStepsIT.TEST_INDEX_V1))
             .build();
@@ -362,13 +332,17 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
-    final SearchResponse searchResponse =
-        prefixAwareClient.search(new SearchRequest(TEST_INDEX_V2.getIndexName()));
-    assertThat(searchResponse.getHits())
+    List<UserTestDto> result =
+        databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
+            TEST_INDEX_V2.getIndexName(), UserTestDto.class);
+
+    assertThat(result)
         .hasSize(1)
-        .extracting(SearchHit::getSourceAsMap)
-        .extracting("username", "password")
-        .containsExactly(new Tuple("admin", "admin1"));
+        .allSatisfy(
+            user -> {
+              assertThat(user.getUsername()).isEqualTo("admin");
+              assertThat(user.getPassword()).isEqualTo("admin1");
+            });
   }
 
   @Test
@@ -378,7 +352,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
         UpgradePlanBuilder.createUpgradePlan()
             .fromVersion(FROM_VERSION)
             .toVersion(TO_VERSION)
-            .addUpgradeStep(new CreateIndexStep(TEST_INDEX_V2))
+            .addUpgradeStep(applyLookupSkip(new CreateIndexStep(TEST_INDEX_V2)))
             .addUpgradeStep(buildInsertTestIndexDataStep(UpgradeStepsIT.TEST_INDEX_V1))
             .addUpgradeStep(buildDeleteTestIndexDataStep(UpgradeStepsIT.TEST_INDEX_V1))
             .build();
@@ -387,9 +361,11 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
-    final SearchResponse searchResponse =
-        prefixAwareClient.search(new SearchRequest(TEST_INDEX_V2.getIndexName()));
-    assertThat(searchResponse.getHits().getHits()).isEmpty();
+    List<UserTestDto> result =
+        databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
+            TEST_INDEX_V2.getIndexName(), UserTestDto.class);
+
+    assertThat(result).isEmpty();
   }
 
   @Test
@@ -399,7 +375,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
         UpgradePlanBuilder.createUpgradePlan()
             .fromVersion(FROM_VERSION)
             .toVersion(TO_VERSION)
-            .addUpgradeStep(new CreateIndexStep(TEST_INDEX_V2))
+            .addUpgradeStep(applyLookupSkip(new CreateIndexStep(TEST_INDEX_V2)))
             .addUpgradeStep(buildDeleteIndexStep(TEST_INDEX_V2))
             .build();
 
@@ -407,7 +383,10 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
-    assertThat(prefixAwareClient.exists(TEST_INDEX_V2)).isFalse();
+    assertThat(
+            databaseIntegrationTestExtension.indexExists(
+                getIndexNameService().getOptimizeIndexNameWithVersion(TEST_INDEX_V2)))
+        .isFalse();
   }
 
   @Test
@@ -417,18 +396,20 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
         UpgradePlanBuilder.createUpgradePlan()
             .fromVersion(FROM_VERSION)
             .toVersion(INTERMEDIATE_VERSION)
-            .addUpgradeStep(new CreateIndexStep(TEST_INDEX_WITH_TEMPLATE_V1))
+            .addUpgradeStep(applyLookupSkip(new CreateIndexStep(TEST_INDEX_WITH_TEMPLATE_V1)))
             .build();
 
     upgradeProcedure.performUpgrade(buildIndexPlan);
 
-    prefixAwareClient.triggerRollover(TEST_INDEX_WITH_TEMPLATE_V1.getIndexName(), 0);
+    getPrefixAwareClient().triggerRollover(TEST_INDEX_WITH_TEMPLATE_V1.getIndexName(), 0);
 
     // then two indices exist after the rollover
-    boolean indicesExist = prefixAwareClient.exists(TEST_INDEX_WITH_TEMPLATE_V1);
+    boolean indicesExist =
+        databaseIntegrationTestExtension.indexExists(
+            getIndexNameService().getOptimizeIndexNameWithVersion(TEST_INDEX_WITH_TEMPLATE_V1));
     assertThat(indicesExist).isTrue();
-    final GetIndexResponse response = getIndicesForMapping(TEST_INDEX_WITH_TEMPLATE_V1);
-    assertThat(response.getIndices()).hasSize(2);
+    final Set<String> response = getIndicesForMapping(TEST_INDEX_WITH_TEMPLATE_V1);
+    assertThat(response).hasSize(2);
 
     UpgradePlan upgradePlan =
         UpgradePlanBuilder.createUpgradePlan()
@@ -441,7 +422,9 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     upgradeProcedure.performUpgrade(upgradePlan);
 
     // then both the initial and rolled over index are deleted
-    indicesExist = prefixAwareClient.exists(TEST_INDEX_WITH_TEMPLATE_V1);
+    indicesExist =
+        databaseIntegrationTestExtension.indexExists(
+            getIndexNameService().getOptimizeIndexNameWithVersion(TEST_INDEX_WITH_TEMPLATE_V1));
     assertThat(indicesExist).isFalse();
   }
 
@@ -452,36 +435,36 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
         UpgradePlanBuilder.createUpgradePlan()
             .fromVersion(FROM_VERSION)
             .toVersion(TO_VERSION)
-            .addUpgradeStep(new CreateIndexStep(TEST_INDEX_V2))
-            .addUpgradeStep(new UpdateMappingIndexStep(TEST_INDEX_WITH_UPDATED_MAPPING_V2))
+            .addUpgradeStep(applyLookupSkip(new CreateIndexStep(TEST_INDEX_V2)))
+            .addUpgradeStep(
+                applyLookupSkip(new UpdateMappingIndexStep(TEST_INDEX_WITH_UPDATED_MAPPING_V2)))
             .build();
 
     // when
     upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
-    final Map<String, Object> mappingFields = getMappingFields();
+    final Map<String, ?> mappingFields =
+        databaseIntegrationTestExtension.getMappingFields(
+            TEST_INDEX_WITH_UPDATED_MAPPING_V2.getIndexName());
     assertThat(mappingFields).containsKey("email");
   }
 
   @Test
   public void fieldRenameWithoutRemovingOldFieldAbortsUpgrade() throws IOException {
     // given
-    createOptimizeIndexWithTypeAndVersion(new RenameFieldTestIndex(), 1);
+    createOptimizeIndexWithTypeAndVersion((DefaultIndexMappingCreator) TEST_INDEX_RENAME_FIELD, 1);
 
-    IndexRequest indexRequest =
-        new IndexRequest("users").source("{\"name\": \"yuri_loza\"}", XContentType.JSON);
-
-    prefixAwareClient.index(indexRequest);
-
-    prefixAwareClient.refresh(new RefreshRequest("*"));
+    databaseIntegrationTestExtension.insertTestDocuments(1, "users", "{\"name\": \"yuri_loza\"}");
+    getPrefixAwareClient().refresh("*");
 
     UpgradePlan upgradePlan =
         UpgradePlanBuilder.createUpgradePlan()
             .fromVersion(FROM_VERSION)
             .toVersion(TO_VERSION)
             .addUpgradeStep(
-                new UpdateIndexStep(TEST_INDEX_WITH_UPDATED_MAPPING_V2, "def foo = \"noop\";"))
+                applyLookupSkip(
+                    new UpdateIndexStep(TEST_INDEX_WITH_UPDATED_MAPPING_V2, "def foo = \"noop\";")))
             .build();
 
     // when
@@ -495,86 +478,51 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
         UpgradePlanBuilder.createUpgradePlan()
             .fromVersion(FROM_VERSION)
             .toVersion(TO_VERSION)
-            .addUpgradeStep(new CreateIndexStep(TEST_INDEX_V2))
+            .addUpgradeStep(applyLookupSkip(new CreateIndexStep(TEST_INDEX_V2)))
             .build();
 
     // when
     upgradeProcedure.performUpgrade(upgradePlan);
 
     // then
-    final SearchResponse searchResponse =
-        prefixAwareClient.search(new SearchRequest(METADATA_INDEX.getIndexName()));
-    assertThat(searchResponse.getHits())
+    List<MetadataDto> result =
+        databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
+            METADATA_INDEX.getIndexName(), MetadataDto.class);
+
+    assertThat(result)
         .hasSize(1)
-        .extracting(SearchHit::getSourceAsMap)
-        .extracting(MetadataIndex.SCHEMA_VERSION)
-        .containsExactly(TO_VERSION);
+        .allSatisfy(metadata -> assertThat(metadata.getSchemaVersion()).isEqualTo(TO_VERSION));
   }
 
-  private GetAliasesResponse getAliasesForAlias(final String readOnlyAliasForIndex)
-      throws IOException {
-    return prefixAwareClient.getAlias(new GetAliasesRequest(readOnlyAliasForIndex));
+  private void assertThatIndexIsSetAsWriteIndex(final IndexMappingCreator mappingCreator) {
+    assertThatIndexIsSetAsWriteIndex(mappingCreator, "");
   }
 
   private void assertThatIndexIsSetAsWriteIndex(
-      final String versionedIndexName, final GetAliasesResponse alias) {
-    assertThat(alias.getAliases())
-        .hasSize(1)
-        .extractingByKey(versionedIndexName)
-        .satisfies(
-            aliasMetaData ->
-                assertThat(aliasMetaData)
-                    .hasSize(1)
-                    .extracting(AliasMetadata::writeIndex)
-                    .containsExactly(true));
+      final IndexMappingCreator mappingCreator, String expectedSuffix) {
+    final List<String> indicesWithWriteAlias =
+        databaseIntegrationTestExtension.getAllIndicesWithWriteAlias(mappingCreator.getIndexName());
+    assertThat(indicesWithWriteAlias)
+        .containsExactly(
+            getIndexNameService().getOptimizeIndexNameWithVersion(mappingCreator) + expectedSuffix);
   }
 
   private void createIndexWithoutWriteIndexFlagOnAlias(final String aliasForIndex)
       throws IOException {
-    final CreateIndexRequest request =
-        new CreateIndexRequest(indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V1));
-    request.alias(new Alias(aliasForIndex).writeIndex(false));
-    request.mapping(TEST_INDEX_V1.getSource());
-    prefixAwareClient
-        .getHighLevelClient()
-        .indices()
-        .create(request, prefixAwareClient.requestOptions());
-  }
-
-  @SuppressWarnings(UNCHECKED_CAST)
-  private Map<String, Object> getMappingFields() throws IOException {
-    GetMappingsRequest request = new GetMappingsRequest();
-    request.indices(TEST_INDEX_WITH_UPDATED_MAPPING_V2.getIndexName());
-    GetMappingsResponse getMappingResponse = prefixAwareClient.getMapping(request);
-    final Object propertiesMap =
-        getMappingResponse.mappings().values().stream()
-            .findFirst()
-            .orElseThrow(
-                () ->
-                    new OptimizeRuntimeException(
-                        "There should be at least one mapping available for the index!"))
-            .getSourceAsMap()
-            .get("properties");
-    if (propertiesMap instanceof Map) {
-      return (Map<String, Object>) propertiesMap;
-    } else {
-      throw new OptimizeRuntimeException(
-          "ElasticSearch index mapping properties should be of type map");
-    }
+    databaseIntegrationTestExtension.createIndex(
+        getIndexNameService().getOptimizeIndexNameWithVersion(TEST_INDEX_V1),
+        aliasForIndex,
+        (DefaultIndexMappingCreator) TEST_INDEX_V1,
+        false);
   }
 
   @SuppressWarnings(SAME_PARAM_VALUE)
   private DeleteIndexIfExistsStep buildDeleteIndexStep(final IndexMappingCreator indexMapping) {
-    return new DeleteIndexIfExistsStep(indexMapping.getIndexName(), indexMapping.getVersion());
+    return applyLookupSkip(
+        new DeleteIndexIfExistsStep(indexMapping.getIndexName(), indexMapping.getVersion()));
   }
 
-  private Map<String, Set<AliasMetadata>> getAliasMap(final String aliasName) {
-    GetAliasesRequest aliasesRequest = new GetAliasesRequest().aliases(aliasName);
-    try {
-      return prefixAwareClient.getAlias(aliasesRequest).getAliases();
-    } catch (IOException e) {
-      String message = String.format("Could not retrieve alias map for alias {%s}.", aliasName);
-      throw new OptimizeRuntimeException(message, e);
-    }
+  private Map<String, Set<String>> getAliasMap(final String aliasName) throws IOException {
+    return getPrefixAwareClient().getAliasesForIndexPattern(aliasName);
   }
 }

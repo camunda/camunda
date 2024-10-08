@@ -20,8 +20,9 @@ import com.google.common.collect.ImmutableList;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.test.util.DateCreationFreezer;
-import io.camunda.optimize.upgrade.es.SchemaUpgradeClient;
+import io.camunda.optimize.upgrade.es.SchemaUpgradeClientES;
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
+import io.camunda.optimize.upgrade.os.SchemaUpgradeClientOS;
 import io.camunda.optimize.upgrade.plan.UpgradePlan;
 import io.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import io.camunda.optimize.upgrade.service.UpgradeStepLogEntryDto;
@@ -31,7 +32,8 @@ import io.github.netmikey.logunit.api.LogCapturer;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.List;
-import org.elasticsearch.client.indices.GetIndexResponse;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockserver.matchers.MatchType;
@@ -47,7 +49,9 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
 
   @RegisterExtension
   protected final LogCapturer schemaUpdateClientLogs =
-      LogCapturer.create().captureForType(SchemaUpgradeClient.class);
+      LogCapturer.create()
+          .captureForType(SchemaUpgradeClientOS.class)
+          .captureForType(SchemaUpgradeClientES.class);
 
   @Test
   public void singleIndexDetectRunningReindexAndWaitForIt() throws IOException {
@@ -55,7 +59,7 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     createIndex(TEST_INDEX_V1);
     insertTestDocuments(5);
     // and the update was run
-    final UpdateIndexStep upgradeStep = new UpdateIndexStep(TEST_INDEX_V2);
+    final UpdateIndexStep upgradeStep = createUpdateIndexStep(TEST_INDEX_V2);
     final UpgradePlan upgradePlan = createUpdatePlan(upgradeStep);
     // with a throttled reindex (so it is still pending later)
     final HttpRequest reindexRequest =
@@ -75,11 +79,14 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     // then it succeeds
     assertUpdateLogIsComplete(upgradeStep, frozenDate);
 
-    final GetIndexResponse newIndex = getIndicesForMapping(TEST_INDEX_V2);
-    assertThat(newIndex.getAliases()).hasSize(1);
-    assertThat(newIndex.getAliases().get(getVersionedIndexName(TEST_INDEX_V2.getIndexName(), 2)))
-        .singleElement()
-        .satisfies(aliasMetadata -> assertThat(aliasMetadata.writeIndex()).isTrue());
+    Map<String, Set<String>> aliases =
+        getPrefixAwareClient().getAliasesForIndexPattern(TEST_INDEX_V2.getIndexName());
+    assertThat(aliases).hasSize(1);
+    assertThat(getPrefixAwareClient().getAliasesForIndexPattern(TEST_INDEX_V2.getIndexName()))
+        .hasSize(1);
+    final List<String> newIndexes =
+        databaseIntegrationTestExtension.getAllIndicesWithWriteAlias(TEST_INDEX_V2.getIndexName());
+    assertThat(newIndexes).hasSize(1);
 
     schemaUpdateClientLogs.assertContains("Found pending task with id");
     schemaUpdateClientLogs.assertContains("will wait for it to finish.");
@@ -92,7 +99,7 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     insertTestDocuments(5);
     // and the update was run
     final UpdateIndexStep upgradeStep =
-        new UpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
+        createUpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
     final UpgradePlan upgradePlan = createUpdatePlan(upgradeStep);
     // with a throttled reindex (so it is still pending later)
     final HttpRequest firstIndexReindexRequest =
@@ -114,17 +121,13 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     // then it succeeds
     assertUpdateLogIsComplete(upgradeStep, frozenDate);
 
-    final GetIndexResponse newIndex =
-        getIndicesForMapping(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
-    assertThat(
-            newIndex
-                .getAliases()
-                .get(
-                    getVersionedIndexName(
-                            TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2)
-                        + INDEX_SUFFIX_PRE_ROLLOVER))
-        .singleElement()
-        .satisfies(aliasMetadata -> assertThat(aliasMetadata.writeIndex()).isTrue());
+    List<String> indicesWithWriteAlias =
+        databaseIntegrationTestExtension.getAllIndicesWithWriteAlias(
+            TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName());
+    assertThat(indicesWithWriteAlias)
+        .containsExactly(
+            getVersionedIndexName(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2)
+                + INDEX_SUFFIX_PRE_ROLLOVER);
 
     schemaUpdateClientLogs.assertContains("Found pending task with id");
     schemaUpdateClientLogs.assertContains("will wait for it to finish.");
@@ -135,11 +138,11 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     // given a prepared index with some data in it and being rolled over
     createIndex(TEST_INDEX_WITH_TEMPLATE_V1);
     insertTestDocuments(5);
-    prefixAwareClient.triggerRollover(TEST_INDEX_WITH_TEMPLATE_V1.getIndexName(), 0);
+    getPrefixAwareClient().triggerRollover(TEST_INDEX_WITH_TEMPLATE_V1.getIndexName(), 0);
     insertTestDocuments(5);
     // and the update was run
     final UpdateIndexStep upgradeStep =
-        new UpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
+        createUpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
     final UpgradePlan upgradePlan = createUpdatePlan(upgradeStep);
     // with a throttled reindex (so it is still pending later)
     final HttpRequest reindexRequest =
@@ -161,26 +164,21 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     // then it succeeds
     assertUpdateLogIsComplete(upgradeStep, frozenDate);
 
-    final GetIndexResponse newIndex =
-        getIndicesForMapping(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
-    assertThat(
-            newIndex
-                .getAliases()
-                .get(
-                    getVersionedIndexName(
-                            TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2)
-                        + INDEX_SUFFIX_PRE_ROLLOVER))
-        .singleElement()
-        .satisfies(aliasMetadata -> assertThat(aliasMetadata.writeIndex()).isFalse());
-    assertThat(
-            newIndex
-                .getAliases()
-                .get(
-                    getVersionedIndexName(
-                            TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2)
-                        + NEWEST_INDEX_SUFFIX))
-        .singleElement()
-        .satisfies(aliasMetadata -> assertThat(aliasMetadata.writeIndex()).isTrue());
+    List<String> indicesReadOnly =
+        databaseIntegrationTestExtension.getAllIndicesWithReadOnlyAlias(
+            TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName());
+    assertThat(indicesReadOnly)
+        .containsExactly(
+            getVersionedIndexName(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2)
+                + INDEX_SUFFIX_PRE_ROLLOVER);
+
+    List<String> indicesWithWriteAlias =
+        databaseIntegrationTestExtension.getAllIndicesWithWriteAlias(
+            TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName());
+    assertThat(indicesWithWriteAlias)
+        .containsExactly(
+            getVersionedIndexName(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2)
+                + NEWEST_INDEX_SUFFIX);
 
     schemaUpdateClientLogs.assertContains("Found pending task with id");
     schemaUpdateClientLogs.assertContains("will wait for it to finish.");
@@ -192,7 +190,7 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     createIndex(TEST_INDEX_V1);
     insertTestDocuments(5);
     // and the update was run
-    final UpdateIndexStep upgradeStep = new UpdateIndexStep(TEST_INDEX_V2);
+    final UpdateIndexStep upgradeStep = createUpdateIndexStep(TEST_INDEX_V2);
     final UpgradePlan upgradePlan = createUpdatePlan(upgradeStep);
     // and getting the reindex status immediately failed and aborted the upgrade
     performUpgradeAndLetReindexStatusCheckFail(upgradePlan, createReindexRequestMatcher());
@@ -207,11 +205,10 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     // then it succeeds
     assertUpdateLogIsComplete(upgradeStep, frozenDate);
 
-    final GetIndexResponse newIndex = getIndicesForMapping(TEST_INDEX_V2);
-    assertThat(newIndex.getAliases()).hasSize(1);
-    assertThat(newIndex.getAliases().get(getVersionedIndexName(TEST_INDEX_V2.getIndexName(), 2)))
-        .singleElement()
-        .satisfies(aliasMetadata -> assertThat(aliasMetadata.writeIndex()).isTrue());
+    List<String> indicesWithWriteAlias =
+        databaseIntegrationTestExtension.getAllIndicesWithWriteAlias(TEST_INDEX_V2.getIndexName());
+    assertThat(indicesWithWriteAlias)
+        .containsExactly(getVersionedIndexName(TEST_INDEX_V2.getIndexName(), 2));
 
     schemaUpdateClientLogs.assertContains(
         "Found that index [optimize-users_v2] already contains "
@@ -225,7 +222,7 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     insertTestDocuments(5);
     // and the update was run
     final UpdateIndexStep upgradeStep =
-        new UpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
+        createUpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
     final UpgradePlan upgradePlan = createUpdatePlan(upgradeStep);
     // and getting the reindex status immediately failed and aborted the upgrade
     performUpgradeAndLetReindexStatusCheckFail(upgradePlan, createReindexRequestMatcher());
@@ -240,17 +237,13 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     // then it succeeds
     assertUpdateLogIsComplete(upgradeStep, frozenDate);
 
-    final GetIndexResponse newIndex =
-        getIndicesForMapping(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
-    assertThat(
-            newIndex
-                .getAliases()
-                .get(
-                    getVersionedIndexName(
-                            TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2)
-                        + INDEX_SUFFIX_PRE_ROLLOVER))
-        .singleElement()
-        .satisfies(aliasMetadata -> assertThat(aliasMetadata.writeIndex()).isTrue());
+    List<String> indices =
+        databaseIntegrationTestExtension.getAllIndicesWithWriteAlias(
+            TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName());
+    assertThat(indices)
+        .containsExactly(
+            getVersionedIndexName(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2)
+                + INDEX_SUFFIX_PRE_ROLLOVER);
 
     schemaUpdateClientLogs.assertContains(
         "Found that index [optimize-users_v2-000001] already contains "
@@ -262,11 +255,11 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     // given a prepared index with some data in it and being rolled over
     createIndex(TEST_INDEX_WITH_TEMPLATE_V1);
     insertTestDocuments(5);
-    prefixAwareClient.triggerRollover(TEST_INDEX_WITH_TEMPLATE_V1.getIndexName(), 0);
+    getPrefixAwareClient().triggerRollover(TEST_INDEX_WITH_TEMPLATE_V1.getIndexName(), 0);
     insertTestDocuments(5);
     // and the update was run
     final UpdateIndexStep upgradeStep =
-        new UpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
+        createUpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
     final UpgradePlan upgradePlan = createUpdatePlan(upgradeStep);
     // and getting the reindex status immediately failed and aborted the upgrade
     final HttpRequest reindexRequest =
@@ -287,26 +280,21 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     // then it succeeds
     assertUpdateLogIsComplete(upgradeStep, frozenDate);
 
-    final GetIndexResponse newIndex =
-        getIndicesForMapping(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
-    assertThat(
-            newIndex
-                .getAliases()
-                .get(
-                    getVersionedIndexName(
-                            TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2)
-                        + INDEX_SUFFIX_PRE_ROLLOVER))
-        .singleElement()
-        .satisfies(aliasMetadata -> assertThat(aliasMetadata.writeIndex()).isFalse());
-    assertThat(
-            newIndex
-                .getAliases()
-                .get(
-                    getVersionedIndexName(
-                            TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2)
-                        + NEWEST_INDEX_SUFFIX))
-        .singleElement()
-        .satisfies(aliasMetadata -> assertThat(aliasMetadata.writeIndex()).isTrue());
+    List<String> indicesReadOnly =
+        databaseIntegrationTestExtension.getAllIndicesWithReadOnlyAlias(
+            TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName());
+    assertThat(indicesReadOnly)
+        .containsExactly(
+            getVersionedIndexName(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2)
+                + INDEX_SUFFIX_PRE_ROLLOVER);
+
+    List<String> indicesWithWriteAlias =
+        databaseIntegrationTestExtension.getAllIndicesWithWriteAlias(
+            TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName());
+    assertThat(indicesWithWriteAlias)
+        .containsExactly(
+            getVersionedIndexName(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName(), 2)
+                + NEWEST_INDEX_SUFFIX);
 
     schemaUpdateClientLogs.assertContains(
         "Found that index [optimize-users_v2-000001] already contains "
@@ -341,6 +329,10 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
                 .build());
   }
 
+  private static UpdateIndexStep createUpdateIndexStep(final IndexMappingCreator index) {
+    return applyLookupSkip(new UpdateIndexStep(index));
+  }
+
   private UpgradePlan createUpdatePlan(final UpdateIndexStep upgradeStep) {
     return UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(INTERMEDIATE_VERSION)
@@ -354,7 +346,7 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
         UpgradePlanBuilder.createUpgradePlan()
             .fromVersion(FROM_VERSION)
             .toVersion(INTERMEDIATE_VERSION)
-            .addUpgradeSteps(ImmutableList.of(new CreateIndexStep(index)))
+            .addUpgradeSteps(ImmutableList.of(applyLookupSkip(new CreateIndexStep(index))))
             .build());
   }
 

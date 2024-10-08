@@ -30,8 +30,8 @@ public class DeleteImportIndexIndex86IT extends AbstractUpgrade86IT {
 
   @SneakyThrows
   private List<String> getImportIndexIndexNames() {
-    return prefixAwareClient.getAllIndexNames().stream()
-        .filter(indexName -> indexName.contains("import-index"))
+    return getPrefixAwareClient().getAllIndexNames().stream()
+        .filter(indexName -> indexName.contains("optimize-import-index"))
         .toList();
   }
 }

@@ -13,12 +13,12 @@ import static org.mockserver.model.HttpRequest.request;
 
 import io.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
 import io.camunda.optimize.service.db.es.schema.index.MetadataIndexES;
+import io.camunda.optimize.service.db.os.schema.OpenSearchMetadataService;
 import io.camunda.optimize.service.db.schema.index.MetadataIndex;
 import io.camunda.optimize.upgrade.main.UpgradeProcedure;
 import io.camunda.optimize.upgrade.plan.UpgradePlan;
 import io.camunda.optimize.upgrade.plan.factories.CurrentVersionNoOperationUpgradePlanFactory;
 import io.github.netmikey.logunit.api.LogCapturer;
-import org.elasticsearch.ElasticsearchStatusException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockserver.model.HttpResponse;
@@ -29,12 +29,13 @@ public class UpdateMissingMetadataIT extends AbstractUpgradeIT {
   protected final LogCapturer logCapturer =
       LogCapturer.create()
           .captureForType(UpgradeProcedure.class)
-          .captureForType(ElasticSearchMetadataService.class);
+          .captureForType(ElasticSearchMetadataService.class)
+          .captureForType(OpenSearchMetadataService.class);
 
   @Test
   public void updateIsSkippedIfNoMetadataIndexExists() {
     // given
-    cleanAllDataFromElasticsearch();
+    cleanAllDataFromDatabase();
     final UpgradePlan upgradePlan =
         new CurrentVersionNoOperationUpgradePlanFactory().createUpgradePlan();
 
@@ -44,7 +45,7 @@ public class UpdateMissingMetadataIT extends AbstractUpgradeIT {
     // then it is skipped
     logCapturer.assertContains("Optimize Metadata index wasn't found, thus no metadata available.");
     logCapturer.assertContains(
-        "No Connection to elasticsearch or no Optimize Metadata index found, skipping update to "
+        "No Connection to database or no Optimize Metadata index found, skipping update to "
             + upgradePlan.getToVersion().getValue()
             + ".");
   }
@@ -63,7 +64,7 @@ public class UpdateMissingMetadataIT extends AbstractUpgradeIT {
     logCapturer.assertContains(
         "Optimize Metadata index exists but no metadata doc was found, thus no metadata available.");
     logCapturer.assertContains(
-        "No Connection to elasticsearch or no Optimize Metadata index found, skipping update to "
+        "No Connection to database or no Optimize Metadata index found, skipping update to "
             + upgradePlan.getToVersion().getValue()
             + ".");
   }
@@ -81,8 +82,7 @@ public class UpdateMissingMetadataIT extends AbstractUpgradeIT {
 
     // when
     assertThatThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan))
-        .hasMessageContaining("Failed retrieving the Optimize metadata document from database!")
-        .hasCauseInstanceOf(ElasticsearchStatusException.class);
+        .hasMessageContaining("Failed retrieving the Optimize metadata document from database!");
 
     logCapturer.assertContains("Failed retrieving the Optimize metadata document from database!");
   }

@@ -20,7 +20,7 @@ public class DeleteOnboardingStateIndex86IT extends AbstractUpgrade86IT {
   public void deleteOnboardingStateIndex() {
     // given pre-upgrade
     List<String> onboardingStateIndexList =
-        prefixAwareClient.getAllIndexNames().stream()
+        getPrefixAwareClient().getAllIndexNames().stream()
             .filter(indexName -> indexName.contains("onboarding-state"))
             .toList();
     assertThat(onboardingStateIndexList).hasSize(1);
@@ -30,7 +30,7 @@ public class DeleteOnboardingStateIndex86IT extends AbstractUpgrade86IT {
 
     // then
     List<String> onboardingStateIndexListPostUpgrade =
-        prefixAwareClient.getAllIndexNames().stream()
+        getPrefixAwareClient().getAllIndexNames().stream()
             .filter(indexName -> indexName.contains("onboarding-state"))
             .toList();
     assertThat(onboardingStateIndexListPostUpgrade).isEmpty();

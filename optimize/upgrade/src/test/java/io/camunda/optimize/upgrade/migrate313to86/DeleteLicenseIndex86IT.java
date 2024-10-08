@@ -20,7 +20,7 @@ public class DeleteLicenseIndex86IT extends AbstractUpgrade86IT {
   public void deleteLicenseIndex() {
     // given pre-upgrade
     List<String> licenseIndexPreUpgrade =
-        prefixAwareClient.getAllIndexNames().stream()
+        getPrefixAwareClient().getAllIndexNames().stream()
             .filter(indexName -> indexName.contains("license"))
             .toList();
     assertThat(licenseIndexPreUpgrade).hasSize(1);
@@ -30,7 +30,7 @@ public class DeleteLicenseIndex86IT extends AbstractUpgrade86IT {
 
     // then
     List<String> licenseIndexPostUpgrade =
-        prefixAwareClient.getAllIndexNames().stream()
+        getPrefixAwareClient().getAllIndexNames().stream()
             .filter(indexName -> indexName.contains("license"))
             .toList();
     assertThat(licenseIndexPostUpgrade).isEmpty();

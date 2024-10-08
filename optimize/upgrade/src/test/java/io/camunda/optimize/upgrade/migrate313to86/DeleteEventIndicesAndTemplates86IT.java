@@ -20,21 +20,21 @@ public class DeleteEventIndicesAndTemplates86IT extends AbstractUpgrade86IT {
   public void allEventIndicesAndTemplatesAreRemoved() {
     // given
     final List<String> eventIndexListPreUpgrade =
-        prefixAwareClient.getAllIndexNames().stream()
+        getPrefixAwareClient().getAllIndexNames().stream()
             .filter(indexName -> indexName.contains("event"))
             .toList();
     assertThat(eventIndexListPreUpgrade).hasSize(6);
-    assertThat(prefixAwareClient.templateExists("optimize-event_v4")).isTrue();
+    assertThat(databaseIntegrationTestExtension.templateExists("optimize-event_v4")).isTrue();
 
     // when
     performUpgrade();
 
     // then
     final List<String> eventIndexListPostUpgrade =
-        prefixAwareClient.getAllIndexNames().stream()
+        getPrefixAwareClient().getAllIndexNames().stream()
             .filter(indexName -> indexName.contains("event"))
             .toList();
     assertThat(eventIndexListPostUpgrade).isEmpty();
-    assertThat(prefixAwareClient.templateExists("optimize-event_v4")).isFalse();
+    assertThat(databaseIntegrationTestExtension.templateExists("optimize-event_v4")).isFalse();
   }
 }

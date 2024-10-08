@@ -28,7 +28,6 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
-import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockserver.matchers.Times;
@@ -62,7 +61,7 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
                 + "_"
                 + SCHEMA_CREATE_INDEX
                 + "_"
-                + indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V1),
+                + getIndexNameService().getOptimizeIndexNameWithVersion(TEST_INDEX_V1),
             UpgradeStepLogEntryDto.class);
     assertThat(updateLogEntries)
         .isPresent()
@@ -177,7 +176,7 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
     assertThatThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan))
         .isInstanceOf(UpgradeRuntimeException.class);
     dbMockServer.verify(indexDeleteRequest, exactly(1));
-    prefixAwareClient.refresh(new RefreshRequest("*"));
+    getPrefixAwareClient().refresh("*");
 
     // when it is retried
     final OffsetDateTime frozenDate2 =
@@ -280,10 +279,10 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
   }
 
   private CreateIndexStep buildCreateIndexStep(final IndexMappingCreator index) {
-    return new CreateIndexStep(index);
+    return applyLookupSkip(new CreateIndexStep(index));
   }
 
   private UpdateIndexStep buildUpdateIndexStep(final IndexMappingCreator index) {
-    return new UpdateIndexStep(index);
+    return applyLookupSkip(new UpdateIndexStep(index));
   }
 }

@@ -33,9 +33,9 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-import org.elasticsearch.client.indices.GetIndexResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -91,18 +91,17 @@ public class UpgradeStepIdempotenceIT extends AbstractUpgradeIT {
                   .toVersion(INTERMEDIATE_VERSION)
                   .addUpgradeSteps(
                       ImmutableList.of(
-                          new CreateIndexStep(TEST_INDEX_WITH_TEMPLATE_V1),
+                          applyLookupSkip(new CreateIndexStep(TEST_INDEX_WITH_TEMPLATE_V1)),
                           buildInsertTestIndexDataStep(TEST_INDEX_WITH_TEMPLATE_V1)))
                   .build());
 
-          prefixAwareClient.triggerRollover(indexName, 0);
+          getPrefixAwareClient().triggerRollover(indexName, 0);
         },
-        new UpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2));
+        applyLookupSkip(new UpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2)));
 
     // then it succeeds on resume
-    final GetIndexResponse response =
-        getIndicesForMapping(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
-    assertThat(response.getIndices())
+    final Set<String> response = getIndicesForMapping(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
+    assertThat(response)
         .hasSize(2)
         .allSatisfy(index -> assertThat(index).contains(getVersionedIndexName(indexName, 2)));
   }
@@ -120,11 +119,11 @@ public class UpgradeStepIdempotenceIT extends AbstractUpgradeIT {
                   .toVersion(INTERMEDIATE_VERSION)
                   .addUpgradeSteps(
                       ImmutableList.of(
-                          new CreateIndexStep(TEST_INDEX_WITH_TEMPLATE_V1),
+                          applyLookupSkip(new CreateIndexStep(TEST_INDEX_WITH_TEMPLATE_V1)),
                           buildInsertTestIndexDataStep(TEST_INDEX_WITH_TEMPLATE_V1)))
                   .build());
 
-          prefixAwareClient.triggerRollover(indexName, 0);
+          getPrefixAwareClient().triggerRollover(indexName, 0);
         },
         () -> {
           // when creating the second rolled over index fails the upgrade
@@ -136,12 +135,11 @@ public class UpgradeStepIdempotenceIT extends AbstractUpgradeIT {
               .error(HttpError.error().withDropConnection(true));
           return createRolledOverIndex2Request;
         },
-        new UpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2));
+        applyLookupSkip(new UpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2)));
 
     // then it succeeds on resume
-    final GetIndexResponse response =
-        getIndicesForMapping(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
-    assertThat(response.getIndices())
+    final Set<String> response = getIndicesForMapping(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
+    assertThat(response)
         .hasSize(2)
         .allSatisfy(index -> assertThat(index).contains(getVersionedIndexName(indexName, 2)));
   }
@@ -232,32 +230,36 @@ public class UpgradeStepIdempotenceIT extends AbstractUpgradeIT {
         Arguments.of(
             UpgradeStepType.SCHEMA_CREATE_INDEX,
             Collections.emptyList(),
-            new CreateIndexStep(indexVersion1)),
+            applyLookupSkip(new CreateIndexStep(indexVersion1))),
         Arguments.of(
             UpgradeStepType.SCHEMA_DELETE_INDEX,
-            ImmutableList.of(new CreateIndexStep(indexVersion1)),
-            new DeleteIndexIfExistsStep(indexVersion1.getIndexName(), indexVersion1.getVersion())),
+            ImmutableList.of(applyLookupSkip(new CreateIndexStep(indexVersion1))),
+            applyLookupSkip(
+                new DeleteIndexIfExistsStep(
+                    indexVersion1.getIndexName(), indexVersion1.getVersion()))),
         Arguments.of(
             UpgradeStepType.SCHEMA_UPDATE_MAPPING,
-            ImmutableList.of(new CreateIndexStep(indexVersion1)),
-            new UpdateMappingIndexStep(indexVersion1)),
+            ImmutableList.of(applyLookupSkip(new CreateIndexStep(indexVersion1))),
+            applyLookupSkip(new UpdateMappingIndexStep(indexVersion1))),
         Arguments.of(
             UpgradeStepType.SCHEMA_UPDATE_INDEX,
-            ImmutableList.of(new CreateIndexStep(indexVersion1)),
-            new UpdateIndexStep(indexVersion2)),
+            ImmutableList.of(applyLookupSkip(new CreateIndexStep(indexVersion1))),
+            applyLookupSkip(new UpdateIndexStep(indexVersion2))),
         Arguments.of(
             UpgradeStepType.DATA_INSERT,
-            ImmutableList.of(new CreateIndexStep(indexVersion1)),
+            ImmutableList.of(applyLookupSkip(new CreateIndexStep(indexVersion1))),
             buildInsertTestIndexDataStep(indexVersion1)),
         Arguments.of(
             UpgradeStepType.DATA_DELETE,
             ImmutableList.of(
-                new CreateIndexStep(indexVersion1), buildInsertTestIndexDataStep(indexVersion1)),
+                applyLookupSkip(new CreateIndexStep(indexVersion1)),
+                buildInsertTestIndexDataStep(indexVersion1)),
             buildDeleteTestIndexDataStep(indexVersion1)),
         Arguments.of(
             UpgradeStepType.DATA_UPDATE,
             ImmutableList.of(
-                new CreateIndexStep(indexVersion1), buildInsertTestIndexDataStep(indexVersion1)),
+                applyLookupSkip(new CreateIndexStep(indexVersion1)),
+                buildInsertTestIndexDataStep(indexVersion1)),
             buildUpdateTestIndexDataStep(indexVersion1)));
   }
 }

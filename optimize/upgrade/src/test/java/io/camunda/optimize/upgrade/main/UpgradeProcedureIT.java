@@ -124,7 +124,7 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
   @Test
   public void upgradeDoesNotFailOnOnMissingMetadataIndex() {
     // given
-    cleanAllDataFromElasticsearch();
+    cleanAllDataFromDatabase();
 
     // when
     assertThatNoException()
@@ -132,7 +132,7 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
 
     // then
     logCapturer.assertContains(
-        "No Connection to elasticsearch or no Optimize Metadata index found, skipping update to "
+        "No Connection to database or no Optimize Metadata index found, skipping update to "
             + previousVersionMajorMinorUpgradePlan.getToVersion().getValue()
             + ".");
   }
@@ -146,14 +146,15 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
         UpgradePlanBuilder.createUpgradePlan()
             .fromVersion(PreviousVersion.PREVIOUS_VERSION)
             .toVersion(Version.VERSION)
-            .addUpgradeStep(new CreateIndexStep(TEST_INDEX_V1))
+            .addUpgradeStep(applyLookupSkip(new CreateIndexStep(TEST_INDEX_V1)))
             .addUpgradeStep(buildInsertTestIndexDataStep(UpgradeStepsIT.TEST_INDEX_V1))
             .addUpgradeStep(
-                new UpdateIndexStep(
-                    TEST_INDEX_V2,
-                    "params.get(ctx._source.someNonExistentField).values();",
-                    Collections.emptyMap(),
-                    Collections.emptySet()))
+                applyLookupSkip(
+                    new UpdateIndexStep(
+                        TEST_INDEX_V2,
+                        "params.get(ctx._source.someNonExistentField).values();",
+                        Collections.emptyMap(),
+                        Collections.emptySet())))
             .build();
 
     // when

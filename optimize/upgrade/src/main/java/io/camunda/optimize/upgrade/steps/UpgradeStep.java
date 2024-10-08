@@ -8,9 +8,9 @@
 package io.camunda.optimize.upgrade.steps;
 
 import com.google.common.annotations.VisibleForTesting;
-import io.camunda.optimize.service.db.schema.IndexLookupUtil;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
+import io.camunda.optimize.upgrade.db.index.IndexLookupUtil;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;

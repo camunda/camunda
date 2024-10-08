@@ -38,10 +38,10 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
   @Test
   public void deleteIndexEventuallySucceedsOnPendingSnapshot() {
     // given
-    UpgradePlan upgradePlan = createDeleteIndexPlan();
+    final UpgradePlan upgradePlan = createDeleteIndexPlan();
 
     final String versionedIndexName =
-        indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V2);
+        getIndexNameService().getOptimizeIndexNameWithVersion(TEST_INDEX_V2);
     final HttpRequest indexDeleteRequest = createIndexDeleteRequest(versionedIndexName);
     dbMockServer
         // respond with this error 2 times, afterwards the request will be forwarded to elastic
@@ -60,17 +60,20 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     // and the mocked delete endpoint was called three times in total
     dbMockServer.verify(indexDeleteRequest, exactly(3));
     // and the index is gone
-    assertThat(prefixAwareClient.exists(TEST_INDEX_V2)).isFalse();
+    assertThat(
+            databaseIntegrationTestExtension.indexExists(
+                getIndexNameService().getOptimizeIndexNameWithVersion(TEST_INDEX_V2)))
+        .isFalse();
   }
 
   @SneakyThrows
   @Test
   public void deleteIndexIndexFailsOnOtherError() {
     // given
-    UpgradePlan upgradePlan = createDeleteIndexPlan();
+    final UpgradePlan upgradePlan = createDeleteIndexPlan();
 
     final String versionedIndexName =
-        indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V2);
+        getIndexNameService().getOptimizeIndexNameWithVersion(TEST_INDEX_V2);
     final HttpRequest indexDeleteRequest = createIndexDeleteRequest(versionedIndexName);
     dbMockServer
         // respond with a different error
@@ -84,20 +87,23 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     // and the mocked delete endpoint was called one time in total
     dbMockServer.verify(indexDeleteRequest, exactly(1));
     // and the index is still there
-    assertThat(prefixAwareClient.exists(TEST_INDEX_V2)).isTrue();
+    assertThat(
+            databaseIntegrationTestExtension.indexExists(
+                getIndexNameService().getOptimizeIndexNameWithVersion(TEST_INDEX_V2)))
+        .isTrue();
   }
 
   @SneakyThrows
   @Test
   public void updateIndexEventuallySucceedsOnPendingSnapshot() {
     // given
-    UpgradePlan upgradePlan = createUpdateIndexPlan();
+    final UpgradePlan upgradePlan = createUpdateIndexPlan();
 
     final String oldIndexToDeleteName =
-        indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V1);
+        getIndexNameService().getOptimizeIndexNameWithVersion(TEST_INDEX_V1);
     final HttpRequest indexDeleteRequest = createIndexDeleteRequest(oldIndexToDeleteName);
     dbMockServer
-        // respond with this error 2 times, afterwards the request will be forwarded to elastic
+        // respond with this error 2 times, afterwards the request will be forwarded to database
         // again
         .when(indexDeleteRequest, Times.exactly(2))
         .respond(createSnapshotInProgressResponse(oldIndexToDeleteName));
@@ -113,18 +119,25 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     // and the mocked delete endpoint was called three times in total
     dbMockServer.verify(indexDeleteRequest, exactly(3));
     // and the old index is gone
-    assertThat(prefixAwareClient.exists(TEST_INDEX_V1)).isFalse();
+    assertThat(
+            databaseIntegrationTestExtension.indexExists(
+                getIndexNameService().getOptimizeIndexNameWithVersion(TEST_INDEX_V1)))
+        .isFalse();
     // and the new index exists
-    assertThat(prefixAwareClient.exists(TEST_INDEX_WITH_UPDATED_MAPPING_V2)).isTrue();
+    assertThat(
+            databaseIntegrationTestExtension.indexExists(
+                getIndexNameService()
+                    .getOptimizeIndexNameWithVersion(TEST_INDEX_WITH_UPDATED_MAPPING_V2)))
+        .isTrue();
   }
 
   @Test
   public void updateDeleteIndexFailsOnOtherError() throws IOException {
     // given
-    UpgradePlan upgradePlan = createUpdateIndexPlan();
+    final UpgradePlan upgradePlan = createUpdateIndexPlan();
 
     final String oldIndexToDeleteName =
-        indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V1);
+        getIndexNameService().getOptimizeIndexNameWithVersion(TEST_INDEX_V1);
     final HttpRequest indexDeleteRequest = createIndexDeleteRequest(oldIndexToDeleteName);
     dbMockServer
         // respond with a different error
@@ -138,16 +151,23 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     // and the mocked delete endpoint was called one time in total
     dbMockServer.verify(indexDeleteRequest, exactly(1));
     // and the old index is still there
-    assertThat(prefixAwareClient.exists(TEST_INDEX_V1)).isTrue();
+    assertThat(
+            databaseIntegrationTestExtension.indexExists(
+                getIndexNameService().getOptimizeIndexNameWithVersion(TEST_INDEX_V1)))
+        .isTrue();
     // and the new index as well
-    assertThat(prefixAwareClient.exists(TEST_INDEX_WITH_UPDATED_MAPPING_V2)).isTrue();
+    assertThat(
+            databaseIntegrationTestExtension.indexExists(
+                getIndexNameService()
+                    .getOptimizeIndexNameWithVersion(TEST_INDEX_WITH_UPDATED_MAPPING_V2)))
+        .isTrue();
   }
 
   private UpgradePlan createDeleteIndexPlan() {
     return UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(new CreateIndexStep(TEST_INDEX_V2))
+        .addUpgradeStep(applyLookupSkip(new CreateIndexStep(TEST_INDEX_V2)))
         .addUpgradeStep(buildDeleteIndexStep(TEST_INDEX_V2))
         .build();
   }
@@ -156,7 +176,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     return UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(new CreateIndexStep(TEST_INDEX_V1))
+        .addUpgradeStep(applyLookupSkip(new CreateIndexStep(TEST_INDEX_V1)))
         .addUpgradeStep(buildUpdateIndexStep(TEST_INDEX_WITH_UPDATED_MAPPING_V2))
         .build();
   }
@@ -179,11 +199,12 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
   }
 
   private UpdateIndexStep buildUpdateIndexStep(final IndexMappingCreator index) {
-    return new UpdateIndexStep(index);
+    return applyLookupSkip(new UpdateIndexStep(index));
   }
 
   @SuppressWarnings(SAME_PARAM_VALUE)
   private DeleteIndexIfExistsStep buildDeleteIndexStep(final IndexMappingCreator indexMapping) {
-    return new DeleteIndexIfExistsStep(indexMapping.getIndexName(), indexMapping.getVersion());
+    return applyLookupSkip(
+        new DeleteIndexIfExistsStep(indexMapping.getIndexName(), indexMapping.getVersion()));
   }
 }
