@@ -24,9 +24,6 @@ import io.camunda.zeebe.util.Either;
  * This processor decorates processors where authorization checks are required, taking care of the
  * authorization checks for them. If the authorization check fails, the processor will reject the
  * command and write a rejection response back to the client.
- *
- * <p>This decorator should be used for processors that do not require a resource from the state to
- * determine which resourceIds it is permitted for.
  */
 public class AuthorizableCommandProcessor<T extends UnifiedRecordValue, Resource>
     implements CommandProcessor<T> {
