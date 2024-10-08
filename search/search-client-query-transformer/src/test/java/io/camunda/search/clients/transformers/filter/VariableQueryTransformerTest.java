@@ -84,7 +84,7 @@ public class VariableQueryTransformerTest extends AbstractTransformerTest {
                   .isInstanceOfSatisfying(
                       SearchTermQuery.class,
                       (term) -> {
-                        assertThat(term.field()).isEqualTo("processInstanceId");
+                        assertThat(term.field()).isEqualTo("processInstanceKey");
                         assertThat(term.value().longValue()).isEqualTo(54321L);
                       });
             });
