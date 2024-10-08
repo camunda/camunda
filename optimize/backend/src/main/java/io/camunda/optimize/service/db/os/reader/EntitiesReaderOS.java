@@ -46,7 +46,6 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import io.camunda.optimize.util.types.MapUtil;
-import jakarta.ws.rs.BadRequestException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
