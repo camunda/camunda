@@ -143,13 +143,6 @@ public class CamundaExporter implements Exporter {
       searchEngineClient.putIndexLifeCyclePolicy(
           configuration.elasticsearch.getRetention().getPolicyName(),
           configuration.elasticsearch.getRetention().getMinimumAge());
-
-      final var lifecycleUpdate =
-          Map.of(
-              "index.lifecycle.name", configuration.elasticsearch.getRetention().getPolicyName());
-
-      searchEngineClient.putSettings(
-          provider.getIndexDescriptors().stream().toList(), lifecycleUpdate);
     }
   }
 
