@@ -22,6 +22,7 @@ public class CamundaExporterMetrics {
   private final MeterRegistry meterRegistry;
   private final AtomicInteger bulkMemorySize = new AtomicInteger(0);
   private final Timer flushLatency;
+  private Timer.Sample flushLatencyMeasurement;
 
   public CamundaExporterMetrics(final MeterRegistry meterRegistry) {
     this.meterRegistry = meterRegistry;
@@ -64,13 +65,13 @@ public class CamundaExporterMetrics {
         .increment();
   }
 
-  public Timer.Sample startFlushLatencyMeasurement() {
-    return Timer.start(meterRegistry);
+  public void startFlushLatencyMeasurement() {
+    flushLatencyMeasurement = Timer.start(meterRegistry);
   }
 
-  public void stopFlushLatencyMeasurement(final Timer.Sample flushLatencySample) {
-    if (flushLatencySample != null) {
-      flushLatencySample.stop(flushLatency);
+  public void stopFlushLatencyMeasurement() {
+    if (flushLatencyMeasurement != null) {
+      flushLatencyMeasurement.stop(flushLatency);
     }
   }
 

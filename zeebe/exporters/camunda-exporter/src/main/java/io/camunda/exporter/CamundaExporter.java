@@ -38,7 +38,6 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.micrometer.core.instrument.Timer.Sample;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
@@ -56,14 +55,6 @@ public class CamundaExporter implements Exporter {
   private long lastPosition = -1;
   private final ExporterResourceProvider provider;
   private CamundaExporterMetrics metrics;
-
-  /**
-   * Sample to measure the flush latency of the current bulk request.
-   *
-   * <p>Time of how long an export bulk request is open and collects new records before flushing,
-   * meaning latency until the next flush is done.
-   */
-  private Sample flushLatencyMeasurement;
 
   public CamundaExporter() {
     this(new DefaultExporterResourceProvider());
@@ -121,7 +112,7 @@ public class CamundaExporter implements Exporter {
   @Override
   public void export(final Record<?> record) {
     if (writer.getBatchSize() == 0) {
-      flushLatencyMeasurement = metrics.startFlushLatencyMeasurement();
+      metrics.startFlushLatencyMeasurement();
     }
 
     writer.addRecord(record);
@@ -130,7 +121,7 @@ public class CamundaExporter implements Exporter {
     if (shouldFlush()) {
       try (final var ignored = metrics.measureFlushDuration()) {
         flush();
-        metrics.stopFlushLatencyMeasurement(flushLatencyMeasurement);
+        metrics.stopFlushLatencyMeasurement();
       } catch (final ElasticsearchExporterException e) {
         metrics.recordFailedFlush();
         throw e;
