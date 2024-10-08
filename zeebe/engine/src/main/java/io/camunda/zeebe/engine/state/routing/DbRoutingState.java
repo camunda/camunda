@@ -74,4 +74,12 @@ public final class DbRoutingState implements MutableRoutingState {
     key.wrapString(DESIRED_KEY);
     columnFamily.upsert(key, desiredRoutingInfo);
   }
+
+  @Override
+  public void arriveAtDesiredState() {
+    key.wrapString(DESIRED_KEY);
+    final var desiredPartitions = columnFamily.get(key);
+    key.wrapString(CURRENT_KEY);
+    columnFamily.update(key, desiredPartitions);
+  }
 }
