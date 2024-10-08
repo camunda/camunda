@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.upgrade.os.indices;
 
-import io.camunda.optimize.upgrade.indices.UserTestIndex;
+import io.camunda.optimize.upgrade.db.indices.UserTestIndex;
 import java.io.IOException;
 import org.opensearch.client.opensearch.indices.IndexSettings;
 import org.opensearch.client.opensearch.indices.IndexSettings.Builder;
@@ -20,8 +20,8 @@ public class UserTestIndexOS extends UserTestIndex<Builder> {
 
   @Override
   public IndexSettings.Builder addStaticSetting(
-      final String key, final int value, final IndexSettings.Builder contentBuilder)
+      final String key, final int value, final IndexSettings.Builder indexSettingsBuilder)
       throws IOException {
-    return contentBuilder.numberOfShards(Integer.toString(value));
+    return indexSettingsBuilder.numberOfShards(Integer.toString(value));
   }
 }

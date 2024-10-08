@@ -7,17 +7,15 @@
  */
 package io.camunda.optimize.upgrade.es.indices;
 
-import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import co.elastic.clients.elasticsearch.indices.IndexSettings.Builder;
-import io.camunda.optimize.upgrade.indices.RenameFieldTestIndex;
+import io.camunda.optimize.upgrade.db.indices.RenameFieldTestIndex;
 import java.io.IOException;
 
 public class RenameFieldTestIndexES extends RenameFieldTestIndex<Builder> {
 
   @Override
-  public IndexSettings.Builder addStaticSetting(
-      final String key, final int value, final IndexSettings.Builder contentBuilder)
-      throws IOException {
-    return contentBuilder.numberOfShards(Integer.toString(value));
+  public Builder addStaticSetting(
+      final String key, final int value, final Builder indexSettingsBuilder) throws IOException {
+    return indexSettingsBuilder.numberOfShards(Integer.toString(value));
   }
 }
