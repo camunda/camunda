@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 @Configuration
@@ -40,6 +41,7 @@ public class RdbmsConfiguration {
 
   @Bean
   public MultiTenantSpringLiquibase customerLiquibase(final DataSource dataSource) {
+    LOGGER.info("Initializing Liquibase for RDBMS.");
     final var moduleConfig = new MultiTenantSpringLiquibase();
     moduleConfig.setDataSource(dataSource);
     // changelog file located in src/main/resources directly in the module
