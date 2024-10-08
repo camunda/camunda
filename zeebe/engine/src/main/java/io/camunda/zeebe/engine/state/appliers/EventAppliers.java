@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
+import io.camunda.zeebe.engine.scaling.ScalingUpApplier;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.EventApplier.NoSuchEventApplier.NoApplierForIntent;
 import io.camunda.zeebe.engine.state.EventApplier.NoSuchEventApplier.NoApplierForVersion;
@@ -52,6 +53,7 @@ import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -113,6 +115,7 @@ public final class EventAppliers implements EventApplier {
     registerAuthorizationAppliers(state);
     registerClockAppliers(state);
     registerRoleAppliers(state);
+    registerScalingAppliers(state);
     return this;
   }
 
@@ -450,6 +453,10 @@ public final class EventAppliers implements EventApplier {
 
   private void registerRoleAppliers(final MutableProcessingState state) {
     register(RoleIntent.CREATED, new RoleCreatedApplier(state.getRoleState()));
+  }
+
+  private void registerScalingAppliers(final MutableProcessingState state) {
+    register(ScaleIntent.SCALING_UP, new ScalingUpApplier(state.getRoutingState()));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {
