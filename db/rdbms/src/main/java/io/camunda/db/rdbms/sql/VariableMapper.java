@@ -22,9 +22,5 @@ public interface VariableMapper {
 
   List<VariableModel> find(VariableFilter filter);
 
-  record VariableFilter(
-      Long processInstanceKey
-  ) {
-
-  }
+  record VariableFilter(Long processInstanceKey) {}
 }

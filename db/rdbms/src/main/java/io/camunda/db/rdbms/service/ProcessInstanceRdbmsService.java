@@ -23,45 +23,40 @@ public class ProcessInstanceRdbmsService {
 
   private static final Logger LOG = LoggerFactory.getLogger(ProcessInstanceRdbmsService.class);
 
-  public record SearchResult(
-      List<ProcessInstanceModel> hits,
-      Integer total
-  ) {}
-
   private final ExecutionQueue executionQueue;
   private final ProcessInstanceMapper processInstanceMapper;
 
-  public ProcessInstanceRdbmsService(final ExecutionQueue executionQueue, final ProcessInstanceMapper processInstanceMapper) {
+  public ProcessInstanceRdbmsService(
+      final ExecutionQueue executionQueue, final ProcessInstanceMapper processInstanceMapper) {
     this.executionQueue = executionQueue;
     this.processInstanceMapper = processInstanceMapper;
   }
 
   public void create(final ProcessInstanceModel processInstance) {
-    executionQueue.executeInQueue(new QueueItem(
-        ContextType.PROCESS_INSTANCE,
-        processInstance.processInstanceKey(),
-        "io.camunda.db.rdbms.sql.ProcessInstanceMapper.insert",
-        processInstance
-    ));
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE,
+            processInstance.processInstanceKey(),
+            "io.camunda.db.rdbms.sql.ProcessInstanceMapper.insert",
+            processInstance));
   }
 
   public void update(final ProcessInstanceModel processInstance) {
-    executionQueue.executeInQueue(new QueueItem(
-        ContextType.PROCESS_INSTANCE,
-        processInstance.processInstanceKey(),
-        "io.camunda.db.rdbms.sql.ProcessInstanceMapper.update",
-        processInstance
-    ));
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE,
+            processInstance.processInstanceKey(),
+            "io.camunda.db.rdbms.sql.ProcessInstanceMapper.update",
+            processInstance));
   }
 
   public void updateCurrentElementId(final long processInstanceKey, final String elementId) {
-    executionQueue.executeInQueue(new QueueItem(
-        ContextType.PROCESS_INSTANCE,
-        processInstanceKey,
-        "io.camunda.db.rdbms.sql.ProcessInstanceMapper.updateCurrentElementId",
-        Map.of("processInstanceKey", processInstanceKey,
-            "elementId", elementId)
-    ));
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE,
+            processInstanceKey,
+            "io.camunda.db.rdbms.sql.ProcessInstanceMapper.updateCurrentElementId",
+            Map.of("processInstanceKey", processInstanceKey, "elementId", elementId)));
   }
 
   public ProcessInstanceModel findOne(final Long processInstanceKey) {
@@ -71,16 +66,16 @@ public class ProcessInstanceRdbmsService {
 
   public SearchResult search(ProcessInstanceFilter filter) {
     LOG.trace("[RDBMS DB] Search for process instance with filter {}", filter);
-    var totalHits = processInstanceMapper.count(filter);
-    var hits = processInstanceMapper.search(
-        filter,
-        new RowBounds(
-            filter.offset() != null ? filter.offset() : RowBounds.NO_ROW_OFFSET,
-            filter.limit() != null ? filter.limit() : RowBounds.NO_ROW_LIMIT
-        )
-    );
+    final var totalHits = processInstanceMapper.count(filter);
+    final var hits =
+        processInstanceMapper.search(
+            filter,
+            new RowBounds(
+                filter.offset() != null ? filter.offset() : RowBounds.NO_ROW_OFFSET,
+                filter.limit() != null ? filter.limit() : RowBounds.NO_ROW_LIMIT));
 
     return new SearchResult(hits, totalHits);
   }
 
+  public record SearchResult(List<ProcessInstanceModel> hits, Integer total) {}
 }

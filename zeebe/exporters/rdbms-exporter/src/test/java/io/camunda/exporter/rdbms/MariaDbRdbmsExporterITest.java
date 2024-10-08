@@ -9,17 +9,15 @@ package io.camunda.exporter.rdbms;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.testcontainers.containers.MariaDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 
 class MariaDbRdbmsExporterITest extends RdbmsExporterITest {
 
-  @Container
-  @ServiceConnection
-  static MariaDBContainer<?> postgres = new MariaDBContainer<>(
-      "mariadb:11.4"
-  );
+  @Container @ServiceConnection
+  static MariaDBContainer<?> postgres = new MariaDBContainer<>("mariadb:11.4");
 
   @BeforeAll
   static void beforeAll() {
@@ -30,5 +28,4 @@ class MariaDbRdbmsExporterITest extends RdbmsExporterITest {
   static void afterAll() {
     postgres.stop();
   }
-
 }

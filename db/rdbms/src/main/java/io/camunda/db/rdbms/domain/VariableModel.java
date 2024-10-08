@@ -14,7 +14,4 @@ public record VariableModel(
     String name,
     String value,
     boolean truncated,
-    String tenantId
-) {
-
-}
+    String tenantId) {}

@@ -11,10 +11,11 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 
-public class DateUtil {
+public final class DateUtil {
+
   private DateUtil() {}
 
-  public static OffsetDateTime toOffsetDateTime(Instant timestamp) {
+  public static OffsetDateTime toOffsetDateTime(final Instant timestamp) {
     return OffsetDateTime.ofInstant(timestamp, ZoneOffset.UTC);
   }
 }

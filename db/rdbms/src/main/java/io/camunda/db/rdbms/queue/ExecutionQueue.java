@@ -31,11 +31,15 @@ public class ExecutionQueue extends Actor {
 
   private final Queue<QueueItem> queue = new ConcurrentLinkedQueue<>();
 
-  public ExecutionQueue(final ActorScheduler actorScheduler, final SqlSessionFactory sessionFactory) {
+  public ExecutionQueue(
+      final ActorScheduler actorScheduler, final SqlSessionFactory sessionFactory) {
     this.sessionFactory = sessionFactory;
 
     actorScheduler.submitActor(this, SchedulingHints.IO_BOUND);
-    actor.run(() -> actor.schedule(Duration.ofSeconds(5), this::flushAndReschedule)); // TODO make timeout configurable
+    actor.run(
+        () ->
+            actor.schedule(
+                Duration.ofSeconds(5), this::flushAndReschedule)); // TODO make timeout configurable
   }
 
   public void executeInQueue(final QueueItem entry) {
@@ -61,7 +65,8 @@ public class ExecutionQueue extends Actor {
 
     final var startMillis = System.currentTimeMillis();
     final var queueSize = queue.size();
-    final var session = sessionFactory.openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED);
+    final var session =
+        sessionFactory.openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED);
 
     try {
       var preFlushListenersCalled = false;
@@ -79,7 +84,10 @@ public class ExecutionQueue extends Actor {
       }
       session.flushStatements();
       session.commit();
-      LOG.debug("[RDBMS Execution Queue] Commit queue with {} entries in {}ms", queueSize, System.currentTimeMillis() - startMillis);
+      LOG.debug(
+          "[RDBMS Execution Queue] Commit queue with {} entries in {}ms",
+          queueSize,
+          System.currentTimeMillis() - startMillis);
     } catch (final Exception e) {
       LOG.error("Error while executing queue", e);
       session.rollback();
@@ -103,5 +111,4 @@ public class ExecutionQueue extends Actor {
     flush();
     actor.schedule(Duration.ofSeconds(5), this::flushAndReschedule);
   }
-
 }

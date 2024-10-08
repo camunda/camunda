@@ -20,8 +20,7 @@ public record ProcessInstanceModel(
     Long parentProcessInstanceKey,
     Long parentElementInstanceKey,
     String elementId,
-    int version
-) {
+    int version) {
 
   public enum State {
     ACTIVE,

@@ -16,12 +16,8 @@ import org.springframework.context.annotation.Import;
 
 @Configuration
 @EnableAutoConfiguration
-@Import({
-    RdbmsConfiguration.class
-})
+@Import({RdbmsConfiguration.class})
 public class RdbmsTestConfiguration {
 
-  @MockBean
-  private ActorScheduler actorScheduler;
-
+  @MockBean private ActorScheduler actorScheduler;
 }

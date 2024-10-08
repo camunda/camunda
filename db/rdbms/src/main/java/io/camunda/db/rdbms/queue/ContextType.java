@@ -8,7 +8,6 @@
 package io.camunda.db.rdbms.queue;
 
 public enum ContextType {
-
   EXPORTER_POSITION,
   PROCESS_INSTANCE,
   VARIABLE,

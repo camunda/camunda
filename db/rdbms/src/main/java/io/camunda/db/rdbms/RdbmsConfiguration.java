@@ -61,8 +61,8 @@ public class RdbmsConfiguration {
   @Bean
   public MapperFactoryBean<ProcessInstanceMapper> processInstanceMapper(
       final SqlSessionFactory sqlSessionFactory) throws Exception {
-    final MapperFactoryBean<ProcessInstanceMapper> factoryBean = new MapperFactoryBean<>(
-        ProcessInstanceMapper.class);
+    final MapperFactoryBean<ProcessInstanceMapper> factoryBean =
+        new MapperFactoryBean<>(ProcessInstanceMapper.class);
     factoryBean.setSqlSessionFactory(sqlSessionFactory);
     return factoryBean;
   }
@@ -70,17 +70,17 @@ public class RdbmsConfiguration {
   @Bean
   public MapperFactoryBean<ProcessDefinitionMapper> processDeploymentMapper(
       final SqlSessionFactory sqlSessionFactory) throws Exception {
-    final MapperFactoryBean<ProcessDefinitionMapper> factoryBean = new MapperFactoryBean<>(
-        ProcessDefinitionMapper.class);
+    final MapperFactoryBean<ProcessDefinitionMapper> factoryBean =
+        new MapperFactoryBean<>(ProcessDefinitionMapper.class);
     factoryBean.setSqlSessionFactory(sqlSessionFactory);
     return factoryBean;
   }
 
   @Bean
-  public MapperFactoryBean<VariableMapper> variableMapper(
-      final SqlSessionFactory sqlSessionFactory) throws Exception {
-    final MapperFactoryBean<VariableMapper> factoryBean = new MapperFactoryBean<>(
-        VariableMapper.class);
+  public MapperFactoryBean<VariableMapper> variableMapper(final SqlSessionFactory sqlSessionFactory)
+      throws Exception {
+    final MapperFactoryBean<VariableMapper> factoryBean =
+        new MapperFactoryBean<>(VariableMapper.class);
     factoryBean.setSqlSessionFactory(sqlSessionFactory);
     return factoryBean;
   }
@@ -88,58 +88,54 @@ public class RdbmsConfiguration {
   @Bean
   public MapperFactoryBean<ExporterPositionMapper> exporterPosition(
       final SqlSessionFactory sqlSessionFactory) throws Exception {
-    final MapperFactoryBean<ExporterPositionMapper> factoryBean = new MapperFactoryBean<>(
-        ExporterPositionMapper.class);
+    final MapperFactoryBean<ExporterPositionMapper> factoryBean =
+        new MapperFactoryBean<>(ExporterPositionMapper.class);
     factoryBean.setSqlSessionFactory(sqlSessionFactory);
     return factoryBean;
   }
 
   @Bean
-  public ExecutionQueue executionQueue(final ActorScheduler actorScheduler, final SqlSessionFactory sqlSessionFactory) {
+  public ExecutionQueue executionQueue(
+      final ActorScheduler actorScheduler, final SqlSessionFactory sqlSessionFactory) {
     return new ExecutionQueue(actorScheduler, sqlSessionFactory);
   }
 
   @Bean
   public VariableRdbmsService variableRdbmsService(
-      final ExecutionQueue executionQueue,
-      final VariableMapper variableMapper) {
+      final ExecutionQueue executionQueue, final VariableMapper variableMapper) {
     return new VariableRdbmsService(executionQueue, variableMapper);
   }
 
   @Bean
   public ProcessRdbmsService processDeploymentRdbmsService(
-      final ExecutionQueue executionQueue,
-      final ProcessDefinitionMapper processDefinitionMapper) {
+      final ExecutionQueue executionQueue, final ProcessDefinitionMapper processDefinitionMapper) {
     return new ProcessRdbmsService(executionQueue, processDefinitionMapper);
   }
 
   @Bean
   public ProcessInstanceRdbmsService processRdbmsService(
-      final ExecutionQueue executionQueue,
-      final ProcessInstanceMapper processInstanceMapper) {
+      final ExecutionQueue executionQueue, final ProcessInstanceMapper processInstanceMapper) {
     return new ProcessInstanceRdbmsService(executionQueue, processInstanceMapper);
   }
 
   @Bean
   public ExporterPositionRdbmsService exporterPositionRdbmsService(
-      final ExecutionQueue executionQueue,
-      final ExporterPositionMapper exporterPositionMapper) {
+      final ExecutionQueue executionQueue, final ExporterPositionMapper exporterPositionMapper) {
     return new ExporterPositionRdbmsService(executionQueue, exporterPositionMapper);
   }
 
   @Bean
-  public RdbmsService rdbmsService(final ExecutionQueue executionQueue,
+  public RdbmsService rdbmsService(
+      final ExecutionQueue executionQueue,
       final ExporterPositionRdbmsService exporterPositionRdbmsService,
       final VariableRdbmsService variableRdbmsService,
       final ProcessRdbmsService processRdbmsService,
-      final ProcessInstanceRdbmsService processInstanceRdbmsService
-  ) {
+      final ProcessInstanceRdbmsService processInstanceRdbmsService) {
     return new RdbmsService(
         executionQueue,
         exporterPositionRdbmsService,
-        processRdbmsService, processInstanceRdbmsService,
-        variableRdbmsService
-    );
+        processRdbmsService,
+        processInstanceRdbmsService,
+        variableRdbmsService);
   }
-
 }

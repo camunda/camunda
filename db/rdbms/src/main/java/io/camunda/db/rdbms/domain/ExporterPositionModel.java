@@ -14,7 +14,4 @@ public record ExporterPositionModel(
     String exporter,
     Long lastExportedPosition,
     LocalDateTime created,
-    LocalDateTime lastUpdated
-) {
-
-}
+    LocalDateTime lastUpdated) {}

@@ -13,6 +13,4 @@ public record ProcessDefinitionModel(
     String name,
     String tenantId,
     String versionTag,
-    int version
-) {
-}
+    int version) {}
