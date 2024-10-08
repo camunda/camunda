@@ -7,4 +7,15 @@
  */
 package io.camunda.db.rdbms.domain;
 
-public record Paging(Integer pageSize, Integer offset) {}
+public record Paging(Integer pageSize, Integer offset) {
+
+  public static final Integer DEFAULT_SIZE = 100;
+  public static final Integer DEFAULT_OFFSET = 0;
+
+  public static Paging createWithDefaults(Integer pageSize, Integer offset) {
+    return new Paging(
+        pageSize != null ? pageSize : DEFAULT_SIZE,
+        offset != null ? offset : DEFAULT_OFFSET
+    );
+  }
+}

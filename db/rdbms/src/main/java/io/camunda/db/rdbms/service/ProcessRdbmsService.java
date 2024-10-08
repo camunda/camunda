@@ -35,7 +35,7 @@ public class ProcessRdbmsService {
   public void save(final ProcessDefinitionModel processDefinition) {
     executionQueue.executeInQueue(
         new QueueItem(
-            ContextType.PROCESS_INSTANCE,
+            ContextType.PROCESS_DEFINITION,
             processDefinition.processDefinitionKey(),
             "io.camunda.db.rdbms.sql.ProcessDefinitionMapper.insert",
             processDefinition));
