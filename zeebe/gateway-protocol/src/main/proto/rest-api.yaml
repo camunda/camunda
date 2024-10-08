@@ -2690,7 +2690,7 @@ components:
           description: The process definition key associated to this flow node instance.
           format: int64
         processDefinitionId:
-          description: The bpmn process id associated to this flow node instance.
+          description: The process definition id associated to this flow node instance.
           type: string
         state:
           description: State of flow node instance as defined set of values.
@@ -2737,7 +2737,7 @@ components:
         treePath:
           type: string
           description: The path of keys from process instance to this flow node instance separated by '/'.
-        incident:
+        hasIncident:
           type: boolean
           description: Shows whether this flow node instance has an incident related to.
         incidentKey:
@@ -2772,7 +2772,7 @@ components:
           type: integer
           format: int64
         processDefinitionId:
-          description: The bpmn process id associated to this flow node instance.
+          description: The process definition id associated to this flow node instance.
           type: string
         startDate:
           description: Date when flow node instance started.
@@ -2824,7 +2824,7 @@ components:
             - ACTIVE
             - COMPLETED
             - TERMINATED
-        incident:
+        hasIncident:
           description: Shows whether this flow node instance has an incident. If true also an incidentKey is provided.
           type: boolean
         incidentKey:
@@ -2890,7 +2890,7 @@ components:
           description: The process definition key associated to this incident.
         processDefinitionId:
           type: string
-          description: The bpmn process id associated to this incident.
+          description: The process definition id associated to this incident.
         processInstanceKey:
           type: integer
           format: int64
@@ -2965,7 +2965,7 @@ components:
           description: The process definition key associated to this incident.
         processDefinitionId:
           type: string
-          description: The bpmn process id associated to this incident.
+          description: The process definition id associated to this incident.
         processInstanceKey:
           type: integer
           format: int64

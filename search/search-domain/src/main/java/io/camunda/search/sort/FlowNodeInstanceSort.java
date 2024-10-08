@@ -41,7 +41,7 @@ public record FlowNodeInstanceSort(List<FieldSorting> orderings) implements Sort
       return this;
     }
 
-    public Builder bpmnProcessId() {
+    public Builder processDefinitionId() {
       currentOrdering = new FieldSorting("bpmnProcessId", null);
       return this;
     }

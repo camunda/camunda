@@ -31,7 +31,7 @@ public class FlowNodeInstanceSortTest extends AbstractSortTransformerTest {
         new FlowNodeInstanceSortTest.TestArguments(
             "processDefinitionKey", SortOrder.ASC, s -> s.processDefinitionKey().asc()),
         new FlowNodeInstanceSortTest.TestArguments(
-            "bpmnProcessId", SortOrder.ASC, s -> s.bpmnProcessId().asc()),
+            "bpmnProcessId", SortOrder.ASC, s -> s.processDefinitionId().asc()),
         new FlowNodeInstanceSortTest.TestArguments(
             "startDate", SortOrder.ASC, s -> s.startDate().asc()),
         new FlowNodeInstanceSortTest.TestArguments(
