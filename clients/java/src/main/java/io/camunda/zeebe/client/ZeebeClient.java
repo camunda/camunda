@@ -46,6 +46,7 @@ import io.camunda.zeebe.client.api.fetch.DecisionDefinitionGetXmlRequest;
 import io.camunda.zeebe.client.api.fetch.DecisionInstanceGetRequest;
 import io.camunda.zeebe.client.api.fetch.DecisionRequirementsGetRequest;
 import io.camunda.zeebe.client.api.fetch.DecisionRequirementsGetXmlRequest;
+import io.camunda.zeebe.client.api.fetch.ProcessDefinitionGetRequest;
 import io.camunda.zeebe.client.api.fetch.ProcessInstanceGetRequest;
 import io.camunda.zeebe.client.api.fetch.UserTaskGetFormRequest;
 import io.camunda.zeebe.client.api.fetch.UserTaskGetRequest;
@@ -686,6 +687,29 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/21647")
   ClockResetCommandStep1 newClockResetCommand();
+
+  /**
+   * Gets a process definition by key.
+   *
+   * <pre>
+   *   long processDefinitionKey = ...;
+   *
+   *   zeebeClient
+   *   .newProcessDefinitionGetRequest(processDefinitionKey)
+   *   .send();
+   *   </pre>
+   *
+   * <p><strong>Experimental: This method is under development, and as such using it may have no
+   * effect on the client builder when called. The respective API on compatible clusters is not
+   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
+   * warning is removed, anything described below may not yet have taken effect, and the interface
+   * and its description are subject to change.</strong>
+   *
+   * @param processDefinitionKey the key of the process definition
+   * @return a builder for the request to get a process definition
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
+  ProcessDefinitionGetRequest newProcessDefinitionGetRequest(long processDefinitionKey);
 
   /**
    * Executes a search request to query process definitions.
