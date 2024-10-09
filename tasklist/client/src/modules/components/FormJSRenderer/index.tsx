@@ -18,7 +18,10 @@ import '@bpmn-io/form-js-viewer/dist/assets/form-js-base.css';
 import '@bpmn-io/form-js-carbon-styles/src/carbon-styles.scss';
 
 type Props = {
-  handleSubmit: (variables: Variable[], files?: File[]) => Promise<void>;
+  handleSubmit: (
+    variables: Variable[],
+    files?: Map<string, File[]>,
+  ) => Promise<void>;
   schema: string;
   data?: Record<string, unknown>;
   readOnly?: boolean;
@@ -141,10 +144,7 @@ const FormJSRenderer: React.FC<Props> = ({
               );
 
               try {
-                await handleSubmit(
-                  variables,
-                  Array.from(files.values()).flat(),
-                );
+                await handleSubmit(variables, files);
                 onSubmitSuccess?.();
               } catch (error) {
                 onSubmitError?.(error);

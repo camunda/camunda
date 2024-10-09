@@ -86,16 +86,31 @@ const Task: React.FC = observer(() => {
 
   async function handleSubmission(
     variables: Pick<Variable, 'name' | 'value'>[],
-    files?: File[],
+    files?: Map<string, File[]>,
   ) {
+    let fileUploadResponses: Awaited<ReturnType<typeof uploadDocuments>> =
+      new Map();
+
     if (files !== undefined) {
-      await uploadDocuments({
+      fileUploadResponses = await uploadDocuments({
         files,
       });
     }
+
     await completeTask({
       taskId,
-      variables,
+      variables:
+        fileUploadResponses.size === 0
+          ? variables
+          : [
+              ...variables,
+              {
+                name: 'documentMetadata',
+                value: JSON.stringify(
+                  Object.fromEntries(fileUploadResponses.entries()),
+                ),
+              },
+            ],
     });
 
     const filter = new URLSearchParams(window.location.search).get('filter');

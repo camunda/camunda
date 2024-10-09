@@ -18,7 +18,7 @@ function useStartProcess(
       RequestError | Error,
       {
         bpmnProcessId: Process['bpmnProcessId'];
-        variables?: Variable[];
+        variables?: Pick<Variable, 'name' | 'value'>[];
         tenantId?: Task['tenantId'];
       }
     >,
@@ -28,7 +28,9 @@ function useStartProcess(
   return useMutation<
     ProcessInstance,
     RequestError | Error,
-    Pick<Process, 'bpmnProcessId'> & {variables?: Variable[]} & {
+    Pick<Process, 'bpmnProcessId'> & {
+      variables?: Pick<Variable, 'name' | 'value'>[];
+    } & {
       tenantId?: Task['tenantId'];
     }
   >({

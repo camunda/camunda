@@ -44,7 +44,7 @@ const api = {
     }),
   startProcess: (payload: {
     bpmnProcessId: string;
-    variables: Variable[];
+    variables: Pick<Variable, 'name' | 'value'>[];
     tenantId?: Task['tenantId'];
   }) => {
     const {bpmnProcessId, variables, tenantId} = payload;
@@ -324,9 +324,6 @@ const api = {
       ...BASE_REQUEST_OPTIONS,
       method: 'POST',
       body,
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
     });
   },
 } as const;
