@@ -55,8 +55,8 @@ public class ElasticsearchSchemaManagerIT {
   @Test
   void shouldInheritDefaultSettingsIfNoIndexSpecificSettings() throws IOException {
     final var properties = new ExporterConfiguration();
-    properties.getDefaultSettings().setNumberOfReplicas(10);
-    properties.getDefaultSettings().setNumberOfShards(10);
+    properties.getIndex().setNumberOfReplicas(10);
+    properties.getIndex().setNumberOfShards(10);
 
     final var indexTemplate =
         SchemaTestUtil.mockIndexTemplate(
@@ -86,8 +86,8 @@ public class ElasticsearchSchemaManagerIT {
   @Test
   void shouldUseIndexSpecificSettingsIfSpecified() throws IOException {
     final var properties = new ExporterConfiguration();
-    properties.getDefaultSettings().setNumberOfReplicas(10);
-    properties.getDefaultSettings().setNumberOfShards(10);
+    properties.getIndex().setNumberOfReplicas(10);
+    properties.getIndex().setNumberOfShards(10);
     properties.setReplicasByIndexName(Map.of("index_name", 5));
     properties.setShardsByIndexName(Map.of("index_name", 5));
 

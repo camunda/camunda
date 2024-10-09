@@ -87,7 +87,7 @@ final class CamundaExporterIT {
   @BeforeAll
   public void beforeAll() {
     config.getConnect().setUrl(CONTAINER.getHttpHostAddress());
-    config.getConnect().setIndexPrefix("camunda-record");
+    config.getIndex().setPrefix("camunda-record");
 
     testClient = new ElasticsearchConnector(config.getConnect()).createClient();
   }
@@ -117,7 +117,7 @@ final class CamundaExporterIT {
 
     index =
         SchemaTestUtil.mockIndex(
-            config.getConnect().getIndexPrefix() + "qualified_name",
+            config.getIndex().getPrefix() + "qualified_name",
             "alias",
             "index_name",
             "/mappings.json");
