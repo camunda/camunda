@@ -964,8 +964,6 @@
               <reuseForks>true</reuseForks>
               <reportsDirectory>target/failsafe-reports/${surefire.forkNumber}</reportsDirectory>
               <systemPropertyVariables>
-                <enginePrefix>${surefire.forkNumber}-</enginePrefix>
-                <prefixedDefaultEngineName>${surefire.forkNumber}-integrationTest</prefixedDefaultEngineName>
                 <indexPrefix>${surefire.forkNumber}-</indexPrefix>
                 <!-- use two dollar signs to prevent maven properties resolution, surefire will resolve
                 the property later. If only ${surefire.forkNumber} is used maven will fail to resolve it
@@ -975,7 +973,6 @@
                 <!-- and we stay in the user port range of 1024-49151 -->
                 <optimizeHttpPort>400${surefire.forkNumber}</optimizeHttpPort>
                 <optimizeHttpsPort>401${surefire.forkNumber}</optimizeHttpsPort>
-                <smtpTestPort>500${surefire.forkNumber}</smtpTestPort>
                 <management.server.port>600${surefire.forkNumber}</management.server.port>
                 <databaseMockServerPort>108${surefire.forkNumber}</databaseMockServerPort>
               </systemPropertyVariables>

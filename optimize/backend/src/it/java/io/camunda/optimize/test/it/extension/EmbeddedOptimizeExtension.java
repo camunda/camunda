@@ -10,7 +10,6 @@ package io.camunda.optimize.test.it.extension;
 import static io.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static io.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CAMUNDA_OPTIMIZE_DATABASE;
-import static io.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,41 +17,24 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.optimize.ApplicationContextProvider;
 import io.camunda.optimize.OptimizeRequestExecutor;
-import io.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import io.camunda.optimize.exception.OptimizeIntegrationTestException;
-import io.camunda.optimize.service.KpiEvaluationSchedulerService;
-import io.camunda.optimize.service.KpiService;
-import io.camunda.optimize.service.LocalizationService;
-import io.camunda.optimize.service.SettingsService;
 import io.camunda.optimize.service.alert.AlertService;
-import io.camunda.optimize.service.cleanup.CleanupScheduler;
-import io.camunda.optimize.service.dashboard.InstantPreviewDashboardService;
-import io.camunda.optimize.service.dashboard.ManagementDashboardService;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.schema.DatabaseMetadataService;
-import io.camunda.optimize.service.db.schema.DatabaseSchemaManager;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
-import io.camunda.optimize.service.db.writer.InstantDashboardMetadataWriter;
-import io.camunda.optimize.service.digest.DigestService;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.importing.AbstractImportScheduler;
 import io.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import io.camunda.optimize.service.importing.ImportSchedulerManagerService;
 import io.camunda.optimize.service.importing.PositionBasedImportIndexHandler;
-import io.camunda.optimize.service.importing.ingested.IngestedDataImportScheduler;
 import io.camunda.optimize.service.importing.ingested.mediator.StoreIngestedImportProgressMediator;
 import io.camunda.optimize.service.importing.zeebe.mediator.StorePositionBasedImportProgressMediator;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import io.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
-import jakarta.ws.rs.client.Entity;
-import jakarta.ws.rs.client.WebTarget;
-import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -74,7 +56,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 public class EmbeddedOptimizeExtension
     implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, AfterAllCallback {
 
-  public static final String DEFAULT_ENGINE_ALIAS = "camunda-bpm";
   private static final ObjectMapper configObjectMapper =
       new ObjectMapper().registerModules(new JavaTimeModule(), new Jdk8Module());
   private static String serializedDefaultConfiguration;
@@ -83,7 +64,6 @@ public class EmbeddedOptimizeExtension
   private final boolean beforeAllMode;
   private ApplicationContext applicationContext;
   private OptimizeRequestExecutor requestExecutor;
-  private ObjectMapper objectMapper;
   private boolean resetImportOnStart = true;
   private boolean closeContextAfterTest = false;
 
@@ -146,7 +126,6 @@ public class EmbeddedOptimizeExtension
 
   public void setupOptimize() {
     try {
-      objectMapper = getBean(ObjectMapper.class);
       requestExecutor =
           new OptimizeRequestExecutor(
                   DEFAULT_USERNAME,
@@ -177,72 +156,8 @@ public class EmbeddedOptimizeExtension
     }
   }
 
-  public void configureDbHostAndPort(final String host, final int dbPort) {
-    getConfigurationService()
-        .getElasticSearchConfiguration()
-        .getConnectionNodes()
-        .get(0)
-        .setHost(host);
-    getConfigurationService()
-        .getElasticSearchConfiguration()
-        .getConnectionNodes()
-        .get(0)
-        .setHttpPort(dbPort);
-    getConfigurationService()
-        .getOpenSearchConfiguration()
-        .getConnectionNodes()
-        .get(0)
-        .setHost(host);
-    getConfigurationService()
-        .getOpenSearchConfiguration()
-        .getConnectionNodes()
-        .get(0)
-        .setHttpPort(dbPort);
-    reloadConfiguration();
-  }
-
-  public void configureEngineRestEndpointForEngineWithName(
-      final String engineName, final String restEndpoint) {
-    getConfigurationService().getConfiguredEngines().values().stream()
-        .filter(config -> config.getName().equals(engineName))
-        .findFirst()
-        .orElseThrow(
-            () ->
-                new IllegalStateException("Cannot find configured engine with name " + engineName))
-        .setRest(restEndpoint);
-  }
-
-  public void startContinuousImportScheduling() {
-    getImportSchedulerManager().startSchedulers();
-  }
-
   public void stopImportScheduling() {
     getImportSchedulerManager().stopSchedulers();
-  }
-
-  public void importIngestedDataFromScratch() {
-    try {
-      resetPositionBasedImportStartIndexes();
-    } catch (final Exception e) {
-      // nothing to do
-    }
-    final IngestedDataImportScheduler scheduler =
-        getImportSchedulerManager().getIngestedDataImportScheduler().orElseThrow();
-    try {
-      scheduler.runImportRound(true).get();
-    } catch (final InterruptedException | ExecutionException e) {
-      throw new OptimizeRuntimeException(e);
-    }
-  }
-
-  public void importIngestedDataFromLastIndex() {
-    final IngestedDataImportScheduler scheduler =
-        getImportSchedulerManager().getIngestedDataImportScheduler().orElseThrow();
-    try {
-      scheduler.runImportRound(true).get();
-    } catch (final InterruptedException | ExecutionException e) {
-      throw new OptimizeRuntimeException(e);
-    }
   }
 
   public void importAllZeebeEntitiesFromScratch() {
@@ -291,33 +206,12 @@ public class EmbeddedOptimizeExtension
     CompletableFuture.allOf(synchronizationCompletables.toArray(new CompletableFuture[0])).join();
   }
 
-  public EngineConfiguration getDefaultEngineConfiguration() {
-    return getConfigurationService()
-        .getEngineConfiguration(DEFAULT_ENGINE_ALIAS)
-        .orElseThrow(
-            () -> new OptimizeIntegrationTestException("Missing default engine configuration"));
-  }
-
   public ImportSchedulerManagerService getImportSchedulerManager() {
     return getBean(ImportSchedulerManagerService.class);
   }
 
   public OptimizeRequestExecutor getRequestExecutor() {
     return requestExecutor;
-  }
-
-  public String getNewAuthenticationToken() {
-    return authenticateUser(DEFAULT_USERNAME, DEFAULT_PASSWORD);
-  }
-
-  public String authenticateUser(final String username, final String password) {
-    final Response tokenResponse = authenticateUserRequest(username, password);
-    return tokenResponse.readEntity(String.class);
-  }
-
-  public Response authenticateUserRequest(final String username, final String password) {
-    final CredentialsRequestDto entity = new CredentialsRequestDto(username, password);
-    return target("authentication").request().post(Entity.json(entity));
   }
 
   public void initMetadataIfMissing() {
@@ -346,26 +240,6 @@ public class EmbeddedOptimizeExtension
     log.info("done resetting config");
   }
 
-  public final WebTarget target(final String path) {
-    return requestExecutor.getDefaultWebTarget().path(path);
-  }
-
-  public final WebTarget target() {
-    return requestExecutor.getDefaultWebTarget();
-  }
-
-  public final WebTarget rootTarget(final String path) {
-    return requestExecutor
-        .createWebTarget(
-            IntegrationTestConfigurationUtil.getEmbeddedOptimizeEndpoint(applicationContext))
-        .path(path);
-  }
-
-  public final WebTarget securedRootTarget() {
-    return requestExecutor.createWebTarget(
-        IntegrationTestConfigurationUtil.getSecuredEmbeddedOptimizeEndpoint(applicationContext));
-  }
-
   public void resetPositionBasedImportStartIndexes() {
     getAllPositionBasedImportHandlers().forEach(PositionBasedImportIndexHandler::resetImportIndex);
   }
@@ -378,10 +252,6 @@ public class EmbeddedOptimizeExtension
       positionBasedHandlers.addAll(getIndexHandlerRegistry().getPositionBasedHandlers(partitionId));
     }
     return positionBasedHandlers;
-  }
-
-  public void reinitializeSchema() {
-    getDatabaseSchemaManager().initializeSchema(getOptimizeDatabaseClient());
   }
 
   public ApplicationContext getApplicationContext() {
@@ -407,34 +277,6 @@ public class EmbeddedOptimizeExtension
     return getBean(ConfigurationService.class);
   }
 
-  public ManagementDashboardService getManagementDashboardService() {
-    return getApplicationContext().getBean(ManagementDashboardService.class);
-  }
-
-  public InstantPreviewDashboardService getInstantPreviewDashboardService() {
-    return getApplicationContext().getBean(InstantPreviewDashboardService.class);
-  }
-
-  public InstantDashboardMetadataWriter getInstantPreviewDashboardWriter() {
-    return getApplicationContext().getBean(InstantDashboardMetadataWriter.class);
-  }
-
-  public CleanupScheduler getCleanupScheduler() {
-    return getBean(CleanupScheduler.class);
-  }
-
-  public KpiEvaluationSchedulerService getKpiSchedulerService() {
-    return getBean(KpiEvaluationSchedulerService.class);
-  }
-
-  public LocalizationService getLocalizationService() {
-    return getBean(LocalizationService.class);
-  }
-
-  public ObjectMapper getObjectMapper() {
-    return objectMapper;
-  }
-
   public ImportIndexHandlerRegistry getIndexHandlerRegistry() {
     return getBean(ImportIndexHandlerRegistry.class);
   }
@@ -443,24 +285,8 @@ public class EmbeddedOptimizeExtension
     return getBean(AlertService.class);
   }
 
-  public DigestService getDigestService() {
-    return getBean(DigestService.class);
-  }
-
-  public KpiService getKpiService() {
-    return getApplicationContext().getBean(KpiService.class);
-  }
-
-  public SettingsService getSettingsService() {
-    return getBean(SettingsService.class);
-  }
-
   public OptimizeIndexNameService getIndexNameService() {
     return getBean(OptimizeIndexNameService.class);
-  }
-
-  public DatabaseSchemaManager getDatabaseSchemaManager() {
-    return getBean(DatabaseSchemaManager.class);
   }
 
   public DatabaseClient getOptimizeDatabaseClient() {
@@ -481,19 +307,6 @@ public class EmbeddedOptimizeExtension
 
   public String format(final OffsetDateTime offsetDateTime) {
     return getDateTimeFormatter().format(offsetDateTime);
-  }
-
-  public String formatToHistogramBucketKey(
-      final OffsetDateTime offsetDateTime, final ChronoUnit unit) {
-    return getDateTimeFormatter().format(truncateToStartOfUnit(offsetDateTime, unit));
-  }
-
-  public String toJsonString(final Object object) {
-    try {
-      return getObjectMapper().writeValueAsString(object);
-    } catch (final JsonProcessingException e) {
-      throw new OptimizeRuntimeException(e);
-    }
   }
 
   public boolean isCloseContextAfterTest() {

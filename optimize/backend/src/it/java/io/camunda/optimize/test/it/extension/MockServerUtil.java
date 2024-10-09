@@ -7,12 +7,8 @@
  */
 package io.camunda.optimize.test.it.extension;
 
-import jakarta.ws.rs.core.Response;
-import java.util.stream.Stream;
 import org.mockserver.configuration.ConfigurationProperties;
 import org.mockserver.integration.ClientAndServer;
-import org.mockserver.model.HttpError;
-import org.mockserver.model.HttpResponse;
 
 public class MockServerUtil {
 
@@ -30,41 +26,5 @@ public class MockServerUtil {
         ClientAndServer.startClientAndServer(targetHost, targetPort, mockServerPort);
     Runtime.getRuntime().addShutdownHook(new Thread(mockServer::stop));
     return mockServer;
-  }
-
-  public static Stream<ErrorResponseMock> engineMockedErrorResponses() {
-    return Stream.of(
-        (request, times, mockServer) ->
-            mockServer
-                .when(request, times)
-                .respond(
-                    HttpResponse.response()
-                        .withStatusCode(Response.Status.NOT_FOUND.getStatusCode())),
-        (request, times, mockServer) ->
-            mockServer
-                .when(request, times)
-                .respond(
-                    HttpResponse.response()
-                        .withStatusCode(Response.Status.FORBIDDEN.getStatusCode())),
-        (request, times, mockServer) ->
-            mockServer
-                .when(request, times)
-                .respond(
-                    HttpResponse.response()
-                        .withStatusCode(Response.Status.UNAUTHORIZED.getStatusCode())),
-        (request, times, mockServer) ->
-            mockServer
-                .when(request, times)
-                .respond(
-                    HttpResponse.response()
-                        .withStatusCode(Response.Status.BAD_REQUEST.getStatusCode())),
-        (request, times, mockServer) ->
-            mockServer
-                .when(request, times)
-                .error(HttpError.error().withResponseBytes(new byte[10])),
-        (request, times, mockServer) ->
-            mockServer
-                .when(request, times)
-                .error(HttpError.error().withDropConnection(true).withResponseBytes(new byte[10])));
   }
 }
