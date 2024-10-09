@@ -164,7 +164,7 @@ public class CamundaExporter implements Exporter {
       final IndexSchemaValidator schemaValidator, final SearchEngineClient searchEngineClient) {
     final var currentIndices =
         searchEngineClient.getMappings(
-            configuration.getConnect().getIndexPrefix() + "*", MappingSource.INDEX);
+            configuration.getIndex().getPrefix() + "*", MappingSource.INDEX);
 
     return schemaValidator.validateIndexMappings(currentIndices, provider.getIndexDescriptors());
   }

@@ -14,7 +14,7 @@ import java.util.Map;
 public class ExporterConfiguration {
 
   private ConnectConfiguration connect = new ConnectConfiguration();
-  private IndexSettings defaultSettings = new IndexSettings();
+  private IndexSettings index = new IndexSettings();
   private BulkConfiguration bulk = new BulkConfiguration();
   private RetentionConfiguration retention = new RetentionConfiguration();
   private Map<String, Integer> replicasByIndexName = new HashMap<>();
@@ -29,12 +29,12 @@ public class ExporterConfiguration {
     this.connect = connect;
   }
 
-  public IndexSettings getDefaultSettings() {
-    return defaultSettings;
+  public IndexSettings getIndex() {
+    return index;
   }
 
-  public void setDefaultSettings(final IndexSettings defaultSettings) {
-    this.defaultSettings = defaultSettings;
+  public void setIndex(final IndexSettings index) {
+    this.index = index;
   }
 
   public BulkConfiguration getBulk() {
@@ -82,8 +82,8 @@ public class ExporterConfiguration {
     return "ExporterConfiguration{"
         + "connect="
         + connect
-        + ", defaultSettings="
-        + defaultSettings
+        + ", index="
+        + index
         + ", bulk="
         + bulk
         + ", retention="
@@ -98,8 +98,17 @@ public class ExporterConfiguration {
   }
 
   public static final class IndexSettings {
+    private String prefix = "camunda-record";
     private Integer numberOfShards = 1;
     private Integer numberOfReplicas = 0;
+
+    public String getPrefix() {
+      return prefix;
+    }
+
+    public void setPrefix(final String prefix) {
+      this.prefix = prefix;
+    }
 
     public Integer getNumberOfShards() {
       return numberOfShards;
@@ -120,7 +129,10 @@ public class ExporterConfiguration {
     @Override
     public String toString() {
       return "IndexSettings{"
-          + "numberOfShards="
+          + "prefix='"
+          + prefix
+          + '\''
+          + ", numberOfShards="
           + numberOfShards
           + ", numberOfReplicas="
           + numberOfReplicas

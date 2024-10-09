@@ -19,6 +19,7 @@ import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplate
 import co.elastic.clients.elasticsearch.indices.put_index_template.IndexTemplateMapping;
 import co.elastic.clients.json.JsonData;
 import co.elastic.clients.json.JsonpDeserializer;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.exceptions.ElasticsearchExporterException;
@@ -257,19 +258,12 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
   private InputStream appendToFileSchemaSettings(
       final InputStream file, final IndexSettings settingsToAppend) throws IOException {
-    final Map<String, Object> map = MAPPER.readValue(file, Map.class);
+    final var map = MAPPER.readValue(file, new TypeReference<Map<String, Object>>() {});
 
-    if (!map.containsKey("settings")) {
-      map.put("settings", new HashMap<String, Object>());
-    }
-
-    final Map<String, Object> settingsBlock = (Map<String, Object>) map.get("settings");
-
-    if (!settingsBlock.containsKey("index")) {
-      settingsBlock.put("index", new HashMap<String, Object>());
-    }
-
-    final Map<String, Object> indexBlock = (Map<String, Object>) settingsBlock.get("index");
+    final var settingsBlock =
+        (Map<String, Object>) map.computeIfAbsent("settings", k -> new HashMap<>());
+    final var indexBlock =
+        (Map<String, Object>) settingsBlock.computeIfAbsent("index", k -> new HashMap<>());
 
     indexBlock.put("number_of_shards", settingsToAppend.getNumberOfShards());
     indexBlock.put("number_of_replicas", settingsToAppend.getNumberOfReplicas());

@@ -46,7 +46,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
         elasticsearchClient.getMappings("*", MappingSource.INDEX_TEMPLATE).keySet();
     final var existingIndexNames =
         elasticsearchClient
-            .getMappings(config.getConnect().getIndexPrefix() + "*", MappingSource.INDEX)
+            .getMappings(config.getIndex().getPrefix() + "*", MappingSource.INDEX)
             .keySet();
     indexTemplateDescriptors.stream()
         .filter(descriptor -> !existingTemplateNames.contains(descriptor.getTemplateName()))
@@ -115,11 +115,11 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     final var templateReplicas =
         config
             .getReplicasByIndexName()
-            .getOrDefault(indexName, config.getDefaultSettings().getNumberOfReplicas());
+            .getOrDefault(indexName, config.getIndex().getNumberOfReplicas());
     final var templateShards =
         config
             .getShardsByIndexName()
-            .getOrDefault(indexName, config.getDefaultSettings().getNumberOfShards());
+            .getOrDefault(indexName, config.getIndex().getNumberOfShards());
 
     final var settings = new IndexSettings();
     settings.setNumberOfShards(templateShards);
