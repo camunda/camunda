@@ -106,7 +106,7 @@ jobs:
           CAMUNDA_OPTIMIZE_DATABASE: elasticsearch
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4
+        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4
         with:
           name: schema-integrity-test-junit
           path: |
@@ -185,7 +185,7 @@ jobs:
 
     - name: Upload Test Results
       if: always()
-      uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4
+      uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4
       with:
         name: integration-test-elasticsearch-${{ matrix.includedGroups }}-junit
         path: |
@@ -263,7 +263,7 @@ jobs:
 
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4
+        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4
         with:
           name: integration-test-opensearch-${{ matrix.includedGroups }}-junit
           path: |
@@ -344,7 +344,7 @@ jobs:
 
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4
+        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4
         with:
           name: integration-test-opensearch-dev-${{ matrix.includedGroups }}-junit
           path: |
