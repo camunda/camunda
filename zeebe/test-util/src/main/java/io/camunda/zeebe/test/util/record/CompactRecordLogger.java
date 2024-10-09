@@ -48,6 +48,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordVa
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
@@ -152,6 +153,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.MESSAGE_CORRELATION, this::summarizeMessageCorrelation);
     valueLoggers.put(ValueType.CLOCK, this::summarizeClock);
     valueLoggers.put(ValueType.ROLE, this::summarizeRole);
+    valueLoggers.put(ValueType.TENANT, this::summarizeTenant);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -879,6 +881,24 @@ public class CompactRecordLogger {
     builder
         .append("Key=")
         .append(shortenKey(value.getRoleKey()))
+        .append(", Name=")
+        .append(formatId(value.getName()))
+        .append(", EntityKey=")
+        .append(shortenKey(value.getEntityKey()))
+        .append("]");
+
+    return builder.toString();
+  }
+
+  private String summarizeTenant(final Record<?> record) {
+    final var value = (TenantRecordValue) record.getValue();
+
+    final StringBuilder builder = new StringBuilder("Tenant[");
+    builder
+        .append("Key=")
+        .append(shortenKey(value.getTenantKey()))
+        .append(", Id=")
+        .append(formatId(value.getTenantId()))
         .append(", Name=")
         .append(formatId(value.getName()))
         .append(", EntityKey=")

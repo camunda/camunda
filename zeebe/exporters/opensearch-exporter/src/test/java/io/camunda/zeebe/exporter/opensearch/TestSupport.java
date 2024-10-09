@@ -122,7 +122,8 @@ final class TestSupport {
             ValueType.PROCESS_INSTANCE_RESULT,
             ValueType.CLOCK,
             // these are not yet supported
-            ValueType.ROLE);
+            ValueType.ROLE,
+            ValueType.TENANT);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 }
