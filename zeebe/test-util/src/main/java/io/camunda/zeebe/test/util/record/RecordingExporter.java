@@ -38,6 +38,7 @@ import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
@@ -74,6 +75,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
+import io.camunda.zeebe.protocol.record.value.scaling.ScaleRecordValue;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Iterator;
@@ -453,6 +455,14 @@ public final class RecordingExporter implements Exporter {
 
   public static AuthorizationRecordStream authorizationRecords(final AuthorizationIntent intent) {
     return authorizationRecords().withIntent(intent);
+  }
+
+  public static ScaleRecordStream scaleRecords() {
+    return new ScaleRecordStream(records(ValueType.SCALE, ScaleRecordValue.class));
+  }
+
+  public static ScaleRecordStream scaleRecords(final ScaleIntent intent) {
+    return scaleRecords().withIntent(intent);
   }
 
   public static void autoAcknowledge(final boolean shouldAcknowledgeRecords) {
