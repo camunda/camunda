@@ -15,11 +15,11 @@
  */
 package io.camunda.zeebe.client.impl.http;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.client.impl.http.ApiResponseConsumer.ApiResponse;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.message.BasicHttpResponse;
+import org.apache.hc.core5.http.nio.AsyncEntityConsumer;
 import org.apache.hc.core5.http.nio.support.AbstractAsyncResponseConsumer;
 import org.apache.hc.core5.http.protocol.HttpContext;
 
@@ -36,8 +36,8 @@ import org.apache.hc.core5.http.protocol.HttpContext;
 final class ApiResponseConsumer<T>
     extends AbstractAsyncResponseConsumer<ApiResponse<T>, ApiEntity<T>> {
 
-  ApiResponseConsumer(final ObjectMapper jsonMapper, final Class<T> type, final int maxCapacity) {
-    super(new ApiEntityConsumer<>(jsonMapper, type, maxCapacity));
+  ApiResponseConsumer(final AsyncEntityConsumer<ApiEntity<T>> entityConsumer) {
+    super(entityConsumer);
   }
 
   @Override

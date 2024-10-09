@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.service.DocumentServices;
 import io.camunda.service.DocumentServices.DocumentException;
+import io.camunda.service.DocumentServices.DocumentLinkParams;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentLinkRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
@@ -48,7 +49,7 @@ public class DocumentController {
   public CompletableFuture<ResponseEntity<Object>> createDocument(
       @RequestParam(required = false) final String documentId,
       @RequestParam(required = false) final String storeId,
-      @RequestPart("file") final MultipartFile file,
+      @RequestPart(value = "file") final MultipartFile file,
       @RequestPart(value = "metadata", required = false) final DocumentMetadata metadata) {
 
     return RequestMapper.toDocumentCreateRequest(documentId, storeId, file, metadata)
@@ -77,7 +78,9 @@ public class DocumentController {
 
     try {
       final InputStream contentInputStream = getDocumentContentStream(documentId, storeId);
-      return ResponseEntity.ok().body(contentInputStream::transferTo);
+      return ResponseEntity.ok()
+          .contentType(MediaType.APPLICATION_OCTET_STREAM)
+          .body(contentInputStream::transferTo);
     } catch (final Exception e) {
       // we can't return a generic Object type when streaming a response due to Spring MVC
       // limitations
@@ -124,20 +127,26 @@ public class DocumentController {
       path = "/{documentId}/links",
       consumes = MediaType.APPLICATION_JSON_VALUE,
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
-  public ResponseEntity<Object> createDocumentLink(
+  public CompletableFuture<ResponseEntity<Object>> createDocumentLink(
       @PathVariable final String documentId,
       @RequestParam(required = false) final String storeId,
       @RequestBody final DocumentLinkRequest linkRequest) {
 
     return RequestMapper.toDocumentLinkParams(linkRequest)
         .fold(
-            RestErrorMapper::mapProblemToResponse,
-            params ->
-                documentServices
-                    .withAuthentication(RequestMapper.getAuthentication())
-                    .createLink(documentId, storeId, params)
-                    .thenApply(ResponseMapper::toDocumentLinkResponse)
-                    .join());
+            RestErrorMapper::mapProblemToCompletedResponse,
+            params -> createDocumentLink(documentId, storeId, params));
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> createDocumentLink(
+      final String documentId, final String storeId, final DocumentLinkParams params) {
+
+    return RequestMapper.executeServiceMethod(
+        () ->
+            documentServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .createLink(documentId, storeId, params),
+        ResponseMapper::toDocumentLinkResponse);
   }
 
   public static class DocumentContentFetchException extends RuntimeException {

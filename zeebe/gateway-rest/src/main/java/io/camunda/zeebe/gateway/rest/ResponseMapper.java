@@ -23,7 +23,7 @@ import io.camunda.zeebe.gateway.protocol.rest.DeploymentProcess;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentResponse;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentReference;
-import io.camunda.zeebe.gateway.protocol.rest.DocumentReference.DocumentTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.DocumentReference.CamundaDocumentTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluateDecisionResponse;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionInputItem;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionItem;
@@ -124,7 +124,7 @@ public final class ResponseMapper {
         .ifPresent(map -> map.forEach(externalMetadata::putAdditionalProperty));
     final var reference =
         new DocumentReference()
-            .documentType(DocumentTypeEnum.CAMUNDA)
+            .camundaDocumentType(CamundaDocumentTypeEnum.CAMUNDA)
             .documentId(response.documentId())
             .storeId(response.storeId())
             .metadata(externalMetadata);

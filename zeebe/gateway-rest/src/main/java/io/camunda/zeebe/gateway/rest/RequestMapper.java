@@ -89,6 +89,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -286,7 +287,7 @@ public class RequestMapper {
       final DocumentLinkRequest documentLinkRequest) {
     return getResult(
         validateDocumentLinkParams(documentLinkRequest),
-        () -> new DocumentLinkParams(ZonedDateTime.parse(documentLinkRequest.getExpiresAt())));
+        () -> new DocumentLinkParams(Duration.ofMillis(documentLinkRequest.getTimeToLive())));
   }
 
   public static Either<ProblemDetail, UserDTO> toUserDTO(
