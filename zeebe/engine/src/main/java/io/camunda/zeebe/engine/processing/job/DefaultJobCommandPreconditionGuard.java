@@ -58,13 +58,13 @@ final class DefaultJobCommandPreconditionGuard {
         .check(jobState, jobKey)
         .flatMap(unused -> checkAuthorization(command))
         .ifRightOrLeft(
-            ok -> acceptCommand.accept(command, commandControl),
+            job -> acceptCommand.accept(command, commandControl, job),
             violation -> commandControl.reject(violation.getLeft(), violation.getRight()));
 
     return true;
   }
 
-  private Either<Tuple<RejectionType, String>, Void> checkAuthorization(
+  private Either<Tuple<RejectionType, String>, JobRecord> checkAuthorization(
       final TypedRecord<JobRecord> command) {
     final var jobKey = command.getKey();
     final var job = state.getJob(jobKey, command.getAuthorizations());
@@ -80,7 +80,7 @@ final class DefaultJobCommandPreconditionGuard {
             .addResourceId(job.getBpmnProcessId());
 
     if (authCheckBehavior.isAuthorized(request)) {
-      return Either.right(null);
+      return Either.right(job);
     }
 
     return Either.left(

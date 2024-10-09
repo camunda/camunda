@@ -18,7 +18,6 @@ import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -26,9 +25,6 @@ import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
-
-  private static final String NO_JOB_FOUND_MESSAGE =
-      "Expected to update retries for job with key '%d', but no such job was found";
 
   private final JobState jobState;
   private final ElementInstanceState elementInstanceState;
@@ -92,16 +88,9 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
   }
 
   private void acceptCommand(
-      final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
-
-    final long jobKey = command.getKey();
-
-    final JobRecord job = jobState.getJob(jobKey, command.getAuthorizations());
-    if (job == null) {
-      commandControl.reject(RejectionType.NOT_FOUND, String.format(NO_JOB_FOUND_MESSAGE, jobKey));
-      return;
-    }
-
+      final TypedRecord<JobRecord> command,
+      final CommandControl<JobRecord> commandControl,
+      final JobRecord job) {
     job.setVariables(command.getValue().getVariablesBuffer());
 
     commandControl.accept(JobIntent.COMPLETED, job);
