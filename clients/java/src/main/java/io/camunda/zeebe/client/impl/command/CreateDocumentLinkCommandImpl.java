@@ -35,13 +35,12 @@ import org.apache.hc.client5.http.config.RequestConfig;
 
 public class CreateDocumentLinkCommandImpl implements CreateDocumentLinkCommandStep1 {
 
+  final Map<String, String> queryParams;
+  final DocumentLinkRequest documentLinkRequest;
   private final String documentId;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
   private final JsonMapper jsonMapper;
-
-  private Duration timeToLive;
-  private String storeId;
 
   public CreateDocumentLinkCommandImpl(
       final String documentId,
@@ -51,7 +50,11 @@ public class CreateDocumentLinkCommandImpl implements CreateDocumentLinkCommandS
       final ZeebeClientConfiguration configuration) {
     ensureNotNull("documentId", documentId);
     this.documentId = documentId;
-    this.storeId = storeId;
+    queryParams = new HashMap<>();
+    if (storeId != null) {
+      queryParams.put("storeId", storeId);
+    }
+    documentLinkRequest = new DocumentLinkRequest();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
@@ -60,13 +63,14 @@ public class CreateDocumentLinkCommandImpl implements CreateDocumentLinkCommandS
 
   @Override
   public CreateDocumentLinkCommandStep1 storeId(final String storeId) {
-    this.storeId = storeId;
+    ensureNotNull("storeId", storeId);
+    queryParams.put("storeId", storeId);
     return this;
   }
 
   @Override
   public CreateDocumentLinkCommandStep1 timeToLive(final Duration timeToLive) {
-    this.timeToLive = timeToLive;
+    documentLinkRequest.setTimeToLive(timeToLive.toMillis());
     return this;
   }
 
@@ -79,15 +83,6 @@ public class CreateDocumentLinkCommandImpl implements CreateDocumentLinkCommandS
 
   @Override
   public ZeebeFuture<DocumentLinkResponse> send() {
-    final DocumentLinkRequest documentLinkRequest = new DocumentLinkRequest();
-    if (timeToLive != null) {
-      documentLinkRequest.setTimeToLive(timeToLive.toMillis());
-    }
-
-    final Map<String, String> queryParams = new HashMap<>();
-    if (storeId != null) {
-      queryParams.put("storeId", storeId);
-    }
     final HttpZeebeFuture<DocumentLinkResponse> result = new HttpZeebeFuture<>();
     httpClient.post(
         String.format("/documents/%s/links", documentId),

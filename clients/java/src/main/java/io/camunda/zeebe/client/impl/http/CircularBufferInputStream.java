@@ -73,15 +73,14 @@ public class CircularBufferInputStream extends InputStream {
     final int firstCopyLength = Math.min(dataSize, capacity - writePos);
     data.get(buffer, writePos, firstCopyLength);
     writePos = (writePos + firstCopyLength) % capacity;
-    availableData += firstCopyLength;
 
     final int remaining = dataSize - firstCopyLength;
     if (remaining > 0) {
       // Wrap around
       data.get(buffer, writePos, remaining);
       writePos = (writePos + remaining) % capacity;
-      availableData += remaining;
     }
+    availableData += dataSize;
 
     // Notify any waiting readers
     notifyAll();
@@ -161,13 +160,7 @@ public class CircularBufferInputStream extends InputStream {
   }
 
   private boolean canConsumeData() throws IOException {
-    while (availableData == 0) {
-      if (exception != null) {
-        throw exception;
-      }
-      if (endOfStream) {
-        return true;
-      }
+    while (availableData == 0 && exception == null && !endOfStream) {
       try {
         wait();
       } catch (final InterruptedException e) {
@@ -175,7 +168,12 @@ public class CircularBufferInputStream extends InputStream {
         throw new IOException("Interrupted while reading", e);
       }
     }
-    return false;
+    if (exception != null) {
+      final IOException ex = exception;
+      exception = null;
+      throw ex;
+    }
+    return availableData == 0;
   }
 
   public synchronized int getAvailableSpace() {
