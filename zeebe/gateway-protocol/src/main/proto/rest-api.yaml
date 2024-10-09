@@ -3175,10 +3175,10 @@ components:
           type: string
           description: State of this incident with a defined set of values.
           enum:
-          - ACTIVE
-          - MIGRATED
-          - RESOLVED
-          - PENDING
+            - ACTIVE
+            - MIGRATED
+            - RESOLVED
+            - PENDING
         jobKey:
           type: integer
           description: The job key, if exists, associated with this incident.
@@ -3675,6 +3675,9 @@ components:
           additionalProperties: true
         tenantId:
           description: The ID of the tenant that owns the job
+          type: string
+        jobListenerEventType:
+          description: The job listener event type
           type: string
     JobFailRequest:
       type: object
