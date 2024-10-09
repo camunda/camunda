@@ -473,7 +473,7 @@ jobs:
       - name: Test
         uses: ./.github/actions/run-maven
         with:
-          parameters: -f optimize/pom.xml test -Dskip.fe.build -Dskip.docker
+          parameters: -pl optimize -am test -Dskip.fe.build -Dskip.docker
           threads: .5C
       - name: Upload Test Results
         if: always()
