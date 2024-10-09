@@ -54,6 +54,13 @@ public class ScaleUpProcessor implements TypedRecordProcessor<ScaleRecord> {
       return;
     }
 
+    if (scaleUp.desiredPartitionCount() < 1 || scaleUp.currentPartitionCount() < 1) {
+      final var reason = "Partition count must be at least 1";
+      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_ARGUMENT, reason);
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, reason);
+      return;
+    }
+
     final var scalingKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(scalingKey, ScaleIntent.SCALING_UP, scaleUp);
     responseWriter.writeEventOnCommand(scalingKey, ScaleIntent.SCALING_UP, scaleUp, command);
