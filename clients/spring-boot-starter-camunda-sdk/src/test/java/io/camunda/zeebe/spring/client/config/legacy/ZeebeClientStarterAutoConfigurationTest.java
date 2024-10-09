@@ -110,6 +110,7 @@ public class ZeebeClientStarterAutoConfigurationTest {
     assertThat(client.getConfiguration().getDefaultJobWorkerMaxJobsActive()).isEqualTo(99);
     assertThat(client.getConfiguration().getDefaultJobPollInterval())
         .isEqualTo(Duration.ofSeconds(99));
+    assertThat(client.getConfiguration().preferRestOverGrpc()).isFalse();
   }
 
   @EnableConfigurationProperties(CamundaClientProperties.class)
