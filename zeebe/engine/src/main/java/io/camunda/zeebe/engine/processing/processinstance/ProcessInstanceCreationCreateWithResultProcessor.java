@@ -7,13 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
-import io.camunda.zeebe.engine.processing.streamprocessor.AuthorizableCommandProcessor.Authorizable;
-import io.camunda.zeebe.engine.processing.streamprocessor.AuthorizableCommandProcessor.Rejection;
-import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor.CommandControl;
+import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
-import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
@@ -22,10 +18,9 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
-import io.camunda.zeebe.util.Either;
 
 public final class ProcessInstanceCreationCreateWithResultProcessor
-    implements Authorizable<ProcessInstanceCreationRecord, DeployedProcess> {
+    implements CommandProcessor<ProcessInstanceCreationRecord> {
 
   private final ProcessInstanceCreationCreateProcessor createProcessor;
   private final MutableElementInstanceState elementInstanceState;
@@ -45,19 +40,11 @@ public final class ProcessInstanceCreationCreateWithResultProcessor
   }
 
   @Override
-  public Either<Rejection, AuthorizationRequest<DeployedProcess>> getAuthorizationRequest(
-      final TypedRecord<ProcessInstanceCreationRecord> command,
-      final CommandControl<ProcessInstanceCreationRecord> controller) {
-    return createProcessor.getAuthorizationRequest(command, controller);
-  }
-
-  @Override
   public boolean onCommand(
       final TypedRecord<ProcessInstanceCreationRecord> command,
-      final CommandControl<ProcessInstanceCreationRecord> controller,
-      final DeployedProcess deployedProcess) {
+      final CommandControl<ProcessInstanceCreationRecord> controller) {
     wrappedController.setCommand(command).setController(controller);
-    createProcessor.onCommand(command, wrappedController, deployedProcess);
+    createProcessor.onCommand(command, wrappedController);
     return shouldRespond;
   }
 

@@ -168,7 +168,8 @@ public final class EngineProcessors {
             partitionId,
             routingInfo,
             clock,
-            config);
+            config,
+            authCheckBehavior);
 
     addDecisionProcessors(typedRecordProcessors, decisionBehavior, writers, processingState);
 
@@ -267,7 +268,8 @@ public final class EngineProcessors {
       final int partitionId,
       final RoutingInfo routingInfo,
       final InstantSource clock,
-      final EngineConfiguration config) {
+      final EngineConfiguration config,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     return BpmnProcessors.addBpmnStreamProcessor(
         processingState,
         scheduledTaskState,
@@ -280,7 +282,8 @@ public final class EngineProcessors {
         partitionId,
         routingInfo,
         clock,
-        config);
+        config,
+        authCheckBehavior);
   }
 
   private static void addDeploymentRelatedProcessorAndServices(
