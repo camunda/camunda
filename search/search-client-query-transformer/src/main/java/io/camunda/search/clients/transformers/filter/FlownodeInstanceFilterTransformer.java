@@ -27,12 +27,12 @@ public class FlownodeInstanceFilterTransformer
         longTerms("key", filter.flowNodeInstanceKeys()),
         longTerms("processInstanceKey", filter.processInstanceKeys()),
         longTerms("processDefinitionKey", filter.processDefinitionKeys()),
-        stringTerms("bpmnProcessId", filter.bpmnProcessIds()),
+        stringTerms("bpmnProcessId", filter.processDefinitionIds()),
         getStateQuery(filter.states()),
         getTypeQuery(filter.types()),
         stringTerms("flowNodeId", filter.flowNodeIds()),
         stringTerms("treePath", filter.treePaths()),
-        filter.incident() != null ? term("incident", filter.incident()) : null,
+        filter.hasIncident() != null ? term("incident", filter.hasIncident()) : null,
         longTerms("incidentKey", filter.incidentKeys()),
         stringTerms("tenantId", filter.tenantIds()));
   }

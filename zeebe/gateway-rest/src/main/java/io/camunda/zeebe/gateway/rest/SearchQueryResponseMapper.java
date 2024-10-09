@@ -282,7 +282,7 @@ public final class SearchQueryResponseMapper {
         .processDefinitionId(instance.bpmnProcessId())
         .processInstanceKey(instance.processInstanceKey())
         .incidentKey(instance.incidentKey())
-        .incident(instance.incident())
+        .hasIncident(instance.incident())
         .startDate(instance.startDate())
         .endDate(instance.endDate())
         .state(FlowNodeInstanceItem.StateEnum.fromValue(instance.state().name()))

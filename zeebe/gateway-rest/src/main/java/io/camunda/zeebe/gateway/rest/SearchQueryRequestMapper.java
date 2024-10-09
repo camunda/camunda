@@ -400,7 +400,8 @@ public final class SearchQueryRequestMapper {
                   .ifPresent(builder::processInstanceKeys);
               Optional.ofNullable(f.getProcessDefinitionKey())
                   .ifPresent(builder::processDefinitionKeys);
-              Optional.ofNullable(f.getProcessDefinitionId()).ifPresent(builder::bpmnProcessIds);
+              Optional.ofNullable(f.getProcessDefinitionId())
+                  .ifPresent(builder::processDefinitionIds);
               Optional.ofNullable(f.getState())
                   .ifPresent(s -> builder.states(FlowNodeState.valueOf(s.getValue())));
               Optional.ofNullable(f.getType())
@@ -408,7 +409,7 @@ public final class SearchQueryRequestMapper {
                       t -> builder.types(FlowNodeType.fromZeebeBpmnElementType(t.getValue())));
               Optional.ofNullable(f.getFlowNodeId()).ifPresent(builder::flowNodeIds);
               Optional.ofNullable(f.getTreePath()).ifPresent(builder::treePaths);
-              Optional.ofNullable(f.getIncident()).ifPresent(builder::incident);
+              Optional.ofNullable(f.getHasIncident()).ifPresent(builder::hasIncident);
               Optional.ofNullable(f.getIncidentKey()).ifPresent(builder::incidentKeys);
               Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
             });
@@ -574,7 +575,7 @@ public final class SearchQueryRequestMapper {
         case "flowNodeInstanceKey" -> builder.flowNodeInstanceKey();
         case "processInstanceKey" -> builder.processInstanceKey();
         case "processDefinitionKey" -> builder.processDefinitionKey();
-        case "bpmnProcessId" -> builder.bpmnProcessId();
+        case "processDefinitionId" -> builder.processDefinitionId();
         case "startDate" -> builder.startDate();
         case "endDate" -> builder.endDate();
         case "flowNodeId" -> builder.flowNodeId();
