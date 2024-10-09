@@ -39,7 +39,7 @@
     <version.assertj>3.26.3</version.assertj>
     <version.awaitility>4.2.2</version.awaitility>
     <version.bouncycastle>1.78.1</version.bouncycastle>
-    <version.camunda>7.22.0-alpha5</version.camunda>
+    <version.camunda>7.22.0</version.camunda>
     <version.camunda-license-check>2.9.0</version.camunda-license-check>
     <version.checkstyle>10.18.1</version.checkstyle>
     <version.commons-beanutils>1.9.4</version.commons-beanutils>
@@ -2332,7 +2332,7 @@
                 <goal>check</goal>
               </goals>
               <phase>validate</phase>
-              <configuration />
+              <configuration></configuration>
             </execution>
           </executions>
         </plugin>
@@ -2362,7 +2362,7 @@
               <usePhrasedTestCaseClassName>true</usePhrasedTestCaseClassName>
               <usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
             </statelessTestsetReporter>
-            <consoleOutputReporter implementation="io.camunda.zeebe.ZeebeConsoleOutputReporter" />
+            <consoleOutputReporter implementation="io.camunda.zeebe.ZeebeConsoleOutputReporter"></consoleOutputReporter>
             <skip>${skipUTs}</skip>
           </configuration>
           <dependencies>
@@ -2402,7 +2402,7 @@
               <usePhrasedTestCaseClassName>true</usePhrasedTestCaseClassName>
               <usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
             </statelessTestsetReporter>
-            <consoleOutputReporter implementation="io.camunda.zeebe.ZeebeConsoleOutputReporter" />
+            <consoleOutputReporter implementation="io.camunda.zeebe.ZeebeConsoleOutputReporter"></consoleOutputReporter>
             <skip>${skipITs}</skip>
           </configuration>
           <dependencies>
@@ -2483,6 +2483,7 @@
                 -->
                 <executable>java</executable>
                 <includePluginDependencies>true</includePluginDependencies>
+                <longClasspath>true</longClasspath>
                 <arguments combine.children="append">
                   <argument>-Dsbe.output.dir=${project.build.directory}/generated-sources/sbe</argument>
                   <argument>-Dsbe.java.generate.interfaces=true</argument>
@@ -2491,7 +2492,7 @@
                   <argument>-classpath</argument>
                   <!-- automatically creates the classpath using all project dependencies,
                      also adding the project build directory -->
-                  <classpath />
+                  <classpath></classpath>
                   <argument>uk.co.real_logic.sbe.SbeTool</argument>
                 </arguments>
                 <workingDirectory>${project.build.directory}/generated-sources</workingDirectory>
@@ -2526,7 +2527,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore />
+                    <ignore></ignore>
                   </action>
                 </pluginExecution>
               </pluginExecutions>
@@ -2611,7 +2612,7 @@
               </goals>
               <configuration>
                 <rules>
-                  <banDuplicatePomDependencyVersions />
+                  <banDuplicatePomDependencyVersions></banDuplicatePomDependencyVersions>
                 </rules>
               </configuration>
             </execution>

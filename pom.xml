@@ -64,7 +64,7 @@
               <exclude>tasklist/client/**/*.md</exclude>
               <exclude>optimize/client/**/*.md</exclude>
             </excludes>
-            <flexmark />
+            <flexmark></flexmark>
           </markdown>
         </configuration>
       </plugin>
