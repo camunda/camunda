@@ -326,7 +326,11 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
 
   @Override
   public boolean preferRestOverGrpc() {
-    return camundaClientProperties.getZeebe().isPreferRestOverGrpc();
+    return getOrDefault(
+        "preferRestOverGrpc",
+        () -> camundaClientProperties.getZeebe().isPreferRestOverGrpc(),
+        DEFAULT.preferRestOverGrpc(),
+        configCache);
   }
 
   private CredentialsProvider credentialsProvider() {
