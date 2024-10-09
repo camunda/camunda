@@ -224,35 +224,24 @@ const ProcessTile: React.FC<Props> = ({
               pathname: '/processes',
             });
           }}
-          onSubmit={async (variables, files) => {
-            let fileUploadResponses: Awaited<
-              ReturnType<typeof uploadDocuments>
-            > = new Map();
-
-            if (files !== undefined) {
-              fileUploadResponses = await uploadDocuments({
-                files,
-              });
-            }
+          onSubmit={async (variables) => {
             await startProcess({
               bpmnProcessId,
-              variables:
-                fileUploadResponses.size === 0
-                  ? variables
-                  : [
-                      ...variables,
-                      {
-                        name: 'documentMetadata',
-                        value: JSON.stringify(
-                          Object.fromEntries(fileUploadResponses.entries()),
-                        ),
-                      },
-                    ],
+              variables,
               tenantId,
             });
             navigate({
               ...location,
               pathname: '/processes',
+            });
+          }}
+          onFileUpload={async (files: Map<string, File[]>) => {
+            if (files.size === 0) {
+              return new Map();
+            }
+
+            return uploadDocuments({
+              files,
             });
           }}
           isMultiTenancyEnabled={isMultiTenancyEnabled}

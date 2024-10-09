@@ -8,9 +8,9 @@
 
 import {FormManager} from 'modules/formManager';
 import {useForm} from 'modules/queries/useForm';
-import type {Process, Variable} from 'modules/types';
+import type {Process} from 'modules/types';
 import {getProcessDisplayName} from 'modules/utils/getProcessDisplayName';
-import {useRef, useState} from 'react';
+import React, {useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {
   TextInputSkeleton,
@@ -30,10 +30,8 @@ type Props = {
   process: Process;
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (
-    variables: Pick<Variable, 'name' | 'value'>[],
-    files?: Map<string, File[]>,
-  ) => Promise<void>;
+  onSubmit: React.ComponentProps<typeof FormJSRenderer>['handleSubmit'];
+  onFileUpload: React.ComponentProps<typeof FormJSRenderer>['handleFileUpload'];
   isMultiTenancyEnabled: boolean;
   tenantId?: string;
 };
@@ -43,6 +41,7 @@ const FormModal: React.FC<Props> = ({
   onClose,
   process,
   onSubmit,
+  onFileUpload,
   isMultiTenancyEnabled,
   tenantId,
 }) => {
@@ -152,6 +151,7 @@ const FormModal: React.FC<Props> = ({
                       <FormJSRenderer
                         schema={schema!}
                         handleSubmit={onSubmit}
+                        handleFileUpload={onFileUpload}
                         onMount={(formManager) => {
                           formManagerRef.current = formManager;
                         }}
