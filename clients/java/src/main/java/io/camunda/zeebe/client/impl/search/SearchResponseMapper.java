@@ -56,6 +56,11 @@ public final class SearchResponseMapper {
     return new SearchQueryResponseImpl<>(instances, page);
   }
 
+  public static ProcessDefinition toProcessDefinitionGetResponse(
+      final ProcessDefinitionItem response) {
+    return new ProcessDefinitionImpl(response);
+  }
+
   public static ProcessInstance toProcessInstanceGetResponse(final ProcessInstanceItem response) {
     return new ProcessInstanceImpl(response);
   }
