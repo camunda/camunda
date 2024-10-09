@@ -164,6 +164,55 @@ public class OpensearchEngineClientIT {
     assertThat(properties.get("email").isKeyword()).isTrue();
     assertThat(properties.get("age").isInteger()).isTrue();
   }
+
+  @Test
+  void shouldRetrieveAllIndexMappingsWithImplementationAgnosticReturnType() {
+    final var index =
+        SchemaTestUtil.mockIndex("index_qualified_name", "alias", "index_name", "/mappings.json");
+
+    opensearchEngineClient.createIndex(index, new IndexSettings());
+
+    final var mappings = opensearchEngineClient.getMappings("*", MappingSource.INDEX);
+
+    assertThat(mappings.size()).isEqualTo(1);
+    assertThat(mappings.get("index_qualified_name").dynamic()).isEqualTo("strict");
+
+    assertThat(mappings.get("index_qualified_name").properties())
+        .containsExactlyInAnyOrder(
+            new IndexMappingProperty.Builder()
+                .name("hello")
+                .typeDefinition(Map.of("type", "text"))
+                .build(),
+            new IndexMappingProperty.Builder()
+                .name("world")
+                .typeDefinition(Map.of("type", "keyword"))
+                .build());
+  }
+
+  @Test
+  void shouldRetrieveAllIndexTemplateMappingsWithImplementationAgnosticReturnType() {
+    final var template =
+        SchemaTestUtil.mockIndexTemplate(
+            "index_name", "index_pattern.*", "alias", List.of(), "template_name", "/mappings.json");
+
+    opensearchEngineClient.createIndexTemplate(template, new IndexSettings(), true);
+
+    final var templateMappings =
+        opensearchEngineClient.getMappings("template_name", MappingSource.INDEX_TEMPLATE);
+
+    assertThat(templateMappings.size()).isEqualTo(1);
+    assertThat(templateMappings.get("template_name").properties())
+        .containsExactlyInAnyOrder(
+            new IndexMappingProperty.Builder()
+                .name("hello")
+                .typeDefinition(Map.of("type", "text"))
+                .build(),
+            new IndexMappingProperty.Builder()
+                .name("world")
+                .typeDefinition(Map.of("type", "keyword"))
+                .build());
+  }
+
   @Test
   void shouldUpdateSettingsWithPutSettingsRequest() throws IOException {
     final var index =
