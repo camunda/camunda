@@ -119,11 +119,11 @@ public class PropertyBasedZeebeWorkerValueCustomizer implements ZeebeWorkerValue
     parameters.forEach(
         pi ->
             ReflectionUtils.doWithFields(
-                pi.getParameterInfo().getType(), f -> result.add(extractParameterName(f))));
+                pi.getParameterInfo().getType(), f -> result.add(extractFieldName(f))));
     return result;
   }
 
-  private String extractParameterName(final Field field) {
+  private String extractFieldName(final Field field) {
     if (field.isAnnotationPresent(JsonProperty.class)) {
       return field.getAnnotation(JsonProperty.class).value();
     }
