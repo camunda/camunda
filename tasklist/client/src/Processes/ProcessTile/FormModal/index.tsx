@@ -30,7 +30,10 @@ type Props = {
   process: Process;
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (variables: Variable[]) => Promise<void>;
+  onSubmit: (
+    variables: Pick<Variable, 'name' | 'value'>[],
+    files?: Map<string, File[]>,
+  ) => Promise<void>;
   isMultiTenancyEnabled: boolean;
   tenantId?: string;
 };

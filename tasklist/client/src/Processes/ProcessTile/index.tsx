@@ -25,6 +25,7 @@ import {getProcessDisplayName} from 'modules/utils/getProcessDisplayName';
 import {ProcessTag} from './ProcessTag';
 import styles from './styles.module.scss';
 import cn from 'classnames';
+import {useUploadDocuments} from 'modules/mutations/useUploadDocuments';
 
 type InlineLoadingStatus = NonNullable<InlineLoadingProps['status']>;
 
@@ -91,7 +92,7 @@ const ProcessTile: React.FC<Props> = ({
   ...props
 }) => {
   const {t} = useTranslation();
-
+  const {mutateAsync: uploadDocuments} = useUploadDocuments();
   const {mutateAsync: startProcess} = useStartProcess({
     onSuccess(data) {
       tracking.track({
@@ -223,10 +224,30 @@ const ProcessTile: React.FC<Props> = ({
               pathname: '/processes',
             });
           }}
-          onSubmit={async (variables) => {
+          onSubmit={async (variables, files) => {
+            let fileUploadResponses: Awaited<
+              ReturnType<typeof uploadDocuments>
+            > = new Map();
+
+            if (files !== undefined) {
+              fileUploadResponses = await uploadDocuments({
+                files,
+              });
+            }
             await startProcess({
               bpmnProcessId,
-              variables,
+              variables:
+                fileUploadResponses.size === 0
+                  ? variables
+                  : [
+                      ...variables,
+                      {
+                        name: 'documentMetadata',
+                        value: JSON.stringify(
+                          Object.fromEntries(fileUploadResponses.entries()),
+                        ),
+                      },
+                    ],
               tenantId,
             });
             navigate({

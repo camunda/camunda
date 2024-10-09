@@ -11,18 +11,54 @@ import {api} from 'modules/api';
 import {type RequestError, request} from 'modules/request';
 
 type Payload = {
-  files: File[];
+  files: Map<string, File[]>;
+};
+
+type FileUploadResponse = {
+  documentType: string;
+  storeId: string;
+  documentId: string;
+  metadata: {
+    contentType: string;
+    fileName: string;
+    size: string;
+  };
 };
 
 function useUploadDocuments() {
-  return useMutation<null, RequestError | Error, Payload>({
+  return useMutation<
+    Map<string, FileUploadResponse[]>,
+    RequestError | Error,
+    Payload
+  >({
     mutationFn: async ({files}) => {
-      const responses = await Promise.all(
-        files.map((file) => request(api.uploadDocuments({file}))),
-      );
+      const requests: ReturnType<typeof request>[] = [];
+      const fileRequestMapping = Array.from(files.entries()).map<
+        [string, Promise<Awaited<ReturnType<typeof request>>[]>]
+      >(([key, files]) => {
+        const itemRequests = files.map((file) =>
+          request(api.v2.uploadDocuments({file})),
+        );
+
+        requests.push(...itemRequests);
+
+        return [key, Promise.all(itemRequests)];
+      });
+      const responses = await Promise.all(requests);
 
       if (responses.every(({response}) => response !== null)) {
-        return null;
+        const metadataMapping: [string, FileUploadResponse[]][] = [];
+
+        for (const [key, responses] of fileRequestMapping) {
+          const metadata = await responses;
+
+          metadataMapping.push([
+            key,
+            await Promise.all(metadata.map(({response}) => response!.json())),
+          ]);
+        }
+
+        return new Map(metadataMapping);
       }
 
       throw new Error('Failed to upload all files');
