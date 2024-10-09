@@ -17,5 +17,5 @@ public interface JobAcceptFunction {
   void accept(
       final TypedRecord<JobRecord> record,
       final CommandControl<JobRecord> commandControl,
-      final JobRecord jobFromState);
+      final JobRecord jobRecord);
 }
