@@ -200,7 +200,7 @@ public enum ZbColumnFamilies implements EnumValue {
 
   ROLE(100),
   ENTITY_BY_ROLE(101),
-  ROLE_BY_NAME(102),;
+  ROLE_BY_NAME(102);
 
   private final int value;
 

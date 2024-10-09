@@ -14,7 +14,8 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 
 public class PersistedRole extends UnpackedObject implements DbValue {
 
-  private final ObjectProperty<RoleRecord> roleRecord = new ObjectProperty<>("roleRecord", new RoleRecord());
+  private final ObjectProperty<RoleRecord> roleRecord =
+      new ObjectProperty<>("roleRecord", new RoleRecord());
 
   public PersistedRole() {
     super(1);
