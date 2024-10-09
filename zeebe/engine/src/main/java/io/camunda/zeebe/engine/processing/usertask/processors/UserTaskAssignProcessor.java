@@ -5,32 +5,31 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.processing.usertask;
+package io.camunda.zeebe.engine.processing.usertask.processors;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
 
-public final class UserTaskAssignProcessor implements TypedRecordProcessor<UserTaskRecord> {
+public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
 
   private static final String DEFAULT_ACTION = "assign";
 
   private final StateWriter stateWriter;
-  private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final UserTaskCommandPreconditionChecker preconditionChecker;
 
   public UserTaskAssignProcessor(final ProcessingState state, final Writers writers) {
     stateWriter = writers.state();
-    rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     preconditionChecker =
         new UserTaskCommandPreconditionChecker(
@@ -38,19 +37,13 @@ public final class UserTaskAssignProcessor implements TypedRecordProcessor<UserT
   }
 
   @Override
-  public void processRecord(final TypedRecord<UserTaskRecord> command) {
-    preconditionChecker
-        .check(command)
-        .ifRightOrLeft(
-            persistedRecord -> assignUserTask(command, persistedRecord),
-            violation -> {
-              rejectionWriter.appendRejection(command, violation.getLeft(), violation.getRight());
-              responseWriter.writeRejectionOnCommand(
-                  command, violation.getLeft(), violation.getRight());
-            });
+  public Either<Tuple<RejectionType, String>, UserTaskRecord> validateCommand(
+      final TypedRecord<UserTaskRecord> command) {
+    return preconditionChecker.check(command);
   }
 
-  private void assignUserTask(
+  @Override
+  public void onCommand(
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
     final long userTaskKey = command.getKey();
 

@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.processing.usertask;
+package io.camunda.zeebe.engine.processing.usertask.processors;
 
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
@@ -24,8 +24,6 @@ public class UserTaskCommandPreconditionChecker {
       "Expected to %s user task with key '%d', but no such user task was found";
   private static final String INVALID_USER_TASK_STATE_MESSAGE =
       "Expected to %s user task with key '%d', but it is in state '%s'";
-
-  private static final String CLAIM_INTENT = "claim";
 
   private final List<LifecycleState> validLifecycleStates;
   private final String intent;
