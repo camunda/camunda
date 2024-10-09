@@ -213,11 +213,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         cfg -> {
           cfg.setClassName("io.camunda.exporter.CamundaExporter");
           cfg.setArgs(
-              Map.of(
-                  "elasticsearch",
-                  Map.of("connect", Map.of("url", elasticSearchUrl)),
-                  "bulk",
-                  Map.of("size", 1)));
+              Map.of("connect", Map.of("url", elasticSearchUrl), "bulk", Map.of("size", 1)));
         });
     final var searchClient = new SearchClientProperties();
     searchClient.setUrl(elasticSearchUrl);

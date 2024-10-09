@@ -90,7 +90,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
         .thenReturn(CompletableFuture.completedFuture(authorizationRecord));
 
     webClient
-        .post()
+        .patch()
         .uri("/v2/authorizations/%d".formatted(ownerKey))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
@@ -140,7 +140,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
     expectedBody.setInstance(URI.create("/v2/authorizations/%d".formatted(ownerKey)));
 
     webClient
-        .post()
+        .patch()
         .uri("/v2/authorizations/%d".formatted(ownerKey))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
@@ -163,7 +163,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
     expectedBody.setDetail(errorMessage);
 
     webClient
-        .post()
+        .patch()
         .uri("/v2/authorizations/%d".formatted(ownerKey))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)

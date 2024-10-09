@@ -71,7 +71,8 @@ public final class FlowNodeInstanceFilterTest extends AbstractTransformerTest {
 
   @Test
   public void shouldQueryByBpmnProcessId() {
-    final var filter = FilterBuilders.flowNodeInstance(f -> f.bpmnProcessIds("complexProcess"));
+    final var filter =
+        FilterBuilders.flowNodeInstance(f -> f.processDefinitionIds("complexProcess"));
     // when
     final var searchRequest = transformQuery(filter);
 

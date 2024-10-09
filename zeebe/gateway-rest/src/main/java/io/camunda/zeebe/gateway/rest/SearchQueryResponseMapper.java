@@ -25,6 +25,7 @@ import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceReference;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
+import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionItem;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryResponse;
@@ -56,6 +57,8 @@ import io.camunda.zeebe.gateway.protocol.rest.UserResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskItem;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.VariableItem;
+import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQueryResponse;
 import io.camunda.zeebe.util.Either;
 import java.util.Arrays;
 import java.util.Collections;
@@ -279,7 +282,7 @@ public final class SearchQueryResponseMapper {
         .processDefinitionId(instance.bpmnProcessId())
         .processInstanceKey(instance.processInstanceKey())
         .incidentKey(instance.incidentKey())
-        .incident(instance.incident())
+        .hasIncident(instance.incident())
         .startDate(instance.startDate())
         .endDate(instance.endDate())
         .state(FlowNodeInstanceItem.StateEnum.fromValue(instance.state().name()))
@@ -500,6 +503,33 @@ public final class SearchQueryResponseMapper {
       default:
         return DecisionDefinitionTypeEnum.UNKNOWN;
     }
+  }
+
+  public static VariableSearchQueryResponse toVariableSearchQueryResponse(
+      final SearchQueryResult<VariableEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new VariableSearchQueryResponse()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toVariables)
+                .orElseGet(Collections::emptyList));
+  }
+
+  private static List<VariableItem> toVariables(final List<VariableEntity> variableEntities) {
+    return variableEntities.stream().map(SearchQueryResponseMapper::toVariable).toList();
+  }
+
+  private static VariableItem toVariable(final VariableEntity variableEntity) {
+    return new VariableItem()
+        .variableKey(variableEntity.key())
+        .name(variableEntity.name())
+        .value(variableEntity.value())
+        .fullValue(variableEntity.fullValue())
+        .processInstanceKey(variableEntity.processInstanceKey())
+        .tenantId(variableEntity.tenantId())
+        .isTruncated(variableEntity.isPreview())
+        .scopeKey(variableEntity.scopeKey());
   }
 
   private record RuleIdentifier(String ruleId, int ruleIndex) {}

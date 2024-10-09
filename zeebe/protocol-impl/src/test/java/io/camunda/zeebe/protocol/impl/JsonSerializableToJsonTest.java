@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.VersionInfo;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
@@ -2667,6 +2668,35 @@ final class JsonSerializableToJsonTest {
         }
         """
       },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////// RoleRecord /////////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Role record",
+        (Supplier<RoleRecord>)
+            () -> new RoleRecord().setRoleKey(1L).setName("role").setEntityKey(2L),
+        """
+        {
+          "roleKey": 1,
+          "name": "role",
+          "entityKey": 2
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// Empty RoleRecord /////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty RoleRecord",
+        (Supplier<RoleRecord>) RoleRecord::new,
+        """
+        {
+          "roleKey": -1,
+          "name": "",
+          "entityKey": -1
+        }
+        """
+      }
     };
   }
 

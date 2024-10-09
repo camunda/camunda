@@ -218,7 +218,12 @@ public final class EngineProcessors {
         typedRecordProcessors, writers, keyGenerator, clock, commandDistributionBehavior);
 
     AuthorizationProcessors.addAuthorizationProcessors(
-        keyGenerator, typedRecordProcessors, processingState, writers, commandDistributionBehavior);
+        keyGenerator,
+        typedRecordProcessors,
+        processingState,
+        writers,
+        commandDistributionBehavior,
+        config);
 
     return typedRecordProcessors;
   }

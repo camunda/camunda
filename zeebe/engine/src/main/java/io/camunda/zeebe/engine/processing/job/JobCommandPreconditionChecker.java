@@ -16,7 +16,7 @@ import java.util.List;
 
 public class JobCommandPreconditionChecker {
 
-  private static final String NO_JOB_FOUND_MESSAGE =
+  public static final String NO_JOB_FOUND_MESSAGE =
       "Expected to %s job with key '%d', but no such job was found";
   private static final String INVALID_JOB_STATE_MESSAGE =
       "Expected to %s job with key '%d', but it is in state '%s'";

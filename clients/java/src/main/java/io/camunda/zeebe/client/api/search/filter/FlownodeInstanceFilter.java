@@ -81,7 +81,7 @@ public interface FlownodeInstanceFilter extends SearchRequestFilter {
    * @param value has the flow node instance an incident
    * @return the updated filter
    */
-  FlownodeInstanceFilter incident(final boolean value);
+  FlownodeInstanceFilter hasIncident(final boolean value);
 
   /**
    * Filters flow node instances by incident key.

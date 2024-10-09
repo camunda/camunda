@@ -11,29 +11,15 @@ import io.camunda.search.connect.configuration.ConnectConfiguration;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ElasticsearchProperties {
-  private boolean createSchema;
+public class ExporterConfiguration {
+
   private ConnectConfiguration connect = new ConnectConfiguration();
   private IndexSettings defaultSettings = new IndexSettings();
+  private BulkConfiguration bulk = new BulkConfiguration();
+  private RetentionConfiguration retention = new RetentionConfiguration();
   private Map<String, Integer> replicasByIndexName = new HashMap<>();
   private Map<String, Integer> shardsByIndexName = new HashMap<>();
-  private RetentionConfiguration retention = new RetentionConfiguration();
-
-  public RetentionConfiguration getRetention() {
-    return retention;
-  }
-
-  public void setRetention(final RetentionConfiguration retention) {
-    this.retention = retention;
-  }
-
-  public boolean isCreateSchema() {
-    return createSchema;
-  }
-
-  public void setCreateSchema(final boolean createSchema) {
-    this.createSchema = createSchema;
-  }
+  private boolean createSchema;
 
   public ConnectConfiguration getConnect() {
     return connect;
@@ -49,6 +35,22 @@ public class ElasticsearchProperties {
 
   public void setDefaultSettings(final IndexSettings defaultSettings) {
     this.defaultSettings = defaultSettings;
+  }
+
+  public BulkConfiguration getBulk() {
+    return bulk;
+  }
+
+  public void setBulk(final BulkConfiguration bulk) {
+    this.bulk = bulk;
+  }
+
+  public RetentionConfiguration getRetention() {
+    return retention;
+  }
+
+  public void setRetention(final RetentionConfiguration retention) {
+    this.retention = retention;
   }
 
   public Map<String, Integer> getReplicasByIndexName() {
@@ -67,12 +69,32 @@ public class ElasticsearchProperties {
     this.shardsByIndexName = shardsByIndexName;
   }
 
-  public String getIndexPrefix() {
-    return connect.getIndexPrefix();
+  public boolean isCreateSchema() {
+    return createSchema;
   }
 
-  public void setIndexPrefix(final String indexPrefix) {
-    connect.setIndexPrefix(indexPrefix);
+  public void setCreateSchema(final boolean createSchema) {
+    this.createSchema = createSchema;
+  }
+
+  @Override
+  public String toString() {
+    return "ExporterConfiguration{"
+        + "connect="
+        + connect
+        + ", defaultSettings="
+        + defaultSettings
+        + ", bulk="
+        + bulk
+        + ", retention="
+        + retention
+        + ", replicasByIndexName="
+        + replicasByIndexName
+        + ", shardsByIndexName="
+        + shardsByIndexName
+        + ", createSchema="
+        + createSchema
+        + '}';
   }
 
   public static final class IndexSettings {
@@ -93,6 +115,16 @@ public class ElasticsearchProperties {
 
     public void setNumberOfReplicas(final Integer numberOfReplicas) {
       this.numberOfReplicas = numberOfReplicas;
+    }
+
+    @Override
+    public String toString() {
+      return "IndexSettings{"
+          + "numberOfShards="
+          + numberOfShards
+          + ", numberOfReplicas="
+          + numberOfReplicas
+          + '}';
     }
   }
 
@@ -123,6 +155,65 @@ public class ElasticsearchProperties {
 
     public void setPolicyName(final String policyName) {
       this.policyName = policyName;
+    }
+
+    @Override
+    public String toString() {
+      return "RetentionConfiguration{"
+          + "enabled="
+          + enabled
+          + ", minimumAge='"
+          + minimumAge
+          + '\''
+          + ", policyName='"
+          + policyName
+          + '\''
+          + '}';
+    }
+  }
+
+  public static class BulkConfiguration {
+    // delay before forced flush
+    private int delay = 5;
+    // bulk size before flush
+    private int size = 1_000;
+    // memory limit of the bulk in bytes before flush
+    private int memoryLimit = 10 * 1024 * 1024;
+
+    public int getDelay() {
+      return delay;
+    }
+
+    public void setDelay(final int delay) {
+      this.delay = delay;
+    }
+
+    public int getSize() {
+      return size;
+    }
+
+    public void setSize(final int size) {
+      this.size = size;
+    }
+
+    public int getMemoryLimit() {
+      return memoryLimit;
+    }
+
+    public void setMemoryLimit(final int memoryLimit) {
+      this.memoryLimit = memoryLimit;
+    }
+
+    @Override
+    public String toString() {
+      return "BulkConfiguration{"
+          + "delay="
+          + delay
+          + ", size="
+          + size
+          + ", memoryLimit="
+          + memoryLimit
+          + '}';
     }
   }
 }

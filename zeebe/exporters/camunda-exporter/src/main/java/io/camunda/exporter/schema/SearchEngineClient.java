@@ -7,8 +7,7 @@
  */
 package io.camunda.exporter.schema;
 
-import io.camunda.exporter.config.ElasticsearchProperties.IndexSettings;
-import io.camunda.exporter.schema.ElasticsearchEngineClient.MappingSource;
+import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.util.List;
@@ -16,7 +15,7 @@ import java.util.Map;
 import java.util.Set;
 
 public interface SearchEngineClient {
-  void createIndex(final IndexDescriptor indexDescriptor);
+  void createIndex(final IndexDescriptor indexDescriptor, final IndexSettings settings);
 
   void createIndexTemplate(
       final IndexTemplateDescriptor indexDescriptor,
