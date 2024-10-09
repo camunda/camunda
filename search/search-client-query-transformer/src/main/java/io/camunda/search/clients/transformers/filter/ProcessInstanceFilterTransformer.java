@@ -47,7 +47,7 @@ public final class ProcessInstanceFilterTransformer
         getDateQuery("startDate", filter.startDate()),
         getDateQuery("endDate", filter.endDate()),
         stringTerms("state", filter.states()),
-        getIncidentQuery(filter.incident()),
+        getIncidentQuery(filter.hasIncident()),
         stringTerms("tenantId", filter.tenantIds()));
   }
 
@@ -68,9 +68,9 @@ public final class ProcessInstanceFilterTransformer
     return null;
   }
 
-  private SearchQuery getIncidentQuery(final Boolean incident) {
-    if (incident != null) {
-      return term("incident", incident);
+  private SearchQuery getIncidentQuery(final Boolean hasIncident) {
+    if (hasIncident != null) {
+      return term("incident", hasIncident);
     }
     return null;
   }

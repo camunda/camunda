@@ -353,7 +353,7 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   @Test
   public void shouldQueryByIncident() {
     // given
-    final var processInstanceFilter = FilterBuilders.processInstance(f -> f.incident(true));
+    final var processInstanceFilter = FilterBuilders.processInstance(f -> f.hasIncident(true));
 
     // when
     final var searchRequest = transformQuery(processInstanceFilter);
@@ -414,7 +414,7 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
     assertThat(processInstanceFilter.startDate()).isNull();
     assertThat(processInstanceFilter.endDate()).isNull();
     assertThat(processInstanceFilter.states()).isEmpty();
-    assertThat(processInstanceFilter.incident()).isNull();
+    assertThat(processInstanceFilter.hasIncident()).isNull();
     assertThat(processInstanceFilter.tenantIds()).isEmpty();
   }
 

@@ -223,7 +223,7 @@ public final class SearchQueryResponseMapper {
         .startDate(p.startDate())
         .endDate(p.endDate())
         .state((p.state() == null) ? null : ProcessInstanceStateEnum.fromValue(p.state().name()))
-        .incident(p.incident())
+        .hasIncident(p.incident())
         .tenantId(p.tenantId());
   }
 

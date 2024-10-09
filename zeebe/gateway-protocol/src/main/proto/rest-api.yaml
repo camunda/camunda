@@ -2734,7 +2734,7 @@ components:
         state:
           $ref: '#/components/schemas/ProcessInstanceStateEnum'
           description: The state, one of ACTIVE, COMPLETED, CANCELED.
-        incident:
+        hasIncident:
           type: boolean
           description: Whether this process instance has a related incident or not.
         tenantId:
@@ -2813,7 +2813,7 @@ components:
         state:
           $ref: '#/components/schemas/ProcessInstanceStateEnum'
           description: The state, one of ACTIVE, COMPLETED, CANCELED.
-        incident:
+        hasIncident:
           type: boolean
           description: Whether this process instance has a related incident or not.
         tenantId:

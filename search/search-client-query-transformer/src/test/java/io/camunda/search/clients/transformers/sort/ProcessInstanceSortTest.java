@@ -50,7 +50,7 @@ public class ProcessInstanceSortTest extends AbstractSortTransformerTest {
             "endDate", SortOrder.DESC, s -> s.endDate().desc()),
         new ProcessInstanceSortTest.TestArguments("state", SortOrder.DESC, s -> s.state().desc()),
         new ProcessInstanceSortTest.TestArguments(
-            "incident", SortOrder.DESC, s -> s.incident().desc()),
+            "incident", SortOrder.DESC, s -> s.hasIncident().desc()),
         new ProcessInstanceSortTest.TestArguments(
             "tenantId", SortOrder.ASC, s -> s.tenantId().asc()));
   }
