@@ -72,6 +72,17 @@ public final class SfvChecksumImpl implements MutableChecksumsSFV {
   }
 
   @Override
+  public boolean sameChecksums(final ImmutableChecksumsSFV o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null) {
+      return false;
+    }
+    return Objects.equals(checksums, o.getChecksums());
+  }
+
+  @Override
   public String toString() {
     return "SfvChecksumImpl{" + ", checksums=" + checksums + '}';
   }
@@ -126,49 +137,5 @@ public final class SfvChecksumImpl implements MutableChecksumsSFV {
   public void updateFromChecksum(final Path filePath, final long checksum) {
     final String fileName = filePath.getFileName().toString();
     checksums.put(fileName, checksum);
-  }
-
-  @Override
-  public boolean sameChecksums(final ImmutableChecksumsSFV o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null) {
-      return false;
-    }
-    return Objects.equals(checksums, o.getChecksums());
-  }
-
-  private static class PreDefinedImmutableChecksum implements Checksum {
-
-    private final long crc;
-
-    public PreDefinedImmutableChecksum(final long crc) {
-      this.crc = crc;
-    }
-
-    @Override
-    public void update(final int b) {
-      throw getUnsupportedOperationException();
-    }
-
-    @Override
-    public void update(final byte[] b, final int off, final int len) {
-      throw getUnsupportedOperationException();
-    }
-
-    @Override
-    public long getValue() {
-      return crc;
-    }
-
-    @Override
-    public void reset() {
-      throw getUnsupportedOperationException();
-    }
-
-    private static UnsupportedOperationException getUnsupportedOperationException() {
-      return new UnsupportedOperationException("This is an immutable checksum.");
-    }
   }
 }
