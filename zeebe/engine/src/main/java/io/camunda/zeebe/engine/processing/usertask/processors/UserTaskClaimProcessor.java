@@ -45,7 +45,7 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
   }
 
   @Override
-  public Either<Tuple<RejectionType, String>, UserTaskRecord> check(
+  public Either<Tuple<RejectionType, String>, UserTaskRecord> validateCommand(
       final TypedRecord<UserTaskRecord> command) {
     return preconditionChecker.check(command);
   }

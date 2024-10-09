@@ -46,6 +46,7 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import io.camunda.optimize.util.types.MapUtil;
+import jakarta.ws.rs.BadRequestException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -227,6 +228,12 @@ public class EntitiesReaderOS implements EntitiesReader {
     final MgetResponse<CollectionEntity> multiGetItemResponse =
         runGetEntityNamesRequest(requestDto);
 
+    final boolean atLeastOneResponseExistsForMultiGet =
+        multiGetItemResponse.docs().stream().anyMatch(doc -> doc.result().found());
+    if (!atLeastOneResponseExistsForMultiGet) {
+      return Optional.empty();
+    }
+
     final EntityNameResponseDto result = new EntityNameResponseDto();
     for (final MultiGetResponseItem<CollectionEntity> itemResponse : multiGetItemResponse.docs()) {
       if (itemResponse.isResult()) {
@@ -294,6 +301,14 @@ public class EntitiesReaderOS implements EntitiesReader {
     indexesToEntitiesId.put(COMBINED_REPORT_INDEX_NAME, requestDto.getReportId());
     indexesToEntitiesId.put(DASHBOARD_INDEX_NAME, requestDto.getDashboardId());
     indexesToEntitiesId.put(COLLECTION_INDEX_NAME, requestDto.getCollectionId());
+
+    final boolean isEmpty =
+        indexesToEntitiesId.entrySet().stream().noneMatch(e -> e.getValue() != null);
+
+    if (isEmpty) {
+      throw new BadRequestException("No ids for entity name request provided");
+    }
+
     final String errorMessage =
         String.format("Could not get entity names search request %s", requestDto);
     return osClient.mget(CollectionEntity.class, errorMessage, indexesToEntitiesId);

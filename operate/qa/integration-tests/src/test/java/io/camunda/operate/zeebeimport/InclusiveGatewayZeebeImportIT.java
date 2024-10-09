@@ -10,9 +10,9 @@ package io.camunda.operate.zeebeimport;
 import static io.camunda.operate.util.CollectionUtil.map;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.operate.entities.FlowNodeInstanceEntity;
-import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
+import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
+import io.camunda.webapps.schema.entities.operate.FlowNodeType;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.List;

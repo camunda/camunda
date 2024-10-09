@@ -13,9 +13,9 @@ import static io.camunda.operate.store.opensearch.dsl.QueryDSL.withTenantCheck;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.entities.UserTaskEntity;
-import io.camunda.operate.schema.templates.UserTaskTemplate;
 import io.camunda.operate.webapp.reader.UserTaskReader;
+import io.camunda.webapps.schema.descriptors.operate.template.UserTaskTemplate;
+import io.camunda.webapps.schema.entities.operate.UserTaskEntity;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.context.annotation.Conditional;

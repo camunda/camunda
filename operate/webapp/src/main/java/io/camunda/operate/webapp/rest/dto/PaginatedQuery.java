@@ -44,7 +44,7 @@ public abstract class PaginatedQuery<T extends PaginatedQuery<T>> {
     return sorting;
   }
 
-  public T setSorting(SortingDto sorting) {
+  public T setSorting(final SortingDto sorting) {
     if (sorting != null && !getValidSortByValues().contains(sorting.getSortBy())) {
       throw new InvalidRequestException(
           "SortBy parameter has invalid value: " + sorting.getSortBy());
@@ -71,7 +71,7 @@ public abstract class PaginatedQuery<T extends PaginatedQuery<T>> {
     return (T) this;
   }
 
-  public Object[] getSearchAfter(ObjectMapper objectMapper) {
+  public Object[] getSearchAfter(final ObjectMapper objectMapper) {
     return SortValuesWrapper.convertSortValues(searchAfter, objectMapper);
   }
 
@@ -84,7 +84,7 @@ public abstract class PaginatedQuery<T extends PaginatedQuery<T>> {
     return (T) this;
   }
 
-  public Object[] getSearchAfterOrEqual(ObjectMapper objectMapper) {
+  public Object[] getSearchAfterOrEqual(final ObjectMapper objectMapper) {
     return SortValuesWrapper.convertSortValues(searchAfterOrEqual, objectMapper);
   }
 
@@ -101,7 +101,7 @@ public abstract class PaginatedQuery<T extends PaginatedQuery<T>> {
     return (T) this;
   }
 
-  public Object[] getSearchBefore(ObjectMapper objectMapper) {
+  public Object[] getSearchBefore(final ObjectMapper objectMapper) {
     return SortValuesWrapper.convertSortValues(searchBefore, objectMapper);
   }
 
@@ -114,7 +114,7 @@ public abstract class PaginatedQuery<T extends PaginatedQuery<T>> {
     return (T) this;
   }
 
-  public Object[] getSearchBeforeOrEqual(ObjectMapper objectMapper) {
+  public Object[] getSearchBeforeOrEqual(final ObjectMapper objectMapper) {
     return SortValuesWrapper.convertSortValues(searchBeforeOrEqual, objectMapper);
   }
 

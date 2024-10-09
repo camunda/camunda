@@ -13,16 +13,16 @@ import static io.camunda.operate.store.opensearch.dsl.RequestDSL.QueryType.ONLY_
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.entities.ErrorType;
-import io.camunda.operate.entities.IncidentEntity;
-import io.camunda.operate.entities.IncidentState;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.store.IncidentStore;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.store.opensearch.dsl.RequestDSL;
 import io.camunda.operate.util.CollectionUtil;
+import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
+import io.camunda.webapps.schema.entities.operate.ErrorType;
+import io.camunda.webapps.schema.entities.operate.IncidentEntity;
+import io.camunda.webapps.schema.entities.operate.IncidentState;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,12 +52,12 @@ public class OpensearchIncidentStore implements IncidentStore {
 
   @Autowired private OperateProperties operateProperties;
 
-  private Query activeIncidentConstantScore(Query q) {
+  private Query activeIncidentConstantScore(final Query q) {
     return constantScore(and(ACTIVE_INCIDENT_QUERY, q));
   }
 
   @Override
-  public IncidentEntity getIncidentById(Long incidentKey) {
+  public IncidentEntity getIncidentById(final Long incidentKey) {
     final var key = incidentKey.toString();
     final var searchRequestBuilder =
         searchRequestBuilder(incidentTemplate, ONLY_RUNTIME)
@@ -67,7 +67,7 @@ public class OpensearchIncidentStore implements IncidentStore {
 
   @Override
   public List<IncidentEntity> getIncidentsWithErrorTypesFor(
-      String treePath, List<Map<ErrorType, Long>> errorTypes) {
+      final String treePath, final List<Map<ErrorType, Long>> errorTypes) {
     final String errorTypesAggName = "errorTypesAgg";
     final var request =
         searchRequestBuilder(incidentTemplate, ONLY_RUNTIME)
@@ -103,7 +103,7 @@ public class OpensearchIncidentStore implements IncidentStore {
   }
 
   @Override
-  public List<IncidentEntity> getIncidentsByProcessInstanceKey(Long processInstanceKey) {
+  public List<IncidentEntity> getIncidentsByProcessInstanceKey(final Long processInstanceKey) {
     final var searchRequestBuilder =
         searchRequestBuilder(incidentTemplate, ONLY_RUNTIME)
             .query(
@@ -116,7 +116,8 @@ public class OpensearchIncidentStore implements IncidentStore {
   }
 
   @Override
-  public Map<Long, List<Long>> getIncidentKeysPerProcessInstance(List<Long> processInstanceKeys) {
+  public Map<Long, List<Long>> getIncidentKeysPerProcessInstance(
+      final List<Long> processInstanceKeys) {
     record Result(Long processInstanceKey) {}
     final int batchSize = operateProperties.getOpensearch().getBatchSize();
     final var searchRequestBuilder =

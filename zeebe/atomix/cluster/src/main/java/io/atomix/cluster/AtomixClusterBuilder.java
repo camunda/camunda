@@ -58,6 +58,7 @@ import java.util.Properties;
 public class AtomixClusterBuilder implements Builder<AtomixCluster> {
 
   protected final ClusterConfig config;
+  private String schedulerPrefix;
 
   public AtomixClusterBuilder(final ClusterConfig config) {
     this.config = checkNotNull(config);
@@ -248,8 +249,13 @@ public class AtomixClusterBuilder implements Builder<AtomixCluster> {
     return this;
   }
 
+  public AtomixClusterBuilder withSchedulerPrefix(final String schedulerPrefix) {
+    this.schedulerPrefix = schedulerPrefix;
+    return this;
+  }
+
   @Override
   public AtomixCluster build() {
-    return new AtomixCluster(config, Version.from(VersionUtil.getVersion()));
+    return new AtomixCluster(config, Version.from(VersionUtil.getVersion()), schedulerPrefix);
   }
 }

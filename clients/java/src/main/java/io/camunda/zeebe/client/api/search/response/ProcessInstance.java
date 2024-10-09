@@ -15,23 +15,27 @@
  */
 package io.camunda.zeebe.client.api.search.response;
 
-import io.camunda.zeebe.client.impl.search.response.OperationImpl;
-import io.camunda.zeebe.client.impl.search.response.ProcessInstanceReferenceImpl;
-import java.util.List;
-
 public interface ProcessInstance {
 
-  Long getKey();
+  Long getProcessInstanceKey();
 
-  String getProcessName();
+  String getProcessDefinitionId();
 
-  Integer getProcessVersion();
+  String getProcessDefinitionName();
 
-  String getBpmnProcessId();
+  Integer getProcessDefinitionVersion();
+
+  String getProcessDefinitionVersionTag();
+
+  Long getProcessDefinitionKey();
+
+  Long getRootProcessInstanceKey();
 
   Long getParentProcessInstanceKey();
 
   Long getParentFlowNodeInstanceKey();
+
+  String getTreePath();
 
   String getStartDate();
 
@@ -41,15 +45,5 @@ public interface ProcessInstance {
 
   Boolean getIncident();
 
-  Boolean getHasActiveOperation();
-
-  Long getProcessDefinitionKey();
-
   String getTenantId();
-
-  String getRootInstanceId();
-
-  List<OperationImpl> getOperations();
-
-  List<ProcessInstanceReferenceImpl> getCallHierarchy();
 }

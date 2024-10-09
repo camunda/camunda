@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_13gwn7q" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.20.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.4.0">
+  <bpmn:process id="parent_process_v1" name="Parent process v1" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_1a3emhl</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_1a3emhl" sourceRef="StartEvent_1" targetRef="taskX" />
+    <bpmn:callActivity id="call_activity" name="Call Activity">
+      <bpmn:extensionElements>
+        <zeebe:calledElement processId="child_process_v1" propagateAllChildVariables="false" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0ohshru</bpmn:incoming>
+      <bpmn:outgoing>Flow_1j9hrgw</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:endEvent id="Event_1p0nsc7">
+      <bpmn:incoming>Flow_1pr3266</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1j9hrgw" sourceRef="call_activity" targetRef="taskY" />
+    <bpmn:sequenceFlow id="Flow_0ohshru" sourceRef="taskX" targetRef="call_activity" />
+    <bpmn:manualTask id="taskX" name="TaskX">
+      <bpmn:incoming>Flow_1a3emhl</bpmn:incoming>
+      <bpmn:outgoing>Flow_0ohshru</bpmn:outgoing>
+    </bpmn:manualTask>
+    <bpmn:sequenceFlow id="Flow_1pr3266" sourceRef="taskY" targetRef="Event_1p0nsc7" />
+    <bpmn:manualTask id="taskY" name="TaskY">
+      <bpmn:incoming>Flow_1j9hrgw</bpmn:incoming>
+      <bpmn:outgoing>Flow_1pr3266</bpmn:outgoing>
+    </bpmn:manualTask>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="parent_process_v1">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="112" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1jff16t_di" bpmnElement="call_activity">
+        <dc:Bounds x="370" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1p0nsc7_di" bpmnElement="Event_1p0nsc7">
+        <dc:Bounds x="682" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1urlg31_di" bpmnElement="taskX">
+        <dc:Bounds x="210" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1m4zh1x_di" bpmnElement="taskY">
+        <dc:Bounds x="520" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1a3emhl_di" bpmnElement="Flow_1a3emhl">
+        <di:waypoint x="148" y="117" />
+        <di:waypoint x="210" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1j9hrgw_di" bpmnElement="Flow_1j9hrgw">
+        <di:waypoint x="470" y="117" />
+        <di:waypoint x="520" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0ohshru_di" bpmnElement="Flow_0ohshru">
+        <di:waypoint x="310" y="117" />
+        <di:waypoint x="370" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1pr3266_di" bpmnElement="Flow_1pr3266">
+        <di:waypoint x="620" y="117" />
+        <di:waypoint x="682" y="117" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

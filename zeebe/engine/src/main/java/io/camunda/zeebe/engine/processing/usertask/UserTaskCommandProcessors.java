@@ -15,8 +15,9 @@ import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskClaimProce
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandProcessor;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCompleteProcessor;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskUpdateProcessor;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Optional;
@@ -27,10 +28,10 @@ public final class UserTaskCommandProcessors {
   private final Map<UserTaskIntent, UserTaskCommandProcessor> commandToProcessor;
 
   public UserTaskCommandProcessors(
-      final MutableProcessingState processingState,
+      final ProcessingState processingState,
+      final KeyGenerator keyGenerator,
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers) {
-    final var keyGenerator = processingState.getKeyGenerator();
     final EventHandle eventHandle =
         new EventHandle(
             keyGenerator,

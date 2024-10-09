@@ -70,6 +70,20 @@ function ReportRenderer(props) {
   }
 
   if (error) {
+    const hasOpensearchError = error?.detailedMessage?.includes('No interpreter registered');
+
+    if (hasOpensearchError) {
+      return (
+        <ReportErrorNotice
+          error={{
+            ...error,
+            title: t('apiErrors.reportNotSupportedForOpenSearch'),
+            message: null,
+          }}
+        />
+      );
+    }
+
     return <ReportErrorNotice error={error} />;
   }
 

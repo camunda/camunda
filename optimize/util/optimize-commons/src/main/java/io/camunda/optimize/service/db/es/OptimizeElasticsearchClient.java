@@ -312,6 +312,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     return esWithTransportOptions().get(getRequest, tClass);
   }
 
+  @Override
   public final boolean exists(final String indexName) throws IOException {
     return exists(ExistsRequest.of(b -> b.index(List.of(convertToPrefixedAliasName(indexName)))));
   }

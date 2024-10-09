@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.db.repository.os;
 
+import static io.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static io.camunda.optimize.dto.optimize.ProcessInstanceConstants.ACTIVE_STATE;
 import static io.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
 import static io.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
@@ -21,6 +22,7 @@ import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.E
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLE_ID;
+import static io.camunda.optimize.service.util.ExceptionUtil.isInstanceIndexNotFoundException;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static java.lang.Math.min;
 import static java.lang.String.format;
@@ -81,9 +83,7 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
                     BulkOperation.of(
                         op ->
                             op.delete(
-                                d ->
-                                    d.index(indexNameService.getOptimizeIndexAliasForIndex(index))
-                                        .id(id))))
+                                d -> d.index(osClient.convertToPrefixedAliasName(index)).id(id))))
             .toList();
 
     osClient.doBulkRequest(BulkRequest.Builder::new, bulkOperations, itemName, false);
@@ -118,13 +118,9 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
               .value()
           > 0;
     } catch (final OpenSearchException e) {
-      if (e.getMessage().contains(INDEX_NOT_FOUND_ERROR_MESSAGE_KEYWORD)) {
-        // If the index doesn't exist yet, then this exception is thrown. No need to worry, just
-        // return false
-        return false;
-      } else {
-        throw e;
-      }
+      // If the index doesn't exist yet, then this exception is thrown. No need to worry, just
+      // return false
+      return false;
     }
   }
 
@@ -148,13 +144,13 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
               osClient.scroll(currentScrollId, scrollTimeout(), Result.class);
           currentScrollId = response.scrollId();
           processInstanceIds =
-              response.documents().stream().map(Result::processInstanceId).toList();
+              response.hits().hits().stream().map(hit -> hit.source().processInstanceId()).toList();
           pageResult
               .getEntities()
               .addAll(
                   processInstanceIds.subList(
                       0,
-                      min(response.documents().size(), limit - pageResult.getEntities().size())));
+                      min(response.hits().hits().size(), limit - pageResult.getEntities().size())));
           pageResult.setPagingState(currentScrollId);
         } else {
           limitReached = true;
@@ -222,18 +218,28 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
             // size of each scroll page, needs to be capped to max size of opensearch
             .size(
                 resolvedLimit <= MAX_RESPONSE_SIZE_LIMIT ? resolvedLimit : MAX_RESPONSE_SIZE_LIMIT);
-
-    final SearchResponse<Result> response =
-        osClient.search(requestBuilder, Result.class, "Could not obtain process instance ids.");
-    final List<String> processInstanceIds =
-        response.hits().hits().stream().map(hit -> hit.source().processInstanceId()).toList();
-    if (!processInstanceIds.isEmpty()) {
-      result
-          .getEntities()
-          .addAll(
-              processInstanceIds.subList(0, min(response.documents().size(), resolvedLimit) + 1));
+    try {
+      final SearchResponse<Result> response =
+          osClient.search(requestBuilder, Result.class, "Could not obtain process instance ids.");
+      final List<String> processInstanceIds =
+          response.hits().hits().stream().map(hit -> hit.source().processInstanceId()).toList();
+      if (!processInstanceIds.isEmpty()) {
+        result
+            .getEntities()
+            .addAll(
+                processInstanceIds.subList(0, min(response.hits().hits().size(), resolvedLimit)));
+      }
+      result.setPagingState(response.scrollId());
+    } catch (OpenSearchException e) {
+      if (isInstanceIndexNotFoundException(PROCESS, e)) {
+        log.info(
+            "Was not able to obtain process instance IDs because instance index {} does not exist. Returning empty result.",
+            getProcessInstanceIndexAliasName(processDefinitionKey));
+        result.setPagingState(null);
+        return result;
+      }
+      throw e;
     }
-    result.setPagingState(response.scrollId());
 
     return result;
   }

@@ -10,13 +10,13 @@ package io.camunda.zeebe.gateway.rest.controller;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
+import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.protocol.rest.DeleteResourceRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,10 +31,12 @@ import org.springframework.web.multipart.MultipartFile;
 public class ResourceController {
 
   private final ResourceServices resourceServices;
+  private final MultiTenancyCfg multiTenancyCfg;
 
-  @Autowired
-  public ResourceController(final ResourceServices resourceServices) {
+  public ResourceController(
+      final ResourceServices resourceServices, final MultiTenancyCfg multiTenancyCfg) {
     this.resourceServices = resourceServices;
+    this.multiTenancyCfg = multiTenancyCfg;
   }
 
   @PostMapping(
@@ -45,7 +47,7 @@ public class ResourceController {
       @RequestPart("resources") final List<MultipartFile> resources,
       @RequestPart(value = "tenantId", required = false) final String tenantId) {
 
-    return RequestMapper.toDeployResourceRequest(resources, tenantId)
+    return RequestMapper.toDeployResourceRequest(resources, tenantId, multiTenancyCfg.isEnabled())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::deployResources);
   }
 

@@ -7,43 +7,41 @@
  */
 package io.camunda.service;
 
-import io.camunda.search.clients.CamundaSearchClient;
-import io.camunda.service.entities.UserEntity;
+import io.camunda.search.clients.UserSearchClient;
+import io.camunda.search.entities.UserEntity;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.UserQuery;
+import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.search.core.SearchQueryService;
-import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.service.search.query.UserQuery;
-import io.camunda.service.security.auth.Authentication;
-import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserCreateRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import java.util.concurrent.CompletableFuture;
 
 public class UserServices extends SearchQueryService<UserServices, UserQuery, UserEntity> {
 
-  public UserServices(final BrokerClient brokerClient, final CamundaSearchClient dataStoreClient) {
-    this(brokerClient, dataStoreClient, null, null);
-  }
+  private final UserSearchClient userSearchClient;
 
   public UserServices(
       final BrokerClient brokerClient,
-      final CamundaSearchClient searchClient,
-      final ServiceTransformers transformers,
+      final UserSearchClient userSearchClient,
       final Authentication authentication) {
-    super(brokerClient, searchClient, transformers, authentication);
+    super(brokerClient, authentication);
+    this.userSearchClient = userSearchClient;
   }
 
   @Override
   public SearchQueryResult<UserEntity> search(final UserQuery query) {
-    return executor.search(query, UserEntity.class);
+    return userSearchClient.searchUsers(query, authentication);
   }
 
   @Override
   public UserServices withAuthentication(final Authentication authentication) {
-    return new UserServices(brokerClient, searchClient, transformers, authentication);
+    return new UserServices(brokerClient, userSearchClient, authentication);
   }
 
-  public CompletableFuture<UserRecord> createUser(final CreateUserRequest request) {
+  public CompletableFuture<UserRecord> createUser(final UserDTO request) {
     return sendBrokerRequest(
         new BrokerUserCreateRequest()
             .setUsername(request.username())
@@ -52,5 +50,16 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
             .setPassword(request.password()));
   }
 
-  public record CreateUserRequest(String username, String name, String email, String password) {}
+  public CompletableFuture<UserRecord> updateUser(final UserDTO request) {
+    return sendBrokerRequest(
+        new BrokerUserUpdateRequest()
+            .setUserKey(request.userKey())
+            .setUsername(request.username())
+            .setName(request.name())
+            .setEmail(request.email())
+            .setPassword(request.password()));
+  }
+
+  public record UserDTO(
+      Long userKey, String username, String name, String email, String password) {}
 }

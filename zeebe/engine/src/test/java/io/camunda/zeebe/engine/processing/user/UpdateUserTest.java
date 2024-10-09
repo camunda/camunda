@@ -11,8 +11,11 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
+import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,18 +32,20 @@ public class UpdateUserTest {
   @Test
   public void shouldUpdateAUser() {
     final var username = UUID.randomUUID().toString();
-    ENGINE
-        .user()
-        .newUser(username)
-        .withName("Foo Bar")
-        .withEmail("foo@bar.com")
-        .withPassword("password")
-        .create();
+    final var userRecord =
+        ENGINE
+            .user()
+            .newUser(username)
+            .withName("Foo Bar")
+            .withEmail("foo@bar.com")
+            .withPassword("password")
+            .create();
 
     final var updatedUser =
         ENGINE
             .user()
-            .updateUser(username)
+            .updateUser(userRecord.getKey())
+            .withUsername(userRecord.getValue().getUsername())
             .withName("Bar Foo")
             .withEmail("foo@bar.blah")
             .withPassword("Foo Bar")
@@ -55,14 +60,15 @@ public class UpdateUserTest {
         .hasFieldOrPropertyWithValue("password", "Foo Bar");
   }
 
-  @DisplayName("should reject user update command when username does not exist")
+  @DisplayName("should reject user update command when user key does not exist")
   @Test
-  public void shouldRejectUserUpdateCommandWhenUsernameDoesNotExist() {
+  public void shouldRejectUserUpdateCommandWhenUserKeyDoesNotExist() {
     final var username = UUID.randomUUID().toString();
     final var userNotFoundRejection =
         ENGINE
             .user()
-            .updateUser(username)
+            .updateUser(-1L)
+            .withUsername(username)
             .withName("Foo Bar")
             .withEmail("bar@foo")
             .withPassword("password")
@@ -75,5 +81,37 @@ public class UpdateUserTest {
             "Expected to update user with username "
                 + username
                 + ", but a user with this username does not exist");
+  }
+
+  @DisplayName("should set the key on follow up commands to the user key")
+  @Test
+  public void shouldSetTheKeyOnFollowUpCommandsToTheUserKey() {
+    final var username = UUID.randomUUID().toString();
+    final var userRecord =
+        ENGINE
+            .user()
+            .newUser(username)
+            .withName("Foo Bar")
+            .withEmail("foo@bar.com")
+            .withPassword("password")
+            .create();
+
+    ENGINE
+        .user()
+        .updateUser(userRecord.getKey())
+        .withUsername(userRecord.getValue().getUsername())
+        .withName("Bar Foo")
+        .withEmail("foo@bar.blah")
+        .withPassword("Foo Bar")
+        .update()
+        .getValue();
+
+    Assertions.assertThat(
+            RecordingExporter.userRecords(UserIntent.UPDATED)
+                .withUserKey(userRecord.getKey())
+                .limit(1)
+                .getFirst()
+                .getKey())
+        .isEqualTo(userRecord.getKey());
   }
 }

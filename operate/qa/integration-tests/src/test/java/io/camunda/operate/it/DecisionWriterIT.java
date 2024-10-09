@@ -7,17 +7,18 @@
  */
 package io.camunda.operate.it;
 
-import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
+import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_TENANT_ID;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
-import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
-import io.camunda.operate.entities.dmn.definition.DecisionRequirementsEntity;
-import io.camunda.operate.schema.indices.DecisionIndex;
-import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
-import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.webapp.writer.DecisionWriter;
+import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
+import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
+import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
+import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
+import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceState;
+import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
+import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionRequirementsEntity;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Test;
@@ -92,7 +93,7 @@ public class DecisionWriterIT extends OperateSearchAbstractIT {
         new DecisionInstanceEntity()
             .setId("2251799813685262-1")
             .setKey(2251799813685262L)
-            .setState(io.camunda.operate.entities.dmn.DecisionInstanceState.EVALUATED)
+            .setState(DecisionInstanceState.EVALUATED)
             .setEvaluationDate(OffsetDateTime.now())
             .setProcessDefinitionKey(2251799813685253L)
             .setDecisionRequirementsKey(2251799813685249L)
@@ -102,7 +103,7 @@ public class DecisionWriterIT extends OperateSearchAbstractIT {
         new DecisionInstanceEntity()
             .setId("2251799813685262-2")
             .setKey(2251799813685262L)
-            .setState(io.camunda.operate.entities.dmn.DecisionInstanceState.EVALUATED)
+            .setState(DecisionInstanceState.EVALUATED)
             .setEvaluationDate(OffsetDateTime.now())
             .setDecisionRequirementsKey(2251799813685249L)
             .setProcessDefinitionKey(2251799813685253L)

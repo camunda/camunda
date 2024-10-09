@@ -9,27 +9,41 @@ package io.camunda.zeebe.broker.exporter.repo;
 
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.exporter.api.Exporter;
-import io.camunda.zeebe.util.ReflectUtil;
+import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * When initialising the ExporterRepository via Spring, we inject predefined beans of the
+ * ExporterDescriptor into it. So for custom exporters which needs Spring, you simply have to
+ * provide an instance of the ExporterDescriptor as spring bean.
+ */
 public class ExporterDescriptor {
   private final ExporterConfiguration configuration;
-  private final Class<? extends Exporter> exporterClass;
+  private final ExporterFactory exporterFactory;
+
+  public ExporterDescriptor(final String id) {
+    this(id, new DefaultExporterFactory(id, null), new HashMap<>());
+  }
+
+  public ExporterDescriptor(final String id, final ExporterFactory exporterFactory) {
+    this(id, exporterFactory, new HashMap<>());
+  }
 
   public ExporterDescriptor(
       final String id,
       final Class<? extends Exporter> exporterClass,
       final Map<String, Object> args) {
-    this.exporterClass = exporterClass;
-    configuration = new ExporterConfiguration(id, args);
+    this(id, new DefaultExporterFactory(id, exporterClass), args);
+  }
+
+  public ExporterDescriptor(
+      final String id, final ExporterFactory exporterFactory, final Map<String, Object> args) {
+    this.configuration = new ExporterConfiguration(id, args);
+    this.exporterFactory = exporterFactory;
   }
 
   public Exporter newInstance() throws ExporterInstantiationException {
-    try {
-      return ReflectUtil.newInstance(exporterClass);
-    } catch (final Exception e) {
-      throw new ExporterInstantiationException(getId(), e);
-    }
+    return exporterFactory.newInstance();
   }
 
   public ExporterConfiguration getConfiguration() {
@@ -41,6 +55,6 @@ public class ExporterDescriptor {
   }
 
   public boolean isSameTypeAs(final ExporterDescriptor other) {
-    return exporterClass.equals(other.exporterClass);
+    return exporterFactory.isSameTypeAs(other.exporterFactory);
   }
 }

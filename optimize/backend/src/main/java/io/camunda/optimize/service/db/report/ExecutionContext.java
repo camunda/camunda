@@ -59,6 +59,8 @@ public class ExecutionContext<D extends SingleReportDataDto, P extends Execution
 
   private FilterContext filterContext;
 
+  private boolean multiIndexAlias = false;
+
   public <R extends ReportDefinitionDto<D>> ExecutionContext(
       final ReportEvaluationContext<? extends R> reportEvaluationContext) {
     this(reportEvaluationContext, null);

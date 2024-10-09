@@ -49,7 +49,7 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
   }
 
   @Override
-  public Either<Tuple<RejectionType, String>, UserTaskRecord> check(
+  public Either<Tuple<RejectionType, String>, UserTaskRecord> validateCommand(
       final TypedRecord<UserTaskRecord> command) {
     return preconditionChecker.check(command);
   }
@@ -59,7 +59,9 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
     final long userTaskKey = command.getKey();
 
-    applyModification(command, userTaskRecord);
+    userTaskRecord.setVariables(command.getValue().getVariablesBuffer());
+    userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));
+
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETING, userTaskRecord);
   }
 
@@ -68,17 +70,13 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
     final long userTaskKey = command.getKey();
 
-    applyModification(command, userTaskRecord);
+    userTaskRecord.setVariables(command.getValue().getVariablesBuffer());
+    userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));
+
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord);
     completeElementInstance(userTaskRecord);
     responseWriter.writeEventOnCommand(
         userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord, command);
-  }
-
-  private void applyModification(
-      final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
-    userTaskRecord.setVariables(command.getValue().getVariablesBuffer());
-    userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));
   }
 
   private void completeElementInstance(final UserTaskRecord userTaskRecord) {

@@ -8,21 +8,17 @@
 package io.camunda.operate.util;
 
 import static io.camunda.operate.qa.util.RestAPITestUtil.*;
-import static io.camunda.operate.schema.templates.IncidentTemplate.*;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.util.ElasticsearchUtil.scroll;
+import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.*;
-import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.indices.DecisionIndex;
-import io.camunda.operate.schema.templates.*;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.elasticsearch.ElasticsearchIncidentStore;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
@@ -32,6 +28,24 @@ import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
+import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
+import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
+import io.camunda.webapps.schema.entities.operate.EventEntity;
+import io.camunda.webapps.schema.entities.operate.EventType;
+import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
+import io.camunda.webapps.schema.entities.operate.FlowNodeState;
+import io.camunda.webapps.schema.entities.operate.IncidentEntity;
+import io.camunda.webapps.schema.entities.operate.IncidentState;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.operate.UserTaskEntity;
+import io.camunda.webapps.schema.entities.operate.VariableEntity;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
@@ -102,7 +116,7 @@ public class ElasticsearchChecks {
       try {
         final ProcessEntity process = processReader.getProcess(processDefinitionKey);
         return process != null;
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -124,7 +138,7 @@ public class ElasticsearchChecks {
             io.camunda.operate.qa.util.ElasticsearchUtil.getDocCount(
                 esClient, decisionIndex.getAlias());
         return docCount == count;
-      } catch (IOException ex) {
+      } catch (final IOException ex) {
         return false;
       }
     };
@@ -146,7 +160,7 @@ public class ElasticsearchChecks {
             io.camunda.operate.qa.util.ElasticsearchUtil.getDocCount(
                 esClient, decisionInstanceTemplate.getAlias());
         return docCount == count;
-      } catch (IOException ex) {
+      } catch (final IOException ex) {
         return false;
       }
     };
@@ -182,7 +196,7 @@ public class ElasticsearchChecks {
             return flowNodes.get(0).getState().equals(FlowNodeState.ACTIVE);
           }
         }
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -277,7 +291,7 @@ public class ElasticsearchChecks {
           return flowNodes.get(0).getState().equals(FlowNodeState.ACTIVE)
               && flowNodes.get(0).isIncident();
         }
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -310,7 +324,7 @@ public class ElasticsearchChecks {
           return flowNodes.stream()
               .allMatch(flowNode -> flowNode.getState().equals(FlowNodeState.TERMINATED));
         }
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -341,7 +355,7 @@ public class ElasticsearchChecks {
                   .count()
               >= instancesCount;
         }
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -375,7 +389,7 @@ public class ElasticsearchChecks {
               .map(FlowNodeInstanceEntity::getState)
               .anyMatch(fns -> fns.equals(FlowNodeState.COMPLETED));
         }
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -412,7 +426,7 @@ public class ElasticsearchChecks {
                   .count()
               >= instancesCount;
         }
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -441,7 +455,7 @@ public class ElasticsearchChecks {
           return flowNodes.stream().filter(fn -> fn.getState().equals(FlowNodeState.ACTIVE)).count()
               >= instancesCount;
         }
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -465,7 +479,7 @@ public class ElasticsearchChecks {
                 .filter(a -> a.getFlowNodeId().equals(flowNodeId))
                 .collect(Collectors.toList());
         return flowNodes.size() >= instancesCount;
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -491,13 +505,13 @@ public class ElasticsearchChecks {
           return flowNodes.stream().filter(fn -> fn.getState().equals(FlowNodeState.ACTIVE)).count()
               >= instancesCount;
         }
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
   }
 
-  public List<FlowNodeInstanceEntity> getAllFlowNodeInstances(Long processInstanceKey) {
+  public List<FlowNodeInstanceEntity> getAllFlowNodeInstances(final Long processInstanceKey) {
     final TermQueryBuilder processInstanceKeyQuery =
         termQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
     final SearchRequest searchRequest =
@@ -508,12 +522,12 @@ public class ElasticsearchChecks {
                     .sort(FlowNodeInstanceTemplate.POSITION, SortOrder.ASC));
     try {
       return scroll(searchRequest, FlowNodeInstanceEntity.class, objectMapper, esClient);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
 
-  public List<EventEntity> getAllEvents(Long processInstanceKey) {
+  public List<EventEntity> getAllEvents(final Long processInstanceKey) {
     final TermQueryBuilder processInstanceKeyQuery =
         termQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
     final SearchRequest searchRequest =
@@ -521,7 +535,7 @@ public class ElasticsearchChecks {
             .source(new SearchSourceBuilder().query(constantScoreQuery(processInstanceKeyQuery)));
     try {
       return scroll(searchRequest, EventEntity.class, objectMapper, esClient);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
@@ -535,7 +549,7 @@ public class ElasticsearchChecks {
                     .sort(FlowNodeInstanceTemplate.POSITION, SortOrder.ASC));
     try {
       return scroll(searchRequest, FlowNodeInstanceEntity.class, objectMapper, esClient);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
@@ -557,7 +571,7 @@ public class ElasticsearchChecks {
       try {
         final List<VariableEntity> variables = getAllVariables(processInstanceKey);
         return variables.stream().anyMatch(v -> v.getName().equals(varName));
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -576,7 +590,7 @@ public class ElasticsearchChecks {
       try {
         return null
             != variableReader.getVariableByName(processInstanceKey + "", scopeKey + "", varName);
-      } catch (OperateRuntimeException ex) {
+      } catch (final OperateRuntimeException ex) {
         return false;
       }
     };
@@ -597,13 +611,13 @@ public class ElasticsearchChecks {
             variableReader
                 .getVariableByName(processInstanceKey + "", "" + scopeKey, varName)
                 .getValue());
-      } catch (OperateRuntimeException ex) {
+      } catch (final OperateRuntimeException ex) {
         return false;
       }
     };
   }
 
-  public List<VariableEntity> getAllVariables(Long processInstanceKey) {
+  public List<VariableEntity> getAllVariables(final Long processInstanceKey) {
     final TermQueryBuilder processInstanceKeyQuery =
         termQuery(VariableTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
     final SearchRequest searchRequest =
@@ -611,7 +625,7 @@ public class ElasticsearchChecks {
             .source(new SearchSourceBuilder().query(constantScoreQuery(processInstanceKeyQuery)));
     try {
       return scroll(searchRequest, VariableEntity.class, objectMapper, esClient);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
@@ -638,7 +652,7 @@ public class ElasticsearchChecks {
         final List<VariableDto> variables = getVariables(processInstanceKey, scopeKey);
         return variables.stream()
             .anyMatch(v -> v.getName().equals(varName) && v.getValue().equals(varValue));
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -671,7 +685,7 @@ public class ElasticsearchChecks {
           found = allIncidents.size() > 0;
         }
         return found;
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -703,7 +717,7 @@ public class ElasticsearchChecks {
                   > 0;
         }
         return found;
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -722,7 +736,7 @@ public class ElasticsearchChecks {
       final Long count = (Long) objects[0];
       try {
         return getActiveIncidentsCount() == count && getPendingIncidentsCount() == 0;
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -741,7 +755,7 @@ public class ElasticsearchChecks {
       final Integer count = (Integer) objects[0];
       try {
         return getPostImporterQueueCount() == count;
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -755,7 +769,7 @@ public class ElasticsearchChecks {
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       return response.getHits().getTotalHits().value;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
@@ -769,7 +783,7 @@ public class ElasticsearchChecks {
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       return response.getHits().getTotalHits().value;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
@@ -781,12 +795,12 @@ public class ElasticsearchChecks {
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       return response.getHits().getTotalHits().value;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
 
-  public long getActiveIncidentsCount(Long processInstanceKey) {
+  public long getActiveIncidentsCount(final Long processInstanceKey) {
     final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(incidentTemplate)
             .source(
@@ -798,12 +812,12 @@ public class ElasticsearchChecks {
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       return response.getHits().getTotalHits().value;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
 
-  public long getIncidentsCount(Long processInstanceKey, IncidentState state) {
+  public long getIncidentsCount(final Long processInstanceKey, final IncidentState state) {
     final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(incidentTemplate)
             .source(
@@ -815,12 +829,12 @@ public class ElasticsearchChecks {
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       return response.getHits().getTotalHits().value;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
 
-  public long getIncidentsCount(String bpmnProcessId, IncidentState state) {
+  public long getIncidentsCount(final String bpmnProcessId, final IncidentState state) {
     final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(incidentTemplate)
             .source(
@@ -831,7 +845,7 @@ public class ElasticsearchChecks {
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       return response.getHits().getTotalHits().value;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
@@ -842,7 +856,7 @@ public class ElasticsearchChecks {
    * @param processInstanceKey
    * @return
    */
-  public long getIncidentsCount(Long processInstanceKey) {
+  public long getIncidentsCount(final Long processInstanceKey) {
     final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(incidentTemplate)
             .source(
@@ -851,7 +865,7 @@ public class ElasticsearchChecks {
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       return response.getHits().getTotalHits().value;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
@@ -868,7 +882,7 @@ public class ElasticsearchChecks {
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       return response.getHits().getTotalHits().value;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
@@ -889,7 +903,7 @@ public class ElasticsearchChecks {
       final int incidentsCount = (int) objects[1];
       try {
         return getActiveIncidentsCount(processInstanceKey) == incidentsCount;
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -911,7 +925,7 @@ public class ElasticsearchChecks {
       final int incidentsCount = (int) objects[1];
       try {
         return getIncidentsCount(bpmnProcessId, IncidentState.ACTIVE) == incidentsCount;
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -933,7 +947,7 @@ public class ElasticsearchChecks {
       final int incidentsCount = (int) objects[1];
       try {
         return getIncidentsCount(processInstanceKey) == incidentsCount;
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -953,7 +967,7 @@ public class ElasticsearchChecks {
       final int incidentsCount = (int) objects[0];
       try {
         return getIncidentsCount() == incidentsCount;
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -974,7 +988,7 @@ public class ElasticsearchChecks {
         final List<FlowNodeInstanceEntity> allActivityInstances =
             getAllFlowNodeInstances(processInstanceKey);
         return allActivityInstances.stream().noneMatch(ai -> ai.isIncident());
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -996,7 +1010,7 @@ public class ElasticsearchChecks {
       try {
         return getIncidentsCount(processInstanceKey, IncidentState.RESOLVED)
             == resolvedIncidentsCount;
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -1017,7 +1031,7 @@ public class ElasticsearchChecks {
         final ProcessInstanceForListViewEntity instance =
             processInstanceReader.getProcessInstanceByKey(processInstanceKey);
         return instance.getState().equals(ProcessInstanceState.CANCELED);
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -1037,7 +1051,7 @@ public class ElasticsearchChecks {
       try {
         processInstanceReader.getProcessInstanceByKey(processInstanceKey);
         return true;
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -1058,7 +1072,7 @@ public class ElasticsearchChecks {
         final ProcessInstanceForListViewEntity instance =
             processInstanceReader.getProcessInstanceByKey(processInstanceKey);
         return instance.getState().equals(ProcessInstanceState.COMPLETED);
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };
@@ -1216,7 +1230,7 @@ public class ElasticsearchChecks {
       try {
         final List<UserTaskEntity> userTasks = userTaskReader.getUserTasks();
         return userTasks.size() == count;
-      } catch (NotFoundException ex) {
+      } catch (final NotFoundException ex) {
         return false;
       }
     };

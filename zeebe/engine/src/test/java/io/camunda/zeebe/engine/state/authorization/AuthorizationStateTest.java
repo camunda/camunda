@@ -33,15 +33,15 @@ public class AuthorizationStateTest {
     authorizationState = processingState.getAuthorizationState();
   }
 
-  @DisplayName("should return null if no authorization for owner and resource is not exist")
+  @DisplayName("should return empty list if no authorization for owner and resource is not exist")
   @Test
-  void shouldReturnNullIfNoAuthorizationForOwnerAndResourceExists() {
+  void shouldReturnEmptyListIfNoAuthorizationForOwnerAndResourceExists() {
     // when
     final var persistedAuth =
         authorizationState.getResourceIdentifiers(
             1L, AuthorizationResourceType.DEPLOYMENT, PermissionType.CREATE);
     // then
-    assertThat(persistedAuth).isNull();
+    assertThat(persistedAuth).isEmpty();
   }
 
   @Test
@@ -57,10 +57,8 @@ public class AuthorizationStateTest {
 
     // then
     final var resourceIdentifiers =
-        authorizationState
-            .getResourceIdentifiers(ownerKey, resourceType, permissionType)
-            .getResourceIdentifiers();
-    assertThat(resourceIdentifiers).containsExactly("foo", "bar");
+        authorizationState.getResourceIdentifiers(ownerKey, resourceType, permissionType);
+    assertThat(resourceIdentifiers).containsExactlyInAnyOrder("foo", "bar");
   }
 
   @Test
@@ -78,10 +76,8 @@ public class AuthorizationStateTest {
 
     // then
     final var resourceIdentifiers =
-        authorizationState
-            .getResourceIdentifiers(ownerKey, resourceType, permissionType)
-            .getResourceIdentifiers();
-    assertThat(resourceIdentifiers).containsExactly("foo", "bar", "baz");
+        authorizationState.getResourceIdentifiers(ownerKey, resourceType, permissionType);
+    assertThat(resourceIdentifiers).containsExactlyInAnyOrder("foo", "bar", "baz");
   }
 
   @Test
@@ -111,7 +107,7 @@ public class AuthorizationStateTest {
     // given
     final var ownerKey = 1L;
     final var resourceType1 = AuthorizationResourceType.DEPLOYMENT;
-    final var resourceType2 = AuthorizationResourceType.JOB;
+    final var resourceType2 = AuthorizationResourceType.PROCESS_DEFINITION;
     final var permissionType = PermissionType.CREATE;
     authorizationState.createOrAddPermission(
         ownerKey, resourceType1, permissionType, List.of("foo"));

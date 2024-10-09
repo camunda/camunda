@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.6.0-SNAPSHOT</version>
+    <version>8.7.0-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
   <groupId>io.camunda</groupId>
@@ -20,8 +20,8 @@
     <module>els-schema</module>
     <module>data-generator</module>
     <module>importer-common</module>
-    <module>importer-850</module>
     <module>importer-860</module>
+    <module>importer-870</module>
     <module>importer</module>
     <module>archiver</module>
     <module>webapp</module>

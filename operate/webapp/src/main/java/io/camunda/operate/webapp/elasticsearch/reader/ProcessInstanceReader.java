@@ -8,8 +8,6 @@
 package io.camunda.operate.webapp.elasticsearch.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.util.TreePath;
 import io.camunda.operate.webapp.reader.OperationReader;
@@ -18,6 +16,8 @@ import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +49,8 @@ public class ProcessInstanceReader {
    * @param processInstanceKey
    * @return
    */
-  public ListViewProcessInstanceDto getProcessInstanceWithOperationsByKey(Long processInstanceKey) {
+  public ListViewProcessInstanceDto getProcessInstanceWithOperationsByKey(
+      final Long processInstanceKey) {
     final ProcessInstanceForListViewEntity processInstance =
         processStore.getProcessInstanceListViewByKey(processInstanceKey);
 
@@ -87,7 +88,7 @@ public class ProcessInstanceReader {
    * @param processInstanceKey
    * @return
    */
-  public ProcessInstanceForListViewEntity getProcessInstanceByKey(Long processInstanceKey) {
+  public ProcessInstanceForListViewEntity getProcessInstanceByKey(final Long processInstanceKey) {
     return processStore.getProcessInstanceListViewByKey(processInstanceKey);
   }
 

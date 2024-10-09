@@ -25,12 +25,12 @@ public class Metadata {
   private Integer partNo;
   private Integer partCount;
 
-  public static String buildSnapshotNamePrefix(Long backupId) {
+  public static String buildSnapshotNamePrefix(final Long backupId) {
     return SNAPSHOT_NAME_PREFIX_PATTERN.replace("{backupId}", String.valueOf(backupId));
   }
 
   // backward compatibility with v. 8.1
-  public static Long extractBackupIdFromSnapshotName(String snapshotName) {
+  public static Long extractBackupIdFromSnapshotName(final String snapshotName) {
     final Matcher matcher = BACKUPID_PATTERN.matcher(snapshotName);
     if (matcher.matches()) {
       return Long.valueOf(matcher.group(1));
@@ -44,7 +44,7 @@ public class Metadata {
     return backupId;
   }
 
-  public Metadata setBackupId(Long backupId) {
+  public Metadata setBackupId(final Long backupId) {
     this.backupId = backupId;
     return this;
   }
@@ -53,7 +53,7 @@ public class Metadata {
     return version;
   }
 
-  public Metadata setVersion(String version) {
+  public Metadata setVersion(final String version) {
     this.version = version;
     return this;
   }
@@ -62,7 +62,7 @@ public class Metadata {
     return partNo;
   }
 
-  public Metadata setPartNo(Integer partNo) {
+  public Metadata setPartNo(final Integer partNo) {
     this.partNo = partNo;
     return this;
   }
@@ -71,7 +71,7 @@ public class Metadata {
     return partCount;
   }
 
-  public Metadata setPartCount(Integer partCount) {
+  public Metadata setPartCount(final Integer partCount) {
     this.partCount = partCount;
     return this;
   }
@@ -90,7 +90,7 @@ public class Metadata {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

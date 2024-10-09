@@ -183,4 +183,10 @@ public class ZeebeClientConfigurationImplSelfManagedTest {
     assertThat(zeebeClientConfiguration.useDefaultRetryPolicy())
         .isEqualTo(DEFAULT.useDefaultRetryPolicy());
   }
+
+  @Test
+  void shouldHaveDefaultPreferRestOverGrpc() {
+    assertThat(zeebeClientConfiguration.preferRestOverGrpc())
+        .isEqualTo(DEFAULT.preferRestOverGrpc());
+  }
 }

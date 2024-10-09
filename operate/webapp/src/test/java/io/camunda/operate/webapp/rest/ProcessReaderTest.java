@@ -13,13 +13,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.webapp.reader.ProcessReader;
 import io.camunda.operate.webapp.rest.dto.ProcessRequestDto;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
 import io.camunda.operate.webapp.security.identity.PermissionsService.ResourcesAllowed;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import java.util.HashMap;
 import java.util.Set;
 import org.junit.jupiter.api.Test;

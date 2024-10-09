@@ -32,7 +32,7 @@ public class IncidentFilterImpl extends TypedSearchRequestPropertyProvider<Incid
 
   @Override
   public IncidentFilter key(final Long value) {
-    filter.setKey(value);
+    filter.setIncidentKey(value);
     return this;
   }
 
@@ -44,7 +44,7 @@ public class IncidentFilterImpl extends TypedSearchRequestPropertyProvider<Incid
 
   @Override
   public IncidentFilter bpmnProcessId(final String value) {
-    filter.setBpmnProcessId(value);
+    filter.setProcessDefinitionId(value);
     return this;
   }
 

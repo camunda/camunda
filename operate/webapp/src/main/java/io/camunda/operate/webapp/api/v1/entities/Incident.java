@@ -9,9 +9,9 @@ package io.camunda.operate.webapp.api.v1.entities;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import io.camunda.operate.entities.ErrorType;
-import io.camunda.operate.entities.IncidentState;
-import io.camunda.operate.schema.templates.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
+import io.camunda.webapps.schema.entities.operate.ErrorType;
+import io.camunda.webapps.schema.entities.operate.IncidentState;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Map;
 import java.util.Objects;
@@ -126,7 +126,7 @@ public class Incident {
     return tenantId;
   }
 
-  public Incident setTenantId(String tenantId) {
+  public Incident setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
@@ -146,7 +146,7 @@ public class Incident {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

@@ -16,6 +16,8 @@
 package io.camunda.zeebe.client.api.search.filter;
 
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
+import io.camunda.zeebe.client.protocol.rest.UserTaskVariableFilterRequest;
+import java.util.List;
 
 /** Interface for defining user task filters in search queries. */
 public interface UserTaskFilter extends SearchRequestFilter {
@@ -26,7 +28,7 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @param value the key of the user task
    * @return the updated filter
    */
-  UserTaskFilter key(final Long value);
+  UserTaskFilter userTaskKey(final Long value);
 
   /**
    * Filters user tasks by the specified state.
@@ -99,4 +101,12 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   UserTaskFilter bpmnProcessId(final String bpmnProcessId);
+
+  /**
+   * Filters user tasks by the specified Process Definition Id.
+   *
+   * @param variableValueFilters from the task
+   * @return the updated filter
+   */
+  UserTaskFilter variables(final List<UserTaskVariableFilterRequest> variableValueFilters);
 }

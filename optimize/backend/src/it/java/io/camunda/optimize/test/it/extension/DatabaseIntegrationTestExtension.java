@@ -69,6 +69,19 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     this(null, haveToClean);
   }
 
+  public void cleanSnapshots(final String snapshotRepositoryName) {
+    databaseTestService.cleanSnapshots(snapshotRepositoryName);
+  }
+
+  public void createRepoSnapshot(final String snapshotRepositoryName) {
+    databaseTestService.createRepoSnapshot(snapshotRepositoryName);
+  }
+
+  public void createSnapshot(
+      final String snapshotRepositoryName, final String snapshotName, final String[] indexNames) {
+    databaseTestService.createSnapshot(snapshotRepositoryName, snapshotName, indexNames);
+  }
+
   public DatabaseIntegrationTestExtension(final String customIndexPrefix) {
     this(customIndexPrefix, true);
   }
@@ -264,6 +277,13 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     return databaseTestService.countRecordsByQuery(queryContainer, index);
   }
 
+  public List<String> getAllIndicesWithReadOnlyAlias(
+      final String externalProcessVariableIndexName) {
+    final String aliasNameWithPrefix =
+        getIndexNameService().getOptimizeIndexAliasForIndex(externalProcessVariableIndexName);
+    return databaseTestService.getAllIndicesWithReadOnlyAlias(aliasNameWithPrefix);
+  }
+
   public <T> List<T> getZeebeExportedRecordsByQuery(
       final String exportIndex, final TermsQueryContainer query, final Class<T> zeebeRecordClass) {
     return databaseTestService.getZeebeExportedRecordsByQuery(exportIndex, query, zeebeRecordClass);
@@ -325,6 +345,12 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
       final Set<String> aliases,
       final Set<String> aKey) {
     databaseTestService.createMissingIndices(indexMappingCreatorBuilder, aliases, aKey);
+  }
+
+  public String[] getImportIndices() {
+    return databaseTestService.getImportIndices().stream()
+        .map(getIndexNameService()::getOptimizeIndexAliasForIndex)
+        .toArray(String[]::new);
   }
 
   public void setActivityStartDatesToNull(final String processDefinitionKey) {

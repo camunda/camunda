@@ -7,24 +7,24 @@
  */
 package io.camunda.operate.schema.opensearch;
 
-import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 import static io.camunda.operate.util.LambdaExceptionUtil.rethrowConsumer;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.JOIN_RELATION;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.entities.IncidentEntity;
-import io.camunda.operate.entities.post.PostImporterActionType;
-import io.camunda.operate.entities.post.PostImporterQueueEntity;
 import io.camunda.operate.exceptions.MigrationException;
 import io.camunda.operate.property.MigrationProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.schema.migration.FillPostImporterQueuePlan;
 import io.camunda.operate.schema.migration.Step;
-import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
+import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
+import io.camunda.webapps.schema.entities.operate.IncidentEntity;
+import io.camunda.webapps.schema.entities.operate.post.PostImporterActionType;
+import io.camunda.webapps.schema.entities.operate.post.PostImporterQueueEntity;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.opensearch.client.opensearch._types.SortOrder;

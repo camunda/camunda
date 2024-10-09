@@ -12,6 +12,7 @@ import io.camunda.application.Profile;
 import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
+import io.camunda.application.commons.search.SearchClientDatabaseConfiguration.SearchClientProperties;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.function.Consumer;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.util.unit.DataSize;
@@ -203,5 +205,19 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   public TestStandaloneBroker withWorkingDirectory(final Path directory) {
     return withBean(
         "workingDirectory", new WorkingDirectory(directory, false), WorkingDirectory.class);
+  }
+
+  public TestStandaloneBroker withCamundaExporter(final String elasticSearchUrl) {
+    withExporter(
+        "CamundaExporter",
+        cfg -> {
+          cfg.setClassName("io.camunda.exporter.CamundaExporter");
+          cfg.setArgs(
+              Map.of("connect", Map.of("url", elasticSearchUrl), "bulk", Map.of("size", 1)));
+        });
+    final var searchClient = new SearchClientProperties();
+    searchClient.setUrl(elasticSearchUrl);
+    withBean("camundaSearchClient", searchClient, SearchClientProperties.class);
+    return this;
   }
 }

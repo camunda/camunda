@@ -11,8 +11,6 @@ import static io.camunda.operate.webapp.rest.dto.incidents.IncidentDto.FALLBACK_
 
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.entities.ErrorType;
-import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.store.FlowNodeStore;
 import io.camunda.operate.store.IncidentStore;
@@ -23,6 +21,8 @@ import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentErrorTypeDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentFlowNodeDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
+import io.camunda.webapps.schema.entities.operate.ErrorType;
+import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import java.util.*;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -49,7 +49,7 @@ public class IncidentReader extends AbstractReader
   @Autowired private FlowNodeStore flowNodeStore;
 
   @Override
-  public List<IncidentEntity> getAllIncidentsByProcessInstanceKey(Long processInstanceKey) {
+  public List<IncidentEntity> getAllIncidentsByProcessInstanceKey(final Long processInstanceKey) {
     return incidentStore.getIncidentsByProcessInstanceKey(processInstanceKey);
   }
 
@@ -60,17 +60,18 @@ public class IncidentReader extends AbstractReader
    * @return
    */
   @Override
-  public Map<Long, List<Long>> getIncidentKeysPerProcessInstance(List<Long> processInstanceKeys) {
+  public Map<Long, List<Long>> getIncidentKeysPerProcessInstance(
+      final List<Long> processInstanceKeys) {
     return incidentStore.getIncidentKeysPerProcessInstance(processInstanceKeys);
   }
 
   @Override
-  public IncidentEntity getIncidentById(Long incidentKey) {
+  public IncidentEntity getIncidentById(final Long incidentKey) {
     return incidentStore.getIncidentById(incidentKey);
   }
 
   @Override
-  public IncidentResponseDto getIncidentsByProcessInstanceId(String processInstanceId) {
+  public IncidentResponseDto getIncidentsByProcessInstanceId(final String processInstanceId) {
     // get treePath for process instance
     final String treePath = processInstanceReader.getProcessInstanceTreePath(processInstanceId);
 
@@ -134,11 +135,13 @@ public class IncidentReader extends AbstractReader
    */
   @Override
   public Map<String, IncidentDataHolder> collectFlowNodeDataForPropagatedIncidents(
-      final List<IncidentEntity> incidents, String processInstanceId, String currentTreePath) {
+      final List<IncidentEntity> incidents,
+      final String processInstanceId,
+      final String currentTreePath) {
 
     final Set<String> flowNodeInstanceIdsSet = new HashSet<>();
     final Map<String, IncidentDataHolder> incDatas = new HashMap<>();
-    for (IncidentEntity inc : incidents) {
+    for (final IncidentEntity inc : incidents) {
       final IncidentDataHolder incData = new IncidentDataHolder().setIncidentId(inc.getId());
       if (!String.valueOf(inc.getProcessInstanceKey()).equals(processInstanceId)) {
         final String callActivityInstanceId =

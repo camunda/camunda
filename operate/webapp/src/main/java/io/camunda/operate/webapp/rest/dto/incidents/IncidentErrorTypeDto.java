@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.rest.dto.incidents;
 
-import io.camunda.operate.entities.ErrorType;
+import io.camunda.webapps.schema.entities.operate.ErrorType;
 import java.util.Objects;
 
 public class IncidentErrorTypeDto {
@@ -18,7 +18,7 @@ public class IncidentErrorTypeDto {
 
   private int count;
 
-  public static IncidentErrorTypeDto createFrom(ErrorType errorType) {
+  public static IncidentErrorTypeDto createFrom(final ErrorType errorType) {
     return new IncidentErrorTypeDto().setId(errorType.name()).setName(errorType.getTitle());
   }
 

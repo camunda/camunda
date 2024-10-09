@@ -22,23 +22,38 @@ public class ProcessInstanceSortImpl extends SearchQuerySortBase<ProcessInstance
     implements ProcessInstanceSort {
 
   @Override
-  public ProcessInstanceSort key() {
+  public ProcessInstanceSort processInstanceKey() {
     return field("key");
   }
 
   @Override
-  public ProcessInstanceSort processName() {
+  public ProcessInstanceSort processDefinitionId() {
+    return field("bpmnProcessId");
+  }
+
+  @Override
+  public ProcessInstanceSort processDefinitionName() {
     return field("processName");
   }
 
   @Override
-  public ProcessInstanceSort processVersion() {
+  public ProcessInstanceSort processDefinitionVersion() {
     return field("processVersion");
   }
 
   @Override
-  public ProcessInstanceSort bpmnProcessId() {
-    return field("bpmnProcessId");
+  public ProcessInstanceSort processDefinitionVersionTag() {
+    return field("processVersionTag");
+  }
+
+  @Override
+  public ProcessInstanceSort processDefinitionKey() {
+    return field("processDefinitionKey");
+  }
+
+  @Override
+  public ProcessInstanceSort rootProcessInstanceKey() {
+    return field("rootProcessInstanceKey");
   }
 
   @Override
@@ -49,6 +64,11 @@ public class ProcessInstanceSortImpl extends SearchQuerySortBase<ProcessInstance
   @Override
   public ProcessInstanceSort parentFlowNodeInstanceKey() {
     return field("parentFlowNodeInstanceKey");
+  }
+
+  @Override
+  public ProcessInstanceSort treePath() {
+    return field("treePath");
   }
 
   @Override
@@ -72,23 +92,8 @@ public class ProcessInstanceSortImpl extends SearchQuerySortBase<ProcessInstance
   }
 
   @Override
-  public ProcessInstanceSort hasActiveOperation() {
-    return field("hasActiveOperation");
-  }
-
-  @Override
-  public ProcessInstanceSort processDefinitionKey() {
-    return field("processDefinitionKey");
-  }
-
-  @Override
   public ProcessInstanceSort tenantId() {
     return field("tenantId");
-  }
-
-  @Override
-  public ProcessInstanceSort rootInstanceId() {
-    return field("rootInstanceId");
   }
 
   @Override

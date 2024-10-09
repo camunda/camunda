@@ -49,7 +49,6 @@ hs_err*.log
 /data/
 /metrics/
 *.exe
-/clients/go/.idea/
 
 .vscode
 .eslintcache
@@ -57,3 +56,9 @@ els-snapshots
 
 optimize/client/.node/
 .yarn
+
+c8run/*.tar.gz
+c8run/*.jar
+c8run/log/*.log
+c8run/camunda-zeebe*
+c8run/elasticsearch*

@@ -17,8 +17,8 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRe
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -32,14 +32,13 @@ public class AuthorizationController {
     this.authorizationServices = authorizationServices;
   }
 
-  @PostMapping(
+  @PatchMapping(
       path = "/{ownerKey}",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> patchAuthorization(
       @PathVariable final long ownerKey,
       @RequestBody final AuthorizationPatchRequest authorizationPatchRequest) {
-
     return RequestMapper.toAuthorizationPatchRequest(ownerKey, authorizationPatchRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::patchAuthorization);
   }

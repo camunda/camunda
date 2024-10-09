@@ -8,7 +8,7 @@
 
 import {zeebeGrpcApi} from '../api/zeebe-grpc';
 
-const {deployProcesses, createInstances} = zeebeGrpcApi;
+const {deployProcesses, createSingleInstance, completeTask} = zeebeGrpcApi;
 
 const setup = async () => {
   const {deployments: deploymentsV1} = await deployProcesses([
@@ -33,12 +33,24 @@ const setup = async () => {
     throw new Error('Error deploying process');
   }
 
+  completeTask('failingTaskWorker', true, {}, (job) => {
+    return job.fail('expected worker failure');
+  });
+
   return {
-    processV1Instances: await createInstances(
-      'orderProcessMigration',
-      deploymentsV1[0].process.version,
-      10,
-      {key1: 'myFirstCorrelationKey', key2: 'mySecondCorrelationKey'},
+    processV1Instances: await Promise.all(
+      [...new Array(10)].map((_, index) =>
+        createSingleInstance(
+          'orderProcessMigration',
+          deploymentsV1[0]!.process.version,
+
+          {
+            key1: 'myFirstCorrelationKey',
+            key2: 'mySecondCorrelationKey',
+            key3: `myCorrelationKey${index}`,
+          },
+        ),
+      ),
     ),
     processV1: deploymentsV1[0].process,
     processV2: deploymentsV2[0].process,

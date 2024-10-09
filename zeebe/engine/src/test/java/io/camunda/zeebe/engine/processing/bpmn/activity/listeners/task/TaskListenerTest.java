@@ -83,7 +83,6 @@ public class TaskListenerTest {
     completeJobs(processInstanceKey, LISTENER_TYPE, LISTENER_TYPE + "_2", LISTENER_TYPE + "_3");
 
     // then
-    assertThatProcessInstanceCompleted(processInstanceKey);
     assertThat(
             RecordingExporter.jobRecords()
                 .withProcessInstanceKey(processInstanceKey)
@@ -93,30 +92,37 @@ public class TaskListenerTest {
                 .limit(3))
         .extracting(Record::getValue)
         .extracting(JobRecordValue::getType)
+        .describedAs("Verify that all task listeners were completed in the correct sequence")
         .containsExactly(LISTENER_TYPE, LISTENER_TYPE + "_2", LISTENER_TYPE + "_3");
-
-    assertThat(
-            RecordingExporter.userTaskRecords(UserTaskIntent.COMPLETED)
-                .withProcessInstanceKey(processInstanceKey)
-                .getFirst())
-        .extracting(Record::getValue)
-        .satisfies(
-            recordValue -> {
-              assertThat(recordValue.getAction()).isEqualTo("my_custom_action");
-              assertThat(recordValue.getVariables()).containsExactly(entry("foo_var", "bar"));
-            });
 
     assertThat(
             RecordingExporter.userTaskRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(r -> r.getIntent() == UserTaskIntent.COMPLETED))
         .extracting(Record::getIntent)
+        .describedAs(
+            "Ensure that `COMPLETE_TASK_LISTENER` events were triggered between user task `COMPLETING` and `COMPLETED` events")
         .containsSubsequence(
             UserTaskIntent.COMPLETING,
             UserTaskIntent.COMPLETE_TASK_LISTENER,
             UserTaskIntent.COMPLETE_TASK_LISTENER,
             UserTaskIntent.COMPLETE_TASK_LISTENER,
             UserTaskIntent.COMPLETED);
+
+    assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst())
+        .extracting(Record::getValue)
+        .describedAs(
+            "Check that the completed user task contains the correct `action` and `variables` provided with `COMPLETE` command")
+        .satisfies(
+            recordValue -> {
+              assertThat(recordValue.getAction()).isEqualTo("my_custom_action");
+              assertThat(recordValue.getVariables()).containsExactly(entry("foo_var", "bar"));
+            });
+
+    assertThatProcessInstanceCompleted(processInstanceKey);
   }
 
   @Test

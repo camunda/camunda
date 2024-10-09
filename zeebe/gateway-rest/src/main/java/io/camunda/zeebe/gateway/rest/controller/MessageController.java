@@ -17,7 +17,6 @@ import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import java.util.concurrent.CompletableFuture;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,7 +30,6 @@ public class MessageController {
   private final MessageServices messageServices;
   private final MultiTenancyCfg multiTenancyCfg;
 
-  @Autowired
   public MessageController(
       final MessageServices messageServices, final MultiTenancyCfg multiTenancyCfg) {
     this.messageServices = messageServices;
@@ -44,7 +42,8 @@ public class MessageController {
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> publishMessage(
       @RequestBody final MessagePublicationRequest publicationRequest) {
-    return RequestMapper.toMessagePublicationRequest(publicationRequest)
+    return RequestMapper.toMessagePublicationRequest(
+            publicationRequest, multiTenancyCfg.isEnabled())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::publishMessage);
   }
 

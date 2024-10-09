@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {InlineLoadingStatus, Stack} from '@carbon/react';
+import {type InlineLoadingProps, Stack} from '@carbon/react';
 import {ArrowRight} from '@carbon/react/icons';
 import {AsyncActionButton} from 'modules/components/AsyncActionButton';
 import {notificationsStore} from 'modules/stores/notifications';
@@ -25,6 +25,8 @@ import {getProcessDisplayName} from 'modules/utils/getProcessDisplayName';
 import {ProcessTag} from './ProcessTag';
 import styles from './styles.module.scss';
 import cn from 'classnames';
+
+type InlineLoadingStatus = NonNullable<InlineLoadingProps['status']>;
 
 type LoadingStatus = InlineLoadingStatus | 'active-tasks';
 
@@ -147,7 +149,7 @@ const ProcessTile: React.FC<Props> = ({
               kind: 'tertiary',
               size: 'sm',
               className: 'startButton',
-              renderIcon: startEventFormId === null ? null : ArrowRight,
+              renderIcon: startEventFormId === null ? undefined : ArrowRight,
               id: isFirst ? 'main-content' : '',
               autoFocus: isFirst,
               disabled: isStartButtonDisabled,

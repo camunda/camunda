@@ -23,14 +23,15 @@ import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.Optional;
@@ -52,10 +53,12 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   private final TypedResponseWriter responseWriter;
 
   public UserTaskProcessor(
-      final MutableProcessingState state,
+      final ProcessingState state,
+      final KeyGenerator keyGenerator,
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers) {
-    this.commandProcessors = new UserTaskCommandProcessors(state, bpmnBehaviors, writers);
+    this.commandProcessors =
+        new UserTaskCommandProcessors(state, keyGenerator, bpmnBehaviors, writers);
     this.processState = state.getProcessState();
     this.userTaskState = state.getUserTaskState();
     this.elementInstanceState = state.getElementInstanceState();
@@ -107,7 +110,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
       final TypedRecord<UserTaskRecord> command, UserTaskIntent intent) {
     final var commandProcessor = commandProcessors.getCommandProcessor(intent);
     commandProcessor
-        .check(command)
+        .validateCommand(command)
         .ifRightOrLeft(
             persistedRecord ->
                 handleCommandProcessing(commandProcessor, command, persistedRecord, intent),

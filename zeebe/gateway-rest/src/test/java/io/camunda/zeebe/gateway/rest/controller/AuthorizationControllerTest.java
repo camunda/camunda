@@ -14,10 +14,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
-import io.camunda.service.CamundaServiceException;
-import io.camunda.service.security.auth.Authentication;
+import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest.ActionEnum;
@@ -52,6 +52,7 @@ import org.springframework.http.ProblemDetail;
 
 @WebMvcTest(AuthorizationController.class)
 public class AuthorizationControllerTest extends RestControllerTest {
+
   @MockBean private AuthorizationServices<AuthorizationRecord> authorizationServices;
 
   @BeforeEach
@@ -89,7 +90,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
         .thenReturn(CompletableFuture.completedFuture(authorizationRecord));
 
     webClient
-        .post()
+        .patch()
         .uri("/v2/authorizations/%d".formatted(ownerKey))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
@@ -127,7 +128,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
 
     when(authorizationServices.patchAuthorization(any(PatchAuthorizationRequest.class)))
         .thenThrow(
-            new CamundaServiceException(
+            new CamundaBrokerException(
                 new BrokerRejection(
                     AuthorizationIntent.ADD_PERMISSION,
                     1L,
@@ -139,7 +140,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
     expectedBody.setInstance(URI.create("/v2/authorizations/%d".formatted(ownerKey)));
 
     webClient
-        .post()
+        .patch()
         .uri("/v2/authorizations/%d".formatted(ownerKey))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
@@ -162,7 +163,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
     expectedBody.setDetail(errorMessage);
 
     webClient
-        .post()
+        .patch()
         .uri("/v2/authorizations/%d".formatted(ownerKey))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)

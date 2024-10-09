@@ -16,17 +16,17 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.entities.ErrorType;
-import io.camunda.operate.entities.IncidentEntity;
-import io.camunda.operate.entities.IncidentState;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.store.IncidentStore;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
+import io.camunda.webapps.schema.entities.operate.ErrorType;
+import io.camunda.webapps.schema.entities.operate.IncidentEntity;
+import io.camunda.webapps.schema.entities.operate.IncidentState;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -71,7 +71,7 @@ public class ElasticsearchIncidentStore implements IncidentStore {
   @Autowired private OperateProperties operateProperties;
 
   @Override
-  public IncidentEntity getIncidentById(Long incidentKey) {
+  public IncidentEntity getIncidentById(final Long incidentKey) {
     final IdsQueryBuilder idsQ = idsQuery().addIds(incidentKey.toString());
     final ConstantScoreQueryBuilder query =
         constantScoreQuery(joinWithAnd(idsQ, ACTIVE_INCIDENT_QUERY));
@@ -92,7 +92,7 @@ public class ElasticsearchIncidentStore implements IncidentStore {
         throw new NotFoundException(
             String.format("Could not find incident with key '%s'.", incidentKey));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining incident: %s", e.getMessage());
       LOGGER.error(message, e);
@@ -102,7 +102,7 @@ public class ElasticsearchIncidentStore implements IncidentStore {
 
   @Override
   public List<IncidentEntity> getIncidentsWithErrorTypesFor(
-      String treePath, List<Map<ErrorType, Long>> errorTypes) {
+      final String treePath, final List<Map<ErrorType, Long>> errorTypes) {
     final TermQueryBuilder processInstanceQuery = termQuery(IncidentTemplate.TREE_PATH, treePath);
 
     final String errorTypesAggName = "errorTypesAgg";
@@ -141,7 +141,7 @@ public class ElasticsearchIncidentStore implements IncidentStore {
                               errorTypes.add(Map.of(errorType, b.getDocCount()));
                             }));
           });
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining incidents: %s", e.getMessage());
       LOGGER.error(message, e);
@@ -150,7 +150,7 @@ public class ElasticsearchIncidentStore implements IncidentStore {
   }
 
   @Override
-  public List<IncidentEntity> getIncidentsByProcessInstanceKey(Long processInstanceKey) {
+  public List<IncidentEntity> getIncidentsByProcessInstanceKey(final Long processInstanceKey) {
     final TermQueryBuilder processInstanceKeyQuery =
         termQuery(IncidentTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
     final ConstantScoreQueryBuilder query =
@@ -170,7 +170,7 @@ public class ElasticsearchIncidentStore implements IncidentStore {
             return ElasticsearchUtil.scroll(
                 searchRequest, IncidentEntity.class, objectMapper, esClient);
           });
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining all incidents: %s", e.getMessage());
       LOGGER.error(message, e);
@@ -179,7 +179,8 @@ public class ElasticsearchIncidentStore implements IncidentStore {
   }
 
   @Override
-  public Map<Long, List<Long>> getIncidentKeysPerProcessInstance(List<Long> processInstanceKeys) {
+  public Map<Long, List<Long>> getIncidentKeysPerProcessInstance(
+      final List<Long> processInstanceKeys) {
     final QueryBuilder processInstanceKeysQuery =
         constantScoreQuery(
             joinWithAnd(
@@ -204,7 +205,7 @@ public class ElasticsearchIncidentStore implements IncidentStore {
                 searchRequest,
                 esClient,
                 searchHits -> {
-                  for (SearchHit hit : searchHits.getHits()) {
+                  for (final SearchHit hit : searchHits.getHits()) {
                     CollectionUtil.addToMap(
                         result,
                         Long.valueOf(
@@ -219,7 +220,7 @@ public class ElasticsearchIncidentStore implements IncidentStore {
             return null;
           });
       return result;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining all incidents: %s", e.getMessage());
       LOGGER.error(message, e);

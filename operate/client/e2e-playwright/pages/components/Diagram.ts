@@ -12,11 +12,15 @@ export class Diagram {
   private page: Page;
   readonly diagram: Locator;
   readonly popover: Locator;
+  readonly resetDiagramZoomButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
     this.diagram = this.page.getByTestId('diagram');
     this.popover = this.page.getByTestId('popover');
+    this.resetDiagramZoomButton = this.page.getByRole('button', {
+      name: /Reset diagram zoom/i,
+    });
   }
 
   async moveCanvasHorizontally(dx: number) {
@@ -44,10 +48,25 @@ export class Diagram {
     return this.getFlowNode(flowNodeName).click();
   }
 
+  async clickEvent(eventName: string) {
+    const event = await this.getEvent(eventName);
+    return event.click();
+  }
+
   getFlowNode(flowNodeName: string) {
     return this.diagram
       .locator('.djs-element')
       .filter({hasText: new RegExp(`^${flowNodeName}$`, 'i')});
+  }
+
+  async getEvent(eventName: string) {
+    const eventLabel = this.diagram
+      .locator('.djs-element')
+      .filter({hasText: new RegExp(`${eventName}`, 'i')});
+
+    const labelId = await eventLabel.getAttribute('data-element-id');
+    const eventId = labelId?.split(/_label$/)[0];
+    return this.diagram.locator(`[data-element-id="${eventId}"]`);
   }
 
   showMetaData() {

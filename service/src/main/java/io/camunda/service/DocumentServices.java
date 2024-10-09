@@ -13,9 +13,7 @@ import io.camunda.document.api.DocumentLink;
 import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.document.api.DocumentStoreRecord;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
-import io.camunda.search.clients.CamundaSearchClient;
-import io.camunda.service.security.auth.Authentication;
-import io.camunda.service.transformers.ServiceTransformers;
+import io.camunda.search.security.auth.Authentication;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.io.InputStream;
 import java.time.ZonedDateTime;
@@ -25,21 +23,17 @@ public class DocumentServices extends ApiServices<DocumentServices> {
 
   private final SimpleDocumentStoreRegistry registry = new SimpleDocumentStoreRegistry();
 
-  public DocumentServices(final BrokerClient brokerClient, final CamundaSearchClient searchClient) {
-    this(brokerClient, searchClient, null, null);
+  public DocumentServices(final BrokerClient brokerClient) {
+    this(brokerClient, null);
   }
 
-  public DocumentServices(
-      final BrokerClient brokerClient,
-      final CamundaSearchClient searchClient,
-      final ServiceTransformers transformers,
-      final Authentication authentication) {
-    super(brokerClient, searchClient, transformers, authentication);
+  public DocumentServices(final BrokerClient brokerClient, final Authentication authentication) {
+    super(brokerClient, authentication);
   }
 
   @Override
   public DocumentServices withAuthentication(final Authentication authentication) {
-    return new DocumentServices(brokerClient, searchClient, transformers, authentication);
+    return new DocumentServices(brokerClient, authentication);
   }
 
   public CompletableFuture<DocumentReferenceResponse> createDocument(

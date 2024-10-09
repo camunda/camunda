@@ -19,7 +19,8 @@ import io.camunda.zeebe.client.api.response.SetVariablesResponse;
 import java.io.InputStream;
 import java.util.Map;
 
-public interface SetVariablesCommandStep1 {
+public interface SetVariablesCommandStep1
+    extends CommandWithCommunicationApiStep<SetVariablesCommandStep1> {
   /**
    * Sets the variables document from a JSON stream.
    *

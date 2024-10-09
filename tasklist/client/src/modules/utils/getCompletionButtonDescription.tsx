@@ -6,10 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {InlineLoadingStatus} from '@carbon/react';
+import {type InlineLoadingProps} from '@carbon/react';
 import {t} from 'i18next';
 
-function getCompletionButtonDescription(status: InlineLoadingStatus) {
+function getCompletionButtonDescription(
+  status: NonNullable<InlineLoadingProps['status']>,
+) {
   if (status === 'active') {
     return t('taskDetailsCompletingTaskMessage');
   }

@@ -7,17 +7,15 @@
  */
 package io.camunda.operate.webapp.elasticsearch.reader;
 
-import static io.camunda.operate.schema.templates.ListViewTemplate.PARENT_FLOW_NODE_INSTANCE_KEY;
 import static io.camunda.operate.util.ElasticsearchUtil.reverseOrder;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PARENT_FLOW_NODE_INSTANCE_KEY;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.OperationEntity;
-import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
@@ -28,6 +26,8 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;

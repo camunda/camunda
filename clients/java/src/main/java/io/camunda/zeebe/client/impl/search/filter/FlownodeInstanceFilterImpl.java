@@ -42,6 +42,12 @@ public class FlownodeInstanceFilterImpl
   }
 
   @Override
+  public FlownodeInstanceFilter bpmnProcessId(final String value) {
+    filter.processDefinitionId(value);
+    return this;
+  }
+
+  @Override
   public FlownodeInstanceFilter processInstanceKey(final long value) {
     filter.setProcessInstanceKey(value);
     return this;
@@ -54,26 +60,20 @@ public class FlownodeInstanceFilterImpl
   }
 
   @Override
-  public FlownodeInstanceFilter flowNodeName(final String value) {
-    filter.setFlowNodeName(value);
-    return this;
-  }
-
-  @Override
   public FlownodeInstanceFilter state(final String value) {
-    filter.setState(value);
+    filter.setState(FlowNodeInstanceFilterRequest.StateEnum.valueOf(value));
     return this;
   }
 
   @Override
   public FlownodeInstanceFilter type(final String value) {
-    filter.setType(value);
+    filter.setType(FlowNodeInstanceFilterRequest.TypeEnum.valueOf(value));
     return this;
   }
 
   @Override
-  public FlownodeInstanceFilter incident(final boolean value) {
-    filter.setIncident(value);
+  public FlownodeInstanceFilter hasIncident(final boolean value) {
+    filter.hasIncident(value);
     return this;
   }
 

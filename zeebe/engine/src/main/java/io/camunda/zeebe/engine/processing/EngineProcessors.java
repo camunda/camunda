@@ -29,6 +29,7 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionContin
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionFinishProcessor;
 import io.camunda.zeebe.engine.processing.distribution.CommandRedistributor;
 import io.camunda.zeebe.engine.processing.dmn.DecisionEvaluationEvaluteProcessor;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationProcessors;
 import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
@@ -123,6 +124,10 @@ public final class EngineProcessors {
             routingInfo,
             interPartitionCommandSender);
 
+    final var authCheckBehavior =
+        new AuthorizationCheckBehavior(
+            processingState.getAuthorizationState(), processingState.getUserState(), config);
+
     final var deploymentDistributionCommandSender =
         new DeploymentDistributionCommandSender(
             typedRecordProcessorContext.getPartitionId(), interPartitionCommandSender);
@@ -137,7 +142,8 @@ public final class EngineProcessors {
         featureFlags,
         commandDistributionBehavior,
         config,
-        clock);
+        clock,
+        authCheckBehavior);
     addMessageProcessors(
         bpmnBehaviors,
         subscriptionCommandSender,
@@ -162,7 +168,9 @@ public final class EngineProcessors {
             commandDistributionBehavior,
             partitionId,
             routingInfo,
-            clock);
+            clock,
+            config,
+            authCheckBehavior);
 
     addDecisionProcessors(typedRecordProcessors, decisionBehavior, writers, processingState);
 
@@ -174,7 +182,8 @@ public final class EngineProcessors {
         writers,
         jobMetrics,
         config,
-        clock);
+        clock,
+        authCheckBehavior);
 
     addIncidentProcessors(
         processingState,
@@ -215,7 +224,12 @@ public final class EngineProcessors {
         typedRecordProcessors, writers, keyGenerator, clock, commandDistributionBehavior);
 
     AuthorizationProcessors.addAuthorizationProcessors(
-        keyGenerator, typedRecordProcessors, processingState, writers, commandDistributionBehavior);
+        keyGenerator,
+        typedRecordProcessors,
+        processingState,
+        writers,
+        commandDistributionBehavior,
+        authCheckBehavior);
 
     return typedRecordProcessors;
   }
@@ -253,7 +267,9 @@ public final class EngineProcessors {
       final CommandDistributionBehavior commandDistributionBehavior,
       final int partitionId,
       final RoutingInfo routingInfo,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final EngineConfiguration config,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     return BpmnProcessors.addBpmnStreamProcessor(
         processingState,
         scheduledTaskState,
@@ -265,7 +281,9 @@ public final class EngineProcessors {
         commandDistributionBehavior,
         partitionId,
         routingInfo,
-        clock);
+        clock,
+        config,
+        authCheckBehavior);
   }
 
   private static void addDeploymentRelatedProcessorAndServices(
@@ -279,7 +297,8 @@ public final class EngineProcessors {
       final FeatureFlags featureFlags,
       final CommandDistributionBehavior distributionBehavior,
       final EngineConfiguration config,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final AuthorizationCheckBehavior authCheckBehavior) {
 
     // on deployment partition CREATE Command is received and processed
     // it will cause a distribution to other partitions
@@ -292,7 +311,9 @@ public final class EngineProcessors {
             featureFlags,
             distributionBehavior,
             config,
-            clock);
+            clock,
+            authCheckBehavior);
+
     typedRecordProcessors.onCommand(ValueType.DEPLOYMENT, CREATE, processor);
 
     // periodically retries deployment distribution
@@ -411,7 +432,9 @@ public final class EngineProcessors {
       final MutableProcessingState processingState,
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers) {
-    final var userTaskProcessor = new UserTaskProcessor(processingState, bpmnBehaviors, writers);
+    final var userTaskProcessor =
+        new UserTaskProcessor(
+            processingState, processingState.getKeyGenerator(), bpmnBehaviors, writers);
 
     UserTaskIntent.commands()
         .forEach(

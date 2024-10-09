@@ -12,11 +12,11 @@ import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBu
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.entities.SequenceFlowEntity;
-import io.camunda.operate.schema.templates.SequenceFlowTemplate;
 import io.camunda.operate.store.SequenceFlowStore;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.store.opensearch.dsl.RequestDSL;
+import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
+import io.camunda.webapps.schema.entities.operate.SequenceFlowEntity;
 import java.util.List;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.slf4j.Logger;
@@ -39,7 +39,8 @@ public class OpensearchSequenceFlowStore implements SequenceFlowStore {
   private ObjectMapper objectMapper;
 
   @Override
-  public List<SequenceFlowEntity> getSequenceFlowsByProcessInstanceKey(Long processInstanceKey) {
+  public List<SequenceFlowEntity> getSequenceFlowsByProcessInstanceKey(
+      final Long processInstanceKey) {
     final var query =
         constantScore(term(SequenceFlowTemplate.PROCESS_INSTANCE_KEY, processInstanceKey));
     final var searchRequestBuilder =

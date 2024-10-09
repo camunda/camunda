@@ -7,12 +7,12 @@
  */
 package io.camunda.operate.zeebeimport;
 
-import static io.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
-import static io.camunda.operate.entities.listview.ProcessInstanceState.ACTIVE;
 import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesRequest;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto.INCIDENT;
+import static io.camunda.webapps.schema.entities.operate.ErrorType.JOB_NO_RETRIES;
+import static io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState.ACTIVE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -20,15 +20,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.entities.FlowNodeInstanceEntity;
-import io.camunda.operate.entities.FlowNodeState;
-import io.camunda.operate.entities.IncidentEntity;
-import io.camunda.operate.entities.IncidentState;
-import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
-import io.camunda.operate.entities.dmn.DecisionInstanceState;
-import io.camunda.operate.entities.dmn.DecisionType;
-import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.PayloadUtil;
 import io.camunda.operate.util.ZeebeTestUtil;
@@ -46,6 +37,15 @@ import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceMetadataDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebe.PartitionHolder;
+import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
+import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
+import io.camunda.webapps.schema.entities.operate.FlowNodeState;
+import io.camunda.webapps.schema.entities.operate.IncidentEntity;
+import io.camunda.webapps.schema.entities.operate.IncidentState;
+import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
+import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceState;
+import io.camunda.webapps.schema.entities.operate.dmn.DecisionType;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.OffsetDateTime;

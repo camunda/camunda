@@ -26,7 +26,6 @@ import org.apache.hc.client5.http.async.methods.SimpleHttpResponse;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.concurrent.FutureCallback;
-import org.apache.hc.core5.http.message.BasicHttpRequest;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -93,7 +92,7 @@ class OpenSearchClientBuilderTest {
     }
 
     // then
-    final var reqWrapper = (BasicHttpRequest) context.getAttribute("http.request");
+    final var reqWrapper = context.getRequest();
 
     Assertions.assertThat(reqWrapper.getFirstHeader("foo").getValue()).isEqualTo("bar");
   }
@@ -135,7 +134,7 @@ class OpenSearchClientBuilderTest {
     }
 
     // then
-    final var reqWrapper = (BasicHttpRequest) context.getAttribute("http.request");
+    final var reqWrapper = context.getRequest();
 
     Assertions.assertThat(reqWrapper.getFirstHeader("foo").getValue()).isEqualTo("bar");
   }
@@ -175,7 +174,7 @@ class OpenSearchClientBuilderTest {
     }
 
     // then
-    final var reqWrapper = (BasicHttpRequest) context.getAttribute("http.request");
+    final var reqWrapper = context.getRequest();
 
     Assertions.assertThat(reqWrapper.getFirstHeader("foo")).isNull();
   }
@@ -219,7 +218,7 @@ class OpenSearchClientBuilderTest {
     }
 
     // then
-    final var reqWrapper = (BasicHttpRequest) context.getAttribute("http.request");
+    final var reqWrapper = context.getRequest();
 
     Assertions.assertThat(reqWrapper.getFirstHeader("foo")).isNull();
   }

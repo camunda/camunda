@@ -53,6 +53,8 @@ jobs:
     - name: "Read Java / Version Info"
       id: "pom-info"
       uses: YunaBraska/java-info-action@main
+      with:
+        work-dir: ./optimize
     - name: Start Elastic search
       uses: ./.github/actions/compose
       with:
@@ -61,9 +63,9 @@ jobs:
       env:
         ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
         ELASTIC_JVM_MEMORY: 1
-        ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_elasticsearch_port }}
+        ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_database_port }}
     - name: Setup NodeJS
-      uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4
+      uses: actions/setup-node@0a44ba7841725637a19e28fa30b79a866c81b0a6 # v4
       with:
         node-version: ${{ steps.pom-info.outputs.x_version_node }}
     - uses: camunda/infra-global-github-actions/setup-yarn-cache@main

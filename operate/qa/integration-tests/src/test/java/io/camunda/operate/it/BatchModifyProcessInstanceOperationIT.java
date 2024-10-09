@@ -11,17 +11,17 @@ package io.camunda.operate.it;
 // the next round of test refactoring
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.operate.entities.FlowNodeInstanceEntity;
-import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.OperationType;
-import io.camunda.operate.entities.VariableEntity;
-import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
-import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.util.j5templates.OperateZeebeSearchAbstractIT;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
 import io.camunda.operate.webapp.zeebe.operation.process.modify.ModifyProcessInstanceHandler;
+import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
+import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
+import io.camunda.webapps.schema.entities.operate.FlowNodeState;
+import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;

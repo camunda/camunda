@@ -22,11 +22,18 @@ import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.api.response.Form;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.impl.Loggers;
+import io.camunda.zeebe.client.protocol.rest.DeploymentDecision;
+import io.camunda.zeebe.client.protocol.rest.DeploymentDecisionRequirements;
+import io.camunda.zeebe.client.protocol.rest.DeploymentForm;
+import io.camunda.zeebe.client.protocol.rest.DeploymentMetadata;
+import io.camunda.zeebe.client.protocol.rest.DeploymentProcess;
+import io.camunda.zeebe.client.protocol.rest.DeploymentResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Deployment;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.slf4j.Logger;
 
 public final class DeploymentEventImpl implements DeploymentEvent {
@@ -74,6 +81,74 @@ public final class DeploymentEventImpl implements DeploymentEvent {
           break;
       }
     }
+  }
+
+  public DeploymentEventImpl(final DeploymentResponse response) {
+    key = response.getDeploymentKey();
+    tenantId = response.getTenantId();
+
+    for (final DeploymentMetadata deployment : response.getDeployments()) {
+      addDeployedForm(deployment.getForm());
+      addDeployedProcess(deployment.getProcessDefinition());
+      addDeployedDecision(deployment.getDecisionDefinition());
+      addDeployedDecisionRequirements(deployment.getDecisionRequirements());
+    }
+  }
+
+  private void addDeployedForm(final DeploymentForm form) {
+    Optional.ofNullable(form)
+        .ifPresent(
+            f ->
+                forms.add(
+                    new FormImpl(
+                        f.getFormId(),
+                        f.getVersion(),
+                        f.getFormKey(),
+                        f.getResourceName(),
+                        f.getTenantId())));
+  }
+
+  private void addDeployedDecisionRequirements(
+      final DeploymentDecisionRequirements decisionRequirement) {
+    Optional.ofNullable(decisionRequirement)
+        .ifPresent(
+            dr ->
+                decisionRequirements.add(
+                    new DecisionRequirementsImpl(
+                        dr.getDecisionRequirementsId(),
+                        dr.getName(),
+                        dr.getVersion(),
+                        dr.getDecisionRequirementsKey(),
+                        dr.getResourceName(),
+                        dr.getTenantId())));
+  }
+
+  private void addDeployedDecision(final DeploymentDecision decision) {
+    Optional.ofNullable(decision)
+        .ifPresent(
+            d ->
+                decisions.add(
+                    new DecisionImpl(
+                        d.getDecisionDefinitionId(),
+                        d.getName(),
+                        d.getVersion(),
+                        d.getDecisionDefinitionKey(),
+                        d.getDecisionRequirementsId(),
+                        d.getDecisionRequirementsKey(),
+                        d.getTenantId())));
+  }
+
+  private void addDeployedProcess(final DeploymentProcess process) {
+    Optional.ofNullable(process)
+        .ifPresent(
+            p ->
+                processes.add(
+                    new ProcessImpl(
+                        p.getProcessDefinitionKey(),
+                        p.getProcessDefinitionId(),
+                        p.getProcessDefinitionVersion(),
+                        p.getResourceName(),
+                        p.getTenantId())));
   }
 
   @Override

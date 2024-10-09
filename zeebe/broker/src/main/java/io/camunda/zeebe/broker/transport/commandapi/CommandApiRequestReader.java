@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
@@ -33,6 +34,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
+import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
@@ -72,6 +74,8 @@ public class CommandApiRequestReader implements RequestReader<ExecuteCommandRequ
     RECORDS_BY_TYPE.put(ValueType.USER, UserRecord::new);
     RECORDS_BY_TYPE.put(ValueType.CLOCK, ClockRecord::new);
     RECORDS_BY_TYPE.put(ValueType.AUTHORIZATION, AuthorizationRecord::new);
+    RECORDS_BY_TYPE.put(ValueType.ROLE, RoleRecord::new);
+    RECORDS_BY_TYPE.put(ValueType.TENANT, TenantRecord::new);
   }
 
   private UnifiedRecordValue value;

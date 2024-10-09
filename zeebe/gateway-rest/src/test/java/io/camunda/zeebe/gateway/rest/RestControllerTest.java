@@ -7,9 +7,15 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
+import io.camunda.search.security.auth.Authentication;
+import java.util.List;
+import java.util.function.Function;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 
 @TestPropertySource(
     properties = {
@@ -18,4 +24,15 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 public abstract class RestControllerTest {
 
   @Autowired protected WebTestClient webClient;
+
+  public ResponseSpec withMultiTenancy(
+      final String tenantId, final Function<WebTestClient, ResponseSpec> function) {
+    try (final MockedStatic<RequestMapper> mockRequestMapper =
+        Mockito.mockStatic(RequestMapper.class, Mockito.CALLS_REAL_METHODS)) {
+      mockRequestMapper
+          .when(RequestMapper::getAuthentication)
+          .thenReturn(new Authentication("user", List.of("group"), List.of(tenantId), "token"));
+      return function.apply(webClient);
+    }
+  }
 }

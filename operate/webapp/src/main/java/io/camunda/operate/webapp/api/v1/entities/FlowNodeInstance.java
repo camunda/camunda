@@ -9,9 +9,9 @@ package io.camunda.operate.webapp.api.v1.entities;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import io.camunda.operate.entities.FlowNodeState;
-import io.camunda.operate.entities.FlowNodeType;
-import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
+import io.camunda.webapps.schema.entities.operate.FlowNodeState;
+import io.camunda.webapps.schema.entities.operate.FlowNodeType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Objects;
 

@@ -12,12 +12,12 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.entities.SequenceFlowEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.schema.templates.SequenceFlowTemplate;
 import io.camunda.operate.store.SequenceFlowStore;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
+import io.camunda.webapps.schema.entities.operate.SequenceFlowEntity;
 import java.io.IOException;
 import java.util.List;
 import org.elasticsearch.action.search.SearchRequest;
@@ -49,7 +49,8 @@ public class ElasticsearchSequenceFlowStore implements SequenceFlowStore {
   private ObjectMapper objectMapper;
 
   @Override
-  public List<SequenceFlowEntity> getSequenceFlowsByProcessInstanceKey(Long processInstanceKey) {
+  public List<SequenceFlowEntity> getSequenceFlowsByProcessInstanceKey(
+      final Long processInstanceKey) {
     final TermQueryBuilder processInstanceKeyQuery =
         termQuery(SequenceFlowTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
     final ConstantScoreQueryBuilder query = constantScoreQuery(processInstanceKeyQuery);
@@ -66,7 +67,7 @@ public class ElasticsearchSequenceFlowStore implements SequenceFlowStore {
             return ElasticsearchUtil.scroll(
                 searchRequest, SequenceFlowEntity.class, objectMapper, esClient);
           });
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format(
               "Exception occurred, while obtaining sequence flows: %s for processInstanceKey %s",

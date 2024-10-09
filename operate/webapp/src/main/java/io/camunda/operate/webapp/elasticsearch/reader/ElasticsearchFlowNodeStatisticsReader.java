@@ -7,14 +7,14 @@
  */
 package io.camunda.operate.webapp.elasticsearch.reader;
 
-import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_ID;
-import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_STATE;
-import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_TYPE;
-import static io.camunda.operate.schema.templates.ListViewTemplate.INCIDENT;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.ACTIVITY_ID;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.ACTIVITY_STATE;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.ACTIVITY_TYPE;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.INCIDENT;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -24,10 +24,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
 import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.entities.FlowNodeState;
-import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
@@ -35,6 +32,9 @@ import io.camunda.operate.webapp.elasticsearch.QueryHelper;
 import io.camunda.operate.webapp.reader.FlowNodeStatisticsReader;
 import io.camunda.operate.webapp.rest.dto.FlowNodeStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.entities.operate.FlowNodeState;
+import io.camunda.webapps.schema.entities.operate.FlowNodeType;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
@@ -69,7 +69,7 @@ public class ElasticsearchFlowNodeStatisticsReader implements FlowNodeStatistics
   @Autowired private QueryHelper queryHelper;
 
   @Override
-  public Collection<FlowNodeStatisticsDto> getFlowNodeStatistics(ListViewQueryDto query) {
+  public Collection<FlowNodeStatisticsDto> getFlowNodeStatistics(final ListViewQueryDto query) {
 
     final SearchRequest searchRequest;
     if (!query.isFinished()) {
@@ -81,7 +81,8 @@ public class ElasticsearchFlowNodeStatisticsReader implements FlowNodeStatistics
     return statisticsMap.values();
   }
 
-  private Map<String, FlowNodeStatisticsDto> runQueryAndCollectStats(SearchRequest searchRequest) {
+  private Map<String, FlowNodeStatisticsDto> runQueryAndCollectStats(
+      final SearchRequest searchRequest) {
     try {
       final Map<String, FlowNodeStatisticsDto> statisticsMap = new HashMap<>();
       final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
@@ -99,7 +100,7 @@ public class ElasticsearchFlowNodeStatisticsReader implements FlowNodeStatistics
                         statisticsMap, activities, aggName, (MapUpdater) mapUpdater));
       }
       return statisticsMap;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format(
               "Exception occurred, while obtaining statistics for activities: %s", e.getMessage());
@@ -108,7 +109,8 @@ public class ElasticsearchFlowNodeStatisticsReader implements FlowNodeStatistics
     }
   }
 
-  private SearchRequest createQuery(ListViewQueryDto query, ElasticsearchUtil.QueryType queryType) {
+  private SearchRequest createQuery(
+      final ListViewQueryDto query, final ElasticsearchUtil.QueryType queryType) {
     final QueryBuilder q = constantScoreQuery(queryHelper.createQueryFragment(query));
 
     ChildrenAggregationBuilder agg = children(AGG_ACTIVITIES, ACTIVITIES_JOIN_RELATION);
@@ -135,10 +137,10 @@ public class ElasticsearchFlowNodeStatisticsReader implements FlowNodeStatistics
   }
 
   private void collectStatisticsFor(
-      Map<String, FlowNodeStatisticsDto> statisticsMap,
-      Children activities,
-      String aggName,
-      MapUpdater mapUpdater) {
+      final Map<String, FlowNodeStatisticsDto> statisticsMap,
+      final Children activities,
+      final String aggName,
+      final MapUpdater mapUpdater) {
     final Filter incidentActivitiesAgg = activities.getAggregations().get(aggName);
     if (incidentActivitiesAgg != null) {
       ((Terms) incidentActivitiesAgg.getAggregations().get(AGG_UNIQUE_ACTIVITIES))

@@ -8,21 +8,21 @@
 package io.camunda.operate.data.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.entities.OperateEntity;
-import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
-import io.camunda.operate.entities.dmn.DecisionInstanceInputEntity;
-import io.camunda.operate.entities.dmn.DecisionInstanceOutputEntity;
-import io.camunda.operate.entities.dmn.DecisionInstanceState;
-import io.camunda.operate.entities.dmn.DecisionType;
-import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
-import io.camunda.operate.entities.dmn.definition.DecisionRequirementsEntity;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.schema.indices.DecisionIndex;
-import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
-import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.DecisionStore;
 import io.camunda.operate.util.PayloadUtil;
+import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
+import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
+import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
+import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
+import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceInputEntity;
+import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceOutputEntity;
+import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceState;
+import io.camunda.webapps.schema.entities.operate.dmn.DecisionType;
+import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
+import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionRequirementsEntity;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -52,7 +52,7 @@ public class DecisionDataUtil {
   public static final String TENANT1 = "tenant1";
   public static final String TENANT2 = "tenant2";
   @Autowired protected DecisionStore decisionStore;
-  private Map<Class<? extends OperateEntity>, String> entityToESAliasMap;
+  private Map<Class<? extends ExporterEntity>, String> entityToESAliasMap;
   private final Random random = new Random();
 
   @Autowired
@@ -67,8 +67,8 @@ public class DecisionDataUtil {
 
   @Autowired private PayloadUtil payloadUtil;
 
-  public List<OperateEntity> createDecisionDefinitions() {
-    final List<OperateEntity> decisionEntities = new ArrayList<>();
+  public List<ExporterEntity> createDecisionDefinitions() {
+    final List<ExporterEntity> decisionEntities = new ArrayList<>();
 
     // create DRD version 1
     decisionEntities.add(
@@ -314,11 +314,11 @@ public class DecisionDataUtil {
         .setTenantId(tenantId);
   }
 
-  public void persistOperateEntities(final List<? extends OperateEntity> operateEntities)
+  public void persistOperateEntities(final List<? extends ExporterEntity> operateEntities)
       throws PersistenceException {
     try {
       final BatchRequest batchRequest = decisionStore.newBatchRequest();
-      for (final OperateEntity<?> entity : operateEntities) {
+      for (final ExporterEntity<?> entity : operateEntities) {
         final String alias = getEntityToESAliasMap().get(entity.getClass());
         if (alias == null) {
           throw new RuntimeException("Index not configured for " + entity.getClass().getName());
@@ -331,7 +331,7 @@ public class DecisionDataUtil {
     }
   }
 
-  public Map<Class<? extends OperateEntity>, String> getEntityToESAliasMap() {
+  public Map<Class<? extends ExporterEntity>, String> getEntityToESAliasMap() {
     if (entityToESAliasMap == null) {
       entityToESAliasMap = new HashMap<>();
       entityToESAliasMap.put(
