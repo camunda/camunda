@@ -7,20 +7,9 @@
  */
 package io.camunda.optimize.upgrade.plan.factories;
 
-import io.camunda.optimize.service.db.DatabaseClient;
-import io.camunda.optimize.service.db.es.schema.index.SettingsIndexES;
-import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import io.camunda.optimize.upgrade.plan.UpgradePlan;
 import io.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
-import io.camunda.optimize.upgrade.steps.schema.DeleteIndexIfExistsStep;
-import io.camunda.optimize.upgrade.steps.schema.DeleteIndexTemplateIfExistsStep;
-import io.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
