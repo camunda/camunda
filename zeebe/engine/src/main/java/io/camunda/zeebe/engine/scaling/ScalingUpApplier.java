@@ -23,7 +23,7 @@ public class ScalingUpApplier implements TypedEventApplier<ScaleIntent, ScaleRec
 
   @Override
   public void applyState(final long key, final ScaleRecord value) {
-    final var partitionCount = value.desiredPartitionCount();
+    final var partitionCount = value.getDesiredPartitionCount();
     final var partitions =
         IntStream.rangeClosed(1, partitionCount).boxed().collect(Collectors.toUnmodifiableSet());
 
