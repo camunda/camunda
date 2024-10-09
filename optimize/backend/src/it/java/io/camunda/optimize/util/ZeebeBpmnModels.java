@@ -12,10 +12,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.EndEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
 import java.time.Duration;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ZeebeBpmnModels {
 
   public static final String START_EVENT = "startEvent";
@@ -53,6 +50,8 @@ public class ZeebeBpmnModels {
   public static final String SERVICE_TASK_WITH_COMPENSATION_EVENT = "compensationEvent";
   public static final String COMPENSATION_EVENT_TASK = "compensationEventTask";
   public static final String VERSION_TAG = "v1";
+
+  private ZeebeBpmnModels() {}
 
   public static BpmnModelInstance createStartEndProcess(final String processName) {
     return createStartEndProcess(processName, null);

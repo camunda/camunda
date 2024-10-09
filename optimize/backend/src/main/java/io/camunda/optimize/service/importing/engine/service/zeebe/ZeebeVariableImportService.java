@@ -41,9 +41,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
 public class ZeebeVariableImportService
     extends ZeebeProcessInstanceSubEntityImportService<ZeebeVariableRecordDto> {
 
@@ -52,6 +51,8 @@ public class ZeebeVariableImportService
 
   private static final Set<VariableIntent> INTENTS_TO_IMPORT =
       Set.of(VariableIntent.CREATED, VariableIntent.UPDATED);
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ZeebeVariableImportService.class);
 
   private final ObjectMapper objectMapper;
   private final ObjectVariableService objectVariableService;
@@ -77,7 +78,7 @@ public class ZeebeVariableImportService
 
   @Override
   protected List<ProcessInstanceDto> filterAndMapZeebeRecordsToOptimizeEntities(
-      List<ZeebeVariableRecordDto> zeebeRecords) {
+      final List<ZeebeVariableRecordDto> zeebeRecords) {
     final List<ProcessInstanceDto> optimizeDtos =
         zeebeRecords.stream()
             .filter(zeebeRecord -> INTENTS_TO_IMPORT.contains(zeebeRecord.getIntent()))
@@ -131,7 +132,8 @@ public class ZeebeVariableImportService
   }
 
   private ProcessInstanceDto updateProcessVariables(
-      final ProcessInstanceDto instanceToAdd, List<ZeebeVariableRecordDto> recordsForInstance) {
+      final ProcessInstanceDto instanceToAdd,
+      final List<ZeebeVariableRecordDto> recordsForInstance) {
     final List<ProcessVariableUpdateDto> variables =
         resolveDuplicateUpdates(recordsForInstance).stream()
             .map(this::convertToProcessVariableDto)
@@ -165,7 +167,7 @@ public class ZeebeVariableImportService
 
   private SimpleProcessVariableDto convertToSimpleProcessVariableDto(
       final ProcessVariableDto processVariableDto) {
-    SimpleProcessVariableDto simpleProcessVariableDto = new SimpleProcessVariableDto();
+    final SimpleProcessVariableDto simpleProcessVariableDto = new SimpleProcessVariableDto();
     simpleProcessVariableDto.setId(String.valueOf(processVariableDto.getId()));
     simpleProcessVariableDto.setName(processVariableDto.getName());
     simpleProcessVariableDto.setType(processVariableDto.getType());
@@ -180,7 +182,7 @@ public class ZeebeVariableImportService
     return getVariableTypeFromJsonNode(zeebeVariableDataDto, variableRecordDto.getKey())
         .map(
             type -> {
-              ProcessVariableUpdateDto processVariableDto = new ProcessVariableUpdateDto();
+              final ProcessVariableUpdateDto processVariableDto = new ProcessVariableUpdateDto();
               processVariableDto.setId(String.valueOf(variableRecordDto.getKey()));
               processVariableDto.setName(zeebeVariableDataDto.getName());
               processVariableDto.setVersion(variableRecordDto.getPosition());
@@ -216,13 +218,13 @@ public class ZeebeVariableImportService
         default:
           return Optional.empty();
       }
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       log.debug("Could not process json node for variable record with key {}", recordKey);
       return Optional.empty();
     }
   }
 
-  private String stripExtraDoubleQuotationsIfExist(String variableValue) {
+  private String stripExtraDoubleQuotationsIfExist(final String variableValue) {
     if (variableValue.charAt(0) == '"' && variableValue.charAt(variableValue.length() - 1) == '"') {
       return variableValue.substring(1, variableValue.length() - 1);
     }

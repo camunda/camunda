@@ -8,7 +8,6 @@
 package io.camunda.optimize.rest.security.oauth;
 
 import java.util.Map;
-import lombok.AllArgsConstructor;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
@@ -16,10 +15,14 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
-@AllArgsConstructor
 public class ScopeValidator implements OAuth2TokenValidator<Jwt> {
+
   private final String expectedScope;
   private final JwtAuthenticationConverter delegate = new JwtAuthenticationConverter();
+
+  public ScopeValidator(final String expectedScope) {
+    this.expectedScope = expectedScope;
+  }
 
   @Override
   public OAuth2TokenValidatorResult validate(final Jwt jwt) {

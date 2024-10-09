@@ -25,20 +25,27 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class BusinessKeyReaderES implements BusinessKeyReader {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(BusinessKeyReaderES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
   private final ConfigurationService configurationService;
+
+  public BusinessKeyReaderES(
+      OptimizeElasticsearchClient esClient,
+      ObjectMapper objectMapper,
+      ConfigurationService configurationService) {
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+    this.configurationService = configurationService;
+  }
 
   @Override
   public List<BusinessKeyDto> getBusinessKeysForProcessInstanceIds(Set<String> processInstanceIds) {

@@ -12,15 +12,18 @@ import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.io.IOException;
 import java.util.Set;
-import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@AllArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class TestIndexRepositoryES implements TestIndexRepository {
+
   private final OptimizeElasticsearchClient esClient;
+
+  public TestIndexRepositoryES(OptimizeElasticsearchClient esClient) {
+    this.esClient = esClient;
+  }
 
   @Override
   public Set<String> getAllIndexNames() {

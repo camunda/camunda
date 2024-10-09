@@ -26,13 +26,14 @@ import io.camunda.optimize.service.importing.zeebe.fetcher.AbstractZeebeRecordFe
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.List;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
 public abstract class AbstractZeebeRecordFetcherES<T> extends AbstractZeebeRecordFetcher<T> {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(AbstractZeebeRecordFetcherES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 

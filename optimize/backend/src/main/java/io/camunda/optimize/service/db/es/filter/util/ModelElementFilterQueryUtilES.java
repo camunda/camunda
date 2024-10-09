@@ -68,13 +68,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.function.TriFunction;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ModelElementFilterQueryUtilES {
+
   private static final Map<
           Class<? extends ProcessFilterDto<?>>, Function<BoolQuery.Builder, BoolQuery.Builder>>
       FLOW_NODE_STATUS_VIEW_FILTER_INSTANCE_QUERIES =
@@ -104,6 +102,8 @@ public class ModelElementFilterQueryUtilES {
           FLOW_NODE_DEFINITION_KEY,
           FLOW_NODE_DEFINITION_VERSION,
           FLOW_NODE_TENANT_ID);
+
+  private ModelElementFilterQueryUtilES() {}
 
   public static Optional<NestedQuery.Builder> addInstanceFilterForRelevantViewLevelFilters(
       final List<ProcessFilterDto<?>> filters, final FilterContext filterContext) {

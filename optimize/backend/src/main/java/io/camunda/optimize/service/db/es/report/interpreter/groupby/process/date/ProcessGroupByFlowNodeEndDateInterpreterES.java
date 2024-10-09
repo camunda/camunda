@@ -19,21 +19,32 @@ import io.camunda.optimize.service.db.es.report.service.MinMaxStatsServiceES;
 import io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.Set;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class ProcessGroupByFlowNodeEndDateInterpreterES
     extends AbstractProcessGroupByFlowNodeDateInterpreterES {
-  @Getter private final DateAggregationServiceES dateAggregationService;
-  @Getter private final MinMaxStatsServiceES minMaxStatsService;
-  @Getter private final DefinitionService definitionService;
-  @Getter private final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
-  @Getter private final ProcessViewInterpreterFacadeES viewInterpreter;
+
+  private final DateAggregationServiceES dateAggregationService;
+  private final MinMaxStatsServiceES minMaxStatsService;
+  private final DefinitionService definitionService;
+  private final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
+  private final ProcessViewInterpreterFacadeES viewInterpreter;
+
+  public ProcessGroupByFlowNodeEndDateInterpreterES(
+      DateAggregationServiceES dateAggregationService,
+      MinMaxStatsServiceES minMaxStatsService,
+      DefinitionService definitionService,
+      ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
+      ProcessViewInterpreterFacadeES viewInterpreter) {
+    this.dateAggregationService = dateAggregationService;
+    this.minMaxStatsService = minMaxStatsService;
+    this.definitionService = definitionService;
+    this.distributedByInterpreter = distributedByInterpreter;
+    this.viewInterpreter = viewInterpreter;
+  }
 
   @Override
   public Set<ProcessGroupBy> getSupportedGroupBys() {
@@ -43,5 +54,25 @@ public class ProcessGroupByFlowNodeEndDateInterpreterES
   @Override
   protected String getDateField() {
     return FLOW_NODE_INSTANCES + "." + FlowNodeInstanceDto.Fields.endDate;
+  }
+
+  public DateAggregationServiceES getDateAggregationService() {
+    return this.dateAggregationService;
+  }
+
+  public MinMaxStatsServiceES getMinMaxStatsService() {
+    return this.minMaxStatsService;
+  }
+
+  public DefinitionService getDefinitionService() {
+    return this.definitionService;
+  }
+
+  public ProcessDistributedByInterpreterFacadeES getDistributedByInterpreter() {
+    return this.distributedByInterpreter;
+  }
+
+  public ProcessViewInterpreterFacadeES getViewInterpreter() {
+    return this.viewInterpreter;
   }
 }

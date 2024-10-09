@@ -21,12 +21,13 @@ import io.camunda.optimize.service.db.report.MinMaxStatDto;
 import io.camunda.optimize.service.db.report.interpreter.service.AbstractNumberVariableAggregationService;
 import java.util.Map;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 public class NumberVariableAggregationServiceES extends AbstractNumberVariableAggregationService {
+
+  public NumberVariableAggregationServiceES() {}
+
   public Optional<Map<String, ContainerBuilder>> createNumberVariableAggregation(
       final VariableAggregationContextES context) {
     if (context.getVariableRangeMinMaxStats().isEmpty()) {

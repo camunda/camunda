@@ -8,14 +8,16 @@
 package io.camunda.optimize.service.status;
 
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 public abstract class StatusCheckingService {
 
   protected final OptimizeIndexNameService optimizeIndexNameService;
+
+  public StatusCheckingService(final OptimizeIndexNameService optimizeIndexNameService) {
+    this.optimizeIndexNameService = optimizeIndexNameService;
+  }
 
   public abstract boolean isConnectedToDatabase();
 }

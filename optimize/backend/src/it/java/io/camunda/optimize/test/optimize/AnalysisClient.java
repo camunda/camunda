@@ -26,20 +26,25 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 public class AnalysisClient {
+
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
 
+  public AnalysisClient(final Supplier<OptimizeRequestExecutor> requestExecutorSupplier) {
+    this.requestExecutorSupplier = requestExecutorSupplier;
+  }
+
   public Response getProcessDefinitionCorrelationRawResponse(
-      BranchAnalysisRequestDto branchAnalysisRequestDto) {
+      final BranchAnalysisRequestDto branchAnalysisRequestDto) {
     return getProcessDefinitionCorrelationRawResponseAsUser(
         branchAnalysisRequestDto, DEFAULT_USERNAME, DEFAULT_USERNAME);
   }
 
   public Response getProcessDefinitionCorrelationRawResponseAsUser(
-      BranchAnalysisRequestDto branchAnalysisRequestDto, String username, String password) {
+      final BranchAnalysisRequestDto branchAnalysisRequestDto,
+      final String username,
+      final String password) {
     return getRequestExecutor()
         .buildProcessDefinitionCorrelation(branchAnalysisRequestDto)
         .withUserAuthentication(username, password)
@@ -47,7 +52,7 @@ public class AnalysisClient {
   }
 
   public Response getProcessDefinitionCorrelationRawResponseWithoutAuth(
-      BranchAnalysisRequestDto branchAnalysisRequestDto) {
+      final BranchAnalysisRequestDto branchAnalysisRequestDto) {
     return getRequestExecutor()
         .buildProcessDefinitionCorrelation(branchAnalysisRequestDto)
         .withoutAuthentication()
@@ -55,7 +60,7 @@ public class AnalysisClient {
   }
 
   public BranchAnalysisResponseDto getProcessDefinitionCorrelation(
-      BranchAnalysisRequestDto branchAnalysisRequestDto) {
+      final BranchAnalysisRequestDto branchAnalysisRequestDto) {
     return getRequestExecutor()
         .buildProcessDefinitionCorrelation(branchAnalysisRequestDto)
         .execute(BranchAnalysisResponseDto.class, Response.Status.OK.getStatusCode());
@@ -65,9 +70,9 @@ public class AnalysisClient {
       final String processDefinitionKey,
       final List<String> processDefinitionVersion,
       final List<String> tenantIds,
-      String splittingGateway,
-      String endEvent) {
-    BranchAnalysisRequestDto dto = new BranchAnalysisRequestDto();
+      final String splittingGateway,
+      final String endEvent) {
+    final BranchAnalysisRequestDto dto = new BranchAnalysisRequestDto();
     dto.setProcessDefinitionKey(processDefinitionKey);
     dto.setProcessDefinitionVersions(processDefinitionVersion);
     dto.setTenantIds(tenantIds);
@@ -82,18 +87,18 @@ public class AnalysisClient {
       final List<String> tenantIds,
       final String gatewayID,
       final String endEventId) {
-    BranchAnalysisRequestDto dto =
+    final BranchAnalysisRequestDto dto =
         createAnalysisDto(
             processDefinitionKey, processDefinitionVersions, tenantIds, gatewayID, endEventId);
     return getProcessDefinitionCorrelation(dto);
   }
 
   public Map<String, FindingsDto> getFlowNodeOutliers(
-      String procDefKey,
-      List<String> procDefVersions,
-      List<String> tenants,
-      long minimalDeviationInMs,
-      boolean onlyHumanTasks) {
+      final String procDefKey,
+      final List<String> procDefVersions,
+      final List<String> tenants,
+      final long minimalDeviationInMs,
+      final boolean onlyHumanTasks) {
     return getRequestExecutor()
         .buildFlowNodeOutliersRequest(
             procDefKey, procDefVersions, tenants, minimalDeviationInMs, onlyHumanTasks)
@@ -101,14 +106,14 @@ public class AnalysisClient {
   }
 
   public Map<String, FindingsDto> getFlowNodeOutliers(
-      String procDefKey, List<String> procDefVersions, List<String> tenants) {
+      final String procDefKey, final List<String> procDefVersions, final List<String> tenants) {
     return getFlowNodeOutliers(procDefKey, procDefVersions, tenants, 0, false);
   }
 
   public Map<String, FindingsDto> getFlowNodeOutliers(
-      String procDefKey,
-      List<String> procDefVersions,
-      List<String> tenants,
+      final String procDefKey,
+      final List<String> procDefVersions,
+      final List<String> tenants,
       final List<ProcessFilterDto<?>> filters) {
     return getRequestExecutor()
         .buildFlowNodeOutliersRequest(procDefKey, procDefVersions, tenants, 0, false, filters)
@@ -187,7 +192,7 @@ public class AnalysisClient {
       final String flowNodeId,
       final Long lowerOutlierBound,
       final List<ProcessFilterDto<?>> filters) {
-    Response variableTermDtosActivityRawResponse =
+    final Response variableTermDtosActivityRawResponse =
         getVariableTermDtosActivityRawResponse(
             sampleOutliersHigherOutlierBound,
             key,
@@ -199,21 +204,21 @@ public class AnalysisClient {
     assertThat(variableTermDtosActivityRawResponse.getStatus())
         .isEqualTo(Response.Status.OK.getStatusCode());
 
-    String jsonString = variableTermDtosActivityRawResponse.readEntity(String.class);
+    final String jsonString = variableTermDtosActivityRawResponse.readEntity(String.class);
     try {
       return new ObjectMapper().readValue(jsonString, new TypeReference<>() {});
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeIntegrationTestException(e);
     }
   }
 
   public Response getVariableTermDtosActivityRawResponse(
-      long sampleOutliersHigherOutlierBound,
-      String key,
-      List<String> versions,
-      List<String> tenantIds,
-      String flowNodeId,
-      Long lowerOutlierBound,
+      final long sampleOutliersHigherOutlierBound,
+      final String key,
+      final List<String> versions,
+      final List<String> tenantIds,
+      final String flowNodeId,
+      final Long lowerOutlierBound,
       final List<ProcessFilterDto<?>> filters) {
     return getRequestExecutor()
         .buildSignificantOutlierVariableTermsRequest(

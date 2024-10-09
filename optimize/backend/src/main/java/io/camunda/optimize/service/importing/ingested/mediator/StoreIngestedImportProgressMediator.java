@@ -18,18 +18,19 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-@Slf4j
 public class StoreIngestedImportProgressMediator
     extends AbstractStoreIndexesImportMediator<StoreTimestampBasedImportIndexImportService>
     implements ImportMediator {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(StoreIngestedImportProgressMediator.class);
   private final ImportIndexHandlerRegistry importIndexHandlerRegistry;
 
   public StoreIngestedImportProgressMediator(
@@ -53,7 +54,7 @@ public class StoreIngestedImportProgressMediator
               .collect(Collectors.toList());
 
       importService.executeImport(importIndexes, () -> importCompleted.complete(null));
-    } catch (Exception e) {
+    } catch (final Exception e) {
       log.error("Could not execute import for storing ingested import information!", e);
       importCompleted.complete(null);
     }

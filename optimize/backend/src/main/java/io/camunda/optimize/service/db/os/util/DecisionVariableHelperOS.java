@@ -16,15 +16,15 @@ import static io.camunda.optimize.service.util.DecisionVariableHelper.getVariabl
 import static io.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueField;
 
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.ChildScoreMode;
 import org.opensearch.client.opensearch._types.query_dsl.NestedQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DecisionVariableHelperOS {
+
+  private DecisionVariableHelperOS() {}
+
   public static Query getVariableUndefinedOrNullQuery(
       final String clauseId, final String variablePath, final VariableType variableType) {
     final String variableTypeId = variableType.getId();

@@ -19,20 +19,26 @@ import io.camunda.optimize.service.security.util.tenant.DataSourceTenantAuthoriz
 import jakarta.ws.rs.ForbiddenException;
 import java.util.List;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 public class DecisionVariableService {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(DecisionVariableService.class);
   private final DecisionVariableReader decisionVariableReader;
   private final DataSourceTenantAuthorizationService tenantAuthorizationService;
 
+  public DecisionVariableService(
+      final DecisionVariableReader decisionVariableReader,
+      final DataSourceTenantAuthorizationService tenantAuthorizationService) {
+    this.decisionVariableReader = decisionVariableReader;
+    this.tenantAuthorizationService = tenantAuthorizationService;
+  }
+
   public List<DecisionVariableNameResponseDto> getInputVariableNames(
-      List<DecisionVariableNameRequestDto> variableRequestDtos) {
+      final List<DecisionVariableNameRequestDto> variableRequestDtos) {
     return variableRequestDtos.stream()
         .flatMap(
             entry ->
@@ -47,7 +53,7 @@ public class DecisionVariableService {
   }
 
   public List<DecisionVariableNameResponseDto> getOutputVariableNames(
-      List<DecisionVariableNameRequestDto> variableRequestDtos) {
+      final List<DecisionVariableNameRequestDto> variableRequestDtos) {
     return variableRequestDtos.stream()
         .flatMap(
             entry ->
@@ -62,7 +68,7 @@ public class DecisionVariableService {
   }
 
   public List<String> getInputVariableValues(
-      String userId, DecisionVariableValueRequestDto requestDto) {
+      final String userId, final DecisionVariableValueRequestDto requestDto) {
     ensureNotEmpty("decision definition key", requestDto.getDecisionDefinitionKey());
     ensureNotEmpty("variable id", requestDto.getVariableId());
     ensureNotEmpty("variable type", requestDto.getVariableType());
@@ -76,7 +82,7 @@ public class DecisionVariableService {
   }
 
   public List<String> getOutputVariableValues(
-      String userId, DecisionVariableValueRequestDto requestDto) {
+      final String userId, final DecisionVariableValueRequestDto requestDto) {
     ensureNotEmpty("decision definition key", requestDto.getDecisionDefinitionKey());
     ensureNotEmpty("variable id", requestDto.getVariableId());
     ensureNotEmpty("variable type", requestDto.getVariableType());

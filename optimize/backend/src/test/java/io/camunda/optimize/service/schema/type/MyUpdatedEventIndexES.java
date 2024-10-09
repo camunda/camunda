@@ -12,10 +12,11 @@ import static io.camunda.optimize.service.db.DatabaseConstants.DEFAULT_SHARD_NUM
 import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.io.IOException;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
 public class MyUpdatedEventIndexES extends MyUpdatedEventIndex<IndexSettings.Builder> {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(MyUpdatedEventIndexES.class);
 
   @Override
   public IndexSettings.Builder getStaticSettings(

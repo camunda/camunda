@@ -50,19 +50,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
-@AllArgsConstructor
 public class KpiService {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(KpiService.class);
   private final ReportService reportService;
   private final LocalizationService localizationService;
   private final PlainReportEvaluationHandler reportEvaluationHandler;
+
+  public KpiService(
+      final ReportService reportService,
+      final LocalizationService localizationService,
+      final PlainReportEvaluationHandler reportEvaluationHandler) {
+    this.reportService = reportService;
+    this.localizationService = localizationService;
+    this.reportEvaluationHandler = reportEvaluationHandler;
+  }
 
   public List<KpiResultDto> evaluateKpiReports(final String processDefinitionKey) {
     final List<SingleProcessReportDefinitionRequestDto> kpiReports =
@@ -235,10 +241,81 @@ public class KpiService {
     return validKpis;
   }
 
-  @Data
-  @AllArgsConstructor
   private static class TargetAndUnit {
+
     private String target;
     private TargetValueUnit targetValueUnit;
+
+    public TargetAndUnit(final String target, final TargetValueUnit targetValueUnit) {
+      this.target = target;
+      this.targetValueUnit = targetValueUnit;
+    }
+
+    public String getTarget() {
+      return target;
+    }
+
+    public void setTarget(final String target) {
+      this.target = target;
+    }
+
+    public TargetValueUnit getTargetValueUnit() {
+      return targetValueUnit;
+    }
+
+    public void setTargetValueUnit(final TargetValueUnit targetValueUnit) {
+      this.targetValueUnit = targetValueUnit;
+    }
+
+    protected boolean canEqual(final Object other) {
+      return other instanceof TargetAndUnit;
+    }
+
+    @Override
+    public int hashCode() {
+      final int PRIME = 59;
+      int result = 1;
+      final Object $target = getTarget();
+      result = result * PRIME + ($target == null ? 43 : $target.hashCode());
+      final Object $targetValueUnit = getTargetValueUnit();
+      result = result * PRIME + ($targetValueUnit == null ? 43 : $targetValueUnit.hashCode());
+      return result;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (o == this) {
+        return true;
+      }
+      if (!(o instanceof TargetAndUnit)) {
+        return false;
+      }
+      final TargetAndUnit other = (TargetAndUnit) o;
+      if (!other.canEqual((Object) this)) {
+        return false;
+      }
+      final Object this$target = getTarget();
+      final Object other$target = other.getTarget();
+      if (this$target == null ? other$target != null : !this$target.equals(other$target)) {
+        return false;
+      }
+      final Object this$targetValueUnit = getTargetValueUnit();
+      final Object other$targetValueUnit = other.getTargetValueUnit();
+      if (this$targetValueUnit == null
+          ? other$targetValueUnit != null
+          : !this$targetValueUnit.equals(other$targetValueUnit)) {
+        return false;
+      }
+      return true;
+    }
+
+    @Override
+    public String toString() {
+      return "KpiService.TargetAndUnit(target="
+          + getTarget()
+          + ", targetValueUnit="
+          + getTargetValueUnit()
+          + ")";
+    }
   }
 }

@@ -16,11 +16,14 @@ import io.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import io.camunda.optimize.dto.optimize.rest.UserResponseDto;
 import jakarta.ws.rs.core.Response;
 import java.util.function.Supplier;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 public class IdentityClient {
+
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
+
+  public IdentityClient(final Supplier<OptimizeRequestExecutor> requestExecutorSupplier) {
+    this.requestExecutorSupplier = requestExecutorSupplier;
+  }
 
   public IdentityWithMetadataResponseDto getIdentityById(final String id) {
     return getRequestExecutor()

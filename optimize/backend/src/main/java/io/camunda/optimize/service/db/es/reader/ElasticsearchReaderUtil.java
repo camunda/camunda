@@ -25,13 +25,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ElasticsearchReaderUtil {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ElasticsearchReaderUtil.class);
+
+  private ElasticsearchReaderUtil() {}
 
   public static <T> List<T> retrieveAllScrollResults(
       final SearchResponse<T> initialScrollResponse,

@@ -17,20 +17,29 @@ import io.camunda.optimize.service.db.os.report.service.MinMaxStatsServiceOS;
 import io.camunda.optimize.service.db.report.plan.process.ProcessDistributedBy;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.Set;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class ProcessDistributedByInstanceStartDateInterpreterOS
     extends AbstractProcessDistributedByInstanceDateInterpreterOS {
-  @Getter private final ProcessViewInterpreterFacadeOS viewInterpreter;
-  @Getter private final DateAggregationServiceOS dateAggregationService;
-  @Getter private final ProcessQueryFilterEnhancerOS queryFilterEnhancer;
-  @Getter private final MinMaxStatsServiceOS minMaxStatsService;
+
+  private final ProcessViewInterpreterFacadeOS viewInterpreter;
+  private final DateAggregationServiceOS dateAggregationService;
+  private final ProcessQueryFilterEnhancerOS queryFilterEnhancer;
+  private final MinMaxStatsServiceOS minMaxStatsService;
+
+  public ProcessDistributedByInstanceStartDateInterpreterOS(
+      ProcessViewInterpreterFacadeOS viewInterpreter,
+      DateAggregationServiceOS dateAggregationService,
+      ProcessQueryFilterEnhancerOS queryFilterEnhancer,
+      MinMaxStatsServiceOS minMaxStatsService) {
+    this.viewInterpreter = viewInterpreter;
+    this.dateAggregationService = dateAggregationService;
+    this.queryFilterEnhancer = queryFilterEnhancer;
+    this.minMaxStatsService = minMaxStatsService;
+  }
 
   @Override
   public Set<ProcessDistributedBy> getSupportedDistributedBys() {
@@ -40,5 +49,21 @@ public class ProcessDistributedByInstanceStartDateInterpreterOS
   @Override
   public String getDateField() {
     return START_DATE;
+  }
+
+  public ProcessViewInterpreterFacadeOS getViewInterpreter() {
+    return this.viewInterpreter;
+  }
+
+  public DateAggregationServiceOS getDateAggregationService() {
+    return this.dateAggregationService;
+  }
+
+  public ProcessQueryFilterEnhancerOS getQueryFilterEnhancer() {
+    return this.queryFilterEnhancer;
+  }
+
+  public MinMaxStatsServiceOS getMinMaxStatsService() {
+    return this.minMaxStatsService;
   }
 }

@@ -42,7 +42,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
 import org.junit.jupiter.api.condition.EnabledIf;
@@ -295,7 +294,6 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
     return incident;
   }
 
-  @SneakyThrows
   private Map<Long, List<ZeebeIncidentRecordDto>> getZeebeExportedIncidentEventsByElementId() {
     final String expectedIndex =
         zeebeExtension.getZeebeRecordPrefix() + "-" + DatabaseConstants.ZEEBE_INCIDENT_INDEX_NAME;

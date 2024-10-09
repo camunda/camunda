@@ -8,12 +8,11 @@
 package io.camunda.optimize.service.util;
 
 import java.util.concurrent.TimeUnit;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DurationFormatterUtil {
+
+  private DurationFormatterUtil() {}
 
   public static String formatMilliSecondsToReadableDurationString(long durationInMs) {
     if (durationInMs <= 0) {

@@ -16,13 +16,13 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DateFilterUtil {
 
-  public static OffsetDateTime getStartOfCurrentInterval(OffsetDateTime now, DateUnit dateUnit) {
+  private DateFilterUtil() {}
+
+  public static OffsetDateTime getStartOfCurrentInterval(
+      final OffsetDateTime now, final DateUnit dateUnit) {
     switch (dateUnit) {
       case MINUTES:
         return now.with(ChronoField.SECOND_OF_MINUTE, 0)
@@ -40,7 +40,7 @@ public class DateFilterUtil {
       case MONTHS:
         return now.with(ChronoField.DAY_OF_MONTH, 1).with(LocalTime.MIN);
       case QUARTERS:
-        int completedMonthsInQuarter = (now.getMonthValue() + 2) % 3;
+        final int completedMonthsInQuarter = (now.getMonthValue() + 2) % 3;
         return now.with(ChronoField.DAY_OF_MONTH, 1)
             .with(LocalTime.MIN)
             .minusMonths(completedMonthsInQuarter);
@@ -52,7 +52,9 @@ public class DateFilterUtil {
   }
 
   public static OffsetDateTime getStartOfPreviousInterval(
-      OffsetDateTime startOfCurrentInterval, DateUnit dateUnit, Long unitQuantity) {
+      final OffsetDateTime startOfCurrentInterval,
+      final DateUnit dateUnit,
+      final Long unitQuantity) {
     if (dateUnit.equals(QUARTERS)) {
       return startOfCurrentInterval.minus(3 * unitQuantity, ChronoUnit.MONTHS);
     } else {
@@ -60,7 +62,7 @@ public class DateFilterUtil {
     }
   }
 
-  public static TemporalUnit unitOf(String unit) {
+  public static TemporalUnit unitOf(final String unit) {
     return ChronoUnit.valueOf(unit.toUpperCase());
   }
 }

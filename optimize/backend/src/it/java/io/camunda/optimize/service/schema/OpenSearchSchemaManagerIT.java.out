@@ -470,7 +470,7 @@
 //             nonNullFields.add(field.getName());
 //           }
 //         } catch (IllegalAccessException e) {
-//           throw new RuntimeException("Unable to access field value", e);
+//           throw new OptimizeRuntimeException("Unable to access field value", e);
 //         }
 //       }
 //       clazz = clazz.getSuperclass(); // Move to the superclass to check its fields

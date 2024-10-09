@@ -27,11 +27,11 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
 public class UpgradeProcedure {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(UpgradeProcedure.class);
   protected final DatabaseClient dbClient;
   protected final UpgradeValidationService upgradeValidationService;
   protected final SchemaUpgradeClient schemaUpgradeClient;

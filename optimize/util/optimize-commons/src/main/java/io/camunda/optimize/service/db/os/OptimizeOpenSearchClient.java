@@ -48,8 +48,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
@@ -116,16 +114,18 @@ import org.opensearch.client.opensearch.tasks.GetTasksResponse;
 import org.opensearch.client.opensearch.tasks.ListRequest;
 import org.opensearch.client.opensearch.tasks.ListResponse;
 import org.opensearch.client.opensearch.tasks.Status;
+import org.slf4j.Logger;
 import org.springframework.context.ApplicationContext;
 
-@Slf4j
 public class OptimizeOpenSearchClient extends DatabaseClient {
 
-  @Getter private ExtendedOpenSearchClient openSearchClient;
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(
+      OptimizeOpenSearchClient.class);
+  private ExtendedOpenSearchClient openSearchClient;
 
-  @Getter private OpenSearchAsyncClient openSearchAsyncClient;
+  private OpenSearchAsyncClient openSearchAsyncClient;
 
-  @Getter private RichOpenSearchClient richOpenSearchClient;
+  private RichOpenSearchClient richOpenSearchClient;
 
   private RestClient restClient;
 
@@ -172,10 +172,11 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   private static String getHintForErrorMsg(final boolean containsNestedDocumentLimitErrorMessage) {
     if (containsNestedDocumentLimitErrorMessage) {
       // exception potentially related to nested object limit
-      return "If you are experiencing failures due to too many nested documents, try carefully increasing the "
-          + "configured nested object limit (opensearch.settings.index.nested_documents_limit) or enabling the skipping of "
-          + "documents that have reached this limit during import (import.skipDataAfterNestedDocLimitReached). "
-          + "See Optimize documentation for details.";
+      return
+          "If you are experiencing failures due to too many nested documents, try carefully increasing the "
+              + "configured nested object limit (opensearch.settings.index.nested_documents_limit) or enabling the skipping of "
+              + "documents that have reached this limit during import (import.skipDataAfterNestedDocLimitReached). "
+              + "See Optimize documentation for details.";
     }
     return "";
   }
@@ -609,7 +610,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   }
 
   public long count(final String indexName, final String errorMessage) {
-    return count(new String[] {indexName}, QueryDSL.matchAll(), errorMessage);
+    return count(new String[]{indexName}, QueryDSL.matchAll(), errorMessage);
   }
 
   public UpdateByQueryResponse submitUpdateTask(final UpdateByQueryRequest request)
@@ -1049,5 +1050,17 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
         () -> openSearchAsyncClient.snapshot().create(createSnapshotRequest),
         e -> "Failed to triger snapshot creation!",
         log);
+  }
+
+  public ExtendedOpenSearchClient getOpenSearchClient() {
+    return this.openSearchClient;
+  }
+
+  public OpenSearchAsyncClient getOpenSearchAsyncClient() {
+    return this.openSearchAsyncClient;
+  }
+
+  public RichOpenSearchClient getRichOpenSearchClient() {
+    return this.richOpenSearchClient;
   }
 }

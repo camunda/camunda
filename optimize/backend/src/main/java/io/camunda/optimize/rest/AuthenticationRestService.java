@@ -19,10 +19,8 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Response;
-import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Path(AuthenticationRestService.AUTHENTICATION_PATH)
 @Component
 public class AuthenticationRestService {
@@ -34,11 +32,16 @@ public class AuthenticationRestService {
 
   private final AbstractAuthenticationService authenticationService;
 
+  public AuthenticationRestService(final AbstractAuthenticationService authenticationService) {
+    this.authenticationService = authenticationService;
+  }
+
   @POST
   @Produces("application/json")
   @Consumes("application/json")
   public Response authenticateUser(
-      @Context ContainerRequestContext requestContext, CredentialsRequestDto credentials) {
+      @Context final ContainerRequestContext requestContext,
+      final CredentialsRequestDto credentials) {
     return authenticationService.authenticateUser(requestContext, credentials);
   }
 
@@ -51,7 +54,7 @@ public class AuthenticationRestService {
   @GET
   @Path(CALLBACK)
   public Response loginCallback(
-      @Context ContainerRequestContext requestContext,
+      @Context final ContainerRequestContext requestContext,
       final @QueryParam("code") String code,
       final @QueryParam("state") String state,
       final @QueryParam("error") String error) {
@@ -60,7 +63,7 @@ public class AuthenticationRestService {
 
   @GET
   @Path(LOGOUT)
-  public Response logoutUser(@Context ContainerRequestContext requestContext) {
+  public Response logoutUser(@Context final ContainerRequestContext requestContext) {
     return authenticationService.logout(requestContext);
   }
 }

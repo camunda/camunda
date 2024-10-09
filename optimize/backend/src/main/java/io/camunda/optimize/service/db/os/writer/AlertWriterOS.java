@@ -23,8 +23,6 @@ import io.camunda.optimize.service.util.IdGenerator;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import jakarta.ws.rs.NotFoundException;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch.core.DeleteRequest;
@@ -33,16 +31,20 @@ import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.IndexResponse;
 import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.core.UpdateResponse;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 @Conditional(OpenSearchCondition.class)
 public class AlertWriterOS implements AlertWriter {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(AlertWriterOS.class);
   private final OptimizeOpenSearchClient osClient;
+
+  public AlertWriterOS(OptimizeOpenSearchClient osClient) {
+    this.osClient = osClient;
+  }
 
   @Override
   public AlertDefinitionDto createAlert(final AlertDefinitionDto alertDefinitionDto) {

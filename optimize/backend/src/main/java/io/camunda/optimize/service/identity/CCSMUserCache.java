@@ -28,15 +28,16 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
 @Conditional(CCSMCondition.class)
 public class CCSMUserCache {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(CCSMUserCache.class);
   private final Cache<String, UserDto> ccsmUsersCache;
   private final CCSMTokenService ccsmTokenService;
   private final Identity identity;

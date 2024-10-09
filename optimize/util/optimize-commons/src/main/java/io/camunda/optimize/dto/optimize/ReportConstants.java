@@ -11,10 +11,7 @@ import com.google.common.collect.ImmutableList;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 import java.util.Collections;
 import java.util.List;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ReportConstants {
 
   public static final String VIEW_FLOW_NODE_ENTITY = "flowNode";
@@ -175,4 +172,6 @@ public class ReportConstants {
   public static final int PAGINATION_DEFAULT_SCROLL_TIMEOUT = 60;
 
   public static final String API_IMPORT_OWNER_NAME = "System User";
+
+  private ReportConstants() {}
 }

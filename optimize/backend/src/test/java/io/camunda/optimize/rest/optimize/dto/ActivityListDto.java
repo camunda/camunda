@@ -10,15 +10,43 @@ package io.camunda.optimize.rest.optimize.dto;
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import java.io.Serializable;
 import java.util.Date;
-import lombok.Getter;
-import lombok.Setter;
 
-@Getter
-@Setter
 public class ActivityListDto implements Serializable, OptimizeDto {
 
   protected String processDefinitionId;
   protected Date processInstanceStartDate;
   protected Date processInstanceEndDate;
   protected String[] activityList;
+
+  public String getProcessDefinitionId() {
+    return processDefinitionId;
+  }
+
+  public void setProcessDefinitionId(final String processDefinitionId) {
+    this.processDefinitionId = processDefinitionId;
+  }
+
+  public Date getProcessInstanceStartDate() {
+    return processInstanceStartDate;
+  }
+
+  public void setProcessInstanceStartDate(final Date processInstanceStartDate) {
+    this.processInstanceStartDate = processInstanceStartDate;
+  }
+
+  public Date getProcessInstanceEndDate() {
+    return processInstanceEndDate;
+  }
+
+  public void setProcessInstanceEndDate(final Date processInstanceEndDate) {
+    this.processInstanceEndDate = processInstanceEndDate;
+  }
+
+  public String[] getActivityList() {
+    return activityList;
+  }
+
+  public void setActivityList(final String[] activityList) {
+    this.activityList = activityList;
+  }
 }

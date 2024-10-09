@@ -65,8 +65,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.function.TriFunction;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery.Builder;
@@ -74,8 +72,8 @@ import org.opensearch.client.opensearch._types.query_dsl.ChildScoreMode;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.ScriptQuery;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ModelElementFilterQueryUtilOS {
+
   private static final Map<Class<? extends ProcessFilterDto<?>>, Function<Builder, Builder>>
       FLOW_NODE_STATUS_VIEW_FILTER_INSTANCE_QUERIES =
           Map.of(
@@ -104,6 +102,8 @@ public class ModelElementFilterQueryUtilOS {
               ModelElementFilterQueryUtilOS::createFlowNodeStartDateFilterQuery,
               FlowNodeEndDateFilterDto.class,
               ModelElementFilterQueryUtilOS::createFlowNodeEndDateFilterQuery);
+
+  private ModelElementFilterQueryUtilOS() {}
 
   public static Optional<Query> instanceFilterForRelevantViewLevelFiltersQuery(
       final List<ProcessFilterDto<?>> filters, final FilterContext filterContext) {

@@ -21,20 +21,21 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-@Slf4j
 public class StorePositionBasedImportProgressMediator
     extends AbstractStoreIndexesImportMediator<StorePositionBasedIndexImportService>
     implements ImportMediator {
 
-  private ImportIndexHandlerRegistry importIndexHandlerRegistry;
-  private ZeebeDataSourceDto dataSource;
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(StorePositionBasedImportProgressMediator.class);
+  private final ImportIndexHandlerRegistry importIndexHandlerRegistry;
+  private final ZeebeDataSourceDto dataSource;
 
   public StorePositionBasedImportProgressMediator(
       final ImportIndexHandlerRegistry importIndexHandlerRegistry,
@@ -43,7 +44,7 @@ public class StorePositionBasedImportProgressMediator
       final ZeebeDataSourceDto zeebeDataSourceDto) {
     super(importService, configurationService);
     this.importIndexHandlerRegistry = importIndexHandlerRegistry;
-    this.dataSource = zeebeDataSourceDto;
+    dataSource = zeebeDataSourceDto;
   }
 
   @Override
@@ -61,7 +62,7 @@ public class StorePositionBasedImportProgressMediator
               .map(PositionBasedImportIndexDto.class::cast)
               .collect(Collectors.toList());
       importService.executeImport(importIndexes, () -> importCompleted.complete(null));
-    } catch (Exception e) {
+    } catch (final Exception e) {
       log.error("Could not execute import for storing zeebe position based index information!", e);
       importCompleted.complete(null);
     }

@@ -30,21 +30,30 @@ import io.camunda.optimize.service.db.util.ProcessVariableHelper;
 import io.camunda.optimize.service.util.InstanceIndexUtil;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.Set;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class ProcessGroupByVariableInterpreterES
     extends AbstractGroupByVariableInterpreterES<ProcessReportDataDto, ProcessExecutionPlan>
     implements ProcessGroupByInterpreterES {
-  @Getter private final VariableAggregationServiceES variableAggregationService;
-  @Getter private final DefinitionService definitionService;
-  @Getter private final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
-  @Getter private final ProcessViewInterpreterFacadeES viewInterpreter;
+
+  private final VariableAggregationServiceES variableAggregationService;
+  private final DefinitionService definitionService;
+  private final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
+  private final ProcessViewInterpreterFacadeES viewInterpreter;
+
+  public ProcessGroupByVariableInterpreterES(
+      VariableAggregationServiceES variableAggregationService,
+      DefinitionService definitionService,
+      ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
+      ProcessViewInterpreterFacadeES viewInterpreter) {
+    this.variableAggregationService = variableAggregationService;
+    this.definitionService = definitionService;
+    this.distributedByInterpreter = distributedByInterpreter;
+    this.viewInterpreter = viewInterpreter;
+  }
 
   @Override
   public Set<ProcessGroupBy> getSupportedGroupBys() {
@@ -100,5 +109,21 @@ public class ProcessGroupByVariableInterpreterES
     final VariableGroupByValueDto variable = getVariableGroupByDto(context);
     return ProcessVariableHelperES.createFilterForUndefinedOrNullQueryBuilder(
         variable.getName(), variable.getType());
+  }
+
+  public VariableAggregationServiceES getVariableAggregationService() {
+    return this.variableAggregationService;
+  }
+
+  public DefinitionService getDefinitionService() {
+    return this.definitionService;
+  }
+
+  public ProcessDistributedByInterpreterFacadeES getDistributedByInterpreter() {
+    return this.distributedByInterpreter;
+  }
+
+  public ProcessViewInterpreterFacadeES getViewInterpreter() {
+    return this.viewInterpreter;
   }
 }

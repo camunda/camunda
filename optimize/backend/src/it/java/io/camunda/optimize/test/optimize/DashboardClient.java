@@ -22,12 +22,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 public class DashboardClient {
 
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
+
+  public DashboardClient(final Supplier<OptimizeRequestExecutor> requestExecutorSupplier) {
+    this.requestExecutorSupplier = requestExecutorSupplier;
+  }
 
   public DashboardDefinitionRestDto getDashboard(final String dashboardId) {
     return getRequestExecutor()
@@ -49,7 +51,7 @@ public class DashboardClient {
   }
 
   public DashboardDefinitionRestDto getInstantPreviewDashboard(
-      String processDefinitionKey, String template) {
+      final String processDefinitionKey, final String template) {
     return getInstantPreviewDashboardLocalized(processDefinitionKey, template, "en");
   }
 
@@ -64,7 +66,7 @@ public class DashboardClient {
   }
 
   public AuthorizedDashboardDefinitionResponseDto getDashboardAsUser(
-      final String dashboardId, String username, String password) {
+      final String dashboardId, final String username, final String password) {
     return getRequestExecutor()
         .buildGetDashboardRequest(dashboardId)
         .withUserAuthentication(username, password)
@@ -85,7 +87,10 @@ public class DashboardClient {
   }
 
   public Response createDashboardAsUserGetRawResponse(
-      final String collectionId, final List<String> reportIds, String username, String password) {
+      final String collectionId,
+      final List<String> reportIds,
+      final String username,
+      final String password) {
     return getRequestExecutor()
         .buildCreateDashboardRequest(createSimpleDashboardDefinition(collectionId, reportIds))
         .withUserAuthentication(username, password)
@@ -93,7 +98,9 @@ public class DashboardClient {
   }
 
   public String createDashboardAsUser(
-      final DashboardDefinitionRestDto dashboardDefinitionDto, String username, String password) {
+      final DashboardDefinitionRestDto dashboardDefinitionDto,
+      final String username,
+      final String password) {
     return getRequestExecutor()
         .buildCreateDashboardRequest(dashboardDefinitionDto)
         .withUserAuthentication(username, password)
@@ -119,30 +126,34 @@ public class DashboardClient {
         reportIds.stream()
             .map(
                 reportId -> {
-                  DashboardReportTileDto dashboardTileDto = new DashboardReportTileDto();
+                  final DashboardReportTileDto dashboardTileDto = new DashboardReportTileDto();
                   dashboardTileDto.setId(reportId);
                   dashboardTileDto.setType(DashboardTileType.OPTIMIZE_REPORT);
                   return dashboardTileDto;
                 })
             .collect(Collectors.toList());
-    DashboardDefinitionRestDto dashboard = new DashboardDefinitionRestDto();
+    final DashboardDefinitionRestDto dashboard = new DashboardDefinitionRestDto();
     dashboard.setTiles(reports);
     return updateDashboard(dashboardId, dashboard);
   }
 
-  public Response updateDashboard(String id, DashboardDefinitionRestDto updatedDashboard) {
+  public Response updateDashboard(
+      final String id, final DashboardDefinitionRestDto updatedDashboard) {
     return getRequestExecutor()
         .buildUpdateDashboardRequest(id, updatedDashboard)
         .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   public Response updateDashboardAndReturnResponse(
-      String id, DashboardDefinitionRestDto updatedDashboard) {
+      final String id, final DashboardDefinitionRestDto updatedDashboard) {
     return getRequestExecutor().buildUpdateDashboardRequest(id, updatedDashboard).execute();
   }
 
   public Response updateDashboardAsUser(
-      String id, DashboardDefinitionRestDto updatedDashboard, String username, String password) {
+      final String id,
+      final DashboardDefinitionRestDto updatedDashboard,
+      final String username,
+      final String password) {
     return getRequestExecutor()
         .buildUpdateDashboardRequest(id, updatedDashboard)
         .withUserAuthentication(username, password)
@@ -165,7 +176,10 @@ public class DashboardClient {
   }
 
   public Response copyDashboardToCollectionAsUserAndGetRawResponse(
-      final String dashboardId, final String collectionId, String username, String password) {
+      final String dashboardId,
+      final String collectionId,
+      final String username,
+      final String password) {
     return getRequestExecutor()
         .buildCopyDashboardRequest(dashboardId, collectionId)
         .withUserAuthentication(username, password)
@@ -187,7 +201,7 @@ public class DashboardClient {
   }
 
   public Response deleteDashboardAsUser(
-      final String dashboardId, String username, String password, final boolean force) {
+      final String dashboardId, final String username, final String password, final boolean force) {
     return getRequestExecutor()
         .buildDeleteDashboardRequest(dashboardId, force)
         .withUserAuthentication(username, password)
@@ -195,7 +209,7 @@ public class DashboardClient {
   }
 
   public String createDashboardShareForDashboard(final String dashboardId) {
-    DashboardShareRestDto sharingDto = new DashboardShareRestDto();
+    final DashboardShareRestDto sharingDto = new DashboardShareRestDto();
     sharingDto.setDashboardId(dashboardId);
     return getRequestExecutor()
         .buildShareDashboardRequest(sharingDto)
@@ -204,8 +218,8 @@ public class DashboardClient {
   }
 
   private DashboardDefinitionRestDto createSimpleDashboardDefinition(
-      String collectionId, List<String> reportIds) {
-    DashboardDefinitionRestDto definitionDto = new DashboardDefinitionRestDto();
+      final String collectionId, final List<String> reportIds) {
+    final DashboardDefinitionRestDto definitionDto = new DashboardDefinitionRestDto();
     definitionDto.setName("MyAwesomeDashboard");
     definitionDto.setCollectionId(collectionId);
     definitionDto.setTiles(

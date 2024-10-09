@@ -16,26 +16,39 @@ import io.camunda.optimize.service.export.CSVUtils;
 import java.time.ZoneId;
 import java.util.LinkedList;
 import java.util.List;
-import lombok.NonNull;
 
 public class NumberCommandResult extends CommandEvaluationResult<Double> {
 
-  public NumberCommandResult(@NonNull final SingleReportDataDto reportData) {
+  public NumberCommandResult(final SingleReportDataDto reportData) {
     super(reportData);
+    if (reportData == null) {
+      throw new IllegalArgumentException("reportData cannot be null");
+    }
   }
 
   public NumberCommandResult(
-      @NonNull final List<MeasureDto<Double>> measures,
-      @NonNull final SingleReportDataDto reportData) {
+      final List<MeasureDto<Double>> measures, final SingleReportDataDto reportData) {
     super(measures, reportData);
+    if (measures == null) {
+      throw new IllegalArgumentException("measures cannot be null");
+    }
+    if (reportData == null) {
+      throw new IllegalArgumentException("reportData cannot be null");
+    }
   }
 
   public NumberCommandResult(
       final long instanceCount,
       final long instanceCountWithoutFilters,
-      @NonNull final List<MeasureDto<Double>> measures,
-      @NonNull final SingleReportDataDto reportData) {
+      final List<MeasureDto<Double>> measures,
+      final SingleReportDataDto reportData) {
     super(instanceCount, instanceCountWithoutFilters, measures, reportData);
+    if (measures == null) {
+      throw new IllegalArgumentException("measures cannot be null");
+    }
+    if (reportData == null) {
+      throw new IllegalArgumentException("reportData cannot be null");
+    }
   }
 
   @Override
@@ -68,7 +81,7 @@ public class NumberCommandResult extends CommandEvaluationResult<Double> {
 
   private List<String[]> durationNumberAsCsv() {
     final List<String[]> csvStrings = new LinkedList<>();
-    Double result = getFirstMeasureData();
+    final Double result = getFirstMeasureData();
     csvStrings.add(new String[] {String.valueOf(result)});
 
     final SingleReportDataDto singleReportData = getReportDataAs(SingleReportDataDto.class);

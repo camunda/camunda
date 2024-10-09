@@ -13,16 +13,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.security.oauth2.jwt.JwtValidationException;
 
-@AllArgsConstructor
 public class OptimizeStaticTokenDecoder implements JwtDecoder {
+
   private final ConfigurationService configurationService;
+
+  public OptimizeStaticTokenDecoder(final ConfigurationService configurationService) {
+    this.configurationService = configurationService;
+  }
 
   @Override
   public Jwt decode(final String token) throws JwtException {

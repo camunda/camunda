@@ -122,24 +122,38 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.stat.inference.TestUtils;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class DurationOutliersReaderES implements DurationOutliersReader {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(DurationOutliersReaderES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
   private final ProcessDefinitionReader processDefinitionReader;
   private final ProcessVariableReader processVariableReader;
   private final ProcessQueryFilterEnhancerES queryFilterEnhancer;
   private final ConfigurationService configurationService;
+
+  public DurationOutliersReaderES(
+      OptimizeElasticsearchClient esClient,
+      ObjectMapper objectMapper,
+      ProcessDefinitionReader processDefinitionReader,
+      ProcessVariableReader processVariableReader,
+      ProcessQueryFilterEnhancerES queryFilterEnhancer,
+      ConfigurationService configurationService) {
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+    this.processDefinitionReader = processDefinitionReader;
+    this.processVariableReader = processVariableReader;
+    this.queryFilterEnhancer = queryFilterEnhancer;
+    this.configurationService = configurationService;
+  }
 
   @Override
   public List<DurationChartEntryDto> getCountByDurationChart(

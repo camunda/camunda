@@ -21,16 +21,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 public class ImportIndexHandlerRegistry {
 
   private IngestedImportIndexHandlerProvider ingestedImportIndexHandlerProvider = null;
   private Map<Integer, ZeebeImportIndexHandlerProvider> zeebeImportIndexHandlerProviderMap =
       new HashMap<>();
+
+  public ImportIndexHandlerRegistry() {}
 
   public void register(
       final IngestedImportIndexHandlerProvider ingestedImportIndexHandlerProvider) {

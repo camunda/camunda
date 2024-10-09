@@ -19,20 +19,30 @@ import io.camunda.optimize.service.db.repository.TaskRepository;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 public class DecisionInstanceWriter {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DecisionInstanceWriter.class);
   private final IndexRepository indexRepository;
   private final TaskRepository taskRepository;
   private final Repository repository;
   private final DecisionInstanceRepository decisionInstanceRepository;
 
-  public void importDecisionInstances(List<DecisionInstanceDto> decisionInstanceDtos) {
+  public DecisionInstanceWriter(
+      final IndexRepository indexRepository,
+      final TaskRepository taskRepository,
+      final Repository repository,
+      final DecisionInstanceRepository decisionInstanceRepository) {
+    this.indexRepository = indexRepository;
+    this.taskRepository = taskRepository;
+    this.repository = repository;
+    this.decisionInstanceRepository = decisionInstanceRepository;
+  }
+
+  public void importDecisionInstances(final List<DecisionInstanceDto> decisionInstanceDtos) {
     final String importItemName = "decision instances";
     log.debug("Writing [{}] {} to Database.", decisionInstanceDtos.size(), importItemName);
     final Set<String> decisionDefinitionKeys =

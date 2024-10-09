@@ -11,15 +11,18 @@ import io.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsD
 import io.camunda.optimize.service.db.repository.VariableRepository;
 import java.util.List;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 public class VariableLabelReader {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(VariableLabelReader.class);
   private final VariableRepository variableRepository;
+
+  public VariableLabelReader(final VariableRepository variableRepository) {
+    this.variableRepository = variableRepository;
+  }
 
   public Map<String, DefinitionVariableLabelsDto> getVariableLabelsByKey(
       final List<String> processDefinitionKeys) {

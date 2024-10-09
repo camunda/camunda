@@ -15,11 +15,10 @@ import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRep
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.db.schema.index.DecisionInstanceIndex;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class InstanceIndexUtil {
+
+  private InstanceIndexUtil() {}
 
   public static String[] getDecisionInstanceIndexAliasName(
       final DecisionReportDataDto reportDataDto) {

@@ -15,18 +15,19 @@ import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.importing.zeebe.db.ZeebeVariableFetcher;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 @Conditional(ElasticSearchCondition.class)
 public class ZeebeVariableFetcherES extends AbstractZeebeRecordFetcherES<ZeebeVariableRecordDto>
     implements ZeebeVariableFetcher {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ZeebeVariableFetcherES.class);
 
   public ZeebeVariableFetcherES(
       final int partitionId,

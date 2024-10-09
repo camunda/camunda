@@ -35,20 +35,27 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class SharingReaderES implements SharingReader {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(SharingReaderES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
+
+  public SharingReaderES(
+      OptimizeElasticsearchClient esClient,
+      ConfigurationService configurationService,
+      ObjectMapper objectMapper) {
+    this.esClient = esClient;
+    this.configurationService = configurationService;
+    this.objectMapper = objectMapper;
+  }
 
   @Override
   public Optional<ReportShareRestDto> getReportShare(String shareId) {

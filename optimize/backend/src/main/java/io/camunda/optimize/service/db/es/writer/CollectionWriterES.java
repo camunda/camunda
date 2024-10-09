@@ -52,21 +52,30 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class CollectionWriterES implements CollectionWriter {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(CollectionWriterES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
   private final DateTimeFormatter formatter;
   private final TaskRepositoryES taskRepositoryES;
+
+  public CollectionWriterES(
+      OptimizeElasticsearchClient esClient,
+      ObjectMapper objectMapper,
+      DateTimeFormatter formatter,
+      TaskRepositoryES taskRepositoryES) {
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+    this.formatter = formatter;
+    this.taskRepositoryES = taskRepositoryES;
+  }
 
   @Override
   public void updateCollection(final CollectionDefinitionUpdateDto collection, final String id) {

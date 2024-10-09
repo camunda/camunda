@@ -41,14 +41,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Path(DashboardRestService.DASHBOARD_PATH)
 @Component
 public class DashboardRestService {
+
   public static final String DASHBOARD_PATH = "/dashboard";
   public static final String INSTANT_PREVIEW_PATH = "/instant";
   private final DashboardService dashboardService;
@@ -56,13 +55,24 @@ public class DashboardRestService {
   private final SessionService sessionService;
   private final DashboardRestMapper dashboardRestMapper;
 
+  public DashboardRestService(
+      final DashboardService dashboardService,
+      final InstantPreviewDashboardService instantPreviewDashboardService,
+      final SessionService sessionService,
+      final DashboardRestMapper dashboardRestMapper) {
+    this.dashboardService = dashboardService;
+    this.instantPreviewDashboardService = instantPreviewDashboardService;
+    this.sessionService = sessionService;
+    this.dashboardRestMapper = dashboardRestMapper;
+  }
+
   @POST
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public IdResponseDto createNewDashboard(
       @Context final ContainerRequestContext requestContext,
-      @Valid DashboardDefinitionRestDto dashboardDefinitionDto) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @Valid final DashboardDefinitionRestDto dashboardDefinitionDto) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     if (dashboardDefinitionDto != null) {
       if (dashboardDefinitionDto.isManagementDashboard()
           || dashboardDefinitionDto.isInstantPreviewDashboard()) {
@@ -80,12 +90,12 @@ public class DashboardRestService {
   @Path("/{id}/copy")
   @Produces(MediaType.APPLICATION_JSON)
   public IdResponseDto copyDashboard(
-      @Context UriInfo uriInfo,
-      @Context ContainerRequestContext requestContext,
-      @PathParam("id") String dashboardId,
+      @Context final UriInfo uriInfo,
+      @Context final ContainerRequestContext requestContext,
+      @PathParam("id") final String dashboardId,
       @QueryParam("collectionId") String collectionId,
-      @QueryParam("name") String newDashboardName) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @QueryParam("name") final String newDashboardName) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
 
     if (collectionId == null) {
       return dashboardService.copyDashboard(dashboardId, userId, newDashboardName);
@@ -101,9 +111,10 @@ public class DashboardRestService {
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
   public AuthorizedDashboardDefinitionResponseDto getDashboard(
-      @Context ContainerRequestContext requestContext, @PathParam("id") String dashboardId) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    AuthorizedDashboardDefinitionResponseDto dashboardDefinition =
+      @Context final ContainerRequestContext requestContext,
+      @PathParam("id") final String dashboardId) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    final AuthorizedDashboardDefinitionResponseDto dashboardDefinition =
         dashboardService.getDashboardDefinition(dashboardId, userId);
     dashboardRestMapper.prepareRestResponse(
         dashboardDefinition, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
@@ -114,11 +125,11 @@ public class DashboardRestService {
   @Path(INSTANT_PREVIEW_PATH + "/{procDefKey}")
   @Produces(MediaType.APPLICATION_JSON)
   public AuthorizedDashboardDefinitionResponseDto getInstantDashboard(
-      @Context ContainerRequestContext requestContext,
-      @PathParam("procDefKey") String processDefinitionKey,
-      @QueryParam("template") String dashboardJsonTemplateFilename) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    AuthorizedDashboardDefinitionResponseDto dashboardDefinition;
+      @Context final ContainerRequestContext requestContext,
+      @PathParam("procDefKey") final String processDefinitionKey,
+      @QueryParam("template") final String dashboardJsonTemplateFilename) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    final AuthorizedDashboardDefinitionResponseDto dashboardDefinition;
     dashboardDefinition =
         instantPreviewDashboardService.getInstantPreviewDashboard(
             processDefinitionKey, dashboardJsonTemplateFilename, userId);
@@ -131,8 +142,8 @@ public class DashboardRestService {
   @Path("/management")
   @Produces(MediaType.APPLICATION_JSON)
   public AuthorizedDashboardDefinitionResponseDto getManagementDashboard(
-      @Context ContainerRequestContext requestContext) {
-    AuthorizedDashboardDefinitionResponseDto dashboardDefinition =
+      @Context final ContainerRequestContext requestContext) {
+    final AuthorizedDashboardDefinitionResponseDto dashboardDefinition =
         dashboardService.getManagementDashboard();
     dashboardRestMapper.prepareRestResponse(
         dashboardDefinition, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
@@ -144,11 +155,11 @@ public class DashboardRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public void updateDashboard(
-      @Context ContainerRequestContext requestContext,
-      @PathParam("id") String dashboardId,
-      @Valid DashboardDefinitionRestDto updatedDashboard) {
+      @Context final ContainerRequestContext requestContext,
+      @PathParam("id") final String dashboardId,
+      @Valid final DashboardDefinitionRestDto updatedDashboard) {
     updatedDashboard.setId(dashboardId);
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     validateDashboard(updatedDashboard);
     dashboardService.updateDashboard(updatedDashboard, userId);
   }
@@ -157,8 +168,9 @@ public class DashboardRestService {
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
   public void deleteDashboard(
-      @Context ContainerRequestContext requestContext, @PathParam("id") String dashboardId) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @Context final ContainerRequestContext requestContext,
+      @PathParam("id") final String dashboardId) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     dashboardService.deleteDashboardAsUser(dashboardId, userId);
   }
 
@@ -206,11 +218,11 @@ public class DashboardRestService {
     }
   }
 
-  private boolean isValidURL(String url) {
+  private boolean isValidURL(final String url) {
     try {
       new URL(url).toURI();
       return true;
-    } catch (MalformedURLException | URISyntaxException e) {
+    } catch (final MalformedURLException | URISyntaxException e) {
       return false;
     }
   }

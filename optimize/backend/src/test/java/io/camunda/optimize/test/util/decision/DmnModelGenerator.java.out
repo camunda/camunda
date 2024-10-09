@@ -256,10 +256,10 @@
 //    public DecisionGenerator buildRule(String ruleId) {
 //      Rule rule = modelInstance.newInstance(Rule.class, ruleId);
 //      if (inputEntries.size() != decisionGenerator.inputs.size()) {
-//        throw new RuntimeException("The number of inputs and input entries must match!");
+//        throw new OptimizeRuntimeException("The number of inputs and input entries must match!");
 //      }
 //      if (outputEntries.size() != decisionGenerator.outputs.size()) {
-//        throw new RuntimeException("The number of outputs and output entries must match!");
+//        throw new OptimizeRuntimeException("The number of outputs and output entries must match!");
 //      }
 //      rule.getInputEntries().addAll(inputEntries);
 //      rule.getOutputEntries().addAll(outputEntries);

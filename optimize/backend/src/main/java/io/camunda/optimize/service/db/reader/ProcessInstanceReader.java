@@ -16,16 +16,22 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 public class ProcessInstanceReader {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ProcessInstanceReader.class);
   private final ProcessInstanceRepository processInstanceRepository;
   private final DefinitionInstanceReader definitionInstanceReader;
+
+  public ProcessInstanceReader(
+      final ProcessInstanceRepository processInstanceRepository,
+      final DefinitionInstanceReader definitionInstanceReader) {
+    this.processInstanceRepository = processInstanceRepository;
+    this.definitionInstanceReader = definitionInstanceReader;
+  }
 
   public PageResultDto<String> getFirstPageOfProcessInstanceIdsThatHaveVariablesAndEndedBefore(
       final String processDefinitionKey, final OffsetDateTime endDate, final Integer limit) {

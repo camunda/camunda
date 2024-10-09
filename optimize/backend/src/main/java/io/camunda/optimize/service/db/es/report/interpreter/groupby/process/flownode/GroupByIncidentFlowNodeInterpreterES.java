@@ -38,24 +38,33 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class GroupByIncidentFlowNodeInterpreterES extends AbstractGroupByFlowNodeInterpreterES {
+
   private static final String NESTED_INCIDENT_AGGREGATION = "nestedIncidentAggregation";
   private static final String GROUPED_BY_FLOW_NODE_ID_AGGREGATION =
       "groupedByFlowNodeIdAggregation";
   private static final String FILTERED_INCIDENT_AGGREGATION = "filteredIncidentAggregation";
 
   private final ConfigurationService configurationService;
-  @Getter private final DefinitionService definitionService;
-  @Getter final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
-  @Getter final ProcessViewInterpreterFacadeES viewInterpreter;
+  private final DefinitionService definitionService;
+  final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
+  final ProcessViewInterpreterFacadeES viewInterpreter;
+
+  public GroupByIncidentFlowNodeInterpreterES(
+      ConfigurationService configurationService,
+      DefinitionService definitionService,
+      ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
+      ProcessViewInterpreterFacadeES viewInterpreter) {
+    this.configurationService = configurationService;
+    this.definitionService = definitionService;
+    this.distributedByInterpreter = distributedByInterpreter;
+    this.viewInterpreter = viewInterpreter;
+  }
 
   @Override
   public Set<ProcessGroupBy> getSupportedGroupBys() {
@@ -169,5 +178,17 @@ public class GroupByIncidentFlowNodeInterpreterES extends AbstractGroupByFlowNod
             .map(Optional::get)
             .map(ProcessDefinitionOptimizeDto.class::cast)
             .collect(Collectors.toList()));
+  }
+
+  public DefinitionService getDefinitionService() {
+    return this.definitionService;
+  }
+
+  public ProcessDistributedByInterpreterFacadeES getDistributedByInterpreter() {
+    return this.distributedByInterpreter;
+  }
+
+  public ProcessViewInterpreterFacadeES getViewInterpreter() {
+    return this.viewInterpreter;
   }
 }
