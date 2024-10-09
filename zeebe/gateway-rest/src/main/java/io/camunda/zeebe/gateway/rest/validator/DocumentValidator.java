@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest.validator;
 
-import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateDate;
@@ -47,9 +46,7 @@ public class DocumentValidator {
     return validate(
         violations -> {
           final Long timeToLive = request.getTimeToLive();
-          if (timeToLive == null) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("timeToLive"));
-          } else if (timeToLive <= 0) {
+          if (timeToLive <= 0) {
             violations.add(
                 ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
                     "timeToLive", timeToLive, "greater than 0"));
