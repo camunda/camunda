@@ -47,14 +47,14 @@ public class ScaleUpProcessor implements TypedRecordProcessor<ScaleRecord> {
       return;
     }
 
-    if (scaleUp.desiredPartitionCount() < scaleUp.currentPartitionCount()) {
+    if (scaleUp.getDesiredPartitionCount() < scaleUp.getCurrentPartitionCount()) {
       final var reason = "Desired partition count must be greater than current partition count";
       responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_ARGUMENT, reason);
       rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, reason);
       return;
     }
 
-    if (scaleUp.desiredPartitionCount() < 1 || scaleUp.currentPartitionCount() < 1) {
+    if (scaleUp.getDesiredPartitionCount() < 1 || scaleUp.getCurrentPartitionCount() < 1) {
       final var reason = "Partition count must be at least 1";
       responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_ARGUMENT, reason);
       rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, reason);

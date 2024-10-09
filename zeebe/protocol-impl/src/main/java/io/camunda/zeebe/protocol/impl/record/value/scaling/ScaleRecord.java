@@ -13,9 +13,9 @@ import io.camunda.zeebe.protocol.record.value.scaling.ScaleRecordValue;
 
 public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue {
   private final IntegerProperty currentPartitionCountProp =
-      new IntegerProperty("currentPartitionCount", -1);
+      new IntegerProperty("getCurrentPartitionCount", -1);
   private final IntegerProperty desiredPartitionCountProp =
-      new IntegerProperty("desiredPartitionCount", -1);
+      new IntegerProperty("getDesiredPartitionCount", -1);
 
   public ScaleRecord() {
     super(2);
@@ -23,22 +23,22 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
   }
 
   @Override
-  public int currentPartitionCount() {
+  public int getCurrentPartitionCount() {
     return currentPartitionCountProp.getValue();
   }
 
   @Override
-  public int desiredPartitionCount() {
+  public int getDesiredPartitionCount() {
     return desiredPartitionCountProp.getValue();
-  }
-
-  public ScaleRecord setCurrentPartitionCount(final int currentPartitionCount) {
-    currentPartitionCountProp.setValue(currentPartitionCount);
-    return this;
   }
 
   public ScaleRecord setDesiredPartitionCount(final int desiredPartitionCount) {
     desiredPartitionCountProp.setValue(desiredPartitionCount);
+    return this;
+  }
+
+  public ScaleRecord setCurrentPartitionCount(final int currentPartitionCount) {
+    currentPartitionCountProp.setValue(currentPartitionCount);
     return this;
   }
 }
