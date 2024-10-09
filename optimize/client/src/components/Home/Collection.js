@@ -13,12 +13,11 @@ import {Column, Grid, Stack} from '@carbon/react';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {Deleter, PageTitle, Tabs} from 'components';
-import {loadEntity, updateEntity, checkDeleteConflict} from 'services';
+import {loadEntity, updateEntity, checkDeleteConflict, loadCollectionEntities} from 'services';
 import {showError, addNotification} from 'notifications';
 import {isUserSearchAvailable} from 'config';
 import {refreshBreadcrumbs} from 'components/navigation';
 
-import {loadCollectionEntities} from './service';
 import UserList from './UserList';
 import AlertList from './AlertList';
 import SourcesList from './SourcesList';

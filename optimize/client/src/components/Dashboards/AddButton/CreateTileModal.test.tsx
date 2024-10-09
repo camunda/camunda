@@ -12,7 +12,7 @@ import {useLocation} from 'react-router-dom';
 import {ComboBox} from '@carbon/react';
 
 import {Tabs} from 'components';
-import {loadReports} from 'services';
+import {loadEntities} from 'services';
 
 import CreateTileModal from './CreateTileModal';
 
@@ -25,7 +25,7 @@ jest.mock('services', () => {
   const rest = jest.requireActual('services');
   return {
     ...rest,
-    loadReports: jest.fn().mockReturnValue([]),
+    loadEntities: jest.fn().mockReturnValue([]),
   };
 });
 
@@ -39,7 +39,7 @@ it('should load the available reports', () => {
 
   runAllEffects();
 
-  expect(loadReports).toHaveBeenCalled();
+  expect(loadEntities).toHaveBeenCalled();
 });
 
 it('should load only reports in the same collection', () => {
@@ -50,7 +50,7 @@ it('should load only reports in the same collection', () => {
 
   runAllEffects();
 
-  expect(loadReports).toHaveBeenCalledWith('123');
+  expect(loadEntities).toHaveBeenCalledWith('123');
 });
 
 it('should render a Combobox element with the available reports as options', async () => {
@@ -58,13 +58,15 @@ it('should render a Combobox element with the available reports as options', asy
     {
       id: 'a',
       name: 'Report A',
+      entityType: 'report',
     },
     {
       id: 'b',
       name: 'Report B',
+      entityType: 'report',
     },
   ];
-  (loadReports as jest.Mock).mockReturnValueOnce(reports);
+  (loadEntities as jest.Mock).mockReturnValueOnce(reports);
   const node = shallow(<CreateTileModal {...props} />);
 
   runAllEffects();
@@ -77,14 +79,16 @@ it('should render a Combobox element with the available reports as options', asy
 });
 
 it('should call the callback when adding a report', async () => {
-  (loadReports as jest.Mock).mockReturnValueOnce([
+  (loadEntities as jest.Mock).mockReturnValueOnce([
     {
       id: 'a',
       name: 'Report A',
+      entityType: 'report',
     },
     {
       id: 'b',
       name: 'Report B',
+      entityType: 'report',
     },
   ]);
   const spy = jest.fn();
