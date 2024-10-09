@@ -142,8 +142,6 @@ public class ElasticsearchExporterConfiguration {
         return index.user;
       case AUTHORIZATION:
         return index.authorization;
-      case TENANT:
-        return index.tenant;
       default:
         return false;
     }
@@ -222,7 +220,6 @@ public class ElasticsearchExporterConfiguration {
     public boolean messageCorrelation = true;
     public boolean user = true;
     public boolean authorization = true;
-    public boolean tenant = true;
 
     // index settings
     private Integer numberOfShards = null;
@@ -330,8 +327,6 @@ public class ElasticsearchExporterConfiguration {
           + user
           + ", authorization="
           + authorization
-          + ", tenant="
-          + tenant
           + '}';
     }
   }

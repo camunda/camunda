@@ -907,6 +907,7 @@ public class CompactRecordLogger {
 
     return builder.toString();
   }
+
   private String formatPinnedTime(final long time) {
     final var dateTime = Instant.ofEpochMilli(time).atZone(ZoneId.systemDefault());
     return "%s (timestamp: %d)".formatted(shortenDateTime(dateTime), time);

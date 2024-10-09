@@ -84,7 +84,6 @@ final class TestSupport {
       case MESSAGE_CORRELATION -> config.messageCorrelation = value;
       case USER -> config.user = value;
       case AUTHORIZATION -> config.authorization = value;
-      case TENANT -> config.tenant = value;
       default ->
           throw new IllegalArgumentException(
               "No known indexing configuration option for value type " + valueType);
@@ -123,7 +122,8 @@ final class TestSupport {
             ValueType.PROCESS_INSTANCE_RESULT,
             ValueType.CLOCK,
             // these are not yet supported
-            ValueType.ROLE);
+            ValueType.ROLE,
+            ValueType.TENANT);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 }
