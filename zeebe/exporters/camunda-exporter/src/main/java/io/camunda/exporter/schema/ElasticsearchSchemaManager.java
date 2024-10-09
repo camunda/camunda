@@ -115,13 +115,11 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     final var templateReplicas =
         config
             .getReplicasByIndexName()
-            .getOrDefault(
-                indexName, config.getDefaultSettings().getNumberOfReplicas());
+            .getOrDefault(indexName, config.getDefaultSettings().getNumberOfReplicas());
     final var templateShards =
         config
             .getShardsByIndexName()
-            .getOrDefault(
-                indexName, config.getDefaultSettings().getNumberOfShards());
+            .getOrDefault(indexName, config.getDefaultSettings().getNumberOfShards());
 
     final var settings = new IndexSettings();
     settings.setNumberOfShards(templateShards);
