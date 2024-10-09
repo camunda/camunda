@@ -15,7 +15,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public class RoleRecord extends UnifiedRecordValue implements RoleRecordValue {
 
-  private final LongProperty roleKeyProp = new LongProperty("roleKey");
+  private final LongProperty roleKeyProp = new LongProperty("roleKey", -1L);
   private final StringProperty nameProp = new StringProperty("name", "");
   private final LongProperty entityKeyProp = new LongProperty("entityKey", -1L);
 

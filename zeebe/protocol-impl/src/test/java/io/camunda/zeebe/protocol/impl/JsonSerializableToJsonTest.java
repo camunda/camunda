@@ -2688,10 +2688,10 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty RoleRecord",
-        (Supplier<RoleRecord>) () -> new RoleRecord().setRoleKey(1L),
+        (Supplier<RoleRecord>) RoleRecord::new,
         """
         {
-          "roleKey": 1,
+          "roleKey": -1,
           "name": "",
           "entityKey": -1
         }
