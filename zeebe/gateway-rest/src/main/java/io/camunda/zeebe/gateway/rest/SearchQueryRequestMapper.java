@@ -29,9 +29,9 @@ import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
-import io.camunda.search.filter.ProcessInstanceVariableFilter;
 import io.camunda.search.filter.UserFilter;
 import io.camunda.search.filter.UserTaskFilter;
+import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.DecisionDefinitionQuery;
@@ -45,6 +45,7 @@ import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.TypedSearchQueryBuilder;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
+import io.camunda.search.query.VariableQuery;
 import io.camunda.search.sort.DecisionDefinitionSort;
 import io.camunda.search.sort.DecisionInstanceSort;
 import io.camunda.search.sort.DecisionRequirementsSort;
@@ -56,6 +57,7 @@ import io.camunda.search.sort.SortOption;
 import io.camunda.search.sort.SortOptionBuilders;
 import io.camunda.search.sort.UserSort;
 import io.camunda.search.sort.UserTaskSort;
+import io.camunda.search.sort.VariableSort;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.protocol.rest.*;
 import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
@@ -233,6 +235,45 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::userTaskSearchQuery);
   }
 
+  public static Either<ProblemDetail, VariableQuery> toVariableQuery(
+      final VariableSearchQueryRequest request) {
+
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.variableSearchQuery().build());
+    }
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        toSearchQuerySort(
+            request.getSort(),
+            SortOptionBuilders::variable,
+            SearchQueryRequestMapper::applyVariableSortField);
+    final VariableFilter filter = toVariableFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::variableSearchQuery);
+  }
+
+  private static VariableFilter toVariableFilter(final VariableFilterRequest filter) {
+    if (filter == null) {
+      return FilterBuilders.variable().build();
+    }
+
+    final var builder = FilterBuilders.variable();
+
+    ofNullable(filter.getProcessInstanceKey()).ifPresent(builder::processInstanceKeys);
+    ofNullable(filter.getScopeKey()).ifPresent(builder::scopeKeys);
+    ofNullable(filter.getVariableKey()).ifPresent(builder::variableKeys);
+    ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
+    ofNullable(filter.getIsTruncated()).ifPresent(builder::isTruncated);
+
+    if (filter.getName() != null || filter.getValue() != null) {
+      final VariableValueFilter variableValueFilter =
+          new VariableValueFilter.Builder().name(filter.getName()).eq(filter.getValue()).build();
+
+      builder.variable(variableValueFilter);
+    }
+
+    return builder.build();
+  }
+
   public static Either<ProblemDetail, UserQuery> toUserQuery(final UserSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.userSearchQuery().build());
@@ -309,24 +350,6 @@ public final class SearchQueryRequestMapper {
     }
 
     return builder.build();
-  }
-
-  private static ProcessInstanceVariableFilter toProcessInstanceVariableFilter(
-      final ProcessInstanceVariableFilterRequest filter) {
-    if (filter != null && filter.getName() != null) {
-      final var builder = FilterBuilders.processInstanceVariable();
-      return builder.name(filter.getName()).values(filter.getValues()).build();
-    }
-    return null;
-  }
-
-  private static VariableValueFilter toUserTaskVariableFilter(
-      final ProcessInstanceVariableFilterRequest filter) {
-    if (filter != null && filter.getName() != null) {
-      final var builder = FilterBuilders.variableValue();
-      return builder.name(filter.getName()).eq(filter.getValues()).build();
-    }
-    return null;
   }
 
   private static DecisionDefinitionFilter toDecisionDefinitionFilter(
@@ -601,6 +624,25 @@ public final class SearchQueryRequestMapper {
         case "creationDate" -> builder.creationDate();
         case "completionDate" -> builder.completionDate();
         case "priority" -> builder.priority();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
+  private static List<String> applyVariableSortField(
+      final String field, final VariableSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case "value" -> builder.value();
+        case "name" -> builder.name();
+        case "tenantId" -> builder.tenantId();
+        case "variableKey" -> builder.variableKey();
+        case "scopeKey" -> builder.scopeKey();
+        case "processInstanceKey" -> builder.processInstanceKey();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }

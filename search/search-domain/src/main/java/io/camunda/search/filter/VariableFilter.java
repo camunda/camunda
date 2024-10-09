@@ -20,19 +20,18 @@ public final record VariableFilter(
     List<VariableValueFilter> variableFilters,
     List<Long> scopeKeys,
     List<Long> processInstanceKeys,
-    boolean orConditions,
-    boolean onlyRuntimeVariables)
+    List<Long> variableKeys,
+    List<String> tenantIds,
+    boolean isTruncated)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<VariableFilter> {
     private List<VariableValueFilter> variableFilters;
     private List<Long> scopeKeys;
     private List<Long> processInstanceKeys;
-    private boolean orConditions;
-    private boolean
-        onlyRuntimeVariables; // internally used to restric the search to variables for running
-
-    // tasks/processes to improve the performance
+    private List<Long> variableKeys;
+    private List<String> tenantIds;
+    private boolean isTruncated;
 
     public Builder variable(final List<VariableValueFilter> values) {
       variableFilters = addValuesToList(variableFilters, values);
@@ -66,13 +65,26 @@ public final record VariableFilter(
       return this;
     }
 
-    public Builder orConditions(final boolean orConditions) {
-      this.orConditions = orConditions;
+    public Builder variableKeys(final Long value, final Long... values) {
+      return variableKeys(collectValues(value, values));
+    }
+
+    public Builder variableKeys(final List<Long> values) {
+      variableKeys = addValuesToList(variableKeys, values);
       return this;
     }
 
-    public Builder onlyRuntimeVariables(final boolean onlyRuntimeVariables) {
-      this.onlyRuntimeVariables = onlyRuntimeVariables;
+    public Builder tenantIds(final String value, final String... values) {
+      return tenantIds(collectValues(value, values));
+    }
+
+    public Builder tenantIds(final List<String> values) {
+      tenantIds = addValuesToList(tenantIds, values);
+      return this;
+    }
+
+    public Builder isTruncated(final boolean value) {
+      isTruncated = value;
       return this;
     }
 
@@ -82,8 +94,9 @@ public final record VariableFilter(
           Objects.requireNonNullElseGet(variableFilters, Collections::emptyList),
           Objects.requireNonNullElseGet(scopeKeys, Collections::emptyList),
           Objects.requireNonNullElseGet(processInstanceKeys, Collections::emptyList),
-          orConditions,
-          onlyRuntimeVariables);
+          Objects.requireNonNullElseGet(variableKeys, Collections::emptyList),
+          Objects.requireNonNullElseGet(tenantIds, Collections::emptyList),
+          isTruncated);
     }
   }
 }

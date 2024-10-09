@@ -691,6 +691,49 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
 
+  /variables/search:
+    post:
+      tags:
+        - Variable
+      summary: Query process and local variables (alpha)
+      description: |
+        Search for variables based on given criteria.
+
+        :::note
+        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VariableSearchQueryRequest"
+      responses:
+        "200":
+          description: >
+            The variable search successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VariableSearchQueryResponse"
+        "400":
+          description: >
+            The user task search query failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+
   /clock:
     put:
       tags:
@@ -2485,6 +2528,83 @@ components:
           minimum: 0
           maximum: 100
           default: 50
+    VariableSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      description: Variable search query request.
+      type: object
+      properties:
+        filter:
+          $ref: "#/components/schemas/VariableFilterRequest"
+    VariableFilterRequest:
+      description: Variable filter request.
+      type: object
+      properties:
+        variableKey:
+          description: The key for this variable.
+          type: integer
+          format: int64
+        name:
+          description: Name of the variable.
+          type: string
+        value:
+          description: The value of the variable.
+          type: string
+        scopeKey:
+          description: The key of the scope of this variable.
+          type: integer
+          format: int64
+        processInstanceKey:
+          description: The key of the process instance of this variable.
+          type: integer
+          format: int64
+        tenantId:
+          description: Tenant id of this variable.
+          type: string
+        isTruncated:
+          description: Whether the value is truncated or not.
+          type: boolean
+    VariableSearchQueryResponse:
+        allOf:
+            - $ref: "#/components/schemas/SearchQueryResponse"
+        description: Variable search query response.
+        type: object
+        properties:
+          items:
+            type: array
+            items:
+                $ref: "#/components/schemas/VariableItem"
+    VariableItem:
+      description: Variable search response item.
+      type: object
+      properties:
+        variableKey:
+          description: The key for this variable.
+          type: integer
+          format: int64
+        name:
+          description: Name of this variable.
+          type: string
+        value:
+          description: Value of this variable.
+          type: string
+        fullValue:
+          description: Full value of this variable.
+          type: string
+        scopeKey:
+          description: The key of the scope of this variable.
+          type: integer
+          format: int64
+        processInstanceKey:
+          description: The key of the process instance of this variable.
+          type: integer
+          format: int64
+        tenantId:
+          description: Tenant id of this variable.
+          type: string
+        isTruncated:
+          description: Whether the value is truncated or not.
+          type: boolean
     ProcessDefinitionSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
