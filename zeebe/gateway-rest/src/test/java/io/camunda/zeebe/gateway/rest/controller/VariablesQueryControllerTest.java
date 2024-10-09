@@ -317,7 +317,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturn404ForInvalidUserTaskKey() {
+  void shouldReturn404ForInvalidVariableTaskKey() {
     // when / then
     webClient
         .get()
