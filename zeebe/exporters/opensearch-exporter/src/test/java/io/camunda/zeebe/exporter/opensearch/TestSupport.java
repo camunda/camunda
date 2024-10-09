@@ -121,6 +121,7 @@ final class TestSupport {
             ValueType.NULL_VAL,
             ValueType.PROCESS_INSTANCE_RESULT,
             ValueType.CLOCK,
+            ValueType.SCALE,
             // these are not yet supported
             ValueType.ROLE,
             ValueType.TENANT);
