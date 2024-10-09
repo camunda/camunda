@@ -9,6 +9,7 @@ package io.camunda.exporter.schema;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
+import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.exporter.exceptions.OpensearchExporterException;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
@@ -21,6 +22,7 @@ import org.opensearch.client.json.JsonpDeserializer;
 import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
+import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 import org.opensearch.client.opensearch.indices.put_index_template.IndexTemplateMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,9 +53,35 @@ public class OpensearchEngineClient implements SearchEngineClient {
 
   @Override
   public void createIndexTemplate(
-      final IndexTemplateDescriptor indexDescriptor,
+      final IndexTemplateDescriptor templateDescriptor,
       final IndexSettings settings,
-      final boolean create) {}
+      final boolean create) {
+
+    final PutIndexTemplateRequest request = putIndexTemplateRequest(templateDescriptor, settings);
+
+    try {
+      // opensearch doesn't support create query parameter in request builder so need to
+      // implement manually
+      if (create
+          && client
+              .indices()
+              .existsIndexTemplate(req -> req.name(templateDescriptor.getTemplateName()))
+              .value()) {
+        throw new OpensearchExporterException(
+            String.format(
+                "Cannot update template [%s] as create = true",
+                templateDescriptor.getTemplateName()));
+      }
+
+      client.indices().putIndexTemplate(request);
+      LOG.debug("Template [{}] was successfully created", templateDescriptor.getTemplateName());
+    } catch (final IOException e) {
+      final var errMsg =
+          String.format("Template [%s] was NOT created", templateDescriptor.getTemplateName());
+      LOG.error(errMsg, e);
+      throw new OpensearchExporterException(errMsg, e);
+    }
+  }
 
   @Override
   public void putMapping(
@@ -71,6 +99,36 @@ public class OpensearchEngineClient implements SearchEngineClient {
 
   @Override
   public void putIndexLifeCyclePolicy(final String policyName, final String deletionMinAge) {}
+
+  private PutIndexTemplateRequest putIndexTemplateRequest(
+      final IndexTemplateDescriptor indexTemplateDescriptor, final IndexSettings settings) {
+
+    try (final var templateFile =
+        getClass().getResourceAsStream(indexTemplateDescriptor.getMappingsClasspathFilename())) {
+
+      final var templateFields =
+          deserializeJson(
+              IndexTemplateMapping._DESERIALIZER,
+              SearchEngineClient.appendToFileSchemaSettings(templateFile, settings, MAPPER));
+
+      return new PutIndexTemplateRequest.Builder()
+          .name(indexTemplateDescriptor.getTemplateName())
+          .indexPatterns(indexTemplateDescriptor.getIndexPattern())
+          .template(
+              t ->
+                  t.aliases(indexTemplateDescriptor.getAlias(), a -> a)
+                      .mappings(templateFields.mappings())
+                      .settings(templateFields.settings()))
+          .composedOf(indexTemplateDescriptor.getComposedOf())
+          .build();
+    } catch (final IOException e) {
+      throw new ElasticsearchExporterException(
+          "Failed to load file "
+              + indexTemplateDescriptor.getMappingsClasspathFilename()
+              + " from classpath.",
+          e);
+    }
+  }
 
   private CreateIndexRequest createIndexRequest(
       final IndexDescriptor indexDescriptor, final IndexSettings settings) {

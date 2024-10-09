@@ -8,12 +8,15 @@
 package io.camunda.exporter.schema;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
+import io.camunda.exporter.exceptions.OpensearchExporterException;
 import io.camunda.exporter.utils.TestSupport;
 import io.camunda.search.connect.os.OpensearchConnector;
 import java.io.IOException;
+import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,12 +52,15 @@ public class OpensearchEngineClientIT {
 
   @Test
   void shouldCreateIndexNormally() throws IOException {
+    // given
     final var descriptor =
         SchemaTestUtil.mockIndex("qualified_name", "alias", "index_name", "/mappings.json");
 
+    // when
     final var indexSettings = new IndexSettings();
     opensearchEngineClient.createIndex(descriptor, indexSettings);
 
+    // then
     final var index =
         openSearchClient.indices().get(req -> req.index("qualified_name")).get("qualified_name");
 
@@ -65,5 +71,67 @@ public class OpensearchEngineClientIT {
         .isEqualTo(indexSettings.getNumberOfReplicas().toString());
     assertThat(index.settings().index().numberOfShards())
         .isEqualTo(indexSettings.getNumberOfShards().toString());
+  }
+
+  @Test
+  void shouldCreateIndexTemplate() throws IOException {
+    // given
+    final var template =
+        SchemaTestUtil.mockIndexTemplate(
+            "index_name",
+            "index_pattern.*",
+            "alias",
+            List.of(),
+            "template_name",
+            "/mappings-and-settings.json");
+
+    // when
+    final var expectedIndexSettings = new IndexSettings();
+    opensearchEngineClient.createIndexTemplate(template, expectedIndexSettings, false);
+
+    // then
+    final var createdTemplate =
+        openSearchClient
+            .indices()
+            .getIndexTemplate(req -> req.name("template_name"))
+            .indexTemplates();
+
+    assertThat(createdTemplate.size()).isEqualTo(1);
+
+    final var indexSettings =
+        createdTemplate
+            .getFirst()
+            .indexTemplate()
+            .template()
+            .settings()
+            .get("index")
+            .toJson()
+            .asJsonObject();
+
+    assertThat(indexSettings.getString("number_of_shards"))
+        .isEqualTo(expectedIndexSettings.getNumberOfShards().toString());
+    assertThat(indexSettings.getString("number_of_replicas"))
+        .isEqualTo(expectedIndexSettings.getNumberOfReplicas().toString());
+    assertThat(indexSettings.getString("refresh_interval")).isEqualTo("2s");
+
+    SchemaTestUtil.validateMappings(
+        createdTemplate.getFirst().indexTemplate().template().mappings(),
+        template.getMappingsClasspathFilename());
+  }
+
+  @Test
+  void shouldFailIndexTemplateUpdateIfCreateTrue() throws IOException {
+    // given
+    final var template =
+        SchemaTestUtil.mockIndexTemplate(
+            "index_name", "index_pattern.*", "alias", List.of(), "template_name", "/mappings.json");
+    opensearchEngineClient.createIndexTemplate(template, new IndexSettings(), false);
+
+    // when
+    // then
+    assertThatThrownBy(
+            () -> opensearchEngineClient.createIndexTemplate(template, new IndexSettings(), true))
+        .isInstanceOf(OpensearchExporterException.class)
+        .hasMessageContaining("Cannot update template [template_name] as create = true");
   }
 }
