@@ -8,15 +8,13 @@
 package io.camunda.zeebe.engine.state.authorization;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.engine.state.immutable.RoleState;
-import io.camunda.zeebe.engine.state.immutable.RoleState.EntityType;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 
 public class EntityTypeValue extends UnpackedObject implements DbValue {
 
   private final EnumProperty<EntityType> entityTypeProp =
-      new EnumProperty<>("entityType", RoleState.EntityType.class);
+      new EnumProperty<>("entityType", EntityType.class);
 
   public EntityTypeValue() {
     super(1);

@@ -5,6 +5,14 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.state.immutable;
+package io.camunda.zeebe.engine.state.authorization;
 
-public interface RoleState {}
+public enum EntityType {
+  USER((byte) 0);
+
+  byte value;
+
+  EntityType(final byte value) {
+    this.value = value;
+  }
+}

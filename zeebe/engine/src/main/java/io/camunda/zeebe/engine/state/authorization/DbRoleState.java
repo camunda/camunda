@@ -20,11 +20,13 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 public class DbRoleState implements MutableRoleState {
 
   private final DbLong roleKey;
+  private final PersistedRole persistedRole = new PersistedRole();
   private final ColumnFamily<DbLong, PersistedRole> roleColumnFamily;
 
   private final DbForeignKey<DbLong> fkRoleKey;
   private final DbLong entityKey;
   private final DbCompositeKey<DbForeignKey<DbLong>, DbLong> fkRoleKeyAndEntityKey;
+  private final EntityTypeValue entityTypeValue = new EntityTypeValue();
   private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbLong>, EntityTypeValue>
       entityTypeByRoleColumnFamily;
 
@@ -36,9 +38,9 @@ public class DbRoleState implements MutableRoleState {
     roleKey = new DbLong();
     roleColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.ROLE, transactionContext, roleKey, new PersistedRole());
+            ZbColumnFamilies.ROLES, transactionContext, roleKey, persistedRole);
 
-    fkRoleKey = new DbForeignKey<>(roleKey, ZbColumnFamilies.ROLE);
+    fkRoleKey = new DbForeignKey<>(roleKey, ZbColumnFamilies.ROLES);
     entityKey = new DbLong();
     fkRoleKeyAndEntityKey = new DbCompositeKey<>(fkRoleKey, entityKey);
     entityTypeByRoleColumnFamily =
@@ -46,7 +48,7 @@ public class DbRoleState implements MutableRoleState {
             ZbColumnFamilies.ENTITY_BY_ROLE,
             transactionContext,
             fkRoleKeyAndEntityKey,
-            new EntityTypeValue());
+            entityTypeValue);
 
     roleName = new DbString();
     roleByNameColumnFamily =
