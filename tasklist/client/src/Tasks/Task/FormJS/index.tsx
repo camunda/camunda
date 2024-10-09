@@ -56,7 +56,10 @@ type Props = {
   id: Form['id'];
   processDefinitionKey: Form['processDefinitionKey'];
   task: Task;
-  onSubmit: (variables: Variable[], files?: File[]) => Promise<void>;
+  onSubmit: (
+    variables: Variable[],
+    files?: Map<string, File[]>,
+  ) => Promise<void>;
   onSubmitSuccess: () => void;
   onSubmitFailure: (error: Error) => void;
   user: CurrentUser;
