@@ -102,12 +102,15 @@ public class ProcessDefinitionQueryController {
   public ResponseEntity<String> getProcessDefinitionXml(
       @PathVariable("processDefinitionKey") final long processDefinitionKey) {
     try {
-      return ResponseEntity.ok()
-          .contentType(new MediaType(MediaType.TEXT_XML, StandardCharsets.UTF_8))
-          .body(
-              processDefinitionServices
-                  .withAuthentication(RequestMapper.getAuthentication())
-                  .getProcessDefinitionXml(processDefinitionKey));
+      return processDefinitionServices
+          .withAuthentication(RequestMapper.getAuthentication())
+          .getProcessDefinitionXml(processDefinitionKey)
+          .map(
+              s ->
+                  ResponseEntity.ok()
+                      .contentType(new MediaType(MediaType.TEXT_XML, StandardCharsets.UTF_8))
+                      .body(s))
+          .orElseGet(() -> ResponseEntity.status(HttpStatus.NO_CONTENT).build());
     } catch (final Exception e) {
       REST_LOGGER.debug("An exception occurred in getProcessDefinitionXml.", e);
       return mapErrorToResponse(e);

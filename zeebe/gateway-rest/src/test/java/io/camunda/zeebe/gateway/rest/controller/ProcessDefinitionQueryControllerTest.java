@@ -20,6 +20,7 @@ import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
@@ -175,7 +176,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   @Test
   public void shouldGetProcessDefinitionXml() {
     // given
-    when(processDefinitionServices.getProcessDefinitionXml(23L)).thenReturn("<xml/>");
+    when(processDefinitionServices.getProcessDefinitionXml(23L)).thenReturn(Optional.of("<xml/>"));
     // when / then
     webClient
         .get()
@@ -186,6 +187,22 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         .isOk()
         .expectBody()
         .xml("<xml/>");
+    // Verify that the service was called with the valid key
+    verify(processDefinitionServices).getProcessDefinitionXml(23L);
+  }
+
+  @Test
+  public void shouldGetProcessDefinitionXmlHasNoXml() {
+    // given
+    when(processDefinitionServices.getProcessDefinitionXml(23L)).thenReturn(Optional.empty());
+    // when / then
+    webClient
+        .get()
+        .uri(PROCESS_DEFINITION_URL + "23/xml")
+        .accept(MediaType.TEXT_XML)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
     // Verify that the service was called with the valid key
     verify(processDefinitionServices).getProcessDefinitionXml(23L);
   }

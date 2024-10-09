@@ -870,6 +870,13 @@ paths:
             text/xml:
               schema:
                 type: string
+        "204":
+          description: >
+            The process definition was found but does not have XML.
+          content:
+            text/plain:
+              schema:
+                type: string
         "400":
           description: >
             The process definition request failed.

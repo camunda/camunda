@@ -17,6 +17,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import java.util.Optional;
 
 public class ProcessDefinitionServices
     extends SearchQueryService<
@@ -61,14 +62,13 @@ public class ProcessDefinitionServices
     }
   }
 
-  public String getProcessDefinitionXml(final Long processDefinitionKey) {
+  public Optional<String> getProcessDefinitionXml(final Long processDefinitionKey) {
     final var processDefinition = getByKey(processDefinitionKey);
     final var xml = processDefinition.bpmnXml();
-    if (xml == null) {
-      throw new NotFoundException(
-          String.format(
-              "Process Definition with key %d does not have a BPMN XML", processDefinitionKey));
+    if (xml == null || xml.isEmpty()) {
+      return Optional.empty();
+    } else {
+      return Optional.of(xml);
     }
-    return xml;
   }
 }
