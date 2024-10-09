@@ -820,7 +820,7 @@ paths:
                 $ref: "#/components/schemas/ProcessDefinitionItem"
         "400":
           description: >
-            The process definition Get failed.
+            The process definition request failed.
             More details are provided in the response body.
           content:
             application/problem+json:
