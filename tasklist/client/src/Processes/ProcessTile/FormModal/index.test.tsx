@@ -56,6 +56,7 @@ describe('<FormModal />', () => {
         isOpen
         onClose={() => Promise.resolve()}
         onSubmit={mockOnSubmit}
+        onFileUpload={() => Promise.resolve(new Map())}
         isMultiTenancyEnabled={false}
       />,
       {
@@ -113,6 +114,7 @@ describe('<FormModal />', () => {
         isOpen
         onClose={mockOnClose}
         onSubmit={() => Promise.resolve()}
+        onFileUpload={() => Promise.resolve(new Map())}
         isMultiTenancyEnabled={false}
       />,
       {
@@ -154,6 +156,7 @@ describe('<FormModal />', () => {
         isOpen
         onClose={() => Promise.resolve()}
         onSubmit={() => Promise.resolve()}
+        onFileUpload={() => Promise.resolve(new Map())}
         isMultiTenancyEnabled={false}
       />,
       {
@@ -190,6 +193,7 @@ describe('<FormModal />', () => {
         isOpen
         onClose={() => Promise.resolve()}
         onSubmit={() => Promise.resolve()}
+        onFileUpload={() => Promise.resolve(new Map())}
         isMultiTenancyEnabled={false}
       />,
       {
@@ -231,6 +235,7 @@ describe('<FormModal />', () => {
         isOpen
         onClose={() => Promise.resolve()}
         onSubmit={mockOnSubmit}
+        onFileUpload={() => Promise.resolve(new Map())}
         isMultiTenancyEnabled={false}
       />,
       {
@@ -292,6 +297,7 @@ describe('<FormModal />', () => {
         isOpen
         onClose={() => Promise.resolve()}
         onSubmit={mockFailOnSubmit}
+        onFileUpload={() => Promise.resolve(new Map())}
         isMultiTenancyEnabled
         tenantId={undefined}
       />,
@@ -337,6 +343,7 @@ describe('<FormModal />', () => {
         isOpen
         onClose={() => Promise.resolve()}
         onSubmit={mockSuccessOnSubmit}
+        onFileUpload={() => Promise.resolve(new Map())}
         isMultiTenancyEnabled
         tenantId="tenantA"
       />,
@@ -394,6 +401,7 @@ describe('<FormModal />', () => {
         isOpen
         onClose={() => Promise.resolve()}
         onSubmit={mockOnSubmit}
+        onFileUpload={() => Promise.resolve(new Map())}
         isMultiTenancyEnabled={false}
       />,
       {
@@ -442,6 +450,7 @@ describe('<FormModal />', () => {
         isOpen={false}
         onClose={() => Promise.resolve()}
         onSubmit={mockOnSubmit}
+        onFileUpload={() => Promise.resolve(new Map())}
         isMultiTenancyEnabled={false}
       />,
     );
@@ -455,6 +464,7 @@ describe('<FormModal />', () => {
         isOpen
         onClose={() => Promise.resolve()}
         onSubmit={mockOnSubmit}
+        onFileUpload={() => Promise.resolve(new Map())}
         isMultiTenancyEnabled={false}
       />,
     );
@@ -480,6 +490,7 @@ describe('<FormModal />', () => {
         isOpen
         onClose={() => Promise.resolve()}
         onSubmit={() => Promise.resolve()}
+        onFileUpload={() => Promise.resolve(new Map())}
         isMultiTenancyEnabled={false}
       />,
       {

@@ -120,6 +120,7 @@ describe('<FormJS />', () => {
         task={unassignedTaskWithForm(MOCK_TASK_ID)}
         user={userMocks.currentUser}
         onSubmit={() => Promise.resolve()}
+        onFileUpload={() => Promise.resolve(new Map())}
         onSubmitFailure={noop}
         onSubmitSuccess={noop}
       />,
@@ -176,6 +177,7 @@ describe('<FormJS />', () => {
         task={assignedTaskWithForm(MOCK_TASK_ID)}
         user={userMocks.currentUser}
         onSubmit={() => Promise.resolve()}
+        onFileUpload={() => Promise.resolve(new Map())}
         onSubmitFailure={noop}
         onSubmitSuccess={noop}
       />,
@@ -231,6 +233,7 @@ describe('<FormJS />', () => {
         task={assignedTaskWithForm(MOCK_TASK_ID)}
         user={userMocks.currentUser}
         onSubmit={() => Promise.resolve()}
+        onFileUpload={() => Promise.resolve(new Map())}
         onSubmitFailure={noop}
         onSubmitSuccess={noop}
       />,
@@ -284,6 +287,7 @@ describe('<FormJS />', () => {
         task={assignedTaskWithForm(MOCK_TASK_ID)}
         user={userMocks.currentUser}
         onSubmit={mockOnSubmit}
+        onFileUpload={() => Promise.resolve(new Map())}
         onSubmitFailure={noop}
         onSubmitSuccess={noop}
       />,
@@ -354,6 +358,7 @@ describe('<FormJS />', () => {
         task={assignedTaskWithForm(MOCK_TASK_ID)}
         user={userMocks.currentUser}
         onSubmit={mockOnSubmit}
+        onFileUpload={() => Promise.resolve(new Map())}
         onSubmitFailure={noop}
         onSubmitSuccess={noop}
       />,
@@ -432,6 +437,7 @@ describe('<FormJS />', () => {
         task={assignedTaskWithForm(MOCK_TASK_ID)}
         user={userMocks.currentUser}
         onSubmit={() => Promise.resolve()}
+        onFileUpload={() => Promise.resolve(new Map())}
         onSubmitFailure={noop}
         onSubmitSuccess={noop}
       />,
@@ -465,6 +471,7 @@ describe('<FormJS />', () => {
         task={assignedTaskWithForm(MOCK_TASK_ID)}
         user={userMocks.currentUser}
         onSubmit={() => Promise.resolve()}
+        onFileUpload={() => Promise.resolve(new Map())}
         onSubmitFailure={noop}
         onSubmitSuccess={noop}
       />,
@@ -508,6 +515,7 @@ describe('<FormJS />', () => {
         task={assignedTaskWithForm(MOCK_TASK_ID)}
         user={userMocks.currentUser}
         onSubmit={() => Promise.resolve()}
+        onFileUpload={() => Promise.resolve(new Map())}
         onSubmitFailure={noop}
         onSubmitSuccess={noop}
       />,

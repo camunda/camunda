@@ -14,7 +14,7 @@ type Payload = {
   files: Map<string, File[]>;
 };
 
-type FileUploadResponse = {
+type FileUploadMetadata = {
   documentType: string;
   storeId: string;
   documentId: string;
@@ -27,7 +27,7 @@ type FileUploadResponse = {
 
 function useUploadDocuments() {
   return useMutation<
-    Map<string, FileUploadResponse[]>,
+    Map<string, FileUploadMetadata[]>,
     RequestError | Error,
     Payload
   >({
@@ -49,7 +49,7 @@ function useUploadDocuments() {
       const responses = await Promise.all(requests);
 
       if (responses.every(({response}) => response !== null)) {
-        const metadataMapping: [string, FileUploadResponse[]][] = [];
+        const metadataMapping: [string, FileUploadMetadata[]][] = [];
 
         for (const [key, responses] of fileRequestMapping) {
           const metadata = await responses;
@@ -69,3 +69,4 @@ function useUploadDocuments() {
 }
 
 export {useUploadDocuments};
+export type {FileUploadMetadata};
