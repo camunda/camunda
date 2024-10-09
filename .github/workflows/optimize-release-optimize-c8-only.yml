@@ -71,10 +71,6 @@ jobs:
           echo "DOCKER_LATEST: ${{ inputs.DOCKER_LATEST }}"
           echo "IS_DRY_RUN: ${{ inputs.IS_DRY_RUN }}"
 
-      - name: "Read Java / Version Info"
-        id: "pom-info"
-        uses: YunaBraska/java-info-action@main
-
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
         with:
