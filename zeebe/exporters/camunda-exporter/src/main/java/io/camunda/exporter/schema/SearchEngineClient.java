@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.Set;
 
 public interface SearchEngineClient {
-  void createIndex(final IndexDescriptor indexDescriptor);
+  void createIndex(final IndexDescriptor indexDescriptor, final IndexSettings settings);
 
   void createIndexTemplate(
       final IndexTemplateDescriptor indexDescriptor,
