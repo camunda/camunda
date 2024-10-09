@@ -30,10 +30,10 @@ public class IncidentFilterTransformer implements FilterTransformer<IncidentFilt
 
   @Override
   public SearchQuery toSearchQuery(final IncidentFilter filter) {
-    final var keyQuery = getKeyQuery(filter.keys());
+    final var keyQuery = getKeyQuery(filter.incidentKeys());
     final var processDefinitionKeyQuery =
         getProcessDefinitionKeyQuery(filter.processDefinitionKeys());
-    final var bpmnProcessIdQuery = getBpmnProcessIdQuery(filter.bpmnProcessIds());
+    final var processDefinitionIdQuery = getProcessDefinitionIds(filter.processDefinitionIds());
     final var processInstanceKeyQuery = getProcessInstanceKeyQuery(filter.processInstanceKeys());
     final var errorTypeQuery = getErrorTypeQuery(filter.errorTypes());
     final var errorMessageQuery = getErrorMessageQuery(filter.errorMessages());
@@ -48,7 +48,7 @@ public class IncidentFilterTransformer implements FilterTransformer<IncidentFilt
     return and(
         keyQuery,
         processDefinitionKeyQuery,
-        bpmnProcessIdQuery,
+        processDefinitionIdQuery,
         processInstanceKeyQuery,
         errorTypeQuery,
         errorMessageQuery,
@@ -86,7 +86,7 @@ public class IncidentFilterTransformer implements FilterTransformer<IncidentFilt
     return null;
   }
 
-  private SearchQuery getBpmnProcessIdQuery(final List<String> bpmnProcessIds) {
+  private SearchQuery getProcessDefinitionIds(final List<String> bpmnProcessIds) {
     return stringTerms("bpmnProcessId", bpmnProcessIds);
   }
 

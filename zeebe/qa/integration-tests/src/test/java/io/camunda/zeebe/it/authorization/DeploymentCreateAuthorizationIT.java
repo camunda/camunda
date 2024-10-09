@@ -7,33 +7,27 @@
  */
 package io.camunda.zeebe.it.authorization;
 
+import static io.camunda.zeebe.it.util.AuthorizationsUtil.awaitUserExistsInElasticsearch;
+import static io.camunda.zeebe.it.util.AuthorizationsUtil.createClientWithAuthorization;
+import static io.camunda.zeebe.it.util.AuthorizationsUtil.createUserWithPermissions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.Profile;
-import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.protocol.rest.AuthorizationPatchRequest.ResourceTypeEnum;
 import io.camunda.zeebe.client.protocol.rest.AuthorizationPatchRequestPermissionsInner.PermissionTypeEnum;
+import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpRequest.BodyPublishers;
-import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
-import java.util.Base64;
-import org.awaitility.Awaitility;
+import java.util.List;
 import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
@@ -67,8 +61,6 @@ final class DeploymentCreateAuthorizationIT {
           .withEnv("xpack.ml.enabled", "false")
           .withEnv("action.destructive_requires_name", "false");
 
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-  private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
   @TestZeebe private TestStandaloneBroker zeebe;
   private ZeebeClient defaultUserClient;
   private ZeebeClient client;
@@ -87,16 +79,12 @@ final class DeploymentCreateAuthorizationIT {
             .withCamundaExporter("http://" + CONTAINER.getHttpHostAddress())
             .withAdditionalProfile(Profile.AUTH_BASIC);
     zeebe.start();
-    defaultUserClient = createClient("demo", "demo");
-  }
-
-  @BeforeEach
-  void beforeEach() throws Exception {
-    awaitUserExistsInElasticsearch("demo");
+    defaultUserClient = createClientWithAuthorization(zeebe, "demo", "demo");
+    awaitUserExistsInElasticsearch(CONTAINER.getHttpHostAddress(), "demo");
   }
 
   @Test
-  void shouldBeAuthorizedToDeployWithDefaultUser() throws Exception {
+  void shouldBeAuthorizedToDeployWithDefaultUser() {
     // given
     final var processId = Strings.newRandomValidBpmnId();
 
@@ -115,27 +103,15 @@ final class DeploymentCreateAuthorizationIT {
   @Test
   void shouldBeAuthorizedToDeployWithPermissions() throws Exception {
     // given
-    final var username = "foo";
-    final var password = "password";
     final var processId = Strings.newRandomValidBpmnId();
-    final var userResponse =
-        defaultUserClient
-            .newUserCreateCommand()
-            .username(username)
-            .password(password)
-            .name("name")
-            .email("foo@bar.com")
-            .send()
-            .join();
-    defaultUserClient
-        .newAddPermissionsCommand(userResponse.getUserKey())
-        .resourceType(ResourceTypeEnum.DEPLOYMENT)
-        .permission(PermissionTypeEnum.CREATE)
-        .resourceId("*")
-        .send()
-        .join();
-    initClient(username, password);
-    awaitUserExistsInElasticsearch(username);
+    client =
+        createUserWithPermissions(
+            zeebe,
+            defaultUserClient,
+            CONTAINER.getHttpHostAddress(),
+            "foo",
+            "password",
+            new Permissions(ResourceTypeEnum.DEPLOYMENT, PermissionTypeEnum.CREATE, List.of("*")));
 
     // when
     final var deploymentEvent =
@@ -154,19 +130,10 @@ final class DeploymentCreateAuthorizationIT {
   @Test
   void shouldBeUnAuthorizedToDeployWithPermissions() throws Exception {
     // given
-    final var username = "bar";
-    final var password = "password";
     final var processId = Strings.newRandomValidBpmnId();
-    defaultUserClient
-        .newUserCreateCommand()
-        .username(username)
-        .password(password)
-        .name("name")
-        .email("foo@bar.com")
-        .send()
-        .join();
-    initClient(username, password);
-    awaitUserExistsInElasticsearch(username);
+    client =
+        createUserWithPermissions(
+            zeebe, defaultUserClient, CONTAINER.getHttpHostAddress(), "bar", "password");
 
     // when
     final var deployFuture =
@@ -185,65 +152,4 @@ final class DeploymentCreateAuthorizationIT {
         .hasMessageContaining(
             "Unauthorized to perform operation 'CREATE' on resource 'DEPLOYMENT'");
   }
-
-  private void initClient(final String username, final String password) {
-    client = createClient(username, password);
-  }
-
-  private ZeebeClient createClient(final String username, final String password) {
-    return zeebe
-        .newClientBuilder()
-        .preferRestOverGrpc(true)
-        .defaultRequestTimeout(Duration.ofSeconds(15))
-        .credentialsProvider(
-            new CredentialsProvider() {
-              @Override
-              public void applyCredentials(final CredentialsApplier applier) {
-                applier.put(
-                    "Authorization",
-                    "Basic %s"
-                        .formatted(
-                            Base64.getEncoder()
-                                .encodeToString("%s:%s".formatted(username, password).getBytes())));
-              }
-
-              @Override
-              public boolean shouldRetryRequest(final StatusCode statusCode) {
-                return false;
-              }
-            })
-        .build();
-  }
-
-  private void awaitUserExistsInElasticsearch(final String username) throws Exception {
-    final var request =
-        HttpRequest.newBuilder()
-            .POST(
-                BodyPublishers.ofString(
-                    """
-                    {
-                      "query": {
-                        "match": {
-                          "username": "%s"
-                        }
-                      }
-                    }"""
-                        .formatted(username)))
-            .uri(new URI("http://%s/users/_count/".formatted(CONTAINER.getHttpHostAddress())))
-            .header("Content-Type", "application/json")
-            .build();
-
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(5))
-        .until(
-            () -> {
-              final var response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
-              final var userExistsResponse =
-                  OBJECT_MAPPER.readValue(response.body(), UserExistsResponse.class);
-              return userExistsResponse.count > 0;
-            });
-  }
-
-  @JsonIgnoreProperties(ignoreUnknown = true)
-  private record UserExistsResponse(int count) {}
 }

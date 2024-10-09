@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.broker.exporter.util.ControlledTestExporter;
 import io.camunda.zeebe.broker.exporter.util.ExternalExporter;
+import io.camunda.zeebe.broker.exporter.util.TestExporterFactory;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.util.jar.ExternalJarLoadException;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import net.bytebuddy.ByteBuddy;
 import org.junit.jupiter.api.Test;
@@ -33,29 +35,43 @@ final class ExporterRepositoryTest {
   private final ExporterRepository repository = new ExporterRepository();
 
   @Test
-  void shouldCacheDescriptorOnceLoaded() throws ExporterLoadException {
+  void shouldCacheDescriptorOnceLoaded() throws ExporterLoadException, ExternalJarLoadException {
     // given
     final var id = "myExporter";
     final var exporterClass = MinimalExporter.class;
 
     // when
-    final var descriptor = repository.load(id, exporterClass, null);
+    final var descriptor = repository.validateAndAddExporterDescriptor(id, exporterClass, null);
 
     // then
     assertThat(descriptor).isNotNull();
-    assertThat(repository.load(id, exporterClass)).isSameAs(descriptor);
+    assertThat(repository.load(id, null)).isSameAs(descriptor);
   }
 
   @Test
-  void shouldFailToLoadIfExporterInvalid() {
+  void shouldFailToValidateAndConfigureIfExporterInvalid() {
     // given
     final var id = "exporter";
-    final var exporterClass = InvalidExporter.class;
 
     // then
-    assertThatThrownBy(() -> repository.load(id, exporterClass))
+    assertThatThrownBy(
+            () -> repository.validateAndAddExporterDescriptor(id, InvalidExporter.class, null))
         .isInstanceOf(ExporterLoadException.class)
         .hasCauseInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  void shouldFailToLoadIfExporterClassNotFound() {
+    // given
+    final var id = "exporter";
+    final var config = new ExporterCfg();
+    config.setClassName("NonExistingClass.class");
+    config.setJarPath(null);
+
+    // then
+    assertThatThrownBy(() -> repository.load(id, config))
+        .isInstanceOf(ExporterLoadException.class)
+        .hasCauseInstanceOf(ClassNotFoundException.class);
   }
 
   @Test
@@ -63,6 +79,27 @@ final class ExporterRepositoryTest {
     // given
     final var config = new ExporterCfg();
     config.setClassName(ControlledTestExporter.class.getCanonicalName());
+    config.setJarPath(null);
+
+    // when
+    final var descriptor = repository.load("controlled", config);
+
+    // then
+    assertThat(config.isExternal()).isFalse();
+    assertThat(descriptor.newInstance()).isInstanceOf(ControlledTestExporter.class);
+  }
+
+  @Test
+  void shouldLoadInternalExporterUsingExporterFactory()
+      throws ExporterLoadException, ExternalJarLoadException {
+    // GIVEN we have factories
+    final List<ExporterDescriptor> exporterDescriptors =
+        List.of(new ExporterDescriptor(TestExporterFactory.EXPORTER_ID, new TestExporterFactory()));
+    final ExporterRepository repository = new ExporterRepository(exporterDescriptors);
+
+    // AND our config
+    final var config = new ExporterCfg();
+    config.setClassName("not used");
     config.setJarPath(null);
 
     // when
