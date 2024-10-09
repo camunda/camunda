@@ -999,7 +999,7 @@ public class LongPollingActivateJobsRestTest {
     final var brokerRequestValue = failRequest.getRequestWriter();
     final var activatedJob = activatedJobRef.get();
 
-    assertThat(failRequest.getKey()).isEqualTo(activatedJob.getKey());
+    assertThat(failRequest.getKey()).isEqualTo(activatedJob.getJobKey());
     assertThat(brokerRequestValue.getRetries()).isEqualTo(activatedJob.getRetries());
     assertThat(brokerRequestValue.getRetryBackoff()).isEqualTo(0);
     assertThat(brokerRequestValue.getErrorMessageBuffer()).isNotNull();

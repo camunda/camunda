@@ -3682,7 +3682,7 @@ components:
     ActivatedJob:
       type: object
       properties:
-        key:
+        jobKey:
           description: the key, a unique identifier for the job
           type: integer
           format: int64
