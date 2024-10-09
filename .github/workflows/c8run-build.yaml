@@ -69,6 +69,10 @@ jobs:
         run: npx playwright test
         working-directory: ./c8run/e2e_tests
 
+      - name: Run v2 API endpoint test
+        run: ./api_tests.sh
+        working-directory: ./c8run/e2e_tests
+
       - uses: actions/upload-artifact@v4
         with:
           name: playwright-report-${{ matrix.os }}
