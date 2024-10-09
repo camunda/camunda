@@ -2490,21 +2490,28 @@ components:
       type: object
       properties:
         variableKey:
+          description: The key for this variable.
           type: integer
           format: int64
         name:
+          description: Name of the variable.
           type: string
         value:
+          description: The value of the variable.
           type: string
         scopeKey:
+          description: The key of the scope of this variable.
           type: integer
           format: int64
         processInstanceKey:
+          description: The key of the process instance of this variable.
           type: integer
           format: int64
         tenantId:
+          description: Tenant id of this variable.
           type: string
         isTruncated:
+          description: Whether the value is truncated or not.
           type: boolean
     VariableSearchQueryResponse:
         allOf:
@@ -2521,23 +2528,31 @@ components:
       type: object
       properties:
         variableKey:
+          description: The key for this variable.
           type: integer
           format: int64
         name:
+          description: Name of this variable.
           type: string
         value:
+          description: Value of this variable.
           type: string
         fullValue:
+          description: Full value of this variable.
           type: string
         scopeKey:
+          description: The key of the scope of this variable.
           type: integer
           format: int64
         processInstanceKey:
+          description: The key of the process instance of this variable.
           type: integer
           format: int64
         tenantId:
+          description: Tenant id of this variable.
           type: string
         isTruncated:
+          description: Whether the value is truncated or not.
           type: boolean
     ProcessDefinitionSearchQueryRequest:
       allOf:
