@@ -217,6 +217,7 @@ public class NettyUnicastService implements ManagedUnicastService {
               dnsAddressResolverGroup =
                   new DnsAddressResolverGroup(
                       new DnsNameResolverBuilder(group.next())
+                          .consolidateCacheSize(128)
                           .dnsQueryLifecycleObserverFactory(
                               new BiDnsQueryLifecycleObserverFactory(
                                   ignored -> metrics,
