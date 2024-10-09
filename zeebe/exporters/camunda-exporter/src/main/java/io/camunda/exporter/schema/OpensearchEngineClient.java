@@ -10,6 +10,7 @@ package io.camunda.exporter.schema;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.exceptions.ElasticsearchExporterException;
+import io.camunda.exporter.exceptions.IndexSchemaValidationException;
 import io.camunda.exporter.exceptions.OpensearchExporterException;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
@@ -17,14 +18,19 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonpDeserializer;
 import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.mapping.Property;
+import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
+import org.opensearch.client.opensearch.indices.PutIndicesSettingsRequest;
 import org.opensearch.client.opensearch.indices.PutMappingRequest;
+import org.opensearch.client.opensearch.indices.get_index_template.IndexTemplateItem;
 import org.opensearch.client.opensearch.indices.put_index_template.IndexTemplateMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,10 +115,39 @@ public class OpensearchEngineClient implements SearchEngineClient {
 
   @Override
   public void putSettings(
-      final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings) {}
+      final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings) {
+    final var request = putIndexSettingsRequest(indexDescriptors, toAppendSettings);
+
+    try {
+      client.indices().putSettings(request);
+    } catch (final IOException e) {
+      final var errMsg =
+          String.format(
+              "settings PUT failed for the following indices [%s]",
+              SearchEngineClient.listIndices(indexDescriptors));
+      LOG.error(errMsg, e);
+      throw new ElasticsearchExporterException(errMsg, e);
+    }
+  }
 
   @Override
   public void putIndexLifeCyclePolicy(final String policyName, final String deletionMinAge) {}
+
+  private PutIndicesSettingsRequest putIndexSettingsRequest(
+      final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings) {
+
+    final org.opensearch.client.opensearch.indices.IndexSettings settings =
+        SearchEngineClient.mapToSettings(
+            toAppendSettings,
+            MAPPER,
+            (inp) ->
+                deserializeJson(
+                    org.opensearch.client.opensearch.indices.IndexSettings._DESERIALIZER, inp));
+    return new PutIndicesSettingsRequest.Builder()
+        .index(SearchEngineClient.listIndices(indexDescriptors))
+        .settings(settings)
+        .build();
+  }
 
   private PutMappingRequest putMappingRequest(
       final IndexDescriptor indexDescriptor, final Set<IndexMappingProperty> newProperties) {

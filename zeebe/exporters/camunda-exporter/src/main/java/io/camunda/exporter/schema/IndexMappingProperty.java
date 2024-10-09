@@ -47,9 +47,6 @@ public record IndexMappingProperty(String name, Object typeDefinition) {
     return JSONP_MAPPER.jsonProvider().createParser(typeDefinitionJson);
   }
 
-  //  T = OP.Property, or
-  //  T = ELS.Property
-
   public static IndexMappingProperty createIndexMappingProperty(
       final Entry<String, Object> propertiesMapEntry) {
     return new IndexMappingProperty(propertiesMapEntry.getKey(), propertiesMapEntry.getValue());
