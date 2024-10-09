@@ -5,19 +5,17 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.schema.descriptors.operate.template;
+package io.camunda.webapps.schema.descriptors;
 
-import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-import io.camunda.webapps.schema.descriptors.operate.index.AbstractIndexDescriptor;
 import java.util.List;
 
 public abstract class AbstractTemplateDescriptor extends AbstractIndexDescriptor
     implements IndexTemplateDescriptor {
 
   private static final String SCHEMA_CREATE_TEMPLATE_JSON_ELASTICSEARCH =
-      SCHEMA_FOLDER_ELASTICSEARCH + "/template/operate-%s.json";
+      SCHEMA_FOLDER_ELASTICSEARCH + "/template/%s-%s.json";
   private static final String SCHEMA_CREATE_TEMPLATE_JSON_OPENSEARCH =
-      SCHEMA_FOLDER_OPENSEARCH + "/template/operate-%s.json";
+      SCHEMA_FOLDER_OPENSEARCH + "/template/%s-%s.json";
 
   public AbstractTemplateDescriptor(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
@@ -43,11 +41,10 @@ public abstract class AbstractTemplateDescriptor extends AbstractIndexDescriptor
 
   @Override
   public String getMappingsClasspathFilename() {
-    if (isElasticsearch) {
-      return String.format(SCHEMA_CREATE_TEMPLATE_JSON_ELASTICSEARCH, getIndexName());
-    } else {
-      return String.format(SCHEMA_CREATE_TEMPLATE_JSON_OPENSEARCH, getIndexName());
-    }
+    return isElasticsearch
+        ? String.format(
+            SCHEMA_CREATE_TEMPLATE_JSON_ELASTICSEARCH, getComponentName(), getIndexName())
+        : String.format(SCHEMA_CREATE_TEMPLATE_JSON_OPENSEARCH, getComponentName(), getIndexName());
   }
 
   @Override
