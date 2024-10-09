@@ -58,4 +58,13 @@ public class VariableServiceTest {
     final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array());
     when(client.searchVariables(any(), any())).thenReturn(result);
   }
+
+  @Test
+  public void shouldReturnSingleVariableForGet() {
+    // when
+    final var searchQueryResult = services.getByKey(1L);
+
+    // then
+    assertThat(searchQueryResult.key()).isEqualTo(123L);
+  }
 }

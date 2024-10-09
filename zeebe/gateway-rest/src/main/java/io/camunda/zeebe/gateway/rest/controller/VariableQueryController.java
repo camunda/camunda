@@ -18,6 +18,8 @@ import jakarta.validation.ValidationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -60,6 +62,22 @@ public class VariableQueryController {
               HttpStatus.INTERNAL_SERVER_ERROR,
               e.getMessage(),
               "Failed to execute UserTask Search Query");
+      return RestErrorMapper.mapProblemToResponse(problemDetail);
+    }
+  }
+
+  @GetMapping(
+      path = "/{variableKey}",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public ResponseEntity<Object> getByKey(@PathVariable("variableKey") final Long variableKey) {
+    try {
+      // Success case: Return the left side with the VariableItem wrapped in ResponseEntity
+      return ResponseEntity.ok()
+          .body(SearchQueryResponseMapper.toVariable(variableServices.getByKey(variableKey)));
+    } catch (final Exception exc) {
+      // Error case: Return the right side with ProblemDetail
+      final var problemDetail =
+          RestErrorMapper.mapErrorToProblem(exc, RestErrorMapper.DEFAULT_REJECTION_MAPPER);
       return RestErrorMapper.mapProblemToResponse(problemDetail);
     }
   }

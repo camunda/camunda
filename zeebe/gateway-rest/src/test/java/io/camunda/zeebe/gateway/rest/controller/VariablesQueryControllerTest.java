@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.query.VariableQuery;
@@ -31,6 +32,21 @@ import org.springframework.http.MediaType;
 @WebMvcTest(value = VariableQueryController.class, properties = "camunda.rest.query.enabled=true")
 public class VariablesQueryControllerTest extends RestControllerTest {
 
+  private static final Long VALID_VARIABLE_KEY = 0L;
+  private static final Long INVALID_VARIABLE_KEY = 99L;
+
+  private static final String EXPECT_SINGLE_VARIABLE_RESPONSE =
+      """
+          {
+              "variableKey": 0,
+              "name": "n",
+              "value": "v",
+              "fullValue": "v",
+              "scopeKey": 2,
+              "processInstanceKey": 3,
+              "tenantId": "<default>",
+              "isTruncated": false
+          }""";
   private static final String EXPECTED_SEARCH_RESPONSE =
       """
           {
@@ -68,6 +84,14 @@ public class VariablesQueryControllerTest extends RestControllerTest {
   void setupServices() {
     when(variableServices.withAuthentication(any(Authentication.class)))
         .thenReturn(variableServices);
+
+    when(variableServices.getByKey(VALID_VARIABLE_KEY))
+        .thenReturn(new VariableEntity(0L, "n", "v", "v", false, 2L, 3L, "<default>"));
+
+    when(variableServices.getByKey(INVALID_VARIABLE_KEY))
+        .thenThrow(
+            new NotFoundException(
+                String.format("Variable with key %d not found", INVALID_VARIABLE_KEY)));
   }
 
   @Test
@@ -273,5 +297,47 @@ public class VariablesQueryControllerTest extends RestControllerTest {
         .json(expectedResponse);
 
     verify(variableServices, never()).search(any(VariableQuery.class));
+  }
+
+  @Test
+  void shouldGetVariableByKey() {
+    // when / then
+    webClient
+        .get()
+        .uri("/v2/variables/" + VALID_VARIABLE_KEY)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECT_SINGLE_VARIABLE_RESPONSE);
+
+    verify(variableServices).getByKey(VALID_VARIABLE_KEY);
+  }
+
+  @Test
+  void shouldReturn404ForInvalidUserTaskKey() {
+    // when / then
+    webClient
+        .get()
+        .uri("/v2/variables/" + INVALID_VARIABLE_KEY)
+        .exchange()
+        .expectStatus()
+        .isNotFound()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "NOT_FOUND",
+                  "status": 404,
+                  "detail": "Variable with key 99 not found",
+                  "instance": "/v2/variables/99"
+                }""");
+
+    verify(variableServices).getByKey(INVALID_VARIABLE_KEY);
   }
 }
