@@ -86,31 +86,10 @@ const Task: React.FC = observer(() => {
 
   async function handleSubmission(
     variables: Pick<Variable, 'name' | 'value'>[],
-    files?: Map<string, File[]>,
   ) {
-    let fileUploadResponses: Awaited<ReturnType<typeof uploadDocuments>> =
-      new Map();
-
-    if (files !== undefined) {
-      fileUploadResponses = await uploadDocuments({
-        files,
-      });
-    }
-
     await completeTask({
       taskId,
-      variables:
-        fileUploadResponses.size === 0
-          ? variables
-          : [
-              ...variables,
-              {
-                name: 'documentMetadata',
-                value: JSON.stringify(
-                  Object.fromEntries(fileUploadResponses.entries()),
-                ),
-              },
-            ],
+      variables,
     });
 
     const filter = new URLSearchParams(window.location.search).get('filter');
@@ -130,6 +109,16 @@ const Task: React.FC = observer(() => {
       kind: 'success',
       title: t('taskCompletedNotification'),
       isDismissable: true,
+    });
+  }
+
+  async function handleFileUpload(files: Map<string, File[]>) {
+    if (files.size === 0) {
+      return new Map();
+    }
+
+    return uploadDocuments({
+      files,
     });
   }
 
@@ -188,6 +177,7 @@ const Task: React.FC = observer(() => {
         id={isEmbeddedForm ? getFormId(formKey) : formId!}
         user={currentUser}
         onSubmit={handleSubmission}
+        onFileUpload={handleFileUpload}
         onSubmitSuccess={handleSubmissionSuccess}
         onSubmitFailure={handleSubmissionFailure}
         processDefinitionKey={processDefinitionKey!}
