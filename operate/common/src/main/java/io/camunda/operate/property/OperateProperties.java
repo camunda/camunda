@@ -64,7 +64,7 @@ public class OperateProperties {
   private String version = UNKNOWN_VERSION;
 
   @NestedConfigurationProperty
-  private final OperateElasticsearchProperties elasticsearch = new OperateElasticsearchProperties();
+  private OperateElasticsearchProperties elasticsearch = new OperateElasticsearchProperties();
 
   @NestedConfigurationProperty
   private OperateOpensearchProperties opensearch = new OperateOpensearchProperties();
@@ -157,6 +157,10 @@ public class OperateProperties {
 
   public OperateElasticsearchProperties getElasticsearch() {
     return elasticsearch;
+  }
+
+  public void setElasticsearch(final OperateElasticsearchProperties elasticsearch) {
+    this.elasticsearch = elasticsearch;
   }
 
   public OperateOpensearchProperties getOpensearch() {
