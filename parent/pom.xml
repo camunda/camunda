@@ -2483,6 +2483,7 @@
                 -->
                 <executable>java</executable>
                 <includePluginDependencies>true</includePluginDependencies>
+                <longClasspath>true</longClasspath>
                 <arguments combine.children="append">
                   <argument>-Dsbe.output.dir=${project.build.directory}/generated-sources/sbe</argument>
                   <argument>-Dsbe.java.generate.interfaces=true</argument>
