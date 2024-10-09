@@ -21,32 +21,32 @@ import io.camunda.zeebe.client.impl.search.query.SearchQuerySortBase;
 public class VariableSortImpl extends SearchQuerySortBase<VariableSort> implements VariableSort {
 
   @Override
-  public VariableSort variableKey(final Long key) {
+  public VariableSort variableKey() {
     return field("key");
   }
 
   @Override
-  public VariableSort value(final String value) {
+  public VariableSort value() {
     return field("value");
   }
 
   @Override
-  public VariableSort name(final String name) {
+  public VariableSort name() {
     return field("name");
   }
 
   @Override
-  public VariableSort scopeKey(final Long scopeKey) {
+  public VariableSort scopeKey() {
     return field("scopeKey");
   }
 
   @Override
-  public VariableSort processInstanceKey(final Long processInstanceKey) {
+  public VariableSort processInstanceKey() {
     return field("processInstanceKey");
   }
 
   @Override
-  public VariableSort tenantId(final String tenantId) {
+  public VariableSort tenantId() {
     return field("tenantId");
   }
 

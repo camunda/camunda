@@ -68,7 +68,7 @@ public class VariableQueryImpl
   public ZeebeFuture<SearchQueryResponse<Variable>> send() {
     final HttpZeebeFuture<SearchQueryResponse<Variable>> result = new HttpZeebeFuture<>();
     httpClient.post(
-        "/user-tasks/search",
+        "/variables/search",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         VariableSearchQueryResponse.class,
