@@ -15,6 +15,10 @@
  */
 package io.camunda.zeebe.protocol.record.intent;
 
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
   CREATING(0),
   CREATED(1),
@@ -119,5 +123,11 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
   @Override
   public boolean shouldBanInstanceOnError() {
     return shouldBanInstance;
+  }
+
+  public static Set<UserTaskIntent> commands() {
+    return Stream.of(UserTaskIntent.values())
+        .filter(intent -> !intent.isEvent())
+        .collect(Collectors.toSet());
   }
 }
