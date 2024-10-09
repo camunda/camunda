@@ -59,6 +59,7 @@ import io.camunda.zeebe.client.api.fetch.DecisionInstanceGetRequest;
 import io.camunda.zeebe.client.api.fetch.DecisionRequirementsGetRequest;
 import io.camunda.zeebe.client.api.fetch.DecisionRequirementsGetXmlRequest;
 import io.camunda.zeebe.client.api.fetch.ProcessDefinitionGetRequest;
+import io.camunda.zeebe.client.api.fetch.ProcessDefinitionGetXmlRequest;
 import io.camunda.zeebe.client.api.fetch.ProcessInstanceGetRequest;
 import io.camunda.zeebe.client.api.fetch.UserTaskGetFormRequest;
 import io.camunda.zeebe.client.api.fetch.UserTaskGetRequest;
@@ -105,6 +106,7 @@ import io.camunda.zeebe.client.impl.fetch.DecisionInstanceGetRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.DecisionRequirementsGetRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.DecisionRequirementsGetXmlRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.ProcessDefinitionGetRequestImpl;
+import io.camunda.zeebe.client.impl.fetch.ProcessDefinitionGetXmlRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.ProcessInstanceGetRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.UserTaskGetFormRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.UserTaskGetRequestImpl;
@@ -576,6 +578,12 @@ public final class ZeebeClientImpl implements ZeebeClient {
   public ProcessDefinitionGetRequest newProcessDefinitionGetRequest(
       final long processDefinitionKey) {
     return new ProcessDefinitionGetRequestImpl(httpClient, processDefinitionKey);
+  }
+
+  @Override
+  public ProcessDefinitionGetXmlRequest newProcessDefinitionGetXmlRequest(
+      final long processDefinitionKey) {
+    return new ProcessDefinitionGetXmlRequestImpl(httpClient, processDefinitionKey);
   }
 
   @Override
