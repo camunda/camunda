@@ -43,7 +43,7 @@ public class CodeQualityTest {
   }
 
   private static void checkForForbiddenAnnotations(File currentDirectory) {
-    final String[] forbiddenAnnotations = {
+    final String[] forbiddenStrings = {
       "@NoArgsConstructor",
       "@AllArgsConstructor",
       "@RequiredArgsConstructor",
@@ -57,7 +57,8 @@ public class CodeQualityTest {
       "@Data",
       "@Getter",
       "@Setter",
-      "@Slf4j"
+      "@Slf4j",
+      "import lombok"
     };
 
     if (currentDirectory == null || !currentDirectory.isDirectory()) {
@@ -82,13 +83,13 @@ public class CodeQualityTest {
           throw new OptimizeRuntimeException(e);
         }
 
-        for (String forbiddenAnnotation : forbiddenAnnotations) {
-          if (fileContent.contains(forbiddenAnnotation)) {
+        for (String forbiddenString : forbiddenStrings) {
+          if (fileContent.contains(forbiddenString)) {
             Assertions.fail(
                 "file "
                     + entry.getAbsolutePath()
-                    + " contains the Lombok annotation "
-                    + forbiddenAnnotation);
+                    + " contains the forbidden string '"
+                    + forbiddenString + "'");
           }
         }
       }
