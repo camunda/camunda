@@ -62,18 +62,37 @@ public final class SchemaTestUtil {
   @SuppressWarnings("unchecked")
   public static void validateMappings(final TypeMapping mapping, final String fileName)
       throws IOException {
+    final var propertiesMap = getFileProperties(fileName);
+
+    assertThat(mapping.properties().size()).isEqualTo(propertiesMap.size());
+    propertiesMap.forEach(
+        (key, value) ->
+            assertThat(mapping.properties().get(key)._kind().jsonValue())
+                .isEqualTo(value.get("type")));
+  }
+
+  public static void validateMappings(
+      final org.opensearch.client.opensearch._types.mapping.TypeMapping mapping,
+      final String fileName)
+      throws IOException {
+
+    final var propertiesMap = getFileProperties(fileName);
+
+    assertThat(mapping.properties().size()).isEqualTo(propertiesMap.size());
+    propertiesMap.forEach(
+        (key, value) ->
+            assertThat(mapping.properties().get(key)._kind().jsonValue())
+                .isEqualTo(value.get("type")));
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Map<String, Map<String, Object>> getFileProperties(final String fileName)
+      throws IOException {
     try (final var expectedMappings = SchemaTestUtil.class.getResourceAsStream(fileName)) {
       final var jsonMap =
           MAPPER.readValue(
               expectedMappings, new TypeReference<Map<String, Map<String, Object>>>() {});
-      final var propertiesMap =
-          (Map<String, Map<String, Object>>) jsonMap.get("mappings").get("properties");
-
-      assertThat(mapping.properties().size()).isEqualTo(propertiesMap.size());
-      propertiesMap.forEach(
-          (key, value) ->
-              assertThat(mapping.properties().get(key)._kind().jsonValue())
-                  .isEqualTo(value.get("type")));
+      return (Map<String, Map<String, Object>>) jsonMap.get("mappings").get("properties");
     }
   }
 }
