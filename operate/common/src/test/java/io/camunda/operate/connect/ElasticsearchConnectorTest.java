@@ -39,10 +39,9 @@ class ElasticsearchConnectorTest {
     final PluginRepository pluginRepository = new PluginRepository();
     pluginRepository.load(
         List.of(new PluginConfiguration("plg1", TestPlugin.class.getName(), null)));
-    final var connector = Mockito.spy(new ElasticsearchConnector());
-    Mockito.doReturn(true).when(connector).checkHealth(Mockito.any(ElasticsearchClient.class));
+    final var connector = spy(new ElasticsearchConnector(operateProperties));
+    doReturn(true).when(connector).checkHealth(any(ElasticsearchClient.class));
     connector.setEsClientRepository(pluginRepository);
-    connector.setOperateProperties(operateProperties);
     final var client = connector.elasticsearchClient();
 
     // when
@@ -66,9 +65,8 @@ class ElasticsearchConnectorTest {
     final PluginRepository pluginRepository = new PluginRepository();
     pluginRepository.load(
         List.of(new PluginConfiguration("plg1", TestPlugin.class.getName(), null)));
-    final var connector = Mockito.spy(new ElasticsearchConnector());
-    Mockito.doReturn(true).when(connector).checkHealth(Mockito.any(RestHighLevelClient.class));
-    connector.setOperateProperties(operateProperties);
+    final var connector = spy(new ElasticsearchConnector(operateProperties));
+    doReturn(true).when(connector).checkHealth(any(RestHighLevelClient.class));
     final var client = connector.createEsClient(esProperties, pluginRepository);
 
     // when
