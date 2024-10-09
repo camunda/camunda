@@ -57,6 +57,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoutingState;
 import io.camunda.zeebe.engine.state.mutable.MutableSignalSubscriptionState;
+import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
 import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
@@ -64,6 +65,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
 import io.camunda.zeebe.engine.state.routing.DbRoutingState;
 import io.camunda.zeebe.engine.state.signal.DbSignalSubscriptionState;
+import io.camunda.zeebe.engine.state.tenant.DbTenantState;
 import io.camunda.zeebe.engine.state.user.DbUserState;
 import io.camunda.zeebe.engine.state.variable.DbVariableState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -104,6 +106,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableClockState clockState;
   private final MutableAuthorizationState authorizationState;
   private final MutableRoutingState routingState;
+  private final MutableTenantState tenantState;
 
   private final int partitionId;
 
@@ -152,6 +155,7 @@ public class ProcessingDbState implements MutableProcessingState {
     clockState = new DbClockState(zeebeDb, transactionContext);
     authorizationState = new DbAuthorizationState(zeebeDb, transactionContext);
     routingState = new DbRoutingState(zeebeDb, transactionContext);
+    tenantState = new DbTenantState(zeebeDb, transactionContext);
   }
 
   @Override
@@ -285,6 +289,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableClockState getClockState() {
     return clockState;
+  }
+
+  @Override
+  public MutableTenantState getTenantState() {
+    return tenantState;
   }
 
   @Override

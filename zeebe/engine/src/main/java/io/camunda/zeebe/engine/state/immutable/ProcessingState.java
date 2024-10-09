@@ -69,4 +69,7 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
   boolean isEmpty(final ZbColumnFamilies column);
 
   ClockState getClockState();
+
+  TenantState getTenantState();
+
 }
