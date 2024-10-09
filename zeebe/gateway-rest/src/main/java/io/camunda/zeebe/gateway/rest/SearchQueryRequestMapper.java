@@ -459,9 +459,9 @@ public final class SearchQueryRequestMapper {
     final var builder = FilterBuilders.incident();
 
     if (filter != null) {
-      ofNullable(filter.getKey()).ifPresent(builder::keys);
+      ofNullable(filter.getIncidentKey()).ifPresent(builder::incidentKeys);
       ofNullable(filter.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
-      ofNullable(filter.getProcessDefinitionId()).ifPresent(builder::bpmnProcessIds);
+      ofNullable(filter.getProcessDefinitionId()).ifPresent(builder::processDefinitionIds);
       ofNullable(filter.getProcessInstanceKey()).ifPresent(builder::processInstanceKeys);
       ofNullable(filter.getErrorType())
           .ifPresent(t -> builder.errorTypes(IncidentEntity.ErrorType.valueOf(t.getValue())));
@@ -596,9 +596,9 @@ public final class SearchQueryRequestMapper {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case "key" -> builder.key();
+        case "incidentKey" -> builder.incidentKey();
         case "processDefinitionKey" -> builder.processDefinitionKey();
-        case "bpmnProcessId" -> builder.bpmnProcessId();
+        case "processDefinitionId" -> builder.processDefinitionId();
         case "processInstanceKey" -> builder.processInstanceKey();
         case "errorType" -> builder.errorType();
         case "errorMessage" -> builder.errorMessage();

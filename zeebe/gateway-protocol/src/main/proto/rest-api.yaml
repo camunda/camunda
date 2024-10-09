@@ -3051,7 +3051,7 @@ components:
     IncidentFilterRequest:
       type: object
       properties:
-        key:
+        incidentKey:
           type: integer
           format: int64
           description: The assigned key, which acts as a unique identifier for this incident.
@@ -3126,7 +3126,7 @@ components:
     IncidentItem:
       type: object
       properties:
-        key:
+        incidentKey:
           type: integer
           format: int64
           description: The assigned key, which acts as a unique identifier for this incident.
