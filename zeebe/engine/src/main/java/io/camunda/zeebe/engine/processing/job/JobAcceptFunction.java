@@ -14,8 +14,5 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 @FunctionalInterface
 public interface JobAcceptFunction {
 
-  void accept(
-      final TypedRecord<JobRecord> record,
-      final CommandControl<JobRecord> commandControl,
-      final JobRecord jobFromState);
+  void accept(final TypedRecord<JobRecord> record, final CommandControl<JobRecord> commandControl);
 }

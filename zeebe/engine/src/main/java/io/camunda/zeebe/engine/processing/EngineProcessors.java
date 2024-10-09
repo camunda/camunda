@@ -181,7 +181,8 @@ public final class EngineProcessors {
         writers,
         jobMetrics,
         config,
-        clock);
+        clock,
+        authCheckBehavior);
 
     addIncidentProcessors(
         processingState,
