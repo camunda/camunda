@@ -91,7 +91,7 @@ public record ProcessInstanceSort(List<FieldSorting> orderings) implements SortO
       return this;
     }
 
-    public Builder incident() {
+    public Builder hasIncident() {
       currentOrdering = new FieldSorting("incident", null);
       return this;
     }

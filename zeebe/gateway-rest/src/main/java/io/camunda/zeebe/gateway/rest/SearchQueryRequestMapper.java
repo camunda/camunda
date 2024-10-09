@@ -345,7 +345,7 @@ public final class SearchQueryRequestMapper {
       ofNullable(toDateValueFilter(filter.getStartDate())).ifPresent(builder::startDate);
       ofNullable(toDateValueFilter(filter.getEndDate())).ifPresent(builder::endDate);
       ofNullable(filter.getState()).ifPresent(state -> builder.states(state.getValue()));
-      ofNullable(filter.getIncident()).ifPresent(builder::incident);
+      ofNullable(filter.getHasIncident()).ifPresent(builder::hasIncident);
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     }
 
@@ -499,7 +499,7 @@ public final class SearchQueryRequestMapper {
         case "startDate" -> builder.startDate();
         case "endDate" -> builder.endDate();
         case "state" -> builder.state();
-        case "incident" -> builder.incident();
+        case "incident" -> builder.hasIncident();
         case "tenantId" -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }

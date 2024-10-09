@@ -112,7 +112,7 @@ public class ProcessQueryTest {
     assertThat(result.getStartDate()).isNotNull();
     assertThat(result.getEndDate()).isNull();
     assertThat(result.getState()).isEqualTo("ACTIVE");
-    assertThat(result.getIncident()).isFalse();
+    assertThat(result.getHasIncident()).isFalse();
     assertThat(result.getTenantId()).isEqualTo("<default>");
   }
 
@@ -248,7 +248,7 @@ public class ProcessQueryTest {
   void shouldRetrieveProcessInstancesWithIncidents() {
     // when
     final var result =
-        zeebeClient.newProcessInstanceQuery().filter(f -> f.incident(true)).send().join();
+        zeebeClient.newProcessInstanceQuery().filter(f -> f.hasIncident(true)).send().join();
 
     // then
     assertThat(result.items().size()).isEqualTo(1);
