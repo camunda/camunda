@@ -427,7 +427,7 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
     }
   }
 
-  private static class PropertyAnnotatedClass {
+  private static final class PropertyAnnotatedClass {
     @JsonProperty("some_name")
     private String value;
   }
