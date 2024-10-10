@@ -8,5 +8,9 @@
 package io.camunda.zeebe.engine.state.mutable;
 
 import io.camunda.zeebe.engine.state.immutable.RoleState;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 
-public interface MutableRoleState extends RoleState {}
+public interface MutableRoleState extends RoleState {
+
+  void createRole(RoleRecord roleRecord);
+}
