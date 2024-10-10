@@ -545,7 +545,7 @@ paths:
   /user-tasks/{userTaskKey}/form:
     get:
       tags:
-        - User Task
+        - User task
       summary: Return user task form
       description: |
         Get the form of a user task.
@@ -1271,7 +1271,7 @@ paths:
   /flownode-instances/search:
     post:
       tags:
-        - Flow node Instance
+        - Flow node instance
       summary: Query flow node instances (alpha)
       description: |
         Search for flow node instances based on given criteria.
