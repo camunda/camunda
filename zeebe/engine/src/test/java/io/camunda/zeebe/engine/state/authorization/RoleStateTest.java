@@ -39,7 +39,7 @@ public class RoleStateTest {
     roleState.createRole(roleRecord);
 
     // then
-    final var persistedRole = roleState.getRole(roleKey);
+    final var persistedRole = roleState.getRole(roleKey).get();
     assertThat(persistedRole.getRoleKey()).isEqualTo(roleKey);
     assertThat(persistedRole.getName()).isEqualTo(roleName);
 
@@ -53,7 +53,7 @@ public class RoleStateTest {
     final var role = roleState.getRole(1L);
 
     // then
-    assertThat(role).isNull();
+    assertThat(role).isEmpty();
   }
 
   @Test

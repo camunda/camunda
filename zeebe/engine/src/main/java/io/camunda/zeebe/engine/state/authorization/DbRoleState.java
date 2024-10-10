@@ -17,6 +17,7 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import java.util.Optional;
 
 public class DbRoleState implements MutableRoleState {
 
@@ -68,10 +69,10 @@ public class DbRoleState implements MutableRoleState {
   }
 
   @Override
-  public RoleRecord getRole(final long roleKey) {
+  public Optional<RoleRecord> getRole(final long roleKey) {
     this.roleKey.wrapLong(roleKey);
     final var persistedRole = roleColumnFamily.get(this.roleKey);
-    return persistedRole != null ? persistedRole.getRole() : null;
+    return persistedRole != null ? Optional.of(persistedRole.getRole()) : Optional.empty();
   }
 
   @Override
