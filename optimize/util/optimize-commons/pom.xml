@@ -77,25 +77,8 @@
       <artifactId>json-path</artifactId>
       <version>${jsonpath.version}</version>
     </dependency>
-    <dependency>
-      <groupId>org.yaml</groupId>
-      <artifactId>snakeyaml</artifactId>
-      <version>2.3</version>
-    </dependency>
-
-    <!-- ClassGraph  -->
-    <dependency>
-      <groupId>io.github.classgraph</groupId>
-      <artifactId>classgraph</artifactId>
-      <version>4.8.176</version>
-    </dependency>
 
     <!-- Logging -->
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>jul-to-slf4j</artifactId>
-      <version>${slf4j.version}</version>
-    </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
@@ -111,7 +94,8 @@
       <artifactId>slf4j-api</artifactId>
       <version>${slf4j.version}</version>
     </dependency>
-    <!-- needed for elasticsearch logs to be available over slf4j -->
+
+    <!-- needed for elasticsearch logs to be available over slf4j. Dependency:analyze error suppressed. -->
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-to-slf4j</artifactId>
@@ -135,20 +119,9 @@
       <version>3.17.0</version>
     </dependency>
     <dependency>
-      <groupId>com.ethlo.time</groupId>
-      <artifactId>itu</artifactId>
-      <version>1.10.2</version>
-    </dependency>
-    <dependency>
       <groupId>net.jodah</groupId>
       <artifactId>failsafe</artifactId>
       <version>2.4.4</version>
-    </dependency>
-    <dependency>
-      <groupId>jakarta.annotation</groupId>
-      <artifactId>jakarta.annotation-api</artifactId>
-      <version>3.0.0</version>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>com.vdurmont</groupId>
@@ -160,12 +133,6 @@
     <dependency>
       <groupId>org.apache.httpcomponents.core5</groupId>
       <artifactId>httpcore5</artifactId>
-      <version>${apache.http5-core.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.httpcomponents.core5</groupId>
-      <artifactId>httpcore5-h2</artifactId>
       <version>${apache.http5-core.version}</version>
     </dependency>
 
@@ -199,16 +166,21 @@
       <version>1.12.772</version>
       <scope>compile</scope>
     </dependency>
+
+    <!-- this is necessary. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>sdk-core</artifactId>
       <version>${awssdk.version}</version>
     </dependency>
+
+    <!-- this is necessary. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>sts</artifactId>
       <version>${awssdk.version}</version>
     </dependency>
+
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>netty-nio-client</artifactId>
@@ -242,9 +214,115 @@
       <scope>test</scope>
     </dependency>
 
+    <!-- used/undeclared block -->
+
+    <dependency>
+      <groupId>org.wiremock</groupId>
+      <artifactId>wiremock</artifactId>
+      <version>3.9.1</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpcore-nio</artifactId>
+      <version>4.4.16</version>
+      <scope>compile</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
+      <version>${spring.version}</version>
+      <scope>compile</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+      <version>${httpclient.version}</version>
+      <scope>compile</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.elasticsearch.client</groupId>
+      <artifactId>elasticsearch-rest-client</artifactId>
+      <version>8.13.4</version>
+      <scope>compile</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>5.11.0</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+      <version>2.17.2</version>
+      <scope>compile</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpcore</artifactId>
+      <version>4.4.16</version>
+      <scope>compile</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-beans</artifactId>
+      <version>${spring.version}</version>
+      <scope>compile</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpasyncclient</artifactId>
+      <version>4.1.5</version>
+      <scope>compile</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+      <version>2.17.2</version>
+      <scope>compile</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>http-client-spi</artifactId>
+      <version>${awssdk.version}</version>
+      <scope>compile</scope>
+    </dependency>
+
   </dependencies>
 
   <build>
+     <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <version>3.8.0</version>
+          <configuration>
+            <ignoredUnusedDeclaredDependencies combine.children="append">
+              <!-- TODO: remove once Zeebe's parent is Optimize's parent -->
+              <dep>org.wiremock:wiremock-jetty12</dep>
+
+              <dep>org.apache.logging.log4j:log4j-to-slf4j</dep>
+              <dep>software.amazon.awssdk:sdk-core</dep>
+              <dep>software.amazon.awssdk:sts</dep>
+            </ignoredUnusedDeclaredDependencies>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+
     <plugins>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>

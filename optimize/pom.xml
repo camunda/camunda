@@ -22,6 +22,10 @@
     <!-- maven plugins -->
     <surefire-plugin.version>3.5.0</surefire-plugin.version>
 
+    <!-- maven dependency plugin -->
+    <dependencyAnalyzeFailOnWarning>false</dependencyAnalyzeFailOnWarning>
+    <dependencyAnalyze.failOnWarning>${dependencyAnalyzeFailOnWarning}</dependencyAnalyze.failOnWarning>
+
     <!-- DATABASE -->
     <!-- Elasticsearch-->
     <elasticsearch.client.version>8.13.0</elasticsearch.client.version>
@@ -415,24 +419,10 @@
       <version>4.2.2</version>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-codec-http</artifactId>
-      <version>${netty.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-codec-http2</artifactId>
-      <version>${netty.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-handler</artifactId>
-      <version>${netty.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-handler-proxy</artifactId>
       <version>${netty.version}</version>
     </dependency>
   </dependencies>
@@ -444,6 +434,28 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
           <version>3.8.0</version>
+          <configuration>
+            <failOnWarning>${dependencyAnalyze.failOnWarning}</failOnWarning>
+            <ignoredUnusedDeclaredDependencies combine.children="append">
+              <!-- TODO: remove once Lombok is removed from the project -->
+              <dep>org.projectlombok:lombok</dep>
+
+              <!-- ignore common test dependencies -->
+              <dep>org.junit.jupiter:junit-jupiter-api</dep>
+              <dep>org.junit.platform:junit-platform-launcher</dep>
+              <dep>org.junit.jupiter:junit-jupiter-engine</dep>
+              <dep>org.junit.jupiter:junit-jupiter-params</dep>
+              <dep>org.junit.platform:junit-platform-commons</dep>
+              <dep>org.assertj:assertj-core</dep>
+              <dep>org.mockito:mockito-inline</dep>
+              <dep>org.mockito:mockito-junit-jupiter</dep>
+              <dep>org.mock-server:mockserver-junit-jupiter</dep>
+              <dep>io.github.netmikey.logunit:logunit-core</dep>
+              <dep>io.github.netmikey.logunit:logunit-logback</dep>
+              <dep>org.apache.httpcomponents:httpmime</dep>
+              <dep>org.awaitility:awaitility</dep>
+            </ignoredUnusedDeclaredDependencies>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
