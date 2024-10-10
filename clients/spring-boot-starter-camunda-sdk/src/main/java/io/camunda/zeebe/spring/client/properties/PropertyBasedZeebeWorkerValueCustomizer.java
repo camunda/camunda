@@ -39,6 +39,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.ReflectionUtils;
@@ -125,7 +126,10 @@ public class PropertyBasedZeebeWorkerValueCustomizer implements ZeebeWorkerValue
 
   private String extractFieldName(final Field field) {
     if (field.isAnnotationPresent(JsonProperty.class)) {
-      return field.getAnnotation(JsonProperty.class).value();
+      final String value = field.getAnnotation(JsonProperty.class).value();
+      if (StringUtils.isNotBlank(value)) {
+        return value;
+      }
     }
     return field.getName();
   }
