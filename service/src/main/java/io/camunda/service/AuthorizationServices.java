@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.StringUtils;
 
 public class AuthorizationServices<T>
     extends SearchQueryService<AuthorizationServices<T>, AuthorizationQuery, AuthorizationEntity> {
@@ -51,10 +50,7 @@ public class AuthorizationServices<T>
   }
 
   public Set<String> fetchAssignedPermissions(
-      final String ownerType,
-      final String ownerId,
-      final AuthorizationResourceType resourceType,
-      final String resourceId) {
+      final String ownerId, final AuthorizationResourceType resourceType, final String resourceId) {
     final SearchQueryResult<AuthorizationEntity> result =
         search(
             SearchQueryBuilders.authorizationSearchQuery(
@@ -63,8 +59,9 @@ public class AuthorizationServices<T>
                             f ->
                                 f.resourceType(resourceType.name())
                                     .resourceKey(
-                                        StringUtils.isNoneEmpty(resourceId) ? resourceId : null)
-                                    .ownerType(ownerType)
+                                        resourceId != null && !resourceId.isEmpty()
+                                            ? resourceId
+                                            : null)
                                     .ownerKey(ownerId))
                         .page(p -> p.size(1))));
     // TODO logic to fetch indirect authorizations via roles/groups should be added later

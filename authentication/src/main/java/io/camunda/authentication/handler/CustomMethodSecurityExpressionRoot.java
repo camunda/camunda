@@ -14,7 +14,6 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Optional;
 import java.util.Set;
-import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.security.access.expression.SecurityExpressionRoot;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionOperations;
 import org.springframework.security.core.Authentication;
@@ -62,20 +61,17 @@ public class CustomMethodSecurityExpressionRoot extends SecurityExpressionRoot
             owner ->
                 authorizationServices
                     .fetchAssignedPermissions(
-                        owner.getLeft(),
-                        owner.getRight(),
-                        AuthorizationResourceType.valueOf(resourceType),
-                        entity)
+                        owner, AuthorizationResourceType.valueOf(resourceType), entity)
                     .containsAll(permissions))
         .orElse(false);
   }
 
-  private Optional<Pair<String, String>> extractOwner() {
+  private Optional<String> extractOwner() {
     final var authentication = getAuthentication();
 
     if (authentication != null) {
       if (authentication.getPrincipal() instanceof final CamundaUser authenticatedPrincipal) {
-        return Optional.of(Pair.of("USER", authenticatedPrincipal.getUserKey().toString()));
+        return Optional.of(authenticatedPrincipal.getUserKey().toString());
       }
       if (authentication instanceof final JwtAuthenticationToken token) {
         // TODO extract mapping rule id
