@@ -195,4 +195,10 @@ public class ZeebeClientConfigurationImplSaasTest {
     assertThat(output).contains("clientId='***'");
     assertThat(output).contains("clientSecret='***'");
   }
+
+  @Test
+  void shouldHaveDefaultPreferRestOverGrpc() {
+    assertThat(zeebeClientConfiguration.preferRestOverGrpc())
+        .isEqualTo(DEFAULT.preferRestOverGrpc());
+  }
 }
