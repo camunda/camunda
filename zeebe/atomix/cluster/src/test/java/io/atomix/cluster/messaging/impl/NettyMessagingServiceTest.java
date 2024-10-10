@@ -737,7 +737,7 @@ final class NettyMessagingServiceTest {
       }
     }
 
-    @EnabledOnOs(OS.WINDOWS) // LINUX)
+    @EnabledOnOs(OS.LINUX)
     @RegressionTest("https://github.com/camunda/camunda/issues/14837")
     void shouldNotLeakUdpSockets() throws IOException {
       // given
