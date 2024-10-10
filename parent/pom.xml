@@ -78,13 +78,13 @@
     <version.netty>4.1.113.Final</version.netty>
     <version.objenesis>3.4</version.objenesis>
     <version.opensearch>2.9.0</version.opensearch>
-    <version.opensearch.testcontainers>2.1.0</version.opensearch.testcontainers>
+    <version.opensearch.testcontainers>2.1.1</version.opensearch.testcontainers>
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>3.25.5</version.protobuf>
     <version.protobuf-common>2.44.0</version.protobuf-common>
     <version.micrometer>1.13.5</version.micrometer>
     <version.rocksdbjni>9.4.0</version.rocksdbjni>
-    <version.sbe>1.33.0</version.sbe>
+    <version.sbe>1.33.1</version.sbe>
     <version.scala>2.13.15</version.scala>
     <version.slf4j>2.0.16</version.slf4j>
     <version.snakeyaml>2.3</version.snakeyaml>
@@ -102,7 +102,7 @@
     <version.spring-security>6.3.3</version.spring-security>
     <version.spring-boot>3.3.4</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
-    <version.kryo>5.6.1</version.kryo>
+    <version.kryo>5.6.2</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
     <version.jetbrains-annotations>24.1.0</version.jetbrains-annotations>
     <version.jqwik>1.9.0</version.jqwik>
@@ -2342,8 +2342,8 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${plugin.version.surefire}</version>
           <configuration>
-            <!-- by default, exclude performance tests -->
-            <groups>!performance</groups>
+            <!-- by default, exclude performance and strace tests -->
+            <excludedGroups>performance, strace</excludedGroups>
             <failIfNoTests>false</failIfNoTests>
             <trimStackTrace>false</trimStackTrace>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
@@ -2877,6 +2877,24 @@
     </profile>
 
     <profile>
+      <!-- Dedicated profile to run ONLY tests requiring strace. -->
+      <id>include-strace-tests</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <groups>strace</groups>
+              <!-- Reset <excludedGroups> as it take precedence over <groups> -->
+              <excludedGroups combine.self="override"></excludedGroups>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
       <!-- Dedicated profile to run ONLY performance tests. The include config overwrites the default pattern-->
       <id>include-performance-tests</id>
       <build>
@@ -2886,6 +2904,8 @@
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
               <groups>performance</groups>
+              <!-- Reset <excludedGroups> as it take precedence over <groups> -->
+              <excludedGroups combine.self="override"></excludedGroups>
             </configuration>
           </plugin>
         </plugins>
