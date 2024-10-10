@@ -8,6 +8,7 @@
 package io.camunda.exporter;
 
 import static io.camunda.zeebe.protocol.record.ValueType.AUTHORIZATION;
+import static io.camunda.zeebe.protocol.record.ValueType.DECISION;
 import static io.camunda.zeebe.protocol.record.ValueType.USER;
 
 import co.elastic.clients.util.VisibleForTesting;
@@ -223,7 +224,8 @@ public class CamundaExporter implements Exporter {
 
   private record ElasticsearchRecordFilter() implements RecordFilter {
     // TODO include other value types to export
-    private static final Set<ValueType> VALUE_TYPES_2_EXPORT = Set.of(USER, AUTHORIZATION);
+    private static final Set<ValueType> VALUE_TYPES_2_EXPORT =
+        Set.of(USER, AUTHORIZATION, DECISION);
 
     @Override
     public boolean acceptType(final RecordType recordType) {
