@@ -210,6 +210,11 @@ public final class ProcessInstanceStateTransitionGuard {
       return Either.right(null);
     }
 
+    // Accept after incident resolved
+    if (hasElementInstanceWithState(context, ProcessInstanceIntent.ELEMENT_ACTIVATING).isRight()) {
+      return Either.right(null);
+    }
+
     final var element = (ExecutableFlowNode) executableFlowElement;
     final int numberOfIncomingSequenceFlows = element.getIncoming().size();
     final int numberOfTakenSequenceFlows =
