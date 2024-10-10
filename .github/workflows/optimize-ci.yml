@@ -1,28 +1,27 @@
-
 name: Optimize CI
 on:
   pull_request:
     paths:
-    - ".github/actions/**"
-    - ".github/workflows/optimize-*"
-    - "bom/*"
-    - "parent/*"
-    - "pom.xml"
-    - "optimize/**"
-    - "optimize.Dockerfile"
+      - ".github/actions/**"
+      - ".github/workflows/optimize-*"
+      - "bom/*"
+      - "parent/*"
+      - "pom.xml"
+      - "optimize/**"
+      - "optimize.Dockerfile"
   push:
     branches:
-    - main
-    - stable/**
-    - release/**
+      - main
+      - stable/**
+      - release/**
     paths:
-    - ".github/actions/**"
-    - ".github/workflows/optimize-*"
-    - "bom/*"
-    - "parent/*"
-    - "pom.xml"
-    - "optimize/**"
-    - "optimize.Dockerfile"
+      - ".github/actions/**"
+      - ".github/workflows/optimize-*"
+      - "bom/*"
+      - "parent/*"
+      - "pom.xml"
+      - "optimize/**"
+      - "optimize.Dockerfile"
   workflow_dispatch:
 
 # Will limit the workflow to 1 concurrent run per ref (branch / PR)
@@ -45,11 +44,11 @@ jobs:
     outputs:
       backend-changes: ${{ steps.filter.outputs.optimize-backend-changes }}
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
-    - name: Get list of changed directories
-      id: filter
-      uses: ./.github/actions/paths-filter
+      - name: Checkout repository
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+      - name: Get list of changed directories
+        id: filter
+        uses: ./.github/actions/paths-filter
 
   docker:
     name: Optimize Build
@@ -76,6 +75,8 @@ jobs:
       - name: "Read Java / Version Info"
         id: "pom-info"
         uses: YunaBraska/java-info-action@main
+        with:
+          work-dir: ./optimize
       - name: Start Elasticsearch - Old
         uses: ./.github/actions/compose
         with:
@@ -97,7 +98,7 @@ jobs:
       - name: Install
         uses: ./.github/actions/run-maven
         with:
-          parameters: install -Dskip.fe.build -Dskip.docker -DskipTests -pl optimize -am
+          parameters: -f optimize/pom.xml install -Dskip.fe.build -Dskip.docker -DskipTests -PrunAssembly
       - name: Verify optimize/qa/schema-integrity-tests
         uses: ./.github/actions/run-maven
         with:
@@ -106,7 +107,7 @@ jobs:
           CAMUNDA_OPTIMIZE_DATABASE: elasticsearch
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4
+        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4
         with:
           name: es-schema-integrity-test-junit
           path: |
@@ -137,6 +138,8 @@ jobs:
       - name: "Read Java / Version Info"
         id: "pom-info"
         uses: YunaBraska/java-info-action@main
+        with:
+          work-dir: ./optimize
       - name: Start OpenSearch - Old
         uses: ./.github/actions/compose
         with:
@@ -158,7 +161,7 @@ jobs:
       - name: Install
         uses: ./.github/actions/run-maven
         with:
-          parameters: install -Dskip.fe.build -Dskip.docker -DskipTests -pl optimize -am
+          parameters: -f optimize/pom.xml install -Dskip.fe.build -Dskip.docker -DskipTests -PrunAssembly
       - name: Verify optimize/qa/schema-integrity-tests
         uses: ./.github/actions/run-maven
         with:
@@ -167,7 +170,7 @@ jobs:
           CAMUNDA_OPTIMIZE_DATABASE: opensearch
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4
+        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4
         with:
           name: os-schema-integrity-test-junit
           path: |
@@ -192,73 +195,75 @@ jobs:
       matrix:
         includedGroups: [ 'ccsm-test' ]
         include:
-        - includedGroups: 'ccsm-test'
-          excludedGroups: ''
-          profiles: 'ccsm-it'
+          - includedGroups: 'ccsm-test'
+            excludedGroups: ''
+            profiles: 'ccsm-it'
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+      - name: Checkout repository
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
 
-    - name: Fetch main branch
-      run: git fetch origin main:refs/remote/origin/main
+      - name: Fetch main branch
+        run: git fetch origin main:refs/remote/origin/main
 
-    - name: Setup Maven
-      uses: ./.github/actions/setup-maven
-      with:
-        secrets: ${{ toJSON(secrets) }}
+      - name: Setup Maven
+        uses: ./.github/actions/setup-maven
+        with:
+          secrets: ${{ toJSON(secrets) }}
 
-    - name: Login to Harbor registry
-      uses: ./.github/actions/login-registry
-      with:
-        secrets: ${{ toJSON(secrets) }}
+      - name: Login to Harbor registry
+        uses: ./.github/actions/login-registry
+        with:
+          secrets: ${{ toJSON(secrets) }}
 
-    - name: "Read Java / Version Info"
-      id: "pom-info"
-      uses: YunaBraska/java-info-action@main
+      - name: "Read Java / Version Info"
+        id: "pom-info"
+        uses: YunaBraska/java-info-action@main
+        with:
+          work-dir: ./optimize
 
-    - name: Expose Parsed Elastic Version
-      run: |
-        echo "ELASTIC_VERSION=${{ steps.pom-info.outputs.x_elasticsearch_test_version }}" >> "$GITHUB_ENV"
+      - name: Expose Parsed Elastic Version
+        run: |
+          echo "ELASTIC_VERSION=${{ steps.pom-info.outputs.x_elasticsearch_test_version }}" >> "$GITHUB_ENV"
 
-    - name: Start Elastic
-      uses: ./.github/actions/compose
-      with:
-        compose_file: .github/actions/compose/docker-compose.elasticsearch.yml
-        project_name: elasticsearch
-      env:
-        ELASTIC_VERSION: ${{ env.ELASTIC_VERSION }}
-        ELASTIC_JVM_MEMORY: 16
-        ELASTIC_HTTP_PORT: 9200
+      - name: Start Elasticsearch
+        uses: ./.github/actions/compose
+        with:
+          compose_file: .github/actions/compose/docker-compose.elasticsearch.yml
+          project_name: elasticsearch
+        env:
+          ELASTIC_VERSION: ${{ env.ELASTIC_VERSION }}
+          ELASTIC_JVM_MEMORY: 16
+          ELASTIC_HTTP_PORT: 9200
 
-    - name: Verify integration
-      uses: ./.github/actions/run-maven
-      env:
-        LIMITS_CPU: 8
-      with:
-        threads: 8
-        parameters: >
-          verify -Dit.test.excludedGroups=${{ matrix.excludedGroups }}
-          -Dit.test.includedGroups=${{ matrix.includedGroups }}
-          -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }}
-          -Dfailsafe.rerunFailingTestsCount=2
-          -Ddatabase.type=elasticsearch -pl optimize/backend -am
+      - name: Verify integration
+        uses: ./.github/actions/run-maven
+        env:
+          LIMITS_CPU: 8
+        with:
+          threads: 8
+          parameters: >
+            verify -Dit.test.excludedGroups=${{ matrix.excludedGroups }}
+            -Dit.test.includedGroups=${{ matrix.includedGroups }}
+            -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }}
+            -Dfailsafe.rerunFailingTestsCount=2
+            -Ddatabase.type=elasticsearch -pl optimize/backend -am
 
-    - name: Upload Test Results
-      if: always()
-      uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4
-      with:
-        name: integration-test-elasticsearch-${{ matrix.includedGroups }}-junit
-        path: |
-          **/failsafe-reports/**/*.xml
-        retention-days: 7
-        if-no-files-found: ignore
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4
+        with:
+          name: integration-test-elasticsearch-${{ matrix.includedGroups }}-junit
+          path: |
+            **/failsafe-reports/**/*.xml
+          retention-days: 7
+          if-no-files-found: ignore
 
-    - name: Docker log dump
-      uses: ./.github/actions/docker-logs
-      if: always()
-      with:
-        archive_name: integration-tests-elasticsearch-${{ matrix.includedGroups }}-docker
+      - name: Docker log dump
+        uses: ./.github/actions/docker-logs
+        if: always()
+        with:
+          archive_name: integration-tests-elasticsearch-${{ matrix.includedGroups }}-docker
 
   integration-tests-os:
     name: Integration Tests OpenSearch
@@ -295,6 +300,8 @@ jobs:
       - name: "Read Java / Version Info"
         id: "pom-info"
         uses: YunaBraska/java-info-action@main
+        with:
+          work-dir: ./optimize
 
       - name: Expose Parsed OpenSearch Version
         run: echo "OPENSEARCH_VERSION=${{ steps.pom-info.outputs.x_opensearch_test_version }}" >> "$GITHUB_ENV"
@@ -324,7 +331,7 @@ jobs:
 
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4
+        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4
         with:
           name: integration-test-opensearch-${{ matrix.includedGroups }}-junit
           path: |
@@ -376,6 +383,8 @@ jobs:
       - name: "Read Java / Version Info"
         id: "pom-info"
         uses: YunaBraska/java-info-action@main
+        with:
+          work-dir: ./optimize
 
       - name: Expose Parsed OpenSearch Version
         run: echo "OPENSEARCH_VERSION=${{ steps.pom-info.outputs.x_opensearch_test_version }}" >> "$GITHUB_ENV"
@@ -405,7 +414,7 @@ jobs:
 
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4
+        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4
         with:
           name: integration-test-opensearch-dev-${{ matrix.includedGroups }}-junit
           path: |
@@ -419,11 +428,63 @@ jobs:
         with:
           archive_name: integration-tests-opensearch-dev-${{ matrix.includedGroups }}-docker
 
+  upgrade-tests:
+    name: Upgrade
+    runs-on: gcp-core-8-default
+    timeout-minutes: 10
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.backend-changes == 'true' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+      - name: Setup Maven
+        uses: ./.github/actions/setup-maven
+        with:
+          secrets: ${{ toJSON(secrets) }}
+      - name: Read Java/version info
+        id: "pom-info"
+        uses: YunaBraska/java-info-action@main
+      - name: Start Elasticsearch
+        uses: ./.github/actions/compose
+        with:
+          compose_file: .github/actions/compose/docker-compose.elasticsearch.yml
+          project_name: elasticsearch
+        env:
+          ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
+          ELASTIC_JVM_MEMORY: 1
+          ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_elasticsearch_port }}
+      - name: Install
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: install -Dskip.fe.build -Dskip.docker -DskipTests -pl optimize -am
+      - name: Verify upgrade tests
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: verify -Dskip.docker -pl optimize/upgrade
+        env:
+          CAMUNDA_OPTIMIZE_DATABASE: elasticsearch
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4
+        with:
+          name: upgrade-junit
+          path: |
+            **/failsafe-reports/**/*.xml
+            **/*.log
+            **/*.json
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Docker log dump
+        uses: ./.github/actions/docker-logs
+        if: always()
+        with:
+          archive_name: upgrade-docker
+
   # Only deploy artifacts on push event, which in this case can only be triggered by main and stable
   deploy-artifacts:
     if: github.event_name == 'push' && (github.ref_name == 'main' || startsWith(github.ref_name, 'stable/'))
     name: Deploy Artifacts
-    needs: [integration-tests, es-schema-integrity-test, os-schema-integrity-test]
+    needs: [integration-tests, upgrade-tests, es-schema-integrity-test, os-schema-integrity-test]
     uses: ./.github/workflows/optimize-deploy-artifacts.yml
     secrets: inherit
 
@@ -432,6 +493,7 @@ jobs:
     needs:
       - integration-tests
       - integration-tests-os
+      - upgrade-tests
       - os-schema-integrity-test
       - es-schema-integrity-test
       - deploy-artifacts

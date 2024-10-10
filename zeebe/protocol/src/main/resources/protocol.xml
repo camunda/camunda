@@ -58,6 +58,8 @@
       <validValue name="USER">41</validValue>
       <validValue name="CLOCK">42</validValue>
       <validValue name="AUTHORIZATION">43</validValue>
+      <validValue name="ROLE">44</validValue>
+      <validValue name="TENANT">45</validValue>
 
       <!-- Management records / record not related to process automation -->
       <validValue name="CHECKPOINT">254</validValue>

@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.job;
 
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -17,7 +18,6 @@ import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -26,9 +26,6 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
 
-  private static final String NO_JOB_FOUND_MESSAGE =
-      "Expected to update retries for job with key '%d', but no such job was found";
-
   private final JobState jobState;
   private final ElementInstanceState elementInstanceState;
   private final DefaultJobCommandPreconditionGuard defaultProcessor;
@@ -36,11 +33,15 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
   private final EventHandle eventHandle;
 
   public JobCompleteProcessor(
-      final ProcessingState state, final JobMetrics jobMetrics, final EventHandle eventHandle) {
+      final ProcessingState state,
+      final JobMetrics jobMetrics,
+      final EventHandle eventHandle,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
     defaultProcessor =
-        new DefaultJobCommandPreconditionGuard("complete", jobState, this::acceptCommand);
+        new DefaultJobCommandPreconditionGuard(
+            "complete", jobState, this::acceptCommand, authCheckBehavior);
     this.jobMetrics = jobMetrics;
     this.eventHandle = eventHandle;
   }
@@ -87,16 +88,9 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
   }
 
   private void acceptCommand(
-      final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
-
-    final long jobKey = command.getKey();
-
-    final JobRecord job = jobState.getJob(jobKey, command.getAuthorizations());
-    if (job == null) {
-      commandControl.reject(RejectionType.NOT_FOUND, String.format(NO_JOB_FOUND_MESSAGE, jobKey));
-      return;
-    }
-
+      final TypedRecord<JobRecord> command,
+      final CommandControl<JobRecord> commandControl,
+      final JobRecord job) {
     job.setVariables(command.getValue().getVariablesBuffer());
 
     commandControl.accept(JobIntent.COMPLETED, job);

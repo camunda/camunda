@@ -25,16 +25,16 @@ import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.api.model.Ports;
-import io.camunda.exporter.config.ElasticsearchExporterConfiguration;
+import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.entities.AuthorizationEntity;
 import io.camunda.exporter.entities.UserEntity;
-import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.exporter.schema.SchemaTestUtil;
 import io.camunda.exporter.utils.TestSupport;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.zeebe.exporter.api.Exporter;
+import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
@@ -76,8 +76,7 @@ final class CamundaExporterIT {
   @Container
   private static final ElasticsearchContainer CONTAINER = TestSupport.createDefaultContainer();
 
-  private final ElasticsearchExporterConfiguration config =
-      new ElasticsearchExporterConfiguration();
+  private final ExporterConfiguration config = new ExporterConfiguration();
   private final ExporterTestController controller = new ExporterTestController();
   private final ProtocolFactory factory = new ProtocolFactory();
   private IndexDescriptor index;
@@ -87,10 +86,10 @@ final class CamundaExporterIT {
 
   @BeforeAll
   public void beforeAll() {
-    config.elasticsearch.getConnect().setUrl(CONTAINER.getHttpHostAddress());
-    config.elasticsearch.setIndexPrefix("camunda-record");
+    config.getConnect().setUrl(CONTAINER.getHttpHostAddress());
+    config.getIndex().setPrefix("camunda-record");
 
-    testClient = new ElasticsearchConnector(config.elasticsearch.getConnect()).createClient();
+    testClient = new ElasticsearchConnector(config.getConnect()).createClient();
   }
 
   @AfterAll
@@ -100,12 +99,12 @@ final class CamundaExporterIT {
 
   @BeforeEach
   void beforeEach() throws IOException {
-    config.bulk.setSize(1); // force flushing on the first record
+    config.getBulk().setSize(1); // force flushing on the first record
     testClient.indices().delete(req -> req.index("*"));
     testClient.indices().deleteIndexTemplate(req -> req.name("*"));
 
-    config.elasticsearch.setCreateSchema(false);
-    config.elasticsearch.getRetention().setEnabled(false);
+    config.setCreateSchema(false);
+    config.getRetention().setEnabled(false);
 
     indexTemplate =
         SchemaTestUtil.mockIndexTemplate(
@@ -118,7 +117,7 @@ final class CamundaExporterIT {
 
     index =
         SchemaTestUtil.mockIndex(
-            config.elasticsearch.getIndexPrefix() + "qualified_name",
+            config.getIndex().getPrefix() + "qualified_name",
             "alias",
             "index_name",
             "/mappings.json");
@@ -128,7 +127,7 @@ final class CamundaExporterIT {
   void shouldPeriodicallyFlushBasedOnConfiguration() {
     // given
     final var duration = 2;
-    config.bulk.setDelay(duration);
+    config.getBulk().setDelay(duration);
 
     final var exporter = new CamundaExporter();
 
@@ -203,7 +202,7 @@ final class CamundaExporterIT {
     @Test
     void shouldHaveCorrectSchemaUpdatesWithMultipleExporters() throws IOException {
       // given
-      config.elasticsearch.setCreateSchema(true);
+      config.setCreateSchema(true);
 
       final var exporter1 = startExporter();
       final var exporter2 = startExporter();
@@ -237,7 +236,7 @@ final class CamundaExporterIT {
     @Test
     void shouldNotErrorIfOldExporterRestartsWhileNewExporterHasAlreadyStarted() throws IOException {
       // given
-      config.elasticsearch.setCreateSchema(true);
+      config.setCreateSchema(true);
       final var updatedExporter = startExporter();
       final var oldExporter = startExporter();
 
@@ -277,7 +276,7 @@ final class CamundaExporterIT {
     @Test
     void shouldCreateAllSchemasIfCreateEnabled() throws IOException {
       // given
-      config.elasticsearch.setCreateSchema(true);
+      config.setCreateSchema(true);
       startExporter();
 
       // then
@@ -296,7 +295,7 @@ final class CamundaExporterIT {
     @Test
     void shouldUpdateSchemasCorrectlyIfCreateEnabled() throws IOException {
       // given
-      config.elasticsearch.setCreateSchema(true);
+      config.setCreateSchema(true);
       final var exporter = startExporter();
 
       // when
@@ -322,7 +321,7 @@ final class CamundaExporterIT {
     @Test
     void shouldCreateNewSchemasIfNewIndexDescriptorAddedToExistingSchemas() throws IOException {
       // given
-      config.elasticsearch.setCreateSchema(true);
+      config.setCreateSchema(true);
       final var resourceProvider = mockResourceProvider(Set.of(index), Set.of(indexTemplate));
       final var exporter = new CamundaExporter(resourceProvider);
       final var context = getContext();
@@ -369,7 +368,7 @@ final class CamundaExporterIT {
     @Test
     void shouldNotPutAnySchemasIfCreatedDisabled() throws IOException {
       // given
-      config.elasticsearch.setCreateSchema(false);
+      config.setCreateSchema(false);
 
       startExporter();
 
@@ -384,9 +383,9 @@ final class CamundaExporterIT {
 
     @Test
     void shouldCreateLifeCyclePoliciesOnStartupIfEnabled() throws IOException {
-      config.elasticsearch.setCreateSchema(true);
-      config.elasticsearch.getRetention().setEnabled(true);
-      config.elasticsearch.getRetention().setPolicyName("policy_name");
+      config.setCreateSchema(true);
+      config.getRetention().setEnabled(true);
+      config.getRetention().setPolicyName("policy_name");
 
       startExporter();
 
@@ -397,30 +396,14 @@ final class CamundaExporterIT {
 
     @Test
     void shouldNotCreateLifeCyclePoliciesIfDisabled() throws IOException {
-      config.elasticsearch.setCreateSchema(true);
-      config.elasticsearch.getRetention().setEnabled(false);
-      config.elasticsearch.getRetention().setPolicyName("not_created_policy");
+      config.setCreateSchema(true);
+      config.getRetention().setEnabled(false);
+      config.getRetention().setPolicyName("not_created_policy");
 
       startExporter();
       final var policies = testClient.ilm().getLifecycle();
 
       assertThat(policies.get("not_created_policy")).isNull();
-    }
-
-    @Test
-    void shouldSetLifecyclePolicyOnCreatedIndices() throws IOException {
-      config.elasticsearch.setCreateSchema(true);
-      config.elasticsearch.getRetention().setEnabled(true);
-      config.elasticsearch.getRetention().setPolicyName("policy_name");
-
-      startExporter();
-
-      final var createdIndex =
-          testClient.indices().get(req -> req.index(index.getFullQualifiedName())).result();
-
-      assertThat(
-              createdIndex.get(index.getFullQualifiedName()).settings().index().lifecycle().name())
-          .isEqualTo("policy_name");
     }
   }
 
@@ -490,7 +473,7 @@ final class CamundaExporterIT {
     @Test
     void shouldExportRecordOnceBulkSizeReached() {
       // given
-      config.bulk.setSize(2);
+      config.getBulk().setSize(2);
       final var exporter = new CamundaExporter();
 
       final var context = getContext();
@@ -530,7 +513,7 @@ final class CamundaExporterIT {
       final Record<UserRecordValue> record = factory.generateRecord(ValueType.USER);
 
       Assertions.assertThatThrownBy(() -> exporter.export(record))
-          .isInstanceOf(ElasticsearchExporterException.class)
+          .isInstanceOf(ExporterException.class)
           .hasMessageContaining("Connection refused");
 
       // starts the container on the same port again
@@ -551,8 +534,7 @@ final class CamundaExporterIT {
       exporter.export(record2);
 
       // then
-      final var testClient =
-          new ElasticsearchConnector(config.elasticsearch.getConnect()).createClient();
+      final var testClient = new ElasticsearchConnector(config.getConnect()).createClient();
 
       Awaitility.await()
           .until(

@@ -87,7 +87,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
                    "treePath":"5/23",
                    "type":"SERVICE_TASK",
                    "state":"ACTIVE",
-                   "incident":true,
+                   "hasIncident":true,
                    "incidentKey":1234,
                    "tenantId":"tenantId"
                  }
@@ -184,7 +184,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
                 "flowNodeId": "StartEvent_1",
                 "flowNodeName": "name",
                 "treePath": "2251799813685989/2251799813685996",
-                "incident": true,
+                "hasIncident": true,
                 "incidentKey": 2251799813685320,
                 "tenantId": "default"
               }
@@ -212,12 +212,12 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
                         .flowNodeInstanceKeys(2251799813685996L)
                         .processInstanceKeys(2251799813685989L)
                         .processDefinitionKeys(3L)
-                        .bpmnProcessIds("complexProcess")
+                        .processDefinitionIds("complexProcess")
                         .states(FlowNodeState.ACTIVE)
                         .types(FlowNodeType.SERVICE_TASK)
                         .flowNodeIds("StartEvent_1")
                         .treePaths("2251799813685989/2251799813685996")
-                        .incident(true)
+                        .hasIncident(true)
                         .incidentKeys(2251799813685320L)
                         .tenantIds("default")
                         .build())
@@ -236,7 +236,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
                  { "field": "flowNodeInstanceKey", "order": "ASC" },
                  { "field": "processInstanceKey", "order": "ASC" },
                  { "field": "processDefinitionKey", "order": "ASC" },
-                 { "field": "bpmnProcessId", "order": "ASC" },
+                 { "field": "processDefinitionId", "order": "ASC" },
                  { "field": "startDate", "order": "DESC" },
                  { "field": "endDate", "order": "DESC" },
                  { "field": "flowNodeId", "order": "ASC" },
@@ -272,7 +272,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
                         .asc()
                         .processDefinitionKey()
                         .asc()
-                        .bpmnProcessId()
+                        .processDefinitionId()
                         .asc()
                         .startDate()
                         .desc()

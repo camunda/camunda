@@ -42,7 +42,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
           {
               "items": [
                   {
-                      "key": 5,
+                      "incidentKey": 5,
                       "processDefinitionKey": 23,
                       "processDefinitionId": "complexProcess",
                       "processInstanceKey": 42,
@@ -91,7 +91,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
   static final String EXPECTED_GET_RESPONSE =
       """
             {
-                          "key": 5,
+                          "incidentKey": 5,
                           "processDefinitionKey": 23,
                           "processDefinitionId": "complexProcess",
                           "processInstanceKey": 42,
@@ -183,7 +183,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
         """
             {
               "filter":{
-                "key": 5,
+                "incidentKey": 5,
                 "processDefinitionKey": 23,
                 "processDefinitionId": "complexProcess",
                 "processInstanceKey": 42,
@@ -222,9 +222,9 @@ public class IncidentQueryControllerTest extends RestControllerTest {
             new IncidentQuery.Builder()
                 .filter(
                     new IncidentFilter.Builder()
-                        .keys(5L)
+                        .incidentKeys(5L)
                         .processDefinitionKeys(23L)
-                        .bpmnProcessIds("complexProcess")
+                        .processDefinitionIds("complexProcess")
                         .processInstanceKeys(42L)
                         .errorTypes(ErrorType.JOB_NO_RETRIES)
                         .errorMessages("No retries left.")
@@ -251,7 +251,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
             {
                 "sort": [
                     {
-                        "field": "key",
+                        "field": "incidentKey",
                         "order": "asc"
                     }
                 ]
@@ -275,7 +275,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
     verify(incidentServices)
         .search(
             new IncidentQuery.Builder()
-                .sort(new IncidentSort.Builder().key().asc().build())
+                .sort(new IncidentSort.Builder().incidentKey().asc().build())
                 .build());
   }
 
