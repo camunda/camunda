@@ -46,7 +46,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
     // given
     final ActivatedJob activatedJob1 =
         new ActivatedJob()
-            .key(12L)
+            .jobKey(12L)
             .type("foo")
             .processInstanceKey(123L)
             .processDefinitionId("test1")
@@ -63,7 +63,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
 
     final ActivatedJob activatedJob2 =
         new ActivatedJob()
-            .key(42L)
+            .jobKey(42L)
             .type("foo")
             .processInstanceKey(333L)
             .processDefinitionId("test3")
@@ -97,7 +97,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
     assertThat(response.getJobs()).hasSize(2);
 
     io.camunda.zeebe.client.api.response.ActivatedJob job = response.getJobs().get(0);
-    assertThat(job.getKey()).isEqualTo(activatedJob1.getKey());
+    assertThat(job.getKey()).isEqualTo(activatedJob1.getJobKey());
     assertThat(job.getType()).isEqualTo(activatedJob1.getType());
     assertThat(job.getBpmnProcessId()).isEqualTo(activatedJob1.getProcessDefinitionId());
     assertThat(job.getElementId()).isEqualTo(activatedJob1.getElementId());
@@ -114,7 +114,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
     assertThat(job.getTenantId()).isEqualTo(activatedJob1.getTenantId());
 
     job = response.getJobs().get(1);
-    assertThat(job.getKey()).isEqualTo(activatedJob2.getKey());
+    assertThat(job.getKey()).isEqualTo(activatedJob2.getJobKey());
     assertThat(job.getType()).isEqualTo(activatedJob2.getType());
     assertThat(job.getBpmnProcessId()).isEqualTo(activatedJob2.getProcessDefinitionId());
     assertThat(job.getElementId()).isEqualTo(activatedJob2.getElementId());
