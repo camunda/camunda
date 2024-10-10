@@ -115,12 +115,17 @@ jobs:
         with:
           distribution: "adopt"
           java-version: ${{ env.JAVA_VERSION }}
-          cache: "maven"
 
       - name: Setup Maven
-        uses: stCarolas/setup-maven@v4.5
+        uses: ./.github/actions/setup-maven-dist
         with:
           maven-version: 3.9.6
+          set-mvnw: true
+
+      - name: Configure Maven
+        uses: ./.github/actions/setup-maven-cache
+        with:
+          maven-cache-key-modifier: operate
 
       # Setup: Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
       - name: Create Maven settings.xml
@@ -146,7 +151,7 @@ jobs:
         env:
           NEXT_DEVELOPMENT_VERSION: ${{ inputs.nextDevelopmentVersion }}
         run: |
-          mvn -f operate release:prepare -P -docker,skipFrontendBuild \
+          ./mvnw -f operate release:prepare -P -docker,skipFrontendBuild \
           -DpushChanges=false \
           -DskipTests=true -B -T$LIMITS_CPU --fail-at-end \
           -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn \
@@ -165,7 +170,7 @@ jobs:
 
       - name: Perform Maven release
         run: |
-          mvn -f operate release:perform -P -docker \
+          ./mvnw -f operate release:perform -P -docker \
           -DlocalCheckout=true \
           -DskipTests=true -B -T$LIMITS_CPU --fail-at-end \
           -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn \
