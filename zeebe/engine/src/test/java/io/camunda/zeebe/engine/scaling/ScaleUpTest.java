@@ -112,7 +112,13 @@ public class ScaleUpTest {
     engine.writeRecords(command);
 
     // then
-    assertThat(RecordingExporter.scaleRecords().onlyCommandRejections().findFirst()).isPresent();
+    assertThat(RecordingExporter.scaleRecords().onlyCommandRejections().findFirst())
+        .hasValueSatisfying(
+            rejection -> {
+              assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+              assertThat(rejection.getRejectionReason())
+                  .isEqualTo("Partition count must be at least 1");
+            });
   }
 
   @Test
@@ -129,7 +135,14 @@ public class ScaleUpTest {
     engine.writeRecords(command);
 
     // then
-    assertThat(RecordingExporter.scaleRecords().onlyCommandRejections().findFirst()).isPresent();
+    assertThat(RecordingExporter.scaleRecords().onlyCommandRejections().findFirst())
+        .hasValueSatisfying(
+            rejection -> {
+              assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+              assertThat(rejection.getRejectionReason())
+                  .isEqualTo(
+                      "Desired partition count must be greater than current partition count");
+            });
   }
 
   private void initRoutingState() {
