@@ -48,6 +48,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.StartPartitionScaleUpOperation;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
@@ -427,9 +428,13 @@ public class ProtoBufSerializer
                   .setPartitionId(bootstrapOperation.partitionId())
                   .setPriority(bootstrapOperation.priority())
                   .build());
-      default ->
-          throw new IllegalArgumentException(
-              "Unknown operation type: " + operation.getClass().getSimpleName());
+      case StartPartitionScaleUpOperation(
+              final var ignoredMemberId,
+              final var desiredPartitionCount) ->
+          builder.setInitiateScaleUpPartitions(
+              Topology.StartPartitionScaleUpOperation.newBuilder()
+                  .setDesiredPartitionCount(desiredPartitionCount)
+                  .build());
     }
     return builder.build();
   }
@@ -616,6 +621,10 @@ public class ProtoBufSerializer
           MemberId.from(topologyChangeOperation.getMemberId()),
           topologyChangeOperation.getPartitionBootstrap().getPartitionId(),
           topologyChangeOperation.getPartitionBootstrap().getPriority());
+    } else if (topologyChangeOperation.hasInitiateScaleUpPartitions()) {
+      return new StartPartitionScaleUpOperation(
+          MemberId.from(topologyChangeOperation.getMemberId()),
+          topologyChangeOperation.getInitiateScaleUpPartitions().getDesiredPartitionCount());
     } else {
       // If the node does not know of a type, the exception thrown will prevent
       // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any
