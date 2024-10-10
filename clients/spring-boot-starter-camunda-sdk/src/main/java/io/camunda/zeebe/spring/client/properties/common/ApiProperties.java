@@ -21,6 +21,7 @@ public class ApiProperties {
   private Boolean enabled;
   private URL baseUrl;
   private String audience;
+  private String scope;
 
   public Boolean getEnabled() {
     return enabled;
@@ -44,5 +45,13 @@ public class ApiProperties {
 
   public void setAudience(String audience) {
     this.audience = audience;
+  }
+
+  public String getScope() {
+    return scope;
+  }
+
+  public void setScope(final String scope) {
+    this.scope = scope;
   }
 }
