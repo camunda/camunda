@@ -9,12 +9,18 @@
 import {expect} from '@playwright/test';
 import {test} from '@/test-fixtures';
 import {createInstances, deploy} from '@/utils/zeebeClient';
+import {sleep} from '@/utils/sleep';
 
 test.afterAll(async ({resetData}) => {
   await resetData();
 });
 
 test.beforeAll(async () => {
+  await deploy([
+    './e2e/resources/emp_form.form',
+    './e2e/resources/confirm_emp_form.form',
+    './e2e/resources/create-invoice_8-5.form',
+  ]);
   await deploy([
     './e2e/resources/usertask_to_be_completed.bpmn',
     './e2e/resources/user_task_with_form.bpmn',
@@ -30,8 +36,9 @@ test.beforeAll(async () => {
     './e2e/resources/tag_list_task_with_form.bpmn',
     './e2e/resources/text-templating-form-task.bpmn',
     './e2e/resources/processWithDeployedForm.bpmn',
-    './e2e/resources/create-invoice_8-5.form',
     './e2e/resources/Zeebe_Process.bpmn',
+    './e2e/resources/emp_process.bpmn',
+    './e2e/resources/zeebe_emp_process.bpmn',
   ]);
 
   await Promise.all([
@@ -63,6 +70,8 @@ test.beforeAll(async () => {
     }),
     createInstances('processWithDeployedForm', 1, 1),
     createInstances('Zeebe_Process', 1, 1),
+    createInstances('emp_process', 1, 1),
+    createInstances('zeebe_emp_process', 1, 1),
   ]);
 });
 
@@ -550,5 +559,85 @@ test.describe('task details page', () => {
     await tasksPage.detailsNav.getByText(/process/i).click();
 
     await expect(tasksPage.bpmnDiagram).toBeVisible();
+  });
+
+  test('Variables are passed along the forms if no output variables are defined for job worker tasks', async ({
+    page,
+    tasksPage,
+    taskFormView,
+  }) => {
+    await tasksPage.openTask('Employee Details');
+    await expect(tasksPage.detailsNav).toBeVisible();
+    await tasksPage.assignToMeButton.click();
+    try {
+      await taskFormView.waitUntilLocatorIsVisible(taskFormView.form, page);
+    } catch (error) {
+      console.log('Form not loaded:' + error);
+      await sleep(20000);
+      await page.reload();
+      await expect(taskFormView.form).toBeVisible({timeout: 10000});
+    }
+    await expect(taskFormView.nameInput).toBeVisible();
+    await taskFormView.nameInput.fill('Ben');
+    await taskFormView.selectDropdownValue('marketing');
+    await tasksPage.completeTaskButton.click({timeout: 60000});
+    await expect(page.getByText('Task completed')).toBeVisible();
+
+    await tasksPage.openTask('Confirm Employee Details');
+    await tasksPage.assignToMeButton.click();
+    await page.reload();
+    await expect(taskFormView.nameInput).toHaveValue('Ben');
+
+    await expect(taskFormView.form.getByText('Marketing')).toBeVisible({
+      timeout: 60000,
+    });
+    await expect(taskFormView.checkbox).not.toBeChecked();
+    await tasksPage.completeTaskButton.click();
+    await expect(page.getByText('Task completed')).toBeVisible();
+
+    await tasksPage.filterBy('Completed');
+    await tasksPage.openTask('Employee Details');
+    await page.reload();
+    await expect(taskFormView.nameInput).toHaveValue('Ben');
+    await expect(taskFormView.form.getByText('Marketing')).toBeVisible();
+
+    await tasksPage.openTask('Confirm Employee Details');
+    await expect(taskFormView.nameInput).toHaveValue('Ben');
+    await expect(taskFormView.form.getByText('Marketing')).toBeVisible();
+    await expect(taskFormView.checkbox).not.toBeChecked();
+  });
+
+  test('Variables are passed along the forms if no output variables are defined for zeebe tasks ', async ({
+    page,
+    tasksPage,
+    taskFormView,
+  }) => {
+    await tasksPage.openTask('Zeebe Employee Details');
+    await expect(tasksPage.detailsNav).toBeVisible();
+    await tasksPage.assignToMeButton.click();
+    await expect(taskFormView.nameInput).toBeVisible();
+    await taskFormView.nameInput.fill('Ben');
+    await taskFormView.selectDropdownValue('finance');
+    await tasksPage.completeTaskButton.click();
+    await expect(page.getByText('Task completed')).toBeVisible();
+
+    await tasksPage.openTask('Confirm Zeebe Employee Details');
+    await tasksPage.assignToMeButton.click();
+    await page.reload();
+    await expect(taskFormView.nameInput).toHaveValue('Ben');
+    await expect(taskFormView.form.getByText('finance')).toBeVisible();
+    await expect(taskFormView.checkbox).not.toBeChecked();
+    await tasksPage.completeTaskButton.click();
+    await expect(page.getByText('Task completed')).toBeVisible();
+
+    await tasksPage.filterBy('Completed');
+    await tasksPage.openTask('Zeebe Employee Details');
+    await expect(taskFormView.nameInput).toHaveValue('Ben');
+    await expect(taskFormView.form.getByText('finance')).toBeVisible();
+
+    await tasksPage.openTask('Confirm Zeebe Employee Details');
+    await expect(taskFormView.nameInput).toHaveValue('Ben');
+    await expect(taskFormView.form.getByText('finance')).toBeVisible();
+    await expect(taskFormView.checkbox).not.toBeChecked();
   });
 });
