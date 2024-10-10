@@ -12,7 +12,7 @@ import java.time.OffsetDateTime;
 
 public record ProcessInstanceDbModel(
     Long processInstanceKey,
-    String bpmnProcessId,
+    String processDefinitionId,
     Long processDefinitionKey,
     ProcessInstanceState state,
     OffsetDateTime startDate,
