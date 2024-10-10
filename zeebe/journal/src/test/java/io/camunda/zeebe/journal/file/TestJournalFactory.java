@@ -82,7 +82,8 @@ final class TestJournalFactory {
   }
 
   int maxSegmentSize() {
-    return (maxEntryCount * serializedEntrySize()) + SegmentDescriptor.getEncodingLength();
+    return (maxEntryCount * serializedEntrySize())
+        + SegmentDescriptorSerializer.currentEncodingLength();
   }
 
   SegmentLoader segmentLoader() {

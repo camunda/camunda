@@ -102,8 +102,9 @@ public class SegmentedJournalBuilder {
    */
   public SegmentedJournalBuilder withMaxSegmentSize(final int maxSegmentSize) {
     checkArgument(
-        maxSegmentSize > SegmentDescriptor.getEncodingLength(),
-        "maxSegmentSize must be greater than " + SegmentDescriptor.getEncodingLength());
+        maxSegmentSize > SegmentDescriptorSerializer.currentEncodingLength(),
+        "maxSegmentSize must be greater than "
+            + SegmentDescriptorSerializer.currentEncodingLength());
     this.maxSegmentSize = maxSegmentSize;
     return this;
   }
