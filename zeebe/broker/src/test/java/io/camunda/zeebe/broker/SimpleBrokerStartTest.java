@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker;
 
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddresses;
+import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
@@ -62,7 +63,7 @@ public final class SimpleBrokerStartTest {
                       mock(ActorScheduler.class),
                       mock(AtomixCluster.class),
                       mock(BrokerClient.class));
-              new Broker(systemContext, TEST_SPRING_BROKER_BRIDGE);
+              new Broker(systemContext, TEST_SPRING_BROKER_BRIDGE, emptyList());
             });
 
     // then

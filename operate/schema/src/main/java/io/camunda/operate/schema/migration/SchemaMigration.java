@@ -42,7 +42,7 @@ public class SchemaMigration implements CommandLineRunner {
   private static final Logger LOGGER = LoggerFactory.getLogger(SchemaMigration.class);
   @Autowired private SchemaStartup schemaStartup;
 
-  public static void main(String[] args) {
+  public static void main(final String[] args) {
     // To ensure that debug logging performed using java.util.logging is routed into Log4j2
     System.setProperty("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");
     // Workaround for https://github.com/spring-projects/spring-boot/issues/26627
@@ -58,7 +58,7 @@ public class SchemaMigration implements CommandLineRunner {
   }
 
   @Override
-  public void run(String... args) {
+  public void run(final String... args) {
     LOGGER.info("SchemaMigration finished.");
   }
 
@@ -66,7 +66,7 @@ public class SchemaMigration implements CommandLineRunner {
       implements ApplicationListener<ApplicationFailedEvent> {
 
     @Override
-    public void onApplicationEvent(ApplicationFailedEvent event) {
+    public void onApplicationEvent(final ApplicationFailedEvent event) {
       if (event.getException() != null) {
         event.getApplicationContext().close();
         System.exit(-1);

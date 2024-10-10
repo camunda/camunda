@@ -73,13 +73,11 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
-
       - name: Generate SBOM (CycloneDX)
         run: |
           mvn org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom
-
       - name: Upload SBOM as artifact
         uses: actions/upload-artifact@v4
         with:
           name: backend-sbom
-          path: target/bom.xml
+          path: target/bom.json

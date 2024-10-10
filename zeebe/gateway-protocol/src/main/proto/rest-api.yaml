@@ -691,6 +691,49 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
 
+  /variables/search:
+    post:
+      tags:
+        - Variable
+      summary: Query process and local variables (alpha)
+      description: |
+        Search for variables based on given criteria.
+
+        :::note
+        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VariableSearchQueryRequest"
+      responses:
+        "200":
+          description: >
+            The variable search successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VariableSearchQueryResponse"
+        "400":
+          description: >
+            The user task search query failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+
   /clock:
     put:
       tags:
@@ -749,7 +792,157 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /process-definitions/search:
+    post:
+      tags:
+        - Process definition
+      summary: Search process definitions (alpha)
+      description: |
+        Search for process definitions based on given criteria.
+        :::note
+        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProcessDefinitionSearchQueryRequest"
+      responses:
+        "200":
+          description: >
+            The process definition search successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProcessDefinitionSearchQueryResponse"
+        "400":
+          description: >
+            The process definition search query failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /process-definitions/{processDefinitionKey}:
+    get:
+      tags:
+        - Process definition
+      summary: Get process definition by key (alpha)
+      description: |
+        Returns process definition as JSON.
+        :::note
+        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
+      parameters:
+        - name: processDefinitionKey
+          in: path
+          required: true
+          description: The assigned key of the process definition, which acts as a unique identifier for this process definition.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: >
+            The process definition is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProcessDefinitionItem"
+        "400":
+          description: >
+            The process definition request failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: >
+            The process definition with the given key was not found.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /process-definitions/{processDefinitionKey}/xml:
+    get:
+      tags:
+        - Process definition
+      summary: Get process definition XML (alpha)
+      description: |
+        Returns process definition as XML.
 
+        :::note
+        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
+      parameters:
+        - name: processDefinitionKey
+          in: path
+          required: true
+          description: The assigned key of the process definition, which acts as a unique identifier for this process.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: >
+            The XML of the process definition is successfully returned.
+          content:
+            text/xml:
+              schema:
+                type: string
+        "204":
+          description: >
+            The process definition was found but does not have XML.
+          content:
+            text/plain:
+              schema:
+                type: string
+        "400":
+          description: >
+            The process definition request failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: >
+            The decision with the given key was not found.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /process-instances:
     post:
       tags:
@@ -2394,6 +2587,152 @@ components:
           minimum: 0
           maximum: 100
           default: 50
+    VariableSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      description: Variable search query request.
+      type: object
+      properties:
+        filter:
+          $ref: "#/components/schemas/VariableFilterRequest"
+    VariableFilterRequest:
+      description: Variable filter request.
+      type: object
+      properties:
+        variableKey:
+          description: The key for this variable.
+          type: integer
+          format: int64
+        name:
+          description: Name of the variable.
+          type: string
+        value:
+          description: The value of the variable.
+          type: string
+        scopeKey:
+          description: The key of the scope of this variable.
+          type: integer
+          format: int64
+        processInstanceKey:
+          description: The key of the process instance of this variable.
+          type: integer
+          format: int64
+        tenantId:
+          description: Tenant id of this variable.
+          type: string
+        isTruncated:
+          description: Whether the value is truncated or not.
+          type: boolean
+    VariableSearchQueryResponse:
+        allOf:
+            - $ref: "#/components/schemas/SearchQueryResponse"
+        description: Variable search query response.
+        type: object
+        properties:
+          items:
+            type: array
+            items:
+                $ref: "#/components/schemas/VariableItem"
+    VariableItem:
+      description: Variable search response item.
+      type: object
+      properties:
+        variableKey:
+          description: The key for this variable.
+          type: integer
+          format: int64
+        name:
+          description: Name of this variable.
+          type: string
+        value:
+          description: Value of this variable.
+          type: string
+        fullValue:
+          description: Full value of this variable.
+          type: string
+        scopeKey:
+          description: The key of the scope of this variable.
+          type: integer
+          format: int64
+        processInstanceKey:
+          description: The key of the process instance of this variable.
+          type: integer
+          format: int64
+        tenantId:
+          description: Tenant id of this variable.
+          type: string
+        isTruncated:
+          description: Whether the value is truncated or not.
+          type: boolean
+    ProcessDefinitionSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      type: object
+      properties:
+        filter:
+          allOf:
+            - $ref: "#/components/schemas/ProcessDefinitionFilterRequest"
+    ProcessDefinitionFilterRequest:
+      type: object
+      properties:
+        processDefinitionKey:
+          description: The key for this process definition.
+          type: integer
+          format: int64
+        name:
+          description: Name of this process definition.
+          type: string
+        resourceName:
+          description: Resource name of this process definition.
+          type: string
+        version:
+          description: Version of this process definition.
+          type: integer
+          format: int32
+        versionTag:
+          description: Version tag of this process definition.
+          type: string
+        processDefinitionId:
+          description:  Process defintion id of this process definition.
+          type: string
+        tenantId:
+          description: Tenant id of this process definition.
+          type: string
+    ProcessDefinitionSearchQueryResponse:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessDefinitionItem"
+    ProcessDefinitionItem:
+      type: object
+      properties:
+        processDefinitionKey:
+          description: The key for this process definition.
+          type: integer
+          format: int64
+        name:
+          description: Name of this process definition.
+          type: string
+        resourceName:
+          description: Resource name for this process definition.
+          type: string
+        version:
+          description: Version of this process definition.
+          type: integer
+          format: int32
+        versionTag:
+          description: Version tag of this process definition.
+          type: string
+        processDefinitionId:
+          description: Process definition id of this process definition.
+          type: string
+        tenantId:
+          description: Tenant id of this process definition.
+          type: string
     ProcessInstanceSearchQueryRequest:
       description: Process instance search request.
       allOf:
@@ -2454,7 +2793,7 @@ components:
         state:
           $ref: '#/components/schemas/ProcessInstanceStateEnum'
           description: The state, one of ACTIVE, COMPLETED, CANCELED.
-        incident:
+        hasIncident:
           type: boolean
           description: Whether this process instance has a related incident or not.
         tenantId:
@@ -2533,7 +2872,7 @@ components:
         state:
           $ref: '#/components/schemas/ProcessInstanceStateEnum'
           description: The state, one of ACTIVE, COMPLETED, CANCELED.
-        incident:
+        hasIncident:
           type: boolean
           description: Whether this process instance has a related incident or not.
         tenantId:
@@ -2581,7 +2920,7 @@ components:
           description: The process definition key associated to this flow node instance.
           format: int64
         processDefinitionId:
-          description: The bpmn process id associated to this flow node instance.
+          description: The process definition id associated to this flow node instance.
           type: string
         state:
           description: State of flow node instance as defined set of values.
@@ -2628,7 +2967,7 @@ components:
         treePath:
           type: string
           description: The path of keys from process instance to this flow node instance separated by '/'.
-        incident:
+        hasIncident:
           type: boolean
           description: Shows whether this flow node instance has an incident related to.
         incidentKey:
@@ -2663,7 +3002,7 @@ components:
           type: integer
           format: int64
         processDefinitionId:
-          description: The bpmn process id associated to this flow node instance.
+          description: The process definition id associated to this flow node instance.
           type: string
         startDate:
           description: Date when flow node instance started.
@@ -2715,7 +3054,7 @@ components:
             - ACTIVE
             - COMPLETED
             - TERMINATED
-        incident:
+        hasIncident:
           description: Shows whether this flow node instance has an incident. If true also an incidentKey is provided.
           type: boolean
         incidentKey:
@@ -2771,7 +3110,7 @@ components:
     IncidentFilterRequest:
       type: object
       properties:
-        key:
+        incidentKey:
           type: integer
           format: int64
           description: The assigned key, which acts as a unique identifier for this incident.
@@ -2781,7 +3120,7 @@ components:
           description: The process definition key associated to this incident.
         processDefinitionId:
           type: string
-          description: The bpmn process id associated to this incident.
+          description: The process definition id associated to this incident.
         processInstanceKey:
           type: integer
           format: int64
@@ -2846,7 +3185,7 @@ components:
     IncidentItem:
       type: object
       properties:
-        key:
+        incidentKey:
           type: integer
           format: int64
           description: The assigned key, which acts as a unique identifier for this incident.
@@ -2856,7 +3195,7 @@ components:
           description: The process definition key associated to this incident.
         processDefinitionId:
           type: string
-          description: The bpmn process id associated to this incident.
+          description: The process definition id associated to this incident.
         processInstanceKey:
           type: integer
           format: int64
@@ -3001,16 +3340,17 @@ components:
           description: The type of resource to add/remove perissions to/from.
           enum:
             - AUTHORIZATION
+            - MAPPING_RULE
             - MESSAGE
-            - JOB
+            - BATCH
             - APPLICATION
+            - SYSTEM
             - TENANT
             - DEPLOYMENT
             - PROCESS_DEFINITION
-            - USER_TASK
             - DECISION_REQUIREMENTS_DEFINITION
             - DECISION_DEFINITION
-            - USER_GROUP
+            - GROUP
             - USER
             - ROLE
         permissions:
@@ -3342,7 +3682,7 @@ components:
     ActivatedJob:
       type: object
       properties:
-        key:
+        jobKey:
           description: the key, a unique identifier for the job
           type: integer
           format: int64

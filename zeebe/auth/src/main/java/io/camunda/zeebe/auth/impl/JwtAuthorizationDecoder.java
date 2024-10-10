@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,8 +36,6 @@ public class JwtAuthorizationDecoder
   private Algorithm signingAlgorithm = Algorithm.none();
   private final Set<String> claims = new HashSet<>();
   private String jwtToken;
-
-  public JwtAuthorizationDecoder() {}
 
   public JwtAuthorizationDecoder(final String jwtToken) {
     this.jwtToken = jwtToken;
@@ -90,6 +89,13 @@ public class JwtAuthorizationDecoder
           Authorization.AUTHORIZED_USER_KEY,
           decodedJWT.getClaim(Authorization.AUTHORIZED_USER_KEY).asLong());
     }
+
+    claimMap.putAll(
+        decodedJWT.getClaims().entrySet().stream()
+            .filter(entry -> entry.getKey().startsWith(USER_TOKEN_CLAIM_PREFIX))
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey, claimEntry -> claimEntry.getValue().as(Object.class))));
 
     return claimMap;
   }

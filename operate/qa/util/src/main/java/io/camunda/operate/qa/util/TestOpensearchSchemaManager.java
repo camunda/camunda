@@ -10,10 +10,10 @@ package io.camunda.operate.qa.util;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.schema.opensearch.OpensearchSchemaManager;
-import io.camunda.operate.schema.templates.TemplateDescriptor;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +35,7 @@ public class TestOpensearchSchemaManager extends OpensearchSchemaManager
   public TestOpensearchSchemaManager(
       final OperateProperties operateProperties,
       final RichOpenSearchClient richOpenSearchClient,
-      final List<TemplateDescriptor> templateDescriptors,
+      final List<IndexTemplateDescriptor> templateDescriptors,
       final List<IndexDescriptor> indexDescriptors,
       @Qualifier("operateObjectMapper") final ObjectMapper objectMapper) {
     super(

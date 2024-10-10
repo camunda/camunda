@@ -141,22 +141,33 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private SslContext clientSslContext;
   private DnsAddressResolverGroup dnsResolverGroup;
   private final MessagingMetrics messagingMetrics = new MessagingMetricsImpl();
+  private final String actorSchedulerName;
 
   public NettyMessagingService(
       final String cluster, final Address advertisedAddress, final MessagingConfig config) {
-    this(cluster, advertisedAddress, config, ProtocolVersion.latest());
+    this(cluster, advertisedAddress, config, ProtocolVersion.latest(), "");
+  }
+
+  public NettyMessagingService(
+      final String cluster,
+      final Address advertisedAddress,
+      final MessagingConfig config,
+      final String actorSchedulerName) {
+    this(cluster, advertisedAddress, config, ProtocolVersion.latest(), actorSchedulerName);
   }
 
   NettyMessagingService(
       final String cluster,
       final Address advertisedAddress,
       final MessagingConfig config,
-      final ProtocolVersion protocolVersion) {
+      final ProtocolVersion protocolVersion,
+      final String actorSchedulerName) {
     preamble = cluster.hashCode();
     this.advertisedAddress = advertisedAddress;
     this.protocolVersion = protocolVersion;
     this.config = config;
     channelPool = new ChannelPool(this::openChannel, config.getConnectionPoolSize());
+    this.actorSchedulerName = actorSchedulerName;
 
     initAddresses(config);
   }
@@ -168,13 +179,14 @@ public final class NettyMessagingService implements ManagedMessagingService {
       final Address advertisedAddress,
       final MessagingConfig config,
       final ProtocolVersion protocolVersion,
-      final Function<Function<Address, CompletableFuture<Channel>>, ChannelPool>
-          channelPoolFactor) {
+      final Function<Function<Address, CompletableFuture<Channel>>, ChannelPool> channelPoolFactor,
+      final String actorSchedulerName) {
     preamble = cluster.hashCode();
     this.advertisedAddress = advertisedAddress;
     this.protocolVersion = protocolVersion;
     this.config = config;
     channelPool = channelPoolFactor.apply(this::openChannel);
+    this.actorSchedulerName = actorSchedulerName;
 
     initAddresses(config);
   }
@@ -394,6 +406,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
               dnsResolverGroup =
                   new DnsAddressResolverGroup(
                       new DnsNameResolverBuilder(clientGroup.next())
+                          .consolidateCacheSize(128)
                           .dnsQueryLifecycleObserverFactory(
                               new BiDnsQueryLifecycleObserverFactory(
                                   ignored -> metrics,
@@ -405,7 +418,6 @@ public final class NettyMessagingService implements ManagedMessagingService {
                       new DefaultThreadFactory("netty-messaging-timeout-"));
               localConnection = new LocalClientConnection(handlers);
               started.set(true);
-
               log.info(
                   "Started messaging service bound to {}, advertising {}, and using {}",
                   bindingAddresses,
@@ -576,9 +588,11 @@ public final class NettyMessagingService implements ManagedMessagingService {
 
   private void initEpollTransport() {
     clientGroup =
-        new EpollEventLoopGroup(0, namedThreads("netty-messaging-event-epoll-client-%d", log));
+        new EpollEventLoopGroup(
+            0, namedThreads("netty-messaging-event-epoll-client-%d", log, actorSchedulerName));
     serverGroup =
-        new EpollEventLoopGroup(0, namedThreads("netty-messaging-event-epoll-server-%d", log));
+        new EpollEventLoopGroup(
+            0, namedThreads("netty-messaging-event-epoll-server-%d", log, actorSchedulerName));
     serverChannelClass = EpollServerSocketChannel.class;
     clientChannelClass = EpollSocketChannel.class;
     clientDataGramChannelClass = EpollDatagramChannel.class;
@@ -586,9 +600,11 @@ public final class NettyMessagingService implements ManagedMessagingService {
 
   private void initNioTransport() {
     clientGroup =
-        new NioEventLoopGroup(0, namedThreads("netty-messaging-event-nio-client-%d", log));
+        new NioEventLoopGroup(
+            0, namedThreads("netty-messaging-event-nio-client-%d", log, actorSchedulerName));
     serverGroup =
-        new NioEventLoopGroup(0, namedThreads("netty-messaging-event-nio-server-%d", log));
+        new NioEventLoopGroup(
+            0, namedThreads("netty-messaging-event-nio-server-%d", log, actorSchedulerName));
     serverChannelClass = NioServerSocketChannel.class;
     clientChannelClass = NioSocketChannel.class;
     clientDataGramChannelClass = NioDatagramChannel.class;

@@ -15,24 +15,29 @@
  */
 package io.camunda.zeebe.client.impl.search;
 
+import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.search.response.DecisionDefinition;
 import io.camunda.zeebe.client.api.search.response.DecisionInstance;
 import io.camunda.zeebe.client.api.search.response.DecisionRequirements;
 import io.camunda.zeebe.client.api.search.response.FlowNodeInstance;
 import io.camunda.zeebe.client.api.search.response.Incident;
+import io.camunda.zeebe.client.api.search.response.ProcessDefinition;
 import io.camunda.zeebe.client.api.search.response.ProcessInstance;
 import io.camunda.zeebe.client.api.search.response.SearchQueryResponse;
 import io.camunda.zeebe.client.api.search.response.SearchResponsePage;
 import io.camunda.zeebe.client.api.search.response.UserTask;
+import io.camunda.zeebe.client.api.search.response.Variable;
 import io.camunda.zeebe.client.impl.search.response.DecisionDefinitionImpl;
 import io.camunda.zeebe.client.impl.search.response.DecisionInstanceImpl;
 import io.camunda.zeebe.client.impl.search.response.DecisionRequirementsImpl;
 import io.camunda.zeebe.client.impl.search.response.FlowNodeInstanceImpl;
 import io.camunda.zeebe.client.impl.search.response.IncidentImpl;
+import io.camunda.zeebe.client.impl.search.response.ProcessDefinitionImpl;
 import io.camunda.zeebe.client.impl.search.response.ProcessInstanceImpl;
 import io.camunda.zeebe.client.impl.search.response.SearchQueryResponseImpl;
 import io.camunda.zeebe.client.impl.search.response.SearchResponsePageImpl;
 import io.camunda.zeebe.client.impl.search.response.UserTaskImpl;
+import io.camunda.zeebe.client.impl.search.response.VariableImpl;
 import io.camunda.zeebe.client.protocol.rest.*;
 import java.util.Collections;
 import java.util.List;
@@ -43,6 +48,20 @@ import java.util.stream.Collectors;
 public final class SearchResponseMapper {
 
   private SearchResponseMapper() {}
+
+  public static SearchQueryResponse<ProcessDefinition> toProcessDefinitionSearchResponse(
+      final ProcessDefinitionSearchQueryResponse response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<ProcessDefinition> instances =
+        toSearchResponseInstances(response.getItems(), ProcessDefinitionImpl::new);
+
+    return new SearchQueryResponseImpl<>(instances, page);
+  }
+
+  public static ProcessDefinition toProcessDefinitionGetResponse(
+      final ProcessDefinitionItem response) {
+    return new ProcessDefinitionImpl(response);
+  }
 
   public static ProcessInstance toProcessInstanceGetResponse(final ProcessInstanceItem response) {
     return new ProcessInstanceImpl(response);
@@ -62,6 +81,14 @@ public final class SearchResponseMapper {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<UserTask> instances =
         toSearchResponseInstances(response.getItems(), UserTaskImpl::new);
+    return new SearchQueryResponseImpl<>(instances, page);
+  }
+
+  public static SearchQueryResponse<Variable> toVariableSearchResponse(
+      final VariableSearchQueryResponse response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<Variable> instances =
+        toSearchResponseInstances(response.getItems(), VariableImpl::new);
     return new SearchQueryResponseImpl<>(instances, page);
   }
 
@@ -106,10 +133,11 @@ public final class SearchResponseMapper {
   }
 
   public static SearchQueryResponse<DecisionInstance> toDecisionInstanceSearchResponse(
-      final DecisionInstanceSearchQueryResponse response) {
+      final DecisionInstanceSearchQueryResponse response, final JsonMapper jsonMapper) {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<DecisionInstance> instances =
-        toSearchResponseInstances(response.getItems(), DecisionInstanceImpl::new);
+        toSearchResponseInstances(
+            response.getItems(), item -> new DecisionInstanceImpl(item, jsonMapper));
     return new SearchQueryResponseImpl<>(instances, page);
   }
 

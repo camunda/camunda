@@ -140,7 +140,7 @@ jobs:
           remove_assignee=true
 
           if [ "${{ steps.parse-args.outputs.arg1 }}" == 'approve' ]; then
-            if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'qa:notNeeded') }}" == "true" ]; then
+            if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'qa/notNeeded') }}" == "true" ]; then
               if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'kind/epic') }}" == "true" ]; then
                 new_assignee="${{ steps.vars.outputs.pm }}"
               else
@@ -178,7 +178,7 @@ jobs:
         run: |
           new_status=""
           if [ "${{ steps.parse-args.outputs.arg1 }}" == 'approve' ]; then
-            if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'qa:notNeeded') }}" == "true" ]; then
+            if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'qa/notNeeded') }}" == "true" ]; then
               if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'kind/epic') }}" == "true" ]; then
                 new_status="PM Review"
               else

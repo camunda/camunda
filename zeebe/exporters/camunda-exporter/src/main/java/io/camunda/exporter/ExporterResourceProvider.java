@@ -7,11 +7,14 @@
  */
 package io.camunda.exporter;
 
+import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.util.Set;
 
 public interface ExporterResourceProvider {
+
+  void init(ExporterConfiguration configuration);
 
   /**
    * This should return descriptors describing the desired state of all indices provided.

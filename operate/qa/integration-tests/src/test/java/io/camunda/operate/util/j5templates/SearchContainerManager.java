@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
-import io.camunda.operate.util.TestUtil;
+import io.camunda.operate.util.IndexPrefixHolder;
 import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,19 +23,24 @@ public abstract class SearchContainerManager {
   protected final OperateProperties operateProperties;
   protected final SchemaManager schemaManager;
   protected String indexPrefix;
+  private final IndexPrefixHolder indexPrefixHolder;
 
-  public SearchContainerManager(OperateProperties operateProperties, SchemaManager schemaManager) {
+  public SearchContainerManager(
+      final OperateProperties operateProperties,
+      final SchemaManager schemaManager,
+      final IndexPrefixHolder indexPrefixHolder) {
     this.operateProperties = operateProperties;
     this.schemaManager = schemaManager;
+    this.indexPrefixHolder = indexPrefixHolder;
   }
 
-  public void refreshIndices(String indexPattern) {
+  public void refreshIndices(final String indexPattern) {
     schemaManager.refresh(indexPattern);
   }
 
   public void startContainer() {
     if (indexPrefix == null) {
-      indexPrefix = TestUtil.createRandomString(10) + "-operate";
+      indexPrefix = indexPrefixHolder.createNewIndexPrefix();
     }
     updatePropertiesIndexPrefix();
     if (shouldCreateSchema()) {
@@ -51,14 +56,14 @@ public abstract class SearchContainerManager {
   protected abstract boolean shouldCreateSchema();
 
   protected boolean areIndicesCreatedAfterChecks(
-      String indexPrefix, int minCountOfIndices, int maxChecks) {
+      final String indexPrefix, final int minCountOfIndices, final int maxChecks) {
     boolean areCreated = false;
     int checks = 0;
     while (!areCreated && checks <= maxChecks) {
       checks++;
       try {
         areCreated = areIndicesCreated(indexPrefix, minCountOfIndices);
-      } catch (Exception t) {
+      } catch (final Exception t) {
         LOGGER.error(
             "Search indices (min {}) are not created yet. Waiting {}/{}",
             minCountOfIndices,

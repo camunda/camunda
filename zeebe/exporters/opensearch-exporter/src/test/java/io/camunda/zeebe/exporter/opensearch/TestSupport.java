@@ -34,7 +34,7 @@ final class TestSupport {
    */
   static OpensearchContainer<?> createDefaultContainer() {
     return new OpensearchContainer<>(OPENSEARCH_IMAGE)
-        .withEnv("ES_JAVA_OPTS", "-Xms256m -Xmx512m -XX:MaxDirectMemorySize=536870912")
+        .withEnv("OPENSEARCH_JAVA_OPTS", "-Xms256m -Xmx512m -XX:MaxDirectMemorySize=536870912")
         .withEnv("action.auto_create_index", "true");
   }
 
@@ -120,7 +120,10 @@ final class TestSupport {
             ValueType.SBE_UNKNOWN,
             ValueType.NULL_VAL,
             ValueType.PROCESS_INSTANCE_RESULT,
-            ValueType.CLOCK);
+            ValueType.CLOCK,
+            // these are not yet supported
+            ValueType.ROLE,
+            ValueType.TENANT);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 }

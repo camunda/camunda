@@ -8,13 +8,13 @@
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.schema.templates.SequenceFlowTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.SequenceFlowDao;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.SequenceFlow;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
+import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -30,10 +30,10 @@ public class OpensearchSequenceFlowDao extends OpensearchSearchableDao<SequenceF
   private final SequenceFlowTemplate sequenceFlowIndex;
 
   public OpensearchSequenceFlowDao(
-      OpensearchQueryDSLWrapper queryDSLWrapper,
-      OpensearchRequestDSLWrapper requestDSLWrapper,
-      RichOpenSearchClient richOpenSearchClient,
-      SequenceFlowTemplate sequenceFlowIndex) {
+      final OpensearchQueryDSLWrapper queryDSLWrapper,
+      final OpensearchRequestDSLWrapper requestDSLWrapper,
+      final RichOpenSearchClient richOpenSearchClient,
+      final SequenceFlowTemplate sequenceFlowIndex) {
     super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
     this.sequenceFlowIndex = sequenceFlowIndex;
   }
@@ -54,7 +54,8 @@ public class OpensearchSequenceFlowDao extends OpensearchSearchableDao<SequenceF
   }
 
   @Override
-  protected void buildFiltering(Query<SequenceFlow> query, SearchRequest.Builder request) {
+  protected void buildFiltering(
+      final Query<SequenceFlow> query, final SearchRequest.Builder request) {
     final SequenceFlow filter = query.getFilter();
 
     if (filter != null) {
@@ -75,7 +76,7 @@ public class OpensearchSequenceFlowDao extends OpensearchSearchableDao<SequenceF
   }
 
   @Override
-  protected SequenceFlow convertInternalToApiResult(SequenceFlow internalResult) {
+  protected SequenceFlow convertInternalToApiResult(final SequenceFlow internalResult) {
     return internalResult;
   }
 }

@@ -12,7 +12,6 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.api.v1.dao.FlowNodeInstanceDao;
 import io.camunda.operate.webapp.api.v1.entities.FlowNodeInstance;
@@ -21,6 +20,7 @@ import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
+import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -74,7 +74,7 @@ public class ElasticsearchFlowNodeInstanceDao extends ElasticsearchDao<FlowNodeI
     try {
       flowNodeInstances =
           searchFor(new SearchSourceBuilder().query(termQuery(FlowNodeInstance.KEY, key)));
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new ServerException(
           String.format("Error in reading flownode instance for key %s", key), e);
     }
@@ -111,7 +111,7 @@ public class ElasticsearchFlowNodeInstanceDao extends ElasticsearchDao<FlowNodeI
       } else {
         return new Results<FlowNodeInstance>().setTotal(searchHits.getTotalHits().value);
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new ServerException("Error in reading flownode instances", e);
     }
   }
@@ -159,7 +159,7 @@ public class ElasticsearchFlowNodeInstanceDao extends ElasticsearchDao<FlowNodeI
       } else {
         return List.of();
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new ServerException("Error in reading incidents", e);
     }
   }

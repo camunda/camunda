@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
@@ -45,10 +46,10 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
 
   @Override
   public void processNewCommand(final TypedRecord<UserRecord> command) {
-    final var username = command.getValue().getUsernameBuffer();
-    final var persistedUser = userState.getUser(username);
+    final long userKey = command.getValue().getUserKey();
+    final var persistedUser = userState.getUser(userKey);
 
-    if (persistedUser == null) {
+    if (persistedUser.isEmpty()) {
       final var rejectionMessage =
           "Expected to update user with username %s, but a user with this username does not exist"
               .formatted(command.getValue().getUsername());
@@ -58,18 +59,22 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
       return;
     }
 
-    final var updatedUser = overlayUser(persistedUser, command.getValue());
+    final var updatedUser = overlayUser(persistedUser.get(), command.getValue());
 
-    final long key = keyGenerator.nextKey();
-    stateWriter.appendFollowUpEvent(key, UserIntent.UPDATED, updatedUser);
-    responseWriter.writeEventOnCommand(key, UserIntent.UPDATED, updatedUser, command);
+    stateWriter.appendFollowUpEvent(userKey, UserIntent.UPDATED, updatedUser);
+    responseWriter.writeEventOnCommand(userKey, UserIntent.UPDATED, updatedUser, command);
 
-    distributionBehavior.withKey(key).unordered().distribute(command);
+    final long distributionKey = keyGenerator.nextKey();
+    distributionBehavior
+        .withKey(distributionKey)
+        .inQueue(DistributionQueue.IDENTITY.getQueueId())
+        .distribute(command);
   }
 
   @Override
   public void processDistributedCommand(final TypedRecord<UserRecord> command) {
-    stateWriter.appendFollowUpEvent(command.getKey(), UserIntent.UPDATED, command.getValue());
+    stateWriter.appendFollowUpEvent(
+        command.getValue().getUserKey(), UserIntent.UPDATED, command.getValue());
 
     distributionBehavior.acknowledgeCommand(command);
   }

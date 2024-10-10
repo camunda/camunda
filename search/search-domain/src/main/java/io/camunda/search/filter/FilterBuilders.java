@@ -14,6 +14,15 @@ public final class FilterBuilders {
 
   private FilterBuilders() {}
 
+  public static ProcessDefinitionFilter.Builder processDefinition() {
+    return new ProcessDefinitionFilter.Builder();
+  }
+
+  public static ProcessDefinitionFilter processDefinition(
+      final Function<ProcessDefinitionFilter.Builder, ObjectBuilder<ProcessDefinitionFilter>> fn) {
+    return fn.apply(processDefinition()).build();
+  }
+
   public static ProcessInstanceFilter.Builder processInstance() {
     return new ProcessInstanceFilter.Builder();
   }

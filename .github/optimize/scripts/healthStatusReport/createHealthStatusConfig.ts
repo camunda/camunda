@@ -19,10 +19,14 @@ const CONFIG_FILE_NAME = 'config.json';
 async function createHealthStatusConfig() {
   const githubService = new GitHubService(GITHUB_TOKEN, GITHUB_ORG, GITHUB_REPO);
   const releaseBranches = await githubService.getBranchesWithPrefix('release/optimize-');
-  const stableBranches = await githubService.getBranchesWithPrefix('stable');
-  const ciBranches = [MAIN_BRANCH, ...releaseBranches, ...stableBranches].sort(
-    githubService.sortBranches,
-  );
+  const stableBranches = await githubService.getBranchesWithPrefix('stable/');
+  const optimizeStableBranches = await githubService.getBranchesWithPrefix('stable/optimize-');
+  const ciBranches = [
+    MAIN_BRANCH,
+    ...releaseBranches,
+    ...optimizeStableBranches,
+    ...stableBranches,
+  ].sort(githubService.sortBranches);
 
   const config: Partial<Config> = {
     github: {
