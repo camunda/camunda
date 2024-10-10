@@ -40,4 +40,8 @@ public final class ExecutableUserTask extends ExecutableJobWorkerTask {
   public void setTaskListeners(final List<TaskListener> taskListeners) {
     this.taskListeners = taskListeners;
   }
+
+  public boolean hasTaskListeners(final ZeebeTaskListenerEventType eventType) {
+    return !getTaskListeners(eventType).isEmpty();
+  }
 }

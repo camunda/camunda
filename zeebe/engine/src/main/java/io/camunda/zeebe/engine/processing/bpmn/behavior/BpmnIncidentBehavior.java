@@ -7,7 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
+
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.bpmn.ProcessElementProperties;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -56,29 +59,33 @@ public final class BpmnIncidentBehavior {
   }
 
   public void createIncident(final Failure failure, final BpmnElementContext context) {
+    createIncident(failure, ProcessElementProperties.from(context));
+  }
+
+  public void createIncident(final Failure failure, final ProcessElementProperties elementProps) {
     final var variableScopeKey =
         failure.getVariableScopeKey() > 0
             ? failure.getVariableScopeKey()
-            : context.getElementInstanceKey();
+            : elementProps.getElementInstanceKey();
 
     final var treePathProperties =
         new ElementTreePathBuilder()
             .withElementInstanceState(elementInstanceState)
             .withProcessState(processState)
-            .withElementInstanceKey(context.getElementInstanceKey())
+            .withElementInstanceKey(elementProps.getElementInstanceKey())
             .build();
 
     incidentRecord.reset();
     incidentRecord
-        .setProcessInstanceKey(context.getProcessInstanceKey())
-        .setBpmnProcessId(context.getBpmnProcessId())
-        .setProcessDefinitionKey(context.getProcessDefinitionKey())
-        .setElementInstanceKey(context.getElementInstanceKey())
-        .setElementId(context.getElementId())
+        .setProcessInstanceKey(elementProps.getProcessInstanceKey())
+        .setBpmnProcessId(wrapString(elementProps.getBpmnProcessId()))
+        .setProcessDefinitionKey(elementProps.getProcessDefinitionKey())
+        .setElementInstanceKey(elementProps.getElementInstanceKey())
+        .setElementId(wrapString(elementProps.getElementId()))
         .setVariableScopeKey(variableScopeKey)
         .setErrorType(failure.getErrorType())
         .setErrorMessage(failure.getMessage())
-        .setTenantId(context.getTenantId())
+        .setTenantId(elementProps.getTenantId())
         .setElementInstancePath(treePathProperties.elementInstancePath())
         .setProcessDefinitionPath(treePathProperties.processDefinitionPath())
         .setCallingElementPath(treePathProperties.callingElementPath());

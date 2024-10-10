@@ -131,6 +131,11 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     priorityProp.setValue(record.getPriority());
   }
 
+  public void wrap(final UserTaskRecord record) {
+    wrapWithoutVariables(record);
+    variableProp.setValue(record.getVariablesBuffer());
+  }
+
   public void wrapChangedAttributes(
       final UserTaskRecord record, final boolean includeTrackingProperties) {
     record.getChangedAttributesProp().stream()

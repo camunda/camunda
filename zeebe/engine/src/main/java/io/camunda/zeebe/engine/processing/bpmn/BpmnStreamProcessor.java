@@ -236,19 +236,16 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       return finalizer.apply(element, context);
     }
 
-    return createExecutionListenerJob(element, context, listeners.getFirst());
+    return createExecutionListenerJob(context, listeners.getFirst());
   }
 
   private Either<Failure, ?> createExecutionListenerJob(
-      final ExecutableFlowElement element,
-      final BpmnElementContext context,
-      final ExecutionListener listener) {
+      final BpmnElementContext context, final ExecutionListener listener) {
     return jobBehavior
         .evaluateJobExpressions(listener.getJobWorkerProperties(), context)
         .thenDo(
             elJobProperties ->
-                jobBehavior.createNewExecutionListenerJob(
-                    context, element, elJobProperties, listener));
+                jobBehavior.createNewExecutionListenerJob(context, elJobProperties, listener));
   }
 
   public Either<Failure, ?> onStartExecutionListenerComplete(
@@ -287,7 +284,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     final Optional<ExecutionListener> nextListener =
         findNextExecutionListener(listeners, currentListenerIndex);
     return nextListener.isPresent()
-        ? createExecutionListenerJob(element, context, nextListener.get())
+        ? createExecutionListenerJob(context, nextListener.get())
         : finalizer.apply(element, context);
   }
 

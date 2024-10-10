@@ -18,6 +18,8 @@ public interface UserTaskState {
 
   UserTaskRecord getUserTask(final long userTaskKey, final Map<String, Object> authorizations);
 
+  UserTaskRecord getUserTaskIntermediateState(final long userTaskKey);
+
   enum LifecycleState {
     NOT_FOUND((byte) 0),
     CREATING((byte) 1),

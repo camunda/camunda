@@ -884,7 +884,8 @@ public class ExecutionListenerTaskElementsTest {
     }
 
     @Test
-    public void shouldRecreateStartExecutionListenerJobsAndProceedAfterIncidentResolution() {
+    public void
+        shouldRecreateStartExecutionListenerJobsAndProceedAfterExtractValueErrorIncidentResolution() {
       // given
       deployProcess(
           createProcessWithTask(

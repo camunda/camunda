@@ -38,10 +38,23 @@ public class DbUserTaskState implements UserTaskState, MutableUserTaskState {
   private final ColumnFamily<DbForeignKey<DbLong>, UserTaskLifecycleStateValue>
       statesUserTaskColumnFamily;
 
+  // key => intermediate user task state
+  // we need two separate wrapper to not interfere with get and put
+  // see https://github.com/zeebe-io/zeebe/issues/1914
+  private final UserTaskIntermediateState userTaskIntermediateStateToRead =
+      new UserTaskIntermediateState();
+  private final UserTaskIntermediateState userTaskIntermediateStateToWrite =
+      new UserTaskIntermediateState();
+
+  private final DbLong userTaskIntermediateStateKey;
+  private final ColumnFamily<DbLong, UserTaskIntermediateState>
+      userTasksIntermediateStatesColumnFamily;
+
   public DbUserTaskState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     userTaskKey = new DbLong();
     fkUserTask = new DbForeignKey<>(userTaskKey, ZbColumnFamilies.USER_TASKS);
+    userTaskIntermediateStateKey = new DbLong();
 
     userTasksColumnFamily =
         zeebeDb.createColumnFamily(
@@ -50,6 +63,13 @@ public class DbUserTaskState implements UserTaskState, MutableUserTaskState {
     statesUserTaskColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.USER_TASK_STATES, transactionContext, fkUserTask, userTaskState);
+
+    userTasksIntermediateStatesColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.USER_TASK_INTERMEDIATE_STATES,
+            transactionContext,
+            userTaskIntermediateStateKey,
+            userTaskIntermediateStateToRead);
   }
 
   @Override
@@ -61,6 +81,14 @@ public class DbUserTaskState implements UserTaskState, MutableUserTaskState {
     // initialize state
     userTaskState.setLifecycleState(LifecycleState.CREATING);
     statesUserTaskColumnFamily.insert(fkUserTask, userTaskState);
+  }
+
+  @Override
+  public void createUserTaskIntermediateState(final UserTaskRecord userTask) {
+    userTaskIntermediateStateKey.wrapLong(userTask.getUserTaskKey());
+    userTaskIntermediateStateToWrite.setRecord(userTask);
+    userTasksIntermediateStatesColumnFamily.insert(
+        userTaskIntermediateStateKey, userTaskIntermediateStateToWrite);
   }
 
   @Override
@@ -86,6 +114,12 @@ public class DbUserTaskState implements UserTaskState, MutableUserTaskState {
   }
 
   @Override
+  public void deleteUserTaskIntermediateState(final long key) {
+    userTaskIntermediateStateKey.wrapLong(key);
+    userTasksIntermediateStatesColumnFamily.deleteExisting(userTaskIntermediateStateKey);
+  }
+
+  @Override
   public LifecycleState getLifecycleState(final long key) {
     userTaskKey.wrapLong(key);
     final UserTaskLifecycleStateValue storedLifecycleState =
@@ -100,6 +134,13 @@ public class DbUserTaskState implements UserTaskState, MutableUserTaskState {
   public UserTaskRecord getUserTask(final long key) {
     userTaskKey.wrapLong(key);
     final UserTaskRecordValue userTask = userTasksColumnFamily.get(userTaskKey);
+    return userTask == null ? null : userTask.getRecord();
+  }
+
+  @Override
+  public UserTaskRecord getUserTaskIntermediateState(final long key) {
+    userTaskIntermediateStateKey.wrapLong(key);
+    final var userTask = userTasksIntermediateStatesColumnFamily.get(userTaskIntermediateStateKey);
     return userTask == null ? null : userTask.getRecord();
   }
 
