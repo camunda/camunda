@@ -96,6 +96,10 @@
       <groupId>com.nimbusds</groupId>
       <artifactId>oauth2-oidc-sdk</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.springframework.session</groupId>
+      <artifactId>spring-session-core</artifactId>
+    </dependency>
   </dependencies>
   <build>
     <plugins>
