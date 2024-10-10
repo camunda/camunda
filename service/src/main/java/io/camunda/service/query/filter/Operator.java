@@ -8,10 +8,10 @@
 package io.camunda.service.query.filter;
 
 public enum Operator {
-  //  GTE("gte"),
-  //  GT("gt"),
-  //  LTE("lte"),
-  //  LT("lt"),
+  GTE("gte"),
+  GT("gt"),
+  LTE("lte"),
+  LT("lt"),
   LIKE("like"),
   EXISTS("exists"),
   EQ("eq"),

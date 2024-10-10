@@ -9,7 +9,11 @@
 package io.camunda.service.query;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.exists;
+import static io.camunda.search.clients.query.SearchQueryBuilders.gt;
+import static io.camunda.search.clients.query.SearchQueryBuilders.gte;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.lt;
+import static io.camunda.search.clients.query.SearchQueryBuilders.lte;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.wildcardQuery;
 
@@ -45,17 +49,43 @@ public abstract class QueryFieldFilterTransformers {
     return switch (operator) {
       case EQ -> // Equals
           longTerms(field, value);
-      //      case GTE ->  // Greater than or equal to
-      //          gte(field, value);
-      //      case GT ->  // Greater than
-      //          gt(field, value);
-      //      case LTE ->  // Less than or equal to
-      //          lte(field, value);
-      //      case LT ->  // Less than
-      //          lt(field, value);
+      case GTE -> // Greater than or equal to
+          gte(field, value);
+      case GT -> // Greater than
+          gt(field, value);
+      case LTE -> // Less than or equal to
+          lte(field, value);
+      case LT -> // Less than
+          lt(field, value);
       case IN -> longTerms(field, value);
       case EXISTS -> // Exists check
           exists(field);
+      default -> throw new IllegalArgumentException("Unsupported operator: " + operator);
+    };
+  }
+
+  public static SearchQuery buildDateQuery(
+      final String field, final List<String> value, final Operator operator) {
+    if (value == null || value.isEmpty()) {
+      return null;
+    }
+    return switch (operator) {
+      case EQ -> // Equals
+          stringTerms(field, value);
+      case LIKE -> // Like (wildcard or pattern matching)
+          wildcardQuery(field, value.getFirst()); // Use the first value for wildcard match
+      case EXISTS -> // Exists check
+          exists(field);
+      case GTE -> // Greater than or equal to
+          gte(field, value);
+      case GT -> // Greater than
+          gt(field, value);
+      case LTE -> // Less than or equal to
+          lte(field, value);
+      case LT -> // Less than
+          lt(field, value);
+      case IN -> // In
+          stringTerms(field, value);
       default -> throw new IllegalArgumentException("Unsupported operator: " + operator);
     };
   }

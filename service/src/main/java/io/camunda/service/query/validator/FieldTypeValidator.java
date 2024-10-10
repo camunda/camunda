@@ -11,12 +11,13 @@ import io.camunda.service.query.filter.Operator;
 
 public abstract class FieldTypeValidator {
   public static boolean isNumericOperator(final Operator operator) {
-    if (
-    //    operator == Operator.GTE
-    //        || operator == Operator.GT
-    //        || operator == Operator.LTE
-    //        || operator == Operator.LT
-    operator == Operator.EQ || operator == Operator.EXISTS || operator == Operator.IN) {
+    if (operator == Operator.GTE
+        || operator == Operator.GT
+        || operator == Operator.LTE
+        || operator == Operator.LT
+        || operator == Operator.EQ
+        || operator == Operator.EXISTS
+        || operator == Operator.IN) {
       return true;
     } else {
       throw new IllegalArgumentException("Unsupported operator for Numeric data type: " + operator);
@@ -35,12 +36,12 @@ public abstract class FieldTypeValidator {
   }
 
   public static boolean isDateOperator(final Operator operator) {
-    if (
-    //        operator == Operator.GTE
-    //        || operator == Operator.GT
-    //        || operator == Operator.LTE
-    //        || operator == Operator.LT
-    operator == Operator.EQ || operator == Operator.EXISTS) {
+    if (operator == Operator.GTE
+        || operator == Operator.GT
+        || operator == Operator.LTE
+        || operator == Operator.LT
+        || operator == Operator.EQ
+        || operator == Operator.EXISTS) {
       return true;
     } else {
       throw new IllegalArgumentException("Unsupported operator for Date data type: " + operator);
@@ -53,14 +54,14 @@ public abstract class FieldTypeValidator {
         return Operator.EQ;
       case "$like":
         return Operator.LIKE;
-      //      case "$gt":
-      //        return Operator.GT;
-      //      case "$gte":
-      //        return Operator.GTE;
-      //      case "$lt":
-      //        return Operator.LT;
-      //      case "$lte":
-      //        return Operator.LTE;
+      case "$gt":
+        return Operator.GT;
+      case "$gte":
+        return Operator.GTE;
+      case "$lt":
+        return Operator.LT;
+      case "$lte":
+        return Operator.LTE;
       case "$exists":
         return Operator.EXISTS;
       case "$in":
