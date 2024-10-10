@@ -67,7 +67,7 @@ final class SegmentWriter {
       final long lastWrittenAsqn,
       final JournalMetrics metrics) {
     this.segment = segment;
-    descriptorLength = segment.descriptor().length();
+    descriptorLength = segment.descriptor().encodingLength();
     recordUtil = new JournalRecordReaderUtil(serializer);
     this.index = index;
     firstIndex = segment.index();

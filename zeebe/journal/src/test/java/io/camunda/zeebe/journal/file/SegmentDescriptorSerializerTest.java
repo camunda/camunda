@@ -27,17 +27,32 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-class SegmentDescriptorTest {
+class SegmentDescriptorSerializerTest {
+
+  SegmentDescriptorSerializer serializer = SegmentDescriptorSerializer.currentSerializer();
+
+  @Test
+  void factoryShouldReturnCorrectInstance() {
+    assertThat(SegmentDescriptorSerializer.forVersion((byte) 2))
+        .isInstanceOf(SegmentDescriptorSerializerSbe.class);
+    assertThatThrownBy(() -> SegmentDescriptorSerializer.forVersion((byte) 1))
+        // When a new major version is added, this message should be different.
+        .hasMessageContaining("Version 1 is not supported. Supported versions are [2]");
+  }
 
   @Test
   void shouldWriteAndReadDescriptor() {
     // given
     final SegmentDescriptor descriptor =
-        SegmentDescriptor.builder().withId(2).withIndex(100).withMaxSegmentSize(1024).build();
-    descriptor.setLastPosition(100);
-    descriptor.setLastIndex(10);
-    final ByteBuffer buffer = ByteBuffer.allocate(SegmentDescriptor.getEncodingLength());
-    descriptor.copyTo(buffer);
+        SegmentDescriptor.builder()
+            .withId(2)
+            .withIndex(100)
+            .withMaxSegmentSize(1024)
+            .build()
+            .withUpdatedIndices(10, 100);
+
+    final ByteBuffer buffer = ByteBuffer.allocate(serializer.encodingLength());
+    serializer.writeTo(descriptor, buffer);
 
     // when
     final SegmentDescriptor descriptorRead = readDescriptor(buffer);
@@ -49,14 +64,14 @@ class SegmentDescriptorTest {
     assertThat(descriptorRead.maxSegmentSize()).isEqualTo(1024);
     assertThat(descriptorRead.lastIndex()).isEqualTo(10);
     assertThat(descriptorRead.lastPosition()).isEqualTo(100);
-    assertThat(descriptorRead.length()).isEqualTo(SegmentDescriptor.getEncodingLength());
+    assertThat(serializer.encodingLength()).isEqualTo(serializer.encodingLength());
   }
 
   @ParameterizedTest
   @ValueSource(ints = {-1, 0, 100})
   void shouldValidateDescriptorHeader(final int invalidVersion) {
     // given
-    final ByteBuffer buffer = ByteBuffer.allocate(SegmentDescriptor.getEncodingLength());
+    final ByteBuffer buffer = ByteBuffer.allocate(serializer.encodingLength());
     buffer.put(0, (byte) invalidVersion);
 
     // when/then
@@ -66,10 +81,10 @@ class SegmentDescriptorTest {
   @Test
   void shouldFailWithChecksumMismatch() {
     // given
-    final ByteBuffer buffer = ByteBuffer.allocate(SegmentDescriptor.getEncodingLength());
+    final ByteBuffer buffer = ByteBuffer.allocate(serializer.encodingLength());
     final SegmentDescriptor descriptor =
         SegmentDescriptor.builder().withId(123).withIndex(456).withMaxSegmentSize(789).build();
-    descriptor.copyTo(buffer);
+    serializer.writeTo(descriptor, buffer);
 
     // when
     final byte corruptByte = (byte) ~buffer.get(buffer.capacity() - 1);
@@ -85,21 +100,23 @@ class SegmentDescriptorTest {
     final SegmentDescriptor descriptor =
         SegmentDescriptor.builder().withId(2).withIndex(100).withMaxSegmentSize(1024).build();
 
-    final ByteBuffer buffer = ByteBuffer.allocate(SegmentDescriptor.getEncodingLength());
+    final ByteBuffer buffer = ByteBuffer.allocate(serializer.encodingLength());
     final UnsafeBuffer directBuffer = new UnsafeBuffer();
     directBuffer.wrap(buffer);
-    writeDescriptorV2(descriptor, directBuffer, buffer);
+    writeDescriptorV2minor1(descriptor, directBuffer, buffer);
 
     // when
     final SegmentDescriptor descriptorRead = readDescriptor(buffer);
 
     // then
-    assertThat(descriptorRead).isEqualTo(descriptor);
     assertThat(descriptorRead.id()).isEqualTo(2);
     assertThat(descriptorRead.index()).isEqualTo(100);
     assertThat(descriptorRead.maxSegmentSize()).isEqualTo(1024);
     assertThat(descriptorRead.lastIndex()).isZero();
     assertThat(descriptorRead.lastPosition()).isZero();
+    assertThat(descriptor.version()).isEqualTo(descriptorRead.version());
+    assertThat(descriptorRead.actingSchemaVersion()).isEqualTo((byte) 1);
+    assertThat(descriptorRead.encodingLength()).isLessThan((short) serializer.encodingLength());
   }
 
   @Test
@@ -108,33 +125,35 @@ class SegmentDescriptorTest {
     final SegmentDescriptor descriptor =
         SegmentDescriptor.builder().withId(2).withIndex(100).withMaxSegmentSize(1024).build();
 
-    final ByteBuffer buffer = ByteBuffer.allocate(SegmentDescriptor.getEncodingLength());
+    final var descriptorSerializer = new SegmentDescriptorSerializerSbe();
+    final ByteBuffer buffer = ByteBuffer.allocate(descriptorSerializer.encodingLength());
     final UnsafeBuffer directBuffer = new UnsafeBuffer();
     directBuffer.wrap(buffer);
-    writeDescriptorV2(descriptor, directBuffer, buffer);
+    writeDescriptorV2minor1(descriptor, directBuffer, buffer);
 
     // when
-    final SegmentDescriptor descriptorToUpdate = readDescriptor(buffer);
-    descriptorToUpdate.setLastIndex(100);
-    descriptorToUpdate.setLastPosition(100);
-    descriptorToUpdate.updateIfCurrentVersion(buffer);
+    SegmentDescriptor descriptorToUpdate = readDescriptor(buffer);
+    descriptorToUpdate = descriptorToUpdate.withUpdatedIndices(100, 100);
+
+    descriptorSerializer.writeTo(descriptorToUpdate, buffer);
 
     final SegmentDescriptor descriptorRead = readDescriptor(buffer);
 
     // then
-    assertThat(descriptorRead).isEqualTo(descriptor);
     assertThat(descriptorRead.id()).isEqualTo(2);
     assertThat(descriptorRead.index()).isEqualTo(100);
     assertThat(descriptorRead.maxSegmentSize()).isEqualTo(1024);
+    // these indices are not written since they were not present in V2.1
     assertThat(descriptorRead.lastIndex()).isZero();
     assertThat(descriptorRead.lastPosition()).isZero();
+    assertThat(descriptorRead.actingSchemaVersion()).isEqualTo((byte) 1);
   }
 
   private SegmentDescriptor readDescriptor(final ByteBuffer buffer) {
-    return new SegmentDescriptorReader().readFrom(buffer);
+    return new SegmentDescriptorSerializerSbe().readFrom(buffer);
   }
 
-  private void writeDescriptorV2(
+  private void writeDescriptorV2minor1(
       final SegmentDescriptor descriptor,
       final UnsafeBuffer directBuffer,
       final ByteBuffer buffer) {
