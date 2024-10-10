@@ -52,7 +52,6 @@ import io.camunda.optimize.service.util.configuration.users.UsersConfiguration;
 import io.camunda.optimize.util.SuppressionConstants;
 import java.io.InputStream;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -74,8 +73,6 @@ public class ConfigurationService {
   private static final TypeRef<HashMap<String, EngineConfiguration>> ENGINES_MAP_TYPEREF =
       new TypeRef<>() {};
   private static final TypeRef<List<String>> LIST_OF_STRINGS_TYPE_REF = new TypeRef<>() {};
-  private static final TypeRef<HashMap<String, WebhookConfiguration>> WEBHOOKS_MAP_TYPEREF =
-      new TypeRef<>() {};
   // @formatter:on
   // job executor settings
   protected Integer jobExecutorQueueSize;
@@ -148,7 +145,6 @@ public class ConfigurationService {
   private Boolean notificationEmailCheckServerIdentity;
   private String notificationEmailCompanyBranding;
   private EmailAuthenticationConfiguration emailAuthenticationConfiguration;
-  private Map<String, WebhookConfiguration> configuredWebhooks;
   private String digestCronTrigger;
   private EntityConfiguration entityConfiguration;
   private CsvConfiguration csvConfiguration;
@@ -855,18 +851,6 @@ public class ConfigurationService {
           configJsonContext.read(ConfigurationServiceConstants.EMAIL_BRANDING, String.class);
     }
     return notificationEmailCompanyBranding;
-  }
-
-  public Map<String, WebhookConfiguration> getConfiguredWebhooks() {
-    if (configuredWebhooks == null) {
-      configuredWebhooks =
-          configJsonContext.read(
-              ConfigurationServiceConstants.CONFIGURED_WEBHOOKS, WEBHOOKS_MAP_TYPEREF);
-      if (configuredWebhooks == null) {
-        configuredWebhooks = Collections.emptyMap();
-      }
-    }
-    return configuredWebhooks;
   }
 
   public String getDigestCronTrigger() {

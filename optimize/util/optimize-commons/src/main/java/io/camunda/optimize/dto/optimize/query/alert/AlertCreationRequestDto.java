@@ -24,7 +24,6 @@ public class AlertCreationRequestDto {
   private boolean fixNotification;
   private AlertInterval reminder;
   private List<String> emails = new ArrayList<>();
-  private String webhook;
 
   // needed to allow inheritance of field name constants
   @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -38,6 +37,5 @@ public class AlertCreationRequestDto {
     public static final String fixNotification = "fixNotification";
     public static final String reminder = "reminder";
     public static final String emails = "emails";
-    public static final String webhook = "webhook";
   }
 }
