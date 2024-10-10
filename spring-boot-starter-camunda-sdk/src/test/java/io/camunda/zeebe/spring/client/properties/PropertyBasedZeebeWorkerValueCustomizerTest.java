@@ -17,6 +17,7 @@ package io.camunda.zeebe.spring.client.properties;
 
 import static org.assertj.core.api.Assertions.*;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.spring.client.annotation.JobWorker;
 import io.camunda.zeebe.spring.client.annotation.Variable;
@@ -60,6 +61,13 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
 
   @JobWorker
   void activatedJobWorker(@Variable final String var1, final ActivatedJob activatedJob) {}
+
+  @JobWorker
+  void sampleWorkerWithJsonProperty(@VariablesAsType final PropertyAnnotatedClass annotatedClass) {}
+
+  @JobWorker
+  void sampleWorkerWithEmptyJsonProperty(
+      @VariablesAsType final PropertyAnnotatedClassEmptyValue annotatedClass) {}
 
   @Test
   void shouldNotAdjustVariableFilterVariablesAsActivatedJobIsInjected() {
@@ -213,6 +221,37 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
     assertThat(zeebeWorkerValue.getEnabled()).isFalse();
   }
 
+  @Test
+  void shouldApplyPropertyAnnotationOnVariableFiltering() {
+    // given
+    final PropertyBasedZeebeWorkerValueCustomizer customizer =
+        new PropertyBasedZeebeWorkerValueCustomizer(properties());
+    final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
+    zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorkerWithJsonProperty"));
+
+    // when
+    customizer.customize(zeebeWorkerValue);
+
+    // then
+    assertThat(zeebeWorkerValue.getFetchVariables()).containsExactly("some_name");
+  }
+
+  @Test
+  void shouldNotApplyPropertyAnnotationOnEmptyValue() {
+    // given
+    final PropertyBasedZeebeWorkerValueCustomizer customizer =
+        new PropertyBasedZeebeWorkerValueCustomizer(properties());
+    final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
+    zeebeWorkerValue.setMethodInfo(
+        methodInfo(this, "testBean", "sampleWorkerWithEmptyJsonProperty"));
+
+    // when
+    customizer.customize(zeebeWorkerValue);
+
+    // then
+    assertThat(zeebeWorkerValue.getFetchVariables()).containsExactly("value");
+  }
+
   private static final class ComplexProcessVariable {
     private String var3;
     private String var4;
@@ -232,5 +271,14 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
     public void setVar4(final String var4) {
       this.var4 = var4;
     }
+  }
+
+  private static final class PropertyAnnotatedClass {
+    @JsonProperty("some_name")
+    private String value;
+  }
+
+  private static final class PropertyAnnotatedClassEmptyValue {
+    @JsonProperty() private String value;
   }
 }
