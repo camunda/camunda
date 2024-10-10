@@ -19,7 +19,7 @@ public class ExporterConfiguration {
   private RetentionConfiguration retention = new RetentionConfiguration();
   private Map<String, Integer> replicasByIndexName = new HashMap<>();
   private Map<String, Integer> shardsByIndexName = new HashMap<>();
-  private boolean createSchema;
+  private boolean createSchema = true;
 
   public ConnectConfiguration getConnect() {
     return connect;
@@ -98,7 +98,7 @@ public class ExporterConfiguration {
   }
 
   public static final class IndexSettings {
-    private String prefix = "camunda-record";
+    private String prefix = "operate";
     private Integer numberOfShards = 1;
     private Integer numberOfReplicas = 0;
 
