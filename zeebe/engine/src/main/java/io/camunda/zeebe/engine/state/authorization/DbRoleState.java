@@ -16,6 +16,8 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import java.util.Optional;
 
 public class DbRoleState implements MutableRoleState {
 
@@ -54,5 +56,29 @@ public class DbRoleState implements MutableRoleState {
     roleByNameColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.ROLE_BY_NAME, transactionContext, roleName, fkRoleKey);
+  }
+
+  @Override
+  public void createRole(final RoleRecord roleRecord) {
+    roleKey.wrapLong(roleRecord.getRoleKey());
+    persistedRole.setRole(roleRecord);
+    roleColumnFamily.insert(roleKey, persistedRole);
+
+    roleName.wrapString(roleRecord.getName());
+    roleByNameColumnFamily.insert(roleName, fkRoleKey);
+  }
+
+  @Override
+  public Optional<RoleRecord> getRole(final long roleKey) {
+    this.roleKey.wrapLong(roleKey);
+    final var persistedRole = roleColumnFamily.get(this.roleKey);
+    return persistedRole != null ? Optional.of(persistedRole.getRole()) : Optional.empty();
+  }
+
+  @Override
+  public long getRoleKeyByName(final String roleName) {
+    this.roleName.wrapString(roleName);
+    final var fkRoleKey = roleByNameColumnFamily.get(this.roleName);
+    return fkRoleKey != null ? fkRoleKey.inner().getValue() : -1;
   }
 }
