@@ -17,7 +17,6 @@ public record ProcessInstanceEntity(
     Integer processVersion,
     String processVersionTag,
     Long processDefinitionKey,
-    Long rootProcessInstanceKey,
     Long parentProcessInstanceKey,
     Long parentFlowNodeInstanceKey,
     String treePath,

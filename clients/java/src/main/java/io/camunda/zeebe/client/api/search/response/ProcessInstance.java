@@ -29,8 +29,6 @@ public interface ProcessInstance {
 
   Long getProcessDefinitionKey();
 
-  Long getRootProcessInstanceKey();
-
   Long getParentProcessInstanceKey();
 
   Long getParentFlowNodeInstanceKey();

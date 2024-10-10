@@ -52,11 +52,6 @@ public class ProcessInstanceSortImpl extends SearchQuerySortBase<ProcessInstance
   }
 
   @Override
-  public ProcessInstanceSort rootProcessInstanceKey() {
-    return field("rootProcessInstanceKey");
-  }
-
-  @Override
   public ProcessInstanceSort parentProcessInstanceKey() {
     return field("parentProcessInstanceKey");
   }

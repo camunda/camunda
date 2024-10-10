@@ -179,32 +179,6 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   }
 
   @Test
-  public void shouldQueryByRootProcessInstanceKey() {
-    // given
-    final var processInstanceFilter =
-        FilterBuilders.processInstance(f -> f.rootProcessInstanceKeys(List.of(567L)));
-    final var searchQuery =
-        SearchQueryBuilders.processInstanceSearchQuery(q -> q.filter(processInstanceFilter));
-
-    // when
-    final var searchRequest = transformQuery(processInstanceFilter);
-
-    // then
-    final var queryVariant = searchRequest.queryOption();
-    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
-    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(2);
-
-    assertIsSearchTermQuery(
-        ((SearchBoolQuery) queryVariant).must().get(0).queryOption(),
-        "joinRelation",
-        "processInstance");
-    assertIsSearchTermQuery(
-        ((SearchBoolQuery) queryVariant).must().get(1).queryOption(),
-        "rootProcessInstanceKey",
-        567L);
-  }
-
-  @Test
   public void shouldQueryByParentProcessInstanceKey() {
     // given
     final var processInstanceFilter =
@@ -407,7 +381,6 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
     assertThat(processInstanceFilter.processDefinitionVersions()).isEmpty();
     assertThat(processInstanceFilter.processDefinitionVersionTags()).isEmpty();
     assertThat(processInstanceFilter.processDefinitionKeys()).isEmpty();
-    assertThat(processInstanceFilter.rootProcessInstanceKeys()).isEmpty();
     assertThat(processInstanceFilter.parentProcessInstanceKeys()).isEmpty();
     assertThat(processInstanceFilter.parentFlowNodeInstanceKeys()).isEmpty();
     assertThat(processInstanceFilter.treePaths()).isEmpty();

@@ -40,7 +40,6 @@ public final class ProcessInstanceFilterTransformer
         intTerms("processVersion", filter.processDefinitionVersions()),
         stringTerms("processVersionTag", filter.processDefinitionVersionTags()),
         longTerms("processDefinitionKey", filter.processDefinitionKeys()),
-        longTerms("rootProcessInstanceKey", filter.rootProcessInstanceKeys()),
         longTerms("parentProcessInstanceKey", filter.parentProcessInstanceKeys()),
         longTerms("parentFlowNodeInstanceKey", filter.parentFlowNodeInstanceKeys()),
         stringTerms("treePath", filter.treePaths()),

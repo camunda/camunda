@@ -216,7 +216,6 @@ public final class SearchQueryResponseMapper {
         .processDefinitionVersion(p.processVersion())
         .processDefinitionVersionTag(p.processVersionTag())
         .processDefinitionKey(p.processDefinitionKey())
-        .rootProcessInstanceKey(p.rootProcessInstanceKey())
         .parentProcessInstanceKey(p.parentProcessInstanceKey())
         .parentFlowNodeInstanceKey(p.parentFlowNodeInstanceKey())
         .treePath(p.treePath())

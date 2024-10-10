@@ -68,12 +68,6 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter rootProcessInstanceKey(final Long rootProcessInstanceKey) {
-    filter.setRootProcessInstanceKey(rootProcessInstanceKey);
-    return this;
-  }
-
-  @Override
   public ProcessInstanceFilter parentProcessInstanceKey(final Long parentProcessInstanceKey) {
     filter.setParentProcessInstanceKey(parentProcessInstanceKey);
     return this;

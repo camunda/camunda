@@ -27,7 +27,6 @@ public class ProcessInstanceImpl implements ProcessInstance {
   private final Integer processDefinitionVersion;
   private final String processDefinitionVersionTag;
   private final Long processDefinitionKey;
-  private final Long rootProcessInstanceKey;
   private final Long parentProcessInstanceKey;
   private final Long parentFlowNodeInstanceKey;
   private final String treePath;
@@ -44,7 +43,6 @@ public class ProcessInstanceImpl implements ProcessInstance {
     processDefinitionVersion = item.getProcessDefinitionVersion();
     processDefinitionVersionTag = item.getProcessDefinitionVersionTag();
     processDefinitionKey = item.getProcessDefinitionKey();
-    rootProcessInstanceKey = item.getRootProcessInstanceKey();
     parentProcessInstanceKey = item.getParentProcessInstanceKey();
     parentFlowNodeInstanceKey = item.getParentFlowNodeInstanceKey();
     treePath = item.getTreePath();
@@ -83,11 +81,6 @@ public class ProcessInstanceImpl implements ProcessInstance {
   @Override
   public Long getProcessDefinitionKey() {
     return processDefinitionKey;
-  }
-
-  @Override
-  public Long getRootProcessInstanceKey() {
-    return rootProcessInstanceKey;
   }
 
   @Override
