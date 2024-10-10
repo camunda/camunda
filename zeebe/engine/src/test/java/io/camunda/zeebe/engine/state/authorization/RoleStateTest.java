@@ -36,7 +36,7 @@ public class RoleStateTest {
     final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName(roleName);
 
     // when
-    roleState.createRole(roleRecord);
+    roleState.create(roleRecord);
 
     // then
     final var persistedRole = roleState.getRole(roleKey).get();

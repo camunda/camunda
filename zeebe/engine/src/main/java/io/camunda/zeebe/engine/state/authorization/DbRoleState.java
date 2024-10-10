@@ -59,7 +59,7 @@ public class DbRoleState implements MutableRoleState {
   }
 
   @Override
-  public void createRole(final RoleRecord roleRecord) {
+  public void create(final RoleRecord roleRecord) {
     roleKey.wrapLong(roleRecord.getRoleKey());
     persistedRole.setRole(roleRecord);
     roleColumnFamily.insert(roleKey, persistedRole);
