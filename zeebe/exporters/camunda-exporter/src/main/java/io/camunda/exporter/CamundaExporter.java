@@ -15,8 +15,6 @@ import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
-import io.camunda.exporter.handlers.AuthorizationRecordValueExportHandler;
-import io.camunda.exporter.handlers.UserRecordValueExportHandler;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.schema.IndexMappingProperty;
 import io.camunda.exporter.schema.IndexSchemaValidator;
@@ -186,11 +184,9 @@ public class CamundaExporter implements Exporter {
   }
 
   private ExporterBatchWriter createBatchWriter() {
-    // TODO register all handlers here
-    return ExporterBatchWriter.Builder.begin()
-        .withHandler(new UserRecordValueExportHandler())
-        .withHandler(new AuthorizationRecordValueExportHandler())
-        .build();
+    final var builder = ExporterBatchWriter.Builder.begin();
+    provider.getExportHandlers().stream().forEach(builder::withHandler);
+    return builder.build();
   }
 
   private void scheduleDelayedFlush() {

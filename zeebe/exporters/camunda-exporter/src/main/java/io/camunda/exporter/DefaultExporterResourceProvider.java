@@ -8,6 +8,9 @@
 package io.camunda.exporter;
 
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.handlers.AuthorizationRecordValueExportHandler;
+import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.UserRecordValueExportHandler;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.util.Set;
@@ -52,5 +55,11 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
     //        new SequenceFlowTemplate(operateIndexPrefix, true),
     //        new UserTaskTemplate(operateIndexPrefix, true),
     //        new VariableTemplate(operateIndexPrefix, true));
+  }
+
+  @Override
+  public Set<ExportHandler> getExportHandlers() {
+    // Register all handlers here
+    return Set.of(new UserRecordValueExportHandler(), new AuthorizationRecordValueExportHandler());
   }
 }
