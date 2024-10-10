@@ -59,6 +59,8 @@ import io.camunda.search.sort.UserSort;
 import io.camunda.search.sort.UserTaskSort;
 import io.camunda.search.sort.VariableSort;
 import io.camunda.util.ObjectBuilder;
+import io.camunda.util.advanced.query.filter.Operator;
+import io.camunda.util.advanced.query.validator.FieldTypeValidator;
 import io.camunda.zeebe.gateway.protocol.rest.*;
 import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
 import io.camunda.zeebe.util.Either;
@@ -66,7 +68,9 @@ import jakarta.validation.constraints.NotNull;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
@@ -258,10 +262,11 @@ public final class SearchQueryRequestMapper {
 
     final var builder = FilterBuilders.variable();
 
-    ofNullable(filter.getProcessInstanceKey()).ifPresent(builder::processInstanceKeys);
-    ofNullable(filter.getScopeKey()).ifPresent(builder::scopeKeys);
-    ofNullable(filter.getVariableKey()).ifPresent(builder::variableKeys);
-    ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
+    applyNumericFilter(filter.getProcessInstanceKey(), builder::processInstanceKeys);
+    applyNumericFilter(filter.getVariableKey(), builder::variableKeys);
+    applyStringFilter(filter.getTenantId(), builder::tenantIds);
+    applyNumericFilter(filter.getScopeKey(), builder::scopeKeys);
+
     ofNullable(filter.getIsTruncated()).ifPresent(builder::isTruncated);
 
     if (filter.getName() != null || filter.getValue() != null) {
@@ -805,5 +810,37 @@ public final class SearchQueryRequestMapper {
         .before(beforeDateTime.orElse(null))
         .after(afterDateTime.orElse(null))
         .build();
+  }
+
+  private static void applyNumericFilter(
+      final Object filterAttribute, final BiConsumer<Operator, List<Long>> builderConsumer) {
+
+    if (filterAttribute != null) {
+      final Map<String, Object> filterConverted = (Map<String, Object>) filterAttribute;
+      final Map.Entry<String, Object> entry = filterConverted.entrySet().iterator().next();
+      final String operatorKey = entry.getKey();
+      final Object value = entry.getValue();
+
+      final Operator operator = FieldTypeValidator.convertToFilterOperator(operatorKey);
+      if (FieldTypeValidator.isNumericOperator(operator)) {
+        builderConsumer.accept(operator, List.of(((Number) value).longValue()));
+      }
+    }
+  }
+
+  private static void applyStringFilter(
+      final Object filterAttribute, final BiConsumer<Operator, String> builderConsumer) {
+
+    if (filterAttribute != null) {
+      final Map<String, Object> filterConverted = (Map<String, Object>) filterAttribute;
+      final Map.Entry<String, Object> entry = filterConverted.entrySet().iterator().next();
+      final String operatorKey = entry.getKey();
+      final Object value = entry.getValue();
+
+      final Operator operator = FieldTypeValidator.convertToFilterOperator(operatorKey);
+      if (FieldTypeValidator.isStringOperator(operator)) {
+        builderConsumer.accept(operator, (String) value);
+      }
+    }
   }
 }

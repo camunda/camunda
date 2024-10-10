@@ -312,4 +312,12 @@ public final class SearchQueryBuilders {
   public static SearchQuery hasParentQuery(final String parent, final SearchQuery query) {
     return hasParent(q -> q.parentType(parent).query(query)).toSearchQuery();
   }
+
+  public static <A> SearchQuery gte(final String field, final A gte) {
+    return SearchRangeQuery.of(q -> q.field(field).gte(gte)).toSearchQuery();
+  }
+
+  public static <A> SearchQuery lt(final String field, final A lt) {
+    return SearchRangeQuery.of(q -> q.field(field).lte(lt)).toSearchQuery();
+  }
 }
