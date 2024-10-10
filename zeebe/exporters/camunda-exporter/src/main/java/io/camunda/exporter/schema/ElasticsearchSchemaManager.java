@@ -51,9 +51,13 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     indexTemplateDescriptors.stream()
         .filter(descriptor -> !existingTemplateNames.contains(descriptor.getTemplateName()))
         .forEach(
-            descriptor ->
-                elasticsearchClient.createIndexTemplate(
-                    descriptor, getIndexSettings(descriptor.getIndexName()), true));
+            descriptor -> {
+              elasticsearchClient.createIndexTemplate(
+                  descriptor, getIndexSettings(descriptor.getIndexName()), true);
+
+              elasticsearchClient.createIndex(
+                  descriptor, getIndexSettings(descriptor.getIndexName()));
+            });
 
     indexDescriptors.stream()
         .filter(descriptor -> !existingIndexNames.contains(descriptor.getFullQualifiedName()))
