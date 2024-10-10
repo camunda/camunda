@@ -98,7 +98,8 @@ public final class BpmnProcessors {
         bpmnBehaviors,
         processingState.getElementInstanceState(),
         keyGenerator,
-        writers);
+        writers,
+        authCheckBehavior);
     addProcessInstanceCreationStreamProcessors(
         typedRecordProcessors,
         processingState,
@@ -203,12 +204,17 @@ public final class BpmnProcessors {
       final BpmnBehaviors bpmnBehaviors,
       final ElementInstanceState elementInstanceState,
       final KeyGenerator keyGenerator,
-      final Writers writers) {
+      final Writers writers,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     typedRecordProcessors.onCommand(
         ValueType.VARIABLE_DOCUMENT,
         VariableDocumentIntent.UPDATE,
         new VariableDocumentUpdateProcessor(
-            elementInstanceState, keyGenerator, bpmnBehaviors.variableBehavior(), writers));
+            elementInstanceState,
+            keyGenerator,
+            bpmnBehaviors.variableBehavior(),
+            writers,
+            authCheckBehavior));
   }
 
   private static void addProcessInstanceCreationStreamProcessors(
