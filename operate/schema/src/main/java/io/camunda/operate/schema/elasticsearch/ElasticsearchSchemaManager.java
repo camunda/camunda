@@ -160,7 +160,12 @@ public class ElasticsearchSchemaManager implements SchemaManager {
 
   @Override
   public boolean isHealthy() {
-    return retryElasticsearchClient.isHealthy();
+    if (operateProperties.getElasticsearch().isHealthCheckEnabled()) {
+      return retryElasticsearchClient.isHealthy();
+    } else {
+      LOGGER.warn("OpenSearch cluster health check is disabled.");
+      return true;
+    }
   }
 
   @Override
