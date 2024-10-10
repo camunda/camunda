@@ -107,7 +107,7 @@ public class OpensearchConnector {
     osClientRepository.load(operateProperties.getOpensearch().getInterceptorPlugins());
     final OpenSearchClient openSearchClient =
         createOsClient(operateProperties.getOpensearch(), osClientRepository);
-    if (operateProperties.isHealthCheckEnabled()) {
+    if (operateProperties.getOpensearch().isHealthCheckEnabled()) {
       try {
         final HealthResponse response = openSearchClient.cluster().health();
         LOGGER.info("OpenSearch cluster health: {}", response.status());
@@ -125,7 +125,7 @@ public class OpensearchConnector {
     osClientRepository.load(operateProperties.getOpensearch().getInterceptorPlugins());
     final OpenSearchAsyncClient openSearchClient =
         createAsyncOsClient(operateProperties.getOpensearch(), osClientRepository);
-    if (operateProperties.isHealthCheckEnabled()) {
+    if (operateProperties.getOpensearch().isHealthCheckEnabled()) {
       final CompletableFuture<HealthResponse> healthResponse;
       try {
         healthResponse = openSearchClient.cluster().health();
@@ -184,7 +184,7 @@ public class OpensearchConnector {
     final OpenSearchTransport transport = builder.build();
     final OpenSearchAsyncClient openSearchAsyncClient = new OpenSearchAsyncClient(transport);
 
-    if (operateProperties.isHealthCheckEnabled()) {
+    if (operateProperties.getOpensearch().isHealthCheckEnabled()) {
       final CompletableFuture<HealthResponse> healthResponse;
       try {
         healthResponse = openSearchAsyncClient.cluster().health();
@@ -254,7 +254,7 @@ public class OpensearchConnector {
 
     final OpenSearchTransport transport = builder.build();
     final OpenSearchClient openSearchClient = new ExtendedOpenSearchClient(transport);
-    if (operateProperties.isHealthCheckEnabled()) {
+    if (operateProperties.getOpensearch().isHealthCheckEnabled()) {
       try {
         final HealthResponse response = openSearchClient.cluster().health();
         LOGGER.info("OpenSearch cluster health: {}", response.status());

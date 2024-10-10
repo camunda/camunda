@@ -40,9 +40,6 @@ public class OperateProperties {
   /** Indicates, whether CSRF prevention is enabled. */
   private boolean csrfPreventionEnabled = true;
 
-  /** Indicates whether operate does a proper health check for ES/OS clusters. */
-  private boolean healthCheckEnabled = true;
-
   /** Standard user data */
   private String userId = "demo";
 
@@ -144,14 +141,6 @@ public class OperateProperties {
 
   public void setCsrfPreventionEnabled(final boolean csrfPreventionEnabled) {
     this.csrfPreventionEnabled = csrfPreventionEnabled;
-  }
-
-  public boolean isHealthCheckEnabled() {
-    return healthCheckEnabled;
-  }
-
-  public void setHealthCheckEnabled(final boolean healthCheckEnabled) {
-    this.healthCheckEnabled = healthCheckEnabled;
   }
 
   public OperateElasticsearchProperties getElasticsearch() {
