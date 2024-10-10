@@ -1,0 +1,15 @@
+spring:
+  datasource:
+    driverClassName: org.h2.Driver
+    url: jdbc:h2:mem:camunda
+    username: sa
+    password:
+  liquibase:
+    enabled: false
+
+mybatis:
+  mapper-locations: classpath:mapper/**/*-mapper.xml
+logging:
+  level:
+    io.camunda.db.rdbms: DEBUG
+    org.mybatis: DEBUG
