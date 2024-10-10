@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.usertask;
 
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -25,17 +26,21 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
+  private final AuthorizationCheckBehavior authCheckBehavior;
 
   public UserTaskProcessor(
       final ProcessingState state,
       final KeyGenerator keyGenerator,
       final BpmnBehaviors bpmnBehaviors,
-      final Writers writers) {
-    this.commandProcessors =
-        new UserTaskCommandProcessors(state, keyGenerator, bpmnBehaviors, writers);
+      final Writers writers,
+      final AuthorizationCheckBehavior authCheckBehavior) {
+    this.authCheckBehavior = authCheckBehavior;
+    commandProcessors =
+        new UserTaskCommandProcessors(
+            state, keyGenerator, bpmnBehaviors, writers, authCheckBehavior);
 
-    this.rejectionWriter = writers.rejection();
-    this.responseWriter = writers.response();
+    rejectionWriter = writers.rejection();
+    responseWriter = writers.response();
   }
 
   @Override

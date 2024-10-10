@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.usertask.processors;
 
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -29,12 +30,15 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
   private final TypedResponseWriter responseWriter;
   private final UserTaskCommandPreconditionChecker preconditionChecker;
 
-  public UserTaskUpdateProcessor(final ProcessingState state, final Writers writers) {
+  public UserTaskUpdateProcessor(
+      final ProcessingState state,
+      final Writers writers,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     preconditionChecker =
         new UserTaskCommandPreconditionChecker(
-            List.of(LifecycleState.CREATED), "update", state.getUserTaskState());
+            List.of(LifecycleState.CREATED), "update", state.getUserTaskState(), authCheckBehavior);
   }
 
   @Override
