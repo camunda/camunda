@@ -16,6 +16,7 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.utils.TestSupport;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
@@ -33,15 +34,17 @@ public class ElasticsearchSchemaManagerIT {
   @Container
   private static final ElasticsearchContainer CONTAINER = TestSupport.createDefaultContainer();
 
+  private static final ExporterConfiguration CONFIG = new ExporterConfiguration();
   private static ElasticsearchClient elsClient;
   private static SearchEngineClient searchEngineClient;
+  private IndexDescriptor index;
+  private IndexTemplateDescriptor indexTemplate;
 
   @BeforeAll
   public static void init() {
     // Create the low-level client
-    final var config = new ExporterConfiguration();
-    config.getConnect().setUrl(CONTAINER.getHttpHostAddress());
-    elsClient = new ElasticsearchConnector(config.getConnect()).createClient();
+    CONFIG.getConnect().setUrl(CONTAINER.getHttpHostAddress());
+    elsClient = new ElasticsearchConnector(CONFIG.getConnect()).createClient();
 
     searchEngineClient = new ElasticsearchEngineClient(elsClient);
   }
@@ -50,6 +53,25 @@ public class ElasticsearchSchemaManagerIT {
   public void refresh() throws IOException {
     elsClient.indices().delete(req -> req.index("*"));
     elsClient.indices().deleteIndexTemplate(req -> req.name("*"));
+
+    indexTemplate =
+        SchemaTestUtil.mockIndexTemplate(
+            "index_name",
+            "test*",
+            "template_alias",
+            Collections.emptyList(),
+            "template_name",
+            "/mappings.json");
+
+    index =
+        SchemaTestUtil.mockIndex(
+            CONFIG.getIndex().getPrefix() + "qualified_name",
+            "alias",
+            "index_name",
+            "/mappings.json");
+
+    when(indexTemplate.getFullQualifiedName())
+        .thenReturn(CONFIG.getIndex().getPrefix() + "template_index_qualified_name");
   }
 
   @Test
@@ -58,18 +80,6 @@ public class ElasticsearchSchemaManagerIT {
     properties.getIndex().setNumberOfReplicas(10);
     properties.getIndex().setNumberOfShards(10);
 
-    final var indexTemplate =
-        SchemaTestUtil.mockIndexTemplate(
-            "indexName",
-            "full_name*",
-            "alias",
-            Collections.emptyList(),
-            "template_name",
-            "/mappings.json");
-
-    final var index =
-        SchemaTestUtil.mockIndex("full_name", "alias", "index_name", "/mappings.json");
-
     final var schemaManager =
         new ElasticsearchSchemaManager(
             searchEngineClient, Set.of(index), Set.of(indexTemplate), properties);
@@ -77,7 +87,10 @@ public class ElasticsearchSchemaManagerIT {
     schemaManager.initialiseResources();
 
     final var retrievedIndex =
-        elsClient.indices().get(req -> req.index("full_name")).get("full_name");
+        elsClient
+            .indices()
+            .get(req -> req.index(index.getFullQualifiedName()))
+            .get(index.getFullQualifiedName());
 
     assertThat(retrievedIndex.settings().index().numberOfReplicas()).isEqualTo("10");
     assertThat(retrievedIndex.settings().index().numberOfShards()).isEqualTo("10");
@@ -91,18 +104,6 @@ public class ElasticsearchSchemaManagerIT {
     properties.setReplicasByIndexName(Map.of("index_name", 5));
     properties.setShardsByIndexName(Map.of("index_name", 5));
 
-    final var indexTemplate =
-        SchemaTestUtil.mockIndexTemplate(
-            "index_name",
-            "full_name*",
-            "alias",
-            Collections.emptyList(),
-            "template_name",
-            "/mappings.json");
-
-    final var index =
-        SchemaTestUtil.mockIndex("full_name", "alias", "index_name", "/mappings.json");
-
     final var schemaManager =
         new ElasticsearchSchemaManager(
             searchEngineClient, Set.of(index), Set.of(indexTemplate), properties);
@@ -110,7 +111,10 @@ public class ElasticsearchSchemaManagerIT {
     schemaManager.initialiseResources();
 
     final var retrievedIndex =
-        elsClient.indices().get(req -> req.index("full_name")).get("full_name");
+        elsClient
+            .indices()
+            .get(req -> req.index(index.getFullQualifiedName()))
+            .get(index.getFullQualifiedName());
 
     assertThat(retrievedIndex.settings().index().numberOfReplicas()).isEqualTo("5");
     assertThat(retrievedIndex.settings().index().numberOfShards()).isEqualTo("5");
@@ -119,14 +123,6 @@ public class ElasticsearchSchemaManagerIT {
   @Test
   void shouldOverwriteIndexTemplateIfMappingsFileChanged() throws IOException {
     // given
-    final var indexTemplate =
-        SchemaTestUtil.mockIndexTemplate(
-            "index_name",
-            "full_name*",
-            "alias",
-            Collections.emptyList(),
-            "template_name",
-            "/mappings.json");
     final var schemaManager =
         new ElasticsearchSchemaManager(
             searchEngineClient, Set.of(), Set.of(indexTemplate), new ExporterConfiguration());
@@ -144,7 +140,7 @@ public class ElasticsearchSchemaManagerIT {
     final var template =
         elsClient
             .indices()
-            .getIndexTemplate(req -> req.name("template_name"))
+            .getIndexTemplate(req -> req.name(indexTemplate.getTemplateName()))
             .indexTemplates()
             .getFirst();
 
@@ -155,9 +151,6 @@ public class ElasticsearchSchemaManagerIT {
   @Test
   void shouldAppendToIndexMappingsWithNewProperties() throws IOException {
     // given
-    final var index =
-        SchemaTestUtil.mockIndex("index_name", "alias", "index_name", "/mappings.json");
-
     final var schemaManager =
         new ElasticsearchSchemaManager(
             searchEngineClient, Set.of(index), Set.of(), new ExporterConfiguration());
@@ -176,7 +169,10 @@ public class ElasticsearchSchemaManagerIT {
 
     // then
     final var updatedIndex =
-        elsClient.indices().get(req -> req.index("index_name")).get("index_name");
+        elsClient
+            .indices()
+            .get(req -> req.index(index.getFullQualifiedName()))
+            .get(index.getFullQualifiedName());
 
     assertThat(updatedIndex.mappings().properties().get("foo").isText()).isTrue();
     assertThat(updatedIndex.mappings().properties().get("bar").isKeyword()).isTrue();

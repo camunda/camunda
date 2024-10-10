@@ -108,7 +108,7 @@ final class CamundaExporterIT {
 
     indexTemplate =
         SchemaTestUtil.mockIndexTemplate(
-            "template_name",
+            "index_name",
             "test*",
             "template_alias",
             Collections.emptyList(),
@@ -121,6 +121,9 @@ final class CamundaExporterIT {
             "alias",
             "index_name",
             "/mappings.json");
+
+    when(indexTemplate.getFullQualifiedName())
+        .thenReturn(config.getIndex().getPrefix() + "template_index_qualified_name");
   }
 
   @Test
@@ -341,6 +344,9 @@ final class CamundaExporterIT {
               "new_template_name",
               "/mappings-added-property.json");
 
+      when(newIndexTemplate.getFullQualifiedName())
+          .thenReturn(config.getIndex().getPrefix() + "new_template_index_qualified_name");
+
       when(resourceProvider.getIndexDescriptors()).thenReturn(Set.of(index, newIndex));
       when(resourceProvider.getIndexTemplateDescriptors())
           .thenReturn(Set.of(indexTemplate, newIndexTemplate));
@@ -404,6 +410,17 @@ final class CamundaExporterIT {
       final var policies = testClient.ilm().getLifecycle();
 
       assertThat(policies.get("not_created_policy")).isNull();
+    }
+
+    @Test
+    void shouldCreateIndexInAdditionToTemplateFromTemplateDescriptor() throws IOException {
+      config.setCreateSchema(true);
+
+      startExporter();
+
+      final var indices =
+          testClient.indices().get(req -> req.index(indexTemplate.getFullQualifiedName()));
+      assertThat(indices.result().size()).isEqualTo(1);
     }
   }
 
