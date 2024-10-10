@@ -877,7 +877,7 @@ public class CompactRecordLogger {
   private String summarizeRole(final Record<?> record) {
     final var value = (RoleRecordValue) record.getValue();
 
-    final StringBuilder builder = new StringBuilder("Tenant[");
+    final StringBuilder builder = new StringBuilder("Role[");
     builder
         .append("Key=")
         .append(shortenKey(value.getRoleKey()))
