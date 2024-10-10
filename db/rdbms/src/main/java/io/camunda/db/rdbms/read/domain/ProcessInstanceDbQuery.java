@@ -20,6 +20,11 @@ import java.util.function.Function;
 public record ProcessInstanceDbQuery(
     ProcessInstanceFilter filter, ProcessInstanceSort sort, SearchQueryPage page) {
 
+  public ProcessInstanceDbQuery {
+    // There should be a default in the SearchQueryPage, so this should never happen
+    Objects.requireNonNull(page);
+  }
+
   public static ProcessInstanceDbQuery of(
       final Function<ProcessInstanceDbQuery.Builder, ObjectBuilder<ProcessInstanceDbQuery>> fn) {
     return fn.apply(new ProcessInstanceDbQuery.Builder()).build();

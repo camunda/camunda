@@ -37,14 +37,19 @@
       <column name="BPMN_PROCESS_ID" type="VARCHAR(200)" />
       <column name="PROCESS_DEFINITION_KEY" type="BIGINT" />
       <column name="STATE" type="VARCHAR(20)" />
-      <column name="START_DATE" type="TIMESTAMP" />
-      <column name="END_DATE" type="TIMESTAMP" />
+      <column name="START_DATE" type="TIMESTAMP WITH TIME ZONE(3)" />
+      <column name="END_DATE" type="TIMESTAMP WITH TIME ZONE(3)" />
       <column name="TENANT_ID" type="VARCHAR(200)" />
       <column name="PARENT_PROCESS_INSTANCE_KEY" type="BIGINT" />
       <column name="PARENT_ELEMENT_INSTANCE_KEY" type="BIGINT" />
       <column name="ELEMENT_ID" type="VARCHAR(255)" />
       <column name="VERSION" type="SMALLINT" />
     </createTable>
+
+    <modifySql dbms="mariadb">
+      <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
+      <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
+    </modifySql>
   </changeSet>
 
   <changeSet id="create_variable_table" author="pwunderlich">

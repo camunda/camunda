@@ -181,7 +181,7 @@ public class RdbmsExporter implements Exporter {
 
   @VisibleForTesting(
       "Each exporter creates it's own executionQueue, so we need an accessible flush method for tests")
-  void flushExecutionQueue() {
+  public void flushExecutionQueue() {
     LOG.debug("[RDBMS Exporter] flushing queue");
     rdbmsWriter.flush();
   }
