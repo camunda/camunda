@@ -173,7 +173,7 @@ test.describe('Processes', () => {
     ).toBeVisible();
 
     await expect(page).toHaveURL(
-      `.${Paths.processes()}?${convertToQueryString({
+      `${Paths.processes()}?${convertToQueryString({
         active: 'true',
         incidents: 'true',
         ids: instance.processInstanceKey,
@@ -197,7 +197,7 @@ test.describe('Processes', () => {
     await expect(page.getByRole('table').getByRole('row')).toHaveCount(2);
 
     await expect(page).toHaveURL(
-      `.${Paths.processes()}?${convertToQueryString({
+      `${Paths.processes()}?${convertToQueryString({
         active: 'true',
         incidents: 'true',
         ids: instance.processInstanceKey,
