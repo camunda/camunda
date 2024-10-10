@@ -737,7 +737,7 @@ paths:
     get:
       tags:
         - Variable
-      summary: Return variable by a variable key.
+      summary: Return variable by a variable key
       description: |
         Get the variable by the variable key.
         :::note
