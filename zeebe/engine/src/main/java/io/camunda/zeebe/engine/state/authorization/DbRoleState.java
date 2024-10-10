@@ -69,6 +69,24 @@ public class DbRoleState implements MutableRoleState {
   }
 
   @Override
+  public void update(final RoleRecord roleRecord) {
+    // retrieve record from the state
+    roleKey.wrapLong(roleRecord.getRoleKey());
+    final var persistedRole = roleColumnFamily.get(roleKey);
+
+    // remove old record from ROLE_BY_NAME cf
+    roleName.wrapString(persistedRole.getRole().getName());
+    roleByNameColumnFamily.deleteExisting(roleName);
+
+    // add new record to ROLE_BY_NAME cf
+    roleName.wrapString(roleRecord.getName());
+    roleByNameColumnFamily.insert(roleName, fkRoleKey);
+
+    persistedRole.setRole(roleRecord);
+    roleColumnFamily.update(roleKey, persistedRole);
+  }
+
+  @Override
   public Optional<RoleRecord> getRole(final long roleKey) {
     this.roleKey.wrapLong(roleKey);
     final var persistedRole = roleColumnFamily.get(this.roleKey);
