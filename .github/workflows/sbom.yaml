@@ -8,9 +8,6 @@ name: Generate SBOM
 
 on:
   workflow_dispatch:
-  pull_request: # Triggers the workflow on pull requests
-    branches:
-      - main         # Specify the branch (or branches) you want to run the workflow on pull request
   schedule:
     - cron: "0 9 * * MON"
 
