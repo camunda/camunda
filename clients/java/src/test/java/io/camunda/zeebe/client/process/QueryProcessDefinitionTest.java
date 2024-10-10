@@ -32,6 +32,19 @@ import org.junit.jupiter.api.Test;
 public class QueryProcessDefinitionTest extends ClientRestTest {
 
   @Test
+  void shouldGetProcessDefinitionXml() {
+    // when
+    final long processDefinitionKey = 1L;
+    client.newProcessDefinitionGetXmlRequest(processDefinitionKey).send().join();
+
+    // then
+    final LoggedRequest request = gatewayService.getLastRequest();
+    assertThat(request.getUrl())
+        .isEqualTo("/v2/process-definitions/" + processDefinitionKey + "/xml");
+    assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
+  }
+
+  @Test
   public void shouldGetProcessDefinitionByKey() {
     // when
     client.newProcessDefinitionGetRequest(123L).send().join();

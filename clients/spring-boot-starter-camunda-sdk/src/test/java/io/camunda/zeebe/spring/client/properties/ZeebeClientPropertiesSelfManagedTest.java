@@ -24,7 +24,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest(
     classes = CamundaClientPropertiesTestConfig.class,
-    properties = "camunda.client.mode=self-managed")
+    properties = {"camunda.client.mode=self-managed", "camunda.client.zeebe.scope=zeebe-scope"})
 public class ZeebeClientPropertiesSelfManagedTest {
   @Autowired CamundaClientProperties properties;
 
@@ -37,6 +37,7 @@ public class ZeebeClientPropertiesSelfManagedTest {
     assertThat(properties.getZeebe().isPreferRestOverGrpc()).isEqualTo(false);
     assertThat(properties.getZeebe().getEnabled()).isEqualTo(true);
     assertThat(properties.getZeebe().getAudience()).isEqualTo("zeebe-api");
+    assertThat(properties.getZeebe().getScope()).isEqualTo("zeebe-scope");
     assertThat(properties.getIdentity().getEnabled()).isEqualTo(true);
     assertThat(properties.getIdentity().getBaseUrl().toString()).isEqualTo("http://localhost:8084");
     assertThat(properties.getIdentity().getAudience()).isEqualTo("identity-api");

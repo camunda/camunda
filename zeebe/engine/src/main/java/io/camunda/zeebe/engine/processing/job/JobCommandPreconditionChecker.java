@@ -30,8 +30,7 @@ public class JobCommandPreconditionChecker {
     this.validStates = validStates;
   }
 
-  protected Either<Tuple<RejectionType, String>, Void> check(
-      final JobState.State state, final long jobKey) {
+  protected Either<Tuple<RejectionType, String>, Void> check(final State state, final long jobKey) {
     if (validStates.contains(state)) {
       return Either.right(null);
     }

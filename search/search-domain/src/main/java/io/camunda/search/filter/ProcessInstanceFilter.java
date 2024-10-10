@@ -29,7 +29,7 @@ public record ProcessInstanceFilter(
     DateValueFilter startDate,
     DateValueFilter endDate,
     List<String> states,
-    Boolean incident,
+    Boolean hasIncident,
     List<String> tenantIds)
     implements FilterBase {
 
@@ -48,7 +48,7 @@ public record ProcessInstanceFilter(
     private DateValueFilter startDate;
     private DateValueFilter endDate;
     private List<String> states;
-    private Boolean incident;
+    private Boolean hasIncident;
     private List<String> tenantIds;
 
     public Builder processInstanceKeys(final List<Long> values) {
@@ -170,8 +170,8 @@ public record ProcessInstanceFilter(
       return states(collectValuesAsList(values));
     }
 
-    public Builder incident(final Boolean value) {
-      incident = value;
+    public Builder hasIncident(final Boolean value) {
+      hasIncident = value;
       return this;
     }
 
@@ -200,7 +200,7 @@ public record ProcessInstanceFilter(
           startDate,
           endDate,
           Objects.requireNonNullElse(states, Collections.emptyList()),
-          incident,
+          hasIncident,
           Objects.requireNonNullElse(tenantIds, Collections.emptyList()));
     }
   }

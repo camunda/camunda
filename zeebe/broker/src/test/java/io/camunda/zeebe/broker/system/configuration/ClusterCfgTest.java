@@ -10,6 +10,8 @@ package io.camunda.zeebe.broker.system.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
+import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,6 +32,14 @@ public final class ClusterCfgTest {
       "zeebe.broker.cluster.clusterSize";
   private static final String ZEEBE_BROKER_CLUSTER_CLUSTER_NAME =
       "zeebe.broker.cluster.clusterName";
+  private static final String ZEEBE_BROKER_CLUSTER_CONFIG_MANAGER_GOSSIP_ENABLE_SYNC =
+      "zeebe.broker.cluster.configManager.gossip.enableSync";
+  private static final String ZEEBE_BROKER_CLUSTER_CONFIG_MANAGER_GOSSIP_SYNC_DELAY =
+      "zeebe.broker.cluster.configManager.gossip.syncDelay";
+  private static final String ZEEBE_BROKER_CLUSTER_CONFIG_MANAGER_GOSSIP_SYNC_REQUEST_TIMEOUT =
+      "zeebe.broker.cluster.configManager.gossip.syncRequestTimeout";
+  private static final String ZEEBE_BROKER_CLUSTER_CONFIG_MANAGER_GOSSIP_GOSSIP_FANOUT =
+      "zeebe.broker.cluster.configManager.gossip.gossipFanout";
 
   @Test
   public void shouldUseDefaults() {
@@ -46,11 +56,14 @@ public final class ClusterCfgTest {
     assertThat(emptyCfg.getClusterSize()).isEqualTo(1);
     assertThat(emptyCfg.getInitialContactPoints()).isEqualTo(List.of());
 
+    assertThat(emptyCfg.getConfigManager()).isEqualTo(ConfigManagerCfg.defaultConfig());
+
     assertThat(defaultCfg.getNodeId()).isEqualTo(0);
     assertThat(defaultCfg.getPartitionsCount()).isEqualTo(1);
     assertThat(defaultCfg.getReplicationFactor()).isEqualTo(1);
     assertThat(defaultCfg.getClusterSize()).isEqualTo(1);
     assertThat(defaultCfg.getInitialContactPoints()).isEqualTo(List.of());
+    assertThat(defaultCfg.getConfigManager()).isEqualTo(ConfigManagerCfg.defaultConfig());
   }
 
   @Test
@@ -142,6 +155,44 @@ public final class ClusterCfgTest {
 
     // then
     assertThat(cfgCluster.getNodeId()).isEqualTo(2);
+  }
+
+  @Test
+  public void shouldUseSpecifiedConfigManagerCfg() {
+    // given
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("config-manager", Collections.emptyMap());
+    final ClusterCfg cfgCluster = cfg.getCluster();
+
+    // then
+    assertThat(cfgCluster.getConfigManager())
+        .isEqualTo(
+            new ConfigManagerCfg(
+                new ClusterConfigurationGossiperConfig(
+                    false, Duration.ofSeconds(10), Duration.ofSeconds(30), 10)));
+  }
+
+  @Test
+  public void shouldUseConfigManagerCfgFromEnvironment() {
+    // given
+    final var environment = new HashMap<String, String>();
+    environment.put(ZEEBE_BROKER_CLUSTER_CONFIG_MANAGER_GOSSIP_ENABLE_SYNC, "true");
+    environment.put(ZEEBE_BROKER_CLUSTER_CONFIG_MANAGER_GOSSIP_SYNC_DELAY, "5s");
+    // cluster size must be larger than node id
+    environment.put(ZEEBE_BROKER_CLUSTER_CONFIG_MANAGER_GOSSIP_SYNC_REQUEST_TIMEOUT, "6s");
+    environment.put(ZEEBE_BROKER_CLUSTER_CONFIG_MANAGER_GOSSIP_GOSSIP_FANOUT, "6");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("config-manager", environment);
+    final ClusterCfg cfgCluster = cfg.getCluster();
+
+    // then
+    assertThat(cfgCluster.getConfigManager())
+        .isEqualTo(
+            new ConfigManagerCfg(
+                new ClusterConfigurationGossiperConfig(
+                    true, Duration.ofSeconds(5), Duration.ofSeconds(6), 6)));
   }
 
   @Test

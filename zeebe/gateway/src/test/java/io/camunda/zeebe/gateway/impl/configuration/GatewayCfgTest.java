@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.impl.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.utils.net.Address;
+import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.test.util.TestConfigurationFactory;
 import io.camunda.zeebe.util.Environment;
 import java.io.File;
@@ -42,7 +43,11 @@ public final class GatewayCfgTest {
         .setClusterName("testCluster")
         .setMemberId("testMember")
         .setHost("1.2.3.4")
-        .setPort(12321);
+        .setPort(12321)
+        .setConfigManager(
+            new ConfigManagerCfg(
+                new ClusterConfigurationGossiperConfig(
+                    false, Duration.ofSeconds(5), Duration.ofSeconds(30), 6)));
     CUSTOM_CFG
         .getSecurity()
         .setEnabled(true)
@@ -119,6 +124,19 @@ public final class GatewayCfgTest {
   }
 
   @Test
+  public void shouldSetCustomConfigManagerCfg() {
+    // when
+    final GatewayCfg gatewayCfg = readConfig(CUSTOM_CFG_FILENAME);
+
+    // then
+    final var gossiperConfig = gatewayCfg.getCluster().getConfigManager().gossip();
+    assertThat(gossiperConfig.enableSync()).isEqualTo(false);
+    assertThat(gossiperConfig.syncDelay()).isEqualTo(Duration.ofSeconds(5));
+    assertThat(gossiperConfig.syncRequestTimeout()).isEqualTo(Duration.ofSeconds(30));
+    assertThat(gossiperConfig.gossipFanout()).isEqualTo(6);
+  }
+
+  @Test
   public void shouldUseEnvironmentVariables() {
     // given
     setEnv("zeebe.gateway.network.host", "zeebe");
@@ -131,6 +149,10 @@ public final class GatewayCfgTest {
     setEnv("zeebe.gateway.cluster.memberId", "envMember");
     setEnv("zeebe.gateway.cluster.host", "envHost");
     setEnv("zeebe.gateway.cluster.port", "12345");
+    setEnv("zeebe.gateway.cluster.configManager.gossip.enableSync", "false");
+    setEnv("zeebe.gateway.cluster.configManager.gossip.syncDelay", "5s");
+    setEnv("zeebe.gateway.cluster.configManager.gossip.syncRequestTimeout", "5s");
+    setEnv("zeebe.gateway.cluster.configManager.gossip.gossipFanout", "4");
     setEnv("zeebe.gateway.security.enabled", String.valueOf(false));
     setEnv(
         "zeebe.gateway.security.privateKeyPath",
@@ -168,6 +190,12 @@ public final class GatewayCfgTest {
         .setMemberId("envMember")
         .setHost("envHost")
         .setPort(12345);
+    expected
+        .getCluster()
+        .setConfigManager(
+            new ConfigManagerCfg(
+                new ClusterConfigurationGossiperConfig(
+                    false, Duration.ofSeconds(5), Duration.ofSeconds(5), 4)));
     expected.getThreads().setManagementThreads(32);
     expected
         .getSecurity()

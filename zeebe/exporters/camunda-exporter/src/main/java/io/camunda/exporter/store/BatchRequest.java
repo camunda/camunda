@@ -53,6 +53,8 @@ public interface BatchRequest {
   BatchRequest updateWithScript(
       String index, String id, String script, Map<String, Object> parameters);
 
+  BatchRequest delete(String index, String id);
+
   /**
    * Applies all updates in this batch.
    *

@@ -29,6 +29,7 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionContin
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionFinishProcessor;
 import io.camunda.zeebe.engine.processing.distribution.CommandRedistributor;
 import io.camunda.zeebe.engine.processing.dmn.DecisionEvaluationEvaluteProcessor;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationProcessors;
 import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
@@ -36,7 +37,6 @@ import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.signal.SignalBroadcastProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.AuthorizableDistributionProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContext;
@@ -44,7 +44,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.processing.user.UserProcessors;
-import io.camunda.zeebe.engine.processing.usertask.UserTaskEventProcessors;
+import io.camunda.zeebe.engine.processing.usertask.UserTaskProcessor;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -57,6 +57,7 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.FeatureFlags;
@@ -123,6 +124,10 @@ public final class EngineProcessors {
             routingInfo,
             interPartitionCommandSender);
 
+    final var authCheckBehavior =
+        new AuthorizationCheckBehavior(
+            processingState.getAuthorizationState(), processingState.getUserState(), config);
+
     final var deploymentDistributionCommandSender =
         new DeploymentDistributionCommandSender(
             typedRecordProcessorContext.getPartitionId(), interPartitionCommandSender);
@@ -137,7 +142,8 @@ public final class EngineProcessors {
         featureFlags,
         commandDistributionBehavior,
         config,
-        clock);
+        clock,
+        authCheckBehavior);
     addMessageProcessors(
         bpmnBehaviors,
         subscriptionCommandSender,
@@ -163,7 +169,8 @@ public final class EngineProcessors {
             partitionId,
             routingInfo,
             clock,
-            config);
+            config,
+            authCheckBehavior);
 
     addDecisionProcessors(typedRecordProcessors, decisionBehavior, writers, processingState);
 
@@ -175,7 +182,8 @@ public final class EngineProcessors {
         writers,
         jobMetrics,
         config,
-        clock);
+        clock,
+        authCheckBehavior);
 
     addIncidentProcessors(
         processingState,
@@ -202,9 +210,8 @@ public final class EngineProcessors {
         processingState,
         scheduledTaskStateFactory,
         interPartitionCommandSender);
-
-    UserTaskEventProcessors.addUserTaskProcessors(
-        typedRecordProcessors, processingState, bpmnBehaviors, writers);
+    addUserTaskProcessors(
+        typedRecordProcessors, processingState, bpmnBehaviors, writers, authCheckBehavior);
 
     UserProcessors.addUserProcessors(
         keyGenerator,
@@ -223,7 +230,7 @@ public final class EngineProcessors {
         processingState,
         writers,
         commandDistributionBehavior,
-        config);
+        authCheckBehavior);
 
     return typedRecordProcessors;
   }
@@ -262,7 +269,8 @@ public final class EngineProcessors {
       final int partitionId,
       final RoutingInfo routingInfo,
       final InstantSource clock,
-      final EngineConfiguration config) {
+      final EngineConfiguration config,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     return BpmnProcessors.addBpmnStreamProcessor(
         processingState,
         scheduledTaskState,
@@ -275,7 +283,8 @@ public final class EngineProcessors {
         partitionId,
         routingInfo,
         clock,
-        config);
+        config,
+        authCheckBehavior);
   }
 
   private static void addDeploymentRelatedProcessorAndServices(
@@ -289,24 +298,22 @@ public final class EngineProcessors {
       final FeatureFlags featureFlags,
       final CommandDistributionBehavior distributionBehavior,
       final EngineConfiguration config,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final AuthorizationCheckBehavior authCheckBehavior) {
 
     // on deployment partition CREATE Command is received and processed
     // it will cause a distribution to other partitions
     final var processor =
-        new AuthorizableDistributionProcessor<>(
+        new DeploymentCreateProcessor(
             processingState,
+            bpmnBehaviors,
             writers,
+            keyGenerator,
+            featureFlags,
+            distributionBehavior,
             config,
-            new DeploymentCreateProcessor(
-                processingState,
-                bpmnBehaviors,
-                writers,
-                keyGenerator,
-                featureFlags,
-                distributionBehavior,
-                config,
-                clock));
+            clock,
+            authCheckBehavior);
 
     typedRecordProcessors.onCommand(ValueType.DEPLOYMENT, CREATE, processor);
 
@@ -419,6 +426,26 @@ public final class EngineProcessors {
             commandDistributionBehavior);
     typedRecordProcessors.onCommand(
         ValueType.SIGNAL, SignalIntent.BROADCAST, signalBroadcastProcessor);
+  }
+
+  private static void addUserTaskProcessors(
+      final TypedRecordProcessors typedRecordProcessors,
+      final MutableProcessingState processingState,
+      final BpmnBehaviors bpmnBehaviors,
+      final Writers writers,
+      final AuthorizationCheckBehavior authCheckBehavior) {
+    final var userTaskProcessor =
+        new UserTaskProcessor(
+            processingState,
+            processingState.getKeyGenerator(),
+            bpmnBehaviors,
+            writers,
+            authCheckBehavior);
+
+    UserTaskIntent.commands()
+        .forEach(
+            intent ->
+                typedRecordProcessors.onCommand(ValueType.USER_TASK, intent, userTaskProcessor));
   }
 
   private static void addCommandDistributionProcessors(

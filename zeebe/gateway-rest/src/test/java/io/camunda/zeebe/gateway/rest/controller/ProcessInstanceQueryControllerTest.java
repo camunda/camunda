@@ -70,7 +70,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             "treePath": "PI_1/PI_2",
             "startDate": "2024-01-01T00:00:00Z",
             "state": "ACTIVE",
-            "incident": false,
+            "hasIncident": false,
             "tenantId": "tenant"
           }
           """;
@@ -92,7 +92,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "treePath": "PI_1/PI_2",
                   "startDate": "2024-01-01T00:00:00Z",
                   "state": "ACTIVE",
-                  "incident": false,
+                  "hasIncident": false,
                   "tenantId": "tenant"
                 }
               ],

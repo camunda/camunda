@@ -11,6 +11,7 @@ public record ProcessDefinitionEntity(
     Long key,
     String name,
     String bpmnProcessId,
+    String bpmnXml,
     String resourceName,
     Integer version,
     String versionTag,

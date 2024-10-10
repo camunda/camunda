@@ -55,7 +55,6 @@ public class ExecutionLatencyMetrics {
       final long creationTimeMs, final long completionTimeMs) {
     Timer.builder("zeebe.process.instance.execution.time")
         .description("The execution time of processing a complete process instance")
-        .tag("partition", Integer.toString(partitionId))
         .sla(PROCESS_INSTANCE_EXECUTION_BUCKETS)
         .register(meterRegistry)
         .record(completionTimeMs - creationTimeMs, TimeUnit.MILLISECONDS);
@@ -64,7 +63,6 @@ public class ExecutionLatencyMetrics {
   public void observeJobLifeTime(final long creationTimeMs, final long completionTimeMs) {
     Timer.builder("zeebe.job.life.time")
         .description("The life time of an job")
-        .tag("partition", Integer.toString(partitionId))
         .sla(JOB_LIFE_TIME_BUCKETS)
         .register(meterRegistry)
         .record(completionTimeMs - creationTimeMs, TimeUnit.MILLISECONDS);
@@ -73,7 +71,6 @@ public class ExecutionLatencyMetrics {
   public void observeJobActivationTime(final long creationTimeMs, final long activationTimeMs) {
     Timer.builder("zeebe.job.activation.time")
         .description("The time until an job was activated")
-        .tag("partition", Integer.toString(partitionId))
         .sla(JOB_ACTIVATION_TIME_BUCKETS)
         .register(meterRegistry)
         .record(activationTimeMs - creationTimeMs, TimeUnit.MILLISECONDS);
@@ -99,7 +96,7 @@ public class ExecutionLatencyMetrics {
             () -> collection.get(partitionId).get())
         .description(
             "The current cached instances for counting their execution latency. If only short-lived instances are handled this can be seen or observed as the current active instance count.")
-        .tags("type", type, "partition", Integer.toString(partitionId))
+        .tags("type", type)
         .register(meterRegistry);
   }
 }

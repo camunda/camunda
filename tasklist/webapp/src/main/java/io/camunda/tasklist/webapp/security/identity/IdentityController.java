@@ -38,11 +38,11 @@ import org.springframework.web.bind.annotation.ResponseBody;
 @Profile(IDENTITY_AUTH_PROFILE)
 public class IdentityController {
 
-  protected final Logger logger = LoggerFactory.getLogger(this.getClass());
+  protected final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Autowired private IdentityService identityService;
 
-  private SecurityContextRepository securityContextRepository =
+  private final SecurityContextRepository securityContextRepository =
       new HttpSessionSecurityContextRepository();
 
   private final SecurityContextHolderStrategy securityContextHolderStrategy =
@@ -77,9 +77,9 @@ public class IdentityController {
   public void loggedInCallback(
       final HttpServletRequest req,
       final HttpServletResponse res,
-      @RequestParam(required = false, name = "code") String code,
-      @RequestParam(required = false, name = "state") String state,
-      @RequestParam(required = false, name = "error") String error)
+      @RequestParam(required = false, name = "code") final String code,
+      @RequestParam(required = false, name = "state") final String state,
+      @RequestParam(required = false, name = "error") final String error)
       throws IOException {
     final AuthCodeDto authCodeDto = new AuthCodeDto(code, state, error);
     logger.debug(
@@ -98,7 +98,7 @@ public class IdentityController {
       securityContextRepository.saveContext(context, req, res);
 
       redirectToPage(req, res);
-    } catch (Exception iae) {
+    } catch (final Exception iae) {
       clearContextAndRedirectToNoPermission(req, res, iae);
     }
   }
@@ -132,24 +132,26 @@ public class IdentityController {
    * @throws IOException exception
    */
   @RequestMapping(value = LOGOUT_RESOURCE)
-  public void logout(HttpServletRequest req, HttpServletResponse res) throws IOException {
+  public void logout(final HttpServletRequest req, final HttpServletResponse res)
+      throws IOException {
     logger.debug("logout user");
     try {
       identityService.logout();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       logger.error("An error occurred in logout process", e);
     }
     cleanup(req);
   }
 
   protected void clearContextAndRedirectToNoPermission(
-      HttpServletRequest req, HttpServletResponse res, Throwable t) throws IOException {
+      final HttpServletRequest req, final HttpServletResponse res, final Throwable t)
+      throws IOException {
     logger.error("Error in authentication callback: ", t);
     cleanup(req);
-    res.sendRedirect(NO_PERMISSION);
+    res.sendRedirect(req.getContextPath() + NO_PERMISSION);
   }
 
-  protected void cleanup(HttpServletRequest req) {
+  protected void cleanup(final HttpServletRequest req) {
     req.getSession().invalidate();
 
     final var context = securityContextHolderStrategy.getContext();

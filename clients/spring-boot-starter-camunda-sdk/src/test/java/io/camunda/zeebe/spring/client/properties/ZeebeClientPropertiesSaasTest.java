@@ -27,7 +27,8 @@ import org.springframework.boot.test.context.SpringBootTest;
     properties = {
       "camunda.client.cluster-id=my-cluster-id",
       "camunda.client.region=bru-2",
-      "camunda.client.mode=saas"
+      "camunda.client.mode=saas",
+      "camunda.client.zeebe.scope=zeebe-scope"
     })
 public class ZeebeClientPropertiesSaasTest {
   @Autowired CamundaClientProperties properties;
@@ -48,6 +49,7 @@ public class ZeebeClientPropertiesSaasTest {
         .isEqualTo("https://login.cloud.camunda.io/oauth/token");
     assertThat(properties.getZeebe().getEnabled()).isEqualTo(true);
     assertThat(properties.getZeebe().getAudience()).isEqualTo("zeebe.camunda.io");
+    assertThat(properties.getZeebe().getScope()).isEqualTo("zeebe-scope");
     assertThat(properties.getIdentity().getEnabled()).isEqualTo(false);
   }
 }

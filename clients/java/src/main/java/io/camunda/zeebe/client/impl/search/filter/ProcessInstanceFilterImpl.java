@@ -110,8 +110,8 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter incident(final Boolean incident) {
-    filter.setIncident(incident);
+  public ProcessInstanceFilter hasIncident(final Boolean hasIncident) {
+    filter.hasIncident(hasIncident);
     return this;
   }
 

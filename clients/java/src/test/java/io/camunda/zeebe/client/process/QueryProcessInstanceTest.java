@@ -71,7 +71,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
                     .startDate("startDate")
                     .endDate("endDate")
                     .state("ACTIVE")
-                    .incident(true)
+                    .hasIncident(true)
                     .tenantId("tenant"))
         .send()
         .join();
@@ -93,7 +93,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertThat(filter.getStartDate()).isEqualTo("startDate");
     assertThat(filter.getEndDate()).isEqualTo("endDate");
     assertThat(filter.getState()).isEqualTo(ProcessInstanceStateEnum.ACTIVE);
-    assertThat(filter.getIncident()).isEqualTo(true);
+    assertThat(filter.getHasIncident()).isEqualTo(true);
     assertThat(filter.getTenantId()).isEqualTo("tenant");
   }
 

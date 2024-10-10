@@ -43,7 +43,7 @@ public interface ProcessInstance {
 
   String getState();
 
-  Boolean getIncident();
+  Boolean getHasIncident();
 
   String getTenantId();
 }

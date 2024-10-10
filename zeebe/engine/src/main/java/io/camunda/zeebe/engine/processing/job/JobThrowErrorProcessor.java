@@ -8,17 +8,14 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MAX_ERROR_MESSAGE_SIZE;
-import static io.camunda.zeebe.engine.processing.job.JobCommandPreconditionChecker.NO_JOB_FOUND_MESSAGE;
 import static io.camunda.zeebe.util.StringUtil.limitString;
 
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.common.Failure;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
-import io.camunda.zeebe.engine.processing.streamprocessor.AuthorizableCommandProcessor.Authorizable;
-import io.camunda.zeebe.engine.processing.streamprocessor.AuthorizableCommandProcessor.Rejection;
-import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor.CommandControl;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer;
@@ -35,16 +32,14 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.util.Optional;
 
-public class JobThrowErrorProcessor implements Authorizable<JobRecord, JobRecord> {
+public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
 
   /**
    * Marker element ID. This ID is used to indicate that a given catch event could not be found. The
@@ -73,7 +68,8 @@ public class JobThrowErrorProcessor implements Authorizable<JobRecord, JobRecord
       final ProcessingState state,
       final BpmnEventPublicationBehavior eventPublicationBehavior,
       final KeyGenerator keyGenerator,
-      final JobMetrics jobMetrics) {
+      final JobMetrics jobMetrics,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     this.keyGenerator = keyGenerator;
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
@@ -81,7 +77,8 @@ public class JobThrowErrorProcessor implements Authorizable<JobRecord, JobRecord
     eventScopeInstanceState = state.getEventScopeInstanceState();
 
     defaultProcessor =
-        new DefaultJobCommandPreconditionGuard("throw an error for", jobState, this::acceptCommand);
+        new DefaultJobCommandPreconditionGuard(
+            "throw an error for", jobState, this::acceptCommand, authCheckBehavior);
 
     stateAnalyzer = new CatchEventAnalyzer(state.getProcessState(), elementInstanceState);
     this.eventPublicationBehavior = eventPublicationBehavior;
@@ -89,32 +86,9 @@ public class JobThrowErrorProcessor implements Authorizable<JobRecord, JobRecord
   }
 
   @Override
-  public Either<Rejection, AuthorizationRequest<JobRecord>> getAuthorizationRequest(
-      final TypedRecord<JobRecord> command, final CommandControl<JobRecord> controller) {
-    final var job = jobState.getJob(command.getKey(), command.getAuthorizations());
-
-    if (job == null) {
-      return Either.left(
-          new Rejection(
-              RejectionType.NOT_FOUND,
-              String.format(NO_JOB_FOUND_MESSAGE, "throw an error for", command.getKey())));
-    }
-
-    final var authorizationRequest =
-        new AuthorizationRequest<JobRecord>(
-                AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.UPDATE)
-            .setResource(job)
-            .addResourceId(job.getBpmnProcessId());
-
-    return Either.right(authorizationRequest);
-  }
-
-  @Override
   public boolean onCommand(
-      final TypedRecord<JobRecord> command,
-      final CommandControl<JobRecord> commandControl,
-      final JobRecord jobRecord) {
-    return defaultProcessor.onCommand(command, commandControl, jobRecord);
+      final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
+    return defaultProcessor.onCommand(command, commandControl);
   }
 
   @Override

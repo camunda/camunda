@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
@@ -18,10 +19,9 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
-import io.camunda.zeebe.engine.processing.streamprocessor.AuthorizableCommandProcessor.Authorizable;
-import io.camunda.zeebe.engine.processing.streamprocessor.AuthorizableCommandProcessor.Rejection;
-import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor.CommandControl;
+import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -49,7 +49,7 @@ import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 public final class ProcessInstanceCreationCreateProcessor
-    implements Authorizable<ProcessInstanceCreationRecord, DeployedProcess> {
+    implements CommandProcessor<ProcessInstanceCreationRecord> {
 
   private static final String ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED =
       "Expected at least a bpmnProcessId or a key greater than -1, but none given";
@@ -84,13 +84,15 @@ public final class ProcessInstanceCreationCreateProcessor
   private final ProcessEngineMetrics metrics;
 
   private final ElementActivationBehavior elementActivationBehavior;
+  private final AuthorizationCheckBehavior authCheckBehavior;
 
   public ProcessInstanceCreationCreateProcessor(
       final ProcessState processState,
       final KeyGenerator keyGenerator,
       final Writers writers,
       final BpmnBehaviors bpmnBehaviors,
-      final ProcessEngineMetrics metrics) {
+      final ProcessEngineMetrics metrics,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     this.processState = processState;
     variableBehavior = bpmnBehaviors.variableBehavior();
     this.keyGenerator = keyGenerator;
@@ -99,33 +101,22 @@ public final class ProcessInstanceCreationCreateProcessor
     responseWriter = writers.response();
     this.metrics = metrics;
     elementActivationBehavior = bpmnBehaviors.elementActivationBehavior();
-  }
-
-  @Override
-  public Either<Rejection, AuthorizationRequest<DeployedProcess>> getAuthorizationRequest(
-      final TypedRecord<ProcessInstanceCreationRecord> command,
-      final CommandControl<ProcessInstanceCreationRecord> controller) {
-    return getProcess(command.getValue())
-        .map(
-            process ->
-                new AuthorizationRequest<DeployedProcess>(
-                        AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.CREATE)
-                    .setResource(process)
-                    .addResourceId(bufferAsString(process.getBpmnProcessId())));
+    this.authCheckBehavior = authCheckBehavior;
   }
 
   @Override
   public boolean onCommand(
       final TypedRecord<ProcessInstanceCreationRecord> command,
-      final CommandControl<ProcessInstanceCreationRecord> controller,
-      final DeployedProcess deployedProcess) {
+      final CommandControl<ProcessInstanceCreationRecord> controller) {
 
     final ProcessInstanceCreationRecord record = command.getValue();
 
-    validateCommand(command.getValue(), deployedProcess)
+    getProcess(record)
+        .flatMap(process -> isAuthorized(command, process))
+        .flatMap(process -> validateCommand(command.getValue(), process))
         .ifRightOrLeft(
             process -> createProcessInstance(controller, record, process),
-            rejection -> controller.reject(rejection.type(), rejection.reason()));
+            rejection -> controller.reject(rejection.type, rejection.reason));
 
     return true;
   }
@@ -142,6 +133,24 @@ public final class ProcessInstanceCreationCreateProcessor
       return ProcessingError.EXPECTED_ERROR;
     }
     return ProcessingError.UNEXPECTED_ERROR;
+  }
+
+  private Either<Rejection, DeployedProcess> isAuthorized(
+      final TypedRecord<ProcessInstanceCreationRecord> command,
+      final DeployedProcess deployedProcess) {
+    final var request =
+        new AuthorizationRequest(
+                command, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.CREATE)
+            .addResourceId(bufferAsString(deployedProcess.getBpmnProcessId()));
+
+    if (authCheckBehavior.isAuthorized(request)) {
+      return Either.right(deployedProcess);
+    }
+
+    final var errorMessage =
+        UNAUTHORIZED_ERROR_MESSAGE.formatted(
+            request.getPermissionType(), request.getResourceType());
+    return Either.left(new Rejection(RejectionType.UNAUTHORIZED, errorMessage));
   }
 
   private void createProcessInstance(
@@ -419,6 +428,8 @@ public final class ProcessInstanceCreationCreateProcessor
           elementActivationBehavior.activateElement(processInstance, element);
         });
   }
+
+  private record Rejection(RejectionType type, String reason) {}
 
   private record ElementIdAndType(String elementId, BpmnElementType elementType) {}
 }

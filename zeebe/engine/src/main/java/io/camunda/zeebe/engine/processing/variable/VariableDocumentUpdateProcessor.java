@@ -7,7 +7,11 @@
  */
 package io.camunda.zeebe.engine.processing.variable;
 
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
+
 import io.camunda.zeebe.auth.impl.TenantAuthorizationCheckerImpl;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -16,6 +20,8 @@ import io.camunda.zeebe.msgpack.spec.MsgpackReaderException;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -31,16 +37,19 @@ public final class VariableDocumentUpdateProcessor
   private final KeyGenerator keyGenerator;
   private final VariableBehavior variableBehavior;
   private final Writers writers;
+  private final AuthorizationCheckBehavior authCheckBehavior;
 
   public VariableDocumentUpdateProcessor(
       final ElementInstanceState elementInstanceState,
       final KeyGenerator keyGenerator,
       final VariableBehavior variableBehavior,
-      final Writers writers) {
+      final Writers writers,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     this.elementInstanceState = elementInstanceState;
     this.keyGenerator = keyGenerator;
     this.variableBehavior = variableBehavior;
     this.writers = writers;
+    this.authCheckBehavior = authCheckBehavior;
   }
 
   @Override
@@ -52,6 +61,19 @@ public final class VariableDocumentUpdateProcessor
       final String reason = String.format(ERROR_MESSAGE_SCOPE_NOT_FOUND, value.getScopeKey());
       writers.rejection().appendRejection(record, RejectionType.NOT_FOUND, reason);
       writers.response().writeRejectionOnCommand(record, RejectionType.NOT_FOUND, reason);
+      return;
+    }
+
+    final var authRequest =
+        new AuthorizationRequest(
+                record, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.UPDATE)
+            .addResourceId(scope.getValue().getBpmnProcessId());
+    if (!authCheckBehavior.isAuthorized(authRequest)) {
+      final var reason =
+          UNAUTHORIZED_ERROR_MESSAGE.formatted(
+              authRequest.getPermissionType(), authRequest.getResourceType());
+      writers.rejection().appendRejection(record, RejectionType.UNAUTHORIZED, reason);
+      writers.response().writeRejectionOnCommand(record, RejectionType.UNAUTHORIZED, reason);
       return;
     }
 

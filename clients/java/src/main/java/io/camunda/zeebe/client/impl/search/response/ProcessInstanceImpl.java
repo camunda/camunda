@@ -34,7 +34,7 @@ public class ProcessInstanceImpl implements ProcessInstance {
   private final String startDate;
   private final String endDate;
   private final String state;
-  private final Boolean incident;
+  private final Boolean hasIncident;
   private final String tenantId;
 
   public ProcessInstanceImpl(final ProcessInstanceItem item) {
@@ -51,7 +51,7 @@ public class ProcessInstanceImpl implements ProcessInstance {
     startDate = item.getStartDate();
     endDate = item.getEndDate();
     state = Optional.ofNullable(item.getState()).map(Enum::toString).orElse(null);
-    incident = item.getIncident();
+    hasIncident = item.getHasIncident();
     tenantId = item.getTenantId();
   }
 
@@ -121,8 +121,8 @@ public class ProcessInstanceImpl implements ProcessInstance {
   }
 
   @Override
-  public Boolean getIncident() {
-    return incident;
+  public Boolean getHasIncident() {
+    return hasIncident;
   }
 
   @Override

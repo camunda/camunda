@@ -81,7 +81,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
         {
           "jobs": [
             {
-              "key": 2251799813685248,
+              "jobKey": 2251799813685248,
               "type": "TEST",
               "processInstanceKey": 123,
               "processDefinitionKey": 4532,
@@ -97,7 +97,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
               "worker": "bar"
             },
             {
-              "key": 2251799813685249,
+              "jobKey": 2251799813685249,
               "type": "TEST",
               "processInstanceKey": 123,
               "processDefinitionKey": 4532,
@@ -213,7 +213,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
             .returnResult()
             .getResponseBody();
 
-    final int basePartition = Protocol.decodePartitionId(JsonPath.read(result, "$.jobs[0].key"));
+    final int basePartition = Protocol.decodePartitionId(JsonPath.read(result, "$.jobs[0].jobKey"));
     final int partitionsCount =
         stubbedBrokerClient.getTopologyManager().getTopology().getPartitionsCount();
 
@@ -237,9 +237,9 @@ public class JobControllerLongPollingTest extends RestControllerTest {
           .expectHeader()
           .contentType(MediaType.APPLICATION_JSON)
           .expectBody()
-          .jsonPath("$.jobs[0].key")
+          .jsonPath("$.jobs[0].jobKey")
           .isEqualTo(Protocol.encodePartitionId(expectedPartitionId, 0))
-          .jsonPath("$.jobs[1].key")
+          .jsonPath("$.jobs[1].jobKey")
           .isEqualTo(Protocol.encodePartitionId(expectedPartitionId, 1));
     }
   }

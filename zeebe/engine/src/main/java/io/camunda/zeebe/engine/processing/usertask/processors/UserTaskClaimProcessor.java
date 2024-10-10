@@ -5,11 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.processing.usertask;
+package io.camunda.zeebe.engine.processing.usertask.processors;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -22,7 +21,7 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
 
-public class UserTaskClaimProcessor implements TypedRecordProcessor<UserTaskRecord> {
+public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
 
   private static final String DEFAULT_ACTION = "claim";
 
@@ -32,36 +31,32 @@ public class UserTaskClaimProcessor implements TypedRecordProcessor<UserTaskReco
       "Expected to claim user task with key '%d', but provided assignee is empty";
 
   private final StateWriter stateWriter;
-  private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final UserTaskCommandPreconditionChecker preconditionChecker;
 
-  public UserTaskClaimProcessor(final ProcessingState state, final Writers writers) {
+  public UserTaskClaimProcessor(
+      final ProcessingState state,
+      final Writers writers,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     stateWriter = writers.state();
-    rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     preconditionChecker =
         new UserTaskCommandPreconditionChecker(
             List.of(LifecycleState.CREATED),
             "claim",
             UserTaskClaimProcessor::checkClaim,
-            state.getUserTaskState());
+            state.getUserTaskState(),
+            authCheckBehavior);
   }
 
   @Override
-  public void processRecord(final TypedRecord<UserTaskRecord> command) {
-    preconditionChecker
-        .check(command)
-        .ifRightOrLeft(
-            persistedRecord -> claimUserTask(command, persistedRecord),
-            violation -> {
-              rejectionWriter.appendRejection(command, violation.getLeft(), violation.getRight());
-              responseWriter.writeRejectionOnCommand(
-                  command, violation.getLeft(), violation.getRight());
-            });
+  public Either<Tuple<RejectionType, String>, UserTaskRecord> validateCommand(
+      final TypedRecord<UserTaskRecord> command) {
+    return preconditionChecker.check(command);
   }
 
-  private void claimUserTask(
+  @Override
+  public void onCommand(
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
     final long userTaskKey = command.getKey();
 
