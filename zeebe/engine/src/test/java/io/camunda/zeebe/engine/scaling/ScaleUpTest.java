@@ -122,6 +122,29 @@ public class ScaleUpTest {
   }
 
   @Test
+  public void shouldRejectScaleUpWithInvalidPartitionCount() {
+    // given
+    initRoutingState();
+    final var command =
+        RecordToWrite.command()
+            .scale(
+                ScaleIntent.SCALE_UP,
+                new ScaleRecord().setCurrentPartitionCount(1).setDesiredPartitionCount(10000));
+
+    // when
+    engine.writeRecords(command);
+
+    // then
+    assertThat(RecordingExporter.scaleRecords().onlyCommandRejections().findFirst())
+        .hasValueSatisfying(
+            rejection -> {
+              assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+              assertThat(rejection.getRejectionReason())
+                  .startsWith("Partition count must be at most");
+            });
+  }
+
+  @Test
   public void shouldRejectScaleDown() {
     // given
     initRoutingState();

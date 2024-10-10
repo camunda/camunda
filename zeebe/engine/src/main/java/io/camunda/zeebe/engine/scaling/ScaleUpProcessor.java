@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoutingState;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
@@ -50,15 +51,23 @@ public class ScaleUpProcessor implements TypedRecordProcessor<ScaleRecord> {
       return;
     }
 
-    if (scaleUp.getDesiredPartitionCount() < scaleUp.getCurrentPartitionCount()) {
+    if (scaleUp.getDesiredPartitionCount() <= scaleUp.getCurrentPartitionCount()) {
       final var reason = "Desired partition count must be greater than current partition count";
       responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_ARGUMENT, reason);
       rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, reason);
       return;
     }
 
-    if (scaleUp.getDesiredPartitionCount() < 1 || scaleUp.getCurrentPartitionCount() < 1) {
+    if (scaleUp.getDesiredPartitionCount() < Protocol.START_PARTITION_ID
+        || scaleUp.getCurrentPartitionCount() < Protocol.START_PARTITION_ID) {
       final var reason = "Partition count must be at least 1";
+      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_ARGUMENT, reason);
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, reason);
+      return;
+    }
+
+    if (scaleUp.getDesiredPartitionCount() > Protocol.MAXIMUM_PARTITIONS) {
+      final var reason = "Partition count must be at most " + Protocol.MAXIMUM_PARTITIONS;
       responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_ARGUMENT, reason);
       rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, reason);
       return;
