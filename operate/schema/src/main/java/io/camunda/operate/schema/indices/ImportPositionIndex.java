@@ -10,13 +10,13 @@ package io.camunda.operate.schema.indices;
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.backup.Prio1Backup;
-import io.camunda.webapps.schema.descriptors.operate.index.AbstractIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.OperateIndexDescriptor;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ImportPositionIndex extends AbstractIndexDescriptor implements Prio1Backup {
+public class ImportPositionIndex extends OperateIndexDescriptor implements Prio1Backup {
 
   public static final String INDEX_NAME = "import-position";
 

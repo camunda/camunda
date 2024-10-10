@@ -8,9 +8,10 @@
 package io.camunda.webapps.schema.descriptors.operate.template;
 
 import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
+import io.camunda.webapps.schema.descriptors.operate.OperateTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
 
-public class JobTemplate extends AbstractTemplateDescriptor
+public class JobTemplate extends OperateTemplateDescriptor
     implements ProcessInstanceDependant, Prio3Backup {
 
   public static final String INDEX_NAME = "job";
