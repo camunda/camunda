@@ -7,4 +7,11 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
-public interface RoleState {}
+import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+
+public interface RoleState {
+
+  RoleRecord getRole(long roleKey);
+
+  long getRoleKeyByName(String roleName);
+}
