@@ -494,8 +494,14 @@ public class ProcessQueryTest {
   }
 
   private static void waitForProcessesToBeDeployed() throws InterruptedException {
-    // Waiting here should be done with zeebeClient.newProcessQuery() but it is not implemented yet
-    Thread.sleep(15000);
+    Awaitility.await("should deploy processes and import in Operate")
+        .atMost(Duration.ofSeconds(15))
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result = zeebeClient.newProcessDefinitionQuery().send().join();
+              assertThat(result.items().size()).isEqualTo(DEPLOYED_PROCESSES.size());
+            });
   }
 
   private static void waitForProcessInstancesToStart() {
