@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.EventSubscriptionException;
@@ -116,7 +117,7 @@ public final class ProcessInstanceCreationCreateProcessor
         .flatMap(process -> validateCommand(command.getValue(), process))
         .ifRightOrLeft(
             process -> createProcessInstance(controller, record, process),
-            rejection -> controller.reject(rejection.type, rejection.reason));
+            rejection -> controller.reject(rejection.type(), rejection.reason()));
 
     return true;
   }
@@ -428,8 +429,6 @@ public final class ProcessInstanceCreationCreateProcessor
           elementActivationBehavior.activateElement(processInstance, element);
         });
   }
-
-  private record Rejection(RejectionType type, String reason) {}
 
   private record ElementIdAndType(String elementId, BpmnElementType elementType) {}
 }
