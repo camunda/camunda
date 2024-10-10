@@ -12,7 +12,7 @@
   <select id="findOne" parameterType="java.lang.Long"
     resultMap="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchResultMap">
     SELECT pi.PROCESS_INSTANCE_KEY,
-           pi.BPMN_PROCESS_ID,
+           pi.PROCESS_DEFINITION_ID,
            pi.PROCESS_DEFINITION_KEY,
            pi.STATE,
            pi.START_DATE,
@@ -31,7 +31,7 @@
     WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
   </select>
 
-  <select id="count">
+  <select id="count" resultType="java.lang.Long">
     SELECT COUNT(*)
     FROM PROCESS_INSTANCE pi
     <!-- TODO: only when definition filters are active -->
@@ -43,7 +43,7 @@
   <select id="search" parameterType="io.camunda.db.rdbms.read.domain.ProcessInstanceDbQuery" resultMap="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchResultMap">
     SELECT
       pi.PROCESS_INSTANCE_KEY,
-      pi.BPMN_PROCESS_ID,
+      pi.PROCESS_DEFINITION_ID,
       pi.PROCESS_DEFINITION_KEY,
       pi.STATE,
       pi.START_DATE,
@@ -77,7 +77,7 @@
       <foreach collection="filter.processInstanceKeys" item="value" open="(" separator=", " close=")">#{value}</foreach>
     </if>
     <if test="filter.processDefinitionIds != null and !filter.processDefinitionIds.isEmpty()">
-      AND pi.BPMN_PROCESS_ID IN
+      AND pi.PROCESS_DEFINITION_ID IN
       <foreach collection="filter.processDefinitionIds" item="value" open="(" separator=", " close=")">#{value}</foreach>
     </if>
     <if test="filter.processDefinitionKeys != null and !filter.processDefinitionKeys.isEmpty()">
@@ -133,7 +133,7 @@
   <sql id="processInstanceSortMapper">
     <choose>
       <when test='item.field == "bpmnProcessId"'>
-        pi.BPMN_PROCESS_ID
+        pi.PROCESS_DEFINITION_ID
       </when>
       <when test='item.field == "processName"'>
         pd.NAME
@@ -165,7 +165,7 @@
   <resultMap id="searchResultMap" type="io.camunda.search.entities.ProcessInstanceEntity">
     <constructor>
       <idArg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="BPMN_PROCESS_ID" javaType="java.lang.String"/>
+      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
       <arg column="PROCESS_DEFINITION_NAME" javaType="java.lang.String"/>
       <arg column="VERSION" javaType="java.lang.Integer"/>
       <arg column="PROCESS_DEFINITION_VERSION_TAG" javaType="java.lang.String"/>
@@ -186,9 +186,9 @@
     id="insert"
     parameterType="io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel"
     flushCache="true">
-    INSERT INTO PROCESS_INSTANCE (PROCESS_INSTANCE_KEY, BPMN_PROCESS_ID, PROCESS_DEFINITION_KEY, STATE, START_DATE, END_DATE, TENANT_ID, PARENT_PROCESS_INSTANCE_KEY, PARENT_ELEMENT_INSTANCE_KEY,
+    INSERT INTO PROCESS_INSTANCE (PROCESS_INSTANCE_KEY, PROCESS_DEFINITION_ID, PROCESS_DEFINITION_KEY, STATE, START_DATE, END_DATE, TENANT_ID, PARENT_PROCESS_INSTANCE_KEY, PARENT_ELEMENT_INSTANCE_KEY,
                                   VERSION)
-    VALUES (#{processInstanceKey}, #{bpmnProcessId}, #{processDefinitionKey}, #{state}, #{startDate, jdbcType=TIMESTAMP}, #{endDate, jdbcType=TIMESTAMP}, #{tenantId}, #{parentProcessInstanceKey},
+    VALUES (#{processInstanceKey}, #{processDefinitionId}, #{processDefinitionKey}, #{state}, #{startDate, jdbcType=TIMESTAMP}, #{endDate, jdbcType=TIMESTAMP}, #{tenantId}, #{parentProcessInstanceKey},
             #{parentElementInstanceKey}, #{version})
   </insert>
 

@@ -34,7 +34,7 @@ public class ProcessInstanceReader {
     LOG.trace("[RDBMS DB] Search for process instance with filter {}", filter);
     final var totalHits = processInstanceMapper.count(filter);
     final var hits = processInstanceMapper.search(filter);
-    return new SearchResult(hits, totalHits);
+    return new SearchResult(hits, totalHits.intValue());
   }
 
   public record SearchResult(List<ProcessInstanceEntity> hits, Integer total) {}
