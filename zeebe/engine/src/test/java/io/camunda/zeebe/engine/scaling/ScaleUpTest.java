@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -35,7 +36,6 @@ public class ScaleUpTest {
 
   @Before
   public void beforeEach() {
-    ((MutableRoutingState) engine.getProcessingState().getRoutingState()).initializeRoutingInfo(1);
     RecordingExporter.reset();
     clearInvocations(engine.getCommandResponseWriter());
   }
@@ -43,6 +43,7 @@ public class ScaleUpTest {
   @Test
   public void shouldRespondToScaleUp() {
     // given
+    initRoutingState();
     final var command =
         RecordToWrite.command()
             .scale(
@@ -60,6 +61,7 @@ public class ScaleUpTest {
   @Test
   public void shouldFinishScaling() {
     // given
+    initRoutingState();
     final var command =
         RecordToWrite.command()
             .scale(
@@ -78,8 +80,32 @@ public class ScaleUpTest {
   }
 
   @Test
+  public void shouldRejectWithoutRoutingState() {
+    // given
+    final var command =
+        RecordToWrite.command()
+            .scale(
+                ScaleIntent.SCALE_UP,
+                new ScaleRecord().setCurrentPartitionCount(1).setDesiredPartitionCount(3));
+
+    // when
+    engine.writeRecords(command);
+
+    // then
+    assertThat(RecordingExporter.scaleRecords().onlyCommandRejections().findFirst())
+        .hasValueSatisfying(
+            rejection -> {
+              assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+              assertThat(rejection.getRejectionReason())
+                  .isEqualTo(
+                      "Routing state is not initialized, partition scaling is probably disabled.");
+            });
+  }
+
+  @Test
   public void shouldRejectEmptyScaleUp() {
     // given
+    initRoutingState();
     final var command = RecordToWrite.command().scale(ScaleIntent.SCALE_UP, new ScaleRecord());
 
     // when
@@ -92,6 +118,7 @@ public class ScaleUpTest {
   @Test
   public void shouldRejectScaleDown() {
     // given
+    initRoutingState();
     final var command =
         RecordToWrite.command()
             .scale(
@@ -103,5 +130,9 @@ public class ScaleUpTest {
 
     // then
     assertThat(RecordingExporter.scaleRecords().onlyCommandRejections().findFirst()).isPresent();
+  }
+
+  private void initRoutingState() {
+    ((MutableRoutingState) engine.getProcessingState().getRoutingState()).initializeRoutingInfo(1);
   }
 }
