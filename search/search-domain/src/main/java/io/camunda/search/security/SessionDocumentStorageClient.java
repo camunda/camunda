@@ -8,10 +8,13 @@
 package io.camunda.search.security;
 
 import java.util.Map;
+import java.util.function.Consumer;
 
 public interface SessionDocumentStorageClient {
 
-  boolean createOrUpdateSessionDocument(final String id, final Map<String, Object> source);
+  void consumeSessions(Consumer<Map<String, Object>> sessionConsumer);
+
+  void createOrUpdateSessionDocument(final String id, final Map<String, Object> source);
 
   Map<String, Object> getSessionDocument(String id);
 

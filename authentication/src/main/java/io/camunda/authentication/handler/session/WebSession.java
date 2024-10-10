@@ -147,13 +147,17 @@ public class WebSession implements Session {
 
     return authentication;
   }
+
   public boolean isPolling() {
     return polling;
   }
+
   public WebSession setPolling(final boolean polling) {
     this.polling = polling;
     return this;
-  }@Override
+  }
+
+  @Override
   public void setLastAccessedTime(final Instant lastAccessedTime) {
     if (!polling) {
       delegate.setLastAccessedTime(lastAccessedTime);
@@ -164,10 +168,6 @@ public class WebSession implements Session {
   public boolean shouldBeDeleted() {
     return isExpired() || containsAuthentication() && !isAuthenticated();
   }
-
-
-
-
 
   @Override
   public Instant getLastAccessedTime() {
@@ -189,6 +189,4 @@ public class WebSession implements Session {
   public boolean isExpired() {
     return getMaxInactiveInterval() != null && delegate.isExpired();
   }
-
-
 }

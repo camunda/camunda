@@ -128,7 +128,7 @@ public class SessionDocumentMapper {
         bytes, TypeDescriptor.valueOf(byte[].class), TypeDescriptor.valueOf(Object.class));
   }
 
-  private String getSessionIdFrom(final Map<String, Object> document) {
+  public String getSessionIdFrom(final Map<String, Object> document) {
     return (String) document.get(ID);
   }
 

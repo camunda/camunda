@@ -11,15 +11,20 @@ import io.camunda.search.security.SessionDocumentStorageClient;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 
 public class NoOpSessionDocumentStorageClient implements SessionDocumentStorageClient {
   private final Map<String, Map<String, Object>> sessionDocuments =
       Collections.synchronizedMap(new HashMap<>());
 
   @Override
-  public boolean createOrUpdateSessionDocument(final String id, final Map<String, Object> source) {
+  public void consumeSessions(final Consumer<Map<String, Object>> sessionConsumer) {
+    sessionDocuments.values().forEach(sessionConsumer);
+  }
+
+  @Override
+  public void createOrUpdateSessionDocument(final String id, final Map<String, Object> source) {
     sessionDocuments.put(id, source);
-    return true;
   }
 
   @Override

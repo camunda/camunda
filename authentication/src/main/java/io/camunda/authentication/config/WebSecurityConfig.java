@@ -11,16 +11,9 @@ import static org.springframework.security.config.Customizer.withDefaults;
 
 import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.handler.AuthFailureHandler;
-import io.camunda.authentication.handler.session.CamundaSessionRepository;
-import io.camunda.authentication.handler.session.NoOpSessionDocumentStorageClient;
-import io.camunda.authentication.handler.session.SessionDocumentMapper;
-import io.camunda.authentication.handler.session.WebSession;
-import io.camunda.search.security.SessionDocumentStorageClient;
 import io.camunda.service.UserServices;
-import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -32,13 +25,10 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.session.SessionRepository;
-import org.springframework.session.config.annotation.web.http.EnableSpringHttpSession;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@EnableSpringHttpSession
 @Profile("auth-basic|auth-oidc")
 public class WebSecurityConfig {
   public static final String[] UNAUTHENTICATED_PATHS =
@@ -58,20 +48,6 @@ public class WebSecurityConfig {
     } catch (final Exception e) {
       throw new RuntimeException(e);
     }
-  }
-
-  @Bean
-  @ConditionalOnMissingBean(SessionDocumentStorageClient.class)
-  public SessionDocumentStorageClient sessionDocumentStorageClient() {
-    return new NoOpSessionDocumentStorageClient();
-  }
-
-  @Bean
-  public SessionRepository<WebSession> camundaSessionRepository(
-      final SessionDocumentMapper sessionDocumentMapper,
-      final SessionDocumentStorageClient sessionStorageClient,
-      final HttpServletRequest request) {
-    return new CamundaSessionRepository(sessionDocumentMapper, sessionStorageClient, request);
   }
 
   @Bean
