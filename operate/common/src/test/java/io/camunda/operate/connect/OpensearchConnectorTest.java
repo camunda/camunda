@@ -109,8 +109,8 @@ public class OpensearchConnectorTest {
   @Test
   public void shouldNotDoClusterHealthCheckWhenDisabled() {
     final OperateProperties operateProperties = new OperateProperties();
-    operateProperties.setHealthCheckEnabled(false);
     final OperateOpensearchProperties osProperties = new OperateOpensearchProperties();
+    osProperties.setHealthCheckEnabled(false);
     operateProperties.setOpensearch(osProperties);
     final OpensearchConnector connector = spy(new OpensearchConnector(operateProperties, mock()));
     doReturn(mock(HttpAsyncClientBuilder.class))

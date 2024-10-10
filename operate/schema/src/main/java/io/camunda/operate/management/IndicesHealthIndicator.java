@@ -36,18 +36,10 @@ public class IndicesHealthIndicator implements HealthIndicator {
   @Override
   public Health health() {
     LOGGER.debug("Indices check is called");
-    if (isClusterHealthy() && indicesCheck.indicesArePresent()) {
+    if (indicesCheck.isHealthy() && indicesCheck.indicesArePresent()) {
       return Health.up().build();
     } else {
       return Health.down().build();
     }
-  }
-
-  private boolean isClusterHealthy() {
-    if (!properties.isHealthCheckEnabled()) {
-      LOGGER.warn("Cluster health check is disabled.");
-      return true;
-    }
-    return indicesCheck.isHealthy();
   }
 }

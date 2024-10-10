@@ -126,7 +126,7 @@ public class ElasticsearchConnector {
     // And create the API client
     elasticsearchClient = new ElasticsearchClient(transport);
 
-    if (operateProperties.isHealthCheckEnabled()) {
+    if (operateProperties.getElasticsearch().isHealthCheckEnabled()) {
       if (!checkHealth(elasticsearchClient)) {
         LOGGER.warn("Elasticsearch cluster is not accessible");
       } else {
@@ -210,7 +210,7 @@ public class ElasticsearchConnector {
         new RestHighLevelClientBuilder(restClientBuilder.build())
             .setApiCompatibilityMode(true)
             .build();
-    if (operateProperties.isHealthCheckEnabled()) {
+    if (operateProperties.getElasticsearch().isHealthCheckEnabled()) {
       if (!checkHealth(esClient)) {
         LOGGER.warn("Elasticsearch cluster is not accessible");
       } else {
