@@ -520,7 +520,7 @@ public final class SearchQueryResponseMapper {
     return variableEntities.stream().map(SearchQueryResponseMapper::toVariable).toList();
   }
 
-  private static VariableItem toVariable(final VariableEntity variableEntity) {
+  public static VariableItem toVariable(final VariableEntity variableEntity) {
     return new VariableItem()
         .variableKey(variableEntity.key())
         .name(variableEntity.name())

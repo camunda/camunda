@@ -733,7 +733,58 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-
+  /variables/{variableKey}:
+    get:
+      tags:
+        - Variable
+      summary: Return variable by a variable key
+      description: |
+        Get the variable by the variable key.
+        :::note
+        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
+      parameters:
+        - name: variableKey
+          in: path
+          required: true
+          description: The variable key.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: >
+            The variable is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VariableItem"
+        "400":
+          description: "Bad request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "Not found"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: "Internal server error"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /clock:
     put:
       tags:
