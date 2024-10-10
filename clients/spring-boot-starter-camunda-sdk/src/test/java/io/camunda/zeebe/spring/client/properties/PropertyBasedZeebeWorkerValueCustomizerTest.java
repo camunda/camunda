@@ -72,6 +72,10 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
   @JobWorker
   void sampleWorkerWithJsonProperty(@VariablesAsType final PropertyAnnotatedClass annotatedClass) {}
 
+  @JobWorker
+  void sampleWorkerWithEmptyJsonProperty(
+      @VariablesAsType final PropertyAnnotatedClassEmptyValue annotatedClass) {}
+
   @Test
   void shouldNotAdjustVariableFilterVariablesAsActivatedJobIsInjectedLegacy() {
     // given
@@ -406,6 +410,22 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
     assertThat(zeebeWorkerValue.getFetchVariables()).containsExactly("some_name");
   }
 
+  @Test
+  void shouldNotApplyPropertyAnnotationOnEmptyValue() {
+    // given
+    final PropertyBasedZeebeWorkerValueCustomizer customizer =
+        new PropertyBasedZeebeWorkerValueCustomizer(legacyProperties(), properties());
+    final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
+    zeebeWorkerValue.setMethodInfo(
+        methodInfo(this, "testBean", "sampleWorkerWithEmptyJsonProperty"));
+
+    // when
+    customizer.customize(zeebeWorkerValue);
+
+    // then
+    assertThat(zeebeWorkerValue.getFetchVariables()).containsExactly("value");
+  }
+
   private static final class ComplexProcessVariable {
     private String var3;
     private String var4;
@@ -430,5 +450,9 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
   private static final class PropertyAnnotatedClass {
     @JsonProperty("some_name")
     private String value;
+  }
+
+  private static final class PropertyAnnotatedClassEmptyValue {
+    @JsonProperty() private String value;
   }
 }
