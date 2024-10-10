@@ -30,12 +30,15 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
 
   private final PartitionChangeExecutor partitionChangeExecutor;
   private final ClusterMembershipChangeExecutor clusterMembershipChangeExecutor;
+  private final PartitionScalingChangeExecutor partitionScalingChangeExecutor;
 
   public ConfigurationChangeAppliersImpl(
       final PartitionChangeExecutor partitionChangeExecutor,
-      final ClusterMembershipChangeExecutor clusterMembershipChangeExecutor) {
+      final ClusterMembershipChangeExecutor clusterMembershipChangeExecutor,
+      final PartitionScalingChangeExecutor partitionScalingChangeExecutor) {
     this.partitionChangeExecutor = partitionChangeExecutor;
     this.clusterMembershipChangeExecutor = clusterMembershipChangeExecutor;
+    this.partitionScalingChangeExecutor = partitionScalingChangeExecutor;
   }
 
   @Override

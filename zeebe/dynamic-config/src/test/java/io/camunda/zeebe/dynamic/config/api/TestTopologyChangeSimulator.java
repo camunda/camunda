@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.fail;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliersImpl;
 import io.camunda.zeebe.dynamic.config.changes.NoopClusterMembershipChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.NoopPartitionChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor.NoopPartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import java.util.List;
@@ -23,7 +24,9 @@ final class TestTopologyChangeSimulator {
       final List<ClusterConfigurationChangeOperation> operations) {
     final var topologyChangeSimulator =
         new ConfigurationChangeAppliersImpl(
-            new NoopPartitionChangeExecutor(), new NoopClusterMembershipChangeExecutor());
+            new NoopPartitionChangeExecutor(),
+            new NoopClusterMembershipChangeExecutor(),
+            new NoopPartitionScalingChangeExecutor());
     ClusterConfiguration newTopology = currentTopology;
     if (!operations.isEmpty()) {
       newTopology = currentTopology.startConfigurationChange(operations);

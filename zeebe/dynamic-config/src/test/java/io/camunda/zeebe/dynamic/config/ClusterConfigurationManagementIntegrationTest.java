@@ -16,6 +16,7 @@ import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator;
 import io.camunda.zeebe.dynamic.config.changes.NoopPartitionChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor.NoopPartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
@@ -309,7 +310,8 @@ class ClusterConfigurationManagementIntegrationTest {
       startFuture.onComplete(
           (ignore, error) -> {
             if (error == null) {
-              service.registerPartitionChangeExecutor(new NoopPartitionChangeExecutor());
+              service.registerChangeExecutors(
+                  new NoopPartitionChangeExecutor(), new NoopPartitionScalingChangeExecutor());
             }
           },
           Runnable::run);
