@@ -110,7 +110,7 @@ public final class BpmnProcessors {
         config,
         authCheckBehavior);
     addProcessInstanceModificationStreamProcessors(
-        typedRecordProcessors, processingState, writers, bpmnBehaviors);
+        typedRecordProcessors, processingState, writers, bpmnBehaviors, authCheckBehavior);
     addProcessInstanceMigrationStreamProcessors(
         typedRecordProcessors,
         processingState,
@@ -253,13 +253,15 @@ public final class BpmnProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final ProcessingState processingState,
       final Writers writers,
-      final BpmnBehaviors bpmnBehaviors) {
+      final BpmnBehaviors bpmnBehaviors,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     final ProcessInstanceModificationModifyProcessor modificationProcessor =
         new ProcessInstanceModificationModifyProcessor(
             writers,
             processingState.getElementInstanceState(),
             processingState.getProcessState(),
-            bpmnBehaviors);
+            bpmnBehaviors,
+            authCheckBehavior);
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_MODIFICATION,
         ProcessInstanceModificationIntent.MODIFY,
