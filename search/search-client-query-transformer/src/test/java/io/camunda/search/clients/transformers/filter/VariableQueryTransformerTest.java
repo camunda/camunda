@@ -22,7 +22,7 @@ public class VariableQueryTransformerTest extends AbstractTransformerTest {
   @Test
   public void shouldQueryByVariableKey() {
     // given
-    final var filter = FilterBuilders.variable((f) -> f.variableKeys(Operator.EQ,12345L));
+    final var filter = FilterBuilders.variable((f) -> f.variableKeys(Operator.EQ, 12345L));
 
     // when
     final var searchRequest = transformQuery(filter);
