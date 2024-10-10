@@ -786,7 +786,7 @@ paths:
       responses:
         "204":
           description: The clock was successfully reset to the system time.
-        "500":
+        §"500":
           description: An internal error occurred while processing the request.
           content:
             application/problem+json:
@@ -2600,9 +2600,8 @@ components:
       type: object
       properties:
         variableKey:
-          description: The key for this variable.
-          type: integer
-          format: int64
+          description: The variable key. It can be accept a Long, or a JSON structured query ex:{$eq:123} }
+          type: object
         name:
           description: Name of the variable.
           type: string
@@ -2610,16 +2609,14 @@ components:
           description: The value of the variable.
           type: string
         scopeKey:
-          description: The key of the scope of this variable.
-          type: integer
-          format: int64
+          description: The key of the scope of this variable. It can be accept a Long, or a JSON structured query ex:{$eq:123} }
+          type: object
         processInstanceKey:
-          description: The key of the process instance of this variable.
-          type: integer
-          format: int64
+          description: The key of the process instance of this variable. It can be accept a Long, or a JSON structured query ex:{$eq:123} }
+          type: object
         tenantId:
-          description: Tenant id of this variable.
-          type: string
+          description: Tenant id of this variable. It can be accept a String, or a JSON structured query ex:{$eq:"tenantId"} }
+          type: object
         isTruncated:
           description: Whether the value is truncated or not.
           type: boolean

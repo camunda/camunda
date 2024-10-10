@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-package io.camunda.service.query;
+package io.camunda.search.clients.core;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.exists;
 import static io.camunda.search.clients.query.SearchQueryBuilders.gt;
@@ -18,7 +18,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.wildcardQuery;
 
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.service.query.filter.Operator;
+import io.camunda.util.advanced.query.filter.Operator;
 import java.util.List;
 
 public abstract class QueryFieldFilterTransformers {

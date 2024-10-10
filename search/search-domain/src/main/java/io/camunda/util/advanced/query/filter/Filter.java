@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.service.query.filter;
+package io.camunda.util.advanced.query.filter;
 
 public class Filter {
   private String field;

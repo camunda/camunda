@@ -5,9 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.service.query.validator;
+package io.camunda.util.advanced.query.validator;
 
-import io.camunda.service.query.filter.Operator;
+import io.camunda.util.advanced.query.filter.Operator;
 
 public abstract class FieldTypeValidator {
   public static boolean isNumericOperator(final Operator operator) {

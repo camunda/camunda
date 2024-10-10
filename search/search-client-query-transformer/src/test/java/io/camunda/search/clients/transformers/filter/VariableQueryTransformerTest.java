@@ -14,6 +14,7 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.VariableValueFilter;
+import io.camunda.util.advanced.query.filter.Operator;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -21,7 +22,7 @@ public class VariableQueryTransformerTest extends AbstractTransformerTest {
   @Test
   public void shouldQueryByVariableKey() {
     // given
-    final var filter = FilterBuilders.variable((f) -> f.variableKeys(12345L));
+    final var filter = FilterBuilders.variable((f) -> f.variableKeys(Operator.EQ,12345L));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -45,7 +46,7 @@ public class VariableQueryTransformerTest extends AbstractTransformerTest {
   @Test
   public void shouldQueryByScopeKey() {
     // given
-    final var filter = FilterBuilders.variable((f) -> f.scopeKeys(67890L));
+    final var filter = FilterBuilders.variable((f) -> f.scopeKeys(Operator.EQ, 67890L));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -69,7 +70,7 @@ public class VariableQueryTransformerTest extends AbstractTransformerTest {
   @Test
   public void shouldQueryByProcessInstanceKey() {
     // given
-    final var filter = FilterBuilders.variable((f) -> f.processInstanceKeys(54321L));
+    final var filter = FilterBuilders.variable((f) -> f.processInstanceKeys(Operator.EQ, 54321L));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -93,7 +94,7 @@ public class VariableQueryTransformerTest extends AbstractTransformerTest {
   @Test
   public void shouldQueryByTenantId() {
     // given
-    final var filter = FilterBuilders.variable((f) -> f.tenantIds("tenant1"));
+    final var filter = FilterBuilders.variable((f) -> f.tenantIds(Operator.EQ, "tenant1"));
 
     // when
     final var searchRequest = transformQuery(filter);
