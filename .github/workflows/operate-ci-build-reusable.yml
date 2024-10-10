@@ -99,7 +99,7 @@ jobs:
       # Build: maven artifacts and Docker images
       - name: Build Maven
         run: |
-          mvn clean deploy -B -T1C -P -docker,skipFrontendBuild -DskipTests -D skipOptimize -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+          ./mvnw clean deploy -B -T1C -P -docker,skipFrontendBuild -DskipTests -D skipOptimize -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
 
       #########################################################################
       # Docker login and image tagging

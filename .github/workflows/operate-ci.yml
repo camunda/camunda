@@ -51,7 +51,7 @@ jobs:
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }}
-      command: mvn -pl operate -am verify -T1C -B -P spotbugs,skipFrontendBuild -DskipTests -DskipDockerProfile -DskipQaBuild
+      command: ./mvnw -pl operate -am verify -T1C -B -P spotbugs,skipFrontendBuild -DskipTests -DskipDockerProfile -DskipQaBuild
       runner-type: gcp-core-4-default
 
   run-unit-tests:
@@ -60,7 +60,7 @@ jobs:
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }}
-      command: mvn -f operate verify -T1C -B -P skipFrontendBuild -DskipITs -DskipDockerProfile -DskipChecks
+      command: ./mvnw -f operate verify -T1C -B -P skipFrontendBuild -DskipITs -DskipDockerProfile -DskipChecks
       test-type: Unit Tests
       runner-type: gcp-core-4-default
 
@@ -70,7 +70,7 @@ jobs:
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }}
-      command: mvn -f operate/qa/integration-tests verify -P operateItStage1 -B -DskipChecks -Dfailsafe.rerunFailingTestsCount=2
+      command: ./mvnw -f operate/qa/integration-tests verify -P operateItStage1 -B -DskipChecks -Dfailsafe.rerunFailingTestsCount=2
       test-type: Integration Tests
       runner-type: gcp-core-32-default
 
@@ -80,6 +80,6 @@ jobs:
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }}
-      command: mvn -f operate/qa/integration-tests verify -P operateItOpensearch,docker-opensearch -B -DskipChecks -Dfailsafe.rerunFailingTestsCount=2
+      command: ./mvnw -f operate/qa/integration-tests verify -P operateItOpensearch,docker-opensearch -B -DskipChecks -Dfailsafe.rerunFailingTestsCount=2
       test-type: Opensearch ITs
       runner-type: gcp-core-32-default
