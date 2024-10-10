@@ -1,0 +1,112 @@
+git:
+  # will be set by the "preview-env-deploy" action
+  branch: master
+  # Defines the repository URL to use for annotating resources
+  repoUrl: https://github.com/camunda/camunda.git
+
+global:
+  labels:
+    camunda.cloud/source: argocd
+    camunda.cloud/managed-by: Helm
+    app: camunda-camunda-cloud
+    team: camunda
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    host: "test.camunda.camunda.cloud"
+    tls:
+      enabled: true
+      secretName: camunda-tls
+  identity:
+    auth:
+      # will be replaced by the preview-env-deploy workflow
+      publicIssuerUrl: "https://test.camunda.camunda.cloud/auth/realms/camunda-platform"
+      operate:
+        # will be replaced by the preview-env-deploy workflow
+        redirectUrl: "https://test.camunda.camunda.cloud/operate"
+        existingSecret:
+          name: identity-secret-for-components
+      tasklist:
+        # will be replaced by the preview-env-deploy workflow
+        redirectUrl: "https://test.camunda.camunda.cloud/tasklist"
+        existingSecret:
+          name: identity-secret-for-components
+      optimize:
+        # will be replaced by the preview-env-deploy workflow
+        redirectUrl: "https://test.camunda.camunda.cloud/optimize"
+      webModeler:
+        # will be replaced by the preview-env-deploy workflow
+        redirectUrl: "https:/test.camunda.camunda.cloud/modeler"
+      console:
+        # will be replaced by the preview-env-deploy workflow
+        redirectUrl: "https://test.camunda.camunda.cloud/console"
+        existingSecret:
+          name: identity-secret-for-components
+      connectors:
+        # will be replaced by the preview-env-deploy workflow
+        redirectUrl: "https://test.camunda.camunda.cloud/connectors"
+        existingSecret:
+          name: identity-secret-for-components
+      zeebe:
+        existingSecret:
+          name: identity-secret-for-components
+
+camunda-platform:
+    enabled: true
+    identity:
+      contextPath: "/identity"
+      # will be replaced by the preview-env-deploy workflow
+      fullURL: "https://test.camunda.camunda.cloud/identity"
+      readinessProbe:
+        ## @param identity.readinessProbe.enabled if true, the readiness probe is enabled in app container
+        enabled: false
+
+    operate:
+      contextPath: "/operate"
+
+    optimize:
+      contextPath: "/optimize"
+
+    tasklist:
+      contextPath: "/tasklist"
+
+
+    webModeler:
+      contextPath: "/modeler"
+
+    console:
+      contextPath: "/console"
+
+    connectors:
+      contextPath: "/connectors"
+
+    zeebeGateway:
+      contextPath: "/zeebe"
+      ingress:
+        grpc:
+          enabled: true
+          className: nginx
+          host: "test.camunda.camunda.cloud"
+          annotations:
+            ingress.kubernetes.io/rewrite-target: "/"
+            nginx.ingress.kubernetes.io/ssl-redirect: "true"
+            nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+          tls:
+            enabled: true
+            secretName: camunda-tls
+
+    identityKeycloak:
+      auth:
+        existingSecret: keycloak-admin-secret
+        passwordSecretKey: admin-password
+        adminUser: admin
+
+      postgresql:
+        enabled: true
+        auth:
+          existingSecret: postgres-secret
+          secretKeys:
+            userPasswordKey: password
