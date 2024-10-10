@@ -7,9 +7,12 @@
  */
 package io.camunda.db.rdbms.fixtures;
 
+import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Random;
 import java.util.function.Function;
 
@@ -37,4 +40,34 @@ public final class ProcessInstanceFixtures {
 
     return builderFunction.apply(builder).build();
   }
+
+  public static void createAndSaveRandomProcessInstances(final RdbmsWriter rdbmsWriter) {
+    for (int i = 0; i < 20; i++) {
+      rdbmsWriter
+          .getProcessInstanceWriter()
+          .create(ProcessInstanceFixtures.createRandomized(b -> b));
+    }
+
+    rdbmsWriter.flush();
+  }
+
+  public static void createAndSaveProcessInstance(final RdbmsWriter rdbmsWriter, final ProcessInstanceDbModel processInstance) {
+    createAndSaveProcessInstances(rdbmsWriter, List.of(processInstance));
+  }
+
+  public static void createAndSaveProcessInstances(
+      final RdbmsWriter rdbmsWriter,
+      final List<ProcessInstanceDbModel> processInstanceList) {
+    for (final ProcessInstanceDbModel processInstance : processInstanceList) {
+      rdbmsWriter.getProcessInstanceWriter().create(processInstance);
+    }
+    rdbmsWriter.flush();
+  }
+
+
+  public static void createAndSaveProcessDefinition(final RdbmsWriter rdbmsWriter, final ProcessDefinitionDbModel processDefinition) {
+    rdbmsWriter.getProcessDefinitionWriter().save(processDefinition);
+    rdbmsWriter.flush();
+  }
+
 }

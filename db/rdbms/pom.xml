@@ -12,6 +12,13 @@
   <artifactId>camunda-db-rdbms</artifactId>
   <name>Camunda Secondary DB - RDBMS</name>
 
+  <properties>
+    <mariadb-java-client.version>3.3.3</mariadb-java-client.version>
+    <mariadb.version>1.19.8</mariadb.version>
+    <version.postgresSqlTestcontainer>1.20.1</version.postgresSqlTestcontainer>
+    <version.postgresSql>42.7.4</version.postgresSql>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
@@ -43,10 +50,28 @@
       <artifactId>spring-beans</artifactId>
     </dependency>
 
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-autoconfigure</artifactId>
       <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-jdbc</artifactId>
     </dependency>
 
     <dependency>
@@ -115,6 +140,39 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-testcontainers</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>${version.postgresSqlTestcontainer}</version>
+      <!-- TODO -->
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>${version.postgresSql}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>mariadb</artifactId>
+      <version>${mariadb.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mariadb.jdbc</groupId>
+      <artifactId>mariadb-java-client</artifactId>
+      <version>${mariadb-java-client.version}</version>
       <scope>test</scope>
     </dependency>
 

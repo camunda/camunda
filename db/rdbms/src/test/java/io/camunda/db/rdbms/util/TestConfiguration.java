@@ -5,12 +5,15 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.db.rdbms;
+package io.camunda.db.rdbms.util;
 
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
-@org.springframework.boot.test.context.TestConfiguration
+@Configuration
+@EnableAutoConfiguration
 public class TestConfiguration {
 
   @Bean
