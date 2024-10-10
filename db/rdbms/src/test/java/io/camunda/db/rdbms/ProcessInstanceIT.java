@@ -40,7 +40,7 @@ import org.springframework.test.context.ContextConfiguration;
 @ContextConfiguration(classes = {TestConfiguration.class, RdbmsConfiguration.class})
 @AutoConfigurationPackage
 @ActiveProfiles("test-h2")
-public class ProcessInstanceITest {
+public class ProcessInstanceIT {
 
   public static final OffsetDateTime NOW = OffsetDateTime.now();
 

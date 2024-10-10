@@ -10,13 +10,13 @@ package io.camunda.exporter.rdbms;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.MariaDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 
-class PostgresRdbmsExporterITest extends RdbmsExporterITest {
+class MariaDbRdbmsExporterIT extends RdbmsExporterIT {
 
   @Container @ServiceConnection
-  static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
+  static MariaDBContainer<?> postgres = new MariaDBContainer<>("mariadb:11.4");
 
   @BeforeAll
   static void beforeAll() {

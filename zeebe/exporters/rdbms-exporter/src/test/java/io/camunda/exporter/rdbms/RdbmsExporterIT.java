@@ -34,7 +34,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 /** Base Class for all tests ... Uses H2 */
 @SpringBootTest(classes = {RdbmsTestConfiguration.class})
 @Testcontainers
-class RdbmsExporterITest {
+class RdbmsExporterIT {
 
   private final ExporterTestController controller = new ExporterTestController();
 
