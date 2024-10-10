@@ -8,7 +8,7 @@
 
 import {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
-import {useLocation} from 'react-router-dom';
+import {useHistory, useLocation} from 'react-router-dom';
 
 import {updateEntity, createEntity, evaluateReport} from 'services';
 import {nowDirty, nowPristine} from 'saveGuard';
@@ -22,6 +22,7 @@ import {useErrorHandling} from 'hooks';
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
   useLocation: jest.fn().mockReturnValue({pathname: '/report/1'}),
+  useHistory: jest.fn().mockReturnValue({push: jest.fn()}),
 }));
 
 jest.mock('services', () => {
@@ -296,23 +297,25 @@ it('should only resolve the save promise if a decision for conflicts has been ma
 });
 
 it('should go back to a custom route after saving if provided as URL Search Param', async () => {
+  const spy = {push: jest.fn()};
+  useHistory.mockReturnValue(spy);
   useLocation.mockReturnValue({pathname: '/report/1', search: '?returnTo=/dashboard/1/edit'});
   const node = shallow(<ReportEdit {...props} />);
 
   await node.find(EntityNameForm).prop('onSave')();
 
-  expect(node.find('Redirect')).toExist();
-  expect(node.find('Redirect').prop('to')).toBe('/dashboard/1/edit');
+  expect(spy.push).toHaveBeenCalledWith('/dashboard/1/edit');
 });
 
 it('should go back to a custom route after canceling if provided as URL Search Param', async () => {
+  const spy = {push: jest.fn()};
+  useHistory.mockReturnValue(spy);
   useLocation.mockReturnValue({pathname: '/report/1', search: '?returnTo=/dashboard/1/edit'});
   const node = shallow(<ReportEdit {...props} />);
 
   node.find(EntityNameForm).prop('onCancel')({preventDefault: jest.fn()});
 
-  expect(node.find('Redirect')).toExist();
-  expect(node.find('Redirect').prop('to')).toBe('/dashboard/1/edit');
+  expect(spy.push).toHaveBeenCalledWith('/dashboard/1/edit');
 });
 
 it('should show loading indicator if specified by children components', () => {

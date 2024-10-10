@@ -275,24 +275,27 @@ export default function EntityList({
                       const isHeaderSortable =
                         !!header && typeof header === 'object' && 'key' in header && !!header.key;
 
+                      const {key, ...headerProps} = getHeaderProps({
+                        header: formattedHeader,
+                        isSortable: isHeaderSortable,
+                        onClick: () => {
+                          if (isObjectHeader(header)) {
+                            if (header.key === sorting?.key) {
+                              const {key, order} =
+                                getNextSorting(sorting, header.defaultOrder) || {};
+                              onChange?.(key, order);
+                            } else {
+                              onChange?.(header.key, header.defaultOrder);
+                            }
+                          }
+                        },
+                      });
+
                       return (
                         // @ts-ignore
                         <TableHeader
-                          {...getHeaderProps({
-                            header: formattedHeader,
-                            isSortable: isHeaderSortable,
-                            onClick: () => {
-                              if (isObjectHeader(header)) {
-                                if (header.key === sorting?.key) {
-                                  const {key, order} =
-                                    getNextSorting(sorting, header.defaultOrder) || {};
-                                  onChange?.(key, order);
-                                } else {
-                                  onChange?.(header.key, header.defaultOrder);
-                                }
-                              }
-                            },
-                          })}
+                          key={key}
+                          {...headerProps}
                           isSortHeader={formattedHeader.key === sorting?.key}
                           sortDirection={sorting?.order?.toUpperCase()}
                           className="tableHeader"
@@ -305,25 +308,29 @@ export default function EntityList({
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {formattedRows.map((row, idx) => (
-                    <TableRow {...getRowProps({row})}>
-                      {bulkActions && (
-                        // @ts-ignore
-                        <TableSelectRow {...getSelectionProps({row})} />
-                      )}
-                      {row.cells.map((cell) => (
-                        <TableCell key={cell.id}>{cell.value}</TableCell>
-                      ))}
-                      <TableCell className="cds--table-column-menu">
-                        <ListItemAction
-                          actions={rows[idx]?.actions}
-                          // carbon recommend using inline buttons if actions are less than three
-                          // see https://carbondesignsystem.com/components/data-table/usage/#inline-actions
-                          showInlineIconButtons={hasLessThanThreeActions}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {formattedRows.map((row, idx) => {
+                    const {key, ...rowProps} = getRowProps({row});
+
+                    return (
+                      <TableRow key={key} {...rowProps}>
+                        {bulkActions && (
+                          // @ts-ignore
+                          <TableSelectRow {...getSelectionProps({row})} />
+                        )}
+                        {row.cells.map((cell) => (
+                          <TableCell key={cell.id}>{cell.value}</TableCell>
+                        ))}
+                        <TableCell className="cds--table-column-menu">
+                          <ListItemAction
+                            actions={rows[idx]?.actions}
+                            // carbon recommend using inline buttons if actions are less than three
+                            // see https://carbondesignsystem.com/components/data-table/usage/#inline-actions
+                            showInlineIconButtons={hasLessThanThreeActions}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </TableContainer>

@@ -21,9 +21,10 @@ export default function TableCell<T extends object>({cell}: TableCellProps<T>): 
     return <>{cell.render('Cell', {key: cell.value.props.id})}</>;
   }
 
-  const {className, ...props} = cell.getCellProps();
+  const {className, key, ...props} = cell.getCellProps();
   return (
     <CarbonTableCell
+      key={key}
       {...props}
       className={classnames(className, {
         noOverflow: cell.value?.type === Select,

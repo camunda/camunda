@@ -178,7 +178,7 @@ export function DashboardView(props) {
                       kind="primary"
                       className="create-copy"
                       hasIconOnly
-                      renderIcon={DashboardCopyIcon}
+                      renderIcon={() => <DashboardCopyIcon />}
                       iconDescription={t('dashboard.copyInstantDashboard')}
                       onClick={() => setIsTemplateModalOpen(true)}
                     />

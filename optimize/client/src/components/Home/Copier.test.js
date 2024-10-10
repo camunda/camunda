@@ -11,7 +11,7 @@ import {shallow} from 'enzyme';
 
 import {copyEntity} from 'services';
 
-import CopierWithErrorHandling from './Copier';
+import Copier from './Copier';
 import CopyModal from './modals/CopyModal';
 
 jest.mock('services', () => ({
@@ -19,10 +19,18 @@ jest.mock('services', () => ({
   copyEntity: jest.fn(),
 }));
 
-const Copier = CopierWithErrorHandling.WrappedComponent;
+jest.mock('react-router-dom', () => ({
+  ...jest.requireActual('react-router-dom'),
+  useHistory: jest.fn(),
+}));
+
+jest.mock('hooks', () => ({
+  useErrorHandling: jest.fn(() => ({
+    mightFail: (promise, cb) => cb(promise),
+  })),
+}));
 
 const props = {
-  mightFail: (promise, cb) => cb(promise),
   onCopy: jest.fn(),
   entity: {id: 'entityId', entityType: 'report'},
 };
