@@ -25,10 +25,10 @@ public class BackoffIdleStrategy {
     this.baseIdleTime = baseIdleTime;
     this.idleIncreaseFactor = idleIncreaseFactor;
     this.maxIdleTime = maxIdleTime;
-    this.maxIdles = ((int) log(idleIncreaseFactor, maxIdleTime / baseIdleTime)) + 1;
+    maxIdles = calculateMaxIdles();
   }
 
-  private double log(double base, double value) {
+  private double log(final double base, final double value) {
     return Math.log10(value) / Math.log10(base);
   }
 
@@ -65,5 +65,12 @@ public class BackoffIdleStrategy {
     }
 
     return idleTime;
+  }
+
+  private int calculateMaxIdles() {
+    if (baseIdleTime <= 0) {
+      return 1;
+    }
+    return ((int) log(idleIncreaseFactor, maxIdleTime / baseIdleTime)) + 1;
   }
 }
