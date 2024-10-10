@@ -118,7 +118,8 @@ public final class BpmnProcessors {
         bpmnBehaviors,
         commandDistributionBehavior,
         partitionId,
-        routingInfo);
+        routingInfo,
+        authCheckBehavior);
     addProcessInstanceBatchStreamProcessors(typedRecordProcessors, processingState, writers);
 
     return bpmnStreamProcessor;
@@ -275,7 +276,8 @@ public final class BpmnProcessors {
       final BpmnBehaviors bpmnBehaviors,
       final CommandDistributionBehavior commandDistributionBehavior,
       final int partitionId,
-      final RoutingInfo routingInfo) {
+      final RoutingInfo routingInfo,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_MIGRATION,
         ProcessInstanceMigrationIntent.MIGRATE,
@@ -285,7 +287,8 @@ public final class BpmnProcessors {
             bpmnBehaviors,
             commandDistributionBehavior,
             partitionId,
-            routingInfo));
+            routingInfo,
+            authCheckBehavior));
   }
 
   private static void addProcessInstanceBatchStreamProcessors(
