@@ -8,7 +8,7 @@
 
 import {zeebeGrpcApi} from '../api/zeebe-grpc';
 
-const {deployProcesses, createSingleInstance, completeTask} = zeebeGrpcApi;
+const {deployProcesses, createSingleInstance, createWorker} = zeebeGrpcApi;
 
 const setup = async () => {
   const {deployments: deploymentsV1} = await deployProcesses([
@@ -33,7 +33,7 @@ const setup = async () => {
     throw new Error('Error deploying process');
   }
 
-  completeTask('failingTaskWorker', true, {}, (job) => {
+  createWorker('failingTaskWorker', true, {}, (job) => {
     return job.fail('expected worker failure');
   });
 

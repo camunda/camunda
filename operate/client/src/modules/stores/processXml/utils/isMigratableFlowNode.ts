@@ -58,6 +58,15 @@ const isMigratableFlowNode = (businessObject: BusinessObject) => {
     });
   }
 
+  if (
+    hasType({businessObject, types: ['bpmn:StartEvent']}) &&
+    hasEventType({businessObject, types: ['bpmn:TimerEventDefinition']}) &&
+    businessObject.$parent !== undefined &&
+    isEventSubProcess({businessObject: businessObject.$parent})
+  ) {
+    return true;
+  }
+
   return hasType({
     businessObject,
     types: [

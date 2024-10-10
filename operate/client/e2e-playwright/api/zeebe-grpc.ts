@@ -108,7 +108,7 @@ class ZeebeGrpcApi {
     });
   };
 
-  completeTask = (
+  createWorker = (
     taskType: string,
     shouldFail: boolean,
     variables?: IOutputVariables,
