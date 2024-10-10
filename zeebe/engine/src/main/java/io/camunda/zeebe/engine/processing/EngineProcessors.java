@@ -210,7 +210,8 @@ public final class EngineProcessors {
         processingState,
         scheduledTaskStateFactory,
         interPartitionCommandSender);
-    addUserTaskProcessors(typedRecordProcessors, processingState, bpmnBehaviors, writers);
+    addUserTaskProcessors(
+        typedRecordProcessors, processingState, bpmnBehaviors, writers, authCheckBehavior);
 
     UserProcessors.addUserProcessors(
         keyGenerator,
@@ -431,10 +432,15 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final MutableProcessingState processingState,
       final BpmnBehaviors bpmnBehaviors,
-      final Writers writers) {
+      final Writers writers,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     final var userTaskProcessor =
         new UserTaskProcessor(
-            processingState, processingState.getKeyGenerator(), bpmnBehaviors, writers);
+            processingState,
+            processingState.getKeyGenerator(),
+            bpmnBehaviors,
+            writers,
+            authCheckBehavior);
 
     UserTaskIntent.commands()
         .forEach(
