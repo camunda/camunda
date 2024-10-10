@@ -1160,7 +1160,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   UserTaskGetRequest newUserTaskGetRequest(long userTaskKey);
 
-  /*
+  /**
    * Executes a search request to query variables.
    *
    * <pre>
@@ -1179,12 +1179,10 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the variable query
    */
-
-
   @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   VariableQuery newVariableQuery();
 
-  /*
+  /**
    * Gets a variable by key.
    *
    * <pre>
