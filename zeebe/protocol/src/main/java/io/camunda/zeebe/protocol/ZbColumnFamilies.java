@@ -196,7 +196,11 @@ public enum ZbColumnFamilies implements EnumValue {
 
   QUEUED_DISTRIBUTION(97),
   RETRIABLE_DISTRIBUTION(98),
-  DISTRIBUTION_CONTINUATION(99);
+  DISTRIBUTION_CONTINUATION(99),
+
+  ROLES(100),
+  ENTITY_BY_ROLE(101),
+  ROLE_BY_NAME(102);
 
   private final int value;
 

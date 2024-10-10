@@ -148,6 +148,10 @@ func main() {
 	os.Setenv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", "http://localhost:9200")
 	os.Setenv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX", "zeebe-record")
 
+	os.Setenv("CAMUNDA_REST_QUERY_ENABLED", "true")
+	os.Setenv("CAMUNDA_OPERATE_CSRFPREVENTIONENABLED", "false")
+	os.Setenv("CAMUNDA_TASKLIST_CSRFPREVENTIONENABLED", "false")
+
 	// classPath := filepath.Join(parentDir, "configuration", "userlib") + "," + filepath.Join(parentDir, "configuration", "keystore")
 
 	baseCommand := ""

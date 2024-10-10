@@ -15,16 +15,11 @@
  */
 package io.camunda.zeebe.client.impl.search.response;
 
-import io.camunda.zeebe.client.api.search.response.UserTask;
 import io.camunda.zeebe.client.api.search.response.Variable;
-import io.camunda.zeebe.client.protocol.rest.UserTaskItem;
 import io.camunda.zeebe.client.protocol.rest.VariableItem;
-import java.util.List;
-import java.util.Map;
 
 public class VariableImpl implements Variable {
 
-  //Declare private variables
   private final Long variableKey;
   private final String name;
   private final String value;
@@ -34,15 +29,20 @@ public class VariableImpl implements Variable {
   private final String tenantId;
   private final Boolean isTruncated;
 
-  public VariableImpl(final VariableItem item) {
-    variableKey = item.getVariableKey();
-    name = item.getName();
-    value = item.getValue();
-    fullValue = item.getFullValue();
-    scopeKey = item.getScopeKey();
-    processInstanceKey = item.getProcessInstanceKey();
-    tenantId = item.getTenantId();
-    isTruncated = item.getIsTruncated();
+  public VariableImpl(VariableItem item) {
+    this.variableKey = item.getVariableKey();
+    this.name = item.getName();
+    this.value = item.getValue();
+    this.fullValue = item.getFullValue();
+    this.scopeKey = item.getScopeKey();
+    this.processInstanceKey = item.getProcessInstanceKey();
+    this.tenantId = item.getTenantId();
+    this.isTruncated = item.getIsTruncated();
+  }
+
+  @Override
+  public Long getVariableKey() {
+    return variableKey;
   }
 
   @Override
@@ -53,11 +53,6 @@ public class VariableImpl implements Variable {
   @Override
   public String getValue() {
     return value;
-  }
-
-  @Override
-  public Long getVariableKey() {
-    return variableKey;
   }
 
   @Override
@@ -81,7 +76,7 @@ public class VariableImpl implements Variable {
   }
 
   @Override
-  public Boolean getIsTruncated() {
+  public Boolean isTruncated() {
     return isTruncated;
   }
 }

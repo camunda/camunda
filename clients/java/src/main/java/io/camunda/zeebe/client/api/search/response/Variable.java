@@ -16,28 +16,27 @@
 package io.camunda.zeebe.client.api.search.response;
 
 public interface Variable {
-
-  /** Name of the variable */
-  String getName();
-
-  /** Value of the variable */
-  String getValue();
-
-  /** Key of the variable */
+  /* The key of the variable */
   Long getVariableKey();
 
-  /** Full value of the variable */
+  /* The name of the variable */
+  String getName();
+
+  /* The value of the variable */
+  String getValue();
+
+  /* The full value of the variable */
   String getFullValue();
 
-  /** Scope key of the variable */
+  /* The scope key of the variable */
   Long getScopeKey();
 
-  /** Process instance key of the variable */
+  /* The process instance key of the variable */
   Long getProcessInstanceKey();
 
-  /** Tenant id of the variable */
+  /* The tenant id of the variable */
   String getTenantId();
 
-  /** Is the variable truncated */
-  Boolean getIsTruncated();
+  /* Check if the variable is truncated */
+  Boolean isTruncated();
 }
