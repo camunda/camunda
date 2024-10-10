@@ -97,7 +97,6 @@ public final class SnapshotChunkImpl
         .snapshotId(snapshotId)
         .chunkName(chunkName)
         .checksum(checksum)
-        .snapshotChecksum(0)
         .putContent(content, 0, content.capacity());
   }
 
