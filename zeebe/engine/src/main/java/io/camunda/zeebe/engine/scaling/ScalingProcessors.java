@@ -26,6 +26,6 @@ public final class ScalingProcessors {
     typedRecordProcessors.onCommand(
         ValueType.SCALE,
         ScaleIntent.SCALE_UP,
-        new ScaleUpProcessor(keyGenerator, writers, processingState.getRoutingState()));
+        new ScaleUpProcessor(keyGenerator, writers, processingState));
   }
 }

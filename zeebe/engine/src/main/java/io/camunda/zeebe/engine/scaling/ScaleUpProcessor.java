@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoutingState;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -27,12 +28,14 @@ public class ScaleUpProcessor implements TypedRecordProcessor<ScaleRecord> {
   private final TypedResponseWriter responseWriter;
 
   public ScaleUpProcessor(
-      final KeyGenerator keyGenerator, final Writers writers, final RoutingState routingState) {
+      final KeyGenerator keyGenerator,
+      final Writers writers,
+      final ProcessingState processingState) {
     this.keyGenerator = keyGenerator;
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     stateWriter = writers.state();
-    this.routingState = routingState;
+    routingState = processingState.getRoutingState();
   }
 
   @Override
