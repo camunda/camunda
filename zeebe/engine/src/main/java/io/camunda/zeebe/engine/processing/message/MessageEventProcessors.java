@@ -133,7 +133,8 @@ public final class MessageEventProcessors {
                 startEventSubscriptionState,
                 messageState,
                 subscriptionState,
-                subscriptionCommandSender))
+                subscriptionCommandSender,
+                authCheckBehavior))
         .withListener(
             new MessageObserver(
                 scheduledTaskStateFactory,

@@ -7,8 +7,14 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
+
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.message.MessageCorrelateBehavior.MessageData;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -26,8 +32,12 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 public final class MessageCorrelationCorrelateProcessor
     implements TypedRecordProcessor<MessageCorrelationRecord> {
@@ -37,6 +47,7 @@ public final class MessageCorrelationCorrelateProcessor
 
   private final MessageCorrelateBehavior correlateBehavior;
   private final KeyGenerator keyGenerator;
+  private final AuthorizationCheckBehavior authCheckBehavior;
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
@@ -50,11 +61,13 @@ public final class MessageCorrelationCorrelateProcessor
       final MessageStartEventSubscriptionState startEventSubscriptionState,
       final MessageState messageState,
       final MessageSubscriptionState messageSubscriptionState,
-      final SubscriptionCommandSender commandSender) {
+      final SubscriptionCommandSender commandSender,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     this.keyGenerator = keyGenerator;
+    this.authCheckBehavior = authCheckBehavior;
     final var eventHandle =
         new EventHandle(
             keyGenerator,
@@ -99,6 +112,15 @@ public final class MessageCorrelationCorrelateProcessor
     correlateBehavior.correlateToMessageEvents(messageData, correlatingSubscriptions);
     correlateBehavior.correlateToMessageStartEvents(messageData, correlatingSubscriptions);
 
+    final var authorizationRejectionOptional =
+        isAuthorizedForAllSubscriptions(command, correlatingSubscriptions);
+    if (authorizationRejectionOptional.isPresent()) {
+      final var rejection = authorizationRejectionOptional.get();
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      return;
+    }
+
     if (correlatingSubscriptions.isEmpty()) {
       final var errorMessage =
           SUBSCRIPTION_NOT_FOUND.formatted(
@@ -137,5 +159,43 @@ public final class MessageCorrelationCorrelateProcessor
         messageCorrelationRecord.getCorrelationKeyBuffer(),
         messageCorrelationRecord.getVariablesBuffer(),
         messageCorrelationRecord.getTenantId());
+  }
+
+  private Optional<Rejection> isAuthorizedForAllSubscriptions(
+      final TypedRecord<MessageCorrelationRecord> command,
+      final Subscriptions correlatingSubscriptions) {
+    final AtomicReference<AuthorizationRequest> request = new AtomicReference<>();
+
+    final var isAuthorized =
+        correlatingSubscriptions.visitSubscriptions(
+            subscription -> {
+              if (subscription.isStartEventSubscription()) {
+                request.set(
+                    new AuthorizationRequest(
+                        command,
+                        AuthorizationResourceType.PROCESS_DEFINITION,
+                        PermissionType.CREATE));
+              } else {
+                request.set(
+                    new AuthorizationRequest(
+                        command,
+                        AuthorizationResourceType.PROCESS_DEFINITION,
+                        PermissionType.UPDATE));
+              }
+
+              request.get().addResourceId(bufferAsString(subscription.getBpmnProcessId()));
+              return authCheckBehavior.isAuthorized(request.get());
+            },
+            true);
+
+    if (!isAuthorized) {
+      final var authorizationRequest = request.get();
+      final var error =
+          UNAUTHORIZED_ERROR_MESSAGE.formatted(
+              authorizationRequest.getPermissionType(), authorizationRequest.getResourceType());
+      return Optional.of(new Rejection(RejectionType.UNAUTHORIZED, error));
+    }
+
+    return Optional.empty();
   }
 }
