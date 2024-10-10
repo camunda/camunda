@@ -59,6 +59,7 @@ jobs:
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
         with:
+          maven-cache-key-modifier: optimize-tests
           secrets: ${{ toJSON(secrets) }}
 
       - name: Install firefox deps
@@ -108,7 +109,7 @@ jobs:
           additional_flags: "--profile self-managed"
 
       - name: Build backend
-        run: mvn clean install -T1C -DskipTests -Dskip.docker -pl optimize/backend -am -P skipFrontendBuild
+        run: ./mvnw clean install -T1C -DskipTests -Dskip.docker -pl optimize/backend -am -P skipFrontendBuild
 
       - name: Create backend logs file
         run: mkdir -p ./optimize/client/build && touch ./optimize/client/build/backendLogs.log
