@@ -137,7 +137,7 @@ func main() {
 	parentDir := baseDir
 	// deploymentDir := filepath.Join(parentDir, "configuration", "resources")
 	elasticsearchVersion := "8.13.4"
-	camundaVersion := "8.6.0-alpha5"
+	camundaVersion := "8.6.0"
 	expectedJavaVersion := 21
 
 	elasticsearchPidPath := filepath.Join(baseDir, "elasticsearch.pid")
@@ -147,6 +147,10 @@ func main() {
 	os.Setenv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME", "io.camunda.zeebe.exporter.ElasticsearchExporter")
 	os.Setenv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", "http://localhost:9200")
 	os.Setenv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX", "zeebe-record")
+
+	os.Setenv("CAMUNDA_REST_QUERY_ENABLED", "true")
+	os.Setenv("CAMUNDA_OPERATE_CSRFPREVENTIONENABLED", "false")
+	os.Setenv("CAMUNDA_TASKLIST_CSRFPREVENTIONENABLED", "false")
 
 	// classPath := filepath.Join(parentDir, "configuration", "userlib") + "," + filepath.Join(parentDir, "configuration", "keystore")
 

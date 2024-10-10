@@ -28,12 +28,10 @@ import java.util.Objects;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Disabled
 @ZeebeIntegration
 public class ProcessQueryTest {
 
@@ -114,7 +112,7 @@ public class ProcessQueryTest {
     assertThat(result.getStartDate()).isNotNull();
     assertThat(result.getEndDate()).isNull();
     assertThat(result.getState()).isEqualTo("ACTIVE");
-    assertThat(result.getIncident()).isFalse();
+    assertThat(result.getHasIncident()).isFalse();
     assertThat(result.getTenantId()).isEqualTo("<default>");
   }
 
@@ -250,7 +248,7 @@ public class ProcessQueryTest {
   void shouldRetrieveProcessInstancesWithIncidents() {
     // when
     final var result =
-        zeebeClient.newProcessInstanceQuery().filter(f -> f.incident(true)).send().join();
+        zeebeClient.newProcessInstanceQuery().filter(f -> f.hasIncident(true)).send().join();
 
     // then
     assertThat(result.items().size()).isEqualTo(1);

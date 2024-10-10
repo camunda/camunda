@@ -7,9 +7,8 @@
  */
 package io.camunda.optimize.upgrade.es.indices;
 
-import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import co.elastic.clients.elasticsearch.indices.IndexSettings.Builder;
-import io.camunda.optimize.upgrade.indices.UserTestIndex;
+import io.camunda.optimize.upgrade.db.indices.UserTestIndex;
 import java.io.IOException;
 
 public class UserTestIndexES extends UserTestIndex<Builder> {
@@ -19,9 +18,8 @@ public class UserTestIndexES extends UserTestIndex<Builder> {
   }
 
   @Override
-  public IndexSettings.Builder addStaticSetting(
-      final String key, final int value, final IndexSettings.Builder contentBuilder)
-      throws IOException {
-    return contentBuilder.numberOfShards(Integer.toString(value));
+  public Builder addStaticSetting(
+      final String key, final int value, final Builder indexSettingsBuilder) throws IOException {
+    return indexSettingsBuilder.numberOfShards(Integer.toString(value));
   }
 }

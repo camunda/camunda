@@ -27,10 +27,8 @@ import java.util.List;
 import java.util.Random;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-@Disabled
 @ZeebeIntegration
 class UserTaskQueryTest {
   private static Long userTaskKeyTaskAssigned;

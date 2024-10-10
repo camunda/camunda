@@ -326,7 +326,11 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
 
   @Override
   public boolean preferRestOverGrpc() {
-    return camundaClientProperties.getZeebe().isPreferRestOverGrpc();
+    return getOrDefault(
+        "preferRestOverGrpc",
+        () -> camundaClientProperties.getZeebe().isPreferRestOverGrpc(),
+        DEFAULT.preferRestOverGrpc(),
+        configCache);
   }
 
   private CredentialsProvider credentialsProvider() {
@@ -337,6 +341,7 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
           .clientSecret(camundaClientProperties.getAuth().getClientSecret())
           .audience(camundaClientProperties.getZeebe().getAudience())
           .authorizationServerUrl(camundaClientProperties.getAuth().getIssuer())
+          .scope(camundaClientProperties.getZeebe().getScope())
           .build();
     }
     return new NoopCredentialsProvider();

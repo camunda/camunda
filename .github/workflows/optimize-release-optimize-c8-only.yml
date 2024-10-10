@@ -43,7 +43,7 @@ jobs:
       DOCKER_IMAGE_TEAM: registry.camunda.cloud/team-optimize/optimize
       DOCKER_IMAGE_DOCKER_HUB: camunda/optimize
       DOCKER_INTERNAL_IMAGE_DOCKER_HUB: europe-west1-docker.pkg.dev/team-infosec/camunda/optimize-8
-      DOCKER_LATEST_TAG: latest
+      DOCKER_LATEST_TAG: 8-latest
     strategy:
       fail-fast: true
     steps:
@@ -166,15 +166,16 @@ jobs:
           ref: ${{ env.BRANCH }}
           fetch-depth: 0
 
-      
       - name: "Read Java / Version Info"
         id: "pom-info"
         uses: YunaBraska/java-info-action@main
+        with:
+          work-dir: ./optimize
 
       - name: Configure GitHub user
         run: |
-          git config --global user.email "github-actions[release]"
-          git config --global user.name "github-actions[release]@users.noreply.github.com"
+          git config --global user.name "github-actions[release]"
+          git config --global user.email "github-actions[release]@users.noreply.github.com"
 
       - name: Prepare release
         run: |

@@ -595,13 +595,13 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>operate-importer-8_5</artifactId>
+        <artifactId>operate-importer-8_6</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>operate-importer-8_6</artifactId>
+        <artifactId>operate-importer-8_7</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -731,13 +731,13 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>tasklist-importer-850</artifactId>
+        <artifactId>tasklist-importer-860</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>tasklist-importer-860</artifactId>
+        <artifactId>tasklist-importer-870</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -2501,6 +2501,7 @@
                 -->
                 <executable>java</executable>
                 <includePluginDependencies>true</includePluginDependencies>
+                <longClasspath>true</longClasspath>
                 <arguments combine.children="append">
                   <argument>-Dsbe.output.dir=${project.build.directory}/generated-sources/sbe</argument>
                   <argument>-Dsbe.java.generate.interfaces=true</argument>

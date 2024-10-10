@@ -13,13 +13,11 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
-import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.nio.file.Path;
-import java.time.Duration;
 
 public class DynamicClusterConfigurationService implements ClusterConfigurationService {
 
@@ -146,16 +144,11 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
         rootDirectory,
         brokerStartupContext.getClusterServices().getCommunicationService(),
         brokerStartupContext.getClusterServices().getMembershipService(),
-        getDefaultClusterConfigurationGossiperConfig(), // TODO: allow user specified config
+        brokerStartupContext.getBrokerConfiguration().getCluster().getConfigManager().gossip(),
         brokerStartupContext
             .getBrokerConfiguration()
             .getExperimental()
             .getFeatures()
             .isEnablePartitionScaling());
-  }
-
-  private ClusterConfigurationGossiperConfig getDefaultClusterConfigurationGossiperConfig() {
-    return new ClusterConfigurationGossiperConfig(
-        true, Duration.ofSeconds(10), Duration.ofSeconds(2), 2);
   }
 }

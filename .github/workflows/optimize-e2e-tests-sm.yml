@@ -53,6 +53,8 @@ jobs:
       - name: "Parse pom.xml for versions"
         id: "pom_info"
         uses: YunaBraska/java-info-action@main
+        with:
+          work-dir: ./optimize
 
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
@@ -136,7 +138,7 @@ jobs:
         run: yarn run e2e:ci:sm:headless
 
       - name: Upload logs
-        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4
+        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4
         if: always()
         with:
           name: logs

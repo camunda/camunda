@@ -13,10 +13,6 @@
   <name>Camunda Search Client - Opensearch</name>
 
   <dependencies>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-search-client</artifactId>
-    </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>

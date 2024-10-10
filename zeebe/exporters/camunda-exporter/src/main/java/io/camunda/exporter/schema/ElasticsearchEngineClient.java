@@ -12,7 +12,6 @@ import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
 import co.elastic.clients.elasticsearch.indices.Alias;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
-import co.elastic.clients.elasticsearch.indices.IndexTemplateSummary;
 import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
@@ -20,8 +19,9 @@ import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplate
 import co.elastic.clients.elasticsearch.indices.put_index_template.IndexTemplateMapping;
 import co.elastic.clients.json.JsonData;
 import co.elastic.clients.json.JsonpDeserializer;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.exporter.config.ElasticsearchProperties.IndexSettings;
+import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.exporter.exceptions.IndexSchemaValidationException;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
@@ -50,8 +50,8 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   }
 
   @Override
-  public void createIndex(final IndexDescriptor indexDescriptor) {
-    final CreateIndexRequest request = createIndexRequest(indexDescriptor);
+  public void createIndex(final IndexDescriptor indexDescriptor, final IndexSettings settings) {
+    final CreateIndexRequest request = createIndexRequest(indexDescriptor, settings);
     try {
       client.indices().create(request);
       LOG.debug("Index [{}] was successfully created", indexDescriptor.getIndexName());
@@ -258,19 +258,12 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
   private InputStream appendToFileSchemaSettings(
       final InputStream file, final IndexSettings settingsToAppend) throws IOException {
-    final Map<String, Object> map = MAPPER.readValue(file, Map.class);
+    final var map = MAPPER.readValue(file, new TypeReference<Map<String, Object>>() {});
 
-    if (!map.containsKey("settings")) {
-      map.put("settings", new HashMap<String, Object>());
-    }
-
-    final Map<String, Object> settingsBlock = (Map<String, Object>) map.get("settings");
-
-    if (!settingsBlock.containsKey("index")) {
-      settingsBlock.put("index", new HashMap<String, Object>());
-    }
-
-    final Map<String, Object> indexBlock = (Map<String, Object>) settingsBlock.get("index");
+    final var settingsBlock =
+        (Map<String, Object>) map.computeIfAbsent("settings", k -> new HashMap<>());
+    final var indexBlock =
+        (Map<String, Object>) settingsBlock.computeIfAbsent("index", k -> new HashMap<>());
 
     indexBlock.put("number_of_shards", settingsToAppend.getNumberOfShards());
     indexBlock.put("number_of_replicas", settingsToAppend.getNumberOfReplicas());
@@ -311,15 +304,21 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     }
   }
 
-  private CreateIndexRequest createIndexRequest(final IndexDescriptor indexDescriptor) {
-    try (final var templateMappings =
+  private CreateIndexRequest createIndexRequest(
+      final IndexDescriptor indexDescriptor, final IndexSettings settings) {
+    try (final var templateFile =
         getResourceAsStream(indexDescriptor.getMappingsClasspathFilename())) {
+
+      final var templateFields =
+          deserializeJson(
+              IndexTemplateMapping._DESERIALIZER,
+              appendToFileSchemaSettings(templateFile, settings));
 
       return new CreateIndexRequest.Builder()
           .index(indexDescriptor.getFullQualifiedName())
           .aliases(indexDescriptor.getAlias(), a -> a.isWriteIndex(false))
-          .mappings(
-              deserializeJson(IndexTemplateSummary._DESERIALIZER, templateMappings).mappings())
+          .mappings(templateFields.mappings())
+          .settings(templateFields.settings())
           .build();
     } catch (final IOException e) {
       throw new ElasticsearchExporterException(
@@ -328,10 +327,5 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
               + " from classpath.",
           e);
     }
-  }
-
-  public enum MappingSource {
-    INDEX,
-    INDEX_TEMPLATE
   }
 }

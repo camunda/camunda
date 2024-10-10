@@ -12,7 +12,7 @@ import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.security.auth.Authentication;
 
-public interface AuthorizationSearchClient extends AutoCloseable {
+public interface AuthorizationSearchClient {
 
   SearchQueryResult<AuthorizationEntity> searchAuthorizations(
       AuthorizationQuery filter, Authentication authentication);

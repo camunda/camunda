@@ -12,7 +12,7 @@ import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.security.auth.Authentication;
 
-public interface FlowNodeInstanceSearchClient extends AutoCloseable {
+public interface FlowNodeInstanceSearchClient {
 
   SearchQueryResult<FlowNodeInstanceEntity> searchFlowNodeInstances(
       FlowNodeInstanceQuery filter, Authentication authentication);

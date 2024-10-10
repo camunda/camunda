@@ -21,6 +21,7 @@ import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.broker.system.configuration.DiskCfg.FreeSpaceCfg;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
+import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.SecurityCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
@@ -34,10 +35,12 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import org.slf4j.Logger;
 
@@ -108,11 +111,61 @@ public final class SystemContext {
 
     validateDataConfig(brokerCfg.getData());
 
+    validClusterConfigs(cluster);
     validateExperimentalConfigs(cluster, brokerCfg.getExperimental());
+
+    validateExporters(brokerCfg.getExporters());
 
     final var security = brokerCfg.getNetwork().getSecurity();
     if (security.isEnabled()) {
       validateNetworkSecurityConfig(security);
+    }
+  }
+
+  private void validClusterConfigs(final ClusterCfg cluster) {
+    final var gossiper = cluster.getConfigManager().gossip();
+
+    final var errors = new ArrayList<String>(0);
+
+    if (gossiper.enableSync()) {
+      if (!gossiper.syncDelay().isPositive()) {
+        errors.add(
+            String.format(
+                "syncDelay must be positive: configured value = %d ms",
+                gossiper.syncDelay().toMillis()));
+      }
+      if (!gossiper.syncRequestTimeout().isPositive()) {
+        errors.add(
+            String.format(
+                "syncRequestTimeout must be positive: configured value = %d ms",
+                gossiper.syncRequestTimeout().toMillis()));
+      }
+    }
+    if (gossiper.gossipFanout() < 2) {
+      errors.add(
+          String.format(
+              "gossipFanout must be greater than 1: configured value = %d",
+              gossiper.gossipFanout()));
+    }
+
+    if (!errors.isEmpty()) {
+      throw new InvalidConfigurationException(
+          "Invalid ConfigManager configuration: " + String.join(", ", errors), null);
+    }
+  }
+
+  private void validateExporters(final Map<String, ExporterCfg> exporters) {
+    final Set<Entry<String, ExporterCfg>> entries = exporters.entrySet();
+    final var badExportersNames =
+        entries.stream()
+            .filter(entry -> entry.getValue().getClassName() == null)
+            .map(Entry::getKey)
+            .toList();
+
+    if (!badExportersNames.isEmpty()) {
+      throw new IllegalArgumentException(
+          "Expected to find a 'className' configured for the exporter. Couldn't find a valid one for the following exporters "
+              + badExportersNames);
     }
   }
 

@@ -25,7 +25,6 @@ import io.camunda.optimize.util.jetty.LoggingConfigurationReader;
 import java.net.InetAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
-import java.util.Arrays;
 import java.util.Optional;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
@@ -55,7 +54,6 @@ import org.springframework.boot.web.servlet.ServletContextInitializer;
 import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
 
 @Configuration
@@ -104,22 +102,6 @@ public class JettyConfig {
         server.addConnector(initHttpsConnector(server));
       }
     };
-  }
-
-  // We use the @Order annotation to make sure that this is modified after the http connector
-  @Bean
-  @Order
-  public JettyServerCustomizer httpConfigurationCustomizer() {
-    return server ->
-        Arrays.stream(server.getConnectors())
-            .flatMap(connector -> connector.getConnectionFactories().stream())
-            .filter(
-                connectionFactory ->
-                    HttpConnectionFactory.class.isAssignableFrom(connectionFactory.getClass()))
-            .map(HttpConnectionFactory.class::cast)
-            .forEach(
-                httpConnectionFactory ->
-                    applyHeaderSizeConfiguration(httpConnectionFactory.getHttpConfiguration()));
   }
 
   @Bean
@@ -212,7 +194,6 @@ public class JettyConfig {
 
     https.addCustomizer(customizer);
     https.setSecureScheme("https");
-    applyHeaderSizeConfiguration(https);
 
     return https;
   }
@@ -263,11 +244,6 @@ public class JettyConfig {
       return configurationService.getContextPath();
     }
     return contextPath;
-  }
-
-  private void applyHeaderSizeConfiguration(final HttpConfiguration configuration) {
-    configuration.setRequestHeaderSize(configurationService.getMaxRequestHeaderSizeInBytes());
-    configuration.setResponseHeaderSize(configurationService.getMaxResponseHeaderSizeInBytes());
   }
 
   private void addStaticResources(final ServletContextHandler servletContextHandler) {

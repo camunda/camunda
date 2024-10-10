@@ -35,6 +35,9 @@ const {
   MessageEventSubProcess,
   TimerEventSubProcess,
   MessageReceiveTask,
+  BusinessRuleTask,
+  ScriptTask,
+  SendTask,
 } = elements;
 
 /**
@@ -66,9 +69,12 @@ describe('MigrationView/BottomPanel', () => {
     expect(screen.getByText(MessageEventSubProcess.name)).toBeInTheDocument();
     expect(screen.getByText(TimerEventSubProcess.name)).toBeInTheDocument();
     expect(screen.getByText(MessageReceiveTask.name)).toBeInTheDocument();
+    expect(screen.getByText(BusinessRuleTask.name)).toBeInTheDocument();
+    expect(screen.getByText(ScriptTask.name)).toBeInTheDocument();
+    expect(screen.getByText(SendTask.name)).toBeInTheDocument();
 
-    // expect table to have 1 header + 16 content rows
-    expect(screen.getAllByRole('row')).toHaveLength(17);
+    // expect table to have 1 header + 19 content rows
+    expect(screen.getAllByRole('row')).toHaveLength(20);
   });
 
   it.each([
@@ -83,6 +89,9 @@ describe('MigrationView/BottomPanel', () => {
     {source: MessageEventSubProcess, target: MessageEventSubProcess},
     {source: TimerEventSubProcess, target: TimerEventSubProcess},
     {source: TaskX, target: TaskX},
+    {source: BusinessRuleTask, target: BusinessRuleTask},
+    {source: ScriptTask, target: ScriptTask},
+    {source: SendTask, target: SendTask},
   ])(
     'should allow $source.type -> $target.type mapping',
     async ({source, target}) => {
@@ -131,6 +140,9 @@ describe('MigrationView/BottomPanel', () => {
     {source: TimerInterrupting, target: TimerIntermediateCatch},
     {source: MessageIntermediateCatch, target: TimerIntermediateCatch},
     {source: MessageEventSubProcess, target: TimerEventSubProcess},
+    {source: checkPayment, target: BusinessRuleTask},
+    {source: ScriptTask, target: SendTask},
+    {source: SendTask, target: MessageReceiveTask},
   ])(
     'should not allow $source.type -> $target.type mapping',
     async ({source, target}) => {
@@ -209,6 +221,15 @@ describe('MigrationView/BottomPanel', () => {
     const comboboxMessageReceiveTask = await screen.findByLabelText(
       new RegExp(`target flow node for ${MessageReceiveTask.name}`, 'i'),
     );
+    const comboboxBusinessRuleTask = await screen.findByLabelText(
+      new RegExp(`target flow node for ${BusinessRuleTask.name}`, 'i'),
+    );
+    const comboboxScriptTaskTask = await screen.findByLabelText(
+      new RegExp(`target flow node for ${ScriptTask.name}`, 'i'),
+    );
+    const comboboxSendTask = await screen.findByLabelText(
+      new RegExp(`target flow node for ${SendTask.name}`, 'i'),
+    );
 
     screen.getByRole('button', {name: /fetch target process/i}).click();
 
@@ -220,8 +241,9 @@ describe('MigrationView/BottomPanel', () => {
     expect(comboboxCheckPayment).toHaveValue(checkPayment.id);
     expect(comboboxTaskX).toHaveValue(TaskX.id);
     expect(comboboxMessageReceiveTask).toHaveValue(MessageReceiveTask.id);
-
-    // Expect auto-mapping (same id, same bpmn type)
+    expect(comboboxBusinessRuleTask).toHaveValue(BusinessRuleTask.id);
+    expect(comboboxScriptTaskTask).toHaveValue(ScriptTask.id);
+    expect(comboboxSendTask).toHaveValue(SendTask.id);
     expect(comboboxShipArticles).toHaveValue(shipArticles.id);
 
     // Expect auto-mapping (same id, boundary event, same event type)
@@ -312,6 +334,15 @@ describe('MigrationView/BottomPanel', () => {
     const rowMessageReceiveTask = screen
       .getByText(getMatcherFunction(MessageReceiveTask.name))
       .closest('tr');
+    const rowBusinessRuleTask = screen
+      .getByText(getMatcherFunction(BusinessRuleTask.name))
+      .closest('tr');
+    const rowScriptTask = screen
+      .getByText(getMatcherFunction(ScriptTask.name))
+      .closest('tr');
+    const rowSendTask = screen
+      .getByText(getMatcherFunction(SendTask.name))
+      .closest('tr');
 
     await waitFor(() => {
       expect(comboboxRequestForPayment).toBeEnabled();
@@ -341,6 +372,15 @@ describe('MigrationView/BottomPanel', () => {
     ).not.toBeInTheDocument();
     expect(
       within(rowMessageReceiveTask!).queryByText(/not mapped/i),
+    ).not.toBeInTheDocument();
+    expect(
+      within(rowBusinessRuleTask!).queryByText(/not mapped/i),
+    ).not.toBeInTheDocument();
+    expect(
+      within(rowScriptTask!).queryByText(/not mapped/i),
+    ).not.toBeInTheDocument();
+    expect(
+      within(rowSendTask!).queryByText(/not mapped/i),
     ).not.toBeInTheDocument();
 
     // expect to have "not mapped" tag (not auto-mapped)
@@ -385,8 +425,8 @@ describe('MigrationView/BottomPanel', () => {
       }),
     ).toBeVisible();
 
-    // Expect all 11 rows to be visible (+1 header row)
-    expect(await screen.findAllByRole('row')).toHaveLength(17);
+    // Expect all 19 rows to be visible (+1 header row)
+    expect(await screen.findAllByRole('row')).toHaveLength(20);
 
     // Toggle on unmapped flow nodes
     await user.click(screen.getByLabelText(/show only not mapped/i));
@@ -418,6 +458,15 @@ describe('MigrationView/BottomPanel', () => {
     ).not.toBeInTheDocument();
     expect(
       screen.queryByText(getMatcherFunction(MessageReceiveTask.name)),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(getMatcherFunction(BusinessRuleTask.name)),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(getMatcherFunction(ScriptTask.name)),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(getMatcherFunction(SendTask.name)),
     ).not.toBeInTheDocument();
 
     // Expect 6 not mapped rows (+1 header row)
@@ -453,6 +502,6 @@ describe('MigrationView/BottomPanel', () => {
     await user.click(screen.getByLabelText(/show only not mapped/i));
 
     // Expect all rows to be visible again
-    expect(await screen.findAllByRole('row')).toHaveLength(17);
+    expect(await screen.findAllByRole('row')).toHaveLength(20);
   });
 });

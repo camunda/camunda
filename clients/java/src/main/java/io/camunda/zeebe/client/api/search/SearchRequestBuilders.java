@@ -20,37 +20,58 @@ import io.camunda.zeebe.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.zeebe.client.api.search.filter.DecisionRequirementsFilter;
 import io.camunda.zeebe.client.api.search.filter.FlownodeInstanceFilter;
 import io.camunda.zeebe.client.api.search.filter.IncidentFilter;
+import io.camunda.zeebe.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.zeebe.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.zeebe.client.api.search.filter.UserTaskFilter;
+import io.camunda.zeebe.client.api.search.filter.VariableFilter;
 import io.camunda.zeebe.client.api.search.filter.VariableValueFilter;
 import io.camunda.zeebe.client.api.search.sort.DecisionDefinitionSort;
 import io.camunda.zeebe.client.api.search.sort.DecisionInstanceSort;
 import io.camunda.zeebe.client.api.search.sort.DecisionRequirementsSort;
 import io.camunda.zeebe.client.api.search.sort.FlownodeInstanceSort;
 import io.camunda.zeebe.client.api.search.sort.IncidentSort;
+import io.camunda.zeebe.client.api.search.sort.ProcessDefinitionSort;
 import io.camunda.zeebe.client.api.search.sort.ProcessInstanceSort;
 import io.camunda.zeebe.client.api.search.sort.UserTaskSort;
+import io.camunda.zeebe.client.api.search.sort.VariableSort;
 import io.camunda.zeebe.client.impl.search.SearchRequestPageImpl;
 import io.camunda.zeebe.client.impl.search.filter.DecisionDefinitionFilterImpl;
 import io.camunda.zeebe.client.impl.search.filter.DecisionInstanceFilterImpl;
 import io.camunda.zeebe.client.impl.search.filter.DecisionRequirementsFilterImpl;
 import io.camunda.zeebe.client.impl.search.filter.FlownodeInstanceFilterImpl;
 import io.camunda.zeebe.client.impl.search.filter.IncidentFilterImpl;
+import io.camunda.zeebe.client.impl.search.filter.ProcessDefinitionFilterImpl;
 import io.camunda.zeebe.client.impl.search.filter.ProcessInstanceFilterImpl;
 import io.camunda.zeebe.client.impl.search.filter.UserTaskFilterImpl;
+import io.camunda.zeebe.client.impl.search.filter.VariableFilterImpl;
 import io.camunda.zeebe.client.impl.search.filter.VariableValueFilterImpl;
 import io.camunda.zeebe.client.impl.search.sort.DecisionDefinitionSortImpl;
 import io.camunda.zeebe.client.impl.search.sort.DecisionInstanceSortImpl;
 import io.camunda.zeebe.client.impl.search.sort.DecisionRequirementsSortImpl;
 import io.camunda.zeebe.client.impl.search.sort.FlownodeInstanceSortImpl;
 import io.camunda.zeebe.client.impl.search.sort.IncidentSortImpl;
+import io.camunda.zeebe.client.impl.search.sort.ProcessDefinitionSortImpl;
 import io.camunda.zeebe.client.impl.search.sort.ProcessInstanceSortImpl;
 import io.camunda.zeebe.client.impl.search.sort.UserTaskSortImpl;
+import io.camunda.zeebe.client.impl.search.sort.VariableSortImpl;
 import java.util.function.Consumer;
 
 public final class SearchRequestBuilders {
 
   private SearchRequestBuilders() {}
+
+  /** Create a process definition filter. */
+  public static ProcessDefinitionFilter processDefinitionFilter() {
+    return new ProcessDefinitionFilterImpl();
+  }
+
+  /** Create a process definition filter by using a fluent builder. */
+  public static ProcessDefinitionFilter processDefinitionFilter(
+      final Consumer<ProcessDefinitionFilter> fn) {
+    final ProcessDefinitionFilter filter = processDefinitionFilter();
+    fn.accept(filter);
+    return filter;
+  }
 
   /** Create a process instance filter. */
   public static ProcessInstanceFilter processInstanceFilter() {
@@ -100,6 +121,19 @@ public final class SearchRequestBuilders {
     final IncidentFilter filter = incidentFilter();
     fn.accept(filter);
     return filter;
+  }
+
+  /** Create a process definition sort option. */
+  public static ProcessDefinitionSort processDefinitionSort() {
+    return new ProcessDefinitionSortImpl();
+  }
+
+  /** Create a process definition sort option by using a fluent builder. */
+  public static ProcessDefinitionSort processDefinitionSort(
+      final Consumer<ProcessDefinitionSort> fn) {
+    final ProcessDefinitionSort sort = processDefinitionSort();
+    fn.accept(sort);
+    return sort;
   }
 
   /** Create a process instance sort option. */
@@ -229,6 +263,26 @@ public final class SearchRequestBuilders {
 
   public static FlownodeInstanceSort flowNodeInstanceSort(final Consumer<FlownodeInstanceSort> fn) {
     final FlownodeInstanceSort sort = flowNodeInstanceSort();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static VariableFilter variableFilter() {
+    return new VariableFilterImpl();
+  }
+
+  public static VariableFilter variableFilter(final Consumer<VariableFilter> fn) {
+    final VariableFilter filter = variableFilter();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static VariableSort variableSort() {
+    return new VariableSortImpl();
+  }
+
+  public static VariableSort variableSort(final Consumer<VariableSort> fn) {
+    final VariableSort sort = variableSort();
     fn.accept(sort);
     return sort;
   }

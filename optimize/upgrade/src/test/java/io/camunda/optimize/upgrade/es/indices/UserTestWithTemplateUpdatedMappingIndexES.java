@@ -7,18 +7,16 @@
  */
 package io.camunda.optimize.upgrade.es.indices;
 
-import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import co.elastic.clients.elasticsearch.indices.IndexSettings.Builder;
-import io.camunda.optimize.upgrade.indices.UserTestWithTemplateUpdatedMappingIndex;
+import io.camunda.optimize.upgrade.db.indices.UserTestWithTemplateUpdatedMappingIndex;
 import java.io.IOException;
 
 public class UserTestWithTemplateUpdatedMappingIndexES
     extends UserTestWithTemplateUpdatedMappingIndex<Builder> {
 
   @Override
-  public IndexSettings.Builder addStaticSetting(
-      final String key, final int value, final IndexSettings.Builder contentBuilder)
-      throws IOException {
-    return contentBuilder.numberOfShards(Integer.toString(value));
+  public Builder addStaticSetting(
+      final String key, final int value, final Builder indexSettingsBuilder) throws IOException {
+    return indexSettingsBuilder.numberOfShards(Integer.toString(value));
   }
 }
