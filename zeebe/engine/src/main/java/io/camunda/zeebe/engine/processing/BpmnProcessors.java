@@ -76,7 +76,8 @@ public final class BpmnProcessors {
 
     final var processEngineMetrics = new ProcessEngineMetrics(processingState.getPartitionId());
 
-    addProcessInstanceCommandProcessor(writers, typedRecordProcessors, processingState);
+    addProcessInstanceCommandProcessor(
+        writers, typedRecordProcessors, processingState, authCheckBehavior);
 
     final var bpmnStreamProcessor =
         new BpmnStreamProcessor(bpmnBehaviors, processingState, writers, processEngineMetrics);
@@ -125,11 +126,12 @@ public final class BpmnProcessors {
   private static void addProcessInstanceCommandProcessor(
       final Writers writers,
       final TypedRecordProcessors typedRecordProcessors,
-      final ProcessingState processingState) {
+      final ProcessingState processingState,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE,
         ProcessInstanceIntent.CANCEL,
-        new ProcessInstanceCancelProcessor(processingState, writers));
+        new ProcessInstanceCancelProcessor(processingState, writers, authCheckBehavior));
   }
 
   private static void addBpmnStepProcessor(

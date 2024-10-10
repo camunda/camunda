@@ -13,6 +13,7 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.authorization.DbAuthorizationState;
+import io.camunda.zeebe.engine.state.authorization.DbRoleState;
 import io.camunda.zeebe.engine.state.clock.DbClockState;
 import io.camunda.zeebe.engine.state.compensation.DbCompensationSubscriptionState;
 import io.camunda.zeebe.engine.state.deployment.DbDecisionState;
@@ -55,6 +56,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoutingState;
 import io.camunda.zeebe.engine.state.mutable.MutableSignalSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
@@ -104,6 +106,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableClockState clockState;
   private final MutableAuthorizationState authorizationState;
   private final MutableRoutingState routingState;
+  private final MutableRoleState roleState;
 
   private final int partitionId;
 
@@ -152,6 +155,7 @@ public class ProcessingDbState implements MutableProcessingState {
     clockState = new DbClockState(zeebeDb, transactionContext);
     authorizationState = new DbAuthorizationState(zeebeDb, transactionContext);
     routingState = new DbRoutingState(zeebeDb, transactionContext);
+    roleState = new DbRoleState(zeebeDb, transactionContext);
   }
 
   @Override
@@ -285,6 +289,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableClockState getClockState() {
     return clockState;
+  }
+
+  @Override
+  public MutableRoleState getRoleState() {
+    return roleState;
   }
 
   @Override
