@@ -8,9 +8,11 @@
 package io.camunda.it.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.api.search.response.Variable;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -19,6 +21,7 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
@@ -198,6 +201,30 @@ class VariableQueryTest {
         result.items().stream().map(item -> item.getName()).collect(Collectors.toList());
 
     assertThat(names).isSorted();
+  }
+
+  @Test
+  void shouldVariableByKey() {
+    // when
+    final var result = camundaClient.newVariableGetRequest(variable.getVariableKey()).send().join();
+
+    // then
+    assertThat(result.getVariableKey()).isEqualTo(variable.getVariableKey());
+  }
+
+  @Test
+  void shouldReturn404ForNotFoundVariableKey() {
+    // when
+    final long variableKey = new Random().nextLong();
+    final var problemException =
+        assertThrows(
+            ProblemException.class,
+            () -> camundaClient.newVariableGetRequest(variableKey).send().join());
+
+    // then
+    assertThat(problemException.code()).isEqualTo(404);
+    assertThat(problemException.details().getDetail())
+        .isEqualTo("Variable with key %d not found".formatted(variableKey));
   }
 
   @Test

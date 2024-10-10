@@ -63,6 +63,7 @@ import io.camunda.zeebe.client.api.fetch.ProcessDefinitionGetXmlRequest;
 import io.camunda.zeebe.client.api.fetch.ProcessInstanceGetRequest;
 import io.camunda.zeebe.client.api.fetch.UserTaskGetFormRequest;
 import io.camunda.zeebe.client.api.fetch.UserTaskGetRequest;
+import io.camunda.zeebe.client.api.fetch.VariableGetRequest;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.search.query.DecisionDefinitionQuery;
 import io.camunda.zeebe.client.api.search.query.DecisionInstanceQuery;
@@ -111,6 +112,7 @@ import io.camunda.zeebe.client.impl.fetch.ProcessDefinitionGetXmlRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.ProcessInstanceGetRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.UserTaskGetFormRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.UserTaskGetRequestImpl;
+import io.camunda.zeebe.client.impl.fetch.VariableGetRequestImpl;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpClientFactory;
 import io.camunda.zeebe.client.impl.search.query.DecisionDefinitionQueryImpl;
@@ -685,6 +687,11 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public VariableQuery newVariableQuery() {
     return new VariableQueryImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public VariableGetRequest newVariableGetRequest(final long variableKey) {
+    return new VariableGetRequestImpl(httpClient, variableKey);
   }
 
   private JobClient newJobClient() {
