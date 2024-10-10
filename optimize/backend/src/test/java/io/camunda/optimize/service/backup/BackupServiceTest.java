@@ -84,8 +84,8 @@ public class BackupServiceTest {
     // Mock existence of repository name field in config
     stringUtils.when(() -> StringUtils.isEmpty(any())).thenReturn(false);
     doThrow(
-        new OptimizeSnapshotRepositoryNotFoundException(
-            "No repository with name [does_not_exist] could be found."))
+            new OptimizeSnapshotRepositoryNotFoundException(
+                "No repository with name [does_not_exist] could be found."))
         .when(backupReader)
         .validateRepositoryExists();
 
@@ -142,8 +142,8 @@ public class BackupServiceTest {
     // Mock existence of repository name field in config
     stringUtils.when(() -> StringUtils.isEmpty(any())).thenReturn(false);
     doThrow(
-        new OptimizeSnapshotRepositoryNotFoundException(
-            "No repository with name [does_not_exist] could be found."))
+            new OptimizeSnapshotRepositoryNotFoundException(
+                "No repository with name [does_not_exist] could be found."))
         .when(backupReader)
         .validateRepositoryExists();
 
@@ -192,8 +192,8 @@ public class BackupServiceTest {
     // Mock existence of repository name field in config
     stringUtils.when(() -> StringUtils.isEmpty(any())).thenReturn(false);
     doThrow(
-        new OptimizeSnapshotRepositoryNotFoundException(
-            "No repository with name [does_not_exist] could be found."))
+            new OptimizeSnapshotRepositoryNotFoundException(
+                "No repository with name [does_not_exist] could be found."))
         .when(backupReader)
         .validateRepositoryExists();
 
@@ -239,8 +239,8 @@ public class BackupServiceTest {
     // Mock existence of repository name field in config
     stringUtils.when(() -> StringUtils.isEmpty(any())).thenReturn(false);
     doThrow(
-        new OptimizeSnapshotRepositoryNotFoundException(
-            "No repository with name [does_not_exist] could be found."))
+            new OptimizeSnapshotRepositoryNotFoundException(
+                "No repository with name [does_not_exist] could be found."))
         .when(backupReader)
         .validateRepositoryExists();
 

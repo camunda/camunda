@@ -89,7 +89,8 @@ public class CodeQualityTest {
                 "file "
                     + entry.getAbsolutePath()
                     + " contains the forbidden string '"
-                    + forbiddenString + "'");
+                    + forbiddenString
+                    + "'");
           }
         }
       }

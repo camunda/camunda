@@ -51,8 +51,8 @@ public class BackupReaderOS extends AbstractBackupReader {
   private final ConfigurationService configurationService;
   private final OptimizeOpenSearchClient osClient;
 
-  public BackupReaderOS(ConfigurationService configurationService,
-      OptimizeOpenSearchClient osClient) {
+  public BackupReaderOS(
+      ConfigurationService configurationService, OptimizeOpenSearchClient osClient) {
     this.configurationService = configurationService;
     this.osClient = osClient;
   }

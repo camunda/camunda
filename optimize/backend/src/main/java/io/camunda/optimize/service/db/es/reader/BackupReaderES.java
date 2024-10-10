@@ -51,8 +51,8 @@ public class BackupReaderES extends AbstractBackupReader {
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
 
-  public BackupReaderES(OptimizeElasticsearchClient esClient,
-      ConfigurationService configurationService) {
+  public BackupReaderES(
+      OptimizeElasticsearchClient esClient, ConfigurationService configurationService) {
     this.esClient = esClient;
     this.configurationService = configurationService;
   }

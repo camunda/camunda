@@ -119,8 +119,8 @@ import org.springframework.context.ApplicationContext;
 
 public class OptimizeOpenSearchClient extends DatabaseClient {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(
-      OptimizeOpenSearchClient.class);
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(OptimizeOpenSearchClient.class);
   private ExtendedOpenSearchClient openSearchClient;
 
   private OpenSearchAsyncClient openSearchAsyncClient;
@@ -172,11 +172,10 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   private static String getHintForErrorMsg(final boolean containsNestedDocumentLimitErrorMessage) {
     if (containsNestedDocumentLimitErrorMessage) {
       // exception potentially related to nested object limit
-      return
-          "If you are experiencing failures due to too many nested documents, try carefully increasing the "
-              + "configured nested object limit (opensearch.settings.index.nested_documents_limit) or enabling the skipping of "
-              + "documents that have reached this limit during import (import.skipDataAfterNestedDocLimitReached). "
-              + "See Optimize documentation for details.";
+      return "If you are experiencing failures due to too many nested documents, try carefully increasing the "
+          + "configured nested object limit (opensearch.settings.index.nested_documents_limit) or enabling the skipping of "
+          + "documents that have reached this limit during import (import.skipDataAfterNestedDocLimitReached). "
+          + "See Optimize documentation for details.";
     }
     return "";
   }
@@ -610,7 +609,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   }
 
   public long count(final String indexName, final String errorMessage) {
-    return count(new String[]{indexName}, QueryDSL.matchAll(), errorMessage);
+    return count(new String[] {indexName}, QueryDSL.matchAll(), errorMessage);
   }
 
   public UpdateByQueryResponse submitUpdateTask(final UpdateByQueryRequest request)

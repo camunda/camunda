@@ -1,4 +1,3 @@
-
 /*
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
@@ -130,8 +129,8 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   private static final String MOCKSERVER_CLIENT_KEY = "MockServer";
   private static final Map<String, OptimizeOpenSearchClient> CLIENT_CACHE = new HashMap<>();
   private static final ClientAndServer mockServerClient = initMockServer();
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(
-      OpenSearchDatabaseTestService.class);
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(OpenSearchDatabaseTestService.class);
 
   private String opensearchDatabaseVersion;
 
@@ -274,7 +273,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   public Integer getDocumentCountOf(final String indexName) {
     try {
       return Long.valueOf(
-              getOptimizeOpenSearchClient().count(new String[]{indexName}, QueryDSL.matchAll()))
+              getOptimizeOpenSearchClient().count(new String[] {indexName}, QueryDSL.matchAll()))
           .intValue();
     } catch (final IOException e) {
       throw new OptimizeIntegrationTestException(
@@ -607,7 +606,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   public long countRecordsByQuery(
       final TermsQueryContainer queryContainer, final String expectedIndex) {
     return getOptimizeOpenSearchClient()
-        .count(new String[]{expectedIndex}, queryContainer.toOpenSearchQuery());
+        .count(new String[] {expectedIndex}, queryContainer.toOpenSearchQuery());
   }
 
   @Override
@@ -674,7 +673,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
       final String idField,
       final Class<T> type) {
     return getAllDocumentsOfIndicesAs(
-        new String[]{indexName}, type, QueryDSL.stringTerms(idField, instanceIds));
+        new String[] {indexName}, type, QueryDSL.stringTerms(idField, instanceIds));
   }
 
   @Override
@@ -970,7 +969,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
 
   private <T> List<T> getAllDocumentsOfIndexAs(
       final String indexName, final Class<T> type, final Query query) {
-    return getAllDocumentsOfIndicesAs(new String[]{indexName}, type, query);
+    return getAllDocumentsOfIndicesAs(new String[] {indexName}, type, query);
   }
 
   private OptimizeIndexNameService getIndexNameService() {
@@ -997,7 +996,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     try {
       return Long.valueOf(
               getOptimizeOpenSearchClient()
-                  .count(new String[]{PROCESS_INSTANCE_MULTI_ALIAS}, query))
+                  .count(new String[] {PROCESS_INSTANCE_MULTI_ALIAS}, query))
           .intValue();
     } catch (final IOException e) {
       throw new OptimizeIntegrationTestException(
@@ -1012,7 +1011,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   private void deleteIndexOfMapping(final IndexMappingCreator<IndexSettings.Builder> indexMapping) {
-    deleteIndices(new String[]{indexMapping.getIndexName()});
+    deleteIndices(new String[] {indexMapping.getIndexName()});
   }
 
   private void deleteIndices(final String[] indicesToDelete) {

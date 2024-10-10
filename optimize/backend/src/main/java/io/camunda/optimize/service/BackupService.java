@@ -40,7 +40,9 @@ public class BackupService {
   private final BackupWriter backupWriter;
   private final ConfigurationService configurationService;
 
-  public BackupService(BackupReader backupReader, BackupWriter backupWriter,
+  public BackupService(
+      BackupReader backupReader,
+      BackupWriter backupWriter,
       ConfigurationService configurationService) {
     this.backupReader = backupReader;
     this.backupWriter = backupWriter;
