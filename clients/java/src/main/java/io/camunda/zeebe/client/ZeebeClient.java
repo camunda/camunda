@@ -50,6 +50,7 @@ import io.camunda.zeebe.client.api.fetch.ProcessDefinitionGetRequest;
 import io.camunda.zeebe.client.api.fetch.ProcessInstanceGetRequest;
 import io.camunda.zeebe.client.api.fetch.UserTaskGetFormRequest;
 import io.camunda.zeebe.client.api.fetch.UserTaskGetRequest;
+import io.camunda.zeebe.client.api.fetch.VariableGetRequest;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.search.query.DecisionDefinitionQuery;
 import io.camunda.zeebe.client.api.search.query.DecisionInstanceQuery;
@@ -1133,4 +1134,28 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   UserTaskGetRequest newUserTaskGetRequest(long userTaskKey);
+
+  // Get Variable by Key
+  /*
+   * Gets a variable by key.
+   *
+   * <pre>
+   *   long variableKey = ...;
+   *
+   *  zeebeClient
+   * .newVariableGetRequest(variableKey)
+   * .send();
+   * </pre>
+   *
+   * <p><strong>Experimental: This method is under development, and as such using it may have no
+   * effect on the client builder when called. The respective API on compatible clusters is not
+   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
+   * warning is removed, anything described below may not yet have taken effect, and the interface
+   * and its description are subject to change.</strong>
+   *
+   * @param variableKey the key of the variable
+   * @return a builder for the request to get a variable
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
+  VariableGetRequest newVariableGetRequest(long variableKey);
 }
