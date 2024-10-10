@@ -336,7 +336,6 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getProcessDefinitionVersionTag())
           .ifPresent(builder::processDefinitionVersionTags);
       ofNullable(filter.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
-      ofNullable(filter.getRootProcessInstanceKey()).ifPresent(builder::rootProcessInstanceKeys);
       ofNullable(filter.getParentProcessInstanceKey())
           .ifPresent(builder::parentProcessInstanceKeys);
       ofNullable(filter.getParentFlowNodeInstanceKey())
@@ -492,7 +491,6 @@ public final class SearchQueryRequestMapper {
         case "processVersion" -> builder.processDefinitionVersion();
         case "processVersionTag" -> builder.processDefinitionVersionTag();
         case "processDefinitionKey" -> builder.processDefinitionKey();
-        case "rootProcessInstanceKey" -> builder.rootProcessInstanceKey();
         case "parentProcessInstanceKey" -> builder.parentProcessInstanceKey();
         case "parentFlowNodeInstanceKey" -> builder.parentFlowNodeInstanceKey();
         case "treePath" -> builder.treePath();

@@ -22,7 +22,6 @@ public record ProcessInstanceFilter(
     List<Integer> processDefinitionVersions,
     List<String> processDefinitionVersionTags,
     List<Long> processDefinitionKeys,
-    List<Long> rootProcessInstanceKeys,
     List<Long> parentProcessInstanceKeys,
     List<Long> parentFlowNodeInstanceKeys,
     List<String> treePaths,
@@ -41,7 +40,6 @@ public record ProcessInstanceFilter(
     private List<Integer> processDefinitionVersions;
     private List<String> processDefinitionVersionTags;
     private List<Long> processDefinitionKeys;
-    private List<Long> rootProcessInstanceKeys;
     private List<Long> parentProcessInstanceKeys;
     private List<Long> parentFlowNodeInstanceKeys;
     private List<String> treePaths;
@@ -103,15 +101,6 @@ public record ProcessInstanceFilter(
 
     public Builder processDefinitionKeys(final Long... values) {
       return processDefinitionKeys(collectValuesAsList(values));
-    }
-
-    public Builder rootProcessInstanceKeys(final List<Long> values) {
-      rootProcessInstanceKeys = addValuesToList(rootProcessInstanceKeys, values);
-      return this;
-    }
-
-    public Builder rootProcessInstanceKeys(final Long... values) {
-      return rootProcessInstanceKeys(collectValuesAsList(values));
     }
 
     public Builder parentProcessInstanceKeys(final List<Long> values) {
@@ -193,7 +182,6 @@ public record ProcessInstanceFilter(
           Objects.requireNonNullElse(processDefinitionVersions, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionVersionTags, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
-          Objects.requireNonNullElse(rootProcessInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(parentProcessInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(parentFlowNodeInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(treePaths, Collections.emptyList()),

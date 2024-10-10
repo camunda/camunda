@@ -37,9 +37,6 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
   /** Filter by processDefinitionKey */
   ProcessInstanceFilter processDefinitionKey(final Long processDefinitionKey);
 
-  /** Filter by rootProcessInstanceKey */
-  ProcessInstanceFilter rootProcessInstanceKey(final Long rootProcessInstanceKey);
-
   /** Filter by parentProcessInstanceKey */
   ProcessInstanceFilter parentProcessInstanceKey(final Long parentProcessInstanceKey);
 
