@@ -99,9 +99,9 @@ public abstract class TasklistEntity<T extends TasklistEntity<T>> extends Abstra
       return false;
     }
     final TasklistEntity<?> that = (TasklistEntity<?>) o;
-    return key == that.key
+    return key.equals(that.key)
         && Objects.equals(id, that.id)
-        && partitionId.equals(that.partitionId)
+        && Objects.equals(partitionId, that.partitionId)
         && Objects.equals(tenantId, that.tenantId);
   }
 }
