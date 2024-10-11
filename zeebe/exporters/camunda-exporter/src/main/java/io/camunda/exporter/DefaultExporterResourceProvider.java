@@ -15,9 +15,11 @@ import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.UserRecordValueExportHandler;
 import io.camunda.exporter.handlers.VariableHandler;
+import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-import io.camunda.webapps.schema.descriptors.operate.index.AbstractIndexDescriptor;
+
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
