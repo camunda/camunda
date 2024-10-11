@@ -20,6 +20,7 @@ import io.camunda.security.auth.SecurityContext;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import java.util.List;
 import java.util.function.Function;
 
 public final class VariableServices
