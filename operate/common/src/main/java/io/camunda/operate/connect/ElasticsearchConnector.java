@@ -59,7 +59,6 @@ import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.client.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -70,9 +69,12 @@ public class ElasticsearchConnector {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchConnector.class);
 
-  @Autowired private OperateProperties operateProperties;
-
+  private final OperateProperties operateProperties;
   private ElasticsearchClient elasticsearchClient;
+
+  public ElasticsearchConnector(final OperateProperties operateProperties) {
+    this.operateProperties = operateProperties;
+  }
 
   public static void closeEsClient(final RestHighLevelClient esClient) {
     if (esClient != null) {
