@@ -336,7 +336,6 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getProcessDefinitionVersionTag())
           .ifPresent(builder::processDefinitionVersionTags);
       ofNullable(filter.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
-      ofNullable(filter.getRootProcessInstanceKey()).ifPresent(builder::rootProcessInstanceKeys);
       ofNullable(filter.getParentProcessInstanceKey())
           .ifPresent(builder::parentProcessInstanceKeys);
       ofNullable(filter.getParentFlowNodeInstanceKey())
@@ -345,7 +344,7 @@ public final class SearchQueryRequestMapper {
       ofNullable(toDateValueFilter(filter.getStartDate())).ifPresent(builder::startDate);
       ofNullable(toDateValueFilter(filter.getEndDate())).ifPresent(builder::endDate);
       ofNullable(filter.getState()).ifPresent(state -> builder.states(state.getValue()));
-      ofNullable(filter.getIncident()).ifPresent(builder::incident);
+      ofNullable(filter.getHasIncident()).ifPresent(builder::hasIncident);
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     }
 
@@ -492,14 +491,13 @@ public final class SearchQueryRequestMapper {
         case "processVersion" -> builder.processDefinitionVersion();
         case "processVersionTag" -> builder.processDefinitionVersionTag();
         case "processDefinitionKey" -> builder.processDefinitionKey();
-        case "rootProcessInstanceKey" -> builder.rootProcessInstanceKey();
         case "parentProcessInstanceKey" -> builder.parentProcessInstanceKey();
         case "parentFlowNodeInstanceKey" -> builder.parentFlowNodeInstanceKey();
         case "treePath" -> builder.treePath();
         case "startDate" -> builder.startDate();
         case "endDate" -> builder.endDate();
         case "state" -> builder.state();
-        case "incident" -> builder.incident();
+        case "incident" -> builder.hasIncident();
         case "tenantId" -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }

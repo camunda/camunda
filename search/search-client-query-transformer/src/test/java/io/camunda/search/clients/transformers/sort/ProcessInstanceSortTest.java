@@ -37,8 +37,6 @@ public class ProcessInstanceSortTest extends AbstractSortTransformerTest {
         new ProcessInstanceSortTest.TestArguments(
             "processDefinitionKey", SortOrder.ASC, s -> s.processDefinitionKey().asc()),
         new ProcessInstanceSortTest.TestArguments(
-            "rootProcessInstanceKey", SortOrder.ASC, s -> s.rootProcessInstanceKey().asc()),
-        new ProcessInstanceSortTest.TestArguments(
             "parentProcessInstanceKey", SortOrder.ASC, s -> s.parentProcessInstanceKey().asc()),
         new ProcessInstanceSortTest.TestArguments(
             "parentFlowNodeInstanceKey", SortOrder.DESC, s -> s.parentFlowNodeInstanceKey().desc()),
@@ -50,7 +48,7 @@ public class ProcessInstanceSortTest extends AbstractSortTransformerTest {
             "endDate", SortOrder.DESC, s -> s.endDate().desc()),
         new ProcessInstanceSortTest.TestArguments("state", SortOrder.DESC, s -> s.state().desc()),
         new ProcessInstanceSortTest.TestArguments(
-            "incident", SortOrder.DESC, s -> s.incident().desc()),
+            "incident", SortOrder.DESC, s -> s.hasIncident().desc()),
         new ProcessInstanceSortTest.TestArguments(
             "tenantId", SortOrder.ASC, s -> s.tenantId().asc()));
   }

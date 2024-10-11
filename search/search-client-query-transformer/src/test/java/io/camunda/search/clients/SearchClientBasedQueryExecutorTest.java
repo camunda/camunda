@@ -36,7 +36,6 @@ class SearchClientBasedQueryExecutorTest {
           5,
           "42",
           789L,
-          777L,
           null,
           null,
           "default",

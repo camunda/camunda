@@ -37,9 +37,6 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
   /** Filter by processDefinitionKey */
   ProcessInstanceFilter processDefinitionKey(final Long processDefinitionKey);
 
-  /** Filter by rootProcessInstanceKey */
-  ProcessInstanceFilter rootProcessInstanceKey(final Long rootProcessInstanceKey);
-
   /** Filter by parentProcessInstanceKey */
   ProcessInstanceFilter parentProcessInstanceKey(final Long parentProcessInstanceKey);
 
@@ -58,8 +55,8 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
   /** Filter by state */
   ProcessInstanceFilter state(final String state);
 
-  /** Filter by incident */
-  ProcessInstanceFilter incident(final Boolean incident);
+  /** Filter by hasIncident */
+  ProcessInstanceFilter hasIncident(final Boolean hasIncident);
 
   /** Filter by tenantId */
   ProcessInstanceFilter tenantId(final String tenantId);

@@ -22,14 +22,13 @@ public record ProcessInstanceFilter(
     List<Integer> processDefinitionVersions,
     List<String> processDefinitionVersionTags,
     List<Long> processDefinitionKeys,
-    List<Long> rootProcessInstanceKeys,
     List<Long> parentProcessInstanceKeys,
     List<Long> parentFlowNodeInstanceKeys,
     List<String> treePaths,
     DateValueFilter startDate,
     DateValueFilter endDate,
     List<String> states,
-    Boolean incident,
+    Boolean hasIncident,
     List<String> tenantIds)
     implements FilterBase {
 
@@ -41,14 +40,13 @@ public record ProcessInstanceFilter(
     private List<Integer> processDefinitionVersions;
     private List<String> processDefinitionVersionTags;
     private List<Long> processDefinitionKeys;
-    private List<Long> rootProcessInstanceKeys;
     private List<Long> parentProcessInstanceKeys;
     private List<Long> parentFlowNodeInstanceKeys;
     private List<String> treePaths;
     private DateValueFilter startDate;
     private DateValueFilter endDate;
     private List<String> states;
-    private Boolean incident;
+    private Boolean hasIncident;
     private List<String> tenantIds;
 
     public Builder processInstanceKeys(final List<Long> values) {
@@ -103,15 +101,6 @@ public record ProcessInstanceFilter(
 
     public Builder processDefinitionKeys(final Long... values) {
       return processDefinitionKeys(collectValuesAsList(values));
-    }
-
-    public Builder rootProcessInstanceKeys(final List<Long> values) {
-      rootProcessInstanceKeys = addValuesToList(rootProcessInstanceKeys, values);
-      return this;
-    }
-
-    public Builder rootProcessInstanceKeys(final Long... values) {
-      return rootProcessInstanceKeys(collectValuesAsList(values));
     }
 
     public Builder parentProcessInstanceKeys(final List<Long> values) {
@@ -170,8 +159,8 @@ public record ProcessInstanceFilter(
       return states(collectValuesAsList(values));
     }
 
-    public Builder incident(final Boolean value) {
-      incident = value;
+    public Builder hasIncident(final Boolean value) {
+      hasIncident = value;
       return this;
     }
 
@@ -193,14 +182,13 @@ public record ProcessInstanceFilter(
           Objects.requireNonNullElse(processDefinitionVersions, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionVersionTags, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
-          Objects.requireNonNullElse(rootProcessInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(parentProcessInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(parentFlowNodeInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(treePaths, Collections.emptyList()),
           startDate,
           endDate,
           Objects.requireNonNullElse(states, Collections.emptyList()),
-          incident,
+          hasIncident,
           Objects.requireNonNullElse(tenantIds, Collections.emptyList()));
     }
   }

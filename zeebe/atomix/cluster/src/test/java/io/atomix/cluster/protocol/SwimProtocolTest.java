@@ -356,7 +356,8 @@ public class SwimProtocolTest extends ConcurrentTestCase {
                     .setProbeInterval(PROBE_INTERVAL)
                     .setProbeTimeout(PROBE_TIMEOUT)
                     .setFailureTimeout(FAILURE_INTERVAL)
-                    .setSyncInterval(SYNC_INTERVAL)));
+                    .setSyncInterval(SYNC_INTERVAL)),
+            "testingActorSchedulerName");
     final TestGroupMembershipEventListener listener = new TestGroupMembershipEventListener();
     listeners.put(member.id(), listener);
     protocol.addListener(listener);
@@ -368,7 +369,7 @@ public class SwimProtocolTest extends ConcurrentTestCase {
     provider.join(bootstrap, member).join();
     final NodeDiscoveryService discovery =
         new DefaultNodeDiscoveryService(bootstrap, member, provider).start().join();
-    protocol.join(bootstrap, discovery, member, actorSchedulerName).join();
+    protocol.join(bootstrap, discovery, member).join();
     protocols.put(member.id(), protocol);
     return protocol;
   }

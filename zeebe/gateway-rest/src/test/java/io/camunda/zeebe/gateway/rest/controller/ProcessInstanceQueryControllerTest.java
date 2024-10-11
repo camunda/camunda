@@ -45,7 +45,6 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           5,
           "v5",
           789L,
-          345L,
           333L,
           777L,
           "PI_1/PI_2",
@@ -64,13 +63,12 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             "processDefinitionVersion": 5,
             "processDefinitionVersionTag": "v5",
             "processDefinitionKey": 789,
-            "rootProcessInstanceKey": 345,
             "parentProcessInstanceKey": 333,
             "parentFlowNodeInstanceKey": 777,
             "treePath": "PI_1/PI_2",
             "startDate": "2024-01-01T00:00:00Z",
             "state": "ACTIVE",
-            "incident": false,
+            "hasIncident": false,
             "tenantId": "tenant"
           }
           """;
@@ -86,13 +84,12 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "processDefinitionVersion": 5,
                   "processDefinitionVersionTag": "v5",
                   "processDefinitionKey": 789,
-                  "rootProcessInstanceKey": 345,
                   "parentProcessInstanceKey": 333,
                   "parentFlowNodeInstanceKey": 777,
                   "treePath": "PI_1/PI_2",
                   "startDate": "2024-01-01T00:00:00Z",
                   "state": "ACTIVE",
-                  "incident": false,
+                  "hasIncident": false,
                   "tenantId": "tenant"
                 }
               ],

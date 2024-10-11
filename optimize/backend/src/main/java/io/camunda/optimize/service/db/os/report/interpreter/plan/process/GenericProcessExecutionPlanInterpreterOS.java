@@ -5,12 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.service.db.os.report.interpreter.distributedby.process;
+package io.camunda.optimize.service.db.os.report.interpreter.plan.process;
 
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.os.report.filter.ProcessQueryFilterEnhancerOS;
 import io.camunda.optimize.service.db.os.report.interpreter.groupby.process.ProcessGroupByInterpreterFacadeOS;
-import io.camunda.optimize.service.db.os.report.interpreter.plan.process.AbstractProcessExecutionPlanInterpreterOS;
 import io.camunda.optimize.service.db.os.report.interpreter.view.process.ProcessViewInterpreterFacadeOS;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.report.interpreter.plan.process.GenericProcessExecutionPlanInterpreter;

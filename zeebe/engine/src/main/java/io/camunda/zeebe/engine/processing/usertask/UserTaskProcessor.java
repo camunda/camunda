@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.TaskListener;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -56,9 +57,11 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
       final ProcessingState state,
       final KeyGenerator keyGenerator,
       final BpmnBehaviors bpmnBehaviors,
-      final Writers writers) {
+      final Writers writers,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     this.commandProcessors =
-        new UserTaskCommandProcessors(state, keyGenerator, bpmnBehaviors, writers);
+        new UserTaskCommandProcessors(
+            state, keyGenerator, bpmnBehaviors, writers, authCheckBehavior);
     this.processState = state.getProcessState();
     this.userTaskState = state.getUserTaskState();
     this.elementInstanceState = state.getElementInstanceState();

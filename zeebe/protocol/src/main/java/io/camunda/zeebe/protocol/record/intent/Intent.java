@@ -19,6 +19,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.MESSAGE_CORRELATION;
 
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
+import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -64,7 +65,8 @@ public interface Intent {
           ClockIntent.class,
           AuthorizationIntent.class,
           RoleIntent.class,
-          TenantIntent.class);
+          TenantIntent.class,
+          ScaleIntent.class);
   short NULL_VAL = 255;
   Intent UNKNOWN = UnknownIntent.UNKNOWN;
 
@@ -160,6 +162,8 @@ public interface Intent {
         return RoleIntent.from(intent);
       case TENANT:
         return TenantIntent.from(intent);
+      case SCALE:
+        return ScaleIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
@@ -247,6 +251,8 @@ public interface Intent {
         return RoleIntent.valueOf(intent);
       case TENANT:
         return TenantIntent.valueOf(intent);
+      case SCALE:
+        return ScaleIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;

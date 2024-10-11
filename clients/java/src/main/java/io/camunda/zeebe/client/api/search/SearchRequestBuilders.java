@@ -23,6 +23,7 @@ import io.camunda.zeebe.client.api.search.filter.IncidentFilter;
 import io.camunda.zeebe.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.zeebe.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.zeebe.client.api.search.filter.UserTaskFilter;
+import io.camunda.zeebe.client.api.search.filter.VariableFilter;
 import io.camunda.zeebe.client.api.search.filter.VariableValueFilter;
 import io.camunda.zeebe.client.api.search.sort.DecisionDefinitionSort;
 import io.camunda.zeebe.client.api.search.sort.DecisionInstanceSort;
@@ -32,6 +33,7 @@ import io.camunda.zeebe.client.api.search.sort.IncidentSort;
 import io.camunda.zeebe.client.api.search.sort.ProcessDefinitionSort;
 import io.camunda.zeebe.client.api.search.sort.ProcessInstanceSort;
 import io.camunda.zeebe.client.api.search.sort.UserTaskSort;
+import io.camunda.zeebe.client.api.search.sort.VariableSort;
 import io.camunda.zeebe.client.impl.search.SearchRequestPageImpl;
 import io.camunda.zeebe.client.impl.search.filter.DecisionDefinitionFilterImpl;
 import io.camunda.zeebe.client.impl.search.filter.DecisionInstanceFilterImpl;
@@ -41,6 +43,7 @@ import io.camunda.zeebe.client.impl.search.filter.IncidentFilterImpl;
 import io.camunda.zeebe.client.impl.search.filter.ProcessDefinitionFilterImpl;
 import io.camunda.zeebe.client.impl.search.filter.ProcessInstanceFilterImpl;
 import io.camunda.zeebe.client.impl.search.filter.UserTaskFilterImpl;
+import io.camunda.zeebe.client.impl.search.filter.VariableFilterImpl;
 import io.camunda.zeebe.client.impl.search.filter.VariableValueFilterImpl;
 import io.camunda.zeebe.client.impl.search.sort.DecisionDefinitionSortImpl;
 import io.camunda.zeebe.client.impl.search.sort.DecisionInstanceSortImpl;
@@ -50,6 +53,7 @@ import io.camunda.zeebe.client.impl.search.sort.IncidentSortImpl;
 import io.camunda.zeebe.client.impl.search.sort.ProcessDefinitionSortImpl;
 import io.camunda.zeebe.client.impl.search.sort.ProcessInstanceSortImpl;
 import io.camunda.zeebe.client.impl.search.sort.UserTaskSortImpl;
+import io.camunda.zeebe.client.impl.search.sort.VariableSortImpl;
 import java.util.function.Consumer;
 
 public final class SearchRequestBuilders {
@@ -259,6 +263,26 @@ public final class SearchRequestBuilders {
 
   public static FlownodeInstanceSort flowNodeInstanceSort(final Consumer<FlownodeInstanceSort> fn) {
     final FlownodeInstanceSort sort = flowNodeInstanceSort();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static VariableFilter variableFilter() {
+    return new VariableFilterImpl();
+  }
+
+  public static VariableFilter variableFilter(final Consumer<VariableFilter> fn) {
+    final VariableFilter filter = variableFilter();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static VariableSort variableSort() {
+    return new VariableSortImpl();
+  }
+
+  public static VariableSort variableSort(final Consumer<VariableSort> fn) {
+    final VariableSort sort = variableSort();
     fn.accept(sort);
     return sort;
   }

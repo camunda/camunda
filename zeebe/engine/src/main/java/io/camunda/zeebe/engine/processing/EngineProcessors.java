@@ -45,6 +45,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.processing.user.UserProcessors;
 import io.camunda.zeebe.engine.processing.usertask.UserTaskProcessor;
+import io.camunda.zeebe.engine.scaling.ScalingProcessors;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -210,7 +211,8 @@ public final class EngineProcessors {
         processingState,
         scheduledTaskStateFactory,
         interPartitionCommandSender);
-    addUserTaskProcessors(typedRecordProcessors, processingState, bpmnBehaviors, writers);
+    addUserTaskProcessors(
+        typedRecordProcessors, processingState, bpmnBehaviors, writers, authCheckBehavior);
 
     UserProcessors.addUserProcessors(
         keyGenerator,
@@ -230,6 +232,9 @@ public final class EngineProcessors {
         writers,
         commandDistributionBehavior,
         authCheckBehavior);
+
+    ScalingProcessors.addScalingProcessors(
+        typedRecordProcessors, writers, keyGenerator, processingState);
 
     return typedRecordProcessors;
   }
@@ -431,10 +436,15 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final MutableProcessingState processingState,
       final BpmnBehaviors bpmnBehaviors,
-      final Writers writers) {
+      final Writers writers,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     final var userTaskProcessor =
         new UserTaskProcessor(
-            processingState, processingState.getKeyGenerator(), bpmnBehaviors, writers);
+            processingState,
+            processingState.getKeyGenerator(),
+            bpmnBehaviors,
+            writers,
+            authCheckBehavior);
 
     UserTaskIntent.commands()
         .forEach(

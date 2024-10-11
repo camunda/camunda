@@ -21,6 +21,7 @@ import static io.camunda.zeebe.spring.client.properties.ZeebeClientConfiguration
 import static java.util.Optional.ofNullable;
 import static org.apache.commons.lang3.StringUtils.*;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.spring.client.annotation.Variable;
 import io.camunda.zeebe.spring.client.annotation.VariablesAsType;
@@ -30,6 +31,7 @@ import io.camunda.zeebe.spring.client.bean.CopyNotNullBeanUtilsBean;
 import io.camunda.zeebe.spring.client.bean.MethodInfo;
 import io.camunda.zeebe.spring.client.bean.ParameterInfo;
 import io.camunda.zeebe.spring.client.properties.common.ZeebeClientProperties;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,6 +39,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.ReflectionUtils;
@@ -117,8 +120,18 @@ public class PropertyBasedZeebeWorkerValueCustomizer implements ZeebeWorkerValue
     parameters.forEach(
         pi ->
             ReflectionUtils.doWithFields(
-                pi.getParameterInfo().getType(), f -> result.add(f.getName())));
+                pi.getParameterInfo().getType(), f -> result.add(extractFieldName(f))));
     return result;
+  }
+
+  private String extractFieldName(final Field field) {
+    if (field.isAnnotationPresent(JsonProperty.class)) {
+      final String value = field.getAnnotation(JsonProperty.class).value();
+      if (StringUtils.isNotBlank(value)) {
+        return value;
+      }
+    }
+    return field.getName();
   }
 
   private void applyOverrides(final ZeebeWorkerValue zeebeWorker) {

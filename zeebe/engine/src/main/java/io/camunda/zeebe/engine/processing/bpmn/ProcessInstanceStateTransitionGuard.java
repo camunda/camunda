@@ -208,19 +208,24 @@ public final class ProcessInstanceStateTransitionGuard {
       final BpmnElementContext context, final ExecutableFlowElement executableFlowElement) {
     if (context.getBpmnElementType() != BpmnElementType.PARALLEL_GATEWAY) {
       return Either.right(null);
-    } else {
-      final var element = (ExecutableFlowNode) executableFlowElement;
-      final int numberOfIncomingSequenceFlows = element.getIncoming().size();
-      final int numberOfTakenSequenceFlows =
-          stateBehavior.getNumberOfTakenSequenceFlows(context.getFlowScopeKey(), element.getId());
-      return numberOfTakenSequenceFlows >= numberOfIncomingSequenceFlows
-          ? Either.right(null)
-          : Either.left(
-              String.format(
-                  "Expected to be able to activate parallel gateway '%s',"
-                      + " but not all sequence flows have been taken.",
-                  BufferUtil.bufferAsString(element.getId())));
     }
+
+    // Accept after incident resolved
+    if (hasElementInstanceWithState(context, ProcessInstanceIntent.ELEMENT_ACTIVATING).isRight()) {
+      return Either.right(null);
+    }
+
+    final var element = (ExecutableFlowNode) executableFlowElement;
+    final int numberOfIncomingSequenceFlows = element.getIncoming().size();
+    final int numberOfTakenSequenceFlows =
+        stateBehavior.getNumberOfTakenSequenceFlows(context.getFlowScopeKey(), element.getId());
+    return numberOfTakenSequenceFlows >= numberOfIncomingSequenceFlows
+        ? Either.right(null)
+        : Either.left(
+            String.format(
+                "Expected to be able to activate parallel gateway '%s',"
+                    + " but not all sequence flows have been taken.",
+                BufferUtil.bufferAsString(element.getId())));
   }
 
   private Either<String, ?> canActivateInclusiveGateway(

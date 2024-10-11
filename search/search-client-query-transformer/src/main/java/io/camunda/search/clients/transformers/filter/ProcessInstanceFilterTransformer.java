@@ -40,14 +40,13 @@ public final class ProcessInstanceFilterTransformer
         intTerms("processVersion", filter.processDefinitionVersions()),
         stringTerms("processVersionTag", filter.processDefinitionVersionTags()),
         longTerms("processDefinitionKey", filter.processDefinitionKeys()),
-        longTerms("rootProcessInstanceKey", filter.rootProcessInstanceKeys()),
         longTerms("parentProcessInstanceKey", filter.parentProcessInstanceKeys()),
         longTerms("parentFlowNodeInstanceKey", filter.parentFlowNodeInstanceKeys()),
         stringTerms("treePath", filter.treePaths()),
         getDateQuery("startDate", filter.startDate()),
         getDateQuery("endDate", filter.endDate()),
         stringTerms("state", filter.states()),
-        getIncidentQuery(filter.incident()),
+        getIncidentQuery(filter.hasIncident()),
         stringTerms("tenantId", filter.tenantIds()));
   }
 
@@ -68,9 +67,9 @@ public final class ProcessInstanceFilterTransformer
     return null;
   }
 
-  private SearchQuery getIncidentQuery(final Boolean incident) {
-    if (incident != null) {
-      return term("incident", incident);
+  private SearchQuery getIncidentQuery(final Boolean hasIncident) {
+    if (hasIncident != null) {
+      return term("incident", hasIncident);
     }
     return null;
   }

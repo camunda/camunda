@@ -545,7 +545,7 @@ paths:
   /user-tasks/{userTaskKey}/form:
     get:
       tags:
-        - User Task
+        - User task
       summary: Return user task form
       description: |
         Get the form of a user task.
@@ -733,7 +733,58 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-
+  /variables/{variableKey}:
+    get:
+      tags:
+        - Variable
+      summary: Return variable by a variable key
+      description: |
+        Get the variable by the variable key.
+        :::note
+        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
+      parameters:
+        - name: variableKey
+          in: path
+          required: true
+          description: The variable key.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: >
+            The variable is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VariableItem"
+        "400":
+          description: "Bad request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "Not found"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: "Internal server error"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /clock:
     put:
       tags:
@@ -872,6 +923,65 @@ paths:
         "404":
           description: >
             The process definition with the given key was not found.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /process-definitions/{processDefinitionKey}/xml:
+    get:
+      tags:
+        - Process definition
+      summary: Get process definition XML (alpha)
+      description: |
+        Returns process definition as XML.
+
+        :::note
+        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
+      parameters:
+        - name: processDefinitionKey
+          in: path
+          required: true
+          description: The assigned key of the process definition, which acts as a unique identifier for this process.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: >
+            The XML of the process definition is successfully returned.
+          content:
+            text/xml:
+              schema:
+                type: string
+        "204":
+          description: >
+            The process definition was found but does not have XML.
+          content:
+            text/plain:
+              schema:
+                type: string
+        "400":
+          description: >
+            The process definition request failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: >
+            The decision with the given key was not found.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -1161,7 +1271,7 @@ paths:
   /flownode-instances/search:
     post:
       tags:
-        - Flow node Instance
+        - Flow node instance
       summary: Query flow node instances (alpha)
       description: |
         Search for flow node instances based on given criteria.
@@ -2708,10 +2818,6 @@ components:
           type: integer
           description: The process definition key.
           format: int64
-        rootProcessInstanceKey:
-          type: integer
-          description: The root process instance key.
-          format: int64
         parentProcessInstanceKey:
           type: integer
           description: The parent process instance key.
@@ -2734,7 +2840,7 @@ components:
         state:
           $ref: '#/components/schemas/ProcessInstanceStateEnum'
           description: The state, one of ACTIVE, COMPLETED, CANCELED.
-        incident:
+        hasIncident:
           type: boolean
           description: Whether this process instance has a related incident or not.
         tenantId:
@@ -2787,10 +2893,6 @@ components:
           type: integer
           description: The process definition key.
           format: int64
-        rootProcessInstanceKey:
-          type: integer
-          description: The root process instance key.
-          format: int64
         parentProcessInstanceKey:
           type: integer
           description: The parent process instance key.
@@ -2813,7 +2915,7 @@ components:
         state:
           $ref: '#/components/schemas/ProcessInstanceStateEnum'
           description: The state, one of ACTIVE, COMPLETED, CANCELED.
-        incident:
+        hasIncident:
           type: boolean
           description: Whether this process instance has a related incident or not.
         tenantId:
@@ -3623,7 +3725,7 @@ components:
     ActivatedJob:
       type: object
       properties:
-        key:
+        jobKey:
           description: the key, a unique identifier for the job
           type: integer
           format: int64
