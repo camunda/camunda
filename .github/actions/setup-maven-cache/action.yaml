@@ -52,6 +52,7 @@ runs:
         # it matters for caching as absolute paths on self-hosted and GitHub runners differ
         # self-hosted: `/runner/` vs gh-hosted: `/home/runner`
         KEY_PREFIX: ${{ runner.environment }}-${{ runner.os }}-mvn-${{ inputs.maven-cache-key-modifier }}
+      shell: sh
       run: |
         maven_version=$(./mvnw --version | head -n 1 | sed "s/Apache Maven \([[:digit:]]\.[[:digit:]]\.[[:digit:]]\).*/\1/g")
         # Only cache release artifacts for Maven version 3.9+
@@ -69,7 +70,6 @@ runs:
           echo "MAVEN_CACHE_KEY=${KEY_PREFIX}-full-${HASH_FILES}" >> $GITHUB_ENV
           echo "MAVEN_CACHE_KEY_PREFIX=${KEY_PREFIX}-full" >> $GITHUB_ENV
         fi
-      shell: sh
     - name: Cache local Maven repository
       # Only use the full cache action if we're on main or stable/* branches
       if: ${{ startsWith(github.ref_name, 'stable/') || github.ref_name == 'main' }}
