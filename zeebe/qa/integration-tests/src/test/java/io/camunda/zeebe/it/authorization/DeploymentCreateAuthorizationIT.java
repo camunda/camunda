@@ -97,7 +97,7 @@ final class DeploymentCreateAuthorizationIT {
                 "process.bpmn")
             .send()
             .join();
-    assertThat(deploymentEvent.getProcesses().getFirst().getBpmnProcessId()).isEqualTo(processId);
+    assertThat(deploymentEvent.getProcesses().getFirst().getProcessDefinitionId()).isEqualTo(processId);
   }
 
   @Test
@@ -124,7 +124,7 @@ final class DeploymentCreateAuthorizationIT {
             .join();
 
     // then
-    assertThat(deploymentEvent.getProcesses().getFirst().getBpmnProcessId()).isEqualTo(processId);
+    assertThat(deploymentEvent.getProcesses().getFirst().getProcessDefinitionId()).isEqualTo(processId);
   }
 
   @Test

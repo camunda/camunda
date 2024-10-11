@@ -110,7 +110,7 @@ public class ProcessInstanceMigrationMigrateAuthorizationIT {
             .join();
     targetProcDefKey =
         deploymentEvent.getProcesses().stream()
-            .filter(process -> process.getBpmnProcessId().equals(TARGET_PROCESS_ID))
+            .filter(process -> process.getProcessDefinitionId().equals(TARGET_PROCESS_ID))
             .findFirst()
             .orElseThrow()
             .getProcessDefinitionKey();

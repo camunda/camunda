@@ -18,7 +18,7 @@ package io.camunda.zeebe.client.impl.fetch;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.fetch.ProcessDefinitionGetRequest;
-import io.camunda.zeebe.client.api.search.response.ProcessDefinition;
+import io.camunda.zeebe.client.api.response.ProcessDefinition;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.search.SearchResponseMapper;

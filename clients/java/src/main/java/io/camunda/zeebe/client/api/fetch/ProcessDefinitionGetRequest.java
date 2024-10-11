@@ -16,6 +16,6 @@
 package io.camunda.zeebe.client.api.fetch;
 
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
-import io.camunda.zeebe.client.api.search.response.ProcessDefinition;
+import io.camunda.zeebe.client.api.response.ProcessDefinition;
 
 public interface ProcessDefinitionGetRequest extends FinalCommandStep<ProcessDefinition> {}

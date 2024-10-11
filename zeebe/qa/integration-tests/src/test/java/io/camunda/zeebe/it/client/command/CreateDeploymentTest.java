@@ -14,7 +14,7 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
-import io.camunda.zeebe.client.api.response.Process;
+import io.camunda.zeebe.client.api.response.ProcessDefinition;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -76,8 +76,8 @@ public final class CreateDeploymentTest {
     assertThat(result.getKey()).isGreaterThan(0);
     assertThat(result.getProcesses()).hasSize(1);
 
-    final Process deployedProcess = result.getProcesses().get(0);
-    assertThat(deployedProcess.getBpmnProcessId()).isEqualTo(processId);
+    final ProcessDefinition deployedProcess = result.getProcesses().get(0);
+    assertThat(deployedProcess.getProcessDefinitionId()).isEqualTo(processId);
     assertThat(deployedProcess.getVersion()).isEqualTo(1);
     assertThat(deployedProcess.getProcessDefinitionKey()).isGreaterThan(0);
     assertThat(deployedProcess.getResourceName()).isEqualTo(resourceName);

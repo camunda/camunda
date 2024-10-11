@@ -97,7 +97,8 @@ public class ZeebeDeploymentAnnotationProcessor extends AbstractZeebeAnnotationP
                       deploymentResult.getProcesses().stream()
                           .map(
                               wf ->
-                                  String.format("<%s:%d>", wf.getBpmnProcessId(), wf.getVersion())))
+                                  String.format(
+                                      "<%s:%d>", wf.getProcessDefinitionId(), wf.getVersion())))
                   .collect(Collectors.joining(",")));
         });
   }

@@ -21,11 +21,11 @@ import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.searchReq
 
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
+import io.camunda.zeebe.client.api.response.ProcessDefinition;
 import io.camunda.zeebe.client.api.search.SearchRequestPage;
 import io.camunda.zeebe.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.zeebe.client.api.search.query.FinalSearchQueryStep;
 import io.camunda.zeebe.client.api.search.query.ProcessDefinitionQuery;
-import io.camunda.zeebe.client.api.search.response.ProcessDefinition;
 import io.camunda.zeebe.client.api.search.response.SearchQueryResponse;
 import io.camunda.zeebe.client.api.search.sort.ProcessDefinitionSort;
 import io.camunda.zeebe.client.impl.http.HttpClient;

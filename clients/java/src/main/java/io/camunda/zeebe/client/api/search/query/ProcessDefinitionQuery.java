@@ -15,8 +15,8 @@
  */
 package io.camunda.zeebe.client.api.search.query;
 
+import io.camunda.zeebe.client.api.response.ProcessDefinition;
 import io.camunda.zeebe.client.api.search.filter.ProcessDefinitionFilter;
-import io.camunda.zeebe.client.api.search.response.ProcessDefinition;
 import io.camunda.zeebe.client.api.search.sort.ProcessDefinitionSort;
 
 public interface ProcessDefinitionQuery
