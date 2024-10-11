@@ -12,16 +12,16 @@ import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 
-public class RoleCreatedApplier implements TypedEventApplier<RoleIntent, RoleRecord> {
+public class RoleUpdatedApplier implements TypedEventApplier<RoleIntent, RoleRecord> {
 
   private final MutableRoleState roleState;
 
-  public RoleCreatedApplier(final MutableRoleState roleState) {
+  public RoleUpdatedApplier(final MutableRoleState roleState) {
     this.roleState = roleState;
   }
 
   @Override
   public void applyState(final long key, final RoleRecord value) {
-    roleState.create(value);
+    roleState.update(value);
   }
 }
