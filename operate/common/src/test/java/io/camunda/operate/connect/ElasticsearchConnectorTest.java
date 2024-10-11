@@ -34,7 +34,7 @@ class ElasticsearchConnectorTest {
   public void shouldNotDoClusterHealthCheckWhenDisabled() {
     final OperateProperties operateProperties = new OperateProperties();
     final OperateElasticsearchProperties esProperties = new OperateElasticsearchProperties();
-    operateProperties.setHealthCheckEnabled(false);
+    esProperties.setHealthCheckEnabled(false);
     operateProperties.setElasticsearch(esProperties);
     final ElasticsearchConnector connector = spy(new ElasticsearchConnector(operateProperties));
 
