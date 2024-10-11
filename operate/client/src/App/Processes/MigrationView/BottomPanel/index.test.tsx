@@ -18,6 +18,13 @@ import {open} from 'modules/mocks/diagrams';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {elements, Wrapper} from './tests/mocks';
 
+jest.mock('modules/stores/processes/processes.migration', () => ({
+  processesStore: {
+    migrationState: {selectedTargetProcess: {bpmnProcessId: 'orderProcess'}},
+    getSelectedProcessDetails: () => ({bpmnProcessId: 'orderProcess'}),
+  },
+}));
+
 const {
   requestForPayment,
   checkPayment,
