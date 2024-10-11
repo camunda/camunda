@@ -62,6 +62,7 @@
       <validValue name="TENANT">45</validValue>
 
       <!-- Management records / record not related to process automation -->
+      <validValue name="SCALE">253</validValue>
       <validValue name="CHECKPOINT">254</validValue>
     </enum>
 
