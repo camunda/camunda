@@ -2515,7 +2515,7 @@ final class JsonSerializableToJsonTest {
                     .setEmail("foo@bar")
                     .setPassword("f00b4r")
                     .setUserType(UserType.DEFAULT)
-                    .setRoleKey(2L),
+                    .addRoleKey(2L),
         """
         {
           "userKey": 1,
@@ -2524,7 +2524,7 @@ final class JsonSerializableToJsonTest {
           "email": "foo@bar",
           "password": "f00b4r",
           "userType": "DEFAULT",
-          "roleKey": 2
+          "roleKeysList": [2]
         }
         """
       },
@@ -2548,7 +2548,7 @@ final class JsonSerializableToJsonTest {
           "email": "foo@bar",
           "password": "f00b4r",
           "userType": "REGULAR",
-          "roleKey": -1
+          "roleKeysList": []
         }
         """
       },
@@ -2680,15 +2680,18 @@ final class JsonSerializableToJsonTest {
       {
         "Role record",
         (Supplier<RoleRecord>)
-            () -> new RoleRecord().setRoleKey(1L).setName("role").setEntityKey(2L).setEntityType(
-                EntityType.USER).setUserKey(2L),
+            () ->
+                new RoleRecord()
+                    .setRoleKey(1L)
+                    .setName("role")
+                    .setEntityKey(2L)
+                    .setEntityType(EntityType.USER),
         """
         {
           "roleKey": 1,
           "name": "role",
           "entityKey": 2,
-          "entityType": "USER",
-          "userKey": 2
+          "entityType": "USER"
         }
         """
       },
@@ -2703,8 +2706,7 @@ final class JsonSerializableToJsonTest {
           "roleKey": -1,
           "name": "",
           "entityKey": -1,
-          "entityType": "USER",
-          "userKey": -1
+          "entityType": "UNSPECIFIED"
         }
         """
       },

@@ -10,13 +10,18 @@ package io.camunda.zeebe.protocol.impl.record.value.user;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
 
 public final class UserRecord extends UnifiedRecordValue implements UserRecordValue {
@@ -27,7 +32,8 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
   private final StringProperty passwordProp = new StringProperty("password", "");
   private final EnumProperty<UserType> userTypeProp =
       new EnumProperty<>("userType", UserType.class, UserType.REGULAR);
-  private final LongProperty roleKeyProp = new LongProperty("roleKey", -1L);
+  private final ArrayProperty<LongValue> roleKeysProp =
+      new ArrayProperty<>("roleKeys", LongValue::new);
 
   public UserRecord() {
     super(7);
@@ -37,7 +43,7 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
         .declareProperty(emailProp)
         .declareProperty(passwordProp)
         .declareProperty(userTypeProp)
-        .declareProperty(roleKeyProp);
+        .declareProperty(roleKeysProp);
   }
 
   public void wrap(final UserRecord record) {
@@ -47,7 +53,7 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
     emailProp.setValue(record.getEmailBuffer());
     passwordProp.setValue(record.getPasswordBuffer());
     userTypeProp.setValue(record.getUserType());
-    roleKeyProp.setValue(record.getRoleKey());
+    setRoleKeysList(record.getRoleKeysList());
   }
 
   public UserRecord copy() {
@@ -58,7 +64,7 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
     copy.emailProp.setValue(BufferUtil.cloneBuffer(getEmailBuffer()));
     copy.passwordProp.setValue(BufferUtil.cloneBuffer(getPasswordBuffer()));
     copy.userTypeProp.setValue(getUserType());
-    copy.roleKeyProp.setValue(getRoleKey());
+    copy.setRoleKeysList(getRoleKeysList());
     return copy;
   }
 
@@ -142,12 +148,20 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
     return this;
   }
 
-  public long getRoleKey() {
-    return roleKeyProp.getValue();
+  public List<Long> getRoleKeysList() {
+    return StreamSupport.stream(roleKeysProp.spliterator(), false)
+        .map(LongValue::getValue)
+        .collect(Collectors.toList());
   }
 
-  public UserRecord setRoleKey(final long roleKey) {
-    roleKeyProp.setValue(roleKey);
+  public UserRecord setRoleKeysList(final List<Long> roleKeys) {
+    roleKeysProp.reset();
+    roleKeys.forEach(roleKey -> roleKeysProp.add().setValue(roleKey));
+    return this;
+  }
+
+  public UserRecord addRoleKey(final long roleKey) {
+    roleKeysProp.add().setValue(roleKey);
     return this;
   }
 

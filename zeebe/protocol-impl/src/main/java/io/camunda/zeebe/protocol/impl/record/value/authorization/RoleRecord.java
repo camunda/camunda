@@ -21,16 +21,14 @@ public class RoleRecord extends UnifiedRecordValue implements RoleRecordValue {
   private final StringProperty nameProp = new StringProperty("name", "");
   private final LongProperty entityKeyProp = new LongProperty("entityKey", -1L);
   private final EnumProperty<EntityType> entityTypeProp =
-      new EnumProperty<>("entityType", EntityType.class, EntityType.USER);
-  private final LongProperty userKeyProp = new LongProperty("userKey", -1L);
+      new EnumProperty<>("entityType", EntityType.class, EntityType.UNSPECIFIED);
 
   public RoleRecord() {
-    super(5);
+    super(4);
     declareProperty(roleKeyProp)
         .declareProperty(nameProp)
         .declareProperty(entityKeyProp)
-        .declareProperty(entityTypeProp)
-        .declareProperty(userKeyProp);
+        .declareProperty(entityTypeProp);
   }
 
   public void wrap(final RoleRecord record) {
@@ -38,7 +36,6 @@ public class RoleRecord extends UnifiedRecordValue implements RoleRecordValue {
     nameProp.setValue(record.getName());
     entityKeyProp.setValue(record.getEntityKey());
     entityTypeProp.setValue(record.getEntityType());
-    userKeyProp.setValue(record.getUserKey());
   }
 
   @Override
@@ -73,16 +70,6 @@ public class RoleRecord extends UnifiedRecordValue implements RoleRecordValue {
 
   public RoleRecord setEntityType(final EntityType entityType) {
     entityTypeProp.setValue(entityType);
-    return this;
-  }
-
-  @Override
-  public long getUserKey() {
-    return userKeyProp.getValue();
-  }
-
-  public RoleRecord setUserKey(final long userKey) {
-    userKeyProp.setValue(userKey);
     return this;
   }
 

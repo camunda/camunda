@@ -60,7 +60,7 @@ public class DbUserState implements UserState, MutableUserState {
   public void addRole(final long userKey, final long roleKey) {
     this.userKey.wrapLong(userKey);
     final var persistedUser = userByUserKeyColumnFamily.get(this.userKey);
-    persistedUser.getUser().setRoleKey(roleKey);
+    persistedUser.getUser().addRoleKey(roleKey);
     userByUserKeyColumnFamily.update(this.userKey, persistedUser);
   }
 

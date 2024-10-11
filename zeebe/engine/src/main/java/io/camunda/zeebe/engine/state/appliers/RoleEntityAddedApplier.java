@@ -29,7 +29,7 @@ public class RoleEntityAddedApplier implements TypedEventApplier<RoleIntent, Rol
   public void applyState(final long key, final RoleRecord value) {
     roleState.addEntity(value);
     if (value.getEntityType() == EntityType.USER) {
-      userState.addRole(value.getUserKey(), value.getRoleKey());
+      userState.addRole(value.getEntityKey(), value.getRoleKey());
     }
     // todo add entity to mapping state when implemented
   }

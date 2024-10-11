@@ -97,19 +97,13 @@ public class DbRoleState implements MutableRoleState {
     entityKey.wrapLong(roleRecord.getEntityKey());
     entityTypeValue.setEntityType(roleRecord.getEntityType());
     entityTypeByRoleColumnFamily.insert(fkRoleKeyAndEntityKey, entityTypeValue);
-
-    // update role record
-    final var persistedRole = roleColumnFamily.get(roleKey);
-    persistedRole.getRole().setEntityKey(roleRecord.getEntityKey());
-    persistedRole.getRole().setEntityType(roleRecord.getEntityType());
-    roleColumnFamily.update(roleKey, persistedRole);
   }
 
   @Override
   public Optional<PersistedRole> getRole(final long roleKey) {
     this.roleKey.wrapLong(roleKey);
     final var persistedRole = roleColumnFamily.get(this.roleKey);
-    return persistedRole != null ? Optional.of(persistedRole) : Optional.empty();
+    return Optional.ofNullable(persistedRole);
   }
 
   @Override
@@ -120,9 +114,10 @@ public class DbRoleState implements MutableRoleState {
   }
 
   @Override
-  public EntityType getEntityType(final long roleKey, final long entityKey) {
+  public Optional<EntityType> getEntityType(final long roleKey, final long entityKey) {
     this.roleKey.wrapLong(roleKey);
     this.entityKey.wrapLong(entityKey);
-    return entityTypeByRoleColumnFamily.get(fkRoleKeyAndEntityKey).getEntityType();
+    return Optional.ofNullable(
+        entityTypeByRoleColumnFamily.get(fkRoleKeyAndEntityKey).getEntityType());
   }
 }

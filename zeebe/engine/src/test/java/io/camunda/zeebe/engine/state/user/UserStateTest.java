@@ -219,6 +219,6 @@ public class UserStateTest {
 
     // then
     final var persistedUser = userState.getUser(userKey).get();
-    assertThat(persistedUser.getRoleKey()).isEqualTo(roleKey);
+    assertThat(persistedUser.getRoleKeysList()).contains(roleKey);
   }
 }
