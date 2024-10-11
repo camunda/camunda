@@ -256,7 +256,9 @@ public class CreateDocumentTest {
 
     // then
     assertThat(documentReference).isNotNull();
-    assertThat(documentReference.getMetadata().get("key1")).isEqualTo("value1");
-    assertThat(documentReference.getMetadata().get("key2")).isEqualTo("value2");
+    assertThat(documentReference.getMetadata().getCustomProperties().get("key1"))
+        .isEqualTo("value1");
+    assertThat(documentReference.getMetadata().getCustomProperties().get("key2"))
+        .isEqualTo("value2");
   }
 }
