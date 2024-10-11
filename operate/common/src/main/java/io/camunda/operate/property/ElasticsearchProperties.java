@@ -39,6 +39,9 @@ public class ElasticsearchProperties {
 
   private boolean createSchema = true;
 
+  /** Indicates whether operate does a proper health check for ES clusters. */
+  private boolean healthCheckEnabled = true;
+
   private String url;
   private String username;
   private String password;
@@ -118,6 +121,14 @@ public class ElasticsearchProperties {
 
   public void setCreateSchema(final boolean createSchema) {
     this.createSchema = createSchema;
+  }
+
+  public boolean isHealthCheckEnabled() {
+    return healthCheckEnabled;
+  }
+
+  public void setHealthCheckEnabled(final boolean healthCheckEnabled) {
+    this.healthCheckEnabled = healthCheckEnabled;
   }
 
   public String getPassword() {
