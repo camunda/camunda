@@ -31,6 +31,21 @@ public class UserTaskSortImpl extends SearchQuerySortBase<UserTaskSort> implemen
   }
 
   @Override
+  public UserTaskSort dueDate() {
+    return field("dueDate");
+  }
+
+  @Override
+  public UserTaskSort followUpDate() {
+    return field("followUpDate");
+  }
+
+  @Override
+  public UserTaskSort priority() {
+    return field("priority");
+  }
+
+  @Override
   protected UserTaskSort self() {
     return this;
   }

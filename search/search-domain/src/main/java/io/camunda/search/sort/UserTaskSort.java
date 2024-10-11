@@ -40,6 +40,16 @@ public final record UserTaskSort(List<FieldSorting> orderings) implements SortOp
       return this;
     }
 
+    public Builder dueDate() {
+      currentOrdering = new FieldSorting("dueDate", null);
+      return this;
+    }
+
+    public Builder followUpDate() {
+      currentOrdering = new FieldSorting("followUpDate", null);
+      return this;
+    }
+
     @Override
     protected Builder self() {
       return this;
