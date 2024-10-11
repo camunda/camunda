@@ -43,7 +43,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
   private static final Logger LOG = LoggerFactory.getLogger(OpensearchEngineClient.class);
   private static final ObjectMapper MAPPER = new ObjectMapper();
   private static final String OPERATE_DELETE_ARCHIVED_POLICY =
-      "/opensearch/operate_delete_archived_policy.json";
+      "/schema/opensearch/create/policy/operate_delete_archived_indices.json";
   private final OpenSearchClient client;
 
   public OpensearchEngineClient(final OpenSearchClient client) {
@@ -74,8 +74,6 @@ public class OpensearchEngineClient implements SearchEngineClient {
     final PutIndexTemplateRequest request = putIndexTemplateRequest(templateDescriptor, settings);
 
     try {
-      // opensearch doesn't support create query parameter in request builder so need to
-      // implement manually
       if (create
           && client
               .indices()
@@ -118,10 +116,6 @@ public class OpensearchEngineClient implements SearchEngineClient {
       final String namePattern, final MappingSource mappingSource) {
     try {
       final Map<String, TypeMapping> mappings = getCurrentMappings(mappingSource, namePattern);
-      // if this is managed to be made generic without repeating code also apply this to tests
-      //      there are so many tests which contain the EXACT same code but the type of `client` is
-      // different.
-      //      however all the method calls etc... are the same
       return mappings.entrySet().stream()
           .collect(
               Collectors.toMap(
@@ -236,8 +230,6 @@ public class OpensearchEngineClient implements SearchEngineClient {
 
   private Map<String, TypeMapping> getCurrentMappings(
       final MappingSource mappingSource, final String namePattern) throws IOException {
-    //    to avoid duplication we set the value of the client based on an enum and that var is smart
-    // enough to work it out?
     if (mappingSource == MappingSource.INDEX) {
       return client.indices().getMapping(req -> req.index(namePattern)).result().entrySet().stream()
           .collect(Collectors.toMap(Entry::getKey, e -> e.getValue().mappings()));

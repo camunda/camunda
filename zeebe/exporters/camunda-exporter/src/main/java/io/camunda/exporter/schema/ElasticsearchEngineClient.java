@@ -136,8 +136,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     } catch (final IOException e) {
       final var errMsg =
           String.format(
-              "settings PUT failed for the following indices [%s]",
-              SearchEngineClient.listIndices(indexDescriptors));
+              "settings PUT failed for the following indices [%s]", listIndices(indexDescriptors));
       LOG.error(errMsg, e);
       throw new ElasticsearchExporterException(errMsg, e);
     }

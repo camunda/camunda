@@ -169,13 +169,16 @@ public class OpensearchEngineClientIT {
 
   @Test
   void shouldRetrieveAllIndexMappingsWithImplementationAgnosticReturnType() {
+    // given
     final var index =
         SchemaTestUtil.mockIndex("index_qualified_name", "alias", "index_name", "/mappings.json");
 
     opensearchEngineClient.createIndex(index, new IndexSettings());
 
+    // when
     final var mappings = opensearchEngineClient.getMappings("*", MappingSource.INDEX);
 
+    // then
     assertThat(mappings.size()).isEqualTo(1);
     assertThat(mappings.get("index_qualified_name").dynamic()).isEqualTo("strict");
 
@@ -193,15 +196,18 @@ public class OpensearchEngineClientIT {
 
   @Test
   void shouldRetrieveAllIndexTemplateMappingsWithImplementationAgnosticReturnType() {
+    // given
     final var template =
         SchemaTestUtil.mockIndexTemplate(
             "index_name", "index_pattern.*", "alias", List.of(), "template_name", "/mappings.json");
 
     opensearchEngineClient.createIndexTemplate(template, new IndexSettings(), true);
 
+    // when
     final var templateMappings =
         opensearchEngineClient.getMappings("template_name", MappingSource.INDEX_TEMPLATE);
 
+    // then
     assertThat(templateMappings.size()).isEqualTo(1);
     assertThat(templateMappings.get("template_name").properties())
         .containsExactlyInAnyOrder(
@@ -217,14 +223,17 @@ public class OpensearchEngineClientIT {
 
   @Test
   void shouldUpdateSettingsWithPutSettingsRequest() throws IOException {
+    // given
     final var index =
         SchemaTestUtil.mockIndex("index_name", "alias", "index_name", "/mappings.json");
 
     opensearchEngineClient.createIndex(index, new IndexSettings());
 
+    // when
     final Map<String, String> newSettings = Map.of("index.refresh_interval", "5s");
     opensearchEngineClient.putSettings(List.of(index), newSettings);
 
+    // then
     final var indices = openSearchClient.indices().get(req -> req.index("index_name"));
 
     assertThat(indices.result().size()).isEqualTo(1);
@@ -234,8 +243,10 @@ public class OpensearchEngineClientIT {
 
   @Test
   void shouldCreateIndexLifeCyclePolicy() throws IOException {
+    // given, when
     opensearchEngineClient.putIndexLifeCyclePolicy("policy_name", "20d");
 
+    // then
     final var req =
         Requests.builder().method("GET").endpoint("/_plugins/_ism/policies/policy_name").build();
     try (final var response = openSearchClient.generic().execute(req)) {
