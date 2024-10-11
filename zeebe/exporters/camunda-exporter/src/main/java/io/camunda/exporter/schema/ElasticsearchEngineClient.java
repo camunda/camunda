@@ -247,21 +247,6 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     return getClass().getResourceAsStream(classpathFileName);
   }
 
-  private InputStream appendToFileSchemaSettings(
-      final InputStream file, final IndexSettings settingsToAppend) throws IOException {
-    final var map = MAPPER.readValue(file, new TypeReference<Map<String, Object>>() {});
-
-    final var settingsBlock =
-        (Map<String, Object>) map.computeIfAbsent("settings", k -> new HashMap<>());
-    final var indexBlock =
-        (Map<String, Object>) settingsBlock.computeIfAbsent("index", k -> new HashMap<>());
-
-    indexBlock.put("number_of_shards", settingsToAppend.getNumberOfShards());
-    indexBlock.put("number_of_replicas", settingsToAppend.getNumberOfReplicas());
-
-    return new ByteArrayInputStream(MAPPER.writeValueAsBytes(map));
-  }
-
   private PutIndexTemplateRequest putIndexTemplateRequest(
       final IndexTemplateDescriptor indexTemplateDescriptor,
       final IndexSettings settings,
@@ -273,7 +258,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       final var templateFields =
           deserializeJson(
               IndexTemplateMapping._DESERIALIZER,
-              appendToFileSchemaSettings(templateFile, settings));
+              SearchEngineClient.appendToFileSchemaSettings(templateFile, settings, MAPPER));
 
       return new PutIndexTemplateRequest.Builder()
           .name(indexTemplateDescriptor.getTemplateName())
@@ -303,7 +288,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       final var templateFields =
           deserializeJson(
               IndexTemplateMapping._DESERIALIZER,
-              appendToFileSchemaSettings(templateFile, settings));
+              SearchEngineClient.appendToFileSchemaSettings(templateFile, settings, MAPPER));
 
       return new CreateIndexRequest.Builder()
           .index(indexDescriptor.getFullQualifiedName())
