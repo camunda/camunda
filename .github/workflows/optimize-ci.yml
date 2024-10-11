@@ -99,7 +99,7 @@ jobs:
       - name: Install
         uses: ./.github/actions/run-maven
         with:
-          parameters: -f optimize/pom.xml install -Dskip.fe.build -Dskip.docker -DskipTests -PrunAssembly
+          parameters: -f optimize/pom.xml install -Dskip.fe.build -Dskip.docker -DskipTests -PrunAssembly -T 1
       - name: Verify optimize/qa/schema-integrity-tests
         uses: ./.github/actions/run-maven
         with:
@@ -162,7 +162,7 @@ jobs:
       - name: Install
         uses: ./.github/actions/run-maven
         with:
-          parameters: -f optimize/pom.xml install -Dskip.fe.build -Dskip.docker -DskipTests -PrunAssembly
+          parameters: -f optimize/pom.xml install -Dskip.fe.build -Dskip.docker -DskipTests -PrunAssembly -T 1
       - name: Verify optimize/qa/schema-integrity-tests
         uses: ./.github/actions/run-maven
         with:
