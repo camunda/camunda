@@ -196,4 +196,29 @@ public class UserStateTest {
     // then
     assertThat(persistedUser).isEmpty();
   }
+
+  @Test
+  void shouldAddRole() {
+    // given
+    final long userKey = 1L;
+    final var username = "username";
+    final var name = "Foo";
+    final var email = "foo@bar.com";
+    final var password = "password";
+    userState.create(
+        new UserRecord()
+            .setUserKey(userKey)
+            .setUsername(username)
+            .setName(name)
+            .setEmail(email)
+            .setPassword(password));
+
+    // when
+    final long roleKey = 1L;
+    userState.addRole(userKey, roleKey);
+
+    // then
+    final var persistedUser = userState.getUser(userKey).get();
+    assertThat(persistedUser.getRoleKey()).isEqualTo(roleKey);
+  }
 }
