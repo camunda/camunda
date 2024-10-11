@@ -39,6 +39,10 @@ public final class RecordStream extends ExporterRecordStream<RecordValue, Record
     return supply(dropWhile(Predicate.not(lowerBound))).limit(upperBound::test);
   }
 
+  public RecordStream after(final long lowerBoundPosition) {
+    return supply(dropWhile(r -> r.getPosition() <= lowerBoundPosition));
+  }
+
   public RecordStream limitToProcessInstance(final long processInstanceKey) {
     return limit(
         r ->
