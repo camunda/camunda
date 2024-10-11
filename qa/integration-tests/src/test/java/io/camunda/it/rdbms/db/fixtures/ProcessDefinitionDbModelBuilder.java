@@ -12,7 +12,9 @@ import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
 public class ProcessDefinitionDbModelBuilder {
 
   private Long processDefinitionKey;
-  private String bpmnProcessId;
+  private String processDefinitionId;
+  private String resourceName;
+  private String bpmnXml;
   private String name;
   private String tenantId;
   private String versionTag;
@@ -27,8 +29,18 @@ public class ProcessDefinitionDbModelBuilder {
     return this;
   }
 
-  public ProcessDefinitionDbModelBuilder bpmnProcessId(final String bpmnProcessId) {
-    this.bpmnProcessId = bpmnProcessId;
+  public ProcessDefinitionDbModelBuilder processDefinitionId(final String processDefinitionId) {
+    this.processDefinitionId = processDefinitionId;
+    return this;
+  }
+
+  public ProcessDefinitionDbModelBuilder resourceName(final String resourceName) {
+    this.resourceName = resourceName;
+    return this;
+  }
+
+  public ProcessDefinitionDbModelBuilder bpmnXml(final String bpmnXml) {
+    this.bpmnXml = bpmnXml;
     return this;
   }
 
@@ -55,6 +67,13 @@ public class ProcessDefinitionDbModelBuilder {
   // Build method to create the record
   public ProcessDefinitionDbModel build() {
     return new ProcessDefinitionDbModel(
-        processDefinitionKey, bpmnProcessId, name, tenantId, versionTag, version);
+        processDefinitionKey,
+        processDefinitionId,
+        resourceName,
+        name,
+        tenantId,
+        versionTag,
+        version,
+        bpmnXml);
   }
 }

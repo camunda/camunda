@@ -15,6 +15,8 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
+import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,15 +42,15 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
   @Override
   public void export(final Record<Process> record) {
     final Process value = record.getValue();
-    processDefinitionWriter.save(map(value));
+    processDefinitionWriter.create(map(value));
   }
 
   private ProcessDefinitionDbModel map(final Process value) {
-    String processName = null;
+    Optional<ProcessEntity> processEntity = Optional.empty();
+
     try {
-      final var xml =
+      processEntity =
           new XMLUtil().extractDiagramData(value.getResource(), value.getBpmnProcessId());
-      processName = xml.map(ProcessEntity::getName).orElse(null);
     } catch (final Exception e) {
       // skip
       LOG.debug("Unable to parse XML diagram", e);
@@ -57,9 +59,11 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
     return new ProcessDefinitionDbModel(
         value.getProcessDefinitionKey(),
         value.getBpmnProcessId(),
-        processName,
+        value.getResourceName(),
+        processEntity.map(ProcessEntity::getName).orElse(null),
         value.getTenantId(),
         value.getVersionTag(),
-        value.getVersion());
+        value.getVersion(),
+        new String(value.getResource(), StandardCharsets.UTF_8));
   }
 }

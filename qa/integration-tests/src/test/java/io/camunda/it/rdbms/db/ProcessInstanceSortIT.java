@@ -7,7 +7,7 @@
  */
 package io.camunda.it.rdbms.db;
 
-import static io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures.createAndSaveProcessDefinition;
+import static io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures.createAndSaveProcessDefinition;
 import static io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures.createAndSaveProcessInstances;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -211,28 +211,28 @@ public class ProcessInstanceSortIT {
         rdbmsWriter,
         ProcessDefinitionFixtures.createRandomized(
             b ->
-                b.bpmnProcessId(bpmProcessId)
+                b.processDefinitionId(bpmProcessId)
                     .processDefinitionKey(processInstanceKey)
                     .name("Test Process 1")));
     createAndSaveProcessDefinition(
         rdbmsWriter,
         ProcessDefinitionFixtures.createRandomized(
             b ->
-                b.bpmnProcessId(bpmProcessId)
+                b.processDefinitionId(bpmProcessId)
                     .processDefinitionKey(processInstanceKey2)
                     .name("Test Process 2")));
     createAndSaveProcessDefinition(
         rdbmsWriter,
         ProcessDefinitionFixtures.createRandomized(
             b ->
-                b.bpmnProcessId(bpmProcessId)
+                b.processDefinitionId(bpmProcessId)
                     .processDefinitionKey(processInstanceKey3)
                     .name("Test Process 3")));
     createAndSaveProcessDefinition(
         rdbmsWriter,
         ProcessDefinitionFixtures.createRandomized(
             b ->
-                b.bpmnProcessId(bpmProcessId)
+                b.processDefinitionId(bpmProcessId)
                     .processDefinitionKey(processInstanceKey4)
                     .name("Test Process 4")));
     createAndSaveProcessInstances(
@@ -290,28 +290,28 @@ public class ProcessInstanceSortIT {
         rdbmsWriter,
         ProcessDefinitionFixtures.createRandomized(
             b ->
-                b.bpmnProcessId(bpmProcessId)
+                b.processDefinitionId(bpmProcessId)
                     .processDefinitionKey(processInstanceKey)
                     .versionTag("Version 1")));
     createAndSaveProcessDefinition(
         rdbmsWriter,
         ProcessDefinitionFixtures.createRandomized(
             b ->
-                b.bpmnProcessId(bpmProcessId)
+                b.processDefinitionId(bpmProcessId)
                     .processDefinitionKey(processInstanceKey2)
                     .versionTag("Version 2")));
     createAndSaveProcessDefinition(
         rdbmsWriter,
         ProcessDefinitionFixtures.createRandomized(
             b ->
-                b.bpmnProcessId(bpmProcessId)
+                b.processDefinitionId(bpmProcessId)
                     .processDefinitionKey(processInstanceKey3)
                     .versionTag("Version 3")));
     createAndSaveProcessDefinition(
         rdbmsWriter,
         ProcessDefinitionFixtures.createRandomized(
             b ->
-                b.bpmnProcessId(bpmProcessId)
+                b.processDefinitionId(bpmProcessId)
                     .processDefinitionKey(processInstanceKey4)
                     .versionTag("Version 4")));
     createAndSaveProcessInstances(
@@ -620,15 +620,15 @@ public class ProcessInstanceSortIT {
     final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
 
     assertThatThrownBy(
-            () ->
-                processInstanceReader
-                    .search(
-                        new ProcessInstanceDbQuery(
-                            new ProcessInstanceFilter.Builder().build(),
-                            new ProcessInstanceSort(
-                                List.of(new FieldSorting("foo", SortOrder.ASC))),
-                            SearchQueryPage.of(b -> b)))
-                    .hits())
+        () ->
+            processInstanceReader
+                .search(
+                    new ProcessInstanceDbQuery(
+                        new ProcessInstanceFilter.Builder().build(),
+                        new ProcessInstanceSort(
+                            List.of(new FieldSorting("foo", SortOrder.ASC))),
+                        SearchQueryPage.of(b -> b)))
+                .hits())
         .isInstanceOf(BadSqlGrammarException.class);
   }
 }

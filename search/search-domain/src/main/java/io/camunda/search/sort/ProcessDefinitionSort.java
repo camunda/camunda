@@ -9,12 +9,18 @@ package io.camunda.search.sort;
 
 import io.camunda.util.ObjectBuilder;
 import java.util.List;
+import java.util.function.Function;
 
 public record ProcessDefinitionSort(List<FieldSorting> orderings) implements SortOption {
 
   @Override
   public List<FieldSorting> getFieldSortings() {
     return orderings;
+  }
+
+  public static ProcessDefinitionSort of(
+      final Function<ProcessDefinitionSort.Builder, ObjectBuilder<ProcessDefinitionSort>> fn) {
+    return SortOptionBuilders.processDefinition(fn);
   }
 
   public static final class Builder

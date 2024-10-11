@@ -67,7 +67,7 @@ public class ExecutionQueue {
 
     final var startMillis = System.currentTimeMillis();
     final var session =
-        sessionFactory.openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED);
+        sessionFactory.openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED);
 
     var flushedElements = 0;
     try {

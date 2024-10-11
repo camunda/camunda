@@ -29,6 +29,14 @@
     </createTable>
   </changeSet>
 
+  <changeSet id="update_process_deployment_table_1" author="cthiel">
+    <addColumn tableName="PROCESS_DEFINITION">
+      <column name="RESOURCE_NAME" type="VARCHAR(400)" />
+      <column name="BPMN_XML" type="CLOB" />
+    </addColumn>
+  </changeSet>
+
+
   <changeSet id="create_process_instance_table" author="cthiel">
     <createTable tableName="PROCESS_INSTANCE">
       <column name="PROCESS_INSTANCE_KEY" type="BIGINT">

@@ -15,16 +15,20 @@ import io.camunda.exporter.rdbms.RdbmsExporter;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.ImmutableProcess;
+import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.Collections;
 import java.util.List;
@@ -36,7 +40,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 
 @Tag("rdbms")
-@SpringBootTest(classes = {RdbmsTestConfiguration.class})
+@SpringBootTest(classes = {RdbmsTestConfiguration.class}, properties = {
+    "logging.level.io.camunda.db.rdbms=DEBUG", "logging.level.io.camunda.exporter.rdbms=DEBUG"})
 @TestPropertySource(properties = {"spring.liquibase.enabled=false", "camunda.database.type=rdbms"})
 class RdbmsExporterIT {
 
@@ -44,7 +49,8 @@ class RdbmsExporterIT {
 
   private final ProtocolFactory factory = new ProtocolFactory();
 
-  @Autowired private RdbmsService rdbmsService;
+  @Autowired
+  private RdbmsService rdbmsService;
 
   private RdbmsExporter exporter;
 
@@ -72,6 +78,23 @@ class RdbmsExporterIT {
         ((ProcessInstanceRecordValue) processInstanceRecord.getValue()).getProcessInstanceKey();
     final var processInstance = rdbmsService.getProcessInstanceReader().findOne(key);
     assertThat(processInstance).isNotNull();
+  }
+
+  @Test
+  public void shouldExportProcessDefinition() {
+    // given
+    final var processDefinitionRecord = getProcessDefinitionCreatedRecord(1L);
+
+    // when
+    exporter.export(processDefinitionRecord);
+    // and we do a manual flush
+    exporter.flushExecutionQueue();
+
+    // then
+    final var key =
+        ((Process) processDefinitionRecord.getValue()).getProcessDefinitionKey();
+    final var processDefinition = rdbmsService.getProcessDefinitionReader().findOne(key);
+    assertThat(processDefinition).isNotEmpty();
   }
 
   @Test
@@ -119,6 +142,28 @@ class RdbmsExporterIT {
             ImmutableProcessInstanceRecordValue.builder()
                 .from((ProcessInstanceRecordValue) recordValueRecord.getValue())
                 .withBpmnElementType(BpmnElementType.PROCESS)
+                .withVersion(1)
+                .build())
+        .build();
+  }
+
+  private ImmutableRecord<RecordValue> getProcessDefinitionCreatedRecord(final Long position) {
+    final Record<RecordValue> recordValueRecord =
+        factory.generateRecord(ValueType.PROCESS);
+
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withIntent(ProcessIntent.CREATED)
+        .withPosition(position)
+        .withTimestamp(System.currentTimeMillis())
+        .withPartitionId(Protocol.decodePartitionId(recordValueRecord.getKey()))
+        .withValue(
+            ImmutableProcess.builder()
+                .from((Process) recordValueRecord.getValue())
+//                .withBpmnProcessId("test-process")
+//                .withVersionTag("test-tag")
+//                .withResourceName("test.bpmn")
+//                .withTenantId("test-tenant")
                 .withVersion(1)
                 .build())
         .build();

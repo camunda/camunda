@@ -7,7 +7,7 @@
  */
 package io.camunda.it.rdbms.db;
 
-import static io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures.createAndSaveProcessDefinition;
+import static io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures.createAndSaveProcessDefinition;
 import static io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures.createAndSaveProcessInstance;
 import static io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures.createAndSaveRandomProcessInstances;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,9 +45,11 @@ public class ProcessInstanceSpecificFilterIT {
 
   public static final OffsetDateTime NOW = OffsetDateTime.now();
 
-  @Autowired private RdbmsService rdbmsService;
+  @Autowired
+  private RdbmsService rdbmsService;
 
-  @Autowired private ProcessInstanceReader processInstanceReader;
+  @Autowired
+  private ProcessInstanceReader processInstanceReader;
 
   private RdbmsWriter rdbmsWriter;
 
@@ -64,7 +66,7 @@ public class ProcessInstanceSpecificFilterIT {
         ProcessDefinitionFixtures.createRandomized(
             b ->
                 b.processDefinitionKey(1337L)
-                    .bpmnProcessId("test-process")
+                    .processDefinitionId("test-process")
                     .name("Test Process")
                     .versionTag("Version 1")));
     createAndSaveRandomProcessInstances(rdbmsWriter);

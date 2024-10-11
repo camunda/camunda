@@ -34,8 +34,7 @@ public record SearchQueryPage(
   }
 
   public SearchQueryPage sanitize() {
-    final var newFrom =
-        (from == null) ? DEFAULT_FROM : Math.max(0, Math.min(SearchQueryPage.DEFAULT_FROM, from));
+    final var newFrom = (from == null) ? DEFAULT_FROM : Math.max(0, from);
     final var newSize =
         (size == null) ? DEFAULT_SIZE : Math.max(0, Math.min(SearchQueryPage.DEFAULT_SIZE, size));
 

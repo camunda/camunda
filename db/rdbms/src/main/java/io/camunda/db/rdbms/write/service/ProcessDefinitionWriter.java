@@ -20,7 +20,7 @@ public class ProcessDefinitionWriter {
     this.executionQueue = executionQueue;
   }
 
-  public void save(final ProcessDefinitionDbModel processDefinition) {
+  public void create(final ProcessDefinitionDbModel processDefinition) {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.PROCESS_DEFINITION,

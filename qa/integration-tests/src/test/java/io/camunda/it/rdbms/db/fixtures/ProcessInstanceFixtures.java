@@ -8,7 +8,6 @@
 package io.camunda.it.rdbms.db.fixtures;
 
 import io.camunda.db.rdbms.write.RdbmsWriter;
-import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -24,7 +23,8 @@ public final class ProcessInstanceFixtures {
   private static final Random RANDOM = new Random(System.nanoTime());
   private static final OffsetDateTime NOW = OffsetDateTime.now();
 
-  private ProcessInstanceFixtures() {}
+  private ProcessInstanceFixtures() {
+  }
 
   public static Long nextKey() {
     return ID_COUNTER.incrementAndGet();
@@ -77,12 +77,6 @@ public final class ProcessInstanceFixtures {
     for (final ProcessInstanceDbModel processInstance : processInstanceList) {
       rdbmsWriter.getProcessInstanceWriter().create(processInstance);
     }
-    rdbmsWriter.flush();
-  }
-
-  public static void createAndSaveProcessDefinition(
-      final RdbmsWriter rdbmsWriter, final ProcessDefinitionDbModel processDefinition) {
-    rdbmsWriter.getProcessDefinitionWriter().save(processDefinition);
     rdbmsWriter.flush();
   }
 }

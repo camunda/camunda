@@ -10,7 +10,11 @@ package io.camunda.db.rdbms.write.domain;
 public record ProcessDefinitionDbModel(
     Long processDefinitionKey,
     String processDefinitionId,
+    String resourceName,
     String name,
     String tenantId,
     String versionTag,
-    int version) {}
+    int version,
+    String bpmnXml) {
+
+}
