@@ -20,9 +20,6 @@ public class TaskEntity extends TasklistEntity<TaskEntity> {
   private String flowNodeInstanceId;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
-  private Integer partitionId;
-
-  @JsonInclude(JsonInclude.Include.NON_NULL)
   private OffsetDateTime completionTime;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -104,7 +101,6 @@ public class TaskEntity extends TasklistEntity<TaskEntity> {
     super(flowNodeInstanceId, key, tenantId, partitionId);
     this.flowNodeBpmnId = flowNodeBpmnId;
     this.flowNodeInstanceId = flowNodeInstanceId;
-    this.partitionId = partitionId;
     this.completionTime = completionTime;
     this.processInstanceId = processInstanceId;
     this.position = position;
@@ -143,16 +139,6 @@ public class TaskEntity extends TasklistEntity<TaskEntity> {
 
   public TaskEntity setFlowNodeInstanceId(final String flowNodeInstanceId) {
     this.flowNodeInstanceId = flowNodeInstanceId;
-    return this;
-  }
-
-  @Override
-  public Integer getPartitionId() {
-    return partitionId;
-  }
-
-  public TaskEntity setPartitionId(final Integer partitionId) {
-    this.partitionId = partitionId;
     return this;
   }
 
