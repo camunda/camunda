@@ -7,9 +7,11 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.authorization;
 
+import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
@@ -18,6 +20,9 @@ public class RoleRecord extends UnifiedRecordValue implements RoleRecordValue {
   private final LongProperty roleKeyProp = new LongProperty("roleKey", -1L);
   private final StringProperty nameProp = new StringProperty("name", "");
   private final LongProperty entityKeyProp = new LongProperty("entityKey", -1L);
+  private final EnumProperty<EntityType> entityTypeProp =
+      new EnumProperty<>("entityType", EntityType.class, EntityType.USER);
+  private final LongProperty userKeyProp = new LongProperty("userKey", -1L);
 
   public RoleRecord() {
     super(3);
@@ -53,6 +58,26 @@ public class RoleRecord extends UnifiedRecordValue implements RoleRecordValue {
   @Override
   public long getEntityKey() {
     return entityKeyProp.getValue();
+  }
+
+  @Override
+  public EntityType getEntityType() {
+    return entityTypeProp.getValue();
+  }
+
+  public RoleRecord setEntityType(final EntityType entityType) {
+    entityTypeProp.setValue(entityType);
+    return this;
+  }
+
+  @Override
+  public long getUserKey() {
+    return userKeyProp.getValue();
+  }
+
+  public RoleRecord setUserKey(final long userKey) {
+    userKeyProp.setValue(userKey);
+    return this;
   }
 
   public RoleRecord setEntityKey(final long entityKey) {

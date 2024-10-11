@@ -31,4 +31,10 @@ public interface RoleRecordValue extends RecordValue {
 
   /** The key of a user/mapping to assign/remove from a role. */
   long getEntityKey();
+
+  /** The type of the entity to assign/remove from a role. */
+  EntityType getEntityType();
+
+  /** The key of the user to assign/remove from a role. */
+  long getUserKey();
 }
