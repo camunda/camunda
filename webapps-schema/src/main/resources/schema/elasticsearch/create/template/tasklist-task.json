@@ -117,9 +117,6 @@
       },
       "isTruncated": {
         "type": "boolean"
-      },
-      "dataType": {
-        "type": "keyword"
       }
     }
   }
