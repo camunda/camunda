@@ -41,7 +41,6 @@ final class CommandApiServiceStep extends AbstractBrokerStartupStep {
 
     final var commandApiServiceActor = brokerShutdownContext.getCommandApiService();
 
-    brokerShutdownContext.removePartitionListener(commandApiServiceActor);
     brokerShutdownContext
         .getDiskSpaceUsageMonitor()
         .removeDiskUsageListener(commandApiServiceActor);
@@ -85,7 +84,6 @@ final class CommandApiServiceStep extends AbstractBrokerStartupStep {
         proceed(
             () -> {
               brokerStartupContext.setCommandApiService(commandApiService);
-              brokerStartupContext.addPartitionListener(commandApiService);
               brokerStartupContext
                   .getDiskSpaceUsageMonitor()
                   .addDiskUsageListener(commandApiService);

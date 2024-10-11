@@ -87,6 +87,17 @@ public class ControlledActorSchedulerExtension implements BeforeEachCallback, Af
     clock.setCurrentTime(currentTime);
   }
 
+<<<<<<< HEAD:scheduler/src/test/java/io/camunda/zeebe/scheduler/testing/ControlledActorSchedulerExtension.java
+=======
+  public ControlledActorClock getClock() {
+    return clock;
+  }
+
+  public ActorScheduler getActorScheduler() {
+    return actorScheduler;
+  }
+
+>>>>>>> a00267fd (fix: complete future with error when leadership change is cancelled):zeebe/scheduler/src/test/java/io/camunda/zeebe/scheduler/testing/ControlledActorSchedulerExtension.java
   static final class ControlledActorThreadFactory implements ActorThreadFactory {
     private ControlledActorThread controlledThread;
 
