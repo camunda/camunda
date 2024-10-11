@@ -102,4 +102,29 @@ public class CamundaProcessTestExtensionIT {
     assertThat(Duration.between(timeBefore, timeAfter))
         .isCloseTo(timerDuration, Duration.ofSeconds(10));
   }
+
+  @Test
+  void shouldFail() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .name("start")
+            .zeebeOutputExpression("\"active\"", "status")
+            .userTask()
+            .name("task")
+            .endEvent()
+            .name("end")
+            .zeebeOutputExpression("\"ok\"", "result")
+            .done();
+
+    client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+
+    // when
+    final ProcessInstanceEvent processInstance =
+        client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
+
+    // then
+    CamundaAssert.assertThat(processInstance).isCompleted();
+  }
 }
