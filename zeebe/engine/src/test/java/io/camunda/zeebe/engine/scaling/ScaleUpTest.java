@@ -117,7 +117,8 @@ public class ScaleUpTest {
             rejection -> {
               assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
               assertThat(rejection.getRejectionReason())
-                  .isEqualTo("Partition count must be at least 1");
+                  .isEqualTo(
+                      "Desired partition count must be greater than current partition count");
             });
   }
 
