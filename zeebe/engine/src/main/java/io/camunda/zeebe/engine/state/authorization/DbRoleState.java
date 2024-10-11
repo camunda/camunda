@@ -16,8 +16,8 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Optional;
 
 public class DbRoleState implements MutableRoleState {
@@ -92,6 +92,20 @@ public class DbRoleState implements MutableRoleState {
   }
 
   @Override
+  public void addEntity(final RoleRecord roleRecord) {
+    roleKey.wrapLong(roleRecord.getRoleKey());
+    entityKey.wrapLong(roleRecord.getEntityKey());
+    entityTypeValue.setEntityType(roleRecord.getEntityType());
+    entityTypeByRoleColumnFamily.insert(fkRoleKeyAndEntityKey, entityTypeValue);
+
+    // update role record
+    final var persistedRole = roleColumnFamily.get(roleKey);
+    persistedRole.getRole().setEntityKey(roleRecord.getEntityKey());
+    persistedRole.getRole().setEntityType(roleRecord.getEntityType());
+    roleColumnFamily.update(roleKey, persistedRole);
+  }
+
+  @Override
   public Optional<PersistedRole> getRole(final long roleKey) {
     this.roleKey.wrapLong(roleKey);
     final var persistedRole = roleColumnFamily.get(this.roleKey);
@@ -103,5 +117,12 @@ public class DbRoleState implements MutableRoleState {
     this.roleName.wrapString(roleName);
     final var fkRoleKey = roleByNameColumnFamily.get(this.roleName);
     return fkRoleKey != null ? fkRoleKey.inner().getValue() : -1;
+  }
+
+  @Override
+  public EntityType getEntityType(final long roleKey, final long entityKey) {
+    this.roleKey.wrapLong(roleKey);
+    this.entityKey.wrapLong(entityKey);
+    return entityTypeByRoleColumnFamily.get(fkRoleKeyAndEntityKey).getEntityType();
   }
 }
