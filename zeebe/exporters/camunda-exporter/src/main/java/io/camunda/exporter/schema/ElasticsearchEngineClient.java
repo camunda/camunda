@@ -7,6 +7,9 @@
  */
 package io.camunda.exporter.schema;
 
+import static io.camunda.exporter.utils.SearchEngineClientUtils.listIndices;
+import static io.camunda.exporter.utils.SearchEngineClientUtils.mapToSettings;
+
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
@@ -29,7 +32,6 @@ import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -37,7 +39,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -158,27 +159,16 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
   private PutIndicesSettingsRequest putIndexSettingsRequest(
       final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings) {
-    try (final var settingsStream =
-        IOUtils.toInputStream(
-            MAPPER.writeValueAsString(toAppendSettings), StandardCharsets.UTF_8)) {
-
-      return new PutIndicesSettingsRequest.Builder()
-          .index(listIndices(indexDescriptors))
-          .withJson(settingsStream)
-          .build();
-    } catch (final IOException e) {
-      throw new ElasticsearchExporterException(
-          String.format(
-              "Failed to serialise settings in PutSettingsRequest for indices %s",
-              listIndices(indexDescriptors)),
-          e);
-    }
-  }
-
-  private String listIndices(final List<IndexDescriptor> indexDescriptors) {
-    return indexDescriptors.stream()
-        .map(IndexDescriptor::getFullQualifiedName)
-        .collect(Collectors.joining(","));
+    final co.elastic.clients.elasticsearch.indices.IndexSettings settings =
+        mapToSettings(
+            toAppendSettings,
+            (inp) ->
+                deserializeJson(
+                    co.elastic.clients.elasticsearch.indices.IndexSettings._DESERIALIZER, inp));
+    return new PutIndicesSettingsRequest.Builder()
+        .index(listIndices(indexDescriptors))
+        .settings(settings)
+        .build();
   }
 
   public PutLifecycleRequest putLifecycleRequest(
