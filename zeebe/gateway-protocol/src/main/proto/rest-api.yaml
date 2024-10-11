@@ -2818,10 +2818,6 @@ components:
           type: integer
           description: The process definition key.
           format: int64
-        rootProcessInstanceKey:
-          type: integer
-          description: The root process instance key.
-          format: int64
         parentProcessInstanceKey:
           type: integer
           description: The parent process instance key.
@@ -2896,10 +2892,6 @@ components:
         processDefinitionKey:
           type: integer
           description: The process definition key.
-          format: int64
-        rootProcessInstanceKey:
-          type: integer
-          description: The root process instance key.
           format: int64
         parentProcessInstanceKey:
           type: integer
