@@ -17,7 +17,6 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.ServerTransport;
@@ -86,19 +85,17 @@ public final class CommandApiServiceImpl extends Actor
       final long term,
       final LogStream logStream,
       final QueryService queryService) {
-    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-    actor.call(
+    return actor.call(
         () -> {
+          // create the writer immediately so if the logStream is closed, this will throw an
+          // exception immediately
+          final var logStreamWriter = logStream.newLogStreamWriter();
           leadPartitions.add(partitionId);
           queryHandler.addPartition(partitionId, queryService);
           serverTransport.subscribe(partitionId, RequestType.QUERY, queryHandler);
-
-          final var logStreamWriter = logStream.newLogStreamWriter();
           commandHandler.addPartition(partitionId, logStreamWriter);
           serverTransport.subscribe(partitionId, RequestType.COMMAND, commandHandler);
-          future.complete(null);
         });
-    return future;
   }
 
   @Override
