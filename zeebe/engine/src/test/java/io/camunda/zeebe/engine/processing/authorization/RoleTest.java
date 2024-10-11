@@ -17,41 +17,33 @@ import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.jupiter.api.DisplayName;
+import org.junit.rules.TestWatcher;
 
 public class RoleTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
-  @Rule
-  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
-      new RecordingExporterTestWatcher();
+  @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
-  @DisplayName("should create a role")
   @Test
   public void shouldCreateRole() {
-    final var roleRecord = ENGINE.role().newRole("Role").withEntityKey(2L).create();
+    final var roleRecord = ENGINE.role().newRole("Role").create();
 
     final var createdRole = roleRecord.getValue();
-    Assertions.assertThat(createdRole)
-        .isNotNull()
-        .hasFieldOrPropertyWithValue("name", "Role")
-        .hasFieldOrPropertyWithValue("entityKey", 2L);
+    Assertions.assertThat(createdRole).isNotNull().hasFieldOrPropertyWithValue("name", "Role");
   }
 
-  @DisplayName("should reject when role already exists")
   @Test
   public void shouldNotDuplicate() {
     // given
     final var name = UUID.randomUUID().toString();
-    final var roleRecord = ENGINE.role().newRole(name).withEntityKey(2L).create();
+    final var roleRecord = ENGINE.role().newRole(name).create();
 
     // when
-    final var duplicatedRoleRecord =
-        ENGINE.role().newRole(name).withEntityKey(2L).expectRejection().create();
+    final var duplicatedRoleRecord = ENGINE.role().newRole(name).expectRejection().create();
 
-    final var createdUser = roleRecord.getValue();
-    Assertions.assertThat(createdUser).isNotNull().hasFieldOrPropertyWithValue("name", name);
+    final var createdRole = roleRecord.getValue();
+    Assertions.assertThat(createdRole).isNotNull().hasFieldOrPropertyWithValue("name", name);
 
     assertThat(duplicatedRoleRecord)
         .hasRejectionType(RejectionType.ALREADY_EXISTS)

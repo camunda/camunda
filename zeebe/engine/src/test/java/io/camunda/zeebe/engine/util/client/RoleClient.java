@@ -28,36 +28,28 @@ public class RoleClient {
 
   public static class RoleCreationClient {
 
-    private static final Function<Long, io.camunda.zeebe.protocol.record.Record<RoleRecordValue>>
-        SUCCESS_SUPPLIER =
-            (position) ->
-                RecordingExporter.roleRecords()
-                    .withIntent(RoleIntent.CREATED)
-                    .withSourceRecordPosition(position)
-                    .getFirst();
+    private static final Function<Long, Record<RoleRecordValue>> SUCCESS_SUPPLIER =
+        (position) ->
+            RecordingExporter.roleRecords()
+                .withIntent(RoleIntent.CREATED)
+                .withSourceRecordPosition(position)
+                .getFirst();
 
-    private static final Function<Long, io.camunda.zeebe.protocol.record.Record<RoleRecordValue>>
-        REJECTION_SUPPLIER =
-            (position) ->
-                RecordingExporter.roleRecords()
-                    .onlyCommandRejections()
-                    .withIntent(RoleIntent.CREATE)
-                    .withSourceRecordPosition(position)
-                    .getFirst();
+    private static final Function<Long, Record<RoleRecordValue>> REJECTION_SUPPLIER =
+        (position) ->
+            RecordingExporter.roleRecords()
+                .onlyCommandRejections()
+                .withIntent(RoleIntent.CREATE)
+                .withSourceRecordPosition(position)
+                .getFirst();
     private final CommandWriter writer;
     private final RoleRecord roleRecord;
-    private Function<Long, io.camunda.zeebe.protocol.record.Record<RoleRecordValue>> expectation =
-        SUCCESS_SUPPLIER;
+    private Function<Long, Record<RoleRecordValue>> expectation = SUCCESS_SUPPLIER;
 
     public RoleCreationClient(final CommandWriter writer, final String name) {
       this.writer = writer;
       roleRecord = new RoleRecord();
       roleRecord.setName(name);
-    }
-
-    public RoleCreationClient withEntityKey(final long entityKey) {
-      roleRecord.setEntityKey(entityKey);
-      return this;
     }
 
     public Record<RoleRecordValue> create() {

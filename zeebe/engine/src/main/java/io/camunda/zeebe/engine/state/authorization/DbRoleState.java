@@ -107,10 +107,10 @@ public class DbRoleState implements MutableRoleState {
   }
 
   @Override
-  public long getRoleKeyByName(final String roleName) {
+  public Optional<Long> getRoleKeyByName(final String roleName) {
     this.roleName.wrapString(roleName);
     final var fkRoleKey = roleByNameColumnFamily.get(this.roleName);
-    return fkRoleKey != null ? fkRoleKey.inner().getValue() : -1;
+    return fkRoleKey != null ? Optional.of(fkRoleKey.inner().getValue()) : Optional.empty();
   }
 
   @Override

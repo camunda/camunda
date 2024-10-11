@@ -66,7 +66,7 @@ public class RoleCreateProcessor implements DistributedTypedRecordProcessor<Role
 
     final var record = command.getValue();
     final var roleKey = roleState.getRoleKeyByName(record.getName());
-    if (roleKey != -1L) {
+    if (roleKey.isPresent()) {
       final var errorMessage =
           "Expected to create role with name '%s', but a role with this name already exists"
               .formatted(record.getName());

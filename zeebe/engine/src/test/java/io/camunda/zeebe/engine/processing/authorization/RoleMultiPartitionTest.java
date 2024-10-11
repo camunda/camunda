@@ -10,16 +10,21 @@ package io.camunda.zeebe.engine.processing.authorization;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 
+import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -36,16 +41,15 @@ public class RoleMultiPartitionTest {
   public void shouldDistributeRoleCreateCommand() {
     // when
     final var name = UUID.randomUUID().toString();
-
-    ENGINE.role().newRole(name).withEntityKey(1L).create();
+    ENGINE.role().newRole(name).create();
 
     assertThat(
             RecordingExporter.records()
                 .withPartitionId(1)
                 .limit(record -> record.getIntent().equals(CommandDistributionIntent.FINISHED)))
         .extracting(
-            io.camunda.zeebe.protocol.record.Record::getIntent,
-            io.camunda.zeebe.protocol.record.Record::getRecordType,
+            Record::getIntent,
+            Record::getRecordType,
             r ->
                 // We want to verify the partition id where the creation was distributing to and
                 // where it was completed. Since only the CommandDistribution records have a
@@ -76,5 +80,54 @@ public class RoleMultiPartitionTest {
           .extracting(Record::getIntent)
           .containsExactly(RoleIntent.CREATE, RoleIntent.CREATED);
     }
+  }
+
+  @Test
+  public void shouldDistributeInIdentityQueue() {
+    // when
+    final var name = UUID.randomUUID().toString();
+    ENGINE.role().newRole(name).create();
+
+    // then
+    assertThat(
+            RecordingExporter.commandDistributionRecords()
+                .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 1)
+                .withIntent(CommandDistributionIntent.ENQUEUED))
+        .extracting(r -> r.getValue().getQueueId())
+        .containsOnly(DistributionQueue.IDENTITY.getQueueId());
+  }
+
+  @Test
+  public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
+    // given the user creation distribution is intercepted
+    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
+      interceptRoleCreateForPartition(partitionId);
+    }
+
+    // when
+    final var name = UUID.randomUUID().toString();
+    ENGINE.role().newRole(name).create();
+
+    // Increase time to trigger a redistribution
+    ENGINE.increaseTime(Duration.ofMinutes(1));
+
+    // then
+    assertThat(
+            RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
+                .limit(1))
+        .extracting(r -> r.getValue().getValueType(), r -> r.getValue().getIntent())
+        .containsExactly(Assertions.tuple(ValueType.ROLE, RoleIntent.CREATE));
+  }
+
+  private void interceptRoleCreateForPartition(final int partitionId) {
+    final var hasInterceptedPartition = new AtomicBoolean(false);
+    ENGINE.interceptInterPartitionCommands(
+        (receiverPartitionId, valueType, intent, recordKey, command) -> {
+          if (hasInterceptedPartition.get()) {
+            return true;
+          }
+          hasInterceptedPartition.set(true);
+          return !(receiverPartitionId == partitionId && intent == RoleIntent.CREATE);
+        });
   }
 }

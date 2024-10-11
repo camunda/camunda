@@ -44,7 +44,7 @@ public class RoleStateTest {
     assertThat(persistedRole.getRoleKey()).isEqualTo(roleKey);
     assertThat(persistedRole.getName()).isEqualTo(roleName);
 
-    final var roleKeyByName = roleState.getRoleKeyByName(roleName);
+    final var roleKeyByName = roleState.getRoleKeyByName(roleName).get();
     assertThat(roleKeyByName).isEqualTo(roleKey);
   }
 
@@ -63,7 +63,7 @@ public class RoleStateTest {
     final var roleKey = roleState.getRoleKeyByName("foo");
 
     // then
-    assertThat(roleKey).isEqualTo(-1L);
+    assertThat(roleKey).isEmpty();
   }
 
   @Test
@@ -83,7 +83,7 @@ public class RoleStateTest {
     assertThat(persistedRole.getRoleKey()).isEqualTo(roleKey);
     assertThat(persistedRole.getName()).isEqualTo(updatedName);
 
-    final var roleKeyByName = roleState.getRoleKeyByName(updatedName);
+    final var roleKeyByName = roleState.getRoleKeyByName(updatedName).get();
     assertThat(roleKeyByName).isEqualTo(roleKey);
   }
 
