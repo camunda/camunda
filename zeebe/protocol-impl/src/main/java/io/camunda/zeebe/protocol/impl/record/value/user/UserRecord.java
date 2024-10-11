@@ -27,15 +27,17 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
   private final StringProperty passwordProp = new StringProperty("password", "");
   private final EnumProperty<UserType> userTypeProp =
       new EnumProperty<>("userType", UserType.class, UserType.REGULAR);
+  private final LongProperty roleKeyProp = new LongProperty("roleKey", -1L);
 
   public UserRecord() {
-    super(6);
+    super(7);
     declareProperty(userKeyProp)
         .declareProperty(usernameProp)
         .declareProperty(nameProp)
         .declareProperty(emailProp)
         .declareProperty(passwordProp)
-        .declareProperty(userTypeProp);
+        .declareProperty(userTypeProp)
+        .declareProperty(roleKeyProp);
   }
 
   public void wrap(final UserRecord record) {
@@ -45,6 +47,7 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
     emailProp.setValue(record.getEmailBuffer());
     passwordProp.setValue(record.getPasswordBuffer());
     userTypeProp.setValue(record.getUserType());
+    roleKeyProp.setValue(record.getRoleKey());
   }
 
   public UserRecord copy() {
@@ -55,6 +58,7 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
     copy.emailProp.setValue(BufferUtil.cloneBuffer(getEmailBuffer()));
     copy.passwordProp.setValue(BufferUtil.cloneBuffer(getPasswordBuffer()));
     copy.userTypeProp.setValue(getUserType());
+    copy.roleKeyProp.setValue(getRoleKey());
     return copy;
   }
 
@@ -136,6 +140,14 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
   public UserRecord setPassword(final DirectBuffer password) {
     passwordProp.setValue(password);
     return this;
+  }
+
+  public long getRoleKey() {
+    return roleKeyProp.getValue();
+  }
+
+  public void setRoleKey(final long roleKey) {
+    roleKeyProp.setValue(roleKey);
   }
 
   @JsonIgnore
