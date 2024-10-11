@@ -262,7 +262,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       final var templateFields =
           deserializeJson(
               IndexTemplateMapping._DESERIALIZER,
-              appendToFileSchemaSettings(templateFile, settings));
+              SearchEngineClient.appendToFileSchemaSettings(templateFile, settings, MAPPER));
 
       return new PutIndexTemplateRequest.Builder()
           .name(indexTemplateDescriptor.getTemplateName())
@@ -292,7 +292,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       final var templateFields =
           deserializeJson(
               IndexTemplateMapping._DESERIALIZER,
-              appendToFileSchemaSettings(templateFile, settings));
+              SearchEngineClient.appendToFileSchemaSettings(templateFile, settings, MAPPER));
 
       return new CreateIndexRequest.Builder()
           .index(indexDescriptor.getFullQualifiedName())
