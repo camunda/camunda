@@ -46,4 +46,5 @@ jobs:
              }]
           mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
       - name: Run checks
-        run: mvn -f optimize/pom.xml -T 1 -B -D skipTests -P !autoFormat,checkFormat verify
+        run: mvn -f optimize/pom.xml -T 1 -B -DskipTests -P !autoFormat,checkFormat verify -pl '!optimize-schema-integrity-tests'
+
