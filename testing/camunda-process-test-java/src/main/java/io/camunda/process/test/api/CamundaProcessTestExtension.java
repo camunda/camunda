@@ -22,6 +22,8 @@ import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
+import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
+import io.camunda.process.test.impl.testresult.ProcessTestResult;
 import io.camunda.zeebe.client.ZeebeClient;
 import java.util.ArrayList;
 import java.util.List;
@@ -64,11 +66,16 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
   /** The JUnit extension store key of the context. */
   public static final String STORE_KEY_CONTEXT = "camunda-process-test-context";
 
+  /** The JUNIT extension store key of the latest test result. */
+  public static final String STORE_KEY_TEST_RESULT = "camunda-process-test-result";
+
   private final List<ZeebeClient> createdClients = new ArrayList<>();
 
   private final CamundaContainerRuntimeBuilder containerRuntimeBuilder;
 
   private CamundaContainerRuntime containerRuntime;
+
+  private CamundaProcessTestResultCollector processTestResultCollector;
 
   CamundaProcessTestExtension(final CamundaContainerRuntimeBuilder containerRuntimeBuilder) {
     this.containerRuntimeBuilder = containerRuntimeBuilder;
@@ -123,6 +130,9 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
     // initialize assertions
     final CamundaDataSource dataSource = createDataSource(containerRuntime);
     CamundaAssert.initialize(dataSource);
+
+    // initialize result collector
+    processTestResultCollector = new CamundaProcessTestResultCollector(dataSource);
   }
 
   private <T> void injectField(
@@ -160,6 +170,10 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
 
   @Override
   public void afterEach(final ExtensionContext extensionContext) throws Exception {
+    // collect test results
+    final ProcessTestResult testResult = processTestResultCollector.collect();
+    extensionContext.getStore(NAMESPACE).put(STORE_KEY_TEST_RESULT, testResult);
+
     // reset assertions
     CamundaAssert.reset();
     // close all created clients
