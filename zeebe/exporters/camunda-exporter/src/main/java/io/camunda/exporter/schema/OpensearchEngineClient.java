@@ -173,9 +173,16 @@ public class OpensearchEngineClient implements SearchEngineClient {
       final String policyName, final String deletionMinAge) {
     try (final var policyJson = getClass().getResourceAsStream(OPERATE_DELETE_ARCHIVED_POLICY)) {
       final var jsonMap = MAPPER.readTree(policyJson);
-      final var transitions =
-          (ObjectNode) jsonMap.path("policy").path("states").path(0).path("transitions").path(0);
-      transitions.putObject("conditions").put("min_index_age", deletionMinAge);
+      final var conditions =
+          (ObjectNode)
+              jsonMap
+                  .path("policy")
+                  .path("states")
+                  .path(0)
+                  .path("transitions")
+                  .path(0)
+                  .path("conditions");
+      conditions.put("min_index_age", deletionMinAge);
 
       final var policy = MAPPER.writeValueAsBytes(jsonMap);
 
