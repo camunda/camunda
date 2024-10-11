@@ -233,7 +233,9 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
     return new PutMappingRequest.Builder()
         .index(indexDescriptor.getFullQualifiedName())
-        .withJson(IndexMappingProperty.toPropertiesJson(newProperties, MAPPER))
+        .properties(
+            IndexMappingProperty.toPropertiesMap(
+                newProperties, MAPPER, (inp) -> deserializeJson(Property._DESERIALIZER, inp)))
         .build();
   }
 
