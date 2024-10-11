@@ -12,6 +12,7 @@ import static io.camunda.exporter.utils.SearchEngineClientUtils.listIndices;
 import static io.camunda.exporter.utils.SearchEngineClientUtils.mapToSettings;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.mapping.Property;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
 import co.elastic.clients.elasticsearch.indices.Alias;
@@ -23,7 +24,11 @@ import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplate
 import co.elastic.clients.elasticsearch.indices.put_index_template.IndexTemplateMapping;
 import co.elastic.clients.json.JsonData;
 import co.elastic.clients.json.JsonpDeserializer;
+import co.elastic.clients.json.jackson.JacksonJsonpGenerator;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.exporter.SchemaResourceSerializer;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.exporter.exceptions.IndexSchemaValidationException;
@@ -211,9 +216,16 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
             p ->
                 new IndexMappingProperty.Builder()
                     .name(p.getKey())
-                    .typeDefinition(Map.of("type", p.getValue()._kind().jsonValue()))
+                    .typeDefinition(propertyToMap(p.getValue()))
                     .build())
         .collect(Collectors.toSet());
+  }
+
+  private Map<String, Object> propertyToMap(final Property property) {
+    return SchemaResourceSerializer.serialize(
+        (JacksonJsonpGenerator::new),
+        (jacksonJsonpGenerator) ->
+            property.serialize(jacksonJsonpGenerator, new JacksonJsonpMapper(MAPPER)));
   }
 
   private String dynamicFromMappings(final TypeMapping mapping) {
