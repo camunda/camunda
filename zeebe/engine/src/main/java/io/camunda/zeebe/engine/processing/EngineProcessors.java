@@ -154,7 +154,8 @@ public final class EngineProcessors {
         config,
         featureFlags,
         commandDistributionBehavior,
-        clock);
+        clock,
+        authCheckBehavior);
 
     final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor =
         addProcessProcessors(
@@ -364,7 +365,8 @@ public final class EngineProcessors {
       final EngineConfiguration config,
       final FeatureFlags featureFlags,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     MessageEventProcessors.addMessageProcessors(
         bpmnBehaviors,
         typedRecordProcessors,
@@ -375,7 +377,8 @@ public final class EngineProcessors {
         config,
         featureFlags,
         commandDistributionBehavior,
-        clock);
+        clock,
+        authCheckBehavior);
   }
 
   private static void addDecisionProcessors(

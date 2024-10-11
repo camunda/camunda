@@ -22,6 +22,7 @@ import static org.mockito.Mockito.verify;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
@@ -94,7 +95,8 @@ public final class MessageStreamProcessorTest {
               DEFAULT_ENGINE_CONFIGURATION,
               FeatureFlags.createDefault(),
               spyCommandDistributionBehavior,
-              InstantSource.system());
+              InstantSource.system(),
+              mock(AuthorizationCheckBehavior.class));
           return typedRecordProcessors;
         });
   }
