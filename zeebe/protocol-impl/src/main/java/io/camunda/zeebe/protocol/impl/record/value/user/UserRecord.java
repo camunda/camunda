@@ -146,8 +146,9 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
     return roleKeyProp.getValue();
   }
 
-  public void setRoleKey(final long roleKey) {
+  public UserRecord setRoleKey(final long roleKey) {
     roleKeyProp.setValue(roleKey);
+    return this;
   }
 
   @JsonIgnore

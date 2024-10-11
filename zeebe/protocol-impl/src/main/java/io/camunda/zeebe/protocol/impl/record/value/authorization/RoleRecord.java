@@ -25,14 +25,20 @@ public class RoleRecord extends UnifiedRecordValue implements RoleRecordValue {
   private final LongProperty userKeyProp = new LongProperty("userKey", -1L);
 
   public RoleRecord() {
-    super(3);
-    declareProperty(roleKeyProp).declareProperty(nameProp).declareProperty(entityKeyProp);
+    super(5);
+    declareProperty(roleKeyProp)
+        .declareProperty(nameProp)
+        .declareProperty(entityKeyProp)
+        .declareProperty(entityTypeProp)
+        .declareProperty(userKeyProp);
   }
 
   public void wrap(final RoleRecord record) {
     roleKeyProp.setValue(record.getRoleKey());
     nameProp.setValue(record.getName());
     entityKeyProp.setValue(record.getEntityKey());
+    entityTypeProp.setValue(record.getEntityType());
+    userKeyProp.setValue(record.getUserKey());
   }
 
   @Override
