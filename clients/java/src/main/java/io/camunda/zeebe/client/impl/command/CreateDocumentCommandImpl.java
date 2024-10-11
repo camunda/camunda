@@ -53,7 +53,7 @@ public class CreateDocumentCommandImpl
   private String documentId;
   private String storeId;
   private InputStream content;
-  private final Map<String, Object> metadata;
+  private final DocumentMetadata metadata;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
@@ -62,7 +62,7 @@ public class CreateDocumentCommandImpl
       final JsonMapper jsonMapper,
       final HttpClient httpClient,
       final ZeebeClientConfiguration configuration) {
-    metadata = new HashMap<>();
+    metadata = new DocumentMetadata();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
@@ -83,9 +83,7 @@ public class CreateDocumentCommandImpl
           MultipartEntityBuilder.create().setContentType(ContentType.MULTIPART_FORM_DATA);
 
       final String name =
-          Optional.ofNullable((String) metadata.get(DocumentMetadata.JSON_PROPERTY_FILE_NAME))
-              .orElse("");
-
+          Optional.ofNullable(metadata.getFileName()).orElse("document-" + documentId);
       entityBuilder.addBinaryBody("file", content, ContentType.DEFAULT_BINARY, name);
 
       final String metadataString = jsonMapper.toJson(metadata);
@@ -155,33 +153,39 @@ public class CreateDocumentCommandImpl
 
   @Override
   public CreateDocumentCommandStep2 contentType(final String contentType) {
-    metadata.put(DocumentMetadata.JSON_PROPERTY_CONTENT_TYPE, contentType);
+    metadata.setContentType(contentType);
     return this;
   }
 
   @Override
   public CreateDocumentCommandStep2 fileName(final String name) {
-    metadata.put(DocumentMetadata.JSON_PROPERTY_FILE_NAME, name);
+    metadata.setFileName(name);
     return this;
   }
 
   @Override
   public CreateDocumentCommandStep2 timeToLive(final Duration timeToLive) {
     final ZonedDateTime expiresAt = ZonedDateTime.now().plus(timeToLive);
-    metadata.put(DocumentMetadata.JSON_PROPERTY_EXPIRES_AT, expiresAt.toString());
+    metadata.setExpiresAt(expiresAt.toString());
     return this;
   }
 
   @Override
   public CreateDocumentCommandStep2 customMetadata(final String key, final Object value) {
     ensureNotNull("key", key);
-    metadata.put(key, value);
+    if (metadata.getCustomProperties() == null) {
+      metadata.setCustomProperties(new HashMap<>());
+    }
+    metadata.getCustomProperties().put(key, value);
     return this;
   }
 
   @Override
   public CreateDocumentCommandStep2 customMetadata(final Map<String, Object> customMetadata) {
-    metadata.putAll(customMetadata);
+    if (metadata.getCustomProperties() == null) {
+      metadata.setCustomProperties(new HashMap<>());
+    }
+    metadata.getCustomProperties().putAll(customMetadata);
     return this;
   }
 }

@@ -491,7 +491,7 @@ public class RequestMapper {
         Optional.ofNullable(metadata.getContentType()).orElse(file.getContentType());
 
     return new DocumentMetadataModel(
-        contentType, fileName, expiresAt, file.getSize(), metadata.getAdditionalProperties());
+        contentType, fileName, expiresAt, file.getSize(), metadata.getCustomProperties());
   }
 
   private static DeployResourcesRequest createDeployResourceRequest(

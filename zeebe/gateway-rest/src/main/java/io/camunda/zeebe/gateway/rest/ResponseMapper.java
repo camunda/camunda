@@ -120,8 +120,8 @@ public final class ResponseMapper {
             .fileName(internalMetadata.fileName())
             .size(internalMetadata.size())
             .contentType(internalMetadata.contentType());
-    Optional.ofNullable(internalMetadata.additionalProperties())
-        .ifPresent(map -> map.forEach(externalMetadata::putAdditionalProperty));
+    Optional.ofNullable(internalMetadata.customProperties())
+        .ifPresent(map -> map.forEach(externalMetadata::putCustomPropertiesItem));
     final var reference =
         new DocumentReference()
             .camundaDocumentType(CamundaDocumentTypeEnum.CAMUNDA)

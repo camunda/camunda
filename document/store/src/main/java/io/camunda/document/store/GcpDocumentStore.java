@@ -38,8 +38,6 @@ import java.util.concurrent.TimeUnit;
 
 public class GcpDocumentStore implements DocumentStore {
 
-  private static final long DEFAULT_LINK_TTL_MILLIS = 3600 * 1000L;
-
   private final String bucketName;
   private final Storage storage;
 
@@ -184,10 +182,10 @@ public class GcpDocumentStore implements DocumentStore {
     } else {
       blobInfoBuilder.setContentDisposition("attachment");
     }
-    if (metadata.additionalProperties() != null && !metadata.additionalProperties().isEmpty()) {
+    if (metadata.customProperties() != null && !metadata.customProperties().isEmpty()) {
       final Map<String, String> blobMetadata = new HashMap<>();
-      final var valueAsString = objectMapper.writeValueAsString(metadata.additionalProperties());
-      metadata.additionalProperties().forEach((key, value) -> blobMetadata.put(key, valueAsString));
+      final var valueAsString = objectMapper.writeValueAsString(metadata.customProperties());
+      metadata.customProperties().forEach((key, value) -> blobMetadata.put(key, valueAsString));
       blobInfoBuilder.setMetadata(blobMetadata);
     }
   }

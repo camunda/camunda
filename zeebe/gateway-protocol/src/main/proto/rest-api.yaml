@@ -4415,7 +4415,6 @@ components:
           $ref: "#/components/schemas/DocumentMetadata"
     DocumentMetadata:
       type: object
-      additionalProperties: true
       properties:
         contentType:
           type: string
@@ -4431,6 +4430,11 @@ components:
           type: integer
           format: int64
           description: The size of the document in bytes.
+        customProperties:
+            type: object
+            description: Custom properties of the document.
+            additionalProperties: true
+
     DocumentLinkRequest:
       type: object
       properties:

@@ -23,16 +23,6 @@ import java.util.Map;
 public interface DocumentMetadata {
 
   /**
-   * @return the full metadata of the document as a map
-   */
-  Map<String, Object> asMap();
-
-  /**
-   * @return the metadata value for the given key
-   */
-  Object get(String key);
-
-  /**
    * @return the content type of the document, if present in the metadata
    */
   String getContentType();
@@ -51,4 +41,9 @@ public interface DocumentMetadata {
    * @return the file name of the document, if present in the metadata
    */
   String getFileName();
+
+  /**
+   * @return the custom properties of the document, if present in the metadata
+   */
+  Map<String, Object> getCustomProperties();
 }
