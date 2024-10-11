@@ -33,7 +33,7 @@ runs:
     - name: Setup Maven
       uses: ./.github/actions/setup-maven-dist
       with:
-        maven-version: 3.8.6
+        maven-version: 3.9.9
         set-mvnw: true
 
     # Setup: Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
@@ -53,3 +53,4 @@ runs:
       uses: ./.github/actions/setup-maven-cache
       with:
         maven-cache-key-modifier: ${{ inputs.maven-cache-key-modifier }}
+        save-cache: true
