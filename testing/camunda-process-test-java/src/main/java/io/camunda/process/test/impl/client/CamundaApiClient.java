@@ -35,6 +35,7 @@ public class CamundaApiClient {
 
   // Operate v1 endpoints
   private static final String PROCESS_INSTANCE_GET_ENDPOINT = "/v1/process-instances/%d";
+  private static final String PROCESS_INSTANCE_SEARCH_ENDPOINT = "/v1/process-instances/search";
   private static final String FLOW_NODE_INSTANCES_SEARCH_ENDPOINT = "/v1/flownode-instances/search";
   private static final String VARIABLES_SEARCH_ENDPOINT = "/v1/variables/search";
 
@@ -98,6 +99,14 @@ public class CamundaApiClient {
     final String body =
         sendGetRequest(String.format(PROCESS_INSTANCE_GET_ENDPOINT, processInstanceKey));
     return objectMapper.readValue(body, ProcessInstanceDto.class);
+  }
+
+  public SearchProcessInstanceResponseDto findProcessInstances() throws IOException {
+    ensureAuthenticated();
+
+    final String requestBody = "{}";
+    final String responseBody = sendPostRequest(PROCESS_INSTANCE_SEARCH_ENDPOINT, requestBody);
+    return objectMapper.readValue(responseBody, SearchProcessInstanceResponseDto.class);
   }
 
   public FlowNodeInstancesResponseDto findFlowNodeInstancesByProcessInstanceKey(

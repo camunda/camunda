@@ -45,4 +45,8 @@ public class CamundaDataSource {
       throws IOException {
     return camundaApiClient.findVariablesByProcessInstanceKey(processInstanceKey).getItems();
   }
+
+  public List<ProcessInstanceDto> findProcessInstances() throws IOException {
+    return camundaApiClient.findProcessInstances().getItems();
+  }
 }
