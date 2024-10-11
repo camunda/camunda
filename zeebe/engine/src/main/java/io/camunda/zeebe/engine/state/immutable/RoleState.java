@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
-import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.engine.state.authorization.PersistedRole;
 import java.util.Optional;
 
 public interface RoleState {
 
-  Optional<RoleRecord> getRole(long roleKey);
+  Optional<PersistedRole> getRole(long roleKey);
 
   long getRoleKeyByName(String roleName);
 }
