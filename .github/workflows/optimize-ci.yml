@@ -45,7 +45,7 @@ jobs:
       backend-changes: ${{ steps.filter.outputs.optimize-backend-changes }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4
       - name: Get list of changed directories
         id: filter
         uses: ./.github/actions/paths-filter
@@ -63,7 +63,7 @@ jobs:
     runs-on: gcp-core-8-default
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+      - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
         with:
@@ -126,7 +126,7 @@ jobs:
     runs-on: gcp-core-8-default
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+      - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
         with:
@@ -201,7 +201,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4
 
       - name: Fetch main branch
         run: git fetch origin main:refs/remote/origin/main
@@ -282,7 +282,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4
 
       - name: Fetch main branch
         run: git fetch origin main:refs/remote/origin/main
@@ -365,7 +365,7 @@ jobs:
             profiles: 'it'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4
 
       - name: Fetch main branch
         run: git fetch origin main:refs/remote/origin/main
@@ -436,7 +436,7 @@ jobs:
     if: ${{ needs.detect-changes.outputs.backend-changes == 'true' }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
         with:
