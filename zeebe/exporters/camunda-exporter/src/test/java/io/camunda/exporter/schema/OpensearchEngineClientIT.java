@@ -10,6 +10,7 @@ package io.camunda.exporter.schema;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.exceptions.OpensearchExporterException;
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch.generic.Requests;
 import org.opensearch.testcontainers.OpensearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -228,5 +230,28 @@ public class OpensearchEngineClientIT {
     assertThat(indices.result().size()).isEqualTo(1);
     assertThat(indices.result().get("index_name").settings().index().refreshInterval().time())
         .isEqualTo("5s");
+  }
+
+  @Test
+  void shouldCreateIndexLifeCyclePolicy() throws IOException {
+    opensearchEngineClient.putIndexLifeCyclePolicy("policy_name", "20d");
+
+    final var req =
+        Requests.builder().method("GET").endpoint("/_plugins/_ism/policies/policy_name").build();
+    try (final var response = openSearchClient.generic().execute(req)) {
+      assertThat(response.getStatus()).isEqualTo(200);
+      assertThat(
+              new ObjectMapper()
+                  .readTree(response.getBody().get().body())
+                  .get("policy")
+                  .get("states")
+                  .get(0)
+                  .get("transitions")
+                  .get(0)
+                  .get("conditions")
+                  .get("min_index_age")
+                  .asText())
+          .isEqualTo("20d");
+    }
   }
 }

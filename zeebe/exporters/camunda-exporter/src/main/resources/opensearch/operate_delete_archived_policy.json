@@ -1,0 +1,26 @@
+{
+  "policy": {
+    "description": "Archived index policy",
+    "default_state": "archived",
+    "states": [
+      {
+        "name": "archived",
+        "actions": [],
+        "transitions": [
+          {
+            "state_name": "deleted"
+          }
+        ]
+      },
+      {
+        "name": "deleted",
+        "actions": [
+          {
+            "delete": {}
+          }
+        ],
+        "transitions": []
+      }
+    ]
+  }
+}
