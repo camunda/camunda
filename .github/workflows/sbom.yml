@@ -66,16 +66,21 @@ jobs:
           distribution: "temurin"
           java-version: "21"
 
-      - name: Cache Maven packages
-        uses: actions/cache@v4
+      - name: Setup Maven
+        uses: ./.github/actions/setup-maven-dist
         with:
-          path: ~/.m2
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
+          maven-version: 3.8.8
+          set-mvnw: true
+
+      - name: Configure Maven
+        uses: ./.github/actions/setup-maven-cache
+        with:
+          maven-cache-key-modifier: sbom
+
       - name: Generate SBOM (CycloneDX)
         run: |
-          mvn org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom
+          ./mvnw org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom
+
       - name: Upload SBOM as artifact
         uses: actions/upload-artifact@v4
         with:

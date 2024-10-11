@@ -70,9 +70,10 @@ jobs:
           distribution: "adopt"
           java-version: "21"
       - name: Setup Maven
-        uses: stCarolas/setup-maven@v4.5
+        uses: ./.github/actions/setup-maven-dist
         with:
           maven-version: "3.9.6"
+          set-mvnw: true
       # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
       - name: 'Create settings.xml'
         uses: s4u/maven-settings-action@v3.0.0
@@ -86,7 +87,7 @@ jobs:
             }]
           mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
       - name: Build backend
-        run: mvn clean install -B -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+        run: ./mvnw clean install -B -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
@@ -102,7 +103,7 @@ jobs:
           tags: ${{ env.OPERATE_TEST_DOCKER_IMAGE }}
           file: operate.Dockerfile
       - name: Run Docker tests
-        run: mvn -pl operate/qa/integration-tests -DskipChecks -Dtest=StartupIT -Dsurefire.failIfNoSpecifiedTests=false -Dspring.profiles.active=docker-test test
+        run: ./mvnw -pl operate/qa/integration-tests -DskipChecks -Dtest=StartupIT -Dsurefire.failIfNoSpecifiedTests=false -Dspring.profiles.active=docker-test test
       - name: Upload Test Report
         if: failure()
         uses: ./.github/actions/collect-operate-test-artifacts
