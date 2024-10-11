@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.broker.transport.commandapi;
 
+import io.camunda.zeebe.engine.state.QueryService;
+import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
 
 public interface CommandApiService {
@@ -18,4 +21,9 @@ public interface CommandApiService {
   void onPaused(final int partitionId);
 
   void onResumed(final int partitionId);
+
+  ActorFuture<Void> registerHandlers(
+      final int partitionId, final LogStream logStream, final QueryService queryService);
+
+  ActorFuture<Void> unregisterHandlers(final int partitionId);
 }
