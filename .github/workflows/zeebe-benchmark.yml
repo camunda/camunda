@@ -183,7 +183,15 @@ jobs:
         with:
           distribution: "adopt"
           java-version: "21"
-          cache: "maven"
+      - name: Setup Maven
+        uses: ./.github/actions/setup-maven-dist
+        with:
+          maven-version: 3.8.8
+          set-mvnw: true
+      - name: Configure Maven
+        uses: ./.github/actions/setup-maven-cache
+        with:
+          maven-cache-key-modifier: operate
       # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
       - name: 'Create settings.xml'
         uses: s4u/maven-settings-action@v3.0.0
@@ -197,7 +205,7 @@ jobs:
             }]
           mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
       - name: Build backend
-        run: mvn clean install -DskipChecks -P -docker -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+        run: ./mvnw clean install -DskipChecks -P -docker -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Build and push to Zeebe gcr.io registry
