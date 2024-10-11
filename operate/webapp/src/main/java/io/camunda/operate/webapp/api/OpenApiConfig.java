@@ -31,7 +31,7 @@ public class OpenApiConfig {
 
   private GroupedOpenApi apiDefinitionFor(final String version) {
     return GroupedOpenApi.builder()
-        .group(version)
+        .group(String.format("Operate-%s", version))
         .addOpenApiCustomizer(
             openApi ->
                 openApi
