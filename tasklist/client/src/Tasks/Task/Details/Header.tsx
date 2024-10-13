@@ -14,7 +14,7 @@ import {CheckmarkFilled} from '@carbon/react/icons';
 import {AssigneeTag} from 'Tasks/AssigneeTag';
 import {AsyncActionButton} from 'modules/components/AsyncActionButton';
 import {Restricted} from 'modules/components/Restricted';
-import {CurrentUser, Task} from 'modules/types';
+import type {CurrentUser, Task} from 'modules/types';
 import {useAssignTask} from 'modules/mutations/useAssignTask';
 import {useUnassignTask} from 'modules/mutations/useUnassignTask';
 import {notificationsStore} from 'modules/stores/notifications';

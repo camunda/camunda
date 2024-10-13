@@ -11,7 +11,12 @@ import {useTranslation} from 'react-i18next';
 import {t} from 'i18next';
 import {observer} from 'mobx-react-lite';
 import {Link as RouterLink, matchPath, useLocation} from 'react-router-dom';
-import {Dropdown, Layer, OnChangeData, SwitcherDivider} from '@carbon/react';
+import {
+  Dropdown,
+  Layer,
+  type OnChangeData,
+  SwitcherDivider,
+} from '@carbon/react';
 import {ArrowRight} from '@carbon/react/icons';
 import {C3Navigation} from '@camunda/camunda-composite-components';
 import {pages} from 'modules/routing';
@@ -21,7 +26,10 @@ import {themeStore} from 'modules/stores/theme';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {getStateLocally} from 'modules/utils/localStorage';
 import styles from './styles.module.scss';
-import {languageItems, SelectionOption} from 'modules/internationalization';
+import {
+  languageItems,
+  type SelectionOption,
+} from 'modules/internationalization';
 import {useLicense} from '../../modules/queries/useLicense';
 
 function getInfoSidebarItems(isPaidPlan: boolean) {

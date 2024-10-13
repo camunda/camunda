@@ -7,7 +7,7 @@
  */
 
 import {useCallback, useEffect, useRef, useState} from 'react';
-import {Variable} from 'modules/types';
+import type {Variable} from 'modules/types';
 import {FormManager} from 'modules/formManager';
 import {mergeVariables} from './mergeVariables';
 import {ValidationMessage} from './ValidationMessage';

@@ -24,8 +24,8 @@ import {
   formatISODateTime,
 } from 'modules/utils/formatDateRelative';
 import {unraw} from 'modules/utils/unraw';
-import {CurrentUser, Task as TaskType} from 'modules/types';
-import {TaskFilters, useTaskFilters} from 'modules/hooks/useTaskFilters';
+import type {CurrentUser, Task as TaskType} from 'modules/types';
+import {type TaskFilters, useTaskFilters} from 'modules/hooks/useTaskFilters';
 import {encodeTaskOpenedRef} from 'modules/utils/reftags';
 import {AssigneeTag} from 'Tasks/AssigneeTag';
 import {DateLabel} from './DateLabel';

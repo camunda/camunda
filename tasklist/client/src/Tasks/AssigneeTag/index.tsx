@@ -7,7 +7,7 @@
  */
 
 import {useTranslation} from 'react-i18next';
-import {CurrentUser} from 'modules/types';
+import type {CurrentUser} from 'modules/types';
 import {CircleDash, UserAvatar, UserAvatarFilled} from '@carbon/react/icons';
 import {Tag as BaseTag} from '@carbon/react';
 import styles from './styles.module.scss';

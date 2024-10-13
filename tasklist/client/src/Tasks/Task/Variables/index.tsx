@@ -15,7 +15,7 @@ import {match, Pattern} from 'ts-pattern';
 import {Button, Heading, type InlineLoadingProps, Layer} from '@carbon/react';
 import {Information, Add} from '@carbon/react/icons';
 import {C3EmptyState} from '@camunda/camunda-composite-components';
-import {Variable, CurrentUser, Task} from 'modules/types';
+import type {Variable, CurrentUser, Task} from 'modules/types';
 import {usePermissions} from 'modules/hooks/usePermissions';
 import {
   ScrollableContent,
@@ -32,7 +32,7 @@ import {getVariableFieldName} from './getVariableFieldName';
 import {VariableEditor} from './VariableEditor';
 import {IconButton} from './IconButton';
 import {ResetForm} from './ResetForm';
-import {FormValues} from './types';
+import type {FormValues} from './types';
 import styles from './styles.module.scss';
 import cn from 'classnames';
 

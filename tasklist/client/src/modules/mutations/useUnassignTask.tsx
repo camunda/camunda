@@ -9,8 +9,8 @@
 import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {api} from 'modules/api';
 import {getUseTaskQueryKey} from 'modules/queries/useTask';
-import {RequestError, request} from 'modules/request';
-import {Task} from 'modules/types';
+import {type RequestError, request} from 'modules/request';
+import type {Task} from 'modules/types';
 
 function useUnassignTask() {
   const client = useQueryClient();

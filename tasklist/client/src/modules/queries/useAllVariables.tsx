@@ -7,14 +7,14 @@
  */
 
 import {
-  QueryKey,
+  type QueryKey,
   useQuery,
   useQueryClient,
-  UseQueryOptions,
+  type UseQueryOptions,
 } from '@tanstack/react-query';
 import {api} from 'modules/api';
-import {request, RequestError} from 'modules/request';
-import {FullVariable, Task, Variable} from 'modules/types';
+import {request, type RequestError} from 'modules/request';
+import type {FullVariable, Task, Variable} from 'modules/types';
 import {useState} from 'react';
 
 type Param = {
