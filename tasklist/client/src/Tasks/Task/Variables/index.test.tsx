@@ -15,7 +15,7 @@ import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {http, HttpResponse} from 'msw';
 import noop from 'lodash/noop';
 import {currentUser} from 'modules/mock-schema/mocks/current-user';
-import {Variable} from 'modules/types';
+import type {Variable} from 'modules/types';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';

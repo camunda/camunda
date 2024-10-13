@@ -14,7 +14,7 @@ import {
   WarningFilled,
 } from '@carbon/react/icons';
 import {match} from 'ts-pattern';
-import {ProcessInstance} from 'modules/types';
+import type {ProcessInstance} from 'modules/types';
 import styles from './styles.module.scss';
 import cn from 'classnames';
 

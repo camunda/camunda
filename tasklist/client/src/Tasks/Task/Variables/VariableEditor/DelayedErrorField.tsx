@@ -6,13 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {FieldValidator} from 'final-form';
+import type {FieldValidator} from 'final-form';
 import {useEffect, useState} from 'react';
 import {
   Field,
   useField,
-  FieldInputProps,
-  FieldMetaState,
+  type FieldInputProps,
+  type FieldMetaState,
 } from 'react-final-form';
 
 type Props = Omit<React.ComponentProps<typeof Field>, 'validate'> & {

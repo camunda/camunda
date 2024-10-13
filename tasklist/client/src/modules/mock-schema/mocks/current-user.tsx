@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {CurrentUser} from 'modules/types';
+import type {CurrentUser} from 'modules/types';
 
 const currentUser: CurrentUser = {
   userId: 'demo',

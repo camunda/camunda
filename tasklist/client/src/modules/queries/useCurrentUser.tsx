@@ -8,8 +8,8 @@
 
 import {useQuery} from '@tanstack/react-query';
 import {api} from 'modules/api';
-import {RequestError, request} from 'modules/request';
-import {CurrentUser} from 'modules/types';
+import {type RequestError, request} from 'modules/request';
+import type {CurrentUser} from 'modules/types';
 
 function useCurrentUser() {
   return useQuery<CurrentUser, RequestError | Error>({
