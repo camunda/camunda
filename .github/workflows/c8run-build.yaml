@@ -1,0 +1,156 @@
+name: "C8Run: build/test"
+
+on:
+  push:
+    paths:
+      - "c8run/**"
+      - ".github/workflows/c8run-build.yaml"
+
+jobs:
+  test_c8run:
+    strategy:
+      matrix:
+        # macos-latest is ARM, mac os 13 will execute on x86 runner.
+        os: [ubuntu-latest, macos-latest, macos-13]
+    name: C8Run Test ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+
+      - if: ${{ matrix.os == 'ubuntu-latest' }}
+        name: disable and stop mono-xsp4.service
+        run: |
+             sudo systemctl stop mono-xsp4.service || true
+             sudo systemctl disable mono-xsp4.service || true
+             sudo killall mono || true
+             sudo killall xsp4 || true
+
+      - uses: actions/checkout@v4
+
+      - name: print architecture
+        run: arch
+
+      - name: make a package
+        run: ./package.sh
+        working-directory: ./c8run
+
+      - if: ${{ matrix.os == 'macos-13' }}
+        name: Set env
+        run: echo "JAVA_HOME=$(echo $JAVA_HOME_21_X64)" >> $GITHUB_ENV
+
+      - if: ${{ matrix.os == 'ubuntu-latest' }}
+        name: Linux - Run c8run
+        run: nohup ./start.sh --detached &
+        working-directory: ./c8run
+        env:
+          JAVA_HOME: /usr/lib/jvm/temurin-21-jdk-amd64
+
+      - if: ${{ startsWith(matrix.os, 'macos') }}
+        name: Mac - Run c8run
+        run: nohup ./start.sh --detached &
+        working-directory: ./c8run
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./c8run/e2e_tests
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+        working-directory: ./c8run/e2e_tests
+
+      - name: Wait for camunda process to start
+        run: bash -c 'while ! curl -s -f "http://localhost:8080/operate/login"; do sleep 5; done'
+        timeout-minutes: 5
+
+      - name: Run Playwright tests
+        run: npx playwright test
+        working-directory: ./c8run/e2e_tests
+
+      - name: Run v2 API endpoint test
+        run: ./api_tests.sh
+        working-directory: ./c8run/e2e_tests
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.os }}
+          path: ./c8run/e2e_tests/playwright-report
+          retention-days: 30
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: camunda8-run-build-${{ matrix.os }}
+          path: ./c8run/camunda8-run*
+          retention-days: 1
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: c8run-logs-${{ matrix.os }}
+          path: ./c8run/log/*.log
+          retention-days: 10
+
+  test_c8run_windows:
+    name: C8Run Test Windows
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: make a package
+        run: .\package.bat
+        working-directory: .\c8run
+
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '22'
+
+      - name: Set env
+        run: echo "JAVA_HOME=$env:JAVA_HOME_22_x64" >> $env:GITHUB_ENV
+
+      - name: Run c8run
+        run: .\c8run.exe start
+        working-directory: .\c8run
+        shell: cmd
+        env:
+          JAVA_VERSION: "22.0.2"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: .\c8run\e2e_tests
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+        working-directory: .\c8run\e2e_tests
+
+      - name: Run Playwright tests
+        run: npx playwright test
+        working-directory: .\c8run\e2e_tests
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: .\c8run\e2e_tests\playwright-report
+          retention-days: 30
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: camunda8-run-build-windows
+          path: .\c8run\camunda8-run*
+          retention-days: 1
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: c8run-logs
+          path: .\c8run\log\*.log
+          retention-days: 10

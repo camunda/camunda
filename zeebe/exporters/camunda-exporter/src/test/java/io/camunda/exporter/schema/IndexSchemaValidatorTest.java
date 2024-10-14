@@ -34,12 +34,12 @@ public class IndexSchemaValidatorTest {
   void shouldDetectIndexWithAddedProperty() throws IOException {
     // given
     final var currentIndices =
-        Map.of("qualified_name", jsonToIndexMappingProperties("mappings.json", "qualified_name"));
+        Map.of("qualified_name", jsonToIndexMappingProperties("/mappings.json", "qualified_name"));
 
     // when
     final var index =
         SchemaTestUtil.mockIndex(
-            "qualified_name", "alias", "index_name", "mappings-added-property.json");
+            "qualified_name", "alias", "index_name", "/mappings-added-property.json");
 
     // then
     final var difference = VALIDATOR.validateIndexMappings(currentIndices, Set.of(index));
@@ -62,14 +62,14 @@ public class IndexSchemaValidatorTest {
     final var currentIndices =
         Map.of(
             "qualified_name",
-            jsonToIndexMappingProperties("mappings.json", "qualified_name"),
+            jsonToIndexMappingProperties("/mappings.json", "qualified_name"),
             "qualified_name_2",
-            jsonToIndexMappingProperties("mappings.json", "qualified_name_2"));
+            jsonToIndexMappingProperties("/mappings.json", "qualified_name_2"));
 
     // when
     final var index =
         SchemaTestUtil.mockIndex(
-            "qualified_name", "aliasx", "qualified_name", "mappings-added-property.json");
+            "qualified_name", "aliasx", "qualified_name", "/mappings-added-property.json");
 
     final var difference = VALIDATOR.validateIndexMappings(currentIndices, Set.of(index));
 
@@ -89,11 +89,11 @@ public class IndexSchemaValidatorTest {
   void shouldValidateSameIndexWithNoDifferences() throws IOException {
     // given
     final var currentIndices =
-        Map.of("qualified_name", jsonToIndexMappingProperties("mappings.json", "qualified_name"));
+        Map.of("qualified_name", jsonToIndexMappingProperties("/mappings.json", "qualified_name"));
 
     // when
     final var index =
-        SchemaTestUtil.mockIndex("qualified_name", "alias", "index_name", "mappings.json");
+        SchemaTestUtil.mockIndex("qualified_name", "alias", "index_name", "/mappings.json");
 
     // then
     final var difference = VALIDATOR.validateIndexMappings(currentIndices, Set.of(index));
@@ -106,7 +106,7 @@ public class IndexSchemaValidatorTest {
 
     // given, when, then
     final var index =
-        SchemaTestUtil.mockIndex("qualified_name", "alias", "index_name", "mappings.json");
+        SchemaTestUtil.mockIndex("qualified_name", "alias", "index_name", "/mappings.json");
     final var difference = VALIDATOR.validateIndexMappings(Map.of(), Set.of(index));
 
     assertThat(difference).isEmpty();
@@ -118,14 +118,14 @@ public class IndexSchemaValidatorTest {
     final var currentIndices =
         Map.of(
             "qualified_name",
-            jsonToIndexMappingProperties("mappings-deleted-property.json", "qualified_name"),
+            jsonToIndexMappingProperties("/mappings-deleted-property.json", "qualified_name"),
             "qualified_name_2",
             jsonToIndexMappingProperties(
-                "mappings-deleted-different-property.json", "qualified_name_2"));
+                "/mappings-deleted-different-property.json", "qualified_name_2"));
 
     // when
     final var currentIndex =
-        SchemaTestUtil.mockIndex("qualified_name", "alias3", "index_name", "mappings.json");
+        SchemaTestUtil.mockIndex("qualified_name", "alias3", "index_name", "/mappings.json");
 
     // then
     assertThatThrownBy(() -> VALIDATOR.validateIndexMappings(currentIndices, Set.of(currentIndex)))
@@ -139,11 +139,11 @@ public class IndexSchemaValidatorTest {
     final var currentIndices =
         Map.of(
             "qualified_name",
-            jsonToIndexMappingProperties("mappings-added-property.json", "qualified_name"));
+            jsonToIndexMappingProperties("/mappings-added-property.json", "qualified_name"));
 
     // when
     final var index =
-        SchemaTestUtil.mockIndex("qualified_name", "alias", "index_name", "mappings.json");
+        SchemaTestUtil.mockIndex("qualified_name", "alias", "index_name", "/mappings.json");
 
     // then
     final var difference = VALIDATOR.validateIndexMappings(currentIndices, Set.of(index));
@@ -155,12 +155,12 @@ public class IndexSchemaValidatorTest {
   void shouldDetectChangedIndexMappingParameters() throws IOException {
     // given
     final var currentIndices =
-        Map.of("qualified_name", jsonToIndexMappingProperties("mappings.json", "qualified_name"));
+        Map.of("qualified_name", jsonToIndexMappingProperties("/mappings.json", "qualified_name"));
 
     // when
     final var index =
         SchemaTestUtil.mockIndex(
-            "qualified_name", "alias", "index_name", "mappings-changed-property-invalid.json");
+            "qualified_name", "alias", "index_name", "/mappings-changed-property-invalid.json");
 
     // then
     assertThatThrownBy(() -> VALIDATOR.validateIndexMappings(currentIndices, Set.of(index)))
@@ -173,7 +173,7 @@ public class IndexSchemaValidatorTest {
   void shouldDetectIndexTemplateWithAddedProperty() throws IOException {
     // given
     final var currentMappings =
-        Map.of("template_name", jsonToIndexMappingProperties("mappings.json", "template_name"));
+        Map.of("template_name", jsonToIndexMappingProperties("/mappings.json", "template_name"));
 
     // when
     final var indexTemplate =
@@ -183,7 +183,7 @@ public class IndexSchemaValidatorTest {
             "alias",
             Collections.emptyList(),
             "template_name",
-            "mappings-added-property.json");
+            "/mappings-added-property.json");
 
     // then
     final var difference = VALIDATOR.validateIndexMappings(currentMappings, Set.of(indexTemplate));
@@ -203,7 +203,7 @@ public class IndexSchemaValidatorTest {
   void shouldIgnoreARemovedTemplateProperty() throws IOException {
     // given
     final var currentMappings =
-        Map.of("template_name", jsonToIndexMappingProperties("mappings.json", "template_name"));
+        Map.of("template_name", jsonToIndexMappingProperties("/mappings.json", "template_name"));
 
     // when
     final var indexTemplate =
@@ -213,7 +213,7 @@ public class IndexSchemaValidatorTest {
             "alias",
             Collections.emptyList(),
             "template_name",
-            "mappings-deleted-property.json");
+            "/mappings-deleted-property.json");
 
     // then
     final var difference = VALIDATOR.validateIndexMappings(currentMappings, Set.of(indexTemplate));
@@ -226,8 +226,7 @@ public class IndexSchemaValidatorTest {
       final String mappingsFileName, final String indexName) throws IOException {
     final Map<String, Object> jsonMap =
         MAPPER.readValue(
-            Thread.currentThread().getContextClassLoader().getResourceAsStream(mappingsFileName),
-            new TypeReference<>() {});
+            getClass().getResourceAsStream(mappingsFileName), new TypeReference<>() {});
     final var propertiesMap =
         ((Map<String, Map<String, Object>>) jsonMap.get("mappings")).get("properties");
     final Set<IndexMappingProperty> properties =

@@ -4,7 +4,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>operate-qa</artifactId>
-    <version>8.6.0-SNAPSHOT</version>
+    <version>8.7.0-SNAPSHOT</version>
   </parent>
   <artifactId>operate-qa-util</artifactId>
 
@@ -18,6 +18,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-schema</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>webapps-schema</artifactId>
     </dependency>
 
     <dependency>

@@ -10,6 +10,7 @@ package io.camunda.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.DecisionInstanceSearchClient;
@@ -18,6 +19,7 @@ import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -47,5 +49,51 @@ class DecisionInstanceServiceTest {
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);
+  }
+
+  @Test
+  void shouldGetDecisionInstanceByKey() {
+    // given
+    final Long decisionInstanceKey = 1L;
+    final var result = mock(SearchQueryResult.class);
+    when(result.total()).thenReturn(1L);
+    when(result.items()).thenReturn(List.of(mock(DecisionInstanceEntity.class)));
+    when(client.searchDecisionInstances(any(), any())).thenReturn(result);
+
+    // when
+    services.getByKey(decisionInstanceKey);
+
+    // then
+    verify(client)
+        .searchDecisionInstances(
+            SearchQueryBuilders.decisionInstanceSearchQuery(
+                q -> q.filter(f -> f.decisionInstanceKeys(decisionInstanceKey))),
+            null);
+  }
+
+  @Test
+  void shouldSearchDecisionInstances() {
+    // given
+    final DecisionInstanceQuery query =
+        SearchQueryBuilders.decisionInstanceSearchQuery(
+            q ->
+                q.filter(f -> f.tenantIds("tenant1"))
+                    .sort(s -> s.evaluationDate().asc())
+                    .page(p -> p.size(20)));
+
+    // when
+    services.search(query);
+
+    // then
+    verify(client)
+        .searchDecisionInstances(
+            SearchQueryBuilders.decisionInstanceSearchQuery(
+                q ->
+                    q.filter(f -> f.tenantIds("tenant1"))
+                        .sort(s -> s.evaluationDate().asc())
+                        .page(p -> p.size(20))
+                        .resultConfig(
+                            r -> r.evaluatedInputs().exclude().evaluatedOutputs().exclude())),
+            null);
   }
 }

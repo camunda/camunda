@@ -20,7 +20,7 @@ import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.common.Manifest;
-import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationException.CouldNotAccessBucketException;
+import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Optional;
@@ -28,15 +28,19 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class GcsBackupStore implements BackupStore {
   public static final String ERROR_MSG_BACKUP_NOT_FOUND =
       "Expected to restore from backup with id '%s', but does not exist.";
   public static final String ERROR_MSG_BACKUP_WRONG_STATE_TO_RESTORE =
       "Expected to restore from completed backup with id '%s', but was in state '%s'";
-  public static final String ERROR_MSG_ACCESS_FAILED = "Expected to access bucket '%s', but failed";
+  public static final String ERROR_VALIDATION_FAILED =
+      "Invalid configuration for GcsBackupStore: %s";
   public static final String SNAPSHOT_FILESET_NAME = "snapshot";
   public static final String SEGMENTS_FILESET_NAME = "segments";
+  private static final Logger LOG = LoggerFactory.getLogger(GcsBackupStore.class);
   private final ExecutorService executor;
   private final ManifestManager manifestManager;
   private final FileSetManager fileSetManager;
@@ -168,10 +172,16 @@ public final class GcsBackupStore implements BackupStore {
 
   public static void validateConfig(final GcsBackupConfig config) {
     try (final var storage = buildClient(config)) {
-      storage.list(config.bucketName(), BlobListOption.pageSize(1));
+      try {
+        storage.list(config.bucketName(), BlobListOption.pageSize(1));
+      } catch (final Exception e) {
+        LOG.warn(
+            "Unable to verify that the bucket %s exists, initialization will continue as it can be a transient network issue"
+                .formatted(config.bucketName()),
+            e);
+      }
     } catch (final Exception e) {
-      throw new CouldNotAccessBucketException(
-          ERROR_MSG_ACCESS_FAILED.formatted(config.bucketName()), e);
+      throw new ConfigurationException(ERROR_VALIDATION_FAILED.formatted(config), e);
     }
   }
 }

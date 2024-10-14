@@ -7,10 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnStreamProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.message.PendingProcessMessageSubscriptionChecker;
 import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionCorrelateProcessor;
 import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionCreateProcessor;
@@ -65,14 +67,17 @@ public final class BpmnProcessors {
       final CommandDistributionBehavior commandDistributionBehavior,
       final int partitionId,
       final RoutingInfo routingInfo,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final EngineConfiguration config,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     final MutableProcessMessageSubscriptionState subscriptionState =
         processingState.getProcessMessageSubscriptionState();
     final var keyGenerator = processingState.getKeyGenerator();
 
     final var processEngineMetrics = new ProcessEngineMetrics(processingState.getPartitionId());
 
-    addProcessInstanceCommandProcessor(writers, typedRecordProcessors, processingState);
+    addProcessInstanceCommandProcessor(
+        writers, typedRecordProcessors, processingState, authCheckBehavior);
 
     final var bpmnStreamProcessor =
         new BpmnStreamProcessor(bpmnBehaviors, processingState, writers, processEngineMetrics);
@@ -94,11 +99,18 @@ public final class BpmnProcessors {
         bpmnBehaviors,
         processingState.getElementInstanceState(),
         keyGenerator,
-        writers);
+        writers,
+        authCheckBehavior);
     addProcessInstanceCreationStreamProcessors(
-        typedRecordProcessors, processingState, writers, bpmnBehaviors, processEngineMetrics);
+        typedRecordProcessors,
+        processingState,
+        writers,
+        bpmnBehaviors,
+        processEngineMetrics,
+        config,
+        authCheckBehavior);
     addProcessInstanceModificationStreamProcessors(
-        typedRecordProcessors, processingState, writers, bpmnBehaviors);
+        typedRecordProcessors, processingState, writers, bpmnBehaviors, authCheckBehavior);
     addProcessInstanceMigrationStreamProcessors(
         typedRecordProcessors,
         processingState,
@@ -106,7 +118,8 @@ public final class BpmnProcessors {
         bpmnBehaviors,
         commandDistributionBehavior,
         partitionId,
-        routingInfo);
+        routingInfo,
+        authCheckBehavior);
     addProcessInstanceBatchStreamProcessors(typedRecordProcessors, processingState, writers);
 
     return bpmnStreamProcessor;
@@ -115,11 +128,12 @@ public final class BpmnProcessors {
   private static void addProcessInstanceCommandProcessor(
       final Writers writers,
       final TypedRecordProcessors typedRecordProcessors,
-      final ProcessingState processingState) {
+      final ProcessingState processingState,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE,
         ProcessInstanceIntent.CANCEL,
-        new ProcessInstanceCancelProcessor(processingState, writers));
+        new ProcessInstanceCancelProcessor(processingState, writers, authCheckBehavior));
   }
 
   private static void addBpmnStepProcessor(
@@ -193,12 +207,17 @@ public final class BpmnProcessors {
       final BpmnBehaviors bpmnBehaviors,
       final ElementInstanceState elementInstanceState,
       final KeyGenerator keyGenerator,
-      final Writers writers) {
+      final Writers writers,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     typedRecordProcessors.onCommand(
         ValueType.VARIABLE_DOCUMENT,
         VariableDocumentIntent.UPDATE,
         new VariableDocumentUpdateProcessor(
-            elementInstanceState, keyGenerator, bpmnBehaviors.variableBehavior(), writers));
+            elementInstanceState,
+            keyGenerator,
+            bpmnBehaviors.variableBehavior(),
+            writers,
+            authCheckBehavior));
   }
 
   private static void addProcessInstanceCreationStreamProcessors(
@@ -206,14 +225,21 @@ public final class BpmnProcessors {
       final MutableProcessingState processingState,
       final Writers writers,
       final BpmnBehaviors bpmnBehaviors,
-      final ProcessEngineMetrics metrics) {
+      final ProcessEngineMetrics metrics,
+      final EngineConfiguration config,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     final MutableElementInstanceState elementInstanceState =
         processingState.getElementInstanceState();
     final KeyGenerator keyGenerator = processingState.getKeyGenerator();
 
     final ProcessInstanceCreationCreateProcessor createProcessor =
         new ProcessInstanceCreationCreateProcessor(
-            processingState.getProcessState(), keyGenerator, writers, bpmnBehaviors, metrics);
+            processingState.getProcessState(),
+            keyGenerator,
+            writers,
+            bpmnBehaviors,
+            metrics,
+            authCheckBehavior);
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATE, createProcessor);
 
@@ -228,13 +254,15 @@ public final class BpmnProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final ProcessingState processingState,
       final Writers writers,
-      final BpmnBehaviors bpmnBehaviors) {
+      final BpmnBehaviors bpmnBehaviors,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     final ProcessInstanceModificationModifyProcessor modificationProcessor =
         new ProcessInstanceModificationModifyProcessor(
             writers,
             processingState.getElementInstanceState(),
             processingState.getProcessState(),
-            bpmnBehaviors);
+            bpmnBehaviors,
+            authCheckBehavior);
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_MODIFICATION,
         ProcessInstanceModificationIntent.MODIFY,
@@ -248,7 +276,8 @@ public final class BpmnProcessors {
       final BpmnBehaviors bpmnBehaviors,
       final CommandDistributionBehavior commandDistributionBehavior,
       final int partitionId,
-      final RoutingInfo routingInfo) {
+      final RoutingInfo routingInfo,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_MIGRATION,
         ProcessInstanceMigrationIntent.MIGRATE,
@@ -258,7 +287,8 @@ public final class BpmnProcessors {
             bpmnBehaviors,
             commandDistributionBehavior,
             partitionId,
-            routingInfo));
+            routingInfo,
+            authCheckBehavior));
   }
 
   private static void addProcessInstanceBatchStreamProcessors(

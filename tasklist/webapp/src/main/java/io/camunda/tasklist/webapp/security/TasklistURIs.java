@@ -55,7 +55,8 @@ public final class TasklistURIs {
       AntPathRequestMatcher.antMatcher(LOGIN_RESOURCE),
       AntPathRequestMatcher.antMatcher(LOGOUT_RESOURCE),
       AntPathRequestMatcher.antMatcher(REST_V1_EXTERNAL_API),
-      new MvcRequestMatcher(introspector, NEW_FORM)
+      new MvcRequestMatcher(introspector, NEW_FORM),
+      AntPathRequestMatcher.antMatcher("/v3/api-docs/**")
     };
     return requestMatchers;
   }

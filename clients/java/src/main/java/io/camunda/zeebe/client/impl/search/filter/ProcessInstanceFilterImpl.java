@@ -68,12 +68,6 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter rootProcessInstanceKey(final Long rootProcessInstanceKey) {
-    filter.setRootProcessInstanceKey(rootProcessInstanceKey);
-    return this;
-  }
-
-  @Override
   public ProcessInstanceFilter parentProcessInstanceKey(final Long parentProcessInstanceKey) {
     filter.setParentProcessInstanceKey(parentProcessInstanceKey);
     return this;
@@ -110,8 +104,8 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter incident(final Boolean incident) {
-    filter.setIncident(incident);
+  public ProcessInstanceFilter hasIncident(final Boolean hasIncident) {
+    filter.hasIncident(hasIncident);
     return this;
   }
 

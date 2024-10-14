@@ -9,8 +9,8 @@ package io.camunda.operate.zeebeimport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.util.j5templates.OperateZeebeSearchAbstractIT;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import java.io.IOException;
 import java.util.List;

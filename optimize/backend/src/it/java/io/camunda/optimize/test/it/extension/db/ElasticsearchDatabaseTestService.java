@@ -87,6 +87,7 @@ import io.camunda.optimize.service.db.es.builders.OptimizeUpdateRequestBuilderES
 import io.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchIndexSettingsBuilder;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
+import io.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
 import io.camunda.optimize.service.db.es.schema.index.ExternalProcessVariableIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import io.camunda.optimize.service.db.es.schema.index.TerminatedUserSessionIndexES;
@@ -344,6 +345,14 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
             index ->
                 indexNameToAliasMap.get(index).aliases().entrySet().stream()
                     .anyMatch(alias -> Boolean.FALSE.equals(alias.getValue().isWriteIndex())))
+        .toList();
+  }
+
+  @Override
+  public List<String> getImportIndices() {
+    return ElasticSearchSchemaManager.getAllNonDynamicMappings().stream()
+        .filter(IndexMappingCreator::isImportIndex)
+        .map(IndexMappingCreator::getIndexName)
         .toList();
   }
 

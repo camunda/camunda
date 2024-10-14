@@ -3,24 +3,28 @@
 
   <groupId>io.camunda.optimize</groupId>
   <artifactId>optimize-parent</artifactId>
-  <version>8.6.0-SNAPSHOT</version>
+  <version>8.7.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Optimize Parent</name>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <project.previousVersion>3.13.4</project.previousVersion>
+    <project.previousVersion>8.6.0</project.previousVersion>
     <camunda.maven.artifacts.version>7.22.0</camunda.maven.artifacts.version>
 
     <!-- We use this version to compile but run IT against containers with zeebe.docker.version -->
-    <zeebe.version>8.6.0-alpha5</zeebe.version>
-    <identity.version>8.5.5</identity.version>
+    <zeebe.version>8.6.0</zeebe.version>
+    <identity.version>8.6.0</identity.version>
     <!-- We use this for the Zeebe test container version only -->
     <zeebe.docker.version>${zeebe.version}</zeebe.docker.version>
 
     <!-- maven plugins -->
     <surefire-plugin.version>3.5.0</surefire-plugin.version>
+
+    <!-- maven dependency plugin -->
+    <dependencyAnalyzeFailOnWarning>false</dependencyAnalyzeFailOnWarning>
+    <dependencyAnalyze.failOnWarning>${dependencyAnalyzeFailOnWarning}</dependencyAnalyze.failOnWarning>
 
     <!-- DATABASE -->
     <!-- Elasticsearch-->
@@ -43,7 +47,7 @@
     <opensearch.test.version>2.10.0</opensearch.test.version>
     <!-- the opensearch version of the previous Optimize version -->
     <previous.optimize.opensearch.version>2.9.0</previous.optimize.opensearch.version>
-    <awssdk.version>2.28.12</awssdk.version>
+    <awssdk.version>2.28.13</awssdk.version>
 
     <jetty.version>12.0.13</jetty.version>
     <jackson.version>2.18.0</jackson.version>
@@ -56,7 +60,7 @@
     <httpclient.version>4.5.14</httpclient.version>
     <quartz.version>2.3.2</quartz.version>
     <jakarta.rs-api.version>4.0.0</jakarta.rs-api.version>
-    <netty.version>4.1.113.Final</netty.version>
+    <netty.version>4.1.114.Final</netty.version>
     <lombok.version>1.18.34</lombok.version>
     <logback.version>1.5.8</logback.version>
     <slf4j.version>2.0.16</slf4j.version>
@@ -415,24 +419,10 @@
       <version>4.2.2</version>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-codec-http</artifactId>
-      <version>${netty.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-codec-http2</artifactId>
-      <version>${netty.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-handler</artifactId>
-      <version>${netty.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-handler-proxy</artifactId>
       <version>${netty.version}</version>
     </dependency>
   </dependencies>
@@ -444,6 +434,29 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
           <version>3.8.0</version>
+          <configuration>
+            <failOnWarning>${dependencyAnalyze.failOnWarning}</failOnWarning>
+            <ignoredUnusedDeclaredDependencies combine.children="append">
+              <!-- TODO: remove once Lombok is removed from the project,
+              with https://github.com/camunda/camunda-optimize/issues/13962 -->
+              <dep>org.projectlombok:lombok</dep>
+
+              <!-- ignore common test dependencies -->
+              <dep>org.junit.jupiter:junit-jupiter-api</dep>
+              <dep>org.junit.platform:junit-platform-launcher</dep>
+              <dep>org.junit.jupiter:junit-jupiter-engine</dep>
+              <dep>org.junit.jupiter:junit-jupiter-params</dep>
+              <dep>org.junit.platform:junit-platform-commons</dep>
+              <dep>org.assertj:assertj-core</dep>
+              <dep>org.mockito:mockito-inline</dep>
+              <dep>org.mockito:mockito-junit-jupiter</dep>
+              <dep>org.mock-server:mockserver-junit-jupiter</dep>
+              <dep>io.github.netmikey.logunit:logunit-core</dep>
+              <dep>io.github.netmikey.logunit:logunit-logback</dep>
+              <dep>org.apache.httpcomponents:httpmime</dep>
+              <dep>org.awaitility:awaitility</dep>
+            </ignoredUnusedDeclaredDependencies>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>

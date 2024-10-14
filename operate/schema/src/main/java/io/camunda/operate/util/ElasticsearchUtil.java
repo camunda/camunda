@@ -19,10 +19,10 @@ import io.camunda.operate.entities.HitEntity;
 import io.camunda.operate.exceptions.ArchiverException;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.schema.templates.AbstractTemplateDescriptor;
-import io.camunda.operate.schema.templates.EventTemplate;
-import io.camunda.operate.schema.templates.IncidentTemplate;
-import io.camunda.operate.schema.templates.TemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.template.AbstractTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.*;
@@ -221,20 +221,20 @@ public abstract class ElasticsearchUtil {
     return total;
   }
 
-  public static SearchRequest createSearchRequest(final TemplateDescriptor template) {
+  public static SearchRequest createSearchRequest(final IndexTemplateDescriptor template) {
     return createSearchRequest(template, QueryType.ALL);
   }
 
   /* CREATE QUERIES */
 
   public static SearchRequest createSearchRequest(
-      final TemplateDescriptor template, final QueryType queryType) {
+      final IndexTemplateDescriptor template, final QueryType queryType) {
     final SearchRequest searchRequest = new SearchRequest(whereToSearch(template, queryType));
     return searchRequest;
   }
 
   private static String whereToSearch(
-      final TemplateDescriptor template, final QueryType queryType) {
+      final IndexTemplateDescriptor template, final QueryType queryType) {
     switch (queryType) {
       case ONLY_RUNTIME:
         return template.getFullQualifiedName();

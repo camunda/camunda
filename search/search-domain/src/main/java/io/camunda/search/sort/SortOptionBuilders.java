@@ -14,6 +14,15 @@ public final class SortOptionBuilders {
 
   private SortOptionBuilders() {}
 
+  public static ProcessDefinitionSort.Builder processDefinition() {
+    return new ProcessDefinitionSort.Builder();
+  }
+
+  public static ProcessDefinitionSort processDefinition(
+      final Function<ProcessDefinitionSort.Builder, ObjectBuilder<ProcessDefinitionSort>> fn) {
+    return fn.apply(processDefinition()).build();
+  }
+
   public static ProcessInstanceSort.Builder processInstance() {
     return new ProcessInstanceSort.Builder();
   }

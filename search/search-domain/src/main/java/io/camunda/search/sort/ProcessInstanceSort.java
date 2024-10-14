@@ -56,11 +56,6 @@ public record ProcessInstanceSort(List<FieldSorting> orderings) implements SortO
       return this;
     }
 
-    public Builder rootProcessInstanceKey() {
-      currentOrdering = new FieldSorting("rootProcessInstanceKey", null);
-      return this;
-    }
-
     public Builder parentProcessInstanceKey() {
       currentOrdering = new FieldSorting("parentProcessInstanceKey", null);
       return this;
@@ -91,7 +86,7 @@ public record ProcessInstanceSort(List<FieldSorting> orderings) implements SortO
       return this;
     }
 
-    public Builder incident() {
+    public Builder hasIncident() {
       currentOrdering = new FieldSorting("incident", null);
       return this;
     }

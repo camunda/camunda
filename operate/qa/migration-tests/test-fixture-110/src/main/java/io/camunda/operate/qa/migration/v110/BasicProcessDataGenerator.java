@@ -7,18 +7,18 @@
  */
 package io.camunda.operate.qa.migration.v110;
 
-import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.qa.util.TestContext;
 import io.camunda.operate.qa.util.ZeebeTestUtil;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ThreadUtil;
 import io.camunda.operate.util.rest.StatefulRestTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;

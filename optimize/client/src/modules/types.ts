@@ -109,18 +109,25 @@ interface ProcessView {
   properties: (ProcessViewProperty | string)[];
 }
 
-interface ProcessGroupBy<Value = unknown> {
-  type:
-    | 'assignee'
-    | 'duration'
-    | 'endDate'
-    | 'flowNodes'
-    | 'none'
-    | 'runningDate'
-    | 'startDate'
-    | 'userTasks'
-    | 'variable';
-  value: Value;
+type GroupByValue = {
+  unit?: string;
+  type?: string | null;
+};
+
+type GroupByType =
+  | 'assignee'
+  | 'duration'
+  | 'endDate'
+  | 'flowNodes'
+  | 'none'
+  | 'runningDate'
+  | 'startDate'
+  | 'userTasks'
+  | 'variable';
+
+interface ProcessGroupBy {
+  type: GroupByType;
+  value: GroupByValue | null;
 }
 
 type DistributedByType =
@@ -133,9 +140,9 @@ type DistributedByType =
   | 'userTask'
   | 'variable';
 
-interface DistributedBy<Value = unknown> {
+interface DistributedBy {
   type: DistributedByType;
-  value: Value;
+  value: GroupByValue | null;
 }
 
 type ProcessReportVisualization = 'number' | 'table' | 'bar' | 'barLine' | 'line' | 'pie' | 'heat';
@@ -282,12 +289,18 @@ export interface SingleProcessReportData<GroupByValue = unknown, DistributedByVa
   extends SingleReportData {
   filter: ProcessFilter[];
   view: ProcessView | null;
-  groupBy: ProcessGroupBy<GroupByValue> | null;
-  distributedBy: DistributedBy<DistributedByValue>;
+  groupBy: ProcessGroupBy | null;
+  distributedBy: DistributedBy;
   visualization: ProcessReportVisualization | null;
   managementReport: boolean;
   instantPreviewReport: boolean;
   userTaskReport: boolean;
+}
+
+export interface SingleProcessReportResultData {
+  key: string;
+  label: string;
+  value: string | number;
 }
 
 export type ReportType = 'process';
@@ -306,7 +319,8 @@ export interface Report<
 
 export type SingleProcessReport<GroupByValue = unknown, DistributedByValue = unknown> = Report<
   'process',
-  SingleProcessReportData<GroupByValue, DistributedByValue>
+  SingleProcessReportData<GroupByValue, DistributedByValue>,
+  {data: SingleProcessReportResultData[]}
 >;
 
 export type GenericReport<

@@ -7,19 +7,14 @@
  */
 package io.camunda.optimize.service.db.reader;
 
-import co.elastic.clients.elasticsearch.snapshot.SnapshotInfo;
+import io.camunda.optimize.dto.optimize.rest.SnapshotInfoDto;
 import java.util.List;
 import java.util.Map;
 
 public interface BackupReader {
+  void validateRepositoryExists();
 
-  void validateRepositoryExistsOrFail();
+  Map<Long, List<SnapshotInfoDto>> getAllOptimizeSnapshotsByBackupId();
 
-  void validateNoDuplicateBackupId(final Long backupId);
-
-  Map<Long, List<SnapshotInfo>> getAllOptimizeSnapshotsByBackupId();
-
-  List<SnapshotInfo> getAllOptimizeSnapshots();
-
-  List<SnapshotInfo> getOptimizeSnapshotsForBackupId(final Long backupId);
+  List<SnapshotInfoDto> getOptimizeSnapshotsForBackupId(final Long backupId);
 }

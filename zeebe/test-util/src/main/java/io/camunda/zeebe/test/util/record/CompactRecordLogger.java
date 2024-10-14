@@ -45,8 +45,10 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordV
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationVariableInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
@@ -99,7 +101,8 @@ public class CompactRecordLogger {
           entry("SIGNAL_SUBSCRIPTION", "SIG_SUBSCRIPTION"),
           entry("SIGNAL", "SIG"),
           entry("COMMAND_DISTRIBUTION", "DSTR"),
-          entry("USER_TASK", "UT"));
+          entry("USER_TASK", "UT"),
+          entry("ROLE", "RL"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
       ofEntries(
@@ -149,6 +152,8 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.COMMAND_DISTRIBUTION, this::summarizeCommandDistribution);
     valueLoggers.put(ValueType.MESSAGE_CORRELATION, this::summarizeMessageCorrelation);
     valueLoggers.put(ValueType.CLOCK, this::summarizeClock);
+    valueLoggers.put(ValueType.ROLE, this::summarizeRole);
+    valueLoggers.put(ValueType.TENANT, this::summarizeTenant);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -867,6 +872,40 @@ public class CompactRecordLogger {
         };
 
     return "to %s".formatted(clockValue);
+  }
+
+  private String summarizeRole(final Record<?> record) {
+    final var value = (RoleRecordValue) record.getValue();
+
+    final StringBuilder builder = new StringBuilder("Tenant[");
+    builder
+        .append("Key=")
+        .append(shortenKey(value.getRoleKey()))
+        .append(", Name=")
+        .append(formatId(value.getName()))
+        .append(", EntityKey=")
+        .append(shortenKey(value.getEntityKey()))
+        .append("]");
+
+    return builder.toString();
+  }
+
+  private String summarizeTenant(final Record<?> record) {
+    final var value = (TenantRecordValue) record.getValue();
+
+    final StringBuilder builder = new StringBuilder("Tenant[");
+    builder
+        .append("Key=")
+        .append(shortenKey(value.getTenantKey()))
+        .append(", Id=")
+        .append(formatId(value.getTenantId()))
+        .append(", Name=")
+        .append(formatId(value.getName()))
+        .append(", EntityKey=")
+        .append(shortenKey(value.getEntityKey()))
+        .append("]");
+
+    return builder.toString();
   }
 
   private String formatPinnedTime(final long time) {

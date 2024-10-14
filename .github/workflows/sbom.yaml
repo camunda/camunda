@@ -1,0 +1,83 @@
+# Workflow: Generate SBOM
+# This workflow generates a Software Bill of Materials (SBOM) using the CycloneDX Maven plugin.
+# The SBOM provides a list of dependencies and helps track potential security risks.
+# The workflow runs on a schedule for testing purposes and can be manually triggered.
+# The generated SBOM is uploaded as an artifact for further analysis or distribution.
+
+name: Generate SBOM
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 9 * * MON"
+
+jobs:
+  frontend_sbom:
+    runs-on: ubuntu-latest
+    name: Generate frontend SBOM
+    strategy:
+      matrix:
+        include:
+          - component: "tasklist"
+            folder: "build"
+          - component: "operate"
+            folder: "build"
+          - component: "identity"
+            folder: "dist"
+          - component: "optimize"
+            folder: "dist"
+
+    defaults:
+      run:
+        working-directory: ${{ matrix.component }}/client
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Setup NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+        with:
+          directory: ${{ matrix.component }}/client
+      - name: Install node dependencies
+        run: yarn
+      - name: Extract SBOM
+        run: |
+          yarn run extract-sbom
+      - name: Upload SBOM as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.component }}-fe-sbom
+          path: ${{ matrix.component }}/client/${{ matrix.folder }}/cyclonedx/bom.json
+
+  backend_sbom:
+    runs-on: ubuntu-latest
+    name: Generate backend SBOM
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "21"
+
+      - name: Cache Maven packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+      - name: Generate SBOM (CycloneDX)
+        run: |
+          mvn org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom
+      - name: Upload SBOM as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-sbom
+          path: target/bom.json

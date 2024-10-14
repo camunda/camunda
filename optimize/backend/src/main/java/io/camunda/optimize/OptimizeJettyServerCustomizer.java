@@ -15,6 +15,7 @@ import static io.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
 
 import io.camunda.optimize.jetty.CustomErrorHandler;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.rewrite.handler.HeaderPatternRule;
@@ -22,6 +23,9 @@ import org.eclipse.jetty.rewrite.handler.RedirectPatternRule;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
 import org.eclipse.jetty.rewrite.handler.RewriteRegexRule;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.springframework.boot.web.embedded.jetty.JettyServerCustomizer;
 import org.springframework.boot.web.embedded.jetty.JettyServletWebServerFactory;
@@ -75,6 +79,20 @@ public class OptimizeJettyServerCustomizer
 
           handlerSequence.addHandler(handler);
           server.setHandler(handlerSequence);
+
+          Arrays.stream(server.getConnectors())
+              .filter(connector -> ServerConnector.class.isAssignableFrom(connector.getClass()))
+              .forEach(
+                  connector -> {
+                    final HttpConnectionFactory connectionFactory =
+                        connector.getConnectionFactory(HttpConnectionFactory.class);
+                    final HttpConfiguration httpConfiguration =
+                        connectionFactory.getHttpConfiguration();
+                    httpConfiguration.setResponseHeaderSize(
+                        configurationService.getMaxResponseHeaderSizeInBytes());
+                    httpConfiguration.setRequestHeaderSize(
+                        configurationService.getMaxRequestHeaderSizeInBytes());
+                  });
         };
     factory.addServerCustomizers(jettyServerCustomizer);
   }

@@ -5,7 +5,6 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-// TODO recreate C8 IT equivalent of this with #13337
 package io.camunda.optimize.upgrade;
 
 import io.camunda.optimize.upgrade.service.UpgradeValidationService;

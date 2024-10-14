@@ -72,8 +72,8 @@ public class FlownodeInstanceFilterImpl
   }
 
   @Override
-  public FlownodeInstanceFilter incident(final boolean value) {
-    filter.setIncident(value);
+  public FlownodeInstanceFilter hasIncident(final boolean value) {
+    filter.hasIncident(value);
     return this;
   }
 
