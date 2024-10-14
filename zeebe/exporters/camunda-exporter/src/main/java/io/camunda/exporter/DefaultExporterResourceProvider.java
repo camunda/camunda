@@ -12,6 +12,7 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.handlers.AuthorizationRecordValueExportHandler;
 import io.camunda.exporter.handlers.DecisionHandler;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.UserRecordValueExportHandler;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
@@ -20,6 +21,7 @@ import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -34,6 +36,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
       indexDescriptorsMap;
 
   private Set<ExportHandler> exportHandlers;
+  private Map<Class<? extends IndexTemplateDescriptor>, IndexTemplateDescriptor>
+      templateDescriptorsMap;
 
   @Override
   public void init(final ExporterConfiguration configuration) {
@@ -41,6 +45,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
     final var isElasticsearch =
         ConnectionTypes.from(configuration.getConnect().getType())
             .equals(ConnectionTypes.ELASTICSEARCH);
+
+    templateDescriptorsMap =
+        Map.of(ListViewTemplate.class, new ListViewTemplate(operateIndexPrefix, isElasticsearch));
 
     indexDescriptorsMap =
         Map.of(
@@ -58,7 +65,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new UserRecordValueExportHandler(),
             new AuthorizationRecordValueExportHandler(),
             new DecisionHandler(
-                indexDescriptorsMap.get(DecisionIndex.class).getFullQualifiedName()));
+                indexDescriptorsMap.get(DecisionIndex.class).getFullQualifiedName()),
+            new ListViewProcessInstanceFromProcessInstanceHandler(
+                templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(), false));
   }
 
   @Override
@@ -67,21 +76,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   }
 
   @Override
-  public Set<IndexTemplateDescriptor> getIndexTemplateDescriptors() {
-    return Set.of();
-    // TODO uncomment this to start creating Operate schema from exporter
-    //    return Set.of(
-    //        new DecisionInstanceTemplate(operateIndexPrefix, true),
-    //        new EventTemplate(operateIndexPrefix, true),
-    //        new FlowNodeInstanceTemplate(operateIndexPrefix, true),
-    //        new IncidentTemplate(operateIndexPrefix, true),
-    //        new JobTemplate(operateIndexPrefix, true),
-    //        new ListViewTemplate(operateIndexPrefix, true),
-    //        new MessageTemplate(operateIndexPrefix, true),
-    //        new PostImporterQueueTemplate(operateIndexPrefix, true),
-    //        new SequenceFlowTemplate(operateIndexPrefix, true),
-    //        new UserTaskTemplate(operateIndexPrefix, true),
-    //        new VariableTemplate(operateIndexPrefix, true));
+  public Collection<IndexTemplateDescriptor> getIndexTemplateDescriptors() {
+    return templateDescriptorsMap.values();
   }
 
   @Override

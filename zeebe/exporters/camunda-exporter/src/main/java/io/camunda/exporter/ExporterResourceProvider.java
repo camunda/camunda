@@ -30,7 +30,7 @@ public interface ExporterResourceProvider {
    *
    * @return A {@link Set} of {@link IndexTemplateDescriptor}
    */
-  Set<IndexTemplateDescriptor> getIndexTemplateDescriptors();
+  Collection<IndexTemplateDescriptor> getIndexTemplateDescriptors();
 
   /**
    * @return A {@link Set} of {@link ExportHandler} to be registered with the exporter
