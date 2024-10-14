@@ -129,7 +129,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByTenantId() {
     // when
-    client.newUserTaskQuery().filter(f -> f.tentantId("tenant1")).send().join();
+    client.newUserTaskQuery().filter(f -> f.tenantId("tenant1")).send().join();
 
     // then
     final UserTaskSearchQueryRequest request =

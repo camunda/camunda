@@ -622,6 +622,8 @@ public final class SearchQueryRequestMapper {
       switch (field) {
         case "creationDate" -> builder.creationDate();
         case "completionDate" -> builder.completionDate();
+        case "followUpDate" -> builder.followUpDate();
+        case "dueDate" -> builder.dueDate();
         case "priority" -> builder.priority();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }

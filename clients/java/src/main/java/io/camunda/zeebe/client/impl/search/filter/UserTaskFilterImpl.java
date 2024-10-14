@@ -83,7 +83,7 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserT
   }
 
   @Override
-  public UserTaskFilter tentantId(final String tenantId) {
+  public UserTaskFilter tenantId(final String tenantId) {
     filter.setTenantId(tenantId);
     return this;
   }
