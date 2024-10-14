@@ -65,7 +65,7 @@ public interface UserTask {
   String getDueDate();
 
   /** Tenant identifiers */
-  String getTenantIds();
+  String getTenantId();
 
   /** External form reference */
   String getExternalFormReference();

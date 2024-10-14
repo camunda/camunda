@@ -258,7 +258,7 @@ class UserTaskQueryTest {
     assertThat(resultDefaultTenant.items().size()).isEqualTo(7);
     resultDefaultTenant
         .items()
-        .forEach(item -> assertThat(item.getTenantIds()).isEqualTo("<default>"));
+        .forEach(item -> assertThat(item.getTenantId()).isEqualTo("<default>"));
 
     final var resultNonExistent =
         camundaClient.newUserTaskQuery().filter(f -> f.tentantId("<default123>")).send().join();
