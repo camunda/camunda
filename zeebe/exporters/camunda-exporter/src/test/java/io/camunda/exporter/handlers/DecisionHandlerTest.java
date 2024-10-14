@@ -12,7 +12,6 @@ import static org.mockito.Mockito.*;
 
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
-import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
@@ -53,7 +52,7 @@ final class DecisionHandlerTest {
     final long expectedId = 123;
     final DecisionRecordValue decisionRecordValue =
         ImmutableDecisionRecordValue.builder()
-            .from(factory.generateObject(DecisionRecord.class))
+            .from(factory.generateObject(DecisionRecordValue.class))
             .withDecisionKey(expectedId)
             .build();
 
@@ -97,7 +96,7 @@ final class DecisionHandlerTest {
     // given
     final DecisionRecordValue decisionRecordValue =
         ImmutableDecisionRecordValue.builder()
-            .from(factory.generateObject(DecisionRecord.class))
+            .from(factory.generateObject(DecisionRecordValue.class))
             .withDecisionKey(123)
             .withDecisionName("decisionName")
             .withVersion(2)
