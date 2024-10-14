@@ -100,4 +100,10 @@ public class DbUserState implements UserState, MutableUserState {
 
     userByUserKeyColumnFamily.update(key, persistedUser);
   }
+
+  @Override
+  public void deleteUser(final long userKey) {
+    this.userKey.wrapLong(userKey);
+    userByUserKeyColumnFamily.deleteExisting(this.userKey);
+  }
 }

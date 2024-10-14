@@ -19,7 +19,8 @@ public enum UserIntent implements Intent {
   CREATE(0),
   CREATED(1),
   UPDATE(2),
-  UPDATED(3);
+  UPDATED(3),
+  DELETED(4);
 
   private final short value;
 
@@ -37,6 +38,7 @@ public enum UserIntent implements Intent {
     switch (this) {
       case CREATED:
       case UPDATED:
+      case DELETED:
         return true;
       default:
         return false;
@@ -53,6 +55,8 @@ public enum UserIntent implements Intent {
         return UPDATE;
       case 3:
         return UPDATED;
+      case 4:
+        return DELETED;
       default:
         return UNKNOWN;
     }
