@@ -71,13 +71,17 @@ export default function ReportView({report, error, loadReport}) {
   }
 
   const shouldShowCSVDownload = () => {
-    return report?.data?.view?.properties?.includes('rawData') && report.result?.measures.length === 1;
+    return report?.data?.view?.properties?.includes('rawData');
   };
 
   const constructCSVDownloadLink = () => {
     return `api/export/csv/${report.id}/${encodeURIComponent(
       formatters.formatFileName(report.name)
     )}.csv`;
+  };
+
+  const getTotalEntries = ({result}) => {
+    return result.instanceCount;
   };
 
   const {id, name, description, currentUserRole, data} = report;
@@ -143,7 +147,7 @@ export default function ReportView({report, error, loadReport}) {
                 kind="ghost"
                 hasIconOnly
                 href={constructCSVDownloadLink()}
-                totalCount={calculateTotalEntries(report)}
+                totalCount={getTotalEntries(report)}
                 user={user}
               />
             )}
@@ -193,17 +197,4 @@ export default function ReportView({report, error, loadReport}) {
       </div>
     </div>
   );
-}
-
-function calculateTotalEntries({result}) {
-  switch (result.type) {
-    case 'raw':
-      return result.instanceCount;
-    case 'map':
-    case 'hyperMap':
-      return result?.measures?.[0]?.data?.length;
-    case 'number':
-    default:
-      return 1;
-  }
 }

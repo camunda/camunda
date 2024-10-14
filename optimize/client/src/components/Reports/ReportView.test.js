@@ -190,15 +190,27 @@ describe('Download CSV', () => {
 
   it('should not show a download csv button for multi-measure reports', () => {
     const node = shallow(
-      <ReportView report={{...rawDataReport, result: {measures: [{data: 0}, {data: 12}]}}} />
+      <ReportView report={report} />
     );
     expect(node.find(DownloadButton)).not.toExist();
   });
 
-  it('should not show a download csv button if the view is not rawData', () => {
-    const node = shallow(<ReportView report={report} />);
+  it('should not show a download csv button if the visualization is number', () => {
+    const node = shallow(
+      <ReportView report={{...report, data: {...report.data, visualization: 'number'}}} />
+    );
 
     expect(node.find(DownloadButton)).not.toExist();
+  });
+
+  it('should calculate total entries correctly for raw data report', () => {
+    const node = shallow(
+      <ReportView
+        report={rawDataReport}
+      />
+    );
+
+    expect(node.find(DownloadButton).prop('totalCount')).toBe(37);
   });
 });
 
