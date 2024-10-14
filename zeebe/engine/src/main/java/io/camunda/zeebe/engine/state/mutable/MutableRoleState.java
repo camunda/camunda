@@ -15,4 +15,6 @@ public interface MutableRoleState extends RoleState {
   void create(RoleRecord roleRecord);
 
   void update(RoleRecord roleRecord);
+
+  void addEntity(final RoleRecord roleRecord);
 }

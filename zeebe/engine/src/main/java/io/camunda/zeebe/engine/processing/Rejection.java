@@ -5,14 +5,8 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.state.authorization;
+package io.camunda.zeebe.engine.processing;
 
-public enum EntityType {
-  USER((byte) 0);
+import io.camunda.zeebe.protocol.record.RejectionType;
 
-  byte value;
-
-  EntityType(final byte value) {
-    this.value = value;
-  }
-}
+public record Rejection(RejectionType type, String reason) {}

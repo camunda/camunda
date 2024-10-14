@@ -31,6 +31,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
+import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
@@ -64,6 +65,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceResultRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ResourceDeletionRecordValue;
+import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
@@ -455,6 +457,14 @@ public final class RecordingExporter implements Exporter {
 
   public static AuthorizationRecordStream authorizationRecords(final AuthorizationIntent intent) {
     return authorizationRecords().withIntent(intent);
+  }
+
+  public static RoleRecordStream roleRecords() {
+    return new RoleRecordStream(records(ValueType.ROLE, RoleRecordValue.class));
+  }
+
+  public static RoleRecordStream roleRecords(final RoleIntent intent) {
+    return roleRecords().withIntent(intent);
   }
 
   public static ScaleRecordStream scaleRecords() {

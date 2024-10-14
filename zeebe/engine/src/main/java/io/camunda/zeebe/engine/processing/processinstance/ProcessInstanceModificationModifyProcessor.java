@@ -11,6 +11,7 @@ import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBeha
 import static java.util.function.Predicate.not;
 
 import io.camunda.zeebe.auth.impl.TenantAuthorizationCheckerImpl;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
@@ -796,8 +797,6 @@ public final class ProcessInstanceModificationModifyProcessor
         // no activate instruction requires this element instance
         && !requiredKeysForActivation.contains(elementInstance.getKey());
   }
-
-  private record Rejection(RejectionType type, String reason) {}
 
   /**
    * Exception that can be thrown when child instance is being modified. If all active element

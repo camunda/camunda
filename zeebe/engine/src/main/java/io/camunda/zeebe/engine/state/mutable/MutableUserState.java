@@ -13,4 +13,6 @@ import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 public interface MutableUserState extends UserState {
 
   void create(final UserRecord user);
+
+  void addRole(final long userKey, final long roleKey);
 }
