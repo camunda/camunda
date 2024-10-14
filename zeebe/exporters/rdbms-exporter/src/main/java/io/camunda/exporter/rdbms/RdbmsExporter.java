@@ -8,12 +8,14 @@
 package io.camunda.exporter.rdbms;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.domain.ExporterPositionModel;
+import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -32,12 +34,14 @@ public class RdbmsExporter implements Exporter {
 
   private long partitionId;
   private final RdbmsService rdbmsService;
+  private final RdbmsWriter rdbmsWriter;
 
   private ExporterPositionModel exporterRdbmsPosition;
   private long lastPosition = -1;
 
   public RdbmsExporter(final RdbmsService rdbmsService) {
     this.rdbmsService = rdbmsService;
+    rdbmsWriter = rdbmsService.createWriter();
   }
 
   @Override
@@ -63,15 +67,15 @@ public class RdbmsExporter implements Exporter {
       updatePositionInBroker();
     }
 
-    rdbmsService.executionQueue().registerPreFlushListener(this::updatePositionInRdbms);
-    rdbmsService.executionQueue().registerPostFlushListener(this::updatePositionInBroker);
+    rdbmsWriter.getExecutionQueue().registerPreFlushListener(this::updatePositionInRdbms);
+    rdbmsWriter.getExecutionQueue().registerPostFlushListener(this::updatePositionInBroker);
     LOG.info("[RDBMS Exporter] Exporter opened with last exported position {}", lastPosition);
   }
 
   @Override
   public void close() {
     try {
-      rdbmsService.executionQueue().flush();
+      rdbmsWriter.flush();
     } catch (final Exception e) {
       LOG.warn("[RDBMS Exporter] Failed to flush records before closing exporter.", e);
     }
@@ -111,13 +115,12 @@ public class RdbmsExporter implements Exporter {
 
   private void registerHandler() {
     registeredHandlers.put(
-        ValueType.PROCESS,
-        new ProcessExportHandler(rdbmsService.getProcessDefinitionRdbmsService()));
+        ValueType.PROCESS, new ProcessExportHandler(rdbmsWriter.getProcessDefinitionWriter()));
     registeredHandlers.put(
         ValueType.PROCESS_INSTANCE,
-        new ProcessInstanceExportHandler(rdbmsService.getProcessInstanceRdbmsService()));
+        new ProcessInstanceExportHandler(rdbmsWriter.getProcessInstanceWriter()));
     registeredHandlers.put(
-        ValueType.VARIABLE, new VariableExportHandler(rdbmsService.getVariableRdbmsService()));
+        ValueType.VARIABLE, new VariableExportHandler(rdbmsWriter.getVariableWriter()));
   }
 
   private void updatePositionInBroker() {
@@ -168,5 +171,11 @@ public class RdbmsExporter implements Exporter {
       LOG.debug(
           "[RDBMS Exporter] Found position in rdbms for this exporter: {}", exporterRdbmsPosition);
     }
+  }
+
+  @VisibleForTesting(
+      "Each exporter creates it's own executionQueue, so we need an accessible flush method for tests")
+  void flushExecutionQueue() {
+    this.rdbmsWriter.flush();
   }
 }

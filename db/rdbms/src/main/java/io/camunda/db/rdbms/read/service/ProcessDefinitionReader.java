@@ -5,40 +5,21 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.db.rdbms.service;
+package io.camunda.db.rdbms.read.service;
 
-import io.camunda.db.rdbms.domain.ProcessDefinitionDbModel;
-import io.camunda.db.rdbms.queue.ContextType;
-import io.camunda.db.rdbms.queue.ExecutionQueue;
-import io.camunda.db.rdbms.queue.QueueItem;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
+import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public class ProcessDefinitionRdbmsService {
+public class ProcessDefinitionReader {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ProcessDefinitionRdbmsService.class);
-
-  private final ExecutionQueue executionQueue;
   private final ProcessDefinitionMapper processDefinitionMapper;
   private final HashMap<CacheKey, ProcessDefinitionDbModel> cache = new HashMap<>();
 
-  public ProcessDefinitionRdbmsService(
-      final ExecutionQueue executionQueue, final ProcessDefinitionMapper processDefinitionMapper) {
-    this.executionQueue = executionQueue;
+  public ProcessDefinitionReader(final ProcessDefinitionMapper processDefinitionMapper) {
     this.processDefinitionMapper = processDefinitionMapper;
-  }
-
-  public void save(final ProcessDefinitionDbModel processDefinition) {
-    executionQueue.executeInQueue(
-        new QueueItem(
-            ContextType.PROCESS_DEFINITION,
-            processDefinition.processDefinitionKey(),
-            "io.camunda.db.rdbms.sql.ProcessDefinitionMapper.insert",
-            processDefinition));
   }
 
   public Optional<ProcessDefinitionDbModel> findOne(

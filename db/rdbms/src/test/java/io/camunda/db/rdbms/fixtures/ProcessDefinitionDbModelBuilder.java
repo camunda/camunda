@@ -7,9 +7,10 @@
  */
 package io.camunda.db.rdbms.fixtures;
 
-import io.camunda.db.rdbms.domain.ProcessDefinitionDbModel;
+import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
 
 public class ProcessDefinitionDbModelBuilder {
+
   private Long processDefinitionKey;
   private String bpmnProcessId;
   private String name;
@@ -21,32 +22,32 @@ public class ProcessDefinitionDbModelBuilder {
   public ProcessDefinitionDbModelBuilder() {}
 
   // Builder methods for each field
-  public ProcessDefinitionDbModelBuilder processDefinitionKey(Long processDefinitionKey) {
+  public ProcessDefinitionDbModelBuilder processDefinitionKey(final Long processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
     return this;
   }
 
-  public ProcessDefinitionDbModelBuilder bpmnProcessId(String bpmnProcessId) {
+  public ProcessDefinitionDbModelBuilder bpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
     return this;
   }
 
-  public ProcessDefinitionDbModelBuilder name(String name) {
+  public ProcessDefinitionDbModelBuilder name(final String name) {
     this.name = name;
     return this;
   }
 
-  public ProcessDefinitionDbModelBuilder tenantId(String tenantId) {
+  public ProcessDefinitionDbModelBuilder tenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
 
-  public ProcessDefinitionDbModelBuilder versionTag(String versionTag) {
+  public ProcessDefinitionDbModelBuilder versionTag(final String versionTag) {
     this.versionTag = versionTag;
     return this;
   }
 
-  public ProcessDefinitionDbModelBuilder version(int version) {
+  public ProcessDefinitionDbModelBuilder version(final int version) {
     this.version = version;
     return this;
   }

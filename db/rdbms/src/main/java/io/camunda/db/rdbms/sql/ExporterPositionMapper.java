@@ -7,7 +7,7 @@
  */
 package io.camunda.db.rdbms.sql;
 
-import io.camunda.db.rdbms.domain.ExporterPositionModel;
+import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
 
 public interface ExporterPositionMapper {
 

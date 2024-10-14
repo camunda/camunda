@@ -5,9 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.db.rdbms.queue;
+package io.camunda.db.rdbms.write.queue;
 
-public interface FlushListener {
-
-  void onFlushSuccess();
+public enum ContextType {
+  EXPORTER_POSITION,
+  PROCESS_DEFINITION,
+  PROCESS_INSTANCE,
+  VARIABLE,
 }

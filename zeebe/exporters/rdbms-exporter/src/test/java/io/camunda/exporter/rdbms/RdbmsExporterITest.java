@@ -10,7 +10,7 @@ package io.camunda.exporter.rdbms;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.domain.VariableModel;
+import io.camunda.db.rdbms.read.domain.VariableModel;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
@@ -42,7 +42,7 @@ class RdbmsExporterITest {
 
   @Autowired private RdbmsService rdbmsService;
 
-  private RdbmsExporter exporter = new RdbmsExporter(rdbmsService);
+  private RdbmsExporter exporter;
 
   @BeforeEach
   void setUp() {
@@ -59,12 +59,12 @@ class RdbmsExporterITest {
     // when
     exporter.export(processInstanceRecord);
     // and we do a manual flush
-    rdbmsService.executionQueue().flush();
+    exporter.flushExecutionQueue();
 
     // then
     final var key =
         ((ProcessInstanceRecordValue) processInstanceRecord.getValue()).getProcessInstanceKey();
-    final var processInstance = rdbmsService.getProcessInstanceRdbmsService().findOne(key);
+    final var processInstance = rdbmsService.getProcessInstanceReader().findOne(key);
     assertThat(processInstance).isNotNull();
   }
 
@@ -85,16 +85,16 @@ class RdbmsExporterITest {
     // when
     recordList.forEach(record -> exporter.export(record));
     // and we do a manual flush
-    rdbmsService.executionQueue().flush();
+    exporter.flushExecutionQueue();
 
     // then
     final var key =
         ((ProcessInstanceRecordValue) processInstanceRecord.getValue()).getProcessInstanceKey();
-    final var processInstance = rdbmsService.getProcessInstanceRdbmsService().findOne(key);
+    final var processInstance = rdbmsService.getProcessInstanceReader().findOne(key);
     assertThat(processInstance).isNotNull();
 
     final VariableModel variable =
-        rdbmsService.getVariableRdbmsService().findOne(variableCreated.getKey());
+        rdbmsService.getVariableReader().findOne(variableCreated.getKey());
     final VariableRecordValue variableRecordValue =
         (VariableRecordValue) variableCreated.getValue();
     assertThat(variable).isNotNull();
