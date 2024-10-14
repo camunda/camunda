@@ -11,6 +11,7 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import java.util.Collection;
 import java.util.Set;
 
 public interface ExporterResourceProvider {
@@ -22,7 +23,7 @@ public interface ExporterResourceProvider {
    *
    * @return A {@link Set} of {@link IndexDescriptor}
    */
-  Set<IndexDescriptor> getIndexDescriptors();
+  Collection<IndexDescriptor> getIndexDescriptors();
 
   /**
    * This should return descriptors describing the desired state of all index templates provided.
