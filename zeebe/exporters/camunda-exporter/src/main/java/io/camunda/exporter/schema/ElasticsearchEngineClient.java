@@ -26,7 +26,6 @@ import co.elastic.clients.json.JsonData;
 import co.elastic.clients.json.JsonpDeserializer;
 import co.elastic.clients.json.jackson.JacksonJsonpGenerator;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.SchemaResourceSerializer;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
