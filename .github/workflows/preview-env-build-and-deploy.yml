@@ -211,7 +211,7 @@ jobs:
     if: always() && needs.deploy-preview.result != 'skipped' && needs.deploy-preview.result != 'cancelled'
     name: Clean Preview Environment
     needs: [deploy-preview]
-    uses: camunda/camunda/.github/workflows/preview-env-clean.yml@preview-env-build-helmchart
+    uses: camunda/camunda/.github/workflows/preview-env-clean.yml@main
     secrets: inherit
     with:
       pull-request: ${{ github.event.pull_request.number }}
