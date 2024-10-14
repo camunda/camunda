@@ -17,15 +17,6 @@ defaults:
     shell: bash
 
 jobs:
-  build-optimize:
-    if: github.event.pull_request.state != 'closed' && (contains( github.event.label.name, 'deploy-preview') || contains( github.event.pull_request.labels.*.name, 'deploy-preview'))
-    name: Optimize Build
-    uses: ./.github/workflows/optimize-ci-build-reusable.yml
-    secrets: inherit
-    with:
-      branch: ${{ github.head_ref }}
-      pushDocker: true
-
   build-operare:
     if: github.event.pull_request.state != 'closed' && (contains( github.event.label.name, 'deploy-preview') || contains( github.event.pull_request.labels.*.name, 'deploy-preview'))
     name: Operate Build
