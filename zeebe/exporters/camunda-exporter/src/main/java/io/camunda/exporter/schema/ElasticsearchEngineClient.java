@@ -232,11 +232,14 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   private PutMappingRequest putMappingRequest(
       final IndexDescriptor indexDescriptor, final Collection<IndexMappingProperty> newProperties) {
 
+    final var elsProperties =
+        newProperties.stream()
+            .map(IndexMappingProperty::toElasticsearchProperty)
+            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+
     return new PutMappingRequest.Builder()
         .index(indexDescriptor.getFullQualifiedName())
-        .properties(
-            IndexMappingProperty.toPropertiesMap(
-                newProperties, MAPPER, (inp) -> deserializeJson(Property._DESERIALIZER, inp)))
+        .properties(elsProperties)
         .build();
   }
 
