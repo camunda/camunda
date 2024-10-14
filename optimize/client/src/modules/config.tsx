@@ -51,7 +51,6 @@ export type UiConfig = {
   enterpriseMode: boolean;
   webappsEndpoints: WebappEndpoints;
   webappsLinks: WebappLinks;
-  webhooks: string[];
   mixpanel: MixpanelConfig;
   logoutHidden: boolean;
   exportCsvLimit: number;
@@ -121,7 +120,6 @@ export const getOptimizeVersion = createAccessorFunction<string>('optimizeVersio
 export const getDocsVersion = createAccessorFunction<string>('optimizeDocsVersion');
 export const getWebappEndpoints = createAccessorFunction<WebappEndpoints>('webappsEndpoints');
 export const getWebappLinks = createAccessorFunction<WebappLinks>('webappsLinks');
-export const getWebhooks = createAccessorFunction<string[]>('webhooks');
 export const getMixpanelConfig = createAccessorFunction<MixpanelConfig>('mixpanel');
 export const getOptimizeProfile =
   createAccessorFunction<UiConfig['optimizeProfile']>('optimizeProfile');

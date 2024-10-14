@@ -23,7 +23,6 @@ import {
   loadReports,
 } from 'services';
 import {t} from 'translation';
-import {getWebhooks} from 'config';
 import {useErrorHandling} from 'hooks';
 
 import './AlertsDropdown.scss';
@@ -33,7 +32,6 @@ export function AlertsDropdown({dashboardTiles, numberReport, location}) {
   const [reports, setReports] = useState([]);
   const [openAlert, setOpenAlert] = useState();
   const [deleting, setDeleting] = useState();
-  const [webhooks, setWebhooks] = useState();
   const [loading, setLoading] = useState(false);
   const collection = React.useMemo(() => getCollection(location.pathname), [location]);
   const {mightFail} = useErrorHandling();
@@ -57,7 +55,6 @@ export function AlertsDropdown({dashboardTiles, numberReport, location}) {
     if (collection) {
       loadEntityAlerts();
       loadCollectionReports();
-      mightFail(getWebhooks(), setWebhooks, showError);
     }
   }, [loadEntityAlerts, loadCollectionReports, location, collection, mightFail]);
 
@@ -157,7 +154,6 @@ export function AlertsDropdown({dashboardTiles, numberReport, location}) {
           initialReport={numberReport?.id}
           reports={reportsInScope}
           onClose={() => setOpenAlert()}
-          webhooks={webhooks}
           onConfirm={(alert) => {
             if (openAlert.id) {
               editExistingAlert(alert);
