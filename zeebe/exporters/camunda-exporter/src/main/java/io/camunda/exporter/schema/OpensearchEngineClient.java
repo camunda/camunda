@@ -18,11 +18,14 @@ import java.io.InputStream;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonpDeserializer;
 import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
+import org.opensearch.client.opensearch.indices.PutMappingRequest;
 import org.opensearch.client.opensearch.indices.put_index_template.IndexTemplateMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,8 +85,19 @@ public class OpensearchEngineClient implements SearchEngineClient {
 
   @Override
   public void putMapping(
-      final IndexDescriptor indexDescriptor,
-      final Collection<IndexMappingProperty> newProperties) {}
+      final IndexDescriptor indexDescriptor, final Collection<IndexMappingProperty> newProperties) {
+    final PutMappingRequest request = putMappingRequest(indexDescriptor, newProperties);
+
+    try {
+      client.indices().putMapping(request);
+      LOG.debug("Mapping in [{}] was successfully updated", indexDescriptor.getIndexName());
+    } catch (final IOException e) {
+      final var errMsg =
+          String.format("Mapping in [%s] was NOT updated", indexDescriptor.getIndexName());
+      LOG.error(errMsg, e);
+      throw new OpensearchExporterException(errMsg, e);
+    }
+  }
 
   @Override
   public Map<String, IndexMapping> getMappings(
@@ -97,6 +111,20 @@ public class OpensearchEngineClient implements SearchEngineClient {
 
   @Override
   public void putIndexLifeCyclePolicy(final String policyName, final String deletionMinAge) {}
+
+  private PutMappingRequest putMappingRequest(
+      final IndexDescriptor indexDescriptor, final Collection<IndexMappingProperty> newProperties) {
+
+    final var opensearchProperties =
+        newProperties.stream()
+            .map(IndexMappingProperty::toOpensearchProperty)
+            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+
+    return new PutMappingRequest.Builder()
+        .index(indexDescriptor.getFullQualifiedName())
+        .properties(opensearchProperties)
+        .build();
+  }
 
   private PutIndexTemplateRequest putIndexTemplateRequest(
       final IndexTemplateDescriptor indexTemplateDescriptor, final IndexSettings settings) {

@@ -16,7 +16,9 @@ import io.camunda.exporter.exceptions.OpensearchExporterException;
 import io.camunda.exporter.utils.TestSupport;
 import io.camunda.search.connect.os.OpensearchConnector;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -133,5 +135,33 @@ public class OpensearchEngineClientIT {
             () -> opensearchEngineClient.createIndexTemplate(template, new IndexSettings(), true))
         .isInstanceOf(OpensearchExporterException.class)
         .hasMessageContaining("Cannot update template [template_name] as create = true");
+  }
+
+  @Test
+  void shouldPutMappingCorrectly() throws IOException {
+    // given
+    final var descriptor =
+        SchemaTestUtil.mockIndex("qualified_name", "alias", "index_name", "/mappings.json");
+    opensearchEngineClient.createIndex(descriptor, new IndexSettings());
+
+    final Set<IndexMappingProperty> newProperties = new HashSet<>();
+    newProperties.add(new IndexMappingProperty("email", Map.of("type", "keyword")));
+    newProperties.add(new IndexMappingProperty("age", Map.of("type", "integer")));
+
+    // when
+    opensearchEngineClient.putMapping(descriptor, newProperties);
+
+    // then
+    final var indices =
+        openSearchClient
+            .indices()
+            .get(req -> req.index(descriptor.getFullQualifiedName()))
+            .result();
+
+    assertThat(indices.size()).isEqualTo(1);
+    final var properties = indices.get(descriptor.getFullQualifiedName()).mappings().properties();
+
+    assertThat(properties.get("email").isKeyword()).isTrue();
+    assertThat(properties.get("age").isInteger()).isTrue();
   }
 }
