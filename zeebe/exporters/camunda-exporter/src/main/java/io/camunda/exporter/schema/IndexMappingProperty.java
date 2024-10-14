@@ -22,13 +22,13 @@ import org.apache.commons.io.IOUtils;
 
 public record IndexMappingProperty(String name, Object typeDefinition) {
   private static final ObjectMapper MAPPER = new ObjectMapper();
-  private static final JsonpMapper jsonpMapper = new JacksonJsonpMapper(MAPPER);
+  private static final JsonpMapper JSONP_MAPPER = new JacksonJsonpMapper(MAPPER);
 
   public Entry<String, Property> toElasticsearchProperty() {
     try {
       final var typeDefinitionParser = getTypeDefinitionParser();
       final var elasticsearchProperty =
-          Property._DESERIALIZER.deserialize(typeDefinitionParser, jsonpMapper);
+          Property._DESERIALIZER.deserialize(typeDefinitionParser, JSONP_MAPPER);
 
       return entry(name(), elasticsearchProperty);
     } catch (final IOException e) {
@@ -44,7 +44,7 @@ public record IndexMappingProperty(String name, Object typeDefinition) {
     final var typeDefinitionJson =
         IOUtils.toInputStream(MAPPER.writeValueAsString(typeDefinition()), StandardCharsets.UTF_8);
 
-    return jsonpMapper.jsonProvider().createParser(typeDefinitionJson);
+    return JSONP_MAPPER.jsonProvider().createParser(typeDefinitionJson);
   }
 
   public static IndexMappingProperty createIndexMappingProperty(
