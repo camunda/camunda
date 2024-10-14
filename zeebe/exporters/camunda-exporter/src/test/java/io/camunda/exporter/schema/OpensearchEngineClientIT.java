@@ -218,4 +218,24 @@ public class OpensearchEngineClientIT {
                 .typeDefinition(Map.of("type", "keyword"))
                 .build());
   }
+
+  @Test
+  void shouldUpdateSettingsWithPutSettingsRequest() throws IOException {
+    // given
+    final var index =
+        SchemaTestUtil.mockIndex("index_name", "alias", "index_name", "/mappings.json");
+
+    opensearchEngineClient.createIndex(index, new IndexSettings());
+
+    // when
+    final Map<String, String> newSettings = Map.of("index.refresh_interval", "5s");
+    opensearchEngineClient.putSettings(List.of(index), newSettings);
+
+    // then
+    final var indices = openSearchClient.indices().get(req -> req.index("index_name"));
+
+    assertThat(indices.result().size()).isEqualTo(1);
+    assertThat(indices.result().get("index_name").settings().index().refreshInterval().time())
+        .isEqualTo("5s");
+  }
 }

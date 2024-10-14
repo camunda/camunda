@@ -8,6 +8,8 @@
 package io.camunda.exporter.schema;
 
 import static io.camunda.exporter.utils.SearchEngineClientUtils.appendToFileSchemaSettings;
+import static io.camunda.exporter.utils.SearchEngineClientUtils.listIndices;
+import static io.camunda.exporter.utils.SearchEngineClientUtils.mapToSettings;
 
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.exceptions.IndexSchemaValidationException;
@@ -28,6 +30,7 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
+import org.opensearch.client.opensearch.indices.PutIndicesSettingsRequest;
 import org.opensearch.client.opensearch.indices.PutMappingRequest;
 import org.opensearch.client.opensearch.indices.get_index_template.IndexTemplateItem;
 import org.opensearch.client.opensearch.indices.put_index_template.IndexTemplateMapping;
@@ -132,10 +135,37 @@ public class OpensearchEngineClient implements SearchEngineClient {
 
   @Override
   public void putSettings(
-      final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings) {}
+      final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings) {
+    final var request = putIndexSettingsRequest(indexDescriptors, toAppendSettings);
+
+    try {
+      client.indices().putSettings(request);
+    } catch (final IOException e) {
+      final var errMsg =
+          String.format(
+              "settings PUT failed for the following indices [%s]", listIndices(indexDescriptors));
+      LOG.error(errMsg, e);
+      throw new OpensearchExporterException(errMsg, e);
+    }
+  }
 
   @Override
   public void putIndexLifeCyclePolicy(final String policyName, final String deletionMinAge) {}
+
+  private PutIndicesSettingsRequest putIndexSettingsRequest(
+      final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings) {
+
+    final org.opensearch.client.opensearch.indices.IndexSettings settings =
+        mapToSettings(
+            toAppendSettings,
+            (inp) ->
+                deserializeJson(
+                    org.opensearch.client.opensearch.indices.IndexSettings._DESERIALIZER, inp));
+    return new PutIndicesSettingsRequest.Builder()
+        .index(listIndices(indexDescriptors))
+        .settings(settings)
+        .build();
+  }
 
   private String dynamicFromMappings(final TypeMapping mapping) {
     final var dynamic = mapping.dynamic();
