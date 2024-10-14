@@ -4,8 +4,8 @@
     "properties": {
       "hello": {
         "type": "text",
-        "index": "false",
-        "eager_global_ordinals": "true"
+        "index": false,
+        "eager_global_ordinals": true
       },
       "world": {
         "type": "keyword"
