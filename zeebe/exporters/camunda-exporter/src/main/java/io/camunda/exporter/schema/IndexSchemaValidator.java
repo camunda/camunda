@@ -111,7 +111,7 @@ public class IndexSchemaValidator {
 
   private IndexMappingDifference getIndexMappingDifference(
       final IndexDescriptor indexDescriptor, final Map<String, IndexMapping> indexMappingsGroup) {
-    final IndexMapping indexMappingMustBe = SchemaManager.readIndex(indexDescriptor, MAPPER);
+    final IndexMapping indexMappingMustBe = IndexMapping.from(indexDescriptor, MAPPER);
 
     final var differences =
         indexMappingsGroup.values().stream()

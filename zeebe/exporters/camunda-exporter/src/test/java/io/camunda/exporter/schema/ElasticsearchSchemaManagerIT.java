@@ -191,7 +191,7 @@ public class ElasticsearchSchemaManagerIT {
             searchEngineClient, Set.of(), Set.of(), new ExporterConfiguration());
 
     // when
-    final var indexMapping = SchemaManager.readIndex(index, new ObjectMapper());
+    final var indexMapping = IndexMapping.from(index, new ObjectMapper());
 
     // then
     assertThat(indexMapping.dynamic()).isEqualTo("strict");

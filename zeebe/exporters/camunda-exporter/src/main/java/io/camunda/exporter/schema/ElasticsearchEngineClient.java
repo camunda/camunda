@@ -9,6 +9,7 @@ package io.camunda.exporter.schema;
 
 import static io.camunda.exporter.utils.SearchEngineClientUtils.listIndices;
 import static io.camunda.exporter.utils.SearchEngineClientUtils.mapToSettings;
+import static io.camunda.exporter.utils.SearchEngineClientUtils.appendToFileSchemaSettings;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
@@ -260,7 +261,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       final var templateFields =
           deserializeJson(
               IndexTemplateMapping._DESERIALIZER,
-              SearchEngineClient.appendToFileSchemaSettings(templateFile, settings, MAPPER));
+              appendToFileSchemaSettings(templateFile, settings));
 
       return new PutIndexTemplateRequest.Builder()
           .name(indexTemplateDescriptor.getTemplateName())
@@ -290,7 +291,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       final var templateFields =
           deserializeJson(
               IndexTemplateMapping._DESERIALIZER,
-              SearchEngineClient.appendToFileSchemaSettings(templateFile, settings, MAPPER));
+              appendToFileSchemaSettings(templateFile, settings));
 
       return new CreateIndexRequest.Builder()
           .index(indexDescriptor.getFullQualifiedName())
