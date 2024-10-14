@@ -13,9 +13,10 @@ import static io.camunda.operate.webapp.security.OperateURIs.AUTH_WHITELIST;
 import static io.camunda.operate.webapp.security.OperateURIs.PUBLIC_API;
 import static io.camunda.operate.webapp.security.OperateURIs.ROOT;
 
+import io.camunda.operate.OperateProfileService;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.security.BaseWebConfigurer;
 import io.camunda.operate.webapp.security.oauth2.IdentityOAuth2WebConfigurer;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -26,7 +27,15 @@ import org.springframework.stereotype.Component;
 @Component("webSecurityConfig")
 public class IdentityWebSecurityConfig extends BaseWebConfigurer {
 
-  @Autowired protected IdentityOAuth2WebConfigurer oAuth2WebConfigurer;
+  protected IdentityOAuth2WebConfigurer oAuth2WebConfigurer;
+
+  public IdentityWebSecurityConfig(
+      final OperateProperties operateProperties,
+      final OperateProfileService errorMessageService,
+      final IdentityOAuth2WebConfigurer oAuth2WebConfigurer) {
+    super(operateProperties, errorMessageService);
+    this.oAuth2WebConfigurer = oAuth2WebConfigurer;
+  }
 
   @Override
   protected void applySecurityFilterSettings(final HttpSecurity http) throws Exception {
