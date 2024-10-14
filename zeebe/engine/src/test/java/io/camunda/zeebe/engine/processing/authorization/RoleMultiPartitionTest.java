@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -24,7 +25,6 @@ import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -101,8 +101,15 @@ public class RoleMultiPartitionTest {
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // given the user creation distribution is intercepted
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
-      interceptRoleCreateForPartition(partitionId);
+      interceptUserCreateForPartition(partitionId);
     }
+    ENGINE
+        .user()
+        .newUser(UUID.randomUUID().toString())
+        .withName("Foo Bar")
+        .withPassword("baz")
+        .withEmail("foobar@baz.com")
+        .create();
 
     // when
     final var name = UUID.randomUUID().toString();
@@ -114,12 +121,13 @@ public class RoleMultiPartitionTest {
     // then
     assertThat(
             RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
-                .limit(1))
+                .limit(2))
         .extracting(r -> r.getValue().getValueType(), r -> r.getValue().getIntent())
-        .containsExactly(Assertions.tuple(ValueType.ROLE, RoleIntent.CREATE));
+        .containsExactly(
+            tuple(ValueType.USER, UserIntent.CREATE), tuple(ValueType.ROLE, RoleIntent.CREATE));
   }
 
-  private void interceptRoleCreateForPartition(final int partitionId) {
+  private void interceptUserCreateForPartition(final int partitionId) {
     final var hasInterceptedPartition = new AtomicBoolean(false);
     ENGINE.interceptInterPartitionCommands(
         (receiverPartitionId, valueType, intent, recordKey, command) -> {
