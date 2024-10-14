@@ -74,7 +74,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @TestInstance(Lifecycle.PER_CLASS)
 final class CamundaExporterIT {
   @Container
-  private static final ElasticsearchContainer CONTAINER = TestSupport.createDefaultContainer();
+  private static final ElasticsearchContainer CONTAINER =
+      TestSupport.createDefeaultElasticsearchContainer();
 
   private final ExporterConfiguration config = new ExporterConfiguration();
   private final ExporterTestController controller = new ExporterTestController();

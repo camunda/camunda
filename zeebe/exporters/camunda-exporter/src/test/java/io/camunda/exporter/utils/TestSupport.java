@@ -9,6 +9,7 @@ package io.camunda.exporter.utils;
 
 import java.time.Duration;
 import org.elasticsearch.client.RestClient;
+import org.opensearch.testcontainers.OpensearchContainer;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.utility.DockerImageName;
@@ -18,7 +19,26 @@ public final class TestSupport {
       DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
           .withTag(RestClient.class.getPackage().getImplementationVersion());
 
+  private static final DockerImageName OPENSEARCH_IMAGE =
+      DockerImageName.parse("opensearchproject/opensearch").withTag("2.17.1");
+
   private TestSupport() {}
+
+  /**
+   * Returns an OpenSearch container pointing at the same version as the {@link
+   * org.opensearch.client.RestClient}.
+   *
+   * <p>The container is configured to use 512m of heap and 512m of direct memory. This is required
+   * because OpenSearch, by default, will grab all the RAM available otherwise.
+   *
+   * <p>Additionally, security is explicitly disabled to avoid having tons of warning printed out.
+   */
+  @SuppressWarnings("resource")
+  public static OpensearchContainer<?> createDefaultOpensearchContainer() {
+    return new OpensearchContainer<>(OPENSEARCH_IMAGE)
+        .withEnv("OPENSEARCH_JAVA_OPTS", "-Xms256m -Xmx512m -XX:MaxDirectMemorySize=536870912")
+        .withEnv("action.auto_create_index", "true");
+  }
 
   /**
    * Returns an Elasticsearch container pointing at the same version as the {@link RestClient}.
@@ -29,7 +49,7 @@ public final class TestSupport {
    * <p>Additionally, security is explicitly disabled to avoid having tons of warning printed out.
    */
   @SuppressWarnings("resource")
-  public static ElasticsearchContainer createDefaultContainer() {
+  public static ElasticsearchContainer createDefeaultElasticsearchContainer() {
     return new ElasticsearchContainer(ELASTIC_IMAGE)
         // use JVM option files to avoid overwriting default options set by the ES container class
         .withClasspathResourceMapping(
