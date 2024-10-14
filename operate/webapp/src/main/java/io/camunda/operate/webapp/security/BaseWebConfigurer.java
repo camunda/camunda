@@ -47,11 +47,17 @@ public abstract class BaseWebConfigurer {
 
   protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-  @Autowired protected OperateProperties operateProperties;
-
-  @Autowired OperateProfileService errorMessageService;
-
+  protected OperateProperties operateProperties;
+  OperateProfileService errorMessageService;
   final CookieCsrfTokenRepository cookieCsrfTokenRepository = new CookieCsrfTokenRepository();
+  private final WebSecurityProperties webSecurityProperties;
+
+  public BaseWebConfigurer(
+      final OperateProperties operateProperties, final OperateProfileService errorMessageService) {
+    this.operateProperties = operateProperties;
+    this.errorMessageService = errorMessageService;
+    webSecurityProperties = operateProperties.getWebSecurity();
+  }
 
   public static void sendJSONErrorMessage(final HttpServletResponse response, final String message)
       throws IOException {
