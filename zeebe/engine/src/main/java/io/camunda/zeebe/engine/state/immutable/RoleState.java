@@ -15,7 +15,7 @@ public interface RoleState {
 
   Optional<PersistedRole> getRole(long roleKey);
 
-  long getRoleKeyByName(String roleName);
+  Optional<Long> getRoleKeyByName(String roleName);
 
   Optional<EntityType> getEntityType(long roleKey, long entityKey);
 }

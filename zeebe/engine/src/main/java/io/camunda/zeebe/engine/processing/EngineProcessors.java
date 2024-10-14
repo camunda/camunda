@@ -31,6 +31,7 @@ import io.camunda.zeebe.engine.processing.distribution.CommandRedistributor;
 import io.camunda.zeebe.engine.processing.dmn.DecisionEvaluationEvaluteProcessor;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationProcessors;
+import io.camunda.zeebe.engine.processing.identity.RoleProcessors;
 import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
 import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
@@ -233,6 +234,14 @@ public final class EngineProcessors {
         writers,
         commandDistributionBehavior,
         authCheckBehavior);
+
+    RoleProcessors.addRoleProcessors(
+        typedRecordProcessors,
+        processingState.getRoleState(),
+        authCheckBehavior,
+        keyGenerator,
+        writers,
+        commandDistributionBehavior);
 
     ScalingProcessors.addScalingProcessors(
         typedRecordProcessors, writers, keyGenerator, processingState);
