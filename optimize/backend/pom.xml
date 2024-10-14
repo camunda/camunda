@@ -561,7 +561,7 @@
     <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-core</artifactId>
-      <version>1.13.5</version>
+      <version>1.13.6</version>
       <scope>compile</scope>
     </dependency>
 
