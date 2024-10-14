@@ -21,6 +21,7 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -100,7 +101,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
 
   @Override
   public void putMapping(
-      final IndexDescriptor indexDescriptor, final Set<IndexMappingProperty> newProperties) {
+      final IndexDescriptor indexDescriptor, final Collection<IndexMappingProperty> newProperties) {
     final PutMappingRequest request = putMappingRequest(indexDescriptor, newProperties);
 
     try {
@@ -258,7 +259,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
   }
 
   private PutMappingRequest putMappingRequest(
-      final IndexDescriptor indexDescriptor, final Set<IndexMappingProperty> newProperties) {
+      final IndexDescriptor indexDescriptor, final Collection<IndexMappingProperty> newProperties) {
 
     final var opensearchProperties =
         newProperties.stream()

@@ -234,11 +234,6 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
             .map(IndexMappingProperty::toElasticsearchProperty)
             .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
 
-    final var elsProperties =
-        newProperties.stream()
-            .map(IndexMappingProperty::toElasticsearchProperty)
-            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-
     return new PutMappingRequest.Builder()
         .index(indexDescriptor.getFullQualifiedName())
         .properties(elsProperties)
