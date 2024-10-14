@@ -12,7 +12,6 @@ import static io.camunda.exporter.utils.SearchEngineClientUtils.listIndices;
 import static io.camunda.exporter.utils.SearchEngineClientUtils.mapToSettings;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.mapping.Property;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
 import co.elastic.clients.elasticsearch.indices.Alias;
@@ -229,6 +228,11 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
   private PutMappingRequest putMappingRequest(
       final IndexDescriptor indexDescriptor, final Collection<IndexMappingProperty> newProperties) {
+
+    final var elsProperties =
+        newProperties.stream()
+            .map(IndexMappingProperty::toElasticsearchProperty)
+            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
 
     final var elsProperties =
         newProperties.stream()
