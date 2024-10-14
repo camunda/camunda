@@ -15,7 +15,6 @@ import com.google.common.base.Strings;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
-import io.camunda.zeebe.engine.processing.bpmn.ProcessElementProperties;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
@@ -92,16 +91,11 @@ public final class BpmnJobBehavior {
     this.userTaskBehavior = userTaskBehavior;
   }
 
-  public Either<Failure, JobProperties> evaluateJobExpressions(
-      final JobWorkerProperties jobWorkerProps, final BpmnElementContext context) {
-    return evaluateJobExpressions(jobWorkerProps, ProcessElementProperties.from(context));
-  }
-
   public Either<Failure, JobProperties> evaluateTaskListenerJobExpressions(
       final JobWorkerProperties jobWorkerProps,
-      final ProcessElementProperties elementProps,
+      final BpmnElementContext context,
       final UserTaskRecord taskRecordValue) {
-    return evaluateJobExpressions(jobWorkerProps, elementProps)
+    return evaluateJobExpressions(jobWorkerProps, context)
         .map(
             p ->
                 of(taskRecordValue.getAssignee())
@@ -135,8 +129,8 @@ public final class BpmnJobBehavior {
   }
 
   public Either<Failure, JobProperties> evaluateJobExpressions(
-      final JobWorkerProperties jobWorkerProps, final ProcessElementProperties elementProps) {
-    final var scopeKey = elementProps.getElementInstanceKey();
+      final JobWorkerProperties jobWorkerProps, final BpmnElementContext context) {
+    final var scopeKey = context.getElementInstanceKey();
     return Either.<Failure, JobProperties>right(new JobProperties())
         .flatMap(p -> evalTypeExp(jobWorkerProps.getType(), scopeKey).map(p::type))
         .flatMap(p -> evalRetriesExp(jobWorkerProps.getRetries(), scopeKey).map(p::retries))
@@ -175,7 +169,7 @@ public final class BpmnJobBehavior {
                         jobWorkerProps.getFormId(),
                         jobWorkerProps.getFormBindingType(),
                         jobWorkerProps.getFormVersionTag(),
-                        elementProps,
+                        context,
                         scopeKey)
                     .map(key -> Objects.toString(key, null))
                     .map(p::formKey));
@@ -199,7 +193,7 @@ public final class BpmnJobBehavior {
       final JobProperties jobProperties) {
 
     writeJobCreatedEvent(
-        ProcessElementProperties.from(context),
+        context,
         jobProperties,
         JobKind.BPMN_ELEMENT,
         JobListenerEventType.UNSPECIFIED,
@@ -214,7 +208,7 @@ public final class BpmnJobBehavior {
     final var jobListenerEventType =
         fromExecutionListenerEventType(executionListener.getEventType());
     writeJobCreatedEvent(
-        ProcessElementProperties.from(context),
+        context,
         jobProperties,
         JobKind.EXECUTION_LISTENER,
         jobListenerEventType,
@@ -222,7 +216,7 @@ public final class BpmnJobBehavior {
   }
 
   public void createNewTaskListenerJob(
-      final ProcessElementProperties elementProps,
+      final BpmnElementContext context,
       final JobProperties jobProperties,
       final TaskListener taskListener,
       final UserTaskRecord taskRecordValue) {
@@ -232,7 +226,7 @@ public final class BpmnJobBehavior {
             Protocol.RESERVED_HEADER_NAME_PREFIX + "userTaskKey",
             Objects.toString(taskRecordValue.getUserTaskKey()));
     writeJobCreatedEvent(
-        elementProps,
+        context,
         jobProperties,
         JobKind.TASK_LISTENER,
         fromTaskListenerEventType(taskListener.getEventType()),
@@ -279,7 +273,7 @@ public final class BpmnJobBehavior {
   }
 
   private void writeJobCreatedEvent(
-      final ProcessElementProperties elementProps,
+      final BpmnElementContext context,
       final JobProperties props,
       final JobKind jobKind,
       final JobListenerEventType jobListenerEventType,
@@ -293,13 +287,13 @@ public final class BpmnJobBehavior {
         .setListenerEventType(jobListenerEventType)
         .setRetries(props.getRetries().intValue())
         .setCustomHeaders(encodedHeaders)
-        .setBpmnProcessId(elementProps.getBpmnProcessId())
-        .setProcessDefinitionVersion(elementProps.getProcessVersion())
-        .setProcessDefinitionKey(elementProps.getProcessDefinitionKey())
-        .setProcessInstanceKey(elementProps.getProcessInstanceKey())
-        .setElementId(elementProps.getElementId())
-        .setElementInstanceKey(elementProps.getElementInstanceKey())
-        .setTenantId(elementProps.getTenantId());
+        .setBpmnProcessId(context.getBpmnProcessId())
+        .setProcessDefinitionVersion(context.getProcessVersion())
+        .setProcessDefinitionKey(context.getProcessDefinitionKey())
+        .setProcessInstanceKey(context.getProcessInstanceKey())
+        .setElementId(context.getElementId())
+        .setElementInstanceKey(context.getElementInstanceKey())
+        .setTenantId(context.getTenantId());
 
     final var jobKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);
