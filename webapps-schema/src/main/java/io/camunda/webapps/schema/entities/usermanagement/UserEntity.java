@@ -5,7 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.schema.entities;
+package io.camunda.webapps.schema.entities.usermanagement;
+
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 
 public class UserEntity extends AbstractExporterEntity<UserEntity> {
 
