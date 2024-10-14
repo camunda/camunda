@@ -169,19 +169,14 @@ public final class MessageCorrelationCorrelateProcessor
     final var isAuthorized =
         correlatingSubscriptions.visitSubscriptions(
             subscription -> {
-              if (subscription.isStartEventSubscription()) {
-                request.set(
-                    new AuthorizationRequest(
-                        command,
-                        AuthorizationResourceType.PROCESS_DEFINITION,
-                        PermissionType.CREATE));
-              } else {
-                request.set(
-                    new AuthorizationRequest(
-                        command,
-                        AuthorizationResourceType.PROCESS_DEFINITION,
-                        PermissionType.UPDATE));
-              }
+              final PermissionType permissionType =
+                  subscription.isStartEventSubscription()
+                      ? PermissionType.CREATE
+                      : PermissionType.UPDATE;
+
+              request.set(
+                  new AuthorizationRequest(
+                      command, AuthorizationResourceType.PROCESS_DEFINITION, permissionType));
 
               request.get().addResourceId(bufferAsString(subscription.getBpmnProcessId()));
               return authCheckBehavior.isAuthorized(request.get());
