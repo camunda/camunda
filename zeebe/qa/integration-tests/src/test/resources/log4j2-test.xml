@@ -17,6 +17,10 @@
     <Logger name="io.atomix.cluster.protocol" level="debug"/>
     <Logger name="io.atomix.raft" level="debug"/>
 
+<!--    <Logger name="org.apache.hc.core5" level="debug"/>-->
+<!--    <logger name="org.apache.http" level="debug"/>-->
+<!--    <Logger name="org.apache.commons.logging.simplelog.log.org.apache.http" level="debug"/>-->
+
     <Root level="info">
       <AppenderRef ref="Console"/>
     </Root>
