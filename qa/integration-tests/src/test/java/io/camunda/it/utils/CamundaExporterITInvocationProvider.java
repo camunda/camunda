@@ -96,6 +96,7 @@ public class CamundaExporterITInvocationProvider
                   testBrokers.put(entry.getKey(), testBroker);
                   testBroker.awaitCompleteTopology();
                 }
+                default -> throw new RuntimeException("Unknown exporter type");
               }
               LOGGER.info("Start up of '{}' finished.", entry.getKey());
             });
