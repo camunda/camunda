@@ -15,23 +15,7 @@
  */
 package io.camunda.zeebe.protocol.record.value;
 
-import io.camunda.zeebe.protocol.record.ImmutableProtocol;
-import io.camunda.zeebe.protocol.record.RecordValue;
-import org.immutables.value.Value;
-
-@Value.Immutable
-@ImmutableProtocol(builder = ImmutableRoleRecordValue.Builder.class)
-public interface RoleRecordValue extends RecordValue {
-
-  /** The unique identifier of the role within our system. */
-  long getRoleKey();
-
-  /** The name of the role. */
-  String getName();
-
-  /** The key of a user/mapping to assign/remove from a role. */
-  long getEntityKey();
-
-  /** The type of the entity to assign/remove from a role. */
-  EntityType getEntityType();
+public enum EntityType {
+  UNSPECIFIED,
+  USER
 }
