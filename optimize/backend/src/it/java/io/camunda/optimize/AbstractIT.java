@@ -16,29 +16,10 @@ import static io.camunda.optimize.service.util.configuration.EnvironmentProperti
 import io.camunda.optimize.jetty.OptimizeResourceConstants;
 import io.camunda.optimize.test.it.extension.DatabaseIntegrationTestExtension;
 import io.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
-import io.camunda.optimize.test.optimize.AlertClient;
-import io.camunda.optimize.test.optimize.AnalysisClient;
-import io.camunda.optimize.test.optimize.AssigneesClient;
-import io.camunda.optimize.test.optimize.CollectionClient;
-import io.camunda.optimize.test.optimize.DashboardClient;
-import io.camunda.optimize.test.optimize.DefinitionClient;
-import io.camunda.optimize.test.optimize.EntitiesClient;
-import io.camunda.optimize.test.optimize.ExportClient;
-import io.camunda.optimize.test.optimize.FlowNodeNamesClient;
-import io.camunda.optimize.test.optimize.IdentityClient;
-import io.camunda.optimize.test.optimize.ImportClient;
-import io.camunda.optimize.test.optimize.IngestionClient;
-import io.camunda.optimize.test.optimize.LocalizationClient;
-import io.camunda.optimize.test.optimize.ProcessOverviewClient;
-import io.camunda.optimize.test.optimize.PublicApiClient;
-import io.camunda.optimize.test.optimize.ReportClient;
-import io.camunda.optimize.test.optimize.SharingClient;
-import io.camunda.optimize.test.optimize.UiConfigurationClient;
 import io.camunda.optimize.test.optimize.VariablesClient;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -73,41 +54,8 @@ public abstract class AbstractIT {
   public static EmbeddedOptimizeExtension embeddedOptimizeExtension =
       new EmbeddedOptimizeExtension();
 
-  private final Supplier<OptimizeRequestExecutor> optimizeRequestExecutorSupplier =
-      () -> embeddedOptimizeExtension.getRequestExecutor();
   // optimize test helpers
-  protected CollectionClient collectionClient =
-      new CollectionClient(optimizeRequestExecutorSupplier);
-  protected ReportClient reportClient = new ReportClient(optimizeRequestExecutorSupplier);
-  protected AlertClient alertClient = new AlertClient(optimizeRequestExecutorSupplier);
-  protected DashboardClient dashboardClient = new DashboardClient(optimizeRequestExecutorSupplier);
-  protected SharingClient sharingClient = new SharingClient(optimizeRequestExecutorSupplier);
-  protected AnalysisClient analysisClient = new AnalysisClient(optimizeRequestExecutorSupplier);
-  protected UiConfigurationClient uiConfigurationClient =
-      new UiConfigurationClient(optimizeRequestExecutorSupplier);
-  protected EntitiesClient entitiesClient = new EntitiesClient(optimizeRequestExecutorSupplier);
-  protected ExportClient exportClient = new ExportClient(optimizeRequestExecutorSupplier);
-  protected ImportClient importClient = new ImportClient(optimizeRequestExecutorSupplier);
-  protected PublicApiClient publicApiClient = new PublicApiClient(optimizeRequestExecutorSupplier);
-  protected DefinitionClient definitionClient =
-      new DefinitionClient(optimizeRequestExecutorSupplier);
-  protected VariablesClient variablesClient = new VariablesClient(optimizeRequestExecutorSupplier);
-  protected AssigneesClient assigneesClient = new AssigneesClient(optimizeRequestExecutorSupplier);
-  protected FlowNodeNamesClient flowNodeNamesClient =
-      new FlowNodeNamesClient(optimizeRequestExecutorSupplier);
-  protected LocalizationClient localizationClient =
-      new LocalizationClient(optimizeRequestExecutorSupplier);
-  protected IdentityClient identityClient = new IdentityClient(optimizeRequestExecutorSupplier);
-  protected IngestionClient ingestionClient =
-      new IngestionClient(
-          optimizeRequestExecutorSupplier,
-          () ->
-              embeddedOptimizeExtension
-                  .getConfigurationService()
-                  .getOptimizeApiConfiguration()
-                  .getAccessToken());
-  protected ProcessOverviewClient processOverviewClient =
-      new ProcessOverviewClient(optimizeRequestExecutorSupplier);
+  protected VariablesClient variablesClient = new VariablesClient();
 
   protected abstract void startAndUseNewOptimizeInstance();
 

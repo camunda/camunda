@@ -81,7 +81,6 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.http.HttpEntity;
 import org.apache.http.nio.entity.NStringEntity;
 import org.jetbrains.annotations.NotNull;
@@ -1001,12 +1000,6 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
       throw new OptimizeIntegrationTestException(
           "Cannot evaluate document count for index " + PROCESS_INSTANCE_MULTI_ALIAS, e);
     }
-  }
-
-  private Integer getVariableInstanceCountForAllProcessInstances(final Query processInstanceQuery) {
-    // TODO implement with #11121
-    throw new NotImplementedException(
-        "Not yet implemented for OpenSearch, will be implemented with issue #11121");
   }
 
   private void deleteIndexOfMapping(final IndexMappingCreator<IndexSettings.Builder> indexMapping) {
