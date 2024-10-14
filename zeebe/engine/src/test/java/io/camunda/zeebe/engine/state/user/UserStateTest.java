@@ -153,6 +153,31 @@ public class UserStateTest {
     assertThat(persistedUserAfterUpdate.getEmail()).isEqualTo(updatedEmail);
   }
 
+  @DisplayName("should delete a user")
+  @Test
+  void shouldDeleteAUser() {
+    final var userKey = 1L;
+    final var username = "username" + UUID.randomUUID();
+    final var name = "name" + UUID.randomUUID();
+    final var password = "password" + UUID.randomUUID();
+    final var email = "email" + UUID.randomUUID();
+
+    final UserRecord user =
+        new UserRecord()
+            .setUserKey(userKey)
+            .setUsername(username)
+            .setName(name)
+            .setPassword(password)
+            .setEmail(email);
+    userState.create(user);
+
+    assertThat(userState.getUser(username)).isNotEmpty();
+
+    userState.deleteUser(userKey);
+
+    assertThat(userState.getUser(username)).isEmpty();
+  }
+
   @Test
   void shouldReturnUserByKey() {
     // given
