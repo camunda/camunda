@@ -141,5 +141,9 @@ public final class Subscriptions {
     public long getElementInstanceKey() {
       return elementInstanceKey;
     }
+
+    public boolean isStartEventSubscription() {
+      return isStartEventSubscription;
+    }
   }
 }
