@@ -11,7 +11,6 @@ import io.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import java.util.Locale;
-import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -21,7 +20,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class OptimizeIndexNameService implements ConfigurationReloadable {
 
-  @Getter private String indexPrefix;
+  private String indexPrefix;
 
   @Autowired
   public OptimizeIndexNameService(
@@ -125,5 +124,9 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
       original = String.join("-", indexPrefix, indexName);
     }
     return original.toLowerCase(Locale.ENGLISH);
+  }
+
+  public String getIndexPrefix() {
+    return this.indexPrefix;
   }
 }

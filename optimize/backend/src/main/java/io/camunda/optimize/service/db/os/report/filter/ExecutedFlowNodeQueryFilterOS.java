@@ -17,10 +17,10 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.
 import io.camunda.optimize.service.db.filter.FilterContext;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.List;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.ChildScoreMode;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -28,10 +28,12 @@ import org.springframework.stereotype.Component;
  * The executed flow node catches any flow nodes that are completed or still running, including
  * those that are marked as canceled
  */
-@Slf4j
 @Component
 @Conditional(OpenSearchCondition.class)
 public class ExecutedFlowNodeQueryFilterOS implements QueryFilterOS<ExecutedFlowNodeFilterDataDto> {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ExecutedFlowNodeQueryFilterOS.class);
 
   @Override
   public List<Query> filterQueries(

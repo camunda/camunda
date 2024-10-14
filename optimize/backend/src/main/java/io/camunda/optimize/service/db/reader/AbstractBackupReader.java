@@ -8,11 +8,13 @@
 package io.camunda.optimize.service.db.reader;
 
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
 
-@Slf4j
 public abstract class AbstractBackupReader implements BackupReader {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(AbstractBackupReader.class);
+
   @Override
   public void validateRepositoryExists() {
     if (StringUtils.isEmpty(getSnapshotRepositoryName())) {

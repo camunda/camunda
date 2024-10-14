@@ -42,9 +42,6 @@ import jakarta.ws.rs.NotFoundException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Map;
-import lombok.AllArgsConstructor;
-import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Result;
@@ -58,25 +55,40 @@ import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.IndexResponse;
 import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.core.UpdateResponse;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 @Conditional(OpenSearchCondition.class)
 public class ReportWriterOS implements ReportWriter {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ReportWriterOS.class);
   private final ObjectMapper objectMapper;
   private final OptimizeOpenSearchClient osClient;
 
+  public ReportWriterOS(final ObjectMapper objectMapper, final OptimizeOpenSearchClient osClient) {
+    this.objectMapper = objectMapper;
+    this.osClient = osClient;
+  }
+
   @Override
   public IdResponseDto createNewCombinedReport(
-      @NonNull final String userId,
-      @NonNull final CombinedReportDataDto reportData,
-      @NonNull final String reportName,
+      final String userId,
+      final CombinedReportDataDto reportData,
+      final String reportName,
       final String description,
       final String collectionId) {
+    if (userId == null) {
+      throw new OptimizeRuntimeException("userId is null");
+    }
+    if (reportData == null) {
+      throw new OptimizeRuntimeException("reportData is null");
+    }
+    if (reportName == null) {
+      throw new OptimizeRuntimeException("reportName is null");
+    }
+
     log.debug("Writing new combined report to OpenSearch");
     final String id = IdGenerator.getNextId();
     final CombinedReportDefinitionRequestDto reportDefinitionDto =
@@ -93,17 +105,17 @@ public class ReportWriterOS implements ReportWriter {
     reportDefinitionDto.setData(reportData);
     reportDefinitionDto.setCollectionId(collectionId);
 
-    IndexRequest.Builder<CombinedReportDefinitionRequestDto> request =
+    final IndexRequest.Builder<CombinedReportDefinitionRequestDto> request =
         new IndexRequest.Builder<CombinedReportDefinitionRequestDto>()
             .index(COMBINED_REPORT_INDEX_NAME)
             .id(id)
             .document(reportDefinitionDto)
             .refresh(Refresh.True);
 
-    IndexResponse indexResponse = osClient.index(request);
+    final IndexResponse indexResponse = osClient.index(request);
 
     if (!indexResponse.result().equals(Result.Created)) {
-      String message =
+      final String message =
           String.format(
               "Could not write report with id [%s] and name [%s] to OpenSearch.", id, reportName);
       log.error(message);
@@ -117,10 +129,17 @@ public class ReportWriterOS implements ReportWriter {
   @Override
   public IdResponseDto createNewSingleProcessReport(
       final String userId,
-      @NonNull final ProcessReportDataDto reportData,
-      @NonNull final String reportName,
+      final ProcessReportDataDto reportData,
+      final String reportName,
       final String description,
       final String collectionId) {
+    if (reportData == null) {
+      throw new OptimizeRuntimeException("reportData is null");
+    }
+    if (reportName == null) {
+      throw new OptimizeRuntimeException("reportName is null");
+    }
+
     log.debug("Writing new single report to OpenSearch");
 
     final String id = IdGenerator.getNextId();
@@ -138,17 +157,17 @@ public class ReportWriterOS implements ReportWriter {
     reportDefinitionDto.setData(reportData);
     reportDefinitionDto.setCollectionId(collectionId);
 
-    IndexRequest.Builder<SingleProcessReportDefinitionRequestDto> request =
+    final IndexRequest.Builder<SingleProcessReportDefinitionRequestDto> request =
         new IndexRequest.Builder<SingleProcessReportDefinitionRequestDto>()
             .index(SINGLE_PROCESS_REPORT_INDEX_NAME)
             .id(id)
             .document(reportDefinitionDto)
             .refresh(Refresh.True);
 
-    IndexResponse indexResponse = osClient.index(request);
+    final IndexResponse indexResponse = osClient.index(request);
 
     if (!indexResponse.result().equals(Result.Created)) {
-      String message =
+      final String message =
           String.format(
               "Could not write single process report with id [%s] and name [%s] to OpenSearch.",
               id, reportName);
@@ -162,11 +181,21 @@ public class ReportWriterOS implements ReportWriter {
 
   @Override
   public IdResponseDto createNewSingleDecisionReport(
-      @NonNull final String userId,
-      @NonNull final DecisionReportDataDto reportData,
-      @NonNull final String reportName,
+      final String userId,
+      final DecisionReportDataDto reportData,
+      final String reportName,
       final String description,
       final String collectionId) {
+    if (userId == null) {
+      throw new OptimizeRuntimeException("userId is null");
+    }
+    if (reportData == null) {
+      throw new OptimizeRuntimeException("reportData is null");
+    }
+    if (reportName == null) {
+      throw new OptimizeRuntimeException("reportName is null");
+    }
+
     log.debug("Writing new single report to OpenSearch");
 
     final String id = IdGenerator.getNextId();
@@ -183,17 +212,17 @@ public class ReportWriterOS implements ReportWriter {
     reportDefinitionDto.setData(reportData);
     reportDefinitionDto.setCollectionId(collectionId);
 
-    IndexRequest.Builder<SingleDecisionReportDefinitionRequestDto> request =
+    final IndexRequest.Builder<SingleDecisionReportDefinitionRequestDto> request =
         new IndexRequest.Builder<SingleDecisionReportDefinitionRequestDto>()
             .index(SINGLE_DECISION_REPORT_INDEX_NAME)
             .id(id)
             .document(reportDefinitionDto)
             .refresh(Refresh.True);
 
-    IndexResponse indexResponse = osClient.index(request);
+    final IndexResponse indexResponse = osClient.index(request);
 
     if (!indexResponse.result().equals(Result.Created)) {
-      String message =
+      final String message =
           String.format(
               "Could not write single decision report with id [%s] and name [%s] to OpenSearch.",
               id, reportName);
@@ -257,7 +286,7 @@ public class ReportWriterOS implements ReportWriter {
 
   @Override
   public void removeSingleReportFromCombinedReports(final String reportId) {
-    String updateItemName = String.format("report with ID [%s]", reportId);
+    final String updateItemName = String.format("report with ID [%s]", reportId);
     log.info("Removing {} from combined report.", updateItemName);
 
     final Script removeReportIdFromCombinedReportsScript =
@@ -267,7 +296,7 @@ public class ReportWriterOS implements ReportWriter {
                 + "  reports.removeIf(r -> r.id.equals(params.idToRemove)); }",
             Collections.singletonMap("idToRemove", JsonData.of(reportId)));
 
-    Query nested =
+    final Query nested =
         new NestedQuery.Builder()
             .path(String.join(".", DATA, REPORTS))
             .query(QueryDSL.term(String.join(".", DATA, REPORTS, REPORT_ITEM_ID), reportId))
@@ -275,7 +304,7 @@ public class ReportWriterOS implements ReportWriter {
             .build()
             .toQuery();
 
-    Query query =
+    final Query query =
         new NestedQuery.Builder()
             .path(DATA)
             .query(nested)
@@ -291,20 +320,20 @@ public class ReportWriterOS implements ReportWriter {
   public void deleteCombinedReport(final String reportId) {
     log.debug("Deleting combined report with id [{}]", reportId);
 
-    DeleteRequest.Builder requestBuilder =
+    final DeleteRequest.Builder requestBuilder =
         new DeleteRequest.Builder()
             .index(COMBINED_REPORT_INDEX_NAME)
             .id(reportId)
             .refresh(Refresh.True);
 
-    DeleteResponse deleteResponse;
+    final DeleteResponse deleteResponse;
 
-    String reason = String.format("Could not delete combined report with id [%s].", reportId);
+    final String reason = String.format("Could not delete combined report with id [%s].", reportId);
 
     deleteResponse = osClient.delete(requestBuilder, reason);
 
     if (!deleteResponse.result().equals(Result.Deleted)) {
-      String message =
+      final String message =
           String.format(
               "Could not delete combined process report with id [%s]. "
                   + "Combined process report does not exist."
@@ -316,7 +345,7 @@ public class ReportWriterOS implements ReportWriter {
   }
 
   @Override
-  public void deleteAllReportsOfCollection(String collectionId) {
+  public void deleteAllReportsOfCollection(final String collectionId) {
     osClient.deleteByQuery(
         QueryDSL.term(COLLECTION_ID, collectionId),
         true,
@@ -325,7 +354,7 @@ public class ReportWriterOS implements ReportWriter {
         SINGLE_DECISION_REPORT_INDEX_NAME);
   }
 
-  private void updateReport(ReportDefinitionUpdateDto updatedReport, String indexName) {
+  private void updateReport(final ReportDefinitionUpdateDto updatedReport, final String indexName) {
     log.debug("Updating report with id [{}] in OpenSearch", updatedReport.getId());
     final Map<String, JsonData> updateParams =
         OpenSearchWriterUtil.createFieldUpdateScriptParams(
@@ -349,7 +378,7 @@ public class ReportWriterOS implements ReportWriter {
             .refresh(Refresh.True)
             .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
-    String errorMessage =
+    final String errorMessage =
         String.format(
             "Was not able to update report with id [%s] and name [%s]",
             updatedReport.getId(), updatedReport.getName());

@@ -13,10 +13,8 @@ import io.camunda.optimize.service.status.StatusCheckingService;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.Response;
-import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Path(READYZ_PATH)
 public class HealthRestService {
@@ -24,6 +22,10 @@ public class HealthRestService {
   public static final String READYZ_PATH = "/readyz";
 
   private final StatusCheckingService statusCheckingService;
+
+  public HealthRestService(final StatusCheckingService statusCheckingService) {
+    this.statusCheckingService = statusCheckingService;
+  }
 
   @GET
   public Response getConnectionStatus() {

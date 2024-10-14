@@ -33,17 +33,19 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 public class AuthCookieService {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(AuthCookieService.class);
   private final ConfigurationService configurationService;
+
+  public AuthCookieService(ConfigurationService configurationService) {
+    this.configurationService = configurationService;
+  }
 
   public jakarta.servlet.http.Cookie createDeleteOptimizeAuthCookie() {
     log.trace("Deleting Optimize authentication cookie.");

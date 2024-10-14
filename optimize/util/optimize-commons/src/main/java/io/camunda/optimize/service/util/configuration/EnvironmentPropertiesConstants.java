@@ -7,13 +7,12 @@
  */
 package io.camunda.optimize.service.util.configuration;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class EnvironmentPropertiesConstants {
+
   public static final String INTEGRATION_TESTS = "integrationTests";
   public static final String HTTPS_PORT_KEY = "httpsPort";
   public static final String HTTP_PORT_KEY = "httpPort";
   public static final String CONTEXT_PATH = "contextPath";
+
+  private EnvironmentPropertiesConstants() {}
 }

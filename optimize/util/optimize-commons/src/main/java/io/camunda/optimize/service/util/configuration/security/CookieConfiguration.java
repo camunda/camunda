@@ -14,9 +14,7 @@ import io.camunda.optimize.util.SuppressionConstants;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import lombok.Data;
 
-@Data
 public class CookieConfiguration {
 
   @JsonProperty("same-site.enabled")
@@ -28,8 +26,10 @@ public class CookieConfiguration {
   @JsonProperty("maxSize")
   private Integer maxSize;
 
+  public CookieConfiguration() {}
+
   public boolean resolveSecureFlagValue(final String requestScheme) {
-    return Optional.ofNullable(this.cookieSecureMode)
+    return Optional.ofNullable(cookieSecureMode)
         .map(mode -> mode.resolveSecureValue(requestScheme))
         .orElse(false);
   }
@@ -37,7 +37,91 @@ public class CookieConfiguration {
   @SuppressWarnings(SuppressionConstants.UNUSED)
   @JsonProperty("same-site")
   private void unpackSameSite(final Map<String, Boolean> sameSite) {
-    this.sameSiteFlagEnabled = sameSite.get("enabled");
+    sameSiteFlagEnabled = sameSite.get("enabled");
+  }
+
+  public boolean isSameSiteFlagEnabled() {
+    return sameSiteFlagEnabled;
+  }
+
+  @JsonProperty("same-site.enabled")
+  public void setSameSiteFlagEnabled(final boolean sameSiteFlagEnabled) {
+    this.sameSiteFlagEnabled = sameSiteFlagEnabled;
+  }
+
+  public CookieSecureMode getCookieSecureMode() {
+    return cookieSecureMode;
+  }
+
+  @JsonProperty("secure")
+  public void setCookieSecureMode(final CookieSecureMode cookieSecureMode) {
+    this.cookieSecureMode = cookieSecureMode;
+  }
+
+  public Integer getMaxSize() {
+    return maxSize;
+  }
+
+  @JsonProperty("maxSize")
+  public void setMaxSize(final Integer maxSize) {
+    this.maxSize = maxSize;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof CookieConfiguration;
+  }
+
+  @Override
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = 1;
+    result = result * PRIME + (isSameSiteFlagEnabled() ? 79 : 97);
+    final Object $cookieSecureMode = getCookieSecureMode();
+    result = result * PRIME + ($cookieSecureMode == null ? 43 : $cookieSecureMode.hashCode());
+    final Object $maxSize = getMaxSize();
+    result = result * PRIME + ($maxSize == null ? 43 : $maxSize.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof CookieConfiguration)) {
+      return false;
+    }
+    final CookieConfiguration other = (CookieConfiguration) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    if (isSameSiteFlagEnabled() != other.isSameSiteFlagEnabled()) {
+      return false;
+    }
+    final Object this$cookieSecureMode = getCookieSecureMode();
+    final Object other$cookieSecureMode = other.getCookieSecureMode();
+    if (this$cookieSecureMode == null
+        ? other$cookieSecureMode != null
+        : !this$cookieSecureMode.equals(other$cookieSecureMode)) {
+      return false;
+    }
+    final Object this$maxSize = getMaxSize();
+    final Object other$maxSize = other.getMaxSize();
+    if (this$maxSize == null ? other$maxSize != null : !this$maxSize.equals(other$maxSize)) {
+      return false;
+    }
+    return true;
+  }
+
+  @Override
+  public String toString() {
+    return "CookieConfiguration(sameSiteFlagEnabled="
+        + isSameSiteFlagEnabled()
+        + ", cookieSecureMode="
+        + getCookieSecureMode()
+        + ", maxSize="
+        + getMaxSize()
+        + ")";
   }
 
   public enum CookieSecureMode {

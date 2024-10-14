@@ -35,14 +35,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.ChildScoreMode;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class IncidentFilterQueryUtilOS extends IncidentFilterQueryUtil {
+
   private static final NestedDefinitionQueryBuilderOS NESTED_DEFINITION_QUERY_BUILDER =
       new NestedDefinitionQueryBuilderOS(
           INCIDENTS, INCIDENT_DEFINITION_KEY, INCIDENT_DEFINITION_VERSION, INCIDENT_TENANT_ID);
@@ -53,6 +51,8 @@ public class IncidentFilterQueryUtilOS extends IncidentFilterQueryUtil {
               IncidentFilterQueryUtilOS.createOpenIncidentTermQuery(),
               ResolvedIncidentFilterDto.class,
               IncidentFilterQueryUtilOS.createResolvedIncidentTermQuery());
+
+  private IncidentFilterQueryUtilOS() {}
 
   public static Query createIncidentAggregationFilterQuery(
       final ProcessReportDataDto reportData, final DefinitionService definitionService) {

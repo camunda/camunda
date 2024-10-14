@@ -28,7 +28,6 @@ import static io.camunda.optimize.service.db.os.report.interpreter.util.Aggregat
 import static io.camunda.optimize.service.db.os.report.interpreter.util.FilterLimitedAggregationUtilOS.FILTER_LIMITED_AGGREGATION;
 import static io.camunda.optimize.service.db.os.report.interpreter.util.FilterLimitedAggregationUtilOS.wrapWithFilterLimitedParentAggregation;
 import static io.camunda.optimize.service.db.report.interpreter.util.AggregateByDateUnitMapper.mapToChronoUnit;
-import static io.camunda.optimize.service.db.report.service.DateAggregationService.getDateHistogramIntervalDurationFromMinMax;
 
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
@@ -57,7 +56,6 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
@@ -71,7 +69,6 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Conditional(OpenSearchCondition.class)
 public class DateAggregationServiceOS extends DateAggregationService {
@@ -79,6 +76,10 @@ public class DateAggregationServiceOS extends DateAggregationService {
   private static final String DATE_AGGREGATION = "dateAggregation";
 
   private final DateTimeFormatter dateTimeFormatter;
+
+  public DateAggregationServiceOS(DateTimeFormatter dateTimeFormatter) {
+    this.dateTimeFormatter = dateTimeFormatter;
+  }
 
   public Optional<Pair<String, Aggregation>> createProcessInstanceDateAggregation(
       final DateAggregationContextOS context) {

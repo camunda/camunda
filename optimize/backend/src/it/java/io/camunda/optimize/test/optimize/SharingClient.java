@@ -18,12 +18,14 @@ import io.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
 import io.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 import jakarta.ws.rs.core.Response;
 import java.util.function.Supplier;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 public class SharingClient {
 
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
+
+  public SharingClient(final Supplier<OptimizeRequestExecutor> requestExecutorSupplier) {
+    this.requestExecutorSupplier = requestExecutorSupplier;
+  }
 
   public DashboardDefinitionRestDto evaluateDashboard(final String dashboardShareId) {
     return getRequestExecutor()
@@ -42,24 +44,24 @@ public class SharingClient {
         .execute(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public Response createDashboardShareResponse(DashboardShareRestDto share) {
+  public Response createDashboardShareResponse(final DashboardShareRestDto share) {
     return createDashboardShareResponse(share, DEFAULT_USERNAME, DEFAULT_PASSWORD);
   }
 
   public Response createDashboardShareResponse(
-      DashboardShareRestDto share, String username, String password) {
+      final DashboardShareRestDto share, final String username, final String password) {
     return getRequestExecutor()
         .buildShareDashboardRequest(share)
         .withUserAuthentication(username, password)
         .execute();
   }
 
-  public Response createReportShareResponse(ReportShareRestDto share) {
+  public Response createReportShareResponse(final ReportShareRestDto share) {
     return getRequestExecutor().buildShareReportRequest(share).execute();
   }
 
   public String shareReport(final String reportId) {
-    ReportShareRestDto shareDto = new ReportShareRestDto();
+    final ReportShareRestDto shareDto = new ReportShareRestDto();
     shareDto.setReportId(reportId);
     return getRequestExecutor()
         .buildShareReportRequest(shareDto)
@@ -68,7 +70,7 @@ public class SharingClient {
   }
 
   public String shareDashboard(final String dashboardId) {
-    DashboardShareRestDto dashboardShare = new DashboardShareRestDto();
+    final DashboardShareRestDto dashboardShare = new DashboardShareRestDto();
     dashboardShare.setDashboardId(dashboardId);
     return getRequestExecutor()
         .buildShareDashboardRequest(dashboardShare)

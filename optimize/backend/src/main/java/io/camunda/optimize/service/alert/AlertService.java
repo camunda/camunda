@@ -34,6 +34,7 @@ import io.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import io.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import io.camunda.optimize.service.db.reader.AlertReader;
 import io.camunda.optimize.service.db.writer.AlertWriter;
+import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.exceptions.OptimizeValidationException;
 import io.camunda.optimize.service.relations.ReportReferencingService;
 import io.camunda.optimize.service.report.ReportService;
@@ -53,8 +54,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.quartz.JobDetail;
@@ -64,16 +63,16 @@ import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.Trigger;
 import org.quartz.TriggerKey;
+import org.slf4j.Logger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 import org.springframework.scheduling.quartz.SpringBeanJobFactory;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 public class AlertService implements ReportReferencingService {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(AlertService.class);
   private final ApplicationContext applicationContext;
   private final AlertReader alertReader;
   private final AlertWriter alertWriter;
@@ -86,35 +85,56 @@ public class AlertService implements ReportReferencingService {
 
   private SchedulerFactoryBean schedulerFactoryBean;
 
+  public AlertService(
+      final ApplicationContext applicationContext,
+      final AlertReader alertReader,
+      final AlertWriter alertWriter,
+      final ConfigurationService configurationService,
+      final AlertReminderJobFactory alertReminderJobFactory,
+      final AlertCheckJobFactory alertCheckJobFactory,
+      final ReportService reportService,
+      final AuthorizedCollectionService authorizedCollectionService,
+      final AlertRecipientValidator alertRecipientValidator) {
+    this.applicationContext = applicationContext;
+    this.alertReader = alertReader;
+    this.alertWriter = alertWriter;
+    this.configurationService = configurationService;
+    this.alertReminderJobFactory = alertReminderJobFactory;
+    this.alertCheckJobFactory = alertCheckJobFactory;
+    this.reportService = reportService;
+    this.authorizedCollectionService = authorizedCollectionService;
+    this.alertRecipientValidator = alertRecipientValidator;
+  }
+
   @PostConstruct
   public void init() {
-    List<AlertDefinitionDto> alerts = alertReader.getStoredAlerts();
+    final List<AlertDefinitionDto> alerts = alertReader.getStoredAlerts();
     checkAlertWebhooksAllExist(alerts);
     try {
       if (schedulerFactoryBean == null) {
-        SpringBeanJobFactory sampleJobFactory = new SpringBeanJobFactory();
+        final SpringBeanJobFactory sampleJobFactory = new SpringBeanJobFactory();
         sampleJobFactory.setApplicationContext(applicationContext);
 
         schedulerFactoryBean = new SchedulerFactoryBean();
         schedulerFactoryBean.setOverwriteExistingJobs(true);
         schedulerFactoryBean.setJobFactory(sampleJobFactory);
 
-        Map<AlertDefinitionDto, JobDetail> checkingDetails = createCheckDetails(alerts);
-        List<Trigger> checkingTriggers = createCheckTriggers(checkingDetails);
+        final Map<AlertDefinitionDto, JobDetail> checkingDetails = createCheckDetails(alerts);
+        final List<Trigger> checkingTriggers = createCheckTriggers(checkingDetails);
 
-        Map<AlertDefinitionDto, JobDetail> reminderDetails = createReminderDetails(alerts);
-        List<Trigger> reminderTriggers = createReminderTriggers(reminderDetails);
+        final Map<AlertDefinitionDto, JobDetail> reminderDetails = createReminderDetails(alerts);
+        final List<Trigger> reminderTriggers = createReminderTriggers(reminderDetails);
 
-        List<Trigger> allTriggers = new ArrayList<>();
+        final List<Trigger> allTriggers = new ArrayList<>();
         allTriggers.addAll(checkingTriggers);
         allTriggers.addAll(reminderTriggers);
 
-        List<JobDetail> allJobDetails = new ArrayList<>();
+        final List<JobDetail> allJobDetails = new ArrayList<>();
         allJobDetails.addAll(checkingDetails.values());
         allJobDetails.addAll(reminderDetails.values());
 
-        JobDetail[] jobDetails = allJobDetails.toArray(new JobDetail[0]);
-        Trigger[] triggers = allTriggers.toArray(new Trigger[0]);
+        final JobDetail[] jobDetails = allJobDetails.toArray(new JobDetail[0]);
+        final Trigger[] triggers = allTriggers.toArray(new Trigger[0]);
 
         schedulerFactoryBean.setGlobalJobListeners(createReminderListener());
         schedulerFactoryBean.setTriggers(triggers);
@@ -127,14 +147,14 @@ public class AlertService implements ReportReferencingService {
         schedulerFactoryBean.setWaitForJobsToCompleteOnShutdown(true);
         schedulerFactoryBean.start();
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       log.error("Couldn't initialize alert scheduling.", e);
       try {
         destroy();
-      } catch (Exception destroyException) {
+      } catch (final Exception destroyException) {
         log.error("Failed destroying alertService", destroyException);
       }
-      throw new RuntimeException(e);
+      throw new OptimizeRuntimeException(e);
     }
   }
 
@@ -144,10 +164,10 @@ public class AlertService implements ReportReferencingService {
       try {
         schedulerFactoryBean.stop();
         schedulerFactoryBean.destroy();
-      } catch (Exception e) {
+      } catch (final Exception e) {
         log.error("Can't destroy scheduler", e);
       }
-      this.schedulerFactoryBean = null;
+      schedulerFactoryBean = null;
     }
   }
 
@@ -155,8 +175,9 @@ public class AlertService implements ReportReferencingService {
     return schedulerFactoryBean.getObject();
   }
 
-  public List<AlertDefinitionDto> getStoredAlertsForCollection(String userId, String collectionId) {
-    List<String> authorizedReportIds =
+  public List<AlertDefinitionDto> getStoredAlertsForCollection(
+      final String userId, final String collectionId) {
+    final List<String> authorizedReportIds =
         reportService.findAndFilterReports(userId, collectionId).stream()
             .map(
                 authorizedReportDefinitionDto ->
@@ -166,12 +187,13 @@ public class AlertService implements ReportReferencingService {
     return alertReader.getAlertsForReports(authorizedReportIds);
   }
 
-  public JobDetail createStatusCheckJobDetails(AlertDefinitionDto fakeReportAlert) {
-    return this.alertCheckJobFactory.createJobDetails(fakeReportAlert);
+  public JobDetail createStatusCheckJobDetails(final AlertDefinitionDto fakeReportAlert) {
+    return alertCheckJobFactory.createJobDetails(fakeReportAlert);
   }
 
-  public Trigger createStatusCheckTrigger(AlertDefinitionDto fakeReportAlert, JobDetail jobDetail) {
-    return this.alertCheckJobFactory.createTrigger(fakeReportAlert, jobDetail);
+  public Trigger createStatusCheckTrigger(
+      final AlertDefinitionDto fakeReportAlert, final JobDetail jobDetail) {
+    return alertCheckJobFactory.createTrigger(fakeReportAlert, jobDetail);
   }
 
   @Override
@@ -187,7 +209,7 @@ public class AlertService implements ReportReferencingService {
 
   @Override
   public Set<ConflictedItemDto> getConflictedItemsForReportUpdate(
-      ReportDefinitionDto currentDefinition, ReportDefinitionDto updateDefinition) {
+      final ReportDefinitionDto currentDefinition, final ReportDefinitionDto updateDefinition) {
     final Set<ConflictedItemDto> conflictedItems = new LinkedHashSet<>();
 
     if (currentDefinition instanceof SingleProcessReportDefinitionRequestDto) {
@@ -217,71 +239,73 @@ public class AlertService implements ReportReferencingService {
     deleteAlertsIfNeeded(reportId, updateDefinition);
   }
 
-  private List<AlertDefinitionDto> getAlertsForReport(String reportId) {
+  private List<AlertDefinitionDto> getAlertsForReport(final String reportId) {
     return alertReader.getAlertsForReport(reportId);
   }
 
-  private AlertDefinitionDto getAlert(String alertId) {
+  private AlertDefinitionDto getAlert(final String alertId) {
     return alertReader
         .getAlert(alertId)
         .orElseThrow(() -> new NotFoundException("Alert does not exist!"));
   }
 
-  public IdResponseDto createAlert(AlertCreationRequestDto toCreate, String userId) {
+  public IdResponseDto createAlert(final AlertCreationRequestDto toCreate, final String userId) {
     validateAlert(toCreate, userId);
     verifyUserAuthorizedToEditAlertOrFail(toCreate, userId);
-    String alertId = this.createAlertForUser(toCreate, userId).getId();
+    final String alertId = createAlertForUser(toCreate, userId).getId();
     return new IdResponseDto(alertId);
   }
 
-  public void copyAndMoveAlerts(String oldReportId, String newReportId) {
-    List<AlertDefinitionDto> oldAlerts = getAlertsForReport(oldReportId);
-    for (AlertDefinitionDto alert : oldAlerts) {
+  public void copyAndMoveAlerts(final String oldReportId, final String newReportId) {
+    final List<AlertDefinitionDto> oldAlerts = getAlertsForReport(oldReportId);
+    for (final AlertDefinitionDto alert : oldAlerts) {
       alert.setReportId(newReportId);
       createAlert(alert, alert.getOwner());
     }
   }
 
-  public void updateAlert(String alertId, AlertCreationRequestDto toCreate, String userId) {
+  public void updateAlert(
+      final String alertId, final AlertCreationRequestDto toCreate, final String userId) {
     validateAlert(toCreate, userId);
-    this.updateAlertForUser(alertId, toCreate, userId);
+    updateAlertForUser(alertId, toCreate, userId);
   }
 
-  public void deleteAlert(String alertId, String userId) {
+  public void deleteAlert(final String alertId, final String userId) {
     verifyUserAuthorizedToEditAlertOrFail(getAlert(alertId), userId);
 
-    AlertDefinitionDto toDelete = getAlert(alertId);
+    final AlertDefinitionDto toDelete = getAlert(alertId);
     alertWriter.deleteAlert(alertId);
     unscheduleJob(toDelete);
   }
 
-  public void deleteAlerts(List<String> alertIds, String userId) {
-    List<String> alertIdsToDelete = new ArrayList<>();
-    for (String alertId : alertIds) {
+  public void deleteAlerts(final List<String> alertIds, final String userId) {
+    final List<String> alertIdsToDelete = new ArrayList<>();
+    for (final String alertId : alertIds) {
       try {
         verifyUserAuthorizedToEditAlertOrFail(getAlert(alertId), userId);
         alertIdsToDelete.add(alertId);
-      } catch (NotFoundException e) {
+      } catch (final NotFoundException e) {
         log.debug("Cannot find alert with id [{}], it may have been deleted already", alertId);
       }
     }
     alertWriter.deleteAlerts(alertIdsToDelete);
   }
 
-  private void unscheduleJob(AlertDefinitionDto toDelete) {
-    String alertId = toDelete.getId();
+  private void unscheduleJob(final AlertDefinitionDto toDelete) {
+    final String alertId = toDelete.getId();
     try {
       unscheduleCheckJob(toDelete);
       unscheduleReminderJob(toDelete);
-    } catch (SchedulerException e) {
+    } catch (final SchedulerException e) {
       log.error("can't adjust scheduler for alert [{}]", alertId, e);
     }
     toDelete.setTriggered(false);
   }
 
-  private static AlertDefinitionDto newAlert(AlertCreationRequestDto toCreate, String userId) {
-    AlertDefinitionDto result = new AlertDefinitionDto();
-    OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
+  private static AlertDefinitionDto newAlert(
+      final AlertCreationRequestDto toCreate, final String userId) {
+    final AlertDefinitionDto result = new AlertDefinitionDto();
+    final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
     result.setOwner(userId);
     result.setCreated(now);
     result.setLastModified(now);
@@ -290,10 +314,11 @@ public class AlertService implements ReportReferencingService {
     return result;
   }
 
-  private void updateAlertForUser(String alertId, AlertCreationRequestDto toCreate, String userId) {
+  private void updateAlertForUser(
+      final String alertId, final AlertCreationRequestDto toCreate, final String userId) {
     verifyUserAuthorizedToEditAlertOrFail(toCreate, userId);
 
-    AlertDefinitionDto toUpdate = getAlert(alertId);
+    final AlertDefinitionDto toUpdate = getAlert(alertId);
     unscheduleJob(toUpdate);
     toUpdate.setLastModified(LocalDateUtil.getCurrentDateTime());
     toUpdate.setLastModifier(userId);
@@ -302,9 +327,9 @@ public class AlertService implements ReportReferencingService {
     scheduleAlert(toUpdate);
   }
 
-  private void unscheduleReminderJob(AlertDefinitionDto toDelete) throws SchedulerException {
-    JobKey toUnschedule = alertReminderJobFactory.getJobKey(toDelete);
-    TriggerKey triggerKey = alertReminderJobFactory.getTriggerKey(toDelete);
+  private void unscheduleReminderJob(final AlertDefinitionDto toDelete) throws SchedulerException {
+    final JobKey toUnschedule = alertReminderJobFactory.getJobKey(toDelete);
+    final TriggerKey triggerKey = alertReminderJobFactory.getTriggerKey(toDelete);
 
     if (toUnschedule != null) {
       getScheduler().unscheduleJob(triggerKey);
@@ -312,9 +337,9 @@ public class AlertService implements ReportReferencingService {
     }
   }
 
-  private void unscheduleCheckJob(AlertDefinitionDto toDelete) throws SchedulerException {
-    JobKey toUnschedule = alertCheckJobFactory.getJobKey(toDelete);
-    TriggerKey triggerKey = alertReminderJobFactory.getTriggerKey(toDelete);
+  private void unscheduleCheckJob(final AlertDefinitionDto toDelete) throws SchedulerException {
+    final JobKey toUnschedule = alertCheckJobFactory.getJobKey(toDelete);
+    final TriggerKey triggerKey = alertReminderJobFactory.getTriggerKey(toDelete);
 
     if (toUnschedule != null) {
       getScheduler().unscheduleJob(triggerKey);
@@ -322,24 +347,25 @@ public class AlertService implements ReportReferencingService {
     }
   }
 
-  private void deleteAlertsForReport(String reportId) {
+  private void deleteAlertsForReport(final String reportId) {
     alertReader.getAlertsForReport(reportId).forEach(this::unscheduleJob);
     alertWriter.deleteAlertsForReport(reportId);
   }
 
   /** Check if it's still evaluated as number. */
-  private void deleteAlertsIfNeeded(String reportId, ReportDefinitionDto reportDefinition) {
+  private void deleteAlertsIfNeeded(
+      final String reportId, final ReportDefinitionDto reportDefinition) {
     if (reportDefinition instanceof SingleProcessReportDefinitionRequestDto) {
-      SingleProcessReportDefinitionRequestDto singleReport =
+      final SingleProcessReportDefinitionRequestDto singleReport =
           (SingleProcessReportDefinitionRequestDto) reportDefinition;
       if (!validateIfReportIsSuitableForAlert(singleReport)) {
-        this.deleteAlertsForReport(reportId);
+        deleteAlertsForReport(reportId);
       }
     }
   }
 
   private boolean validateIfReportIsSuitableForAlert(
-      SingleProcessReportDefinitionRequestDto report) {
+      final SingleProcessReportDefinitionRequestDto report) {
     final ProcessReportDataDto data = report.getData();
     return data != null
         && data.getGroupBy() != null
@@ -351,7 +377,7 @@ public class AlertService implements ReportReferencingService {
   }
 
   private boolean validateIfReportIsSuitableForAlert(
-      SingleDecisionReportDefinitionRequestDto report) {
+      final SingleDecisionReportDefinitionRequestDto report) {
     final DecisionReportDataDto data = report.getData();
     return data != null
         && data.getGroupBy() != null
@@ -360,7 +386,7 @@ public class AlertService implements ReportReferencingService {
   }
 
   private Set<ConflictedItemDto> mapAlertsToConflictingItems(
-      List<AlertDefinitionDto> alertsForReport) {
+      final List<AlertDefinitionDto> alertsForReport) {
     return alertsForReport.stream()
         .map(
             alertDto ->
@@ -371,18 +397,18 @@ public class AlertService implements ReportReferencingService {
 
   private void verifyUserAuthorizedToEditAlertOrFail(
       final AlertCreationRequestDto alertDto, final String userId) {
-    AuthorizedReportDefinitionResponseDto reportDefinitionDto =
+    final AuthorizedReportDefinitionResponseDto reportDefinitionDto =
         reportService.getReportDefinition(alertDto.getReportId(), userId);
     authorizedCollectionService.verifyUserAuthorizedToEditCollectionResources(
         userId, reportDefinitionDto.getDefinitionDto().getCollectionId());
   }
 
-  private void validateAlert(AlertCreationRequestDto toCreate, String userId) {
-    ReportDefinitionDto report;
+  private void validateAlert(final AlertCreationRequestDto toCreate, final String userId) {
+    final ReportDefinitionDto report;
     try {
       report = reportService.getReportDefinition(toCreate.getReportId(), userId).getDefinitionDto();
-    } catch (Exception e) {
-      String errorMessage =
+    } catch (final Exception e) {
+      final String errorMessage =
           "Could not create alert ["
               + toCreate.getName()
               + "]. Report id ["
@@ -404,7 +430,7 @@ public class AlertService implements ReportReferencingService {
     ValidationHelper.ensureNotEmpty(INTERVAL_UNIT, toCreate.getCheckInterval().getUnit());
 
     if (report.getData() instanceof ProcessReportDataDto) {
-      ProcessReportDataDto data = (ProcessReportDataDto) report.getData();
+      final ProcessReportDataDto data = (ProcessReportDataDto) report.getData();
       if (data.getView() != null
           && data.getView().getFirstProperty() != null
           && data.getView().getFirstProperty().equals(ViewProperty.PERCENTAGE)
@@ -426,43 +452,46 @@ public class AlertService implements ReportReferencingService {
     }
   }
 
-  private AlertDefinitionDto createAlertForUser(AlertCreationRequestDto toCreate, String userId) {
-    AlertDefinitionDto alert = alertWriter.createAlert(newAlert(toCreate, userId));
+  private AlertDefinitionDto createAlertForUser(
+      final AlertCreationRequestDto toCreate, final String userId) {
+    final AlertDefinitionDto alert = alertWriter.createAlert(newAlert(toCreate, userId));
     scheduleAlert(alert);
     return alert;
   }
 
-  private void scheduleAlert(AlertDefinitionDto alert) {
+  private void scheduleAlert(final AlertDefinitionDto alert) {
     try {
-      JobDetail jobDetail = alertCheckJobFactory.createJobDetails(alert);
+      final JobDetail jobDetail = alertCheckJobFactory.createJobDetails(alert);
       if (schedulerFactoryBean != null) {
         getScheduler().scheduleJob(jobDetail, alertCheckJobFactory.createTrigger(alert, jobDetail));
       }
-    } catch (SchedulerException e) {
+    } catch (final SchedulerException e) {
       log.error("can't schedule new alert", e);
     }
   }
 
-  private List<Trigger> createReminderTriggers(Map<AlertDefinitionDto, JobDetail> reminderDetails) {
+  private List<Trigger> createReminderTriggers(
+      final Map<AlertDefinitionDto, JobDetail> reminderDetails) {
     return reminderDetails.entrySet().stream()
         .filter(entry -> Objects.nonNull(entry.getKey().getReminder()))
         .map(entry -> alertReminderJobFactory.createTrigger(entry.getKey(), entry.getValue()))
         .collect(Collectors.toList());
   }
 
-  private List<Trigger> createCheckTriggers(Map<AlertDefinitionDto, JobDetail> details) {
+  private List<Trigger> createCheckTriggers(final Map<AlertDefinitionDto, JobDetail> details) {
     return details.entrySet().stream()
         .map(entry -> alertCheckJobFactory.createTrigger(entry.getKey(), entry.getValue()))
         .collect(Collectors.toList());
   }
 
   private Map<AlertDefinitionDto, JobDetail> createReminderDetails(
-      List<AlertDefinitionDto> alerts) {
+      final List<AlertDefinitionDto> alerts) {
     return alerts.stream()
         .collect(Collectors.toMap(alert -> alert, alertReminderJobFactory::createJobDetails));
   }
 
-  private Map<AlertDefinitionDto, JobDetail> createCheckDetails(List<AlertDefinitionDto> alerts) {
+  private Map<AlertDefinitionDto, JobDetail> createCheckDetails(
+      final List<AlertDefinitionDto> alerts) {
     return alerts.stream()
         .collect(Collectors.toMap(alert -> alert, alertCheckJobFactory::createJobDetails));
   }
@@ -471,7 +500,7 @@ public class AlertService implements ReportReferencingService {
     return new ReminderHandlingListener(alertReminderJobFactory);
   }
 
-  private void checkAlertWebhooksAllExist(List<AlertDefinitionDto> alerts) {
+  private void checkAlertWebhooksAllExist(final List<AlertDefinitionDto> alerts) {
     final Set<String> webhooks = configurationService.getConfiguredWebhooks().keySet();
     final Map<String, List<String>> missingWebhookMap =
         alerts.stream()

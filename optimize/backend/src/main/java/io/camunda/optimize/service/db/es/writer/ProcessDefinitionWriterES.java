@@ -34,12 +34,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class ProcessDefinitionWriterES extends AbstractProcessDefinitionWriterES
     implements ProcessDefinitionWriter {
@@ -53,6 +52,8 @@ public class ProcessDefinitionWriterES extends AbstractProcessDefinitionWriterES
           s ->
               s.inline(
                   i -> i.lang(ScriptLanguage.Painless).source("ctx._source.onboarded = true")));
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ProcessDefinitionWriterES.class);
 
   private final ConfigurationService configurationService;
 

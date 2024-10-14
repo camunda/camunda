@@ -10,10 +10,11 @@ package io.camunda.optimize.dto.optimize.query.report.single.process.filter;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import java.util.Collections;
 import java.util.List;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
 public class InstanceEndDateFilterDto extends ProcessFilterDto<DateFilterDataDto<?>> {
+
+  public InstanceEndDateFilterDto() {}
+
   @Override
   public List<FilterApplicationLevel> validApplicationLevels() {
     return Collections.singletonList(FilterApplicationLevel.INSTANCE);

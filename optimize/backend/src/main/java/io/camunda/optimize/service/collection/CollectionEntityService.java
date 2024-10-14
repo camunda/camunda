@@ -26,24 +26,36 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 public class CollectionEntityService {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(CollectionEntityService.class);
   private final AuthorizedEntitiesService authorizedEntitiesService;
   private final AuthorizedCollectionService authorizedCollectionService;
   private final AlertService alertService;
   private final ReportService reportService;
   private final DashboardService dashboardService;
 
+  public CollectionEntityService(
+      final AuthorizedEntitiesService authorizedEntitiesService,
+      final AuthorizedCollectionService authorizedCollectionService,
+      final AlertService alertService,
+      final ReportService reportService,
+      final DashboardService dashboardService) {
+    this.authorizedEntitiesService = authorizedEntitiesService;
+    this.authorizedCollectionService = authorizedCollectionService;
+    this.alertService = alertService;
+    this.reportService = reportService;
+    this.dashboardService = dashboardService;
+  }
+
   public List<EntityResponseDto> getAuthorizedCollectionEntities(
       final String userId, final String collectionId) {
-    AuthorizedCollectionDefinitionDto authCollectionDto =
+    final AuthorizedCollectionDefinitionDto authCollectionDto =
         authorizedCollectionService.getAuthorizedCollectionDefinitionOrFail(userId, collectionId);
     List<EntityResponseDto> entities =
         authorizedEntitiesService.getAuthorizedCollectionEntities(userId, collectionId);
@@ -60,19 +72,22 @@ public class CollectionEntityService {
     return entities;
   }
 
-  public List<AlertDefinitionDto> getStoredAlertsForCollection(String userId, String collectionId) {
+  public List<AlertDefinitionDto> getStoredAlertsForCollection(
+      final String userId, final String collectionId) {
     return alertService.getStoredAlertsForCollection(userId, collectionId);
   }
 
   public List<AuthorizedReportDefinitionResponseDto> findAndFilterReports(
-      String userId, String collectionId) {
+      final String userId, final String collectionId) {
     return reportService.findAndFilterReports(userId, collectionId);
   }
 
   public void copyCollectionEntities(
-      String userId, CollectionDefinitionRestDto collectionDefinitionDto, String newCollectionId) {
+      final String userId,
+      final CollectionDefinitionRestDto collectionDefinitionDto,
+      final String newCollectionId) {
     final Map<String, String> uniqueReportCopies = new HashMap<>();
-    List<EntityResponseDto> oldCollectionEntities =
+    final List<EntityResponseDto> oldCollectionEntities =
         getAuthorizedCollectionEntities(userId, collectionDefinitionDto.getId());
 
     oldCollectionEntities.forEach(

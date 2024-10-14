@@ -12,13 +12,12 @@ import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import java.util.Map;
 import java.util.Optional;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class FilterLimitedAggregationUtilES {
 
   public static final String FILTER_LIMITED_AGGREGATION = "filterLimitedAggregation";
+
+  private FilterLimitedAggregationUtilES() {}
 
   public static Map<String, Aggregation.Builder.ContainerBuilder>
       wrapWithFilterLimitedParentAggregation(

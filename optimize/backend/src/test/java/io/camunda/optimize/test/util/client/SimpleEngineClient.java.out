@@ -371,13 +371,13 @@
 //    try (CloseableHttpResponse response = client.execute(suspendRequest)) {
 //      if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode())
 // {
-//        throw new RuntimeException(
+//        throw new OptimizeRuntimeException(
 //            "Could not suspend process instance. Status-code: "
 //                + response.getStatusLine().getStatusCode());
 //      }
 //    } catch (Exception e) {
 //      log.error("Error while trying to suspend process instance!");
-//      throw new RuntimeException(e);
+//      throw new OptimizeRuntimeException(e);
 //    }
 //  }
 //
@@ -466,7 +466,7 @@
 //    try (CloseableHttpResponse claimResponse = client.execute(claimPost)) {
 //      if (claimResponse.getStatusLine().getStatusCode()
 //          != Response.Status.NO_CONTENT.getStatusCode()) {
-//        throw new RuntimeException("Wrong error code when claiming user tasks!");
+//        throw new OptimizeRuntimeException("Wrong error code when claiming user tasks!");
 //      }
 //    }
 //  }
@@ -561,7 +561,7 @@
 //    try (CloseableHttpResponse response = client.execute(completePost)) {
 //      if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode())
 // {
-//        throw new RuntimeException("Wrong error code when completing user tasks!");
+//        throw new OptimizeRuntimeException("Wrong error code when completing user tasks!");
 //      }
 //    } catch (Exception e) {
 //      log.error("Could not complete user task!", e);
@@ -625,7 +625,7 @@
 //              try (CloseableHttpResponse response = client.execute(d)) {
 //                if (response.getStatusLine().getStatusCode()
 //                    != Response.Status.OK.getStatusCode()) {
-//                  throw new RuntimeException(
+//                  throw new OptimizeRuntimeException(
 //                      "Something really bad happened during deployment, "
 //                          + "could not create a deployment!");
 //                }
@@ -798,7 +798,7 @@
 //                String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
 //                if (response.getStatusLine().getStatusCode()
 //                    != Response.Status.OK.getStatusCode()) {
-//                  throw new RuntimeException(
+//                  throw new OptimizeRuntimeException(
 //                      "Something really bad happened during deployment, "
 //                          + "could not create a deployment!\n"
 //                          + responseString);

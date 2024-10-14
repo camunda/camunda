@@ -26,9 +26,6 @@ import io.camunda.optimize.service.util.IdGenerator;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.Collections;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
-import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Result;
@@ -42,29 +39,48 @@ import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.IndexResponse;
 import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.core.UpdateResponse;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 @Conditional(OpenSearchCondition.class)
 public class DashboardWriterOS implements DashboardWriter {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DashboardWriterOS.class);
   private final OptimizeOpenSearchClient osClient;
+
+  public DashboardWriterOS(final OptimizeOpenSearchClient osClient) {
+    this.osClient = osClient;
+  }
 
   @Override
   public IdResponseDto createNewDashboard(
-      @NonNull final String userId,
-      @NonNull final DashboardDefinitionRestDto dashboardDefinitionDto) {
+      final String userId, final DashboardDefinitionRestDto dashboardDefinitionDto) {
+    if (userId == null) {
+      throw new OptimizeRuntimeException("userId cannot be null");
+    }
+    if (dashboardDefinitionDto == null) {
+      throw new OptimizeRuntimeException("dashboardDefinitionDto cannot be null");
+    }
     return createNewDashboard(userId, dashboardDefinitionDto, IdGenerator.getNextId());
   }
 
   @Override
   public IdResponseDto createNewDashboard(
-      @NonNull final String userId,
-      @NonNull final DashboardDefinitionRestDto dashboardDefinitionDto,
-      @NonNull final String id) {
+      final String userId,
+      final DashboardDefinitionRestDto dashboardDefinitionDto,
+      final String id) {
+    if (userId == null) {
+      throw new OptimizeRuntimeException("userId cannot be null");
+    }
+    if (dashboardDefinitionDto == null) {
+      throw new OptimizeRuntimeException("dashboardDefinitionDto cannot be null");
+    }
+    if (id == null) {
+      throw new OptimizeRuntimeException("id cannot be null");
+    }
+
     log.debug("Writing new dashboard to OpenSearch");
     dashboardDefinitionDto.setOwner(userId);
     dashboardDefinitionDto.setName(
@@ -75,8 +91,11 @@ public class DashboardWriterOS implements DashboardWriter {
   }
 
   @Override
-  public IdResponseDto saveDashboard(
-      @NonNull final DashboardDefinitionRestDto dashboardDefinitionDto) {
+  public IdResponseDto saveDashboard(final DashboardDefinitionRestDto dashboardDefinitionDto) {
+    if (dashboardDefinitionDto == null) {
+      throw new OptimizeRuntimeException("dashboardDefinitionDto cannot be null");
+    }
+
     dashboardDefinitionDto.setCreated(LocalDateUtil.getCurrentDateTime());
     dashboardDefinitionDto.setLastModified(LocalDateUtil.getCurrentDateTime());
     final String dashboardId = dashboardDefinitionDto.getId();

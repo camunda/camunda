@@ -43,21 +43,32 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 public class EntityImportService {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(EntityImportService.class);
   private final ReportImportService reportImportService;
   private final DashboardImportService dashboardImportService;
   private final AuthorizedCollectionService authorizedCollectionService;
   private final CollectionService collectionService;
   private final ConfigurationService configurationService;
+
+  public EntityImportService(
+      final ReportImportService reportImportService,
+      final DashboardImportService dashboardImportService,
+      final AuthorizedCollectionService authorizedCollectionService,
+      final CollectionService collectionService,
+      final ConfigurationService configurationService) {
+    this.reportImportService = reportImportService;
+    this.dashboardImportService = dashboardImportService;
+    this.authorizedCollectionService = authorizedCollectionService;
+    this.collectionService = collectionService;
+    this.configurationService = configurationService;
+  }
 
   public List<EntityIdResponseDto> importEntities(
       final String collectionId, final Set<OptimizeEntityExportDto> entitiesToImport) {
@@ -135,7 +146,7 @@ public class EntityImportService {
           objectMapper.readValue(exportedDtoJson, new TypeReference<>() {});
       // @formatter:on
       final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
-      Set<ConstraintViolation<OptimizeEntityExportDto>> violations = new HashSet<>();
+      final Set<ConstraintViolation<OptimizeEntityExportDto>> violations = new HashSet<>();
       exportDtos.forEach(exportDto -> violations.addAll(validator.validate(exportDto)));
       if (!violations.isEmpty()) {
         throw new OptimizeImportFileInvalidException(
@@ -147,7 +158,7 @@ public class EntityImportService {
                     .collect(joining(","))));
       }
       return exportDtos;
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       throw new OptimizeImportFileInvalidException(
           "Could not import entities because the provided file is not a valid list of OptimizeEntityExportDtos."
               + " Error:"

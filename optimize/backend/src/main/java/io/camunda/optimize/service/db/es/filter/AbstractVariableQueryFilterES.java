@@ -17,10 +17,12 @@ import io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.time.ZoneId;
 import java.util.List;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
 public abstract class AbstractVariableQueryFilterES {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(AbstractVariableQueryFilterES.class);
 
   protected abstract Query.Builder createContainsOneOfTheGivenStringsQueryBuilder(
       final StringVariableFilterDataDto dto);

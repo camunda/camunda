@@ -35,8 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.FiltersAggregate;
@@ -46,15 +44,28 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class ProcessGroupByProcessInstanceRunningDateInterpreterOS
     extends AbstractProcessGroupByInterpreterOS {
+
   private final DateTimeFormatter formatter;
   private final DateAggregationServiceOS dateAggregationService;
   private final MinMaxStatsServiceOS minMaxStatsService;
-  @Getter private final ProcessDistributedByInterpreterFacadeOS distributedByInterpreter;
-  @Getter private final ProcessViewInterpreterFacadeOS viewInterpreter;
+  private final ProcessDistributedByInterpreterFacadeOS distributedByInterpreter;
+  private final ProcessViewInterpreterFacadeOS viewInterpreter;
+
+  public ProcessGroupByProcessInstanceRunningDateInterpreterOS(
+      DateTimeFormatter formatter,
+      DateAggregationServiceOS dateAggregationService,
+      MinMaxStatsServiceOS minMaxStatsService,
+      ProcessDistributedByInterpreterFacadeOS distributedByInterpreter,
+      ProcessViewInterpreterFacadeOS viewInterpreter) {
+    this.formatter = formatter;
+    this.dateAggregationService = dateAggregationService;
+    this.minMaxStatsService = minMaxStatsService;
+    this.distributedByInterpreter = distributedByInterpreter;
+    this.viewInterpreter = viewInterpreter;
+  }
 
   @Override
   public Set<ProcessGroupBy> getSupportedGroupBys() {
@@ -133,5 +144,13 @@ public class ProcessGroupByProcessInstanceRunningDateInterpreterOS
               })
           .toList();
     }
+  }
+
+  public ProcessDistributedByInterpreterFacadeOS getDistributedByInterpreter() {
+    return this.distributedByInterpreter;
+  }
+
+  public ProcessViewInterpreterFacadeOS getViewInterpreter() {
+    return this.viewInterpreter;
   }
 }

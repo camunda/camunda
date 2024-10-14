@@ -17,7 +17,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation.Builder;
@@ -28,10 +27,12 @@ import org.opensearch.client.opensearch._types.aggregations.NestedAggregation;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
+import org.slf4j.Logger;
 
-@Slf4j
 public class OpenSearchCompositeAggregationScroller {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(OpenSearchCompositeAggregationScroller.class);
   private OptimizeOpenSearchClient osClient;
   private SearchRequest.Builder searchRequestBuilder;
   private Consumer<CompositeBucket> compositeBucketConsumer;

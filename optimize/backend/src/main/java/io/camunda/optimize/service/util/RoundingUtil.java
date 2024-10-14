@@ -7,11 +7,9 @@
  */
 package io.camunda.optimize.service.util;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class RoundingUtil {
+
+  private RoundingUtil() {}
 
   public static Double roundDownToNearestPowerOfTen(final Double numberToRound) {
     if (numberToRound >= 0) {

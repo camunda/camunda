@@ -10,13 +10,9 @@ package io.camunda.optimize.dto.optimize.query.report.single.filter.data;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Data
 public class OperatorMultipleValuesFilterDataDto {
+
   protected FilterOperator operator;
   protected List<String> values;
 
@@ -24,5 +20,72 @@ public class OperatorMultipleValuesFilterDataDto {
       final FilterOperator operator, final List<String> values) {
     this.operator = operator;
     this.values = Optional.ofNullable(values).orElseGet(ArrayList::new);
+  }
+
+  protected OperatorMultipleValuesFilterDataDto() {}
+
+  public FilterOperator getOperator() {
+    return operator;
+  }
+
+  public void setOperator(final FilterOperator operator) {
+    this.operator = operator;
+  }
+
+  public List<String> getValues() {
+    return values;
+  }
+
+  public void setValues(final List<String> values) {
+    this.values = values;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof OperatorMultipleValuesFilterDataDto;
+  }
+
+  @Override
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = 1;
+    final Object $operator = getOperator();
+    result = result * PRIME + ($operator == null ? 43 : $operator.hashCode());
+    final Object $values = getValues();
+    result = result * PRIME + ($values == null ? 43 : $values.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof OperatorMultipleValuesFilterDataDto)) {
+      return false;
+    }
+    final OperatorMultipleValuesFilterDataDto other = (OperatorMultipleValuesFilterDataDto) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    final Object this$operator = getOperator();
+    final Object other$operator = other.getOperator();
+    if (this$operator == null ? other$operator != null : !this$operator.equals(other$operator)) {
+      return false;
+    }
+    final Object this$values = getValues();
+    final Object other$values = other.getValues();
+    if (this$values == null ? other$values != null : !this$values.equals(other$values)) {
+      return false;
+    }
+    return true;
+  }
+
+  @Override
+  public String toString() {
+    return "OperatorMultipleValuesFilterDataDto(operator="
+        + getOperator()
+        + ", values="
+        + getValues()
+        + ")";
   }
 }

@@ -22,16 +22,17 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ExternalVariableUpdateImportMediator implements ImportMediator {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ExternalVariableUpdateImportMediator.class);
   private final ConfigurationService configurationService;
   private final BackoffCalculator idleBackoffCalculator;
   private final ExternalVariableUpdateImportIndexHandler importIndexHandler;

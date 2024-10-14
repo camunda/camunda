@@ -12,8 +12,6 @@ import io.camunda.optimize.dto.optimize.query.report.single.configuration.Aggreg
 import io.camunda.optimize.service.db.report.interpreter.util.AggregationResultMappingUtil;
 import java.util.Map;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
@@ -21,11 +19,16 @@ import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.PercentilesAggregation;
 import org.opensearch.client.opensearch._types.aggregations.TDigestPercentilesAggregate;
 
-@AllArgsConstructor
-@NoArgsConstructor
 public class PercentileAggregationOS extends AggregationStrategyOS {
+
   private static final String PERCENTILE_AGGREGATION = "percentileAggregation";
   private Double percentileValue;
+
+  public PercentileAggregationOS(Double percentileValue) {
+    this.percentileValue = percentileValue;
+  }
+
+  public PercentileAggregationOS() {}
 
   @Override
   public AggregationDto getAggregationType() {

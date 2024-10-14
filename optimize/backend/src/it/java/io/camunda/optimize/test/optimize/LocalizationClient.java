@@ -11,13 +11,16 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.camunda.optimize.OptimizeRequestExecutor;
 import jakarta.ws.rs.core.Response;
 import java.util.function.Supplier;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 public class LocalizationClient {
+
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
 
-  public JsonNode getLocalizationJson(String localeCode) {
+  public LocalizationClient(final Supplier<OptimizeRequestExecutor> requestExecutorSupplier) {
+    this.requestExecutorSupplier = requestExecutorSupplier;
+  }
+
+  public JsonNode getLocalizationJson(final String localeCode) {
     return getRequestExecutor()
         .buildGetLocalizationRequest(localeCode)
         .execute(JsonNode.class, Response.Status.OK.getStatusCode());

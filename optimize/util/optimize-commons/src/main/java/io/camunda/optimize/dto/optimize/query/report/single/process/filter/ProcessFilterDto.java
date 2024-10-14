@@ -14,8 +14,6 @@ import io.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDa
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 /**
  * Abstract class that contains a hidden "type" field to distinguish, which filter type the jackson
@@ -63,8 +61,6 @@ import lombok.NoArgsConstructor;
       value = CompletedOrCanceledFlowNodesOnlyFilterDto.class,
       name = "completedOrCanceledFlowNodesOnly")
 })
-@Data
-@NoArgsConstructor
 public abstract class ProcessFilterDto<DATA extends FilterDataDto> {
 
   protected DATA data;
@@ -77,7 +73,84 @@ public abstract class ProcessFilterDto<DATA extends FilterDataDto> {
     setFilterLevel(filterLevel);
   }
 
+  public ProcessFilterDto() {}
+
   public abstract List<FilterApplicationLevel> validApplicationLevels();
+
+  public DATA getData() {
+    return data;
+  }
+
+  public void setData(final DATA data) {
+    this.data = data;
+  }
+
+  public @NotNull FilterApplicationLevel getFilterLevel() {
+    return filterLevel;
+  }
+
+  public void setFilterLevel(@NotNull final FilterApplicationLevel filterLevel) {
+    this.filterLevel = filterLevel;
+  }
+
+  public @NotEmpty List<String> getAppliedTo() {
+    return appliedTo;
+  }
+
+  public void setAppliedTo(@NotEmpty final List<String> appliedTo) {
+    this.appliedTo = appliedTo;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof ProcessFilterDto;
+  }
+
+  @Override
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = 1;
+    final Object $data = getData();
+    result = result * PRIME + ($data == null ? 43 : $data.hashCode());
+    final Object $filterLevel = getFilterLevel();
+    result = result * PRIME + ($filterLevel == null ? 43 : $filterLevel.hashCode());
+    final Object $appliedTo = getAppliedTo();
+    result = result * PRIME + ($appliedTo == null ? 43 : $appliedTo.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof ProcessFilterDto)) {
+      return false;
+    }
+    final ProcessFilterDto<?> other = (ProcessFilterDto<?>) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    final Object this$data = getData();
+    final Object other$data = other.getData();
+    if (this$data == null ? other$data != null : !this$data.equals(other$data)) {
+      return false;
+    }
+    final Object this$filterLevel = getFilterLevel();
+    final Object other$filterLevel = other.getFilterLevel();
+    if (this$filterLevel == null
+        ? other$filterLevel != null
+        : !this$filterLevel.equals(other$filterLevel)) {
+      return false;
+    }
+    final Object this$appliedTo = getAppliedTo();
+    final Object other$appliedTo = other.getAppliedTo();
+    if (this$appliedTo == null
+        ? other$appliedTo != null
+        : !this$appliedTo.equals(other$appliedTo)) {
+      return false;
+    }
+    return true;
+  }
 
   @Override
   public String toString() {

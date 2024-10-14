@@ -34,19 +34,28 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class ProcessGroupByDurationInterpreterES extends AbstractProcessGroupByInterpreterES {
+
   private final DurationAggregationServiceES durationAggregationService;
   private final MinMaxStatsServiceES minMaxStatsService;
-  @Getter private final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
-  @Getter private final ProcessViewInterpreterFacadeES viewInterpreter;
+  private final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
+  private final ProcessViewInterpreterFacadeES viewInterpreter;
+
+  public ProcessGroupByDurationInterpreterES(
+      DurationAggregationServiceES durationAggregationService,
+      MinMaxStatsServiceES minMaxStatsService,
+      ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
+      ProcessViewInterpreterFacadeES viewInterpreter) {
+    this.durationAggregationService = durationAggregationService;
+    this.minMaxStatsService = minMaxStatsService;
+    this.distributedByInterpreter = distributedByInterpreter;
+    this.viewInterpreter = viewInterpreter;
+  }
 
   @Override
   public Set<ProcessGroupBy> getSupportedGroupBys() {
@@ -97,5 +106,13 @@ public class ProcessGroupByDurationInterpreterES extends AbstractProcessGroupByI
         LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
         ProcessInstanceIndex.DURATION,
         ProcessInstanceIndex.START_DATE);
+  }
+
+  public ProcessDistributedByInterpreterFacadeES getDistributedByInterpreter() {
+    return this.distributedByInterpreter;
+  }
+
+  public ProcessViewInterpreterFacadeES getViewInterpreter() {
+    return this.viewInterpreter;
   }
 }

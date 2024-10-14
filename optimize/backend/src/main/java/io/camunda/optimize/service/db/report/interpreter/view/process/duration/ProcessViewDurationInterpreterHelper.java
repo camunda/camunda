@@ -17,12 +17,12 @@ import io.camunda.optimize.service.db.report.result.CompositeCommandResult.ViewR
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.util.List;
 import java.util.function.Function;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.apache.commons.math3.util.Precision;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ProcessViewDurationInterpreterHelper {
+
+  private ProcessViewDurationInterpreterHelper() {}
+
   public static ProcessPartDto getProcessPart(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     return context

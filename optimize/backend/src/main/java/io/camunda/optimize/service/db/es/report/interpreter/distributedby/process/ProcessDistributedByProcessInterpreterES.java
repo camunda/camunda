@@ -33,20 +33,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class ProcessDistributedByProcessInterpreterES
     extends AbstractProcessDistributedByInterpreterES
     implements ProcessDistributedByProcessInterpreter {
-  @Getter private final ProcessViewInterpreterFacadeES viewInterpreter;
+
+  private final ProcessViewInterpreterFacadeES viewInterpreter;
   private final ConfigurationService configurationService;
-  @Getter private final ProcessDefinitionReader processDefinitionReader;
+  private final ProcessDefinitionReader processDefinitionReader;
+
+  public ProcessDistributedByProcessInterpreterES(
+      ProcessViewInterpreterFacadeES viewInterpreter,
+      ConfigurationService configurationService,
+      ProcessDefinitionReader processDefinitionReader) {
+    this.viewInterpreter = viewInterpreter;
+    this.configurationService = configurationService;
+    this.processDefinitionReader = processDefinitionReader;
+  }
 
   @Override
   public Set<ProcessDistributedBy> getSupportedDistributedBys() {
@@ -158,5 +165,13 @@ public class ProcessDistributedByProcessInterpreterES
       }
     }
     return bucketsByDefKey;
+  }
+
+  public ProcessViewInterpreterFacadeES getViewInterpreter() {
+    return this.viewInterpreter;
+  }
+
+  public ProcessDefinitionReader getProcessDefinitionReader() {
+    return this.processDefinitionReader;
   }
 }

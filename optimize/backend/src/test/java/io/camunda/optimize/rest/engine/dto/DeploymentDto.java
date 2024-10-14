@@ -7,9 +7,15 @@
  */
 package io.camunda.optimize.rest.engine.dto;
 
-import lombok.Getter;
-import lombok.Setter;
-
 public class DeploymentDto {
-  @Getter @Setter protected String id;
+
+  protected String id;
+
+  public String getId() {
+    return id;
+  }
+
+  public void setId(final String id) {
+    this.id = id;
+  }
 }

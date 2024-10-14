@@ -14,15 +14,18 @@ import io.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import io.camunda.optimize.service.importing.job.StoreTimestampBasedImportIndexDatabaseImportJob;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.List;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
 /**
  * Write all information of the current import index to elasticsearch. If Optimize is restarted the
  * import index can thus be restored again.
  */
-@Slf4j
 public class StoreTimestampBasedImportIndexImportService
     implements ImportService<TimestampBasedImportIndexDto> {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(StoreTimestampBasedImportIndexImportService.class);
+
   private final ImportIndexWriter importIndexWriter;
   private final DatabaseImportJobExecutor databaseImportJobExecutor;
   private final DatabaseClient databaseClient;

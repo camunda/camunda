@@ -27,14 +27,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
 public class ConfigurationValidator {
 
   public static final String DOC_URL =
       "https://docs.camunda.io/optimize/next/self-managed/optimize-deployment/configuration/system-configuration/";
   private static final String[] DEFAULT_DELETED_CONFIG_LOCATIONS = {"deleted-config.yaml"};
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ConfigurationValidator.class);
 
   private final Map<String, String> deletedConfigKeys;
 
@@ -43,21 +43,21 @@ public class ConfigurationValidator {
   }
 
   @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
-  public ConfigurationValidator(String[] deletedConfigLocations) {
+  public ConfigurationValidator(final String[] deletedConfigLocations) {
     final List<InputStream> deletedConfigStreams =
         getLocationsAsInputStream(
             deletedConfigLocations == null
                 ? DEFAULT_DELETED_CONFIG_LOCATIONS
                 : deletedConfigLocations);
 
-    this.deletedConfigKeys =
+    deletedConfigKeys =
         (Map<String, String>)
             parseConfigFromLocations(deletedConfigStreams)
                 .map(ReadContext::json)
                 .orElse(Collections.emptyMap());
   }
 
-  public void validate(ConfigurationService configurationService) {
+  public void validate(final ConfigurationService configurationService) {
     validateNoDeletedConfigKeysUsed(configurationService.getConfigJsonContext());
     configurationService.getEmailAuthenticationConfiguration().validate();
     validateWebhooks(configurationService);
@@ -67,7 +67,7 @@ public class ConfigurationValidator {
     return new ConfigurationValidator(new String[] {});
   }
 
-  private void validateNoDeletedConfigKeysUsed(ReadContext configJsonContext) {
+  private void validateNoDeletedConfigKeysUsed(final ReadContext configJsonContext) {
     final Configuration conf =
         Configuration.defaultConfiguration().addOptions(Option.SUPPRESS_EXCEPTIONS);
     final DocumentContext failsafeConfigurationJsonContext =
@@ -111,7 +111,7 @@ public class ConfigurationValidator {
     final List<String> webhooksWithoutPlaceholder = Lists.newArrayList();
     final List<String> webhooksWithoutUrl = Lists.newArrayList();
 
-    for (Map.Entry<String, WebhookConfiguration> webhookConfigEntry : webhookMap.entrySet()) {
+    for (final Map.Entry<String, WebhookConfiguration> webhookConfigEntry : webhookMap.entrySet()) {
       final String defaultPayload = webhookConfigEntry.getValue().getDefaultPayload();
       final String url = webhookConfigEntry.getValue().getUrl();
       final boolean usesPlaceholderString =

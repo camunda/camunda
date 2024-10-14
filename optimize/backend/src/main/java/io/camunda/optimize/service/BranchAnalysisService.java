@@ -15,15 +15,20 @@ import io.camunda.optimize.service.security.util.definition.DataSourceDefinition
 import io.camunda.optimize.service.util.ValidationHelper;
 import jakarta.ws.rs.ForbiddenException;
 import java.time.ZoneId;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 public class BranchAnalysisService {
 
   private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
   private final BranchAnalysisReader branchAnalysisReader;
+
+  public BranchAnalysisService(
+      final DataSourceDefinitionAuthorizationService definitionAuthorizationService,
+      final BranchAnalysisReader branchAnalysisReader) {
+    this.definitionAuthorizationService = definitionAuthorizationService;
+    this.branchAnalysisReader = branchAnalysisReader;
+  }
 
   public BranchAnalysisResponseDto branchAnalysis(
       final String userId, final BranchAnalysisRequestDto request, final ZoneId timezone) {

@@ -11,18 +11,20 @@ import static io.camunda.optimize.jetty.OptimizeResourceConstants.ACTUATOR_PORT_
 
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.Collections;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.freemarker.FreeMarkerAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 
-@Slf4j
 @ComponentScan(excludeFilters = @ComponentScan.Filter(IgnoreDuringScan.class))
 @SpringBootApplication(exclude = {FreeMarkerAutoConfiguration.class})
 public class Main {
-  public static void main(String[] args) {
-    SpringApplication optimize = new SpringApplication(Main.class);
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(Main.class);
+
+  public static void main(final String[] args) {
+    final SpringApplication optimize = new SpringApplication(Main.class);
 
     final ConfigurationService configurationService = ConfigurationService.createDefault();
     optimize.setDefaultProperties(

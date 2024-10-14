@@ -24,10 +24,8 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.Set;
-import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Path("/import")
 @Component
 public class ImportRestService {
@@ -35,6 +33,15 @@ public class ImportRestService {
   private final SessionService sessionService;
   private final EntityImportService entityImportService;
   private final AbstractIdentityService identityService;
+
+  public ImportRestService(
+      final SessionService sessionService,
+      final EntityImportService entityImportService,
+      final AbstractIdentityService identityService) {
+    this.sessionService = sessionService;
+    this.entityImportService = entityImportService;
+    this.identityService = identityService;
+  }
 
   @POST
   @Produces(MediaType.APPLICATION_JSON)

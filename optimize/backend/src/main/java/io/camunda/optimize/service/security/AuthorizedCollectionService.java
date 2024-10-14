@@ -23,12 +23,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@Slf4j
-@AllArgsConstructor
 @Component
 public class AuthorizedCollectionService {
 
@@ -38,9 +35,17 @@ public class AuthorizedCollectionService {
       "User [%s] is not authorized to edit/delete collection [%s].";
   private static final String RESOURCE_EDIT_NOT_AUTHORIZED_MESSAGE =
       "User [%s] does not have the role to add/edit collection [%s] resources.";
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(AuthorizedCollectionService.class);
 
   private final CollectionReader collectionReader;
   private final AbstractIdentityService identityService;
+
+  public AuthorizedCollectionService(
+      final CollectionReader collectionReader, final AbstractIdentityService identityService) {
+    this.collectionReader = collectionReader;
+    this.identityService = identityService;
+  }
 
   public Optional<RoleType> getUsersCollectionResourceRole(
       final String userId, final String collectionId) throws NotFoundException, ForbiddenException {

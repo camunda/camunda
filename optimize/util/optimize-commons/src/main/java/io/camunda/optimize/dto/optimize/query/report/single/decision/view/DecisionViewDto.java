@@ -13,13 +13,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
-@AllArgsConstructor
-@Data
 public class DecisionViewDto {
 
   protected List<ViewProperty> properties = new ArrayList<>();
@@ -28,9 +22,19 @@ public class DecisionViewDto {
     getProperties().add(property);
   }
 
+  public DecisionViewDto(final List<ViewProperty> properties) {
+    this.properties = properties;
+  }
+
+  public DecisionViewDto() {}
+
   @JsonIgnore
   public String createCommandKey() {
     return getProperties().stream().findFirst().map(ViewProperty::toString).orElse(null);
+  }
+
+  public List<ViewProperty> getProperties() {
+    return properties;
   }
 
   @JsonSetter
@@ -40,6 +44,46 @@ public class DecisionViewDto {
 
   public void setProperties(final ViewProperty... properties) {
     this.properties = Arrays.asList(properties);
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof DecisionViewDto;
+  }
+
+  @Override
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = 1;
+    final Object $properties = getProperties();
+    result = result * PRIME + ($properties == null ? 43 : $properties.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof DecisionViewDto)) {
+      return false;
+    }
+    final DecisionViewDto other = (DecisionViewDto) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    final Object this$properties = getProperties();
+    final Object other$properties = other.getProperties();
+    if (this$properties == null
+        ? other$properties != null
+        : !this$properties.equals(other$properties)) {
+      return false;
+    }
+    return true;
+  }
+
+  @Override
+  public String toString() {
+    return "DecisionViewDto(properties=" + getProperties() + ")";
   }
 
   public static final class Fields {

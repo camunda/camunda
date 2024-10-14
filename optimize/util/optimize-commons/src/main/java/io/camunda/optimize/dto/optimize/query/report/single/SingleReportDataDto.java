@@ -16,24 +16,34 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.experimental.SuperBuilder;
 
-@AllArgsConstructor
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@SuperBuilder
 public abstract class SingleReportDataDto implements ReportDataDto {
 
-  @Getter @Setter @Builder.Default
   private SingleReportConfigurationDto configuration = new SingleReportConfigurationDto();
 
-  @Getter @Setter @Builder.Default @Valid
-  private List<ReportDataDefinitionDto> definitions = new ArrayList<>();
+  @Valid private List<ReportDataDefinitionDto> definitions = new ArrayList<>();
+
+  public SingleReportDataDto(
+      final SingleReportConfigurationDto configuration,
+      @Valid final List<ReportDataDefinitionDto> definitions) {
+    this.configuration = configuration;
+    this.definitions = definitions;
+  }
+
+  protected SingleReportDataDto() {}
+
+  protected SingleReportDataDto(final SingleReportDataDtoBuilder<?, ?> b) {
+    if (b.configuration$set) {
+      configuration = b.configuration$value;
+    } else {
+      configuration = $default$configuration();
+    }
+    if (b.definitions$set) {
+      definitions = b.definitions$value;
+    } else {
+      definitions = $default$definitions();
+    }
+  }
 
   @JsonIgnore
   public Optional<ReportDataDefinitionDto> getFirstDefinition() {
@@ -81,9 +91,68 @@ public abstract class SingleReportDataDto implements ReportDataDto {
   @JsonIgnore
   public abstract List<ViewProperty> getViewProperties();
 
+  public SingleReportConfigurationDto getConfiguration() {
+    return configuration;
+  }
+
+  public void setConfiguration(final SingleReportConfigurationDto configuration) {
+    this.configuration = configuration;
+  }
+
+  public @Valid List<ReportDataDefinitionDto> getDefinitions() {
+    return definitions;
+  }
+
+  public void setDefinitions(@Valid final List<ReportDataDefinitionDto> definitions) {
+    this.definitions = definitions;
+  }
+
+  private static SingleReportConfigurationDto $default$configuration() {
+    return new SingleReportConfigurationDto();
+  }
+
+  @Valid
+  private static List<ReportDataDefinitionDto> $default$definitions() {
+    return new ArrayList<>();
+  }
+
   public static final class Fields {
 
     public static final String configuration = "configuration";
     public static final String definitions = "definitions";
+  }
+
+  public abstract static class SingleReportDataDtoBuilder<
+      C extends SingleReportDataDto, B extends SingleReportDataDtoBuilder<C, B>> {
+
+    private SingleReportConfigurationDto configuration$value;
+    private boolean configuration$set;
+    private @Valid List<ReportDataDefinitionDto> definitions$value;
+    private boolean definitions$set;
+
+    public B configuration(final SingleReportConfigurationDto configuration) {
+      configuration$value = configuration;
+      configuration$set = true;
+      return self();
+    }
+
+    public B definitions(@Valid final List<ReportDataDefinitionDto> definitions) {
+      definitions$value = definitions;
+      definitions$set = true;
+      return self();
+    }
+
+    protected abstract B self();
+
+    public abstract C build();
+
+    @Override
+    public String toString() {
+      return "SingleReportDataDto.SingleReportDataDtoBuilder(configuration$value="
+          + configuration$value
+          + ", definitions$value="
+          + definitions$value
+          + ")";
+    }
   }
 }

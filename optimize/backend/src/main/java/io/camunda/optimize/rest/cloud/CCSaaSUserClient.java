@@ -18,19 +18,19 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
 @Conditional(CCSaaSCondition.class)
 public class CCSaaSUserClient extends AbstractCCSaaSClient {
 
   private static final String GET_USER_BY_ID_TEMPLATE = GET_ORGS_TEMPLATE + "/members/%s";
   private static final String GET_USERS_TEMPLATE = GET_ORGS_TEMPLATE + "/members?filter=members";
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(CCSaaSUserClient.class);
 
   public CCSaaSUserClient(
       final ConfigurationService configurationService, final ObjectMapper objectMapper) {

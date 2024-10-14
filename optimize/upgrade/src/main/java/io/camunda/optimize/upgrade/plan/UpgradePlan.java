@@ -11,24 +11,42 @@ import com.vdurmont.semver4j.Semver;
 import io.camunda.optimize.upgrade.steps.UpgradeStep;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@NoArgsConstructor(access = AccessLevel.PACKAGE)
-@Slf4j
 public class UpgradePlan {
-  @Getter private final List<UpgradeStep> upgradeSteps = new ArrayList<>();
-  @Getter @Setter private Semver toVersion;
-  @Getter @Setter private Semver fromVersion;
 
-  public void addUpgradeStep(UpgradeStep upgradeStep) {
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(UpgradePlan.class);
+  private final List<UpgradeStep> upgradeSteps = new ArrayList<>();
+  private Semver toVersion;
+  private Semver fromVersion;
+
+  UpgradePlan() {}
+
+  public void addUpgradeStep(final UpgradeStep upgradeStep) {
     upgradeSteps.add(upgradeStep);
   }
 
-  public void addUpgradeSteps(List<? extends UpgradeStep> upgradeSteps) {
+  public void addUpgradeSteps(final List<? extends UpgradeStep> upgradeSteps) {
     this.upgradeSteps.addAll(upgradeSteps);
+  }
+
+  public List<UpgradeStep> getUpgradeSteps() {
+    return upgradeSteps;
+  }
+
+  public Semver getToVersion() {
+    return toVersion;
+  }
+
+  public void setToVersion(final Semver toVersion) {
+    this.toVersion = toVersion;
+  }
+
+  public Semver getFromVersion() {
+    return fromVersion;
+  }
+
+  public void setFromVersion(final Semver fromVersion) {
+    this.fromVersion = fromVersion;
   }
 }

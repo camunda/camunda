@@ -22,11 +22,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
 public abstract class MappingMetadataUtil<BUILDER> {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(MappingMetadataUtil.class);
   private final DatabaseClient dbClient;
 
   public MappingMetadataUtil(final DatabaseClient dbClient) {

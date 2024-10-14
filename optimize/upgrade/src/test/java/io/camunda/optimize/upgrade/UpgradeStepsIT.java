@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.camunda.optimize.dto.optimize.query.MetadataDto;
+import io.camunda.optimize.exception.OptimizeIntegrationTestException;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.upgrade.db.indices.UserTestDto;
@@ -27,7 +28,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 
 public class UpgradeStepsIT extends AbstractUpgradeIT {
@@ -76,7 +76,6 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     assertThatIndexIsSetAsWriteIndex(TEST_INDEX_WITH_TEMPLATE_V1);
   }
 
-  @SneakyThrows
   @Test
   public void executeUpdateIndexStep() {
     // given
@@ -100,13 +99,16 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
         .isTrue();
   }
 
-  @SneakyThrows
   @Test
   public void executeUpdateIndexStep_preexistingIndexWithoutAliasWriteIndexFlag() {
     // given
     final String aliasForIndex =
         getIndexNameService().getOptimizeIndexAliasForIndex(TEST_INDEX_V1.getIndexName());
-    createIndexWithoutWriteIndexFlagOnAlias(aliasForIndex);
+    try {
+      createIndexWithoutWriteIndexFlagOnAlias(aliasForIndex);
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException(e);
+    }
 
     UpgradePlan upgradePlan =
         UpgradePlanBuilder.createUpgradePlan()
@@ -129,7 +131,6 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     assertThatIndexIsSetAsWriteIndex(TEST_INDEX_WITH_UPDATED_MAPPING_V2);
   }
 
-  @SneakyThrows
   @Test
   public void executeUpdateIndexWithAliasFromTemplateStep() {
     // given
@@ -152,20 +153,28 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
                     .getOptimizeIndexNameWithVersion(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2)))
         .isTrue();
 
-    final Map<String, ?> mappingFields =
-        databaseIntegrationTestExtension.getMappingFields(
-            TEST_INDEX_WITH_UPDATED_MAPPING_V2.getIndexName());
+    final Map<String, ?> mappingFields;
+    try {
+      mappingFields =
+          databaseIntegrationTestExtension.getMappingFields(
+              TEST_INDEX_WITH_UPDATED_MAPPING_V2.getIndexName());
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException(e);
+    }
     assertThat(mappingFields).containsKey("email");
   }
 
-  @SneakyThrows
   @Test
   public void
       executeUpdateIndexFromTemplateStep_preexistingIndexWasNotFromTemplateAndLackedAliasWriteIndexFlag() {
     // given
     final String aliasForIndex =
         getIndexNameService().getOptimizeIndexAliasForIndex(TEST_INDEX_V1.getIndexName());
-    createIndexWithoutWriteIndexFlagOnAlias(aliasForIndex);
+    try {
+      createIndexWithoutWriteIndexFlagOnAlias(aliasForIndex);
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException(e);
+    }
 
     UpgradePlan upgradePlan =
         UpgradePlanBuilder.createUpgradePlan()
@@ -185,16 +194,20 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
                     .getOptimizeIndexNameWithVersion(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2)))
         .isTrue();
 
-    final Map<String, ?> mappingFields =
-        databaseIntegrationTestExtension.getMappingFields(
-            TEST_INDEX_WITH_UPDATED_MAPPING_V2.getIndexName());
+    final Map<String, ?> mappingFields;
+    try {
+      mappingFields =
+          databaseIntegrationTestExtension.getMappingFields(
+              TEST_INDEX_WITH_UPDATED_MAPPING_V2.getIndexName());
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException(e);
+    }
     assertThat(mappingFields).containsKey("email");
 
     // even though not being set before the writeIndex flag is now set
     assertThatIndexIsSetAsWriteIndex(TEST_INDEX_WITH_UPDATED_MAPPING_V2, INDEX_SUFFIX_PRE_ROLLOVER);
   }
 
-  @SneakyThrows
   @Test
   public void
       executeUpdateIndexFromTemplateStep_preexistingIndexWasNotFromTemplateAndHadWriteAndReadAlias() {
@@ -209,10 +222,14 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
             aliasForIndex, true,
             readOnlyAliasForIndex, false);
 
-    databaseIntegrationTestExtension.createIndex(
-        getIndexNameService().getOptimizeIndexNameWithVersion(TEST_INDEX_V1),
-        aliases,
-        (DefaultIndexMappingCreator) TEST_INDEX_V1);
+    try {
+      databaseIntegrationTestExtension.createIndex(
+          getIndexNameService().getOptimizeIndexNameWithVersion(TEST_INDEX_V1),
+          aliases,
+          (DefaultIndexMappingCreator) TEST_INDEX_V1);
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException(e);
+    }
 
     UpgradePlan upgradePlan =
         UpgradePlanBuilder.createUpgradePlan()
@@ -233,10 +250,13 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
         .isTrue();
 
     assertThatIndexIsSetAsWriteIndex(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
-    assertThat(databaseIntegrationTestExtension.isAliasReadOnly(readOnlyAliasForIndex)).isTrue();
+    try {
+      assertThat(databaseIntegrationTestExtension.isAliasReadOnly(readOnlyAliasForIndex)).isTrue();
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException(e);
+    }
   }
 
-  @SneakyThrows
   @Test
   public void executeUpdateIndexWithTemplateAfterRolloverStep() {
     // given rolled over users index
@@ -268,24 +288,38 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
         getIndexNameService()
             .getOptimizeIndexAliasForIndex(
                 TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName());
-    final Map<String, Set<String>> aliasMap = getAliasMap(indexAlias);
+    final Map<String, Set<String>> aliasMap;
+    try {
+      aliasMap = getAliasMap(indexAlias);
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException(e);
+    }
     final List<String> indicesWithWriteAlias =
         databaseIntegrationTestExtension.getAllIndicesWithWriteAlias(
             TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2.getIndexName());
-    final Map<String, ?> mappingFields =
-        databaseIntegrationTestExtension.getMappingFields(
-            TEST_INDEX_WITH_UPDATED_MAPPING_V2.getIndexName());
+    final Map<String, ?> mappingFields;
+    try {
+      mappingFields =
+          databaseIntegrationTestExtension.getMappingFields(
+              TEST_INDEX_WITH_UPDATED_MAPPING_V2.getIndexName());
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException(e);
+    }
     assertThat(mappingFields).containsKey("email");
     assertThat(aliasMap.keySet()).hasSize(2);
     assertThat(indicesWithWriteAlias).hasSize(1);
     assertThat(indicesWithWriteAlias.get(0)).contains(expectedSuffixAfterRollover);
 
     // old template is gone
-    assertThat(
-            databaseIntegrationTestExtension.templateExists(
-                getIndexNameService()
-                    .getOptimizeIndexTemplateNameWithVersion(TEST_INDEX_WITH_TEMPLATE_V1)))
-        .isFalse();
+    try {
+      assertThat(
+              databaseIntegrationTestExtension.templateExists(
+                  getIndexNameService()
+                      .getOptimizeIndexTemplateNameWithVersion(TEST_INDEX_WITH_TEMPLATE_V1)))
+          .isFalse();
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException(e);
+    }
   }
 
   @Test

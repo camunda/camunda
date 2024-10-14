@@ -28,7 +28,6 @@ import io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecis
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionUpdateDto;
 import java.util.Set;
-import lombok.NonNull;
 
 public interface ReportWriter {
 
@@ -49,23 +48,23 @@ public interface ReportWriter {
           ".", DATA, SingleReportDataDto.Fields.definitions, ReportDataDefinitionDto.Fields.key);
 
   IdResponseDto createNewCombinedReport(
-      @NonNull final String userId,
-      @NonNull final CombinedReportDataDto reportData,
-      @NonNull final String reportName,
+      final String userId,
+      final CombinedReportDataDto reportData,
+      final String reportName,
       final String description,
       final String collectionId);
 
   IdResponseDto createNewSingleProcessReport(
       final String userId,
-      @NonNull final ProcessReportDataDto reportData,
-      @NonNull final String reportName,
+      final ProcessReportDataDto reportData,
+      final String reportName,
       final String description,
       final String collectionId);
 
   IdResponseDto createNewSingleDecisionReport(
-      @NonNull final String userId,
-      @NonNull final DecisionReportDataDto reportData,
-      @NonNull final String reportName,
+      final String userId,
+      final DecisionReportDataDto reportData,
+      final String reportName,
       final String description,
       final String collectionId);
 

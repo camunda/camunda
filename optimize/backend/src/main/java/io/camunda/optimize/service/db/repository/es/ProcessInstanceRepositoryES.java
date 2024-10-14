@@ -48,21 +48,34 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ProcessInstanceRepositoryES.class);
   private final ConfigurationService configurationService;
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
   private final DateTimeFormatter dateTimeFormatter;
   private final TaskRepositoryES taskRepositoryES;
+
+  public ProcessInstanceRepositoryES(
+      ConfigurationService configurationService,
+      OptimizeElasticsearchClient esClient,
+      ObjectMapper objectMapper,
+      DateTimeFormatter dateTimeFormatter,
+      TaskRepositoryES taskRepositoryES) {
+    this.configurationService = configurationService;
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+    this.dateTimeFormatter = dateTimeFormatter;
+    this.taskRepositoryES = taskRepositoryES;
+  }
 
   @Override
   public void deleteByIds(

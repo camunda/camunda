@@ -35,16 +35,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
-@RequiredArgsConstructor
 public abstract class AbstractProcessGroupByModelElementDateInterpreterES
     extends AbstractProcessGroupByInterpreterES {
+
   private static final String ELEMENT_AGGREGATION = "elementAggregation";
   private static final String FILTERED_ELEMENTS_AGGREGATION = "filteredElements";
   private static final String MODEL_ELEMENT_TYPE_FILTER_AGGREGATION = "filteredElementsByType";
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(AbstractProcessGroupByModelElementDateInterpreterES.class);
+
+  public AbstractProcessGroupByModelElementDateInterpreterES() {}
 
   protected abstract DateAggregationServiceES getDateAggregationService();
 

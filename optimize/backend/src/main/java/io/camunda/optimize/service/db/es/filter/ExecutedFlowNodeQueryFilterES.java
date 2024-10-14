@@ -18,7 +18,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.
 import io.camunda.optimize.service.db.filter.FilterContext;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.List;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -26,10 +26,12 @@ import org.springframework.stereotype.Component;
  * The executed flow node catches any flow nodes that are completed or still running, including
  * those that are marked as canceled
  */
-@Slf4j
 @Component
 @Conditional(ElasticSearchCondition.class)
 public class ExecutedFlowNodeQueryFilterES implements QueryFilterES<ExecutedFlowNodeFilterDataDto> {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ExecutedFlowNodeQueryFilterES.class);
 
   @Override
   public void addFilters(

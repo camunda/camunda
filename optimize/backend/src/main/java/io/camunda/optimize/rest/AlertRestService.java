@@ -24,11 +24,9 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
 
-@AllArgsConstructor
 @Path("/alert")
 @Component
 public class AlertRestService {
@@ -36,13 +34,19 @@ public class AlertRestService {
   private final AlertService alertService;
   private final SessionService sessionService;
 
+  public AlertRestService(final AlertService alertService, final SessionService sessionService) {
+    this.alertService = alertService;
+    this.sessionService = sessionService;
+  }
+
   @POST
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public IdResponseDto createAlert(
-      @Context ContainerRequestContext requestContext, AlertCreationRequestDto toCreate) {
+      @Context final ContainerRequestContext requestContext,
+      final AlertCreationRequestDto toCreate) {
     ValidationHelper.ensureNotNull("creation object", toCreate);
-    String user = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    final String user = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return alertService.createAlert(toCreate, user);
   }
 
@@ -51,11 +55,11 @@ public class AlertRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public void updateAlert(
-      @Context ContainerRequestContext requestContext,
-      @PathParam("id") String alertId,
-      AlertCreationRequestDto toCreate) {
+      @Context final ContainerRequestContext requestContext,
+      @PathParam("id") final String alertId,
+      final AlertCreationRequestDto toCreate) {
     ValidationHelper.ensureNotNull("creation object", toCreate);
-    String user = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    final String user = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     alertService.updateAlert(alertId, toCreate, user);
   }
 
@@ -63,8 +67,9 @@ public class AlertRestService {
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
   public void deleteAlert(
-      @Context ContainerRequestContext requestContext, @PathParam("id") String alertId) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @Context final ContainerRequestContext requestContext,
+      @PathParam("id") final String alertId) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     alertService.deleteAlert(alertId, userId);
   }
 
@@ -72,9 +77,9 @@ public class AlertRestService {
   @Path("/delete")
   @Produces(MediaType.APPLICATION_JSON)
   public void deleteAlerts(
-      @Context ContainerRequestContext requestContext,
-      @NotNull @RequestBody List<String> alertIds) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @Context final ContainerRequestContext requestContext,
+      @NotNull @RequestBody final List<String> alertIds) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     alertService.deleteAlerts(alertIds, userId);
   }
 }

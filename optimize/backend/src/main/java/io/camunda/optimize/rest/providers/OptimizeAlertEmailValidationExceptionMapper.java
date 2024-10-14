@@ -13,12 +13,14 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
 @Provider
-@Slf4j
 public class OptimizeAlertEmailValidationExceptionMapper
     implements ExceptionMapper<OptimizeAlertEmailValidationException> {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(OptimizeAlertEmailValidationExceptionMapper.class);
 
   @Override
   public Response toResponse(

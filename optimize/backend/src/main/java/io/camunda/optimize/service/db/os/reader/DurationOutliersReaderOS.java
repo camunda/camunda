@@ -19,16 +19,18 @@ import io.camunda.optimize.service.db.reader.DurationOutliersReader;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.List;
 import java.util.Map;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 @Conditional(OpenSearchCondition.class)
 public class DurationOutliersReaderOS implements DurationOutliersReader {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(DurationOutliersReaderOS.class);
+
+  public DurationOutliersReaderOS() {}
 
   @Override
   public List<DurationChartEntryDto> getCountByDurationChart(

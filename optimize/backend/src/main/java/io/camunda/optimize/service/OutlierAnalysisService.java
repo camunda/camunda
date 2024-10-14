@@ -21,15 +21,20 @@ import io.camunda.optimize.service.security.util.definition.DataSourceDefinition
 import jakarta.ws.rs.ForbiddenException;
 import java.util.List;
 import java.util.Map;
-import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
-@AllArgsConstructor
 public class OutlierAnalysisService {
 
   private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
   private final DurationOutliersReader outliersReader;
+
+  public OutlierAnalysisService(
+      final DataSourceDefinitionAuthorizationService definitionAuthorizationService,
+      final DurationOutliersReader outliersReader) {
+    this.definitionAuthorizationService = definitionAuthorizationService;
+    this.outliersReader = outliersReader;
+  }
 
   public Map<String, FindingsDto> getFlowNodeOutlierMap(
       final OutlierAnalysisServiceParameters<ProcessDefinitionParametersDto>

@@ -30,7 +30,6 @@ import io.camunda.optimize.service.util.configuration.ElasticSearchConfiguration
 import jakarta.ws.rs.NotFoundException;
 import java.util.Collections;
 import java.util.List;
-import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -97,7 +96,6 @@ public class BackupServiceTest {
         .isEqualTo("No repository with name [does_not_exist] could be found.");
   }
 
-  @SneakyThrows
   @Test
   public void triggerBackupWithDuplicateBackupId() {
     // given

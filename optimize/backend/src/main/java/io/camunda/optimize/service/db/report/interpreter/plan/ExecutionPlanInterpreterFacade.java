@@ -22,14 +22,20 @@ import io.camunda.optimize.service.db.report.plan.decision.DecisionExecutionPlan
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.util.SuppressionConstants;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 public class ExecutionPlanInterpreterFacade {
+
   private final ProcessExecutionPlanInterpreterFacade processExecutionPlanInterpreterFacade;
   private final DecisionExecutionPlanInterpreterFacade decisionExecutionPlanInterpreterFacade;
+
+  public ExecutionPlanInterpreterFacade(
+      ProcessExecutionPlanInterpreterFacade processExecutionPlanInterpreterFacade,
+      DecisionExecutionPlanInterpreterFacade decisionExecutionPlanInterpreterFacade) {
+    this.processExecutionPlanInterpreterFacade = processExecutionPlanInterpreterFacade;
+    this.decisionExecutionPlanInterpreterFacade = decisionExecutionPlanInterpreterFacade;
+  }
 
   public CommandEvaluationResult<Object> interpret(
       final ExecutionContext<? extends SingleReportDataDto, ? extends ExecutionPlan> context) {

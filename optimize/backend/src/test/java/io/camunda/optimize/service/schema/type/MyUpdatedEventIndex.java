@@ -12,12 +12,12 @@ import static io.camunda.optimize.service.db.schema.index.MetadataIndex.SCHEMA_V
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
 public abstract class MyUpdatedEventIndex<TBuilder> implements IndexMappingCreator<TBuilder> {
 
   public static final String MY_NEW_FIELD = "myAwesomeNewField";
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(MyUpdatedEventIndex.class);
 
   @Override
   public String getIndexName() {

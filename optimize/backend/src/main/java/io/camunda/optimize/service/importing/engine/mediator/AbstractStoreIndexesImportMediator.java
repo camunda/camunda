@@ -12,22 +12,23 @@ import io.camunda.optimize.service.importing.engine.service.ImportService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
 public abstract class AbstractStoreIndexesImportMediator<T extends ImportService>
     implements ImportMediator {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(AbstractStoreIndexesImportMediator.class);
   protected T importService;
   protected OffsetDateTime dateUntilJobCreationIsBlocked;
-  private ConfigurationService configurationService;
+  private final ConfigurationService configurationService;
 
   protected AbstractStoreIndexesImportMediator(
-      T importService, ConfigurationService configurationService) {
+      final T importService, final ConfigurationService configurationService) {
     this.configurationService = configurationService;
-    this.dateUntilJobCreationIsBlocked = calculateDateUntilJobCreationIsBlocked();
+    dateUntilJobCreationIsBlocked = calculateDateUntilJobCreationIsBlocked();
     this.importService = importService;
   }
 
@@ -40,7 +41,7 @@ public abstract class AbstractStoreIndexesImportMediator<T extends ImportService
 
   @Override
   public void resetBackoff() {
-    this.dateUntilJobCreationIsBlocked = OffsetDateTime.MIN;
+    dateUntilJobCreationIsBlocked = OffsetDateTime.MIN;
   }
 
   @Override

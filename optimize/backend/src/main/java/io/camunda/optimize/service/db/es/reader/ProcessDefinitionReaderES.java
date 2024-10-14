@@ -33,19 +33,24 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class ProcessDefinitionReaderES implements ProcessDefinitionReader {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ProcessDefinitionReaderES.class);
   private final DefinitionReaderES definitionReader;
   private final OptimizeElasticsearchClient esClient;
+
+  public ProcessDefinitionReaderES(
+      DefinitionReaderES definitionReader, OptimizeElasticsearchClient esClient) {
+    this.definitionReader = definitionReader;
+    this.esClient = esClient;
+  }
 
   @Override
   public Optional<ProcessDefinitionOptimizeDto> getProcessDefinition(final String definitionId) {

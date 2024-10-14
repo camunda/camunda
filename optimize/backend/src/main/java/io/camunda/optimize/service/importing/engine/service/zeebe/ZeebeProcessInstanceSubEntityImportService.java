@@ -18,11 +18,12 @@ import io.camunda.optimize.service.importing.engine.service.ImportService;
 import io.camunda.optimize.service.importing.job.ProcessInstanceDatabaseImportJob;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.List;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
 public abstract class ZeebeProcessInstanceSubEntityImportService<T> implements ImportService<T> {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ZeebeProcessInstanceSubEntityImportService.class);
   protected final DatabaseImportJobExecutor databaseImportJobExecutor;
   protected final ConfigurationService configurationService;
   protected final ProcessDefinitionReader processDefinitionReader;
@@ -52,7 +53,7 @@ public abstract class ZeebeProcessInstanceSubEntityImportService<T> implements I
 
   @Override
   public void executeImport(final List<T> zeebeRecords, final Runnable importCompleteCallback) {
-    boolean newDataIsAvailable = !zeebeRecords.isEmpty();
+    final boolean newDataIsAvailable = !zeebeRecords.isEmpty();
     if (newDataIsAvailable) {
       final List<ProcessInstanceDto> newOptimizeEntities =
           filterAndMapZeebeRecordsToOptimizeEntities(zeebeRecords);
@@ -83,13 +84,13 @@ public abstract class ZeebeProcessInstanceSubEntityImportService<T> implements I
   }
 
   private void addDatabaseImportJobToQueue(
-      DatabaseImportJob<ProcessInstanceDto> databaseImportJob) {
+      final DatabaseImportJob<ProcessInstanceDto> databaseImportJob) {
     databaseImportJobExecutor.executeImportJob(databaseImportJob);
   }
 
   private DatabaseImportJob<ProcessInstanceDto> createDatabaseImportJob(
       final List<ProcessInstanceDto> processInstanceDtos, final Runnable importCompleteCallback) {
-    ProcessInstanceDatabaseImportJob processInstanceImportJob =
+    final ProcessInstanceDatabaseImportJob processInstanceImportJob =
         new ProcessInstanceDatabaseImportJob(
             processInstanceWriter,
             configurationService,

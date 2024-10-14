@@ -41,25 +41,34 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class AssigneeAndCandidateGroupsReaderES implements AssigneeAndCandidateGroupsReader {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(AssigneeAndCandidateGroupsReaderES.class);
   private final OptimizeElasticsearchClient esClient;
+
+  public AssigneeAndCandidateGroupsReaderES(OptimizeElasticsearchClient esClient) {
+    this.esClient = esClient;
+  }
 
   @Override
   public void consumeAssigneesInBatches(
-      @NonNull final String engineAlias,
-      @NonNull final Consumer<List<String>> assigneeBatchConsumer,
+      final String engineAlias,
+      final Consumer<List<String>> assigneeBatchConsumer,
       final int batchSize) {
+    if (engineAlias == null) {
+      throw new IllegalArgumentException("engineAlias cannot be null");
+    }
+    if (assigneeBatchConsumer == null) {
+      throw new IllegalArgumentException("assigneeBatchConsumer cannot be null");
+    }
+
     consumeUserTaskFieldTermsInBatches(
         Query.of(
             q ->
@@ -77,9 +86,15 @@ public class AssigneeAndCandidateGroupsReaderES implements AssigneeAndCandidateG
 
   @Override
   public void consumeCandidateGroupsInBatches(
-      @NonNull final String engineAlias,
-      @NonNull final Consumer<List<String>> candidateGroupBatchConsumer,
+      final String engineAlias,
+      final Consumer<List<String>> candidateGroupBatchConsumer,
       final int batchSize) {
+    if (engineAlias == null) {
+      throw new IllegalArgumentException("engineAlias cannot be null");
+    }
+    if (candidateGroupBatchConsumer == null) {
+      throw new IllegalArgumentException("candidateGroupBatchConsumer cannot be null");
+    }
 
     consumeUserTaskFieldTermsInBatches(
         Query.of(

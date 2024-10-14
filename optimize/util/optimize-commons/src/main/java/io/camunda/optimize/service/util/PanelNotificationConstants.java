@@ -7,11 +7,8 @@
  */
 package io.camunda.optimize.service.util;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class PanelNotificationConstants {
+
   // API constants
   public static final String SEND_NOTIFICATION_TO_ALL_ORG_USERS_ENDPOINT = "/notifications/org";
 
@@ -29,4 +26,6 @@ public class PanelNotificationConstants {
   public static final String INITIAL_VISIT_TO_INSTANT_DASHBOARD_LINK_LABEL =
       "View instant preview dashboard";
   public static final String[] OPTIMIZE_USER_PERMISSIONS = new String[] {"cluster:optimize:read"};
+
+  private PanelNotificationConstants() {}
 }

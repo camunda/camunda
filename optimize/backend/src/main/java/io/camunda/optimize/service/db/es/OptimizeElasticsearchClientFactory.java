@@ -21,15 +21,16 @@ import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCon
 import io.camunda.optimize.upgrade.es.ElasticsearchClientBuilder;
 import io.camunda.search.connect.plugin.PluginRepository;
 import java.io.IOException;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 
-@Slf4j
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Conditional(ElasticSearchCondition.class)
 public class OptimizeElasticsearchClientFactory {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(OptimizeElasticsearchClientFactory.class);
+
+  private OptimizeElasticsearchClientFactory() {}
 
   public static OptimizeElasticsearchClient create(
       final ConfigurationService configurationService,

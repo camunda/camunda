@@ -23,6 +23,7 @@ import io.camunda.optimize.service.SettingsService;
 import io.camunda.optimize.service.dashboard.DashboardService;
 import io.camunda.optimize.service.entities.EntityExportService;
 import io.camunda.optimize.service.entities.EntityImportService;
+import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.export.JsonReportResultExportService;
 import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.variable.ProcessVariableLabelService;
@@ -45,17 +46,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import lombok.AllArgsConstructor;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
 
-@AllArgsConstructor
-@Slf4j
 @Path(PublicApiRestService.PUBLIC_PATH)
 @Component
 public class PublicApiRestService {
+
   public static final String PUBLIC_PATH = "/public";
 
   public static final String EXPORT_SUB_PATH = "/export";
@@ -73,6 +71,7 @@ public class PublicApiRestService {
       REPORT_EXPORT_PATH + "/definition/json";
   public static final String DASHBOARD_EXPORT_DEFINITION_SUB_PATH =
       EXPORT_SUB_PATH + DASHBOARD_SUB_PATH + "/definition/json";
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(PublicApiRestService.class);
 
   private final JsonReportResultExportService jsonReportResultExportService;
   private final EntityExportService entityExportService;
@@ -82,10 +81,26 @@ public class PublicApiRestService {
   private final ProcessVariableLabelService processVariableLabelService;
   private final SettingsService settingsService;
 
+  public PublicApiRestService(
+      JsonReportResultExportService jsonReportResultExportService,
+      EntityExportService entityExportService,
+      EntityImportService entityImportService,
+      ReportService reportService,
+      DashboardService dashboardService,
+      ProcessVariableLabelService processVariableLabelService,
+      SettingsService settingsService) {
+    this.jsonReportResultExportService = jsonReportResultExportService;
+    this.entityExportService = entityExportService;
+    this.entityImportService = entityImportService;
+    this.reportService = reportService;
+    this.dashboardService = dashboardService;
+    this.processVariableLabelService = processVariableLabelService;
+    this.settingsService = settingsService;
+  }
+
   @GET
   @Path(REPORT_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
-  @SneakyThrows
   public List<IdResponseDto> getReportIds(
       final @Context ContainerRequestContext requestContext,
       final @QueryParam("collectionId") String collectionId) {
@@ -96,7 +111,6 @@ public class PublicApiRestService {
   @GET
   @Path(DASHBOARD_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
-  @SneakyThrows
   public List<IdResponseDto> getDashboardIds(
       final @Context ContainerRequestContext requestContext,
       final @QueryParam("collectionId") String collectionId) {
@@ -107,7 +121,6 @@ public class PublicApiRestService {
   @GET
   @Path(REPORT_EXPORT_DATA_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
-  @SneakyThrows
   public PaginatedDataExportDto exportReportData(
       @Context ContainerRequestContext requestContext,
       @SuppressWarnings("UnresolvedRestParam") @PathParam("reportId") String reportId,
@@ -123,11 +136,15 @@ public class PublicApiRestService {
       // expired) the message from ElasticSearch is a bit cryptic. Therefore, we extract the useful
       // information so
       // that the user gets an appropriate response.
-      throw Optional.ofNullable(e.response().error().causedBy())
-          .filter(pag -> pag.type().contains("search_context_missing_exception"))
-          .map(pag -> (Exception) new BadRequestException(pag.reason()))
-          // In case the exception happened for another reason, just re-throw it as is
-          .orElse(e);
+      try {
+        throw Optional.ofNullable(e.response().error().causedBy())
+            .filter(pag -> pag.type().contains("search_context_missing_exception"))
+            .map(pag -> (Exception) new BadRequestException(pag.reason()))
+            // In case the exception happened for another reason, just re-throw it as is
+            .orElse(e);
+      } catch (Exception ex) {
+        throw new OptimizeRuntimeException(ex);
+      }
     }
   }
 

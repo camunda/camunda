@@ -15,9 +15,7 @@ import io.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import java.util.List;
-import lombok.experimental.SuperBuilder;
 
-@SuperBuilder
 public class SingleProcessReportDefinitionRequestDto
     extends SingleReportDefinitionDto<ProcessReportDataDto> {
 
@@ -37,5 +35,46 @@ public class SingleProcessReportDefinitionRequestDto
   @JsonIgnore
   public List<FilterDataDto> getFilterData() {
     return data.getFilter().stream().map(ProcessFilterDto::getData).collect(toList());
+  }
+
+  public static SingleProcessReportDefinitionRequestDtoBuilder<?, ?> builder() {
+    return new SingleProcessReportDefinitionRequestDtoBuilderImpl();
+  }
+
+  public abstract static class SingleProcessReportDefinitionRequestDtoBuilder<
+          C extends SingleProcessReportDefinitionRequestDto,
+          B extends SingleProcessReportDefinitionRequestDtoBuilder<C, B>>
+      extends SingleReportDefinitionDtoBuilder<ProcessReportDataDto, C, B> {
+
+    @Override
+    protected abstract B self();
+
+    @Override
+    public abstract C build();
+
+    @Override
+    public String toString() {
+      return "SingleProcessReportDefinitionRequestDto.SingleProcessReportDefinitionRequestDtoBuilder(super="
+          + super.toString()
+          + ")";
+    }
+  }
+
+  private static final class SingleProcessReportDefinitionRequestDtoBuilderImpl
+      extends SingleProcessReportDefinitionRequestDtoBuilder<
+          SingleProcessReportDefinitionRequestDto,
+          SingleProcessReportDefinitionRequestDtoBuilderImpl> {
+
+    private SingleProcessReportDefinitionRequestDtoBuilderImpl() {}
+
+    @Override
+    protected SingleProcessReportDefinitionRequestDtoBuilderImpl self() {
+      return this;
+    }
+
+    @Override
+    public SingleProcessReportDefinitionRequestDto build() {
+      return new SingleProcessReportDefinitionRequestDto(getData());
+    }
   }
 }

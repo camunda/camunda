@@ -9,13 +9,17 @@ package io.camunda.optimize.service.db.report.plan.decision;
 
 import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.NoneDistributedByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessReportDistributedByDto;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
-@Getter
-@RequiredArgsConstructor
 public enum DecisionDistributedBy {
   DECISION_DISTRIBUTED_BY_NONE(new NoneDistributedByDto());
 
   private final ProcessReportDistributedByDto<?> dto;
+
+  private DecisionDistributedBy(ProcessReportDistributedByDto<?> dto) {
+    this.dto = dto;
+  }
+
+  public ProcessReportDistributedByDto<?> getDto() {
+    return this.dto;
+  }
 }

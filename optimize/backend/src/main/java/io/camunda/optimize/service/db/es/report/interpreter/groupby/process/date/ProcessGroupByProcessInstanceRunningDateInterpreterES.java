@@ -41,21 +41,32 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class ProcessGroupByProcessInstanceRunningDateInterpreterES
     extends AbstractProcessGroupByInterpreterES {
+
   private final DateTimeFormatter formatter;
   private final DateAggregationServiceES dateAggregationService;
   private final MinMaxStatsServiceES minMaxStatsService;
-  @Getter private final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
-  @Getter private final ProcessViewInterpreterFacadeES viewInterpreter;
+  private final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
+  private final ProcessViewInterpreterFacadeES viewInterpreter;
+
+  public ProcessGroupByProcessInstanceRunningDateInterpreterES(
+      DateTimeFormatter formatter,
+      DateAggregationServiceES dateAggregationService,
+      MinMaxStatsServiceES minMaxStatsService,
+      ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
+      ProcessViewInterpreterFacadeES viewInterpreter) {
+    this.formatter = formatter;
+    this.dateAggregationService = dateAggregationService;
+    this.minMaxStatsService = minMaxStatsService;
+    this.distributedByInterpreter = distributedByInterpreter;
+    this.viewInterpreter = viewInterpreter;
+  }
 
   @Override
   public Set<ProcessGroupBy> getSupportedGroupBys() {
@@ -130,5 +141,13 @@ public class ProcessGroupByProcessInstanceRunningDateInterpreterES
       results.add(CompositeCommandResult.GroupByResult.createGroupByResult(key, distributions));
     }
     return results;
+  }
+
+  public ProcessDistributedByInterpreterFacadeES getDistributedByInterpreter() {
+    return this.distributedByInterpreter;
+  }
+
+  public ProcessViewInterpreterFacadeES getViewInterpreter() {
+    return this.viewInterpreter;
   }
 }
