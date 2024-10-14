@@ -7,7 +7,7 @@
  */
 package io.camunda.db.rdbms.sql;
 
-import io.camunda.db.rdbms.domain.VariableModel;
+import io.camunda.db.rdbms.read.domain.VariableModel;
 import java.util.List;
 
 public interface VariableMapper {

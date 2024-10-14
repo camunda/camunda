@@ -8,12 +8,14 @@
 package io.camunda.exporter.rdbms;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.domain.ExporterPositionModel;
+import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -32,6 +34,7 @@ public class RdbmsExporter implements Exporter {
 
   private long partitionId;
   private final RdbmsService rdbmsService;
+  private RdbmsWriter rdbmsWriter;
 
   private ExporterPositionModel exporterRdbmsPosition;
   private long lastPosition = -1;
@@ -44,6 +47,7 @@ public class RdbmsExporter implements Exporter {
   public void configure(final Context context) {
     partitionId = context.getPartitionId();
 
+    rdbmsWriter = rdbmsService.createWriter(partitionId);
     registerHandler();
 
     LOG.info("[RDBMS Exporter] RDBMS Exporter configured!");
@@ -52,6 +56,7 @@ public class RdbmsExporter implements Exporter {
   @Override
   public void open(final Controller controller) {
     this.controller = controller;
+    this.controller.scheduleCancellableTask(Duration.ofSeconds(5), this::flushAndReschedule);
 
     initializeRdbmsPosition();
     lastPosition = controller.getLastExportedRecordPosition();
@@ -63,15 +68,15 @@ public class RdbmsExporter implements Exporter {
       updatePositionInBroker();
     }
 
-    rdbmsService.executionQueue().registerPreFlushListener(this::updatePositionInRdbms);
-    rdbmsService.executionQueue().registerPostFlushListener(this::updatePositionInBroker);
+    rdbmsWriter.getExecutionQueue().registerPreFlushListener(this::updatePositionInRdbms);
+    rdbmsWriter.getExecutionQueue().registerPostFlushListener(this::updatePositionInBroker);
     LOG.info("[RDBMS Exporter] Exporter opened with last exported position {}", lastPosition);
   }
 
   @Override
   public void close() {
     try {
-      rdbmsService.executionQueue().flush();
+      rdbmsWriter.flush();
     } catch (final Exception e) {
       LOG.warn("[RDBMS Exporter] Failed to flush records before closing exporter.", e);
     }
@@ -111,13 +116,12 @@ public class RdbmsExporter implements Exporter {
 
   private void registerHandler() {
     registeredHandlers.put(
-        ValueType.PROCESS,
-        new ProcessExportHandler(rdbmsService.getProcessDefinitionRdbmsService()));
+        ValueType.PROCESS, new ProcessExportHandler(rdbmsWriter.getProcessDefinitionWriter()));
     registeredHandlers.put(
         ValueType.PROCESS_INSTANCE,
-        new ProcessInstanceExportHandler(rdbmsService.getProcessInstanceRdbmsService()));
+        new ProcessInstanceExportHandler(rdbmsWriter.getProcessInstanceWriter()));
     registeredHandlers.put(
-        ValueType.VARIABLE, new VariableExportHandler(rdbmsService.getVariableRdbmsService()));
+        ValueType.VARIABLE, new VariableExportHandler(rdbmsWriter.getVariableWriter()));
   }
 
   private void updatePositionInBroker() {
@@ -135,7 +139,7 @@ public class RdbmsExporter implements Exporter {
               lastPosition,
               exporterRdbmsPosition.created(),
               LocalDateTime.now());
-      rdbmsService.getExporterPositionRdbmsService().update(exporterRdbmsPosition);
+      rdbmsWriter.getExporterPositionService().update(exporterRdbmsPosition);
     }
   }
 
@@ -144,7 +148,7 @@ public class RdbmsExporter implements Exporter {
     // TODO ... DIRTY we need to find a way that exports get opened AFTER the application is ready
     while (true) {
       try {
-        exporterRdbmsPosition = rdbmsService.getExporterPositionRdbmsService().findOne(partitionId);
+        exporterRdbmsPosition = rdbmsWriter.getExporterPositionService().findOne(partitionId);
         break;
       } catch (final Exception e) {
         LOG.warn(
@@ -162,11 +166,23 @@ public class RdbmsExporter implements Exporter {
               lastPosition,
               LocalDateTime.now(),
               LocalDateTime.now());
-      rdbmsService.getExporterPositionRdbmsService().createWithoutQueue(exporterRdbmsPosition);
+      rdbmsWriter.getExporterPositionService().createWithoutQueue(exporterRdbmsPosition);
       LOG.debug("[RDBMS Exporter] Initialize position in rdbms");
     } else {
       LOG.debug(
           "[RDBMS Exporter] Found position in rdbms for this exporter: {}", exporterRdbmsPosition);
     }
+  }
+
+  private void flushAndReschedule() {
+    flushExecutionQueue();
+    controller.scheduleCancellableTask(Duration.ofSeconds(5), this::flushAndReschedule);
+  }
+
+  @VisibleForTesting(
+      "Each exporter creates it's own executionQueue, so we need an accessible flush method for tests")
+  void flushExecutionQueue() {
+    LOG.debug("[RDBMS Exporter] flushing queue");
+    rdbmsWriter.flush();
   }
 }

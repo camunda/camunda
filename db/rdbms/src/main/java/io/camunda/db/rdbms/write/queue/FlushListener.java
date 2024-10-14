@@ -5,12 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.db.rdbms.domain;
+package io.camunda.db.rdbms.write.queue;
 
-public record ProcessDefinitionDbModel(
-    Long processDefinitionKey,
-    String bpmnProcessId,
-    String name,
-    String tenantId,
-    String versionTag,
-    int version) {}
+public interface FlushListener {
+
+  void onFlushSuccess();
+}

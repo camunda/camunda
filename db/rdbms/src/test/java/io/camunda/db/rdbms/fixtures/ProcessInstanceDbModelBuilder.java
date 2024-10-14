@@ -7,11 +7,12 @@
  */
 package io.camunda.db.rdbms.fixtures;
 
-import io.camunda.db.rdbms.domain.ProcessInstanceDbModel;
+import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import java.time.OffsetDateTime;
 
 public class ProcessInstanceDbModelBuilder {
+
   private Long processInstanceKey;
   private String bpmnProcessId;
   private Long processDefinitionKey;
@@ -28,57 +29,59 @@ public class ProcessInstanceDbModelBuilder {
   public ProcessInstanceDbModelBuilder() {}
 
   // Builder methods for each field
-  public ProcessInstanceDbModelBuilder processInstanceKey(Long processInstanceKey) {
+  public ProcessInstanceDbModelBuilder processInstanceKey(final Long processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
     return this;
   }
 
-  public ProcessInstanceDbModelBuilder bpmnProcessId(String bpmnProcessId) {
+  public ProcessInstanceDbModelBuilder bpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
     return this;
   }
 
-  public ProcessInstanceDbModelBuilder processDefinitionKey(Long processDefinitionKey) {
+  public ProcessInstanceDbModelBuilder processDefinitionKey(final Long processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
     return this;
   }
 
-  public ProcessInstanceDbModelBuilder state(ProcessInstanceState state) {
+  public ProcessInstanceDbModelBuilder state(final ProcessInstanceState state) {
     this.state = state;
     return this;
   }
 
-  public ProcessInstanceDbModelBuilder startDate(OffsetDateTime startDate) {
+  public ProcessInstanceDbModelBuilder startDate(final OffsetDateTime startDate) {
     this.startDate = startDate;
     return this;
   }
 
-  public ProcessInstanceDbModelBuilder endDate(OffsetDateTime endDate) {
+  public ProcessInstanceDbModelBuilder endDate(final OffsetDateTime endDate) {
     this.endDate = endDate;
     return this;
   }
 
-  public ProcessInstanceDbModelBuilder tenantId(String tenantId) {
+  public ProcessInstanceDbModelBuilder tenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
 
-  public ProcessInstanceDbModelBuilder parentProcessInstanceKey(Long parentProcessInstanceKey) {
+  public ProcessInstanceDbModelBuilder parentProcessInstanceKey(
+      final Long parentProcessInstanceKey) {
     this.parentProcessInstanceKey = parentProcessInstanceKey;
     return this;
   }
 
-  public ProcessInstanceDbModelBuilder parentElementInstanceKey(Long parentElementInstanceKey) {
+  public ProcessInstanceDbModelBuilder parentElementInstanceKey(
+      final Long parentElementInstanceKey) {
     this.parentElementInstanceKey = parentElementInstanceKey;
     return this;
   }
 
-  public ProcessInstanceDbModelBuilder elementId(String elementId) {
+  public ProcessInstanceDbModelBuilder elementId(final String elementId) {
     this.elementId = elementId;
     return this;
   }
 
-  public ProcessInstanceDbModelBuilder version(int version) {
+  public ProcessInstanceDbModelBuilder version(final int version) {
     this.version = version;
     return this;
   }
