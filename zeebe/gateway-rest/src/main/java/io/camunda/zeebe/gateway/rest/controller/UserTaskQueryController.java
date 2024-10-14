@@ -8,14 +8,22 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.search.query.UserTaskQuery;
+import io.camunda.search.query.VariableQuery;
+import io.camunda.service.FlowNodeInstanceServices;
 import io.camunda.service.FormServices;
 import io.camunda.service.UserTaskServices;
+import io.camunda.service.VariableServices;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskVariablesSearchQueryRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import jakarta.validation.ValidationException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -30,12 +38,19 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class UserTaskQueryController {
 
   private final UserTaskServices userTaskServices;
+  private final VariableServices variableServices;
+  private final FlowNodeInstanceServices flowNodeInstanceServices;
   private final FormServices formServices;
 
   public UserTaskQueryController(
-      final UserTaskServices userTaskServices, final FormServices formServices) {
+      final UserTaskServices userTaskServices,
+      final FormServices formServices,
+      final VariableServices variableServices,
+      final FlowNodeInstanceServices flowNodeInstanceServices) {
     this.userTaskServices = userTaskServices;
     this.formServices = formServices;
+    this.variableServices = variableServices;
+    this.flowNodeInstanceServices = flowNodeInstanceServices;
   }
 
   @PostMapping(
@@ -104,6 +119,54 @@ public class UserTaskQueryController {
       // Error case: Return the right side with ProblemDetail
       final var problemDetail =
           RestErrorMapper.mapErrorToProblem(exc, RestErrorMapper.DEFAULT_REJECTION_MAPPER);
+      return RestErrorMapper.mapProblemToResponse(problemDetail);
+    }
+  }
+
+  @PostMapping(
+      path = "/{userTaskKey}/variables",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<Object> searchVariables(
+      @PathVariable("userTaskKey") final Long userTaskKey,
+      @RequestBody(required = false)
+          final UserTaskVariablesSearchQueryRequest userTaskVariablesSearchQueryRequest) {
+    // Retrieve user tak data
+    final var userTask = userTaskServices.getByKey(userTaskKey);
+
+    // Retrieve treePath for flowNodeInstanceId
+    final var flowNodeInstance = flowNodeInstanceServices.getByKey(userTask.flowNodeInstanceId());
+
+    final var treePath = flowNodeInstance.treePath();
+    final List<Long> treePathList =
+        (treePath != null && !treePath.isEmpty())
+            ? Arrays.stream(treePath.split("/")).map(Long::valueOf).collect(Collectors.toList())
+            : Collections.emptyList();
+
+    return SearchQueryRequestMapper.toUserTaskVariableQuery(
+            userTaskVariablesSearchQueryRequest, treePathList)
+        .fold(RestErrorMapper::mapProblemToResponse, this::searchUserTaskVariableQuery);
+  }
+
+  private ResponseEntity<Object> searchUserTaskVariableQuery(final VariableQuery query) {
+    try {
+      final var result =
+          variableServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
+
+      return ResponseEntity.ok(SearchQueryResponseMapper.toVariableSearchQueryResponse(result));
+    } catch (final ValidationException e) {
+      final var problemDetail =
+          RestErrorMapper.createProblemDetail(
+              HttpStatus.BAD_REQUEST,
+              e.getMessage(),
+              "Validation failed for UserTask Variables Search Query");
+      return RestErrorMapper.mapProblemToResponse(problemDetail);
+    } catch (final Exception e) {
+      final var problemDetail =
+          RestErrorMapper.createProblemDetail(
+              HttpStatus.INTERNAL_SERVER_ERROR,
+              e.getMessage(),
+              "Failed to execute UserTask Search Variable Query");
       return RestErrorMapper.mapProblemToResponse(problemDetail);
     }
   }

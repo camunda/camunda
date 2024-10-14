@@ -9,7 +9,6 @@ package io.camunda.service;
 
 import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.entities.UserTaskEntity;
-import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.query.SearchQueryBuilders;
@@ -26,19 +25,14 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskCompletionRequ
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
-import org.springframework.beans.factory.annotation.Autowired;
 
 public final class UserTaskServices
     extends SearchQueryService<UserTaskServices, UserTaskQuery, UserTaskEntity> {
 
   private final UserTaskSearchClient userTaskSearchClient;
-
-  @Autowired
-  private VariableServices variableServices;
 
   public UserTaskServices(
       final BrokerClient brokerClient,
@@ -105,15 +99,5 @@ public final class UserTaskServices
     } else {
       return result.items().stream().findFirst().orElseThrow();
     }
-  }
-
-  public SearchQueryResult<VariableEntity> searchVariablesByUserTaskKey(
-      final Long userTaskKey) {
-
-    final UserTaskEntity userTaskEntity = getByKey(userTaskKey);
-    return variableServices.search(
-        SearchQueryBuilders.variableSearchQuery()
-            .filter(f -> f.scopeKeys(List.of(userTaskEntity.flowNodeInstanceId(), userTaskEntity.processInstanceId())))
-            .build());
   }
 }

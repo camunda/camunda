@@ -14,17 +14,24 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
+import io.camunda.search.entities.FlowNodeInstanceEntity;
+import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
+import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.UserTaskEntity.UserTaskState;
+import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.query.UserTaskQuery;
+import io.camunda.search.query.VariableQuery;
 import io.camunda.search.sort.UserTaskSort;
 import io.camunda.security.auth.Authentication;
+import io.camunda.service.FlowNodeInstanceServices;
 import io.camunda.service.FormServices;
 import io.camunda.service.UserTaskServices;
+import io.camunda.service.VariableServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -77,6 +84,31 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                   ]
               }
           }""";
+
+  private static final String EXPECTED_VARIABLE_RESULT_JSON =
+      """
+      {
+        "items": [
+          {
+              "variableKey":0,
+              "name":"name",
+              "value":"value",
+              "fullValue":"test",
+              "scopeKey":1,
+              "processInstanceKey":2,
+              "tenantId":"<default>",
+              "isTruncated":false
+          }
+        ],
+        "page": {
+          "totalItems": 1,
+          "firstSortValues": [],
+          "lastSortValues": [
+            "v"
+          ]
+        }
+      }
+      """;
 
   private static final String USER_TASK_ITEM_JSON =
       """
@@ -146,9 +178,22 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       )))
           .sortValues(new Object[] {"v"})
           .build();
+
+  private static final SearchQueryResult<VariableEntity> SEARCH_VAR_QUERY_RESULT =
+      new Builder<VariableEntity>()
+          .total(1L)
+          .items(
+              List.of(new VariableEntity(0L, "name", "value", "test", false, 1L, 2L, "<default>")))
+          .sortValues(new Object[] {"v"})
+          .build();
+
   @MockBean UserTaskServices userTaskServices;
 
   @MockBean private FormServices formServices;
+
+  @MockBean private VariableServices variableServices;
+
+  @MockBean private FlowNodeInstanceServices flowNodeInstanceServices;
 
   @BeforeEach
   void setupServices() {
@@ -163,6 +208,9 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .thenReturn(userTaskServices);
 
     when(formServices.withAuthentication(any(Authentication.class))).thenReturn(formServices);
+
+    when(variableServices.withAuthentication(any(Authentication.class)))
+        .thenReturn(variableServices);
 
     // Mock the behavior of userTaskServices for a valid key
     when(userTaskServices.getByKey(VALID_USER_TASK_KEY))
@@ -193,6 +241,27 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .thenThrow(
             new NotFoundException(
                 String.format("User Task with key %d not found", INVALID_USER_TASK_KEY)));
+
+    when(flowNodeInstanceServices.getByKey(any()))
+        .thenReturn(
+            new FlowNodeInstanceEntity(
+                0L,
+                1L,
+                2L,
+                "00:00:00.000Z+00:00",
+                "00:00:00.000Z+00:00",
+                "a",
+                "1/2/3",
+                FlowNodeType.TASK,
+                FlowNodeState.ACTIVE,
+                true,
+                1L,
+                2L,
+                "test",
+                "<default>"));
+
+    // Mock Variable
+    when(variableServices.search(any(VariableQuery.class))).thenReturn(SEARCH_VAR_QUERY_RESULT);
   }
 
   @Test
@@ -545,5 +614,22 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
               "instance": "/v2/user-tasks/0/form"
             }
             """);
+  }
+
+  @Test
+  public void shouldReturnVariableForValidUserTaskKey() {
+    // when and then
+    webClient
+        .post()
+        .uri("/v2/user-tasks/" + VALID_USER_TASK_KEY + "/variables")
+        .accept(APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(EXPECTED_VARIABLE_RESULT_JSON);
+
+    // Verify that the service was called with the invalid userTaskKey
+    verify(userTaskServices).getByKey(VALID_USER_TASK_KEY);
   }
 }
