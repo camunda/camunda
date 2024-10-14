@@ -34,6 +34,7 @@ import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -68,6 +69,7 @@ import io.camunda.zeebe.protocol.record.value.ResourceDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
@@ -473,6 +475,14 @@ public final class RecordingExporter implements Exporter {
 
   public static ScaleRecordStream scaleRecords(final ScaleIntent intent) {
     return scaleRecords().withIntent(intent);
+  }
+
+  public static TenantRecordStream tenantRecords() {
+    return new TenantRecordStream(records(ValueType.TENANT, TenantRecordValue.class));
+  }
+
+  public static TenantRecordStream tenantRecords(final TenantIntent intent) {
+    return tenantRecords().withIntent(intent);
   }
 
   public static void autoAcknowledge(final boolean shouldAcknowledgeRecords) {
