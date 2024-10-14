@@ -10,9 +10,9 @@ package io.camunda.exporter.schema;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public interface SearchEngineClient {
   void createIndex(final IndexDescriptor indexDescriptor, final IndexSettings settings);
@@ -27,7 +27,7 @@ public interface SearchEngineClient {
    * @param newProperties New properties to be appended to the index
    */
   void putMapping(
-      final IndexDescriptor indexDescriptor, final Set<IndexMappingProperty> newProperties);
+      final IndexDescriptor indexDescriptor, final Collection<IndexMappingProperty> newProperties);
 
   Map<String, IndexMapping> getMappings(
       final String namePattern, final MappingSource mappingSource);

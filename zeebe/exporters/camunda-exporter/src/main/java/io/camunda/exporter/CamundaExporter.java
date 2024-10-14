@@ -34,6 +34,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -159,7 +160,7 @@ public class CamundaExporter implements Exporter {
     }
   }
 
-  private Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndices(
+  private Map<IndexDescriptor, Collection<IndexMappingProperty>> validateIndices(
       final IndexSchemaValidator schemaValidator, final SearchEngineClient searchEngineClient) {
     final var currentIndices =
         searchEngineClient.getMappings(
@@ -168,7 +169,7 @@ public class CamundaExporter implements Exporter {
     return schemaValidator.validateIndexMappings(currentIndices, provider.getIndexDescriptors());
   }
 
-  private Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexTemplates(
+  private Map<IndexDescriptor, Collection<IndexMappingProperty>> validateIndexTemplates(
       final IndexSchemaValidator schemaValidator, final SearchEngineClient searchEngineClient) {
     final var currentTemplates = searchEngineClient.getMappings("*", MappingSource.INDEX_TEMPLATE);
 

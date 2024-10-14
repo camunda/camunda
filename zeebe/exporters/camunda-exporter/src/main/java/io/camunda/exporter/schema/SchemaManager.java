@@ -8,13 +8,13 @@
 package io.camunda.exporter.schema;
 
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 
 public interface SchemaManager {
   void initialiseResources();
 
-  void updateSchema(final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields);
+  void updateSchema(final Map<IndexDescriptor, Collection<IndexMappingProperty>> newFields);
 
   IndexMapping readIndex(final IndexDescriptor indexDescriptor);
 }

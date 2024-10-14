@@ -11,16 +11,16 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
 
 public record IndexMappingProperty(String name, Object typeDefinition) {
 
   public static InputStream toPropertiesJson(
-      final Set<IndexMappingProperty> properties, final ObjectMapper mapper) {
+      final Collection<IndexMappingProperty> properties, final ObjectMapper mapper) {
     final var propertiesAsMap =
         properties.stream()
             .collect(

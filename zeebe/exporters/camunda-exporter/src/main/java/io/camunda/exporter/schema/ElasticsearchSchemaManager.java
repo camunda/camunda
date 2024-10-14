@@ -15,8 +15,8 @@ import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,14 +25,14 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   private static final Logger LOG = LoggerFactory.getLogger(ElasticsearchSchemaManager.class);
   private static final ObjectMapper MAPPER = new ObjectMapper();
   private final SearchEngineClient elasticsearchClient;
-  private final Set<IndexDescriptor> indexDescriptors;
-  private final Set<IndexTemplateDescriptor> indexTemplateDescriptors;
+  private final Collection<IndexDescriptor> indexDescriptors;
+  private final Collection<IndexTemplateDescriptor> indexTemplateDescriptors;
   private final ExporterConfiguration config;
 
   public ElasticsearchSchemaManager(
       final SearchEngineClient elasticsearchClient,
-      final Set<IndexDescriptor> indexDescriptors,
-      final Set<IndexTemplateDescriptor> indexTemplateDescriptors,
+      final Collection<IndexDescriptor> indexDescriptors,
+      final Collection<IndexTemplateDescriptor> indexTemplateDescriptors,
       final ExporterConfiguration config) {
     this.elasticsearchClient = elasticsearchClient;
     this.indexDescriptors = indexDescriptors;
@@ -68,7 +68,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   }
 
   @Override
-  public void updateSchema(final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields) {
+  public void updateSchema(final Map<IndexDescriptor, Collection<IndexMappingProperty>> newFields) {
     for (final var newFieldEntry : newFields.entrySet()) {
       final var descriptor = newFieldEntry.getKey();
       final var newProperties = newFieldEntry.getValue();
