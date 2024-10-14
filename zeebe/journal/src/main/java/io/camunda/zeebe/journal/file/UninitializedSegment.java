@@ -13,7 +13,7 @@ import java.nio.MappedByteBuffer;
  * Holds a normal segment file that hasn't been written to and that has no {@link
  * SegmentDescriptor}.
  */
-public record UninitializedSegment(
+record UninitializedSegment(
     SegmentFile file,
     long segmentId,
     int maxSegmentSize,
@@ -32,7 +32,15 @@ public record UninitializedSegment(
             .withIndex(index)
             .withMaxSegmentSize(maxSegmentSize)
             .build();
-    updatedDescriptor.copyTo(buffer);
-    return new Segment(file, updatedDescriptor, buffer, lastWrittenAsqn, journalIndex, metrics);
+    final var descriptorSerializer = SegmentDescriptorSerializer.currentSerializer();
+    descriptorSerializer.writeTo(updatedDescriptor, buffer);
+    return new Segment(
+        file,
+        updatedDescriptor,
+        descriptorSerializer,
+        buffer,
+        lastWrittenAsqn,
+        journalIndex,
+        metrics);
   }
 }
