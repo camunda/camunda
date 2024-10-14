@@ -46,7 +46,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
           {
               "items": [
                   {
-                      "tenantIds": "t",
+                      "tenantId": "t",
                       "userTaskKey": 0,
                       "processInstanceKey": 1,
                       "processDefinitionKey": 2,
@@ -80,7 +80,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
   private static final String USER_TASK_ITEM_JSON =
       """
           {
-                      "tenantIds": "t",
+                      "tenantId": "t",
                       "userTaskKey": 0,
                       "processInstanceKey": 1,
                       "processDefinitionKey": 2,

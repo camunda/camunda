@@ -432,7 +432,7 @@ public final class SearchQueryRequestMapper {
                   .ifPresent(builder::processDefinitionKeys);
               Optional.ofNullable(f.getProcessInstanceKey())
                   .ifPresent(builder::processInstanceKeys);
-              Optional.ofNullable(f.getTenantIds()).ifPresent(builder::tenantIds);
+              Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
 
               Optional.ofNullable(f.getVariables())
                   .filter(variables -> !variables.isEmpty())
