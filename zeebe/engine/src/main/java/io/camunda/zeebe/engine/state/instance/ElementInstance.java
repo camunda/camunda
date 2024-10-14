@@ -283,7 +283,7 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
     taskListenerIndicesRecordProp.getValue().resetTaskListenerIndex(eventType);
   }
 
-  public void resetTaskListenerIndexes() {
+  public void resetTaskListenerIndices() {
     taskListenerIndicesRecordProp.getValue().reset();
   }
 

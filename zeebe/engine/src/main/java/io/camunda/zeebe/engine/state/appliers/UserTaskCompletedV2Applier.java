@@ -8,6 +8,8 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
@@ -17,17 +19,32 @@ public final class UserTaskCompletedV2Applier
     implements TypedEventApplier<UserTaskIntent, UserTaskRecord> {
 
   private final MutableUserTaskState userTaskState;
-  private final UserTaskCompletedV1Applier delegate;
 
-  public UserTaskCompletedV2Applier(
-      final MutableProcessingState processingState, final UserTaskCompletedV1Applier delegate) {
+  private final MutableElementInstanceState elementInstanceState;
+
+  public UserTaskCompletedV2Applier(final MutableProcessingState processingState) {
     userTaskState = processingState.getUserTaskState();
-    this.delegate = delegate;
+    elementInstanceState = processingState.getElementInstanceState();
   }
 
   @Override
   public void applyState(final long key, final UserTaskRecord value) {
-    delegate.applyState(key, value);
+    userTaskState.delete(key);
     userTaskState.deleteUserTaskIntermediateState(key);
+
+    final long elementInstanceKey = value.getElementInstanceKey();
+    final ElementInstance elementInstance = elementInstanceState.getInstance(elementInstanceKey);
+
+    if (elementInstance != null) {
+      final long scopeKey = elementInstance.getValue().getFlowScopeKey();
+      final ElementInstance scopeInstance = elementInstanceState.getInstance(scopeKey);
+
+      if (scopeInstance != null && scopeInstance.isActive()) {
+
+        elementInstance.setUserTaskKey(-1);
+        elementInstance.resetTaskListenerIndices();
+        elementInstanceState.updateInstance(elementInstance);
+      }
+    }
   }
 }

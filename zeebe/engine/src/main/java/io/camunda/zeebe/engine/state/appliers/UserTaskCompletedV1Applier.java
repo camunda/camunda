@@ -41,7 +41,6 @@ public final class UserTaskCompletedV1Applier
       if (scopeInstance != null && scopeInstance.isActive()) {
 
         elementInstance.setUserTaskKey(-1);
-        elementInstance.resetTaskListenerIndexes();
         elementInstanceState.updateInstance(elementInstance);
       }
     }

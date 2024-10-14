@@ -44,7 +44,7 @@ public final class TaskListenerIndicesRecord extends UnpackedObject implements D
       case complete -> completeTaskListenerIndexProp.getValue();
       case cancel -> cancelTaskListenerIndexProp.getValue();
       default ->
-          throw new IllegalArgumentException("Unexpected ZeebeTaskListenerEventType " + eventType);
+          throw new IllegalArgumentException("Unsupported ZeebeTaskListenerEventType " + eventType);
     };
   }
 
@@ -56,7 +56,7 @@ public final class TaskListenerIndicesRecord extends UnpackedObject implements D
       case complete -> completeTaskListenerIndexProp.increment();
       case cancel -> cancelTaskListenerIndexProp.increment();
       default ->
-          throw new IllegalArgumentException("Unexpected ZeebeTaskListenerEventType " + eventType);
+          throw new IllegalArgumentException("Unsupported ZeebeTaskListenerEventType " + eventType);
     }
   }
 
@@ -68,7 +68,7 @@ public final class TaskListenerIndicesRecord extends UnpackedObject implements D
       case complete -> completeTaskListenerIndexProp.reset();
       case cancel -> cancelTaskListenerIndexProp.reset();
       default ->
-          throw new IllegalArgumentException("Unexpected ZeebeTaskListenerEventType " + eventType);
+          throw new IllegalArgumentException("Unsupported ZeebeTaskListenerEventType " + eventType);
     }
   }
 
