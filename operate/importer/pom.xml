@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>operate-parent</artifactId>
-    <version>8.6.0-SNAPSHOT</version>
+    <version>8.7.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>operate-importer</artifactId>
@@ -33,13 +33,13 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>operate-importer-8_5</artifactId>
+      <artifactId>operate-importer-8_6</artifactId>
       <scope>runtime</scope>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>operate-importer-8_6</artifactId>
+      <artifactId>operate-importer-8_7</artifactId>
       <scope>runtime</scope>
     </dependency>
 
@@ -153,7 +153,7 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
           <usedDependencies>
-            <dependency>io.camunda:operate-importer-8_5</dependency>
+            <dependency>io.camunda:operate-importer-8_6</dependency>
           </usedDependencies>
         </configuration>
       </plugin>

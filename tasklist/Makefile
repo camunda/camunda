@@ -72,7 +72,7 @@ env-identity-mt-up: $(DATABASE) identity-oauth multi-tenancy setup-maven-context
 
 .PHONY: operate-up
 operate-up:
-	@DATABASE=$(DATABASE) docker compose up -d operate
+	@DATABASE=$(DATABASE) docker compose -f $(COMPOSE_FILE) up -d operate
 
 .PHONY: operate-identity-up
 operate-identity-up:
@@ -88,13 +88,13 @@ operate-identity-mt-up:
 
 .PHONY: env-down
 env-down:
-	@DATABASE=opensearch docker compose -f ./config/docker-compose.yml down -v
-	@DATABASE=elasticsearch docker compose -f ./config/docker-compose.yml down -v
+	@DATABASE=opensearch docker compose -f $(COMPOSE_FILE) down -v
+	@DATABASE=elasticsearch docker compose -f $(COMPOSE_FILE) down -v
 	@mvn clean
 
 .PHONY: env-status
 env-status:
-	@docker compose ps
+	@DATABASE=$(DATABASE) docker compose -f $(COMPOSE_FILE) ps
 
 .PHONY: env-clean
 env-clean: env-down

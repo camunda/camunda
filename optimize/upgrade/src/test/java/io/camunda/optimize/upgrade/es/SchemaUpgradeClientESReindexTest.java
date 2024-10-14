@@ -54,9 +54,6 @@ import org.mockito.stubbing.OngoingStubbing;
 
 @ExtendWith(MockitoExtension.class)
 public class SchemaUpgradeClientESReindexTest {
-  @RegisterExtension
-  LogCapturer logCapturer = LogCapturer.create().captureForType(SchemaUpgradeClientES.class);
-
   @Mock private ElasticSearchSchemaManager schemaManager;
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS, strictness = Mock.Strictness.LENIENT)
@@ -66,7 +63,11 @@ public class SchemaUpgradeClientESReindexTest {
   @Mock private OptimizeIndexNameService indexNameService;
   @Mock private ElasticSearchMetadataService metadataService;
   @Mock private TaskInfo taskInfo;
+
   private SchemaUpgradeClient<?, ?> underTest;
+
+  @RegisterExtension
+  LogCapturer logCapturer = LogCapturer.create().captureForType(SchemaUpgradeClientES.class);
 
   @BeforeEach
   public void init() {
@@ -137,7 +138,7 @@ public class SchemaUpgradeClientESReindexTest {
   public void testReindexSkippedDueToEqualDocCount() throws IOException {
     // given
     final String index1 = "index1";
-    final String index2 = "index2";
+    final String index2 = "index1";
 
     mockCountResponseFromIndex(index1, 1L);
     mockCountResponseFromIndex(index2, 1L);
@@ -286,7 +287,7 @@ public class SchemaUpgradeClientESReindexTest {
     when(elasticsearchClient.countWithoutPrefix(matches(indexName))).thenAnswer(a -> count);
   }
 
-  private Response createEsResponse(final TaskResponse taskResponse) throws IOException {
+  private Response createEsResponse(TaskResponse taskResponse) throws IOException {
     final Response mockedReindexResponse = mock(Response.class);
 
     final HttpEntity httpEntity = mock(HttpEntity.class);

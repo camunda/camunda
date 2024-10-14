@@ -11,6 +11,9 @@ import java.util.List;
 
 public interface IndexTemplateDescriptor extends IndexDescriptor {
 
+  String PARTITION_ID = "partitionId";
+  String POSITION = "position";
+
   String getIndexPattern();
 
   String getTemplateName();

@@ -17,7 +17,7 @@ import java.util.Objects;
 
 public record DecisionRequirementsFilter(
     List<Long> decisionRequirementsKeys,
-    List<String> dmnDecisionRequirementsNames,
+    List<String> names,
     List<Integer> versions,
     List<String> decisionRequirementsIds,
     List<String> tenantIds)
@@ -26,9 +26,9 @@ public record DecisionRequirementsFilter(
   public static final class Builder implements ObjectBuilder<DecisionRequirementsFilter> {
 
     private List<Long> decisionRequirementsKeys;
-    private List<String> dmnDecisionRequirementsNames;
+    private List<String> names;
     private List<Integer> versions;
-    private List<String> dmnDecisionRequirementsIds;
+    private List<String> decisionRequirementsIds;
     private List<String> tenantIds;
 
     public Builder decisionRequirementsKeys(final List<Long> values) {
@@ -40,13 +40,13 @@ public record DecisionRequirementsFilter(
       return decisionRequirementsKeys(collectValuesAsList(values));
     }
 
-    public Builder dmnDecisionRequirementsNames(final List<String> values) {
-      dmnDecisionRequirementsNames = addValuesToList(dmnDecisionRequirementsNames, values);
+    public Builder names(final List<String> values) {
+      names = addValuesToList(names, values);
       return this;
     }
 
-    public Builder dmnDecisionRequirementsNames(final String... values) {
-      return dmnDecisionRequirementsNames(collectValuesAsList(values));
+    public Builder names(final String... values) {
+      return names(collectValuesAsList(values));
     }
 
     public Builder versions(final List<Integer> values) {
@@ -58,13 +58,13 @@ public record DecisionRequirementsFilter(
       return versions(collectValuesAsList(values));
     }
 
-    public Builder dmnDecisionRequirementsIds(final List<String> values) {
-      dmnDecisionRequirementsIds = addValuesToList(dmnDecisionRequirementsIds, values);
+    public Builder decisionRequirementsIds(final List<String> values) {
+      decisionRequirementsIds = addValuesToList(decisionRequirementsIds, values);
       return this;
     }
 
-    public Builder dmnDecisionRequirementsIds(final String... values) {
-      return dmnDecisionRequirementsIds(collectValuesAsList(values));
+    public Builder decisionRequirementsIds(final String... values) {
+      return decisionRequirementsIds(collectValuesAsList(values));
     }
 
     public Builder tenantIds(final List<String> values) {
@@ -80,9 +80,9 @@ public record DecisionRequirementsFilter(
     public DecisionRequirementsFilter build() {
       return new DecisionRequirementsFilter(
           Objects.requireNonNullElse(decisionRequirementsKeys, Collections.emptyList()),
-          Objects.requireNonNullElse(dmnDecisionRequirementsNames, Collections.emptyList()),
+          Objects.requireNonNullElse(names, Collections.emptyList()),
           Objects.requireNonNullElse(versions, Collections.emptyList()),
-          Objects.requireNonNullElse(dmnDecisionRequirementsIds, Collections.emptyList()),
+          Objects.requireNonNullElse(decisionRequirementsIds, Collections.emptyList()),
           Objects.requireNonNullElse(tenantIds, Collections.emptyList()));
     }
   }

@@ -112,7 +112,7 @@ public class ProcessQueryTest {
     assertThat(result.getStartDate()).isNotNull();
     assertThat(result.getEndDate()).isNull();
     assertThat(result.getState()).isEqualTo("ACTIVE");
-    assertThat(result.getIncident()).isFalse();
+    assertThat(result.getHasIncident()).isFalse();
     assertThat(result.getTenantId()).isEqualTo("<default>");
   }
 
@@ -248,7 +248,7 @@ public class ProcessQueryTest {
   void shouldRetrieveProcessInstancesWithIncidents() {
     // when
     final var result =
-        zeebeClient.newProcessInstanceQuery().filter(f -> f.incident(true)).send().join();
+        zeebeClient.newProcessInstanceQuery().filter(f -> f.hasIncident(true)).send().join();
 
     // then
     assertThat(result.items().size()).isEqualTo(1);
@@ -494,8 +494,14 @@ public class ProcessQueryTest {
   }
 
   private static void waitForProcessesToBeDeployed() throws InterruptedException {
-    // Waiting here should be done with zeebeClient.newProcessQuery() but it is not implemented yet
-    Thread.sleep(15000);
+    Awaitility.await("should deploy processes and import in Operate")
+        .atMost(Duration.ofSeconds(15))
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result = zeebeClient.newProcessDefinitionQuery().send().join();
+              assertThat(result.items().size()).isEqualTo(DEPLOYED_PROCESSES.size());
+            });
   }
 
   private static void waitForProcessInstancesToStart() {

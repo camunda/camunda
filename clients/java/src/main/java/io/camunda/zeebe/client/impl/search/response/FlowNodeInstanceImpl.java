@@ -40,7 +40,7 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
     flowNodeId = item.getFlowNodeId();
     startDate = item.getStartDate();
     endDate = item.getEndDate();
-    incident = item.getIncident();
+    incident = item.getHasIncident();
     incidentKey = item.getIncidentKey();
     state = item.getState();
     tenantId = item.getTenantId();

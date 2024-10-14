@@ -291,7 +291,7 @@ class DecisionQueryTest {
     final var result =
         zeebeClient
             .newDecisionRequirementsQuery()
-            .filter(f -> f.dmnDecisionRequirementsId(decisionRequirementId))
+            .filter(f -> f.decisionRequirementsId(decisionRequirementId))
             .send()
             .join();
 
@@ -311,7 +311,7 @@ class DecisionQueryTest {
     final var result =
         zeebeClient
             .newDecisionRequirementsQuery()
-            .filter(f -> f.dmnDecisionRequirementsName(decisionRequirementName))
+            .filter(f -> f.name(decisionRequirementName))
             .send()
             .join();
 
@@ -371,13 +371,13 @@ class DecisionQueryTest {
     final var resultAsc =
         zeebeClient
             .newDecisionRequirementsQuery()
-            .sort(s -> s.dmnDecisionRequirementsId().asc())
+            .sort(s -> s.decisionRequirementsId().asc())
             .send()
             .join();
     final var resultDesc =
         zeebeClient
             .newDecisionRequirementsQuery()
-            .sort(s -> s.dmnDecisionRequirementsId().desc())
+            .sort(s -> s.decisionRequirementsId().desc())
             .send()
             .join();
 
@@ -410,17 +410,9 @@ class DecisionQueryTest {
   void shouldSortByDecisionRequirementsName() {
     // when
     final var resultAsc =
-        zeebeClient
-            .newDecisionRequirementsQuery()
-            .sort(s -> s.dmnDecisionRequirementsName().asc())
-            .send()
-            .join();
+        zeebeClient.newDecisionRequirementsQuery().sort(s -> s.name().asc()).send().join();
     final var resultDesc =
-        zeebeClient
-            .newDecisionRequirementsQuery()
-            .sort(s -> s.dmnDecisionRequirementsName().desc())
-            .send()
-            .join();
+        zeebeClient.newDecisionRequirementsQuery().sort(s -> s.name().desc()).send().join();
 
     // Extract unique names from the results
     final List<String> uniqueAscNames =
@@ -678,5 +670,31 @@ class DecisionQueryTest {
         .isEqualTo(
             "Decision requirements with decisionRequirementsKey=%d not found"
                 .formatted(decisionRequirementsKey));
+  }
+
+  @Test
+  void shouldGetDecisionInstance() {
+    // when
+    final long decisionInstanceKey = EVALUATED_DECISIONS.get(0).getDecisionInstanceKey();
+    final var result = zeebeClient.newDecisionInstanceGetRequest(decisionInstanceKey).send().join();
+
+    // then
+    assertThat(result.getDecisionInstanceKey()).isEqualTo(decisionInstanceKey);
+  }
+
+  @Test
+  void shouldReturn404ForNotFoundDecisionInstance() {
+    // when
+    final long decisionInstanceKey = new Random().nextLong();
+    final var problemException =
+        assertThrows(
+            ProblemException.class,
+            () -> zeebeClient.newDecisionInstanceGetRequest(decisionInstanceKey).send().join());
+    // then
+    assertThat(problemException.code()).isEqualTo(404);
+    assertThat(problemException.details().getDetail())
+        .isEqualTo(
+            "Decision Instance with decisionInstanceKey=%d not found"
+                .formatted(decisionInstanceKey));
   }
 }

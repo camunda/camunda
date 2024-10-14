@@ -8,11 +8,11 @@
 package io.camunda.operate.webapp.opensearch.writer;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.OperationTemplate;
-import io.camunda.operate.schema.templates.ProcessInstanceDependant;
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
+import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -56,7 +56,7 @@ public class OpensearchProcessInstanceWriter
   }
 
   @Override
-  public void deleteInstanceById(Long id) throws IOException {
+  public void deleteInstanceById(final Long id) throws IOException {
     final ProcessInstanceForListViewEntity processInstanceEntity =
         processInstanceReader.getProcessInstanceByKey(id);
     validateDeletion(processInstanceEntity);
@@ -69,7 +69,7 @@ public class OpensearchProcessInstanceWriter
         processInstanceDependantTemplates.stream()
             .filter(t -> !(t instanceof OperationTemplate))
             .toList();
-    for (ProcessInstanceDependant template : processInstanceDependantsWithoutOperation) {
+    for (final ProcessInstanceDependant template : processInstanceDependantsWithoutOperation) {
       deleteDocument(
           template.getFullQualifiedName() + "*",
           ProcessInstanceDependant.PROCESS_INSTANCE_KEY,
@@ -82,11 +82,11 @@ public class OpensearchProcessInstanceWriter
         processInstanceKey);
   }
 
-  private void deleteProcessInstanceFromTreePath(String processInstanceKey) {
+  private void deleteProcessInstanceFromTreePath(final String processInstanceKey) {
     processStore.deleteProcessInstanceFromTreePath(processInstanceKey);
   }
 
-  private long deleteDocument(final String indexName, final String idField, String id)
+  private long deleteDocument(final String indexName, final String idField, final String id)
       throws IOException {
     return processStore.deleteDocument(indexName, idField, id);
   }

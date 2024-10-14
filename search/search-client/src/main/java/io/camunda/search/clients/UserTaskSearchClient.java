@@ -12,7 +12,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.security.auth.Authentication;
 
-public interface UserTaskSearchClient extends AutoCloseable {
+public interface UserTaskSearchClient {
 
   SearchQueryResult<UserTaskEntity> searchUserTasks(
       UserTaskQuery filter, Authentication authentication);

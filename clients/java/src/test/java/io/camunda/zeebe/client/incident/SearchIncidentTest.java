@@ -67,7 +67,7 @@ public class SearchIncidentTest extends ClientRestTest {
     final IncidentSearchQueryRequest request =
         gatewayService.getLastRequest(IncidentSearchQueryRequest.class);
     final IncidentFilterRequest filter = request.getFilter();
-    assertThat(filter.getKey()).isEqualTo(1L);
+    assertThat(filter.getIncidentKey()).isEqualTo(1L);
     assertThat(filter.getProcessDefinitionKey()).isEqualTo(2L);
     assertThat(filter.getProcessDefinitionId()).isEqualTo("complexProcess");
     assertThat(filter.getProcessInstanceKey()).isEqualTo(3L);

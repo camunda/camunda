@@ -94,6 +94,21 @@ const elements = {
     name: 'Message receive task',
     type: 'receiveTask',
   },
+  BusinessRuleTask: {
+    id: 'BusinessRuleTask',
+    name: 'Business rule task',
+    type: 'businessRuleTask',
+  },
+  ScriptTask: {
+    id: 'ScriptTask',
+    name: 'Script task',
+    type: 'scriptTask',
+  },
+  SendTask: {
+    id: 'SendTask',
+    name: 'Send task',
+    type: 'sendTask',
+  },
 };
 
 type Props = {

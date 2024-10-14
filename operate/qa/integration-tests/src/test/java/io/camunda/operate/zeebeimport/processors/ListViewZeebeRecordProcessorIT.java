@@ -7,14 +7,14 @@
  */
 package io.camunda.operate.zeebeimport.processors;
 
-import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.VARIABLES_JOIN_RELATION;
 import static io.camunda.operate.util.TestUtil.createFlowNodeInstance;
 import static io.camunda.operate.util.TestUtil.createProcessInstance;
 import static io.camunda.operate.util.TestUtil.createVariableForListView;
 import static io.camunda.operate.util.ZeebeRecordTestUtil.createZeebeRecordFromFni;
 import static io.camunda.operate.util.ZeebeRecordTestUtil.createZeebeRecordFromPi;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.VARIABLES_JOIN_RELATION;
 import static io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState.ACTIVE;
 import static io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState.COMPLETED;
 import static io.camunda.zeebe.protocol.record.intent.IncidentIntent.CREATED;
@@ -28,12 +28,12 @@ import static org.mockito.Mockito.when;
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.ImportBatch;
 import io.camunda.operate.zeebeimport.ImportPositionHolder;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.FlowNodeState;
 import io.camunda.webapps.schema.entities.operate.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;

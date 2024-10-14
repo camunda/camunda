@@ -15,7 +15,6 @@ import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.OperationTemplate;
 import io.camunda.operate.store.ListViewStore;
 import io.camunda.operate.store.OperationStore;
@@ -24,6 +23,7 @@ import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestD
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.UserService;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;

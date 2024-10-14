@@ -82,7 +82,7 @@ public final class ResponseMapper {
 
   private static ActivatedJob toActivatedJob(final long jobKey, final JobRecord job) {
     return new ActivatedJob()
-        .key(jobKey)
+        .jobKey(jobKey)
         .type(job.getType())
         .processDefinitionId(job.getBpmnProcessId())
         .elementId(job.getElementId())
@@ -185,7 +185,7 @@ public final class ResponseMapper {
                 new DeploymentDecisionRequirements()
                     .decisionRequirementsId(decisionRequirement.getDecisionRequirementsId())
                     .version(decisionRequirement.getDecisionRequirementsVersion())
-                    .decisionRequirementsName(decisionRequirement.getDecisionRequirementsName())
+                    .name(decisionRequirement.getDecisionRequirementsName())
                     .tenantId(decisionRequirement.getTenantId())
                     .decisionRequirementsKey(decisionRequirement.getDecisionRequirementsKey())
                     .resourceName(decisionRequirement.getResourceName()))
@@ -376,7 +376,7 @@ public final class ResponseMapper {
     @Override
     public List<ActivatedJob> getJobs() {
       return response.getJobs().stream()
-          .map(j -> new ActivatedJob(j.getKey(), j.getRetries()))
+          .map(j -> new ActivatedJob(j.getJobKey(), j.getRetries()))
           .toList();
     }
 

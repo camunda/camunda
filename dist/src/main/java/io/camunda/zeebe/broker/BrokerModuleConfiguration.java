@@ -11,6 +11,8 @@ import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
+import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.CloseableSilently;
@@ -18,6 +20,8 @@ import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -71,8 +75,19 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.meterRegistry = meterRegistry;
   }
 
+  @Bean
+  public ExporterRepository exporterRepository(
+      @Autowired(required = false) List<ExporterDescriptor> exporterDescriptors) {
+    if (exporterDescriptors != null && !exporterDescriptors.isEmpty()) {
+      LOGGER.info("Create ExporterRepository with predefined exporter descriptors.");
+      return new ExporterRepository(exporterDescriptors);
+    } else {
+      return new ExporterRepository();
+    }
+  }
+
   @Bean(destroyMethod = "close")
-  public Broker broker() {
+  public Broker broker(final ExporterRepository exporterRepository) {
     final SystemContext systemContext =
         new SystemContext(
             configuration.shutdownTimeout(),
@@ -84,7 +99,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             meterRegistry);
     springBrokerBridge.registerShutdownHelper(
         errorCode -> shutdownHelper.initiateShutdown(errorCode));
-    broker = new Broker(systemContext, springBrokerBridge);
+    broker =
+        new Broker(systemContext, springBrokerBridge, Collections.emptyList(), exporterRepository);
 
     // already initiate starting the broker
     // to ensure that the necessary ports

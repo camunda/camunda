@@ -13,13 +13,13 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.schema.templates.JobTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.reader.ListenerReader;
 import io.camunda.operate.webapp.rest.dto.ListenerDto;
 import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
 import io.camunda.operate.webapp.rest.dto.ListenerResponseDto;
 import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
+import io.camunda.webapps.schema.descriptors.operate.template.JobTemplate;
 import io.camunda.webapps.schema.entities.operate.JobEntity;
 import io.camunda.webapps.schema.entities.operate.ListenerType;
 import java.io.IOException;

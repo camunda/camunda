@@ -1,0 +1,9 @@
+zeebe:
+  broker:
+    cluster:
+      configManager:
+        gossip:
+          enableSync: false
+          syncDelay: 10s
+          syncRequestTimeout: 30s
+          gossipFanout: 10

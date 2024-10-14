@@ -17,7 +17,7 @@ public class DecisionRequirementsEntity extends OperateZeebeEntity<DecisionRequi
   private int version;
   private String xml;
   private String resourceName;
-  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  private String tenantId = DEFAULT_TENANT_ID;
 
   public String getDecisionRequirementsId() {
     return decisionRequirementsId;

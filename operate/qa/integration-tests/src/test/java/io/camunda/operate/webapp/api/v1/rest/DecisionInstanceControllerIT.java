@@ -17,13 +17,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.api.v1.dao.DecisionInstanceDao;
 import io.camunda.operate.webapp.api.v1.entities.DecisionInstance;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
+import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Before;

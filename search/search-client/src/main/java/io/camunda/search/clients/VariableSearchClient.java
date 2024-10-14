@@ -12,7 +12,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.search.security.auth.Authentication;
 
-public interface VariableSearchClient extends AutoCloseable {
+public interface VariableSearchClient {
 
   SearchQueryResult<VariableEntity> searchVariables(
       VariableQuery filter, Authentication authentication);

@@ -12,6 +12,7 @@ import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.executi
 import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.execution.ExecutionListenerTest.SERVICE_TASK_TYPE;
 import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.execution.ExecutionListenerTest.START_EL_TYPE;
 import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.execution.ExecutionListenerTest.createProcessInstance;
+import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -26,9 +27,11 @@ import io.camunda.zeebe.model.bpmn.builder.AbstractGatewayBuilder;
 import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
 import io.camunda.zeebe.model.bpmn.instance.Gateway;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -252,9 +255,54 @@ public class ExecutionListenerGatewayElementsTest {
                   .withProcessInstanceKey(processInstanceKey)
                   .withJobKind(JobKind.EXECUTION_LISTENER)
                   .onlyEvents()
-                  .getFirst())
-          .extracting(r -> r.getValue().getType())
-          .isEqualTo(START_EL_TYPE);
+                  .findFirst())
+          .hasValueSatisfying(r -> assertThat(r.getValue()).hasType(START_EL_TYPE));
+    }
+
+    @Test
+    public void shouldResolveIncidentOnGatewayElementAndCreateStartExecutionListenerJob() {
+      final var invalidExpression = "missing_var";
+      final var modelInstance =
+          scenario
+              .processBuilder
+              .apply(
+                  scenario
+                      .gatewayBuilderFunction
+                      .apply(Bpmn.createExecutableProcess(PROCESS_ID).startEvent("start"))
+                      .zeebeExecutionListener(l -> l.start().typeExpression(invalidExpression)))
+              .done();
+
+      final long processInstanceKey =
+          createProcessInstance(ENGINE, modelInstance, scenario.variables);
+
+      final var incident =
+          RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+              .withProcessInstanceKey(processInstanceKey)
+              .withElementId(GATEWAY_ELEMENT_ID)
+              .withErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+              .getFirst();
+
+      // when
+      ENGINE
+          .variables()
+          .ofScope(processInstanceKey)
+          .withDocument(Map.of(invalidExpression, START_EL_TYPE))
+          .update();
+      ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+      // then
+      assertThat(
+              jobRecords(JobIntent.CREATED)
+                  .withProcessInstanceKey(processInstanceKey)
+                  .withJobKind(JobKind.EXECUTION_LISTENER)
+                  .findFirst())
+          .hasValueSatisfying(
+              r ->
+                  assertThat(r.getValue())
+                      .describedAs(
+                          "Expected to successfully resolve the incident and create start execution listener job")
+                      .hasElementId(GATEWAY_ELEMENT_ID)
+                      .hasType(START_EL_TYPE));
     }
 
     private record GatewayTestScenario(

@@ -7,7 +7,11 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
+
 import io.camunda.zeebe.auth.impl.TenantAuthorizationCheckerImpl;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -19,6 +23,8 @@ import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 public final class ProcessInstanceCancelProcessor
@@ -38,13 +44,17 @@ public final class ProcessInstanceCancelProcessor
   private final TypedResponseWriter responseWriter;
   private final TypedCommandWriter commandWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final AuthorizationCheckBehavior authCheckBehavior;
 
   public ProcessInstanceCancelProcessor(
-      final ProcessingState processingState, final Writers writers) {
+      final ProcessingState processingState,
+      final Writers writers,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     elementInstanceState = processingState.getElementInstanceState();
     responseWriter = writers.response();
     commandWriter = writers.command();
     rejectionWriter = writers.rejection();
+    this.authCheckBehavior = authCheckBehavior;
   }
 
   @Override
@@ -77,6 +87,19 @@ public final class ProcessInstanceCancelProcessor
           command,
           RejectionType.NOT_FOUND,
           String.format(PROCESS_NOT_FOUND_MESSAGE, command.getKey()));
+      return false;
+    }
+
+    final var request =
+        new AuthorizationRequest(
+                command, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.UPDATE)
+            .addResourceId(elementInstance.getValue().getBpmnProcessId());
+    if (!authCheckBehavior.isAuthorized(request)) {
+      final var errorMessage =
+          UNAUTHORIZED_ERROR_MESSAGE.formatted(
+              request.getPermissionType(), request.getResourceType());
+      rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, errorMessage);
       return false;
     }
 

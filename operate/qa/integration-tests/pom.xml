@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>operate-qa</artifactId>
-    <version>8.6.0-SNAPSHOT</version>
+    <version>8.7.0-SNAPSHOT</version>
   </parent>
   <artifactId>operate-qa-it-tests</artifactId>
 
@@ -105,13 +105,13 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>operate-importer-8_5</artifactId>
+      <artifactId>operate-importer-8_6</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>operate-importer-8_6</artifactId>
+      <artifactId>operate-importer-8_7</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -449,6 +449,12 @@
     <dependency>
       <groupId>net.bytebuddy</groupId>
       <artifactId>byte-buddy</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-authentication</artifactId>
       <scope>test</scope>
     </dependency>
 

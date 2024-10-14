@@ -7,24 +7,24 @@
  */
 package io.camunda.operate.store.elasticsearch;
 
-import static io.camunda.operate.schema.indices.ProcessIndex.BPMN_XML;
-import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TREE_PATH;
-import static io.camunda.operate.schema.templates.ListViewTemplate.BPMN_PROCESS_ID;
-import static io.camunda.operate.schema.templates.ListViewTemplate.ID;
-import static io.camunda.operate.schema.templates.ListViewTemplate.INCIDENT;
-import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.KEY;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PARENT_PROCESS_INSTANCE_KEY;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_KEY;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_NAME;
-import static io.camunda.operate.schema.templates.ListViewTemplate.STATE;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import static io.camunda.operate.util.ElasticsearchUtil.createSearchRequest;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.util.ElasticsearchUtil.scrollWith;
+import static io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex.BPMN_XML;
+import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.TREE_PATH;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.ID;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.INCIDENT;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.KEY;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PARENT_PROCESS_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_KEY;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_NAME;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.STATE;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
@@ -38,16 +38,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.indices.ProcessIndex;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.OperationTemplate;
-import io.camunda.operate.schema.templates.ProcessInstanceDependant;
-import io.camunda.operate.schema.templates.TemplateDescriptor;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.TreePath;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
@@ -655,7 +655,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
             .toList();
     try {
       for (final ProcessInstanceDependant template : processInstanceDependantsWithoutOperation) {
-        final String indexName = ((TemplateDescriptor) template).getAlias();
+        final String indexName = ((IndexTemplateDescriptor) template).getAlias();
         final DeleteByQueryRequest query =
             new DeleteByQueryRequest(indexName)
                 .setQuery(

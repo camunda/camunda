@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -47,9 +48,6 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
    */
   public static final String NO_CATCH_EVENT_FOUND = "NO_CATCH_EVENT_FOUND";
 
-  public static final String NO_JOB_FOUND_MESSAGE =
-      "Expected to cancel job with key '%d', but no such job was found";
-
   public static final String ERROR_REJECTION_MESSAGE =
       "Cannot throw BPMN error from %s job with key '%d', type '%s' and processInstanceKey '%d'";
 
@@ -70,7 +68,8 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
       final ProcessingState state,
       final BpmnEventPublicationBehavior eventPublicationBehavior,
       final KeyGenerator keyGenerator,
-      final JobMetrics jobMetrics) {
+      final JobMetrics jobMetrics,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     this.keyGenerator = keyGenerator;
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
@@ -78,7 +77,8 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
     eventScopeInstanceState = state.getEventScopeInstanceState();
 
     defaultProcessor =
-        new DefaultJobCommandPreconditionGuard("throw an error for", jobState, this::acceptCommand);
+        new DefaultJobCommandPreconditionGuard(
+            "throw an error for", jobState, this::acceptCommand, authCheckBehavior);
 
     stateAnalyzer = new CatchEventAnalyzer(state.getProcessState(), elementInstanceState);
     this.eventPublicationBehavior = eventPublicationBehavior;
@@ -111,14 +111,10 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
   }
 
   private void acceptCommand(
-      final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
+      final TypedRecord<JobRecord> command,
+      final CommandControl<JobRecord> commandControl,
+      final JobRecord job) {
     final long jobKey = command.getKey();
-
-    final JobRecord job = jobState.getJob(jobKey, command.getAuthorizations());
-    if (job == null) {
-      commandControl.reject(RejectionType.NOT_FOUND, String.format(NO_JOB_FOUND_MESSAGE, jobKey));
-      return;
-    }
 
     // Check if the job is of kind EXECUTION_LISTENER. Execution Listener jobs should not throw
     // BPMN errors because the element is not in an ACTIVATED state.

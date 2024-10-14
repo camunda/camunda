@@ -2,7 +2,7 @@ services:
   optimize:
     profiles: ["", "elasticsearch"]
     container_name: optimize
-    image: camunda/optimize:latest
+    image: camunda/optimize:8-latest
     depends_on:
       - elasticsearch
       - identity
@@ -34,7 +34,7 @@ services:
   optimize-opensearch:
     profiles: [ "opensearch" ]
     container_name: optimize-opensearch
-    image: camunda/optimize:latest
+    image: camunda/optimize:8-latest
     depends_on:
       - identity
     ports:
@@ -71,7 +71,7 @@ services:
     environment:
       KEYCLOAK_ADMIN_USER: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
-      KEYCLOAK_DATABASE_VENDOR: dev-mem
+      KEYCLOAK_DATABASE_VENDOR: dev-file
       KEYCLOAK_HTTP_RELATIVE_PATH: /auth
       KEYCLOAK_ENABLE_HEALTH_ENDPOINTS: true
     healthcheck:
