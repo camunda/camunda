@@ -114,7 +114,9 @@ public final class SystemContext {
     validClusterConfigs(cluster);
     validateExperimentalConfigs(cluster, brokerCfg.getExperimental());
 
+    LOG.debug("Gonna validate exporters...");
     validateExporters(brokerCfg.getExporters());
+    LOG.debug("Validated exporters!");
 
     final var security = brokerCfg.getNetwork().getSecurity();
     if (security.isEnabled()) {
@@ -156,11 +158,18 @@ public final class SystemContext {
 
   private void validateExporters(final Map<String, ExporterCfg> exporters) {
     final Set<Entry<String, ExporterCfg>> entries = exporters.entrySet();
+    LOG.debug("Got " + entries.size() + " exporters names! " + entries);
+
+    for (final Entry<String, ExporterCfg> entry : entries) {
+      LOG.debug(entry.getKey() + " - className= " + entry.getValue().getClassName());
+    }
+
     final var badExportersNames =
         entries.stream()
             .filter(entry -> entry.getValue().getClassName() == null)
             .map(Entry::getKey)
             .toList();
+    LOG.debug("Got " + badExportersNames.size() + " bad exporters names! " + badExportersNames);
 
     if (!badExportersNames.isEmpty()) {
       throw new IllegalArgumentException(
