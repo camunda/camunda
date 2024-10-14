@@ -11,6 +11,8 @@ import static io.camunda.exporter.utils.SearchEngineClientUtils.appendToFileSche
 import static io.camunda.exporter.utils.SearchEngineClientUtils.listIndices;
 import static io.camunda.exporter.utils.SearchEngineClientUtils.mapToSettings;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.exceptions.IndexSchemaValidationException;
 import io.camunda.exporter.exceptions.OpensearchExporterException;
@@ -28,6 +30,9 @@ import org.opensearch.client.json.JsonpDeserializer;
 import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
+import org.opensearch.client.opensearch.generic.Body;
+import org.opensearch.client.opensearch.generic.Request;
+import org.opensearch.client.opensearch.generic.Requests;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 import org.opensearch.client.opensearch.indices.PutIndicesSettingsRequest;
@@ -39,6 +44,9 @@ import org.slf4j.LoggerFactory;
 
 public class OpensearchEngineClient implements SearchEngineClient {
   private static final Logger LOG = LoggerFactory.getLogger(OpensearchEngineClient.class);
+  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final String OPERATE_DELETE_ARCHIVED_POLICY =
+      "/schema/opensearch/create/policy/operate_delete_archived_indices.json";
   private final OpenSearchClient client;
 
   public OpensearchEngineClient(final OpenSearchClient client) {
@@ -150,7 +158,53 @@ public class OpensearchEngineClient implements SearchEngineClient {
   }
 
   @Override
-  public void putIndexLifeCyclePolicy(final String policyName, final String deletionMinAge) {}
+  public void putIndexLifeCyclePolicy(final String policyName, final String deletionMinAge) {
+    final var request = createIndexStateManagementPolicy(policyName, deletionMinAge);
+
+    try (final var response = client.generic().execute(request)) {
+      if (response.getStatus() / 100 != 2) {
+        throw new OpensearchExporterException(
+            String.format(
+                "Creating index state management policy [%s] with min_deletion_age [%s] failed. Http response = [%s]",
+                policyName, deletionMinAge, response.getBody().get().bodyAsString()));
+      }
+
+    } catch (final IOException e) {
+      final var errMsg =
+          String.format("Failed to create index state management policy [%s]", policyName);
+      LOG.error(errMsg, e);
+      throw new OpensearchExporterException(errMsg, e);
+    }
+  }
+
+  public Request createIndexStateManagementPolicy(
+      final String policyName, final String deletionMinAge) {
+    try (final var policyJson = getClass().getResourceAsStream(OPERATE_DELETE_ARCHIVED_POLICY)) {
+      final var jsonMap = MAPPER.readTree(policyJson);
+      final var conditions =
+          (ObjectNode)
+              jsonMap
+                  .path("policy")
+                  .path("states")
+                  .path(0)
+                  .path("transitions")
+                  .path(0)
+                  .path("conditions");
+      conditions.put("min_index_age", deletionMinAge);
+
+      final var policy = MAPPER.writeValueAsBytes(jsonMap);
+
+      return Requests.builder()
+          .method("PUT")
+          .endpoint("_plugins/_ism/policies/" + policyName)
+          .body(Body.from(policy, "application/json"))
+          .build();
+
+    } catch (final IOException e) {
+      throw new OpensearchExporterException(
+          "Failed to deserialize policy file " + OPERATE_DELETE_ARCHIVED_POLICY, e);
+    }
+  }
 
   private PutIndicesSettingsRequest putIndexSettingsRequest(
       final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings) {
