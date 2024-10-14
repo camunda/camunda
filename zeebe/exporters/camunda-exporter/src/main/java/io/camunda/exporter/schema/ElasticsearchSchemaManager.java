@@ -7,11 +7,8 @@
  */
 package io.camunda.exporter.schema;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
-import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
@@ -23,7 +20,6 @@ import org.slf4j.LoggerFactory;
 
 public class ElasticsearchSchemaManager implements SchemaManager {
   private static final Logger LOG = LoggerFactory.getLogger(ElasticsearchSchemaManager.class);
-  private static final ObjectMapper MAPPER = new ObjectMapper();
   private final SearchEngineClient elasticsearchClient;
   private final Collection<IndexDescriptor> indexDescriptors;
   private final Collection<IndexTemplateDescriptor> indexTemplateDescriptors;
@@ -85,33 +81,6 @@ public class ElasticsearchSchemaManager implements SchemaManager {
 
         elasticsearchClient.putMapping(descriptor, newProperties);
       }
-    }
-  }
-
-  @Override
-  @SuppressWarnings("unchecked")
-  public IndexMapping readIndex(final IndexDescriptor indexDescriptor) {
-    try (final var mappingsStream =
-        getClass().getResourceAsStream(indexDescriptor.getMappingsClasspathFilename())) {
-      final var nestedType = new TypeReference<Map<String, Map<String, Object>>>() {};
-      final Map<String, Object> mappings =
-          MAPPER.readValue(mappingsStream, nestedType).get("mappings");
-      final Map<String, Object> properties = (Map<String, Object>) mappings.get("properties");
-      final var dynamic = mappings.get("dynamic");
-
-      return new IndexMapping.Builder()
-          .indexName(indexDescriptor.getIndexName())
-          .dynamic(dynamic == null ? "strict" : dynamic.toString())
-          .properties(
-              properties.entrySet().stream()
-                  .map(IndexMappingProperty::createIndexMappingProperty)
-                  .collect(Collectors.toSet()))
-          .build();
-    } catch (final IOException e) {
-      throw new ElasticsearchExporterException(
-          String.format(
-              "Failed to parse index json [%s]", indexDescriptor.getMappingsClasspathFilename()),
-          e);
     }
   }
 

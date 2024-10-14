@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.utils.TestSupport;
 import io.camunda.search.connect.es.ElasticsearchConnector;
@@ -190,7 +191,7 @@ public class ElasticsearchSchemaManagerIT {
             searchEngineClient, Set.of(), Set.of(), new ExporterConfiguration());
 
     // when
-    final var indexMapping = schemaManager.readIndex(index);
+    final var indexMapping = SchemaManager.readIndex(index, new ObjectMapper());
 
     // then
     assertThat(indexMapping.dynamic()).isEqualTo("strict");
