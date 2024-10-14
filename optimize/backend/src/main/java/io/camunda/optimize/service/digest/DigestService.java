@@ -44,24 +44,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 public class DigestService implements ConfigurationReloadable {
 
   private static final String DIGEST_EMAIL_TEMPLATE = "digestEmailTemplate.ftl";
   private static final String UTM_SOURCE = "digest";
   private static final String UTM_MEDIUM = "email";
   private static final String DEFAULT_LOCALE = "en";
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DigestService.class);
   private final ConfigurationService configurationService;
   private final EmailService emailService;
   private final AbstractIdentityService identityService;
@@ -73,6 +70,27 @@ public class DigestService implements ConfigurationReloadable {
   private final RootUrlGenerator rootUrlGenerator;
   private final Map<String, ScheduledFuture<?>> scheduledDigestTasks = new HashMap<>();
   private ThreadPoolTaskScheduler digestTaskScheduler;
+
+  public DigestService(
+      ConfigurationService configurationService,
+      EmailService emailService,
+      AbstractIdentityService identityService,
+      KpiService kpiService,
+      DefinitionService definitionService,
+      ProcessOverviewWriter processOverviewWriter,
+      ProcessOverviewReader processOverviewReader,
+      ReportReader reportReader,
+      RootUrlGenerator rootUrlGenerator) {
+    this.configurationService = configurationService;
+    this.emailService = emailService;
+    this.identityService = identityService;
+    this.kpiService = kpiService;
+    this.definitionService = definitionService;
+    this.processOverviewWriter = processOverviewWriter;
+    this.processOverviewReader = processOverviewReader;
+    this.reportReader = reportReader;
+    this.rootUrlGenerator = rootUrlGenerator;
+  }
 
   @PostConstruct
   public void init() {
@@ -313,8 +331,8 @@ public class DigestService implements ConfigurationReloadable {
     BAD // compared to previous report value, new value is further away from KPI target
   }
 
-  @Data
   public static class DigestTemplateKpiSummaryDto {
+
     private final String reportName;
     private final String reportLink;
     private final String kpiType;
@@ -416,6 +434,143 @@ public class DigestService implements ConfigurationReloadable {
       } else {
         return changeInPercent > 0. ? KpiChangeType.GOOD : KpiChangeType.BAD;
       }
+    }
+
+    public String getReportName() {
+      return this.reportName;
+    }
+
+    public String getReportLink() {
+      return this.reportLink;
+    }
+
+    public String getKpiType() {
+      return this.kpiType;
+    }
+
+    public boolean isTargetMet() {
+      return this.targetMet;
+    }
+
+    public String getTarget() {
+      return this.target;
+    }
+
+    public String getCurrent() {
+      return this.current;
+    }
+
+    public Double getChangeInPercent() {
+      return this.changeInPercent;
+    }
+
+    public KpiChangeType getChangeType() {
+      return this.changeType;
+    }
+
+    public boolean equals(final Object o) {
+      if (o == this) {
+        return true;
+      }
+      if (!(o instanceof DigestTemplateKpiSummaryDto)) {
+        return false;
+      }
+      final DigestTemplateKpiSummaryDto other = (DigestTemplateKpiSummaryDto) o;
+      if (!other.canEqual((Object) this)) {
+        return false;
+      }
+      final Object this$reportName = this.getReportName();
+      final Object other$reportName = other.getReportName();
+      if (this$reportName == null
+          ? other$reportName != null
+          : !this$reportName.equals(other$reportName)) {
+        return false;
+      }
+      final Object this$reportLink = this.getReportLink();
+      final Object other$reportLink = other.getReportLink();
+      if (this$reportLink == null
+          ? other$reportLink != null
+          : !this$reportLink.equals(other$reportLink)) {
+        return false;
+      }
+      final Object this$kpiType = this.getKpiType();
+      final Object other$kpiType = other.getKpiType();
+      if (this$kpiType == null ? other$kpiType != null : !this$kpiType.equals(other$kpiType)) {
+        return false;
+      }
+      if (this.isTargetMet() != other.isTargetMet()) {
+        return false;
+      }
+      final Object this$target = this.getTarget();
+      final Object other$target = other.getTarget();
+      if (this$target == null ? other$target != null : !this$target.equals(other$target)) {
+        return false;
+      }
+      final Object this$current = this.getCurrent();
+      final Object other$current = other.getCurrent();
+      if (this$current == null ? other$current != null : !this$current.equals(other$current)) {
+        return false;
+      }
+      final Object this$changeInPercent = this.getChangeInPercent();
+      final Object other$changeInPercent = other.getChangeInPercent();
+      if (this$changeInPercent == null
+          ? other$changeInPercent != null
+          : !this$changeInPercent.equals(other$changeInPercent)) {
+        return false;
+      }
+      final Object this$changeType = this.getChangeType();
+      final Object other$changeType = other.getChangeType();
+      if (this$changeType == null
+          ? other$changeType != null
+          : !this$changeType.equals(other$changeType)) {
+        return false;
+      }
+      return true;
+    }
+
+    protected boolean canEqual(final Object other) {
+      return other instanceof DigestTemplateKpiSummaryDto;
+    }
+
+    public int hashCode() {
+      final int PRIME = 59;
+      int result = 1;
+      final Object $reportName = this.getReportName();
+      result = result * PRIME + ($reportName == null ? 43 : $reportName.hashCode());
+      final Object $reportLink = this.getReportLink();
+      result = result * PRIME + ($reportLink == null ? 43 : $reportLink.hashCode());
+      final Object $kpiType = this.getKpiType();
+      result = result * PRIME + ($kpiType == null ? 43 : $kpiType.hashCode());
+      result = result * PRIME + (this.isTargetMet() ? 79 : 97);
+      final Object $target = this.getTarget();
+      result = result * PRIME + ($target == null ? 43 : $target.hashCode());
+      final Object $current = this.getCurrent();
+      result = result * PRIME + ($current == null ? 43 : $current.hashCode());
+      final Object $changeInPercent = this.getChangeInPercent();
+      result = result * PRIME + ($changeInPercent == null ? 43 : $changeInPercent.hashCode());
+      final Object $changeType = this.getChangeType();
+      result = result * PRIME + ($changeType == null ? 43 : $changeType.hashCode());
+      return result;
+    }
+
+    public String toString() {
+      return "DigestService.DigestTemplateKpiSummaryDto(reportName="
+          + this.getReportName()
+          + ", reportLink="
+          + this.getReportLink()
+          + ", kpiType="
+          + this.getKpiType()
+          + ", targetMet="
+          + this.isTargetMet()
+          + ", target="
+          + this.getTarget()
+          + ", current="
+          + this.getCurrent()
+          + ", changeInPercent="
+          + this.getChangeInPercent()
+          + ", changeType="
+          + this.getChangeType()
+          + ")";
     }
   }
 

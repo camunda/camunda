@@ -7,7 +7,7 @@
  */
 // TODO recreate C8 IT equivalent of this with #13337
 // package io.camunda.optimize.test.engine;
-// 
+//
 // import io.camunda.optimize.exception.OptimizeIntegrationTestException;
 // import io.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 // import jakarta.ws.rs.core.Response;
@@ -20,17 +20,16 @@
 // import org.apache.http.client.utils.URIBuilder;
 // import org.apache.http.impl.client.CloseableHttpClient;
 // import org.apache.http.util.EntityUtils;
-// 
-// @AllArgsConstructor
+//
 // @Slf4j
 // public class EnginePluginClient {
 //   private static final String ENGINE_IT_PLUGIN_ENDPOINT =
 //       IntegrationTestConfigurationUtil.getEngineItPluginEndpoint();
 //   private static final String DEPLOY_PATH = "/deploy";
 //   private static final String PURGE_PATH = "/purge";
-// 
+//
 //   private final CloseableHttpClient httpClient;
-// 
+//
 //   @SneakyThrows
 //   public void deployEngine(final String engineName) {
 //     log.info("Deploying engine with name {}", engineName);
@@ -56,7 +55,7 @@
 //               engineName,
 //               statusCode,
 //               responseString);
-//           throw new RuntimeException(
+//           throw new OptimizeRuntimeException(
 //               "Something really bad happened during engine deployment, please check the logs.");
 //       }
 //     } catch (IOException e) {
@@ -65,7 +64,7 @@
 //       throw new OptimizeIntegrationTestException(message, e);
 //     }
 //   }
-// 
+//
 //   @SneakyThrows
 //   public void cleanEngine(final String engineName) {
 //     log.info("Start cleaning engine");
@@ -76,7 +75,7 @@
 //                 .build());
 //     try (CloseableHttpResponse response = httpClient.execute(purgeRequest)) {
 //       if (response.getStatusLine().getStatusCode() != Response.Status.OK.getStatusCode()) {
-//         throw new RuntimeException(
+//         throw new OptimizeRuntimeException(
 //             "Something really bad happened during purge, please check the logs.");
 //       }
 //       log.info("Finished cleaning engine");

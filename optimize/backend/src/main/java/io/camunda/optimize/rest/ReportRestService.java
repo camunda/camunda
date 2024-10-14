@@ -48,10 +48,8 @@ import jakarta.ws.rs.core.MediaType;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Path("/report")
 @Component
 public class ReportRestService {
@@ -61,6 +59,17 @@ public class ReportRestService {
   private final SessionService sessionService;
   private final ReportRestMapper reportRestMapper;
 
+  public ReportRestService(
+      final ReportService reportService,
+      final ReportEvaluationService reportEvaluationService,
+      final SessionService sessionService,
+      final ReportRestMapper reportRestMapper) {
+    this.reportService = reportService;
+    this.reportEvaluationService = reportEvaluationService;
+    this.sessionService = sessionService;
+    this.reportRestMapper = reportRestMapper;
+  }
+
   @POST
   @Path("/process/single/")
   @Produces(MediaType.APPLICATION_JSON)
@@ -68,7 +77,7 @@ public class ReportRestService {
   public IdResponseDto createNewSingleProcessReport(
       @Context final ContainerRequestContext requestContext,
       @Valid final SingleProcessReportDefinitionRequestDto definition) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     if (definition != null
         && definition.getData() != null
         && (definition.getData().isManagementReport()
@@ -88,7 +97,7 @@ public class ReportRestService {
   public IdResponseDto createNewSingleDecisionReport(
       @Context final ContainerRequestContext requestContext,
       @Valid final SingleDecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return reportService.createNewSingleDecisionReport(
         userId,
         Optional.ofNullable(singleDecisionReportDefinitionDto)
@@ -101,8 +110,8 @@ public class ReportRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public IdResponseDto createNewCombinedProcessReport(
       @Context final ContainerRequestContext requestContext,
-      CombinedReportDefinitionRequestDto combinedReportDefinitionDto) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      final CombinedReportDefinitionRequestDto combinedReportDefinitionDto) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return reportService.createNewCombinedProcessReport(
         userId,
         Optional.ofNullable(combinedReportDefinitionDto)
@@ -113,11 +122,11 @@ public class ReportRestService {
   @Path("/{id}/copy")
   @Produces(MediaType.APPLICATION_JSON)
   public IdResponseDto copyReport(
-      @Context ContainerRequestContext requestContext,
-      @PathParam("id") String id,
+      @Context final ContainerRequestContext requestContext,
+      @PathParam("id") final String id,
       @QueryParam("collectionId") String collectionId,
-      @QueryParam("name") String newReportName) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @QueryParam("name") final String newReportName) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     if (collectionId == null) {
       return reportService.copyReport(id, userId, newReportName);
     } else {
@@ -130,9 +139,9 @@ public class ReportRestService {
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   public List<AuthorizedReportDefinitionResponseDto> getAuthorizedPrivateReports(
-      @Context ContainerRequestContext requestContext) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    List<AuthorizedReportDefinitionResponseDto> reportDefinitions =
+      @Context final ContainerRequestContext requestContext) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    final List<AuthorizedReportDefinitionResponseDto> reportDefinitions =
         reportService.findAndFilterPrivateReports(userId);
     reportDefinitions.forEach(
         authorizedReportDefinitionDto ->
@@ -146,9 +155,10 @@ public class ReportRestService {
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
   public AuthorizedReportDefinitionResponseDto getReport(
-      @Context ContainerRequestContext requestContext, @PathParam("id") String reportId) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    AuthorizedReportDefinitionResponseDto reportDefinition =
+      @Context final ContainerRequestContext requestContext,
+      @PathParam("id") final String reportId) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    final AuthorizedReportDefinitionResponseDto reportDefinition =
         reportService.getReportDefinition(reportId, userId);
     reportRestMapper.prepareLocalizedRestResponse(
         reportDefinition, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
@@ -160,10 +170,10 @@ public class ReportRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   public AuthorizedReportEvaluationResponseDto evaluateReportByIdWithFilters(
-      @Context ContainerRequestContext requestContext,
-      @PathParam("id") String reportId,
+      @Context final ContainerRequestContext requestContext,
+      @PathParam("id") final String reportId,
       @BeanParam @Valid final PaginationRequestDto paginationRequestDto,
-      AdditionalProcessReportEvaluationFilterDto reportEvaluationFilter) {
+      final AdditionalProcessReportEvaluationFilterDto reportEvaluationFilter) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     final ZoneId timezone = extractTimezone(requestContext);
     final AuthorizedReportEvaluationResult reportEvaluationResult =
@@ -182,10 +192,10 @@ public class ReportRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public AuthorizedReportEvaluationResponseDto evaluateProvidedReport(
-      @Context ContainerRequestContext requestContext,
-      @Valid @NotNull ReportDefinitionDto reportDefinitionDto,
+      @Context final ContainerRequestContext requestContext,
+      @Valid @NotNull final ReportDefinitionDto reportDefinitionDto,
       @BeanParam @Valid final PaginationRequestDto paginationRequestDto) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     if (reportDefinitionDto instanceof SingleProcessReportDefinitionRequestDto
         && ((SingleProcessReportDefinitionRequestDto) reportDefinitionDto)
             .getData()
@@ -212,7 +222,7 @@ public class ReportRestService {
       @PathParam("id") final String reportId,
       @QueryParam("force") final boolean force,
       @NotNull @Valid final SingleProcessReportDefinitionRequestDto updatedReport) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     final @Valid ProcessReportDataDto reportData = updatedReport.getData();
     if (reportData != null
         && (reportData.isManagementReport() || reportData.isInstantPreviewReport())) {
@@ -234,7 +244,7 @@ public class ReportRestService {
       @PathParam("id") final String reportId,
       @QueryParam("force") final boolean force,
       @NotNull @Valid final SingleDecisionReportDefinitionRequestDto updatedReport) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     updatedReport.setId(reportId);
     updatedReport.setLastModifier(userId);
     updatedReport.setLastModified(LocalDateUtil.getCurrentDateTime());
@@ -246,11 +256,11 @@ public class ReportRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public void updateCombinedProcessReport(
-      @Context ContainerRequestContext requestContext,
-      @PathParam("id") String reportId,
-      @QueryParam("force") boolean force,
-      @NotNull CombinedReportDefinitionRequestDto updatedReport) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @Context final ContainerRequestContext requestContext,
+      @PathParam("id") final String reportId,
+      @QueryParam("force") final boolean force,
+      @NotNull final CombinedReportDefinitionRequestDto updatedReport) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     updatedReport.setId(reportId);
     updatedReport.setLastModifier(userId);
     updatedReport.setLastModified(LocalDateUtil.getCurrentDateTime());
@@ -261,8 +271,9 @@ public class ReportRestService {
   @Path("/{id}/delete-conflicts")
   @Produces(MediaType.APPLICATION_JSON)
   public ConflictResponseDto getDeleteConflicts(
-      @Context ContainerRequestContext requestContext, @PathParam("id") String reportId) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @Context final ContainerRequestContext requestContext,
+      @PathParam("id") final String reportId) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return reportService.getReportDeleteConflictingItems(userId, reportId);
   }
 
@@ -270,10 +281,10 @@ public class ReportRestService {
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
   public void deleteReport(
-      @Context ContainerRequestContext requestContext,
-      @PathParam("id") String reportId,
-      @QueryParam("force") boolean force) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @Context final ContainerRequestContext requestContext,
+      @PathParam("id") final String reportId,
+      @QueryParam("force") final boolean force) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     reportService.deleteReportAsUser(userId, reportId, force);
   }
 }

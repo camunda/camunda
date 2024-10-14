@@ -26,16 +26,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch.core.UpdateRequest;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
 @Conditional(OpenSearchCondition.class)
 public class ProcessDefinitionWriterOS extends AbstractProcessDefinitionWriterOS
     implements ProcessDefinitionWriter {
@@ -47,6 +46,8 @@ public class ProcessDefinitionWriterOS extends AbstractProcessDefinitionWriterOS
   private static final Script MARK_AS_ONBOARDED_SCRIPT =
       OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams(
           "ctx._source.onboarded = true", Collections.emptyMap());
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ProcessDefinitionWriterOS.class);
 
   private final ConfigurationService configurationService;
 

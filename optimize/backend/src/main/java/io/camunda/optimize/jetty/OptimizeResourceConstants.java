@@ -10,12 +10,10 @@ package io.camunda.optimize.jetty;
 import com.google.common.collect.ImmutableList;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationReloadable;
-import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Configuration;
 
-@NoArgsConstructor
 @Configuration
 public class OptimizeResourceConstants implements ConfigurationReloadable {
 
@@ -31,19 +29,21 @@ public class OptimizeResourceConstants implements ConfigurationReloadable {
   public static String ACTUATOR_ENDPOINT;
   public static int ACTUATOR_PORT;
 
+  public OptimizeResourceConstants() {}
+
   @Value("${management.endpoints.web.base-path:/actuator}")
-  public void setActuatorEndpointStatic(String endpoint) {
+  public void setActuatorEndpointStatic(final String endpoint) {
     OptimizeResourceConstants.ACTUATOR_ENDPOINT = endpoint;
   }
 
   @Value("${" + ACTUATOR_PORT_PROPERTY_KEY + ":" + ACTUATOR_PORT_DEFAULT + "}")
-  public void setActuatorPortStatic(int port) {
+  public void setActuatorPortStatic(final int port) {
     OptimizeResourceConstants.ACTUATOR_PORT = port;
   }
 
   @Override
-  public void reloadConfiguration(ApplicationContext context) {
-    String configuredPort =
+  public void reloadConfiguration(final ApplicationContext context) {
+    final String configuredPort =
         context.getEnvironment().getProperty(ACTUATOR_PORT_PROPERTY_KEY, ACTUATOR_PORT_DEFAULT);
     try {
       setActuatorPortStatic(Integer.parseInt(configuredPort));

@@ -13,14 +13,16 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
 @Provider
 // The priority is needed to make sure it takes precedence over the default Jackson mapper
 //  https://stackoverflow.com/a/45482110
 @Priority(1)
-@Slf4j
 public class JsonMappingExceptionMapper implements ExceptionMapper<JsonMappingException> {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(JsonMappingExceptionMapper.class);
 
   @Override
   public Response toResponse(final JsonMappingException exception) {

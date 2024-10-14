@@ -35,11 +35,7 @@ import io.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.function.Supplier;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 
-@AllArgsConstructor
-@Builder
 public class CollectionClient {
 
   public static final String DEFAULT_DEFINITION_KEY = "defaultScopeDefinitionKey";
@@ -48,6 +44,10 @@ public class CollectionClient {
   public static final String PRIVATE_COLLECTION_ID = null;
 
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
+
+  public CollectionClient(final Supplier<OptimizeRequestExecutor> requestExecutorSupplier) {
+    this.requestExecutorSupplier = requestExecutorSupplier;
+  }
 
   public String createNewCollectionForAllDefinitionTypes() {
     final String collectionId = createNewCollectionWithDefaultScope(PROCESS);
@@ -415,5 +415,33 @@ public class CollectionClient {
 
   private OptimizeRequestExecutor getRequestExecutor() {
     return requestExecutorSupplier.get();
+  }
+
+  public static CollectionClientBuilder builder() {
+    return new CollectionClientBuilder();
+  }
+
+  public static class CollectionClientBuilder {
+
+    private Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
+
+    CollectionClientBuilder() {}
+
+    public CollectionClientBuilder requestExecutorSupplier(
+        final Supplier<OptimizeRequestExecutor> requestExecutorSupplier) {
+      this.requestExecutorSupplier = requestExecutorSupplier;
+      return this;
+    }
+
+    public CollectionClient build() {
+      return new CollectionClient(requestExecutorSupplier);
+    }
+
+    @Override
+    public String toString() {
+      return "CollectionClient.CollectionClientBuilder(requestExecutorSupplier="
+          + requestExecutorSupplier
+          + ")";
+    }
   }
 }

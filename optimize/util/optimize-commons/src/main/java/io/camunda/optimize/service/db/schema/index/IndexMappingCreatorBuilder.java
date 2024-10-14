@@ -7,18 +7,15 @@
  */
 package io.camunda.optimize.service.db.schema.index;
 
+import co.elastic.clients.elasticsearch.indices.IndexSettings.Builder;
 import io.camunda.optimize.service.db.es.schema.index.DecisionInstanceIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import io.camunda.optimize.service.db.os.schema.index.DecisionInstanceIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ProcessInstanceIndexOS;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import java.util.function.Function;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 import org.opensearch.client.opensearch.indices.IndexSettings;
 
-@AllArgsConstructor
-@Getter
 public enum IndexMappingCreatorBuilder {
   DECISION_INSTANCE_INDEX(DecisionInstanceIndexES::new, DecisionInstanceIndexOS::new),
   PROCESS_INSTANCE_INDEX(ProcessInstanceIndexES::new, ProcessInstanceIndexOS::new);
@@ -28,4 +25,19 @@ public enum IndexMappingCreatorBuilder {
           IndexMappingCreator<co.elastic.clients.elasticsearch.indices.IndexSettings.Builder>>
       elasticsearch;
   private final Function<String, IndexMappingCreator<IndexSettings.Builder>> opensearch;
+
+  private IndexMappingCreatorBuilder(
+      Function<String, IndexMappingCreator<Builder>> elasticsearch,
+      Function<String, IndexMappingCreator<IndexSettings.Builder>> opensearch) {
+    this.elasticsearch = elasticsearch;
+    this.opensearch = opensearch;
+  }
+
+  public Function<String, IndexMappingCreator<Builder>> getElasticsearch() {
+    return this.elasticsearch;
+  }
+
+  public Function<String, IndexMappingCreator<IndexSettings.Builder>> getOpensearch() {
+    return this.opensearch;
+  }
 }

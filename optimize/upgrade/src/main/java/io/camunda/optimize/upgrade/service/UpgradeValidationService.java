@@ -15,19 +15,28 @@ import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Objects;
-import lombok.AllArgsConstructor;
-import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@AllArgsConstructor
-@Slf4j
 public class UpgradeValidationService {
+
   private static final String ENVIRONMENT_CONFIG_FILE = "environment-config.yaml";
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(UpgradeValidationService.class);
+
+  public UpgradeValidationService() {}
 
   public void validateSchemaVersions(
-      @NonNull final String schemaVersion,
-      @NonNull final String fromVersion,
-      @NonNull final String toVersion) {
+      final String schemaVersion, final String fromVersion, final String toVersion) {
+    if (schemaVersion == null) {
+      throw new UpgradeRuntimeException("Schema version cannot be null");
+    }
+    if (fromVersion == null) {
+      throw new UpgradeRuntimeException("From version cannot be null");
+    }
+    if (toVersion == null) {
+      throw new UpgradeRuntimeException("To version cannot be null");
+    }
+
     try {
       if (!(Objects.equals(fromVersion, schemaVersion)
           || Objects.equals(fromVersion, getMajorAndMinor(schemaVersion))

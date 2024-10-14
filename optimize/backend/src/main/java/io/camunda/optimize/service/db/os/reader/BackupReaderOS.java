@@ -32,8 +32,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.ShardFailure;
@@ -41,16 +39,23 @@ import org.opensearch.client.opensearch.snapshot.GetRepositoryRequest;
 import org.opensearch.client.opensearch.snapshot.GetSnapshotRequest;
 import org.opensearch.client.opensearch.snapshot.GetSnapshotResponse;
 import org.opensearch.client.opensearch.snapshot.SnapshotInfo;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 @Conditional(OpenSearchCondition.class)
 public class BackupReaderOS extends AbstractBackupReader {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(BackupReaderOS.class);
   private final ConfigurationService configurationService;
   private final OptimizeOpenSearchClient osClient;
+
+  public BackupReaderOS(
+      ConfigurationService configurationService, OptimizeOpenSearchClient osClient) {
+    this.configurationService = configurationService;
+    this.osClient = osClient;
+  }
 
   @Override
   protected String getSnapshotRepositoryName() {

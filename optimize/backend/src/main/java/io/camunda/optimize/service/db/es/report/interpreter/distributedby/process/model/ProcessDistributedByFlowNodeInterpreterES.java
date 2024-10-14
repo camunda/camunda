@@ -23,19 +23,26 @@ import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCon
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class ProcessDistributedByFlowNodeInterpreterES
     extends AbstractProcessDistributedByModelElementInterpreterES {
-  @Getter private final ConfigurationService configurationService;
-  @Getter private final DefinitionService definitionService;
-  @Getter private final ProcessViewInterpreterFacadeES viewInterpreter;
+
+  private final ConfigurationService configurationService;
+  private final DefinitionService definitionService;
+  private final ProcessViewInterpreterFacadeES viewInterpreter;
+
+  public ProcessDistributedByFlowNodeInterpreterES(
+      ConfigurationService configurationService,
+      DefinitionService definitionService,
+      ProcessViewInterpreterFacadeES viewInterpreter) {
+    this.configurationService = configurationService;
+    this.definitionService = definitionService;
+    this.viewInterpreter = viewInterpreter;
+  }
 
   @Override
   protected String getModelElementIdPath() {
@@ -52,5 +59,17 @@ public class ProcessDistributedByFlowNodeInterpreterES
   @Override
   public Set<ProcessDistributedBy> getSupportedDistributedBys() {
     return Set.of(PROCESS_DISTRIBUTED_BY_FLOW_NODE);
+  }
+
+  public ConfigurationService getConfigurationService() {
+    return this.configurationService;
+  }
+
+  public DefinitionService getDefinitionService() {
+    return this.definitionService;
+  }
+
+  public ProcessViewInterpreterFacadeES getViewInterpreter() {
+    return this.viewInterpreter;
   }
 }

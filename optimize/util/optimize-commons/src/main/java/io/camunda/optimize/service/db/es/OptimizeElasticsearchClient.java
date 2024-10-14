@@ -116,9 +116,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
-import lombok.Getter;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.http.HttpEntity;
@@ -128,6 +125,7 @@ import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
+import org.slf4j.Logger;
 import org.springframework.context.ApplicationContext;
 
 /**
@@ -140,12 +138,13 @@ import org.springframework.context.ApplicationContext;
  * <p>For low level operations it still exposes the underlying {@link ElasticsearchClient}, as well
  * as the {@link OptimizeIndexNameService}.
  */
-@Slf4j
 public class OptimizeElasticsearchClient extends DatabaseClient {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(OptimizeElasticsearchClient.class);
   private RestClient restClient;
   private final ObjectMapper objectMapper;
-  @Getter private ElasticsearchClient esClient;
+  private ElasticsearchClient esClient;
   private ElasticsearchAsyncClient elasticsearchAsyncClient;
   private TransportOptionsProvider transportOptionsProvider;
 
@@ -367,9 +366,12 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
   }
 
   @Override
-  @SneakyThrows
   public long countWithoutPrefix(final String unprefixedIndex) {
-    return countWithoutPrefix(CountRequest.of(c -> c.index(unprefixedIndex)));
+    try {
+      return countWithoutPrefix(CountRequest.of(c -> c.index(unprefixedIndex)));
+    } catch (IOException | InterruptedException e) {
+      throw new OptimizeRuntimeException(e);
+    }
   }
 
   public long countWithoutPrefix(final CountRequest request)
@@ -1062,5 +1064,9 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
   public final <T> SearchResponse<T> searchWithoutPrefixing(
       final SearchRequest searchRequest, final Class<T> clas) throws IOException {
     return esWithTransportOptions().search(searchRequest, clas);
+  }
+
+  public ElasticsearchClient getEsClient() {
+    return this.esClient;
   }
 }

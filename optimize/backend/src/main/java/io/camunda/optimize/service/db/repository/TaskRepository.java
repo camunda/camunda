@@ -14,12 +14,12 @@ import io.camunda.optimize.upgrade.es.TaskResponse;
 import jakarta.json.JsonObject;
 import java.io.IOException;
 import java.util.List;
-import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 
-@Slf4j
 public abstract class TaskRepository {
+
   protected static final String TASKS_ENDPOINT = "_tasks";
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(TaskRepository.class);
 
   public record TaskProgressInfo(int progress, long totalCount, long processedCount) {}
 

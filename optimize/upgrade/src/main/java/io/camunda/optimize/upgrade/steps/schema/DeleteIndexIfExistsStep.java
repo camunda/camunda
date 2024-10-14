@@ -11,15 +11,12 @@ import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
 import io.camunda.optimize.upgrade.steps.UpgradeStep;
 import io.camunda.optimize.upgrade.steps.UpgradeStepType;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
 
-@EqualsAndHashCode(callSuper = true)
 public class DeleteIndexIfExistsStep extends UpgradeStep {
 
   // This should be the name of the index without prefix and without version suffix
-  @Getter private final String indexName;
-  @Getter private final int indexVersion;
+  private final String indexName;
+  private final int indexVersion;
 
   public DeleteIndexIfExistsStep(final String indexName, final int indexVersion) {
     super(null);
@@ -45,5 +42,53 @@ public class DeleteIndexIfExistsStep extends UpgradeStep {
   @Override
   public UpgradeStepType getType() {
     return UpgradeStepType.SCHEMA_DELETE_INDEX;
+  }
+
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof DeleteIndexIfExistsStep)) {
+      return false;
+    }
+    final DeleteIndexIfExistsStep other = (DeleteIndexIfExistsStep) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final Object this$indexName = this.indexName;
+    final Object other$indexName = other.indexName;
+    if (this$indexName == null
+        ? other$indexName != null
+        : !this$indexName.equals(other$indexName)) {
+      return false;
+    }
+    if (this.indexVersion != other.indexVersion) {
+      return false;
+    }
+    return true;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof DeleteIndexIfExistsStep;
+  }
+
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = super.hashCode();
+    final Object $indexName = this.indexName;
+    result = result * PRIME + ($indexName == null ? 43 : $indexName.hashCode());
+    result = result * PRIME + this.indexVersion;
+    return result;
+  }
+
+  public String getIndexName() {
+    return this.indexName;
+  }
+
+  public int getIndexVersion() {
+    return this.indexVersion;
   }
 }

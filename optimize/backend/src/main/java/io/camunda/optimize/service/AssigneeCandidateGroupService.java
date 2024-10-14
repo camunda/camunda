@@ -25,6 +25,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinition
 import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import io.camunda.optimize.service.db.reader.AssigneeAndCandidateGroupsReader;
+import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.identity.UserTaskIdentityService;
 import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
@@ -38,23 +39,32 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
-@Slf4j
 @Component
 public class AssigneeCandidateGroupService {
 
   public static final IdentityType ASSIGNEE_IDENTITY_TYPE = IdentityType.USER;
   private static final IdentityType CANDIDATE_GROUP_IDENTITY_TYPE = IdentityType.GROUP;
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(AssigneeCandidateGroupService.class);
 
   private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
   private final AssigneeAndCandidateGroupsReader assigneeAndCandidateGroupsReader;
   private final UserTaskIdentityService userTaskIdentityService;
   private final ReportService reportService;
+
+  public AssigneeCandidateGroupService(
+      final DataSourceDefinitionAuthorizationService definitionAuthorizationService,
+      final AssigneeAndCandidateGroupsReader assigneeAndCandidateGroupsReader,
+      final UserTaskIdentityService userTaskIdentityService,
+      final ReportService reportService) {
+    this.definitionAuthorizationService = definitionAuthorizationService;
+    this.assigneeAndCandidateGroupsReader = assigneeAndCandidateGroupsReader;
+    this.userTaskIdentityService = userTaskIdentityService;
+    this.reportService = reportService;
+  }
 
   public Optional<IdentityWithMetadataResponseDto> getIdentityByIdAndType(
       final String id, final IdentityType type) {
@@ -69,8 +79,14 @@ public class AssigneeCandidateGroupService {
   }
 
   public IdentitySearchResultResponseDto searchForAssigneesAsUser(
-      @NonNull final String userId,
-      @NonNull final AssigneeCandidateGroupDefinitionSearchRequestDto requestDto) {
+      final String userId, final AssigneeCandidateGroupDefinitionSearchRequestDto requestDto) {
+    if (userId == null) {
+      throw new OptimizeRuntimeException("userId is null");
+    }
+    if (requestDto == null) {
+      throw new OptimizeRuntimeException("requestDto is null");
+    }
+
     return searchForAssignees(
         requestDto.getLimit(),
         requestDto.getTerms().orElse(""),
@@ -79,8 +95,14 @@ public class AssigneeCandidateGroupService {
   }
 
   public IdentitySearchResultResponseDto searchForAssigneesAsUser(
-      @NonNull final String userId,
-      @NonNull final AssigneeCandidateGroupReportSearchRequestDto requestDto) {
+      final String userId, final AssigneeCandidateGroupReportSearchRequestDto requestDto) {
+    if (userId == null) {
+      throw new OptimizeRuntimeException("userId is null");
+    }
+    if (requestDto == null) {
+      throw new OptimizeRuntimeException("requestDto is null");
+    }
+
     return searchForAssignees(
         requestDto.getLimit(),
         requestDto.getTerms().orElse(""),
@@ -97,8 +119,14 @@ public class AssigneeCandidateGroupService {
   }
 
   public IdentitySearchResultResponseDto searchForCandidateGroupsAsUser(
-      @NonNull final String userId,
-      @NonNull final AssigneeCandidateGroupDefinitionSearchRequestDto requestDto) {
+      final String userId, final AssigneeCandidateGroupDefinitionSearchRequestDto requestDto) {
+    if (userId == null) {
+      throw new OptimizeRuntimeException("userId is null");
+    }
+    if (requestDto == null) {
+      throw new OptimizeRuntimeException("requestDto is null");
+    }
+
     return searchForCandidateGroups(
         requestDto.getLimit(),
         requestDto.getTerms().orElse(""),
@@ -107,8 +135,14 @@ public class AssigneeCandidateGroupService {
   }
 
   public IdentitySearchResultResponseDto searchForCandidateGroupsAsUser(
-      @NonNull final String userId,
-      @NonNull final AssigneeCandidateGroupReportSearchRequestDto requestDto) {
+      final String userId, final AssigneeCandidateGroupReportSearchRequestDto requestDto) {
+    if (userId == null) {
+      throw new OptimizeRuntimeException("userId is null");
+    }
+    if (requestDto == null) {
+      throw new OptimizeRuntimeException("requestDto is null");
+    }
+
     return searchForCandidateGroups(
         requestDto.getLimit(),
         requestDto.getTerms().orElse(""),
@@ -117,8 +151,15 @@ public class AssigneeCandidateGroupService {
 
   private IdentitySearchResultResponseDto searchForAssignees(
       final int limit,
-      @NonNull final String terms,
-      @NonNull final Map<String, Set<String>> definitionKeyToTenantsMap) {
+      final String terms,
+      final Map<String, Set<String>> definitionKeyToTenantsMap) {
+    if (terms == null) {
+      throw new OptimizeRuntimeException("terms is null");
+    }
+    if (definitionKeyToTenantsMap == null) {
+      throw new OptimizeRuntimeException("definitionKeyToTenantsMap is null");
+    }
+
     // this is not efficient but a compromise assuming assignee cardinality is usually within a
     // handleable frame
     // and that the effort to enrich the cache data with the definition scope is for now too complex
@@ -131,8 +172,15 @@ public class AssigneeCandidateGroupService {
 
   private IdentitySearchResultResponseDto searchForCandidateGroups(
       final int limit,
-      @NonNull final String terms,
-      @NonNull final Map<String, Set<String>> definitionKeyToTenantsMap) {
+      final String terms,
+      final Map<String, Set<String>> definitionKeyToTenantsMap) {
+    if (terms == null) {
+      throw new OptimizeRuntimeException("terms is null");
+    }
+    if (definitionKeyToTenantsMap == null) {
+      throw new OptimizeRuntimeException("definitionKeyToTenantsMap is null");
+    }
+
     // this is not efficient but a compromise assuming assignee cardinality is usually within a
     // handleable frame
     // and that the effort to enrich the cache data with the definition scope is for now too complex
@@ -144,7 +192,14 @@ public class AssigneeCandidateGroupService {
   }
 
   private Map<String, Set<String>> retrieveAuthorizedDefinitionTenantMap(
-      @NonNull final String userId, @NonNull final List<String> reportIds) {
+      final String userId, final List<String> reportIds) {
+    if (userId == null) {
+      throw new OptimizeRuntimeException("userId is null");
+    }
+    if (reportIds == null) {
+      throw new OptimizeRuntimeException("reportIds is null");
+    }
+
     final List<ReportDefinitionDto> reports =
         reportService.getAllAuthorizedReportsForIds(userId, reportIds);
     // Add all single reports contained within combined reports
@@ -175,9 +230,17 @@ public class AssigneeCandidateGroupService {
   }
 
   private Map<String, Set<String>> validateAccessAndCreateDefinitionTenantMap(
-      @NonNull final String userId,
-      @NonNull final String definitionKey,
-      @NonNull final List<String> tenantIds) {
+      final String userId, final String definitionKey, final List<String> tenantIds) {
+    if (userId == null) {
+      throw new OptimizeRuntimeException("userId is null");
+    }
+    if (definitionKey == null) {
+      throw new OptimizeRuntimeException("definitionKey is null");
+    }
+    if (tenantIds == null) {
+      throw new OptimizeRuntimeException("tenantIds is null");
+    }
+
     validateDefinitionAccess(userId, definitionKey, tenantIds);
     final Map<String, Set<String>> definitionKeyToTenantsMap = new HashMap<>();
     definitionKeyToTenantsMap.put(definitionKey, Sets.newHashSet(tenantIds));
@@ -185,9 +248,11 @@ public class AssigneeCandidateGroupService {
   }
 
   private void validateDefinitionAccess(
-      final @NonNull String userId,
-      final String processDefinitionKey,
-      final List<String> tenantIds) {
+      final String userId, final String processDefinitionKey, final List<String> tenantIds) {
+    if (userId == null) {
+      throw new OptimizeRuntimeException("userId is null");
+    }
+
     if (!definitionAuthorizationService.isAuthorizedToAccessDefinition(
         userId, DefinitionType.PROCESS, processDefinitionKey, tenantIds)) {
       throw new ForbiddenException(

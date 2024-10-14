@@ -18,20 +18,18 @@ import io.camunda.optimize.service.identity.AbstractIdentityService;
 import io.camunda.optimize.service.util.RootUrlGenerator;
 import java.util.Map;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
-import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 public class OnboardingEmailNotificationService {
 
   public static final String DASHBOARD_LINK_TEMPLATE = "%s/dashboard/instant/%s";
   public static final String EMAIL_SUBJECT =
       "You've got insights from Optimize for your new process";
   private static final String ONBOARDING_EMAIL_TEMPLATE = "onboardingEmailTemplate.ftl";
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(OnboardingEmailNotificationService.class);
 
   private final EmailService emailService;
   private final ProcessOverviewReader processOverviewReader;
@@ -39,15 +37,32 @@ public class OnboardingEmailNotificationService {
   private final DefinitionService definitionService;
   private final RootUrlGenerator rootUrlGenerator;
 
-  public void sendOnboardingEmailWithErrorHandling(@NonNull final String processKey) {
+  public OnboardingEmailNotificationService(
+      final EmailService emailService,
+      final ProcessOverviewReader processOverviewReader,
+      final AbstractIdentityService identityService,
+      final DefinitionService definitionService,
+      final RootUrlGenerator rootUrlGenerator) {
+    this.emailService = emailService;
+    this.processOverviewReader = processOverviewReader;
+    this.identityService = identityService;
+    this.definitionService = definitionService;
+    this.rootUrlGenerator = rootUrlGenerator;
+  }
+
+  public void sendOnboardingEmailWithErrorHandling(final String processKey) {
+    if (processKey == null) {
+      throw new IllegalArgumentException("processKey must not be null");
+    }
+
     final Optional<ProcessOverviewDto> optProcessOverview =
         processOverviewReader.getProcessOverviewByKey(processKey);
     if (optProcessOverview.isPresent()) {
-      ProcessOverviewDto overviewDto = optProcessOverview.get();
-      String ownerId = overviewDto.getOwner();
+      final ProcessOverviewDto overviewDto = optProcessOverview.get();
+      final String ownerId = overviewDto.getOwner();
       final Optional<UserDto> optProcessOwner = identityService.getUserById(ownerId);
       if (optProcessOwner.isPresent()) {
-        UserDto processOwner = optProcessOwner.get();
+        final UserDto processOwner = optProcessOwner.get();
         final String definitionName =
             definitionService
                 .getLatestCachedDefinitionOnAnyTenant(
@@ -88,7 +103,7 @@ public class OnboardingEmailNotificationService {
   }
 
   public String generateDashboardLinkForProcess(final String processKey) {
-    String rootUrl = rootUrlGenerator.getRootUrl() + "/#";
+    final String rootUrl = rootUrlGenerator.getRootUrl() + "/#";
     return String.format(DASHBOARD_LINK_TEMPLATE, rootUrl, processKey);
   }
 }

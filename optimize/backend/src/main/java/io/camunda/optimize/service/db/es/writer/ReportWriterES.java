@@ -58,29 +58,45 @@ import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
-import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class ReportWriterES implements ReportWriter {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ReportWriterES.class);
   private final ObjectMapper objectMapper;
   private final OptimizeElasticsearchClient esClient;
   private final TaskRepositoryES taskRepositoryES;
 
+  public ReportWriterES(
+      ObjectMapper objectMapper,
+      OptimizeElasticsearchClient esClient,
+      TaskRepositoryES taskRepositoryES) {
+    this.objectMapper = objectMapper;
+    this.esClient = esClient;
+    this.taskRepositoryES = taskRepositoryES;
+  }
+
   @Override
   public IdResponseDto createNewCombinedReport(
-      @NonNull final String userId,
-      @NonNull final CombinedReportDataDto reportData,
-      @NonNull final String reportName,
+      final String userId,
+      final CombinedReportDataDto reportData,
+      final String reportName,
       final String description,
       final String collectionId) {
+    if (userId == null) {
+      throw new OptimizeRuntimeException("userId is null");
+    }
+    if (reportData == null) {
+      throw new OptimizeRuntimeException("reportData is null");
+    }
+    if (reportName == null) {
+      throw new OptimizeRuntimeException("reportName is null");
+    }
+
     log.debug("Writing new combined report to Elasticsearch");
     final String id = IdGenerator.getNextId();
     final CombinedReportDefinitionRequestDto reportDefinitionDto =
@@ -124,11 +140,18 @@ public class ReportWriterES implements ReportWriter {
   @Override
   public IdResponseDto createNewSingleProcessReport(
       final String userId,
-      @NonNull final ProcessReportDataDto reportData,
-      @NonNull final String reportName,
+      final ProcessReportDataDto reportData,
+      final String reportName,
       final String description,
       final String collectionId) {
     log.debug("Writing new single report to Elasticsearch");
+
+    if (reportData == null) {
+      throw new OptimizeRuntimeException("reportData is null");
+    }
+    if (reportName == null) {
+      throw new OptimizeRuntimeException("reportName is null");
+    }
 
     final String id = IdGenerator.getNextId();
     final SingleProcessReportDefinitionRequestDto reportDefinitionDto =
@@ -171,12 +194,22 @@ public class ReportWriterES implements ReportWriter {
 
   @Override
   public IdResponseDto createNewSingleDecisionReport(
-      @NonNull final String userId,
-      @NonNull final DecisionReportDataDto reportData,
-      @NonNull final String reportName,
+      final String userId,
+      final DecisionReportDataDto reportData,
+      final String reportName,
       final String description,
       final String collectionId) {
     log.debug("Writing new single report to Elasticsearch");
+
+    if (userId == null) {
+      throw new OptimizeRuntimeException("userId is null");
+    }
+    if (reportData == null) {
+      throw new OptimizeRuntimeException("reportData is null");
+    }
+    if (reportName == null) {
+      throw new OptimizeRuntimeException("reportName is null");
+    }
 
     final String id = IdGenerator.getNextId();
     final SingleDecisionReportDefinitionRequestDto reportDefinitionDto =

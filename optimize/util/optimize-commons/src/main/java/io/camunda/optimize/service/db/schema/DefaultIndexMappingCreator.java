@@ -18,7 +18,6 @@ import io.camunda.optimize.service.db.es.schema.PropertiesAppender;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.io.IOException;
 import java.util.Map;
-import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +30,7 @@ public abstract class DefaultIndexMappingCreator<TBuilder>
   protected static final String ANALYZER = "analyzer";
   protected static final String NORMALIZER = "normalizer";
 
-  @Setter private DynamicMapping dynamic = DynamicMapping.Strict;
+  private DynamicMapping dynamic = DynamicMapping.Strict;
 
   public abstract TBuilder addStaticSetting(final String key, final int value, TBuilder builder)
       throws IOException;
@@ -67,5 +66,9 @@ public abstract class DefaultIndexMappingCreator<TBuilder>
                     t.matchMappingType("string")
                         .mapping(m -> m.keyword(k -> k.indexOptions(IndexOptions.Docs)))
                         .pathMatch("*"))));
+  }
+
+  public void setDynamic(DynamicMapping dynamic) {
+    this.dynamic = dynamic;
   }
 }

@@ -13,7 +13,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
-import lombok.AllArgsConstructor;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
@@ -21,13 +20,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Conditional;
 
-@AllArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public abstract class AbstractProcessDefinitionWriterOS {
 
   protected final Logger log = LoggerFactory.getLogger(getClass());
   protected final ObjectMapper objectMapper;
   protected final OptimizeOpenSearchClient osClient;
+
+  public AbstractProcessDefinitionWriterOS(
+      final ObjectMapper objectMapper, final OptimizeOpenSearchClient osClient) {
+    this.objectMapper = objectMapper;
+    this.osClient = osClient;
+  }
 
   abstract Script createUpdateScript(ProcessDefinitionOptimizeDto processDefinitionDtos);
 

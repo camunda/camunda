@@ -20,19 +20,17 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
 public class CollectionDefinitionDto extends BaseCollectionDefinitionDto<CollectionDataDto> {
 
   public CollectionDefinitionDto(
-      CollectionDataDto data,
-      OffsetDateTime created,
-      String id,
-      String name,
-      OffsetDateTime lastModified,
-      String lastModifier,
-      String owner) {
+      final CollectionDataDto data,
+      final OffsetDateTime created,
+      final String id,
+      final String name,
+      final OffsetDateTime lastModified,
+      final String lastModifier,
+      final String owner) {
     super();
     this.data = data;
     this.created = created;
@@ -41,8 +39,10 @@ public class CollectionDefinitionDto extends BaseCollectionDefinitionDto<Collect
     this.lastModified = lastModified;
     this.lastModifier = lastModifier;
     this.owner = owner;
-    this.automaticallyCreated = false;
+    automaticallyCreated = false;
   }
+
+  public CollectionDefinitionDto() {}
 
   public EntityResponseDto toEntityDto(final RoleType roleType) {
     return new EntityResponseDto(

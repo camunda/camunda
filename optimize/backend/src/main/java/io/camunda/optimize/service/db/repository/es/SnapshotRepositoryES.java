@@ -23,18 +23,23 @@ import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCon
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class SnapshotRepositoryES implements SnapshotRepository {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(SnapshotRepositoryES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
+
+  public SnapshotRepositoryES(
+      OptimizeElasticsearchClient esClient, ConfigurationService configurationService) {
+    this.esClient = esClient;
+    this.configurationService = configurationService;
+  }
 
   @Override
   public void deleteOptimizeSnapshots(final Long backupId) {

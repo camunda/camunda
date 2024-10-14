@@ -32,17 +32,20 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Conditional(ElasticSearchCondition.class)
-@RequiredArgsConstructor
 @Component
-@Slf4j
 public class MinMaxStatsServiceES extends AbstractMinMaxStatsService {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(MinMaxStatsServiceES.class);
   private final OptimizeElasticsearchClient esClient;
+
+  public MinMaxStatsServiceES(OptimizeElasticsearchClient esClient) {
+    this.esClient = esClient;
+  }
 
   public MinMaxStatDto getMinMaxDateRange(
       final ExecutionContext<? extends SingleReportDataDto, ?> context,

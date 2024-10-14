@@ -7,14 +7,73 @@
  */
 package io.camunda.optimize.dto.engine;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-
-@Data
-@EqualsAndHashCode(of = {"id"})
 public class EngineGroupDto {
 
   private String id;
   private String name;
   private String type;
+
+  public EngineGroupDto() {}
+
+  public String getId() {
+    return id;
+  }
+
+  public void setId(final String id) {
+    this.id = id;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(final String name) {
+    this.name = name;
+  }
+
+  public String getType() {
+    return type;
+  }
+
+  public void setType(final String type) {
+    this.type = type;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof EngineGroupDto;
+  }
+
+  @Override
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = 1;
+    final Object $id = getId();
+    result = result * PRIME + ($id == null ? 43 : $id.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof EngineGroupDto)) {
+      return false;
+    }
+    final EngineGroupDto other = (EngineGroupDto) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    final Object this$id = getId();
+    final Object other$id = other.getId();
+    if (this$id == null ? other$id != null : !this$id.equals(other$id)) {
+      return false;
+    }
+    return true;
+  }
+
+  @Override
+  public String toString() {
+    return "EngineGroupDto(id=" + getId() + ", name=" + getName() + ", type=" + getType() + ")";
+  }
 }

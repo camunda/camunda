@@ -27,7 +27,6 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.IntStream;
-import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -52,7 +51,6 @@ public class ZeebeRecordFetcherTest {
   @Mock SearchResponse searchResponse;
 
   @Test
-  @SneakyThrows
   public void testFetchFailsTriggersDynamicBatchResizing() {
     // given
     when(configurationService.getConfiguredZeebe().getMaxImportPageSize())
@@ -67,8 +65,12 @@ public class ZeebeRecordFetcherTest {
     assertThat(underTest.getDynamicBatchSize()).isEqualTo(TEST_CONFIGURED_BATCH_SIZE);
     assertThat(underTest.getConsecutiveSuccessfulFetches()).isZero();
     // and search requests fail with an IOException
-    when(optimizeElasticsearchClient.searchWithoutPrefixing(any(), any()))
-        .thenThrow(IOException.class);
+    try {
+      when(optimizeElasticsearchClient.searchWithoutPrefixing(any(), any()))
+          .thenThrow(IOException.class);
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException(e);
+    }
 
     // when the next import is attempted
     triggerFailedFetchAttempt();
@@ -108,8 +110,12 @@ public class ZeebeRecordFetcherTest {
       when(mockedShardStatistics.failed()).thenReturn(0);
       when(mockedShardStatistics.successful()).thenReturn(0);
       when(searchResponse.shards()).thenReturn(mockedShardStatistics);
-      when(optimizeElasticsearchClient.searchWithoutPrefixing(any(), any()))
-          .thenReturn(searchResponse);
+      try {
+        when(optimizeElasticsearchClient.searchWithoutPrefixing(any(), any()))
+            .thenReturn(searchResponse);
+      } catch (IOException e) {
+        throw new OptimizeRuntimeException(e);
+      }
 
       // when the next import is attempted
       underTest.getZeebeRecordsForPrefixAndPartitionFrom(new PositionBasedImportPage());
@@ -195,7 +201,6 @@ public class ZeebeRecordFetcherTest {
   }
 
   @Test
-  @SneakyThrows
   public void testThatEmptyPageFetchesAreTrackedCorrectly() {
     // given
     when(configurationService.getConfiguredZeebe().getImportConfig().getMaxEmptyPagesToImport())
@@ -217,8 +222,12 @@ public class ZeebeRecordFetcherTest {
       when(mockedShardStatistics.failed()).thenReturn(0);
       when(mockedShardStatistics.successful()).thenReturn(0);
       when(searchResponse.shards()).thenReturn(mockedShardStatistics);
-      when(optimizeElasticsearchClient.searchWithoutPrefixing(any(), any()))
-          .thenReturn(searchResponse);
+      try {
+        when(optimizeElasticsearchClient.searchWithoutPrefixing(any(), any()))
+            .thenReturn(searchResponse);
+      } catch (IOException e) {
+        throw new OptimizeRuntimeException(e);
+      }
 
       // when the next import is attempted
       triggerFetchAttemptForEmptyPage();

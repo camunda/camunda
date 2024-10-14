@@ -14,15 +14,16 @@ import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.service.db.schema.MappingMetadataUtil;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.Collection;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch.indices.IndexSettings.Builder;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
 @Conditional(OpenSearchCondition.class)
 public class MappingMetadataUtilOS extends MappingMetadataUtil<Builder> {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(MappingMetadataUtilOS.class);
 
   public MappingMetadataUtilOS(OptimizeOpenSearchClient dbClient) {
     super(dbClient);

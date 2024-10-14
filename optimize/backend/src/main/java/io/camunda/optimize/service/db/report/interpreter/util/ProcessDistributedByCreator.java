@@ -19,11 +19,10 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.
 import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.value.DateDistributedByValueDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.value.VariableDistributedByValueDto;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ProcessDistributedByCreator {
+
+  private ProcessDistributedByCreator() {}
 
   public static NoneDistributedByDto createDistributedByNone() {
     return new NoneDistributedByDto();
@@ -46,28 +45,28 @@ public class ProcessDistributedByCreator {
   }
 
   public static VariableDistributedByDto createDistributedByVariable(
-      String variableName, VariableType variableType) {
-    VariableDistributedByValueDto distributedByValueDto = new VariableDistributedByValueDto();
+      final String variableName, final VariableType variableType) {
+    final VariableDistributedByValueDto distributedByValueDto = new VariableDistributedByValueDto();
     distributedByValueDto.setName(variableName);
     distributedByValueDto.setType(variableType);
-    VariableDistributedByDto distributedByDto = new VariableDistributedByDto();
+    final VariableDistributedByDto distributedByDto = new VariableDistributedByDto();
     distributedByDto.setValue(distributedByValueDto);
     return distributedByDto;
   }
 
   public static StartDateDistributedByDto createDistributedByStartDateDto(
-      AggregateByDateUnit dateInterval) {
-    StartDateDistributedByDto distributedBy = new StartDateDistributedByDto();
-    DateDistributedByValueDto distributedByValueDto = new DateDistributedByValueDto();
+      final AggregateByDateUnit dateInterval) {
+    final StartDateDistributedByDto distributedBy = new StartDateDistributedByDto();
+    final DateDistributedByValueDto distributedByValueDto = new DateDistributedByValueDto();
     distributedByValueDto.setUnit(dateInterval);
     distributedBy.setValue(distributedByValueDto);
     return distributedBy;
   }
 
   public static EndDateDistributedByDto createDistributedByEndDateDto(
-      AggregateByDateUnit dateInterval) {
-    EndDateDistributedByDto distributedBy = new EndDateDistributedByDto();
-    DateDistributedByValueDto distributedByValueDto = new DateDistributedByValueDto();
+      final AggregateByDateUnit dateInterval) {
+    final EndDateDistributedByDto distributedBy = new EndDateDistributedByDto();
+    final DateDistributedByValueDto distributedByValueDto = new DateDistributedByValueDto();
     distributedByValueDto.setUnit(dateInterval);
     distributedBy.setValue(distributedByValueDto);
     return distributedBy;

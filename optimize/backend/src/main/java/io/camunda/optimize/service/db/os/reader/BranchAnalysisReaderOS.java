@@ -12,16 +12,17 @@ import io.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto
 import io.camunda.optimize.service.db.reader.BranchAnalysisReader;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.time.ZoneId;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 @Conditional(OpenSearchCondition.class)
 public class BranchAnalysisReaderOS implements BranchAnalysisReader {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(BranchAnalysisReaderOS.class);
+
+  public BranchAnalysisReaderOS() {}
 
   @Override
   public BranchAnalysisResponseDto branchAnalysis(

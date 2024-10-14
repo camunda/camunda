@@ -26,11 +26,10 @@ import io.camunda.optimize.upgrade.es.SchemaUpgradeClientES;
 import io.camunda.optimize.upgrade.os.SchemaUpgradeClientOS;
 import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import jakarta.ws.rs.NotSupportedException;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class SchemaUpgradeClientFactory {
+
+  private SchemaUpgradeClientFactory() {}
 
   public static SchemaUpgradeClient<?, ?> createSchemaUpgradeClient(
       final UpgradeExecutionDependencies upgradeDependencies) {

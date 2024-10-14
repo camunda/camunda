@@ -35,14 +35,15 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
 public class UserTaskIdentityService {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(UserTaskIdentityService.class);
   private final AbstractIdentityService identityService;
   // These caches hold the user/group IDs that we cannot find in the "real" identityCache and
   // identity provider. Since users can set any string as assignee/candidate group, these are

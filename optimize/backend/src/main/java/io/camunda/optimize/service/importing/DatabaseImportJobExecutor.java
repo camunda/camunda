@@ -14,11 +14,12 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
 public class DatabaseImportJobExecutor {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(DatabaseImportJobExecutor.class);
   private final ConfigurationService configurationService;
   private final String name;
   private ThreadPoolExecutor importExecutor;
@@ -98,6 +99,7 @@ public class DatabaseImportJobExecutor {
   }
 
   private static class BlockCallerUntilExecutorHasCapacity implements RejectedExecutionHandler {
+
     @Override
     public void rejectedExecution(final Runnable runnable, final ThreadPoolExecutor executor) {
       // this will block if the queue is full

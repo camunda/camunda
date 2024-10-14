@@ -13,16 +13,21 @@ import static io.camunda.optimize.service.util.SnapshotUtil.getSnapshotNameForNo
 import io.camunda.optimize.service.db.repository.MappingMetadataRepository;
 import io.camunda.optimize.service.db.repository.SnapshotRepository;
 import java.util.concurrent.CompletableFuture;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-@RequiredArgsConstructor
 public class BackupWriter {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(BackupWriter.class);
   private final MappingMetadataRepository mappingMetadataRepository;
   private final SnapshotRepository snapshotRepository;
+
+  public BackupWriter(
+      MappingMetadataRepository mappingMetadataRepository, SnapshotRepository snapshotRepository) {
+    this.mappingMetadataRepository = mappingMetadataRepository;
+    this.snapshotRepository = snapshotRepository;
+  }
 
   public void triggerSnapshotCreation(final Long backupId) {
     final String snapshot1Name = getSnapshotNameForImportIndices(backupId);

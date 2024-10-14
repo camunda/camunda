@@ -28,17 +28,19 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Optional;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchRequest.Builder;
 import org.opensearch.client.opensearch.core.SearchResponse;
+import org.slf4j.Logger;
 
-@Slf4j
 public abstract class AbstractExecutionPlanInterpreterOS<
         DATA extends SingleReportDataDto, PLAN extends ExecutionPlan>
     implements ExecutionPlanInterpreter<DATA, PLAN> {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(AbstractExecutionPlanInterpreterOS.class);
 
   @Override
   public CommandEvaluationResult<Object> interpret(

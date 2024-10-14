@@ -20,14 +20,14 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.opensearch.client.opensearch._types.aggregations.ExtendedBounds;
 import org.opensearch.client.opensearch._types.aggregations.FieldDateMath;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DateHistogramFilterUtilOS {
+
+  private DateHistogramFilterUtilOS() {}
+
   public static List<Query> createDecisionDateHistogramLimitingFilter(
       final DateAggregationContextOS context) {
     return context

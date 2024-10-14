@@ -14,17 +14,19 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Path("/token")
 @Component
-@Slf4j
 public class TokenRestService {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(TokenRestService.class);
   private final Optional<CloudSaasMetaInfoService> cloudSaasMetaInfoService;
+
+  public TokenRestService(final Optional<CloudSaasMetaInfoService> cloudSaasMetaInfoService) {
+    this.cloudSaasMetaInfoService = cloudSaasMetaInfoService;
+  }
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)

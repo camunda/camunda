@@ -17,22 +17,30 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 public class TerminatedSessionService extends AbstractScheduledService {
 
   private static final int CLEANUP_INTERVAL_HOURS = 8;
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(TerminatedSessionService.class);
 
   private final TerminatedUserSessionReader terminatedUserSessionReader;
   private final TerminatedUserSessionWriter terminatedUserSessionWriter;
   private final ConfigurationService configurationService;
+
+  public TerminatedSessionService(
+      final TerminatedUserSessionReader terminatedUserSessionReader,
+      final TerminatedUserSessionWriter terminatedUserSessionWriter,
+      final ConfigurationService configurationService) {
+    this.terminatedUserSessionReader = terminatedUserSessionReader;
+    this.terminatedUserSessionWriter = terminatedUserSessionWriter;
+    this.configurationService = configurationService;
+  }
 
   @PostConstruct
   public void initScheduledCleanup() {
@@ -45,13 +53,13 @@ public class TerminatedSessionService extends AbstractScheduledService {
   }
 
   @Override
-  protected Trigger createScheduleTrigger() {
-    return new PeriodicTrigger(Duration.ofHours(CLEANUP_INTERVAL_HOURS));
+  protected void run() {
+    cleanup();
   }
 
   @Override
-  protected void run() {
-    cleanup();
+  protected Trigger createScheduleTrigger() {
+    return new PeriodicTrigger(Duration.ofHours(CLEANUP_INTERVAL_HOURS));
   }
 
   public void terminateUserSession(final String sessionId) {

@@ -51,10 +51,8 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.function.Supplier;
-import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Path(EXTERNAL_SUB_PATH)
 @Component
 public class SharingPublicReaderRestService {
@@ -70,6 +68,27 @@ public class SharingPublicReaderRestService {
   private final UIConfigurationRestService uiConfigurationService;
   private final AssigneeRestService assigneeRestService;
   private final SettingsService settingsService;
+
+  public SharingPublicReaderRestService(
+      final SharingRestService protectedSharingRestService,
+      final LocalizationRestService localizationRestService,
+      final ProcessVariableRestService processVariableRestService,
+      final DecisionVariablesRestService decisionVariableRestService,
+      final FlowNodeRestService flowNodeRestService,
+      final CandidateGroupRestService candidateGroupRestService,
+      final UIConfigurationRestService uiConfigurationService,
+      final AssigneeRestService assigneeRestService,
+      final SettingsService settingsService) {
+    this.protectedSharingRestService = protectedSharingRestService;
+    this.localizationRestService = localizationRestService;
+    this.processVariableRestService = processVariableRestService;
+    this.decisionVariableRestService = decisionVariableRestService;
+    this.flowNodeRestService = flowNodeRestService;
+    this.candidateGroupRestService = candidateGroupRestService;
+    this.uiConfigurationService = uiConfigurationService;
+    this.assigneeRestService = assigneeRestService;
+    this.settingsService = settingsService;
+  }
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
@@ -92,8 +111,8 @@ public class SharingPublicReaderRestService {
   @Path(SHARE_PATH + REPORT_SUB_PATH + "/{shareId}" + EVALUATE_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
   public AuthorizedReportEvaluationResponseDto evaluateReport(
-      @Context ContainerRequestContext requestContext,
-      @PathParam("shareId") String reportShareId,
+      @Context final ContainerRequestContext requestContext,
+      @PathParam("shareId") final String reportShareId,
       @BeanParam @Valid final PaginationRequestDto paginationRequestDto) {
     return executeIfSharingEnabled(
         () ->
@@ -112,10 +131,10 @@ public class SharingPublicReaderRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public AuthorizedReportEvaluationResponseDto evaluateReport(
-      @Context ContainerRequestContext requestContext,
-      @PathParam("shareId") String dashboardShareId,
-      @PathParam("reportId") String reportId,
-      AdditionalProcessReportEvaluationFilterDto reportEvaluationFilter,
+      @Context final ContainerRequestContext requestContext,
+      @PathParam("shareId") final String dashboardShareId,
+      @PathParam("reportId") final String reportId,
+      final AdditionalProcessReportEvaluationFilterDto reportEvaluationFilter,
       @BeanParam @Valid final PaginationRequestDto paginationRequestDto) {
     return executeIfSharingEnabled(
         () ->
@@ -131,8 +150,8 @@ public class SharingPublicReaderRestService {
   @Path(SHARE_PATH + DASHBOARD_SUB_PATH + "/{shareId}" + EVALUATE_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
   public DashboardDefinitionRestDto evaluateDashboard(
-      @Context ContainerRequestContext requestContext,
-      @PathParam("shareId") String dashboardShareId) {
+      @Context final ContainerRequestContext requestContext,
+      @PathParam("shareId") final String dashboardShareId) {
     return executeIfSharingEnabled(
         () -> protectedSharingRestService.evaluateDashboard(requestContext, dashboardShareId));
   }
@@ -195,7 +214,7 @@ public class SharingPublicReaderRestService {
     return executeIfSharingEnabled(() -> assigneeRestService.getAssigneesByIds(commaSeparatedIdn));
   }
 
-  private <C> C executeIfSharingEnabled(Supplier<C> supplier) {
+  private <C> C executeIfSharingEnabled(final Supplier<C> supplier) {
     return settingsService
         .getSettings()
         .getSharingEnabled()

@@ -13,11 +13,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.decision.group.Decis
 import io.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByMatchedRuleDto;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByNoneDto;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByOutputVariableDto;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
-@Getter
-@RequiredArgsConstructor
 public enum DecisionGroupBy {
   DECISION_GROUP_BY_EVALUATION_DATE_TIME(new DecisionGroupByEvaluationDateTimeDto()),
   DECISION_GROUP_BY_MATCHED_RULE(new DecisionGroupByMatchedRuleDto()),
@@ -26,4 +22,12 @@ public enum DecisionGroupBy {
   DECISION_GROUP_BY_OUTPUT_VARIABLE(new DecisionGroupByOutputVariableDto());
 
   private final DecisionGroupByDto<?> dto;
+
+  private DecisionGroupBy(DecisionGroupByDto<?> dto) {
+    this.dto = dto;
+  }
+
+  public DecisionGroupByDto<?> getDto() {
+    return this.dto;
+  }
 }

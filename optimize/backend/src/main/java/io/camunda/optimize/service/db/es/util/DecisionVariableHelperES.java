@@ -15,11 +15,10 @@ import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.ChildScoreMode;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DecisionVariableHelperES {
+
+  private DecisionVariableHelperES() {}
 
   public static BoolQuery.Builder getVariableUndefinedOrNullQuery(
       final String clauseId, final String variablePath, final VariableType variableType) {

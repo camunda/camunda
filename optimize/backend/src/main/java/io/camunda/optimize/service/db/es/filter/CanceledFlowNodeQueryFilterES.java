@@ -18,14 +18,16 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.
 import io.camunda.optimize.service.db.filter.FilterContext;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.List;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
 @Conditional(ElasticSearchCondition.class)
 public class CanceledFlowNodeQueryFilterES implements QueryFilterES<CanceledFlowNodeFilterDataDto> {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(CanceledFlowNodeQueryFilterES.class);
 
   @Override
   public void addFilters(

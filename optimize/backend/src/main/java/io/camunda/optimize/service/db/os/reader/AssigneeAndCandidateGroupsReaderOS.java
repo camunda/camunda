@@ -27,8 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.CompositeAggregation;
 import org.opensearch.client.opensearch._types.aggregations.CompositeAggregationSource;
@@ -36,16 +34,21 @@ import org.opensearch.client.opensearch._types.aggregations.CompositeTermsAggreg
 import org.opensearch.client.opensearch._types.aggregations.NestedAggregation;
 import org.opensearch.client.opensearch._types.aggregations.NestedAggregation.Builder;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 @Conditional(OpenSearchCondition.class)
 public class AssigneeAndCandidateGroupsReaderOS implements AssigneeAndCandidateGroupsReader {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(AssigneeAndCandidateGroupsReaderOS.class);
   private final OptimizeOpenSearchClient osClient;
+
+  public AssigneeAndCandidateGroupsReaderOS(OptimizeOpenSearchClient osClient) {
+    this.osClient = osClient;
+  }
 
   @Override
   public Set<String> getUserTaskFieldTerms(

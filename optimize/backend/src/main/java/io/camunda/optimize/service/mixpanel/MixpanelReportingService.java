@@ -11,16 +11,21 @@ import io.camunda.optimize.service.mixpanel.client.EventReportingEvent;
 import io.camunda.optimize.service.mixpanel.client.MixpanelClient;
 import io.camunda.optimize.service.mixpanel.client.MixpanelEvent;
 import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
-import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
 @Conditional(CCSaaSCondition.class)
-@AllArgsConstructor
 public class MixpanelReportingService {
+
   private final MixpanelDataService mixpanelDataService;
   private final MixpanelClient mixpanelClient;
+
+  public MixpanelReportingService(
+      final MixpanelDataService mixpanelDataService, final MixpanelClient mixpanelClient) {
+    this.mixpanelDataService = mixpanelDataService;
+    this.mixpanelClient = mixpanelClient;
+  }
 
   public void sendHeartbeatData() {
     mixpanelClient.importEvent(

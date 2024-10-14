@@ -28,8 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.FilterAggregate;
@@ -40,16 +38,25 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class ProcessIncidentGroupByNoneInterpreterOS extends AbstractProcessGroupByInterpreterOS
     implements ProcessGroupByInterpreterOS {
+
   private static final String NESTED_INCIDENT_AGGREGATION = "incidentAggregation";
   private static final String FILTERED_INCIDENT_AGGREGATION = "filteredIncidentAggregation";
 
-  @Getter private final ProcessViewInterpreterFacadeOS viewInterpreter;
-  @Getter private final ProcessDistributedByInterpreterFacadeOS distributedByInterpreter;
+  private final ProcessViewInterpreterFacadeOS viewInterpreter;
+  private final ProcessDistributedByInterpreterFacadeOS distributedByInterpreter;
   private final DefinitionService definitionService;
+
+  public ProcessIncidentGroupByNoneInterpreterOS(
+      ProcessViewInterpreterFacadeOS viewInterpreter,
+      ProcessDistributedByInterpreterFacadeOS distributedByInterpreter,
+      DefinitionService definitionService) {
+    this.viewInterpreter = viewInterpreter;
+    this.distributedByInterpreter = distributedByInterpreter;
+    this.definitionService = definitionService;
+  }
 
   @Override
   public Set<ProcessGroupBy> getSupportedGroupBys() {
@@ -111,5 +118,13 @@ public class ProcessIncidentGroupByNoneInterpreterOS extends AbstractProcessGrou
       final SearchResponse<RawResult> response) {
     return Optional.ofNullable(response.aggregations())
         .map(aggs -> aggs.get(NESTED_INCIDENT_AGGREGATION).nested());
+  }
+
+  public ProcessViewInterpreterFacadeOS getViewInterpreter() {
+    return this.viewInterpreter;
+  }
+
+  public ProcessDistributedByInterpreterFacadeOS getDistributedByInterpreter() {
+    return this.distributedByInterpreter;
   }
 }

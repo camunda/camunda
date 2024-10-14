@@ -11,17 +11,21 @@ import io.camunda.optimize.service.db.es.MappingMetadataUtilES;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.repository.MappingMetadataRepository;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class MappingMetadataRepositoryES implements MappingMetadataRepository {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(MappingMetadataRepositoryES.class);
   private final OptimizeElasticsearchClient esClient;
+
+  public MappingMetadataRepositoryES(OptimizeElasticsearchClient esClient) {
+    this.esClient = esClient;
+  }
 
   @Override
   public String[] getIndexAliasesWithImportIndexFlag(final boolean isImportIndex) {

@@ -24,21 +24,23 @@ import io.camunda.optimize.upgrade.es.TaskResponse;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-@AllArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class TaskRepositoryES extends TaskRepository {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(TaskRepositoryES.class);
   private final OptimizeElasticsearchClient esClient;
+
+  public TaskRepositoryES(OptimizeElasticsearchClient esClient) {
+    this.esClient = esClient;
+  }
 
   @Override
   public List<TaskRepository.TaskProgressInfo> tasksProgress(final String action) {

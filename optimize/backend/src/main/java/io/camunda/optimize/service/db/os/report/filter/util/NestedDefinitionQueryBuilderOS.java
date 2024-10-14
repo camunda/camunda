@@ -17,16 +17,22 @@ import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.os.util.DefinitionQueryUtilOS;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 
-@AllArgsConstructor
 public class NestedDefinitionQueryBuilderOS {
 
   private final String nestedField;
   private final String definitionKeyField;
   private final String versionField;
   private final String tenantIdField;
+
+  public NestedDefinitionQueryBuilderOS(
+      String nestedField, String definitionKeyField, String versionField, String tenantIdField) {
+    this.nestedField = nestedField;
+    this.definitionKeyField = definitionKeyField;
+    this.versionField = versionField;
+    this.tenantIdField = tenantIdField;
+  }
 
   public BoolQuery.Builder createNestedDocDefinitionQuery(
       final String definitionKey,

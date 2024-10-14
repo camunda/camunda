@@ -12,10 +12,12 @@ import io.camunda.optimize.service.metadata.Version;
 import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import io.camunda.optimize.upgrade.plan.UpgradePlan;
 import io.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
 public class CurrentVersionNoOperationUpgradePlanFactory implements UpgradePlanFactory {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(CurrentVersionNoOperationUpgradePlanFactory.class);
 
   public UpgradePlan createUpgradePlan() {
     return UpgradePlanBuilder.createUpgradePlan()

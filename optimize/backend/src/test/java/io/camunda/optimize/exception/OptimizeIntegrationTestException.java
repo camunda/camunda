@@ -13,6 +13,10 @@ public class OptimizeIntegrationTestException extends RuntimeException {
     super();
   }
 
+  public OptimizeIntegrationTestException(Throwable cause) {
+    super(cause);
+  }
+
   public OptimizeIntegrationTestException(Exception e) {
     super(e);
   }

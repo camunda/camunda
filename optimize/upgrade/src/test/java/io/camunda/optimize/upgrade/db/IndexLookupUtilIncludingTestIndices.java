@@ -16,15 +16,17 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
-import lombok.experimental.UtilityClass;
 
-@UtilityClass
-public class IndexLookupUtilIncludingTestIndices {
+public final class IndexLookupUtilIncludingTestIndices {
 
   private static final Map<String, Function<String, IndexMappingCreator>> osIndexLookupMap =
       createOpensearchIndexFunctionLookupMap();
   private static final Map<String, Function<String, IndexMappingCreator>> esIndexLookupMap =
       createElasticsearchIndexFunctionLookupMap();
+
+  private IndexLookupUtilIncludingTestIndices() {
+    throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
+  }
 
   public static IndexMappingCreator convertIndexForDatabase(
       final IndexMappingCreator indexToConvert, final DatabaseType databaseType) {

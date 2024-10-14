@@ -11,17 +11,23 @@ import io.camunda.optimize.service.db.writer.variable.ExternalProcessVariableWri
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import java.time.OffsetDateTime;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 public class ExternalVariableCleanupService extends CleanupService {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ExternalVariableCleanupService.class);
   private final ConfigurationService configurationService;
   private final ExternalProcessVariableWriter externalProcessVariableWriter;
+
+  public ExternalVariableCleanupService(
+      final ConfigurationService configurationService,
+      final ExternalProcessVariableWriter externalProcessVariableWriter) {
+    this.configurationService = configurationService;
+    this.externalProcessVariableWriter = externalProcessVariableWriter;
+  }
 
   @Override
   public boolean isEnabled() {
@@ -37,6 +43,6 @@ public class ExternalVariableCleanupService extends CleanupService {
   }
 
   private CleanupConfiguration getCleanupConfiguration() {
-    return this.configurationService.getCleanupServiceConfiguration();
+    return configurationService.getCleanupServiceConfiguration();
   }
 }

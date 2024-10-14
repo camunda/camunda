@@ -38,14 +38,15 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
 public class ZeebeUserTaskImportService
     extends ZeebeProcessInstanceSubEntityImportService<ZeebeUserTaskRecordDto> {
 
   public static final Set<UserTaskIntent> INTENTS_TO_IMPORT =
       Set.of(CREATING, ASSIGNED, COMPLETED, CANCELED);
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ZeebeUserTaskImportService.class);
 
   public ZeebeUserTaskImportService(
       final ConfigurationService configurationService,

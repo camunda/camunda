@@ -19,7 +19,6 @@ import io.camunda.optimize.service.importing.zeebe.fetcher.AbstractZeebeRecordFe
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.List;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.FieldSort;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.SortOptions;
@@ -29,12 +28,14 @@ import org.opensearch.client.opensearch.core.CountRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 
-@Slf4j
 @Conditional(OpenSearchCondition.class)
 public abstract class AbstractZeebeRecordFetcherOS<T> extends AbstractZeebeRecordFetcher<T> {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(AbstractZeebeRecordFetcherOS.class);
   private final OptimizeOpenSearchClient osClient;
 
   protected AbstractZeebeRecordFetcherOS(
@@ -44,6 +45,14 @@ public abstract class AbstractZeebeRecordFetcherOS<T> extends AbstractZeebeRecor
       final ConfigurationService configurationService) {
     super(partitionId, configurationService);
     this.osClient = osClient;
+  }
+
+  @Override
+  protected boolean isZeebeInstanceIndexNotFoundException(final Exception e) {
+    if (e instanceof OpenSearchException) {
+      return e.getMessage().contains(INDEX_NOT_FOUND_EXCEPTION_TYPE);
+    }
+    return false;
   }
 
   @Override
@@ -67,14 +76,6 @@ public abstract class AbstractZeebeRecordFetcherOS<T> extends AbstractZeebeRecor
       throw new OptimizeRuntimeException("Not all shards could be searched successfully");
     }
     return searchResponse.hits().hits().stream().map(Hit::source).toList();
-  }
-
-  @Override
-  protected boolean isZeebeInstanceIndexNotFoundException(final Exception e) {
-    if (e instanceof OpenSearchException) {
-      return e.getMessage().contains(INDEX_NOT_FOUND_EXCEPTION_TYPE);
-    }
-    return false;
   }
 
   private Query getRecordQuery(final PositionBasedImportPage positionBasedImportPage) {

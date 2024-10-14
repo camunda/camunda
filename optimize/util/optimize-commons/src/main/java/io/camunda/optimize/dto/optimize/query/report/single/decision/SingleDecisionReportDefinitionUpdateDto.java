@@ -9,11 +9,17 @@ package io.camunda.optimize.dto.optimize.query.report.single.decision;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionUpdateDto;
-import lombok.Getter;
-import lombok.Setter;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class SingleDecisionReportDefinitionUpdateDto extends ReportDefinitionUpdateDto {
 
-  @Getter @Setter protected DecisionReportDataDto data;
+  protected DecisionReportDataDto data;
+
+  public DecisionReportDataDto getData() {
+    return data;
+  }
+
+  public void setData(final DecisionReportDataDto data) {
+    this.data = data;
+  }
 }

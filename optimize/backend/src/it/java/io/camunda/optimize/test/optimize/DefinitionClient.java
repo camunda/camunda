@@ -24,11 +24,14 @@ import io.camunda.optimize.dto.optimize.rest.definition.MultiDefinitionTenantsRe
 import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.function.Supplier;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 public class DefinitionClient {
+
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
+
+  public DefinitionClient(Supplier<OptimizeRequestExecutor> requestExecutorSupplier) {
+    this.requestExecutorSupplier = requestExecutorSupplier;
+  }
 
   public DefinitionResponseDto getDefinitionByTypeAndKey(
       final DefinitionType definitionType, final DefinitionOptimizeResponseDto expectedDefinition) {

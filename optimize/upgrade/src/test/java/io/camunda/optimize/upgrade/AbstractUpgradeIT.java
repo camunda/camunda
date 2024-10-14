@@ -69,7 +69,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
-import lombok.SneakyThrows;
 import org.apache.http.client.methods.HttpPost;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -242,15 +241,18 @@ public abstract class AbstractUpgradeIT {
     metadataService.upsertMetadata(getPrefixAwareClient(), version);
   }
 
-  @SneakyThrows
   protected String getMetadataVersion() {
-    return (String)
-        metadataService
-            .getSchemaVersion(getPrefixAwareClient())
-            .orElseThrow(
-                () ->
-                    new OptimizeIntegrationTestException(
-                        "Could not obtain current schema version!"));
+    try {
+      return (String)
+          metadataService
+              .getSchemaVersion(getPrefixAwareClient())
+              .orElseThrow(
+                  () ->
+                      new OptimizeIntegrationTestException(
+                          "Could not obtain current schema version!"));
+    } catch (Throwable e) {
+      throw new OptimizeIntegrationTestException(e);
+    }
   }
 
   protected String getIndexNameWithVersion(final UpgradeStep upgradeStep) {
@@ -261,20 +263,26 @@ public abstract class AbstractUpgradeIT {
     }
   }
 
-  @SneakyThrows
   protected void createOptimizeIndexWithTypeAndVersion(
       final DefaultIndexMappingCreator indexMapping, final int version) {
     final String aliasName =
         getIndexNameService().getOptimizeIndexAliasForIndex(indexMapping.getIndexName());
     final String indexName = getVersionedIndexName(indexMapping.getIndexName(), version);
-    databaseIntegrationTestExtension.createIndex(indexName, aliasName, indexMapping);
+    try {
+      databaseIntegrationTestExtension.createIndex(indexName, aliasName, indexMapping);
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException(e);
+    }
   }
 
-  @SneakyThrows
   protected void executeBulk(final String bulkPayloadFilePath) {
     String bulkPayload = UpgradeUtil.readClasspathFileAsString(bulkPayloadFilePath);
-    databaseIntegrationTestExtension.performLowLevelBulkRequest(
-        HttpPost.METHOD_NAME, "/_bulk", bulkPayload);
+    try {
+      databaseIntegrationTestExtension.performLowLevelBulkRequest(
+          HttpPost.METHOD_NAME, "/_bulk", bulkPayload);
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException(e);
+    }
     getPrefixAwareClient().refresh("*");
   }
 
@@ -291,13 +299,15 @@ public abstract class AbstractUpgradeIT {
     getPrefixAwareClient().deleteAllIndexes();
   }
 
-  @SneakyThrows
   protected Set<String> getIndicesForMapping(final IndexMappingCreator mapping) {
-    return getPrefixAwareClient()
-        .getAllIndicesForAlias(getIndexNameService().getOptimizeIndexAliasForIndex(mapping));
+    try {
+      return getPrefixAwareClient()
+          .getAllIndicesForAlias(getIndexNameService().getOptimizeIndexAliasForIndex(mapping));
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException(e);
+    }
   }
 
-  @SneakyThrows
   protected <T> Optional<T> getDocumentOfIndexByIdAs(
       final String indexName, final String id, final Class<T> valueType) {
     return databaseIntegrationTestExtension.getDatabaseEntryById(indexName, id, valueType);

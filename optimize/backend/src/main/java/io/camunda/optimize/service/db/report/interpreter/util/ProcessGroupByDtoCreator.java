@@ -21,24 +21,24 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.group.Variab
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ProcessGroupByDtoCreator {
 
-  public static StartDateGroupByDto createGroupByStartDateDto(AggregateByDateUnit dateInterval) {
-    StartDateGroupByDto groupByDto = new StartDateGroupByDto();
-    DateGroupByValueDto valueDto = new DateGroupByValueDto();
+  private ProcessGroupByDtoCreator() {}
+
+  public static StartDateGroupByDto createGroupByStartDateDto(
+      final AggregateByDateUnit dateInterval) {
+    final StartDateGroupByDto groupByDto = new StartDateGroupByDto();
+    final DateGroupByValueDto valueDto = new DateGroupByValueDto();
     valueDto.setUnit(dateInterval);
     groupByDto.setValue(valueDto);
 
     return groupByDto;
   }
 
-  public static EndDateGroupByDto createGroupByEndDateDto(AggregateByDateUnit dateInterval) {
-    EndDateGroupByDto groupByDto = new EndDateGroupByDto();
-    DateGroupByValueDto valueDto = new DateGroupByValueDto();
+  public static EndDateGroupByDto createGroupByEndDateDto(final AggregateByDateUnit dateInterval) {
+    final EndDateGroupByDto groupByDto = new EndDateGroupByDto();
+    final DateGroupByValueDto valueDto = new DateGroupByValueDto();
     valueDto.setUnit(dateInterval);
     groupByDto.setValue(valueDto);
 
@@ -50,9 +50,9 @@ public class ProcessGroupByDtoCreator {
   }
 
   public static RunningDateGroupByDto createGroupByRunningDateDto(
-      AggregateByDateUnit dateInterval) {
-    RunningDateGroupByDto groupByDto = new RunningDateGroupByDto();
-    DateGroupByValueDto valueDto = new DateGroupByValueDto();
+      final AggregateByDateUnit dateInterval) {
+    final RunningDateGroupByDto groupByDto = new RunningDateGroupByDto();
+    final DateGroupByValueDto valueDto = new DateGroupByValueDto();
     valueDto.setUnit(dateInterval);
     groupByDto.setValue(valueDto);
 
@@ -88,11 +88,11 @@ public class ProcessGroupByDtoCreator {
   }
 
   public static VariableGroupByDto createGroupByVariable(
-      String variableName, VariableType variableType) {
-    VariableGroupByValueDto groupByValueDto = new VariableGroupByValueDto();
+      final String variableName, final VariableType variableType) {
+    final VariableGroupByValueDto groupByValueDto = new VariableGroupByValueDto();
     groupByValueDto.setName(variableName);
     groupByValueDto.setType(variableType);
-    VariableGroupByDto groupByDto = new VariableGroupByDto();
+    final VariableGroupByDto groupByDto = new VariableGroupByDto();
     groupByDto.setValue(groupByValueDto);
     return groupByDto;
   }

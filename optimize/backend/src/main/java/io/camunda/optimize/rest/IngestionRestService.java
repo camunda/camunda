@@ -25,20 +25,23 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
 
-@AllArgsConstructor
-@Slf4j
 @Path(INGESTION_PATH)
 @Component
 public class IngestionRestService {
+
   public static final String INGESTION_PATH = "/ingestion";
   public static final String VARIABLE_SUB_PATH = "/variable";
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(IngestionRestService.class);
 
   private final ExternalVariableService externalVariableService;
+
+  public IngestionRestService(ExternalVariableService externalVariableService) {
+    this.externalVariableService = externalVariableService;
+  }
 
   @POST
   @Path(VARIABLE_SUB_PATH)

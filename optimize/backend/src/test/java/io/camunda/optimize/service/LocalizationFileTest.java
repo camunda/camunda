@@ -11,11 +11,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
+import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 
 public class LocalizationFileTest {
@@ -25,14 +26,14 @@ public class LocalizationFileTest {
   @Test
   public void localizationFilesHaveTheSameKeys() {
     // given
-    String enLocale = "en";
-    String deLocale = "de";
+    final String enLocale = "en";
+    final String deLocale = "de";
 
     // when
-    List<String> enKeys =
+    final List<String> enKeys =
         buildQualifiedKeyList(
             getJsonTreeMapFromLocalizationFile(enLocale), Lists.newArrayList(), null);
-    List<String> deKeys =
+    final List<String> deKeys =
         buildQualifiedKeyList(
             getJsonTreeMapFromLocalizationFile(deLocale), Lists.newArrayList(), null);
 
@@ -41,12 +42,12 @@ public class LocalizationFileTest {
   }
 
   private List<String> buildQualifiedKeyList(
-      Map<String, Object> jsonMap, List<String> keys, String parentKeyPath) {
+      final Map<String, Object> jsonMap, final List<String> keys, final String parentKeyPath) {
     jsonMap.forEach(
         (key, value) -> {
-          String qualifiedKeyPath = Optional.ofNullable(parentKeyPath).orElse("") + "/" + key;
+          final String qualifiedKeyPath = Optional.ofNullable(parentKeyPath).orElse("") + "/" + key;
           if (value instanceof LinkedHashMap) {
-            Map<String, Object> map = (LinkedHashMap) value;
+            final Map<String, Object> map = (LinkedHashMap) value;
             buildQualifiedKeyList(map, keys, qualifiedKeyPath);
           }
           keys.add(qualifiedKeyPath);
@@ -54,12 +55,15 @@ public class LocalizationFileTest {
     return keys;
   }
 
-  @SneakyThrows
   private Map<String, Object> getJsonTreeMapFromLocalizationFile(final String locale) {
-    return OBJECT_MAPPER.readValue(
-        getClass()
-            .getClassLoader()
-            .getResourceAsStream(LocalizationService.LOCALIZATION_PATH + locale + ".json"),
-        Map.class);
+    try {
+      return OBJECT_MAPPER.readValue(
+          getClass()
+              .getClassLoader()
+              .getResourceAsStream(LocalizationService.LOCALIZATION_PATH + locale + ".json"),
+          Map.class);
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException(e);
+    }
   }
 }

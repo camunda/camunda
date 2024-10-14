@@ -8,7 +8,7 @@
 // TODO recreate C8 IT equivalent of this with #13337
 
 // package io.camunda.optimize.rest;
-// 
+//
 // import static io.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 // import static io.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 // import static io.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto.INSTANT_DASHBOARD_DEFAULT_TEMPLATE;
@@ -24,7 +24,7 @@
 // import static io.camunda.optimize.util.SuppressionConstants.UNUSED;
 // import static java.util.stream.Collectors.toSet;
 // import static org.assertj.core.api.Assertions.assertThat;
-// 
+//
 // import io.camunda.optimize.dto.optimize.RoleType;
 // import io.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 // import io.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto;
@@ -63,10 +63,10 @@
 // import org.junit.jupiter.params.ParameterizedTest;
 // import org.junit.jupiter.params.provider.Arguments;
 // import org.junit.jupiter.params.provider.MethodSource;
-// 
+//
 // @Tag(OPENSEARCH_PASSING)
 // public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
-// 
+//
 //   private static final String SECOND_TENANT = "secondTenant";
 //   private static final String FIRST_TENANT = "firstTenant";
 //   private static final String FIRST_DEF_KEY = "someDef";
@@ -79,7 +79,7 @@
 //   public static final String TEMPLATE_3_FILENAME = "template3.json";
 //   public static final String PROCESS_DEF_KEY = "dummy";
 //   private static final Map<String, List<String>> EXPECTED_TILE_STRINGS = createExpectedTileString();
-// 
+//
 //   @Test
 //   public void instantPreviewDashboardCreatedAsExpected() {
 //     // given
@@ -87,12 +87,12 @@
 //         embeddedOptimizeExtension.getInstantPreviewDashboardService();
 //     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEF_KEY));
 //     importAllEngineEntitiesFromScratch();
-// 
+//
 //     // when
 //     final Optional<InstantDashboardDataDto> instantPreviewDashboard =
 //         instantPreviewDashboardService.createInstantPreviewDashboard(
 //             PROCESS_DEF_KEY, TEMPLATE_2_FILENAME);
-// 
+//
 //     // then
 //     assertThat(instantPreviewDashboard).isPresent();
 //     final InstantDashboardDataDto instantPreviewDashboardDto = instantPreviewDashboard.get();
@@ -105,7 +105,7 @@
 //     // when
 //     DashboardDefinitionRestDto returnedDashboard =
 //         dashboardClient.getInstantPreviewDashboard(PROCESS_DEF_KEY, TEMPLATE_2_FILENAME);
-// 
+//
 //     // then
 //     assertThat(returnedDashboard).isNotNull();
 //     assertThat(returnedDashboard.getId()).isEqualTo(instantPreviewDashboardDto.getDashboardId());
@@ -114,7 +114,7 @@
 //     assertThat(dashboard).isNotNull();
 //     assertThat(dashboard.getTiles()).hasSize(5);
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @MethodSource("emptyTemplates")
 //   public void instantPreviewDashboardEmptyTemplateDefaultsToDefault(final String emptyTemplate) {
@@ -123,12 +123,12 @@
 //         embeddedOptimizeExtension.getInstantPreviewDashboardService();
 //     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEF_KEY));
 //     importAllEngineEntitiesFromScratch();
-// 
+//
 //     // when
 //     final Optional<InstantDashboardDataDto> instantPreviewDashboard =
 //         instantPreviewDashboardService.createInstantPreviewDashboard(
 //             PROCESS_DEF_KEY, emptyTemplate);
-// 
+//
 //     // then
 //     assertThat(instantPreviewDashboard).isPresent();
 //     final InstantDashboardDataDto instantPreviewDashboardDto = instantPreviewDashboard.get();
@@ -140,11 +140,11 @@
 //         .isEqualTo(INSTANT_DASHBOARD_DEFAULT_TEMPLATE);
 //     assertThat(instantPreviewDashboardDto.getTemplateHash())
 //         .isEqualTo(calculateExpectedChecksum(INSTANT_DASHBOARD_DEFAULT_TEMPLATE));
-// 
+//
 //     // when
 //     DashboardDefinitionRestDto returnedDashboard =
 //         dashboardClient.getInstantPreviewDashboard(PROCESS_DEF_KEY, emptyTemplate);
-// 
+//
 //     // then
 //     assertThat(returnedDashboard).isNotNull();
 //     assertThat(returnedDashboard.getId()).isEqualTo(instantPreviewDashboardDto.getDashboardId());
@@ -153,24 +153,24 @@
 //     assertThat(dashboard).isNotNull();
 //     assertThat(dashboard.getTiles()).hasSize(14);
 //   }
-// 
+//
 //   @Test
 //   public void instantPreviewDashboardNonExistingDashboard() {
 //     // given
 //     String processDefKey = "never_heard_of";
 //     String dashboardJsonTemplateFilename = "dummy_template.json";
-// 
+//
 //     // when
 //     String response =
 //         embeddedOptimizeExtension
 //             .getRequestExecutor()
 //             .buildGetInstantPreviewDashboardRequest(processDefKey, dashboardJsonTemplateFilename)
 //             .execute(String.class, Response.Status.NOT_FOUND.getStatusCode());
-// 
+//
 //     // then
 //     assertThat(response).containsSequence("Dashboard does not exist!");
 //   }
-// 
+//
 //   @Test
 //   public void getInstantPreviewDashboardWithoutAuthentication() {
 //     // when
@@ -180,11 +180,11 @@
 //             .buildGetInstantPreviewDashboardRequest("bla", "bla")
 //             .withoutAuthentication()
 //             .execute();
-// 
+//
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
 //   }
-// 
+//
 //   @Test
 //   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
 //   public void changeInTemplateCausesRefreshOfDashboard() {
@@ -193,15 +193,15 @@
 //         embeddedOptimizeExtension.getInstantPreviewDashboardService();
 //     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEF_KEY));
 //     importAllEngineEntitiesFromScratch();
-// 
+//
 //     // when
 //     final Optional<InstantDashboardDataDto> instantPreviewDashboard =
 //         instantPreviewDashboardService.createInstantPreviewDashboard(
 //             PROCESS_DEF_KEY, TEMPLATE_3_FILENAME);
-// 
+//
 //     // then
 //     assertThat(instantPreviewDashboard).isPresent();
-// 
+//
 //     // given
 //     final InstantDashboardDataDto instantPreviewDashboardDto = instantPreviewDashboard.get();
 //     DashboardDefinitionRestDto originalDashboard =
@@ -209,7 +209,7 @@
 //     // Let's keep track of the report IDs that belong to this dashboard, this will be important
 //     // later
 //     Set<String> originalReportIds = originalDashboard.getTileIds();
-// 
+//
 //     // when
 //     // now fiddle with the stored hash in the database so that the code thinks a change has happened
 //     instantPreviewDashboardDto.setTemplateHash(23L);
@@ -223,7 +223,7 @@
 //     // Now get the dashboard again
 //     DashboardDefinitionRestDto newDashboard =
 //         dashboardClient.getInstantPreviewDashboard(PROCESS_DEF_KEY, TEMPLATE_3_FILENAME);
-// 
+//
 //     // then
 //     // Since the entry had been de-validated, I expect that a new dashboard with a new ID has been
 //     // created
@@ -236,7 +236,7 @@
 //     assertThat(originalReportIds)
 //         .allSatisfy(reportId -> reportClient.assertReportIsDeleted(reportId));
 //   }
-// 
+//
 //   @Test
 //   public void aCheckForNewDashboardTemplatesDoesntDevalidateCurrentEntries() {
 //     // given
@@ -244,21 +244,21 @@
 //         embeddedOptimizeExtension.getInstantPreviewDashboardService();
 //     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEF_KEY));
 //     importAllEngineEntitiesFromScratch();
-// 
+//
 //     // when
 //     final Optional<InstantDashboardDataDto> instantPreviewDashboard =
 //         instantPreviewDashboardService.createInstantPreviewDashboard(
 //             PROCESS_DEF_KEY, TEMPLATE_3_FILENAME);
-// 
+//
 //     // then
 //     assertThat(instantPreviewDashboard).isPresent();
-// 
+//
 //     // given
 //     DashboardDefinitionRestDto originalDashboard =
 //         dashboardClient.getInstantPreviewDashboard(PROCESS_DEF_KEY, TEMPLATE_3_FILENAME);
 //     // We keep track of the report IDs that belong to this dashboard, this will be important later
 //     Set<String> originalReportIds = originalDashboard.getTileIds();
-// 
+//
 //     // when
 //     // Perform the check that is done at the start-up from Optimize
 //     embeddedOptimizeExtension
@@ -268,13 +268,13 @@
 //     // with the same ID
 //     DashboardDefinitionRestDto newDashboard =
 //         dashboardClient.getInstantPreviewDashboard(PROCESS_DEF_KEY, TEMPLATE_3_FILENAME);
-// 
+//
 //     // then
 //     assertThat(newDashboard.getId()).isEqualTo(originalDashboard.getId());
 //     // I expect that the reports from the dashboard also remain the same
 //     assertThat(newDashboard.getTileIds()).isEqualTo(originalReportIds);
 //   }
-// 
+//
 //   @Test
 //   public void existingDashboardsDontGetCreatedAgain() {
 //     // given
@@ -282,32 +282,32 @@
 //         embeddedOptimizeExtension.getInstantPreviewDashboardService();
 //     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEF_KEY));
 //     importAllEngineEntitiesFromScratch();
-// 
+//
 //     // when
 //     final Optional<InstantDashboardDataDto> instantPreviewDashboard =
 //         instantPreviewDashboardService.createInstantPreviewDashboard(
 //             PROCESS_DEF_KEY, TEMPLATE_3_FILENAME);
-// 
+//
 //     // then
 //     assertThat(instantPreviewDashboard).isPresent();
-// 
+//
 //     // given
 //     DashboardDefinitionRestDto originalDashboard =
 //         dashboardClient.getInstantPreviewDashboard(PROCESS_DEF_KEY, TEMPLATE_3_FILENAME);
 //     // We keep track of the report IDs that belong to this dashboard, this will be important later
 //     Set<String> originalReportIds = originalDashboard.getTileIds();
-// 
+//
 //     // when
 //     DashboardDefinitionRestDto refetchedDashboard =
 //         dashboardClient.getInstantPreviewDashboard(PROCESS_DEF_KEY, TEMPLATE_3_FILENAME);
-// 
+//
 //     // then
 //     // I expect the same old dashboard with the same ID
 //     assertThat(refetchedDashboard.getId()).isEqualTo(originalDashboard.getId());
 //     // I expect that the reports from the dashboard also remain the same
 //     assertThat(refetchedDashboard.getTileIds()).isEqualTo(originalReportIds);
 //   }
-// 
+//
 //   @Test
 //   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
 //   public void instantPreviewReportsRespectPermissions() {
@@ -316,17 +316,17 @@
 //         embeddedOptimizeExtension.getInstantPreviewDashboardService();
 //     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEF_KEY));
 //     importAllEngineEntitiesFromScratch();
-// 
+//
 //     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-// 
+//
 //     // when
 //     final Optional<InstantDashboardDataDto> instantPreviewDashboard =
 //         instantPreviewDashboardService.createInstantPreviewDashboard(
 //             PROCESS_DEF_KEY, TEMPLATE_3_FILENAME);
-// 
+//
 //     // then
 //     assertThat(instantPreviewDashboard).isPresent();
-// 
+//
 //     // given
 //     DashboardDefinitionRestDto originalDashboard =
 //         dashboardClient.getInstantPreviewDashboard(PROCESS_DEF_KEY, TEMPLATE_3_FILENAME);
@@ -341,7 +341,7 @@
 //               // Kermit has no access to the process definition, therefore he shall not be able to
 //               // evaluate the reports
 //               assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
-// 
+//
 //               // when
 //               response =
 //                   reportClient.evaluateReportAsUserRawResponse(
@@ -358,7 +358,7 @@
 //               assertThat(result.getCurrentUserRole()).isEqualTo(RoleType.VIEWER);
 //             });
 //   }
-// 
+//
 //   @Test
 //   public void createInstantPreviewEntitiesManuallyNotSupported() {
 //     // given
@@ -367,20 +367,20 @@
 //     final SingleProcessReportDefinitionRequestDto instantReportToCreate =
 //         new SingleProcessReportDefinitionRequestDto();
 //     instantReportToCreate.getData().setInstantPreviewReport(true);
-// 
+//
 //     // when
 //     final Response dashboardCreateResponse =
 //         dashboardClient.createDashboardAndReturnResponse(instantDashboardToCreate);
 //     final Response reportCreateResponse =
 //         reportClient.createSingleProcessReportAndReturnResponse(instantReportToCreate);
-// 
+//
 //     // then
 //     assertThat(dashboardCreateResponse.getStatus())
 //         .isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
 //     assertThat(reportCreateResponse.getStatus())
 //         .isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
 //   }
-// 
+//
 //   @Test
 //   public void getPrivateReportsExcludesInstantPreviewReports() {
 //     // given
@@ -388,15 +388,15 @@
 //         embeddedOptimizeExtension.getInstantPreviewDashboardService();
 //     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEF_KEY));
 //     importAllEngineEntitiesFromScratch();
-// 
+//
 //     // when
 //     instantPreviewDashboardService.createInstantPreviewDashboard(
 //         PROCESS_DEF_KEY, TEMPLATE_2_FILENAME);
-// 
+//
 //     // when
 //     assertThat(reportClient.getAllReportsAsUser()).isEmpty();
 //   }
-// 
+//
 //   @Test
 //   public void updateInstantPreviewEntitiesNotSupported() {
 //     // given
@@ -408,7 +408,7 @@
 //         dashboardClient.getInstantPreviewDashboard(PROCESS_DEF_KEY, TEMPLATE_3_FILENAME);
 //     final Optional<String> instantReportId = originalDashboard.getTileIds().stream().findFirst();
 //     assertThat(instantReportId).isPresent();
-// 
+//
 //     // when
 //     final Response dashboardUpdateResponse =
 //         dashboardClient.updateDashboardAndReturnResponse(
@@ -416,14 +416,14 @@
 //     final Response reportUpdateResponse =
 //         reportClient.updateSingleProcessReport(
 //             instantReportId.get(), new SingleProcessReportDefinitionRequestDto());
-// 
+//
 //     // then
 //     assertThat(dashboardUpdateResponse.getStatus())
 //         .isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
 //     assertThat(reportUpdateResponse.getStatus())
 //         .isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
 //   }
-// 
+//
 //   @Test
 //   public void deleteInstantPreviewEntitiesNotSupported() {
 //     // given
@@ -433,19 +433,19 @@
 //         dashboardClient.getInstantPreviewDashboard(PROCESS_DEF_KEY, TEMPLATE_3_FILENAME);
 //     final Optional<String> instantReportId = originalDashboard.getTileIds().stream().findFirst();
 //     assertThat(instantReportId).isPresent();
-// 
+//
 //     // when
 //     final Response dashboardDeleteResponse =
 //         dashboardClient.deleteDashboardAndReturnResponse(originalDashboard.getId());
 //     final Response reportDeleteResponse = reportClient.deleteReport(instantReportId.get(), false);
-// 
+//
 //     // then
 //     assertThat(dashboardDeleteResponse.getStatus())
 //         .isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
 //     assertThat(reportDeleteResponse.getStatus())
 //         .isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
 //   }
-// 
+//
 //   @Test
 //   public void importInstantPreviewEntitiesNotSupported() {
 //     // given
@@ -459,18 +459,18 @@
 //     final SingleProcessReportDefinitionExportDto reportExport =
 //         new SingleProcessReportDefinitionExportDto(new SingleProcessReportDefinitionRequestDto());
 //     reportExport.getData().setInstantPreviewReport(true);
-// 
+//
 //     // when
 //     final Response dashboardImportResponse = importClient.importEntity(dashboardExport);
 //     final Response reportImportResponse = importClient.importEntity(reportExport);
-// 
+//
 //     // then
 //     assertThat(dashboardImportResponse.getStatus())
 //         .isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
 //     assertThat(reportImportResponse.getStatus())
 //         .isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
 //   }
-// 
+//
 //   @Test
 //   public void copyInstantPreviewEntitiesNotSupported() {
 //     // given
@@ -480,20 +480,20 @@
 //         dashboardClient.getInstantPreviewDashboard(PROCESS_DEF_KEY, TEMPLATE_3_FILENAME);
 //     final Optional<String> instantReportId = originalDashboard.getTileIds().stream().findFirst();
 //     assertThat(instantReportId).isPresent();
-// 
+//
 //     // when
 //     final Response dashboardCopyResponse =
 //         dashboardClient.copyDashboardAndReturnResponse(originalDashboard.getId());
 //     final Response reportCopyResponse =
 //         reportClient.copyReportToCollection(instantReportId.get(), null);
-// 
+//
 //     // then
 //     assertThat(dashboardCopyResponse.getStatus())
 //         .isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
 //     assertThat(reportCopyResponse.getStatus())
 //         .isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @MethodSource("templateAndExpectedLocalizedReportNames")
 //   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
@@ -507,14 +507,14 @@
 //         embeddedOptimizeExtension.getInstantPreviewDashboardService();
 //     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEF_KEY));
 //     importAllEngineEntitiesFromScratch();
-// 
+//
 //     // when
 //     final Optional<InstantDashboardDataDto> instantPreviewDashboard =
 //         instantPreviewDashboardService.createInstantPreviewDashboard(PROCESS_DEF_KEY, template);
-// 
+//
 //     // then
 //     assertThat(instantPreviewDashboard).isPresent();
-// 
+//
 //     // when
 //     final DashboardDefinitionRestDto localizedDashboard =
 //         dashboardClient.getInstantPreviewDashboardLocalized(PROCESS_DEF_KEY, template, locale);
@@ -527,12 +527,12 @@
 //                         .getReportDefinition()
 //                         .getName())
 //             .collect(toSet());
-// 
+//
 //     // then
 //     assertThat(localizedDashboard.getName()).isEqualTo(expectedDashboardName);
 //     assertThat(reportNames).containsExactlyInAnyOrderElementsOf(expectedReportNames);
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @MethodSource("templateAndExpectedLocalizedReports")
 //   public void instantPreviewDashboardAndReportsAreLocalized(
@@ -544,15 +544,15 @@
 //         embeddedOptimizeExtension.getInstantPreviewDashboardService();
 //     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEF_KEY));
 //     importAllEngineEntitiesFromScratch();
-// 
+//
 //     // when
 //     final Optional<InstantDashboardDataDto> instantPreviewDashboard =
 //         instantPreviewDashboardService.createInstantPreviewDashboard(
 //             PROCESS_DEF_KEY, TEMPLATE_1_FILENAME);
-// 
+//
 //     // then
 //     assertThat(instantPreviewDashboard).isPresent();
-// 
+//
 //     // when
 //     final DashboardDefinitionRestDto localizedDashboard =
 //         dashboardClient.getInstantPreviewDashboardLocalized(
@@ -573,12 +573,12 @@
 //                       reportConfig.getXLabel());
 //                 })
 //             .toList();
-// 
+//
 //     // then
 //     assertThat(localizedDashboard.getName()).isEqualTo(expectedDashboardName);
 //     assertThat(localizedReports).containsExactlyInAnyOrderElementsOf(expectedReports);
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @MethodSource("templateAndLocales")
 //   public void checkLocalizationFromTextTileTexts(String template, String locale) {
@@ -587,18 +587,18 @@
 //         embeddedOptimizeExtension.getInstantPreviewDashboardService();
 //     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEF_KEY));
 //     importAllEngineEntitiesFromScratch();
-// 
+//
 //     // when
 //     final Optional<InstantDashboardDataDto> instantPreviewDashboard =
 //         instantPreviewDashboardService.createInstantPreviewDashboard(PROCESS_DEF_KEY, template);
-// 
+//
 //     // then
 //     assertThat(instantPreviewDashboard).isPresent();
-// 
+//
 //     // when
 //     final DashboardDefinitionRestDto dashboardData =
 //         dashboardClient.getInstantPreviewDashboardLocalized(PROCESS_DEF_KEY, template, locale);
-// 
+//
 //     dashboardData
 //         .getTiles()
 //         .forEach(
@@ -611,7 +611,7 @@
 //               }
 //             });
 //   }
-// 
+//
 //   @Test
 //   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
 //   public void savedInstantPreviewReportCanBeEvaluatedAndIncludesAllTenants() {
@@ -621,14 +621,14 @@
 //     engineIntegrationExtension.deployAndStartProcess(
 //         getSingleUserTaskDiagram(FIRST_DEF_KEY), FIRST_TENANT);
 //     importAllEngineEntitiesFromScratch();
-// 
+//
 //     final Set<String> reportIds = getInstantPreviewReportIDsForProcess(FIRST_DEF_KEY);
 //     reportIds.forEach(
 //         reportId -> {
 //           // when
 //           final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>
 //               evaluationResponse = reportClient.evaluateReport(reportId);
-// 
+//
 //           // then
 //           ProcessReportDataDto resultReportDataDto =
 //               evaluationResponse.getReportDefinition().getData();
@@ -654,17 +654,17 @@
 //             assertThat(resultDto.getInstanceCountWithoutFilters()).isEqualTo(1L);
 //           }
 //         });
-// 
+//
 //     engineIntegrationExtension.deployAndStartProcess(
 //         getSingleUserTaskDiagram(FIRST_DEF_KEY), SECOND_TENANT);
 //     importAllEngineEntitiesFromLastIndex();
-// 
+//
 //     reportIds.forEach(
 //         reportId -> {
 //           // when
 //           final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>
 //               evaluationResponse = reportClient.evaluateReport(reportId);
-// 
+//
 //           // then
 //           ProcessReportDataDto resultReportDataDto =
 //               evaluationResponse.getReportDefinition().getData();
@@ -692,7 +692,7 @@
 //           }
 //         });
 //   }
-// 
+//
 //   @Test
 //   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
 //   public void savedInstantPreviewReportCanBeEvaluatedAndExcludesUnauthorizedTenants() {
@@ -708,23 +708,23 @@
 //         getSingleUserTaskDiagram(FIRST_DEF_KEY), SECOND_TENANT);
 //     engineIntegrationExtension.deployAndStartProcess(
 //         getSingleUserTaskDiagram(SECOND_DEF_KEY), SECOND_TENANT);
-// 
+//
 //     authorizationClient.addKermitUserAndGrantAccessToOptimize();
 //     authorizationClient.grantSingleResourceAuthorizationsForUser(
 //         KERMIT_USER, processInstance.getProcessDefinitionKey(), RESOURCE_TYPE_PROCESS_DEFINITION);
 //     authorizationClient.grantSingleResourceAuthorizationsForUser(
 //         KERMIT_USER, FIRST_TENANT, RESOURCE_TYPE_TENANT);
-// 
+//
 //     importAllEngineEntitiesFromScratch();
-// 
+//
 //     final Set<String> reportIds = getInstantPreviewReportIDsForProcess(FIRST_DEF_KEY);
-// 
+//
 //     reportIds.forEach(
 //         reportId -> {
 //           // when
 //           final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>>
 //               evaluationResponse = reportClient.evaluateReportAsKermit(reportId);
-// 
+//
 //           // then
 //           ProcessReportDataDto resultReportDataDto =
 //               evaluationResponse.getReportDefinition().getData();
@@ -751,7 +751,7 @@
 //           }
 //         });
 //   }
-// 
+//
 //   @Test
 //   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
 //   public void allDashboardTemplatesAreValid() {
@@ -761,26 +761,26 @@
 //     final InstantPreviewDashboardService instantPreviewDashboardService =
 //         embeddedOptimizeExtension.getInstantPreviewDashboardService();
 //     final List<String> templateFiles = templates().collect(Collectors.toList());
-// 
+//
 //     // then there are the expected number of template files
 //     assertThat(templateFiles)
 //         .hasSameSizeAs(instantPreviewDashboardService.getCurrentFileChecksums());
-// 
+//
 //     templateFiles.forEach(
 //         templateFile -> {
 //           // when
 //           final Optional<InstantDashboardDataDto> instantPreviewDashboard =
 //               instantPreviewDashboardService.createInstantPreviewDashboard(
 //                   PROCESS_DEF_KEY, templateFile);
-// 
+//
 //           // then
 //           assertThat(instantPreviewDashboard).isPresent();
 //           final InstantDashboardDataDto instantPreviewDashboardDto = instantPreviewDashboard.get();
-// 
+//
 //           // when
 //           DashboardDefinitionRestDto returnedDashboard =
 //               dashboardClient.getInstantPreviewDashboard(PROCESS_DEF_KEY, templateFile);
-// 
+//
 //           // then
 //           assertThat(returnedDashboard).isNotNull();
 //           assertThat(returnedDashboard.getId())
@@ -811,7 +811,7 @@
 //                   });
 //         });
 //   }
-// 
+//
 //   private Set<String> getInstantPreviewReportIDsForProcess(final String processDefKey) {
 //     DashboardDefinitionRestDto originalDashboard =
 //         dashboardClient.getInstantPreviewDashboard(processDefKey, TEMPLATE_3_FILENAME);
@@ -819,7 +819,7 @@
 //     assertThat(reportIds).isNotEmpty();
 //     return reportIds;
 //   }
-// 
+//
 //   @NotNull
 //   private Long calculateExpectedChecksum(final String dashboardJsonTemplate) {
 //     InputStream templateInputStream =
@@ -833,7 +833,7 @@
 //           "Failed to calculate expected checksum for template", e);
 //     }
 //   }
-// 
+//
 //   private void assertImagePresent(
 //       Map<String, Object> textTileConfiguration, final String imageTag) {
 //     // Reverse-engineering the frontend external resources URI to the frontend resources folder
@@ -843,7 +843,7 @@
 //     // then
 //     assertThat(new File(filePath)).exists();
 //   }
-// 
+//
 //   private static Map<String, List<String>> createExpectedTileString() {
 //     return Map.of(
 //         "de",
@@ -908,17 +908,17 @@
 //                 "Bottlenecks in the process ended in the last 6 months",
 //                 "The heatmap highlights the flow nodes that consume on average the most time to be completed."));
 //   }
-// 
+//
 //   private void assertTileTranslation(Map<String, Object> textTileConfiguration, String locale) {
 //     String textContent = (String) textTileConfiguration.get(TEXT_FIELD);
 //     assertThat(EXPECTED_TILE_STRINGS.get(locale)).contains(textContent);
 //   }
-// 
+//
 //   @SuppressWarnings(UNUSED)
 //   public static Stream<String> emptyTemplates() {
 //     return Stream.of("", null);
 //   }
-// 
+//
 //   @SuppressWarnings(UNUSED)
 //   private static Stream<Arguments> templateAndExpectedLocalizedReportNames() {
 //     return Stream.of(
@@ -977,7 +977,7 @@
 //                 "Durchsatz (gleitend über die letzten 30 Tage)",
 //                 "75. Perzentil der Dauer")));
 //   }
-// 
+//
 //   @SuppressWarnings(UNUSED)
 //   private static Stream<Arguments> templateAndExpectedLocalizedReports() {
 //     return Stream.of(
@@ -1070,8 +1070,7 @@
 //                     "Prozessknoten Dauer",
 //                     "Prozessknoten"))));
 //   }
-// 
-//   @AllArgsConstructor
+//
 //   @Data
 //   public static final class LocalizedReportData {
 //     private final String reportName;
@@ -1079,13 +1078,13 @@
 //     private final String yLabel;
 //     private final String xLabel;
 //   }
-// 
+//
 //   @SuppressWarnings(UNUSED)
 //   private static Stream<Arguments> templateAndLocales() {
 //     return Stream.of(
 //         Arguments.of(TEMPLATE_1_FILENAME, "en"), Arguments.of(TEMPLATE_1_FILENAME, "de"));
 //   }
-// 
+//
 //   @SuppressWarnings(UNUSED)
 //   private static Stream<String> templates() {
 //     return Stream.of(TEMPLATE_1_FILENAME, TEMPLATE_2_FILENAME, TEMPLATE_3_FILENAME);

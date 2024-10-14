@@ -20,17 +20,23 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
+import org.slf4j.Logger;
 
-@Slf4j
 public class HyperMapCommandResult extends CommandEvaluationResult<List<HyperMapResultEntryDto>> {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(HyperMapCommandResult.class);
+
   public HyperMapCommandResult(
-      @NonNull final List<MeasureDto<List<HyperMapResultEntryDto>>> measures,
-      @NonNull final ProcessReportDataDto reportDataDto) {
+      final List<MeasureDto<List<HyperMapResultEntryDto>>> measures,
+      final ProcessReportDataDto reportDataDto) {
     super(measures, reportDataDto);
+    if (measures == null) {
+      throw new IllegalArgumentException("measures cannot be null");
+    }
+    if (reportDataDto == null) {
+      throw new IllegalArgumentException("reportDataDto cannot be null");
+    }
   }
 
   @Override
@@ -56,8 +62,8 @@ public class HyperMapCommandResult extends CommandEvaluationResult<List<HyperMap
     return mergedCsvReports;
   }
 
-  private void addHeaderLine(List<String[]> mergedCsvReports) {
-    ProcessReportDataDto data = (ProcessReportDataDto) reportData;
+  private void addHeaderLine(final List<String[]> mergedCsvReports) {
+    final ProcessReportDataDto data = (ProcessReportDataDto) reportData;
     final String[] reportNameHeader =
         new String[] {
           data.getDistributedBy().createCommandKey(), data.getGroupBy().createCommandKey()
@@ -75,14 +81,16 @@ public class HyperMapCommandResult extends CommandEvaluationResult<List<HyperMap
         .collect(Collectors.toList());
   }
 
-  private List<String[]> removeLabelColumn(List<String[]> column) {
+  private List<String[]> removeLabelColumn(final List<String[]> column) {
     return column.stream()
         .map(row -> row.length > 1 ? ArrayUtils.remove(row, 0) : row)
         .collect(Collectors.toList());
   }
 
   private List<String[]> mapSingleHyperMapResultEntry(
-      final Integer limit, HyperMapResultEntryDto resultEntryDto, final boolean removeLabelColumn) {
+      final Integer limit,
+      final HyperMapResultEntryDto resultEntryDto,
+      final boolean removeLabelColumn) {
     List<String[]> csvStrings = CSVUtils.map(resultEntryDto.getValue(), limit, 0);
     final String label = resultEntryDto.getLabel();
     final String[] header = new String[] {"", label};
@@ -96,7 +104,8 @@ public class HyperMapCommandResult extends CommandEvaluationResult<List<HyperMap
 
   private List<String[]> mergeSingleReportsToOneCsv(
       final List<List<String[]>> allSingleReportsAsCsvList) {
-    int numberOfRows = allSingleReportsAsCsvList.stream().mapToInt(List::size).max().orElse(0);
+    final int numberOfRows =
+        allSingleReportsAsCsvList.stream().mapToInt(List::size).max().orElse(0);
     return allSingleReportsAsCsvList.stream()
         .reduce(
             (l1, l2) -> {
@@ -109,14 +118,15 @@ public class HyperMapCommandResult extends CommandEvaluationResult<List<HyperMap
             })
         .orElseGet(
             () -> {
-              String message = "Was not able to merge single map entry to hyper map report csv";
+              final String message =
+                  "Was not able to merge single map entry to hyper map report csv";
               log.warn(message);
               return new ArrayList<>();
             });
   }
 
-  private void fillMissingRowsWithEmptyEntries(int numberOfRows, List<String[]> l1) {
-    String[] l1Fill = new String[l1.get(0).length];
+  private void fillMissingRowsWithEmptyEntries(final int numberOfRows, final List<String[]> l1) {
+    final String[] l1Fill = new String[l1.get(0).length];
     Arrays.fill(l1Fill, "");
     IntStream.range(l1.size(), numberOfRows).forEach(i -> l1.add(l1Fill));
   }

@@ -11,21 +11,22 @@ import static java.lang.System.getProperties;
 import static java.lang.System.setProperties;
 
 import java.util.Properties;
-import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.slf4j.Logger;
 
 /**
  * Extension to allow manipulation of System Properties and restore their state after test
  * completion
  */
-@Slf4j
-@NoArgsConstructor
 public class SystemPropertiesExtension implements BeforeEachCallback, AfterEachCallback {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(SystemPropertiesExtension.class);
   private Properties originalProperties;
+
+  public SystemPropertiesExtension() {}
 
   @Override
   public void beforeEach(final ExtensionContext extensionContext) throws Exception {
@@ -38,8 +39,8 @@ public class SystemPropertiesExtension implements BeforeEachCallback, AfterEachC
     setProperties(originalProperties);
   }
 
-  private Properties copyOf(Properties source) {
-    Properties copy = new Properties();
+  private Properties copyOf(final Properties source) {
+    final Properties copy = new Properties();
     copy.putAll(source);
     return copy;
   }

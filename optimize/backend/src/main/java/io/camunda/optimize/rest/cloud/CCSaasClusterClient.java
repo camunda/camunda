@@ -28,23 +28,22 @@ import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Set;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
 @Conditional(CCSaaSCondition.class)
 public class CCSaasClusterClient extends AbstractCCSaaSClient {
 
   private static final String GET_CLUSTERS_TEMPLATE = GET_ORGS_TEMPLATE + "/clusters";
-  private Map<AppName, String> webappsLinks;
   private static final Set<AppName> REQUIRED_WEBAPPS_LINKS =
       Set.of(CONSOLE, OPERATE, OPTIMIZE, MODELER, TASKLIST);
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(CCSaasClusterClient.class);
+  private Map<AppName, String> webappsLinks;
 
   public CCSaasClusterClient(
       final ConfigurationService configurationService, final ObjectMapper objectMapper) {
@@ -115,11 +114,73 @@ public class CCSaasClusterClient extends AbstractCCSaaSClient {
         .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
-  @Data
   @JsonIgnoreProperties(ignoreUnknown = true)
   private static class ClusterMetadata implements Serializable {
 
     private String uuid;
     private Map<AppName, String> urls = new EnumMap<>(AppName.class);
+
+    public ClusterMetadata() {}
+
+    public String getUuid() {
+      return uuid;
+    }
+
+    public void setUuid(final String uuid) {
+      this.uuid = uuid;
+    }
+
+    public Map<AppName, String> getUrls() {
+      return urls;
+    }
+
+    public void setUrls(final Map<AppName, String> urls) {
+      this.urls = urls;
+    }
+
+    protected boolean canEqual(final Object other) {
+      return other instanceof ClusterMetadata;
+    }
+
+    @Override
+    public int hashCode() {
+      final int PRIME = 59;
+      int result = 1;
+      final Object $uuid = getUuid();
+      result = result * PRIME + ($uuid == null ? 43 : $uuid.hashCode());
+      final Object $urls = getUrls();
+      result = result * PRIME + ($urls == null ? 43 : $urls.hashCode());
+      return result;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (o == this) {
+        return true;
+      }
+      if (!(o instanceof ClusterMetadata)) {
+        return false;
+      }
+      final ClusterMetadata other = (ClusterMetadata) o;
+      if (!other.canEqual((Object) this)) {
+        return false;
+      }
+      final Object this$uuid = getUuid();
+      final Object other$uuid = other.getUuid();
+      if (this$uuid == null ? other$uuid != null : !this$uuid.equals(other$uuid)) {
+        return false;
+      }
+      final Object this$urls = getUrls();
+      final Object other$urls = other.getUrls();
+      if (this$urls == null ? other$urls != null : !this$urls.equals(other$urls)) {
+        return false;
+      }
+      return true;
+    }
+
+    @Override
+    public String toString() {
+      return "CCSaasClusterClient.ClusterMetadata(uuid=" + getUuid() + ", urls=" + getUrls() + ")";
+    }
   }
 }

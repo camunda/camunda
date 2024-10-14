@@ -17,15 +17,21 @@ import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.util.DefinitionQueryUtilES;
 import java.util.List;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 public class NestedDefinitionQueryBuilderES {
 
   private final String nestedField;
   private final String definitionKeyField;
   private final String versionField;
   private final String tenantIdField;
+
+  public NestedDefinitionQueryBuilderES(
+      String nestedField, String definitionKeyField, String versionField, String tenantIdField) {
+    this.nestedField = nestedField;
+    this.definitionKeyField = definitionKeyField;
+    this.versionField = versionField;
+    this.tenantIdField = tenantIdField;
+  }
 
   public Query.Builder createNestedDocDefinitionQuery(
       final String definitionKey,

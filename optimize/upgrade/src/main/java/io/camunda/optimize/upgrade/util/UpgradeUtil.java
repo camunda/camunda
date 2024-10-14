@@ -26,14 +26,14 @@ import io.camunda.search.connect.plugin.PluginRepository;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
 /** Bunch of utility methods that might be required during upgrade operation. */
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
-@Slf4j
 public class UpgradeUtil {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(UpgradeUtil.class);
+
+  private UpgradeUtil() {}
 
   public static UpgradeExecutionDependencies createUpgradeDependencies(
       final DatabaseType databaseType) {

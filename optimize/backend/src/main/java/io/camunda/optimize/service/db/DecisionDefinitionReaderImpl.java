@@ -13,16 +13,19 @@ import io.camunda.optimize.service.db.reader.DecisionDefinitionReader;
 import io.camunda.optimize.service.db.reader.DefinitionReader;
 import java.util.List;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 public class DecisionDefinitionReaderImpl implements DecisionDefinitionReader {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(DecisionDefinitionReaderImpl.class);
   private final DefinitionReader definitionReader;
+
+  public DecisionDefinitionReaderImpl(final DefinitionReader definitionReader) {
+    this.definitionReader = definitionReader;
+  }
 
   @Override
   public Optional<DecisionDefinitionOptimizeDto> getDecisionDefinition(
@@ -39,7 +42,7 @@ public class DecisionDefinitionReaderImpl implements DecisionDefinitionReader {
   }
 
   @Override
-  public String getLatestVersionToKey(String key) {
+  public String getLatestVersionToKey(final String key) {
     return definitionReader.getLatestVersionToKey(DefinitionType.DECISION, key);
   }
 }

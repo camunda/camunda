@@ -17,15 +17,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
 public class ExternalProcessVariableIndexRolloverService extends AbstractScheduledService {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ExternalProcessVariableIndexRolloverService.class);
   private final DatabaseClient databaseClient;
   private final ConfigurationService configurationService;
 

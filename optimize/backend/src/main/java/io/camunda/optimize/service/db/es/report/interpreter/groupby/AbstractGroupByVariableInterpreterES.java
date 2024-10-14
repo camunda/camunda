@@ -50,14 +50,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 
-@RequiredArgsConstructor
 public abstract class AbstractGroupByVariableInterpreterES<
         DATA extends SingleReportDataDto, PLAN extends ExecutionPlan>
     extends AbstractGroupByInterpreterES<DATA, PLAN> {
 
   public static final String FILTERED_FLOW_NODE_AGGREGATION = "filteredFlowNodeAggregation";
+
+  public AbstractGroupByVariableInterpreterES() {}
 
   protected abstract VariableAggregationServiceES getVariableAggregationService();
 

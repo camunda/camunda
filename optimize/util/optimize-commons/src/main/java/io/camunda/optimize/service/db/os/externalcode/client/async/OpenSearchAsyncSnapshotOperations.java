@@ -11,32 +11,29 @@ import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.snapshot.CreateSnapshotRequest;
 import org.opensearch.client.opensearch.snapshot.CreateSnapshotResponse;
 import org.opensearch.client.opensearch.snapshot.DeleteSnapshotRequest;
 import org.opensearch.client.opensearch.snapshot.DeleteSnapshotRequest.Builder;
 import org.opensearch.client.opensearch.snapshot.DeleteSnapshotResponse;
+import org.slf4j.Logger;
 
-@Slf4j
 public class OpenSearchAsyncSnapshotOperations extends OpenSearchAsyncOperation {
-  public static class SnaphotStatus {
-    public static final String FAILED = "FAILED";
-    public static final String IN_PROGRESS = "IN_PROGRESS";
-    public static final String PARTIAL = "PARTIAL";
-    public static final String SUCCESS = "SUCCESS";
-  }
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(OpenSearchAsyncSnapshotOperations.class);
 
   public OpenSearchAsyncSnapshotOperations(
-      OptimizeIndexNameService indexNameService, OpenSearchAsyncClient openSearchAsyncClient) {
+      final OptimizeIndexNameService indexNameService,
+      final OpenSearchAsyncClient openSearchAsyncClient) {
     super(indexNameService, openSearchAsyncClient);
   }
 
   public CompletableFuture<DeleteSnapshotResponse> delete(
       final String repository,
       final String snapshot,
-      Function<Exception, String> errorMessageSupplier) {
+      final Function<Exception, String> errorMessageSupplier) {
     final DeleteSnapshotRequest request =
         new Builder().repository(repository).snapshot(snapshot).build();
 
@@ -47,8 +44,8 @@ public class OpenSearchAsyncSnapshotOperations extends OpenSearchAsyncOperation 
       final String repository,
       final String snapshot,
       final List<String> indexNames,
-      Function<Exception, String> errorMessageSupplier) {
-    CreateSnapshotRequest request =
+      final Function<Exception, String> errorMessageSupplier) {
+    final CreateSnapshotRequest request =
         new CreateSnapshotRequest.Builder()
             .repository(repository)
             .snapshot(snapshot)
@@ -58,5 +55,13 @@ public class OpenSearchAsyncSnapshotOperations extends OpenSearchAsyncOperation 
             .build();
 
     return safe(() -> openSearchAsyncClient.snapshot().create(request), errorMessageSupplier);
+  }
+
+  public static class SnaphotStatus {
+
+    public static final String FAILED = "FAILED";
+    public static final String IN_PROGRESS = "IN_PROGRESS";
+    public static final String PARTIAL = "PARTIAL";
+    public static final String SUCCESS = "SUCCESS";
   }
 }

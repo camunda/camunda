@@ -17,14 +17,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 public class ExternalVariableService {
 
   private final ExternalProcessVariableWriter externalProcessVariableWriter;
+
+  public ExternalVariableService(
+      final ExternalProcessVariableWriter externalProcessVariableWriter) {
+    this.externalProcessVariableWriter = externalProcessVariableWriter;
+  }
 
   public void storeExternalProcessVariables(
       final List<ExternalProcessVariableDto> externalProcessVariables) {
@@ -37,9 +40,10 @@ public class ExternalVariableService {
     // if we have more than one variable update for the same variable within one process instance,
     // we only import the latest
     // variable in the batch
-    List<ExternalProcessVariableDto> deduplicatedVariables = new ArrayList<>();
-    Map<String, List<ExternalProcessVariableDto>> variablesByProcessInstanceId = new HashMap<>();
-    for (ExternalProcessVariableDto variable : externalProcessVariables) {
+    final List<ExternalProcessVariableDto> deduplicatedVariables = new ArrayList<>();
+    final Map<String, List<ExternalProcessVariableDto>> variablesByProcessInstanceId =
+        new HashMap<>();
+    for (final ExternalProcessVariableDto variable : externalProcessVariables) {
       variablesByProcessInstanceId.putIfAbsent(variable.getProcessInstanceId(), new ArrayList<>());
       variablesByProcessInstanceId.get(variable.getProcessInstanceId()).add(variable);
     }

@@ -29,15 +29,23 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 public class SingleReportEvaluator {
+
   private final ConfigurationService configurationService;
   private final ExecutionPlanExtractor executionPlanExtractor;
   private final ExecutionPlanInterpreterFacade interpreter;
+
+  public SingleReportEvaluator(
+      ConfigurationService configurationService,
+      ExecutionPlanExtractor executionPlanExtractor,
+      ExecutionPlanInterpreterFacade interpreter) {
+    this.configurationService = configurationService;
+    this.executionPlanExtractor = executionPlanExtractor;
+    this.interpreter = interpreter;
+  }
 
   @SuppressWarnings(UNCHECKED_CAST)
   public <D extends SingleReportDataDto> SingleReportEvaluationResult<Object> evaluate(

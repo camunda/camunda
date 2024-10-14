@@ -40,8 +40,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Refresh;
@@ -69,10 +67,11 @@ import org.opensearch.client.opensearch.tasks.ListRequest;
 import org.opensearch.client.opensearch.tasks.ListResponse;
 import org.opensearch.client.opensearch.tasks.State;
 import org.opensearch.client.opensearch.tasks.TaskExecutingNode;
+import org.slf4j.Logger;
 
-@Getter
-@Slf4j
 public class SchemaUpgradeClientOS extends SchemaUpgradeClient<OptimizeOpenSearchClient, Builder> {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(SchemaUpgradeClientOS.class);
   private final ObjectMapper objectMapper;
 
   public SchemaUpgradeClientOS(
@@ -657,5 +656,9 @@ public class SchemaUpgradeClientOS extends SchemaUpgradeClient<OptimizeOpenSearc
         .type(state.type())
         .parentTaskId(state.parentTaskId())
         .build();
+  }
+
+  public ObjectMapper getObjectMapper() {
+    return this.objectMapper;
   }
 }

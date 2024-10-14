@@ -18,8 +18,6 @@ import io.camunda.optimize.service.db.report.result.CompositeCommandResult.ViewR
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.List;
 import java.util.Map;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -28,11 +26,15 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class DecisionDistributedByNoneInterpreterOS
     extends AbstractDistributedByInterpreterOS<DecisionReportDataDto, DecisionExecutionPlan> {
-  @Getter private final DecisionViewInterpreterFacadeOS viewInterpreter;
+
+  private final DecisionViewInterpreterFacadeOS viewInterpreter;
+
+  public DecisionDistributedByNoneInterpreterOS(DecisionViewInterpreterFacadeOS viewInterpreter) {
+    this.viewInterpreter = viewInterpreter;
+  }
 
   @Override
   public Map<String, Aggregation> createAggregations(
@@ -56,5 +58,9 @@ public class DecisionDistributedByNoneInterpreterOS
     return List.of(
         DistributedByResult.createDistributedByNoneResult(
             viewInterpreter.createEmptyResult(context)));
+  }
+
+  public DecisionViewInterpreterFacadeOS getViewInterpreter() {
+    return this.viewInterpreter;
   }
 }

@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
-import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
@@ -45,11 +44,18 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@AllArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class DurationAggregationServiceOS extends DurationAggregationService {
+
   private final MinMaxStatsServiceOS minMaxStatsService;
   private final ProcessDistributedByInterpreterFacadeOS distributedByInterpreter;
+
+  public DurationAggregationServiceOS(
+      MinMaxStatsServiceOS minMaxStatsService,
+      ProcessDistributedByInterpreterFacadeOS distributedByInterpreter) {
+    this.minMaxStatsService = minMaxStatsService;
+    this.distributedByInterpreter = distributedByInterpreter;
+  }
 
   public Optional<Pair<String, Aggregation>> createLimitedGroupByScriptedDurationAggregation(
       final Query baseQuery,

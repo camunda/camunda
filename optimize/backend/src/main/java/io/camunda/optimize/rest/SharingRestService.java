@@ -45,11 +45,9 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.time.ZoneId;
 import java.util.function.Supplier;
-import lombok.AllArgsConstructor;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Path(SharingRestService.SHARE_PATH)
 @Component
 public class SharingRestService {
@@ -66,6 +64,23 @@ public class SharingRestService {
   private final DashboardRestMapper dashboardRestMapper;
   private final EventReportingService eventReportingService;
   private final Environment environment;
+
+  public SharingRestService(
+      final SharingService sharingService,
+      final SettingsService settingsService,
+      final SessionService sessionService,
+      final ReportRestMapper reportRestMapper,
+      final DashboardRestMapper dashboardRestMapper,
+      final EventReportingService eventReportingService,
+      final Environment environment) {
+    this.sharingService = sharingService;
+    this.settingsService = settingsService;
+    this.sessionService = sessionService;
+    this.reportRestMapper = reportRestMapper;
+    this.dashboardRestMapper = dashboardRestMapper;
+    this.eventReportingService = eventReportingService;
+    this.environment = environment;
+  }
 
   @POST
   @Produces(MediaType.APPLICATION_JSON)

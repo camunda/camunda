@@ -126,7 +126,7 @@
 //             .getRequestExecutor()
 //             .buildDecisionOutputVariableValuesRequest(requestDto);
 //       default:
-//         throw new RuntimeException("unsupported type " + inputsOrOutputs);
+//         throw new OptimizeRuntimeException("unsupported type " + inputsOrOutputs);
 //     }
 //   }
 // 
