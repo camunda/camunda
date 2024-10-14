@@ -36,7 +36,7 @@ public class RoleStateTest {
     final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName(roleName);
 
     // when
-    roleState.createRole(roleRecord);
+    roleState.create(roleRecord);
 
     // then
     final var persistedRole = roleState.getRole(roleKey).get();
@@ -63,5 +63,26 @@ public class RoleStateTest {
 
     // then
     assertThat(roleKey).isEqualTo(-1L);
+  }
+
+  @Test
+  void shouldUpdateRole() {
+    // given
+    final long roleKey = 1L;
+    final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName("foo");
+    roleState.create(roleRecord);
+
+    // when
+    final String updatedName = "updatedName";
+    final var updatedRecord = new RoleRecord().setRoleKey(roleKey).setName(updatedName);
+    roleState.update(updatedRecord);
+
+    // then
+    final var persistedRole = roleState.getRole(roleKey).get();
+    assertThat(persistedRole.getRoleKey()).isEqualTo(roleKey);
+    assertThat(persistedRole.getName()).isEqualTo(updatedName);
+
+    final var roleKeyByName = roleState.getRoleKeyByName(updatedName);
+    assertThat(roleKeyByName).isEqualTo(roleKey);
   }
 }

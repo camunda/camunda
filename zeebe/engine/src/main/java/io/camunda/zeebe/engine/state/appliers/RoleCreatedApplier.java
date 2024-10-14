@@ -22,6 +22,6 @@ public class RoleCreatedApplier implements TypedEventApplier<RoleIntent, RoleRec
 
   @Override
   public void applyState(final long key, final RoleRecord value) {
-    roleState.createRole(value);
+    roleState.create(value);
   }
 }
