@@ -20,8 +20,7 @@ public final class TestSupport {
           .withTag(RestClient.class.getPackage().getImplementationVersion());
 
   private static final DockerImageName OPENSEARCH_IMAGE =
-      DockerImageName.parse("opensearchproject/opensearch")
-          .withTag(org.opensearch.client.RestClient.class.getPackage().getImplementationVersion());
+      DockerImageName.parse("opensearchproject/opensearch").withTag("2.17.1");
 
   private TestSupport() {}
 
