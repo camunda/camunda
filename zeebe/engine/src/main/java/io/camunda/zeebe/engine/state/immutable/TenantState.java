@@ -21,10 +21,11 @@ public interface TenantState {
   Optional<TenantRecord> getTenantByKey(long tenantKey);
 
   /**
-   * Retrieves a tenant key by its ID.
+   * Retrieves the tenant key associated with the given tenant ID.
    *
-   * @param tenantId the ID of the tenant to look up
-   * @return the key of the tenant if it exists, otherwise null
+   * @param tenantId the unique identifier of the tenant to look up
+   * @return an {@link Optional} containing the tenant key if the tenant exists, or an empty {@link
+   *     Optional} if not
    */
-  Long getTenantKeyById(String tenantId);
+  Optional<Long> getTenantKeyById(String tenantId);
 }
