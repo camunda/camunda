@@ -120,6 +120,7 @@ final class DecisionHandlerTest {
     assertThat(decisionDefinitionEntity.getId()).isEqualTo("123");
     assertThat(decisionDefinitionEntity.getKey()).isEqualTo(123L);
     assertThat(decisionDefinitionEntity.getName()).isEqualTo("decisionName");
+    assertThat(decisionDefinitionEntity.getDecisionId()).isEqualTo("decisionId");
     assertThat(decisionDefinitionEntity.getVersion()).isEqualTo(2);
     assertThat(decisionDefinitionEntity.getDecisionRequirementsId())
         .isEqualTo("decisionRequirementsId");
