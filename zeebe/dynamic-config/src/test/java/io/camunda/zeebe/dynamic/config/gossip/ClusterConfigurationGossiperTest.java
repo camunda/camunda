@@ -26,15 +26,11 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Named;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.api.Test;
 
 final class ClusterConfigurationGossiperTest {
 
@@ -55,10 +51,11 @@ final class ClusterConfigurationGossiperTest {
     CloseHelper.quietCloseAll(node1, node2, node3, actorScheduler);
   }
 
-  @ParameterizedTest
-  @MethodSource("provideConfig")
-  void shouldPropagateTopologyUpdate(final ClusterConfigurationGossiperConfig config) {
+  @Test
+  void shouldPropagateTopologyUpdate() {
     // given
+    final var config =
+        new ClusterConfigurationGossiperConfig(Duration.ofMillis(100), Duration.ofSeconds(1), 0);
     node1 = new TestGossiper(createClusterNode(clusterNodes.get(0), clusterNodes), config);
     node2 = new TestGossiper(createClusterNode(clusterNodes.get(1), clusterNodes), config);
     node3 = new TestGossiper(createClusterNode(clusterNodes.get(2), clusterNodes), config);
@@ -78,20 +75,6 @@ final class ClusterConfigurationGossiperTest {
         .untilAsserted(() -> assertThat(node2.clusterConfiguration).isEqualTo(node1Topology));
     Awaitility.await("Node 3 has received topology via gossip")
         .untilAsserted(() -> assertThat(node3.clusterConfiguration).isEqualTo(node1Topology));
-  }
-
-  private static Stream<Arguments> provideConfig() {
-    return Stream.of(
-        Arguments.of(
-            Named.of(
-                "by gossip", // Disable sync
-                new ClusterConfigurationGossiperConfig(
-                    false, Duration.ofMinutes(10), Duration.ofSeconds(1), 2))),
-        Arguments.of(
-            Named.of(
-                "by sync", // Set gossipFanout to 0
-                new ClusterConfigurationGossiperConfig(
-                    true, Duration.ofMillis(100), Duration.ofSeconds(1), 0))));
   }
 
   private Node createNode(final String id) {

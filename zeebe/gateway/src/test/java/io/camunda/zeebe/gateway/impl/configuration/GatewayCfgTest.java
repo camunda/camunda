@@ -47,7 +47,7 @@ public final class GatewayCfgTest {
         .setConfigManager(
             new ConfigManagerCfg(
                 new ClusterConfigurationGossiperConfig(
-                    false, Duration.ofSeconds(5), Duration.ofSeconds(30), 6)));
+                    Duration.ofSeconds(5), Duration.ofSeconds(30), 6)));
     CUSTOM_CFG
         .getSecurity()
         .setEnabled(true)
@@ -130,7 +130,6 @@ public final class GatewayCfgTest {
 
     // then
     final var gossiperConfig = gatewayCfg.getCluster().getConfigManager().gossip();
-    assertThat(gossiperConfig.enableSync()).isEqualTo(false);
     assertThat(gossiperConfig.syncDelay()).isEqualTo(Duration.ofSeconds(5));
     assertThat(gossiperConfig.syncRequestTimeout()).isEqualTo(Duration.ofSeconds(30));
     assertThat(gossiperConfig.gossipFanout()).isEqualTo(6);
@@ -195,7 +194,7 @@ public final class GatewayCfgTest {
         .setConfigManager(
             new ConfigManagerCfg(
                 new ClusterConfigurationGossiperConfig(
-                    false, Duration.ofSeconds(5), Duration.ofSeconds(5), 4)));
+                    Duration.ofSeconds(5), Duration.ofSeconds(5), 4)));
     expected.getThreads().setManagementThreads(32);
     expected
         .getSecurity()

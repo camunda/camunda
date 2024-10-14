@@ -500,9 +500,6 @@
         # Configure the parameters used for gossiping the configuration
         # Note that this is not related to cluster membership gossip.
         # gossip:
-          # Enable the synchronization of the gossip instead of only relying on gossip
-          # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_CONFIGMANAGER_GOSSIP_ENABLESYNC
-          # enableSync: true
           # Sets the interval between two synchronization requests to other members of the cluster
           # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_CONFIGMANAGER_GOSSIP_SYNCDELAY
           # syncDelay: 10s

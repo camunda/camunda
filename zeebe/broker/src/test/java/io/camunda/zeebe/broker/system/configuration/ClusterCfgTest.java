@@ -170,7 +170,7 @@ public final class ClusterCfgTest {
         .isEqualTo(
             new ConfigManagerCfg(
                 new ClusterConfigurationGossiperConfig(
-                    false, Duration.ofSeconds(10), Duration.ofSeconds(30), 10)));
+                    Duration.ofSeconds(10), Duration.ofSeconds(30), 10)));
   }
 
   @Test
@@ -192,7 +192,7 @@ public final class ClusterCfgTest {
         .isEqualTo(
             new ConfigManagerCfg(
                 new ClusterConfigurationGossiperConfig(
-                    true, Duration.ofSeconds(5), Duration.ofSeconds(6), 6)));
+                    Duration.ofSeconds(5), Duration.ofSeconds(6), 6)));
   }
 
   @Test
