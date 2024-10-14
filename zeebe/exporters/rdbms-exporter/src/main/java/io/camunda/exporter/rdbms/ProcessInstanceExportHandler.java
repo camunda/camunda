@@ -7,8 +7,8 @@
  */
 package io.camunda.exporter.rdbms;
 
-import io.camunda.db.rdbms.domain.ProcessInstanceDbModel;
-import io.camunda.db.rdbms.service.ProcessInstanceRdbmsService;
+import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
+import io.camunda.db.rdbms.write.service.ProcessInstanceWriter;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -20,11 +20,10 @@ import java.time.Instant;
 public class ProcessInstanceExportHandler
     implements RdbmsExportHandler<ProcessInstanceRecordValue> {
 
-  private final ProcessInstanceRdbmsService processInstanceRdbmsService;
+  private final ProcessInstanceWriter processInstanceWriter;
 
-  public ProcessInstanceExportHandler(
-      final ProcessInstanceRdbmsService processInstanceRdbmsService) {
-    this.processInstanceRdbmsService = processInstanceRdbmsService;
+  public ProcessInstanceExportHandler(final ProcessInstanceWriter processInstanceWriter) {
+    this.processInstanceWriter = processInstanceWriter;
   }
 
   @Override
@@ -36,17 +35,15 @@ public class ProcessInstanceExportHandler
   public void export(final Record<ProcessInstanceRecordValue> record) {
     if (record.getValue().getBpmnElementType() == BpmnElementType.PROCESS) {
       exportProcessInstance(record);
-    } else {
-      exportFlowNode(record);
     }
   }
 
   private void exportProcessInstance(final Record<ProcessInstanceRecordValue> record) {
     final var value = record.getValue();
     if (record.getIntent().equals(ProcessInstanceIntent.ELEMENT_ACTIVATING)) {
-      processInstanceRdbmsService.create(map(record));
+      processInstanceWriter.create(map(record));
     } else if (record.getIntent().equals(ProcessInstanceIntent.ELEMENT_COMPLETED)) {
-      processInstanceRdbmsService.update(
+      processInstanceWriter.update(
           new ProcessInstanceDbModel(
               value.getProcessInstanceKey(),
               value.getBpmnProcessId(),
@@ -60,7 +57,7 @@ public class ProcessInstanceExportHandler
               null,
               value.getVersion()));
     } else if (record.getIntent().equals(ProcessInstanceIntent.ELEMENT_TERMINATED)) {
-      processInstanceRdbmsService.update(
+      processInstanceWriter.update(
           new ProcessInstanceDbModel(
               value.getProcessInstanceKey(),
               value.getBpmnProcessId(),
@@ -73,14 +70,6 @@ public class ProcessInstanceExportHandler
               value.getParentElementInstanceKey(),
               null,
               value.getVersion()));
-    }
-  }
-
-  private void exportFlowNode(final Record<ProcessInstanceRecordValue> record) {
-    final var value = record.getValue();
-    if (record.getIntent().equals(ProcessInstanceIntent.ELEMENT_COMPLETED)) {
-      processInstanceRdbmsService.updateCurrentElementId(
-          value.getProcessInstanceKey(), value.getElementId());
     }
   }
 

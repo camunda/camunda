@@ -12,7 +12,7 @@
   <select id="findOne"
     statementType="PREPARED"
     parameterType="java.lang.Long"
-    resultType="io.camunda.db.rdbms.domain.ExporterPositionModel">
+    resultType="io.camunda.db.rdbms.write.domain.ExporterPositionModel">
       SELECT
         PARTITION_ID,
         EXPORTER,
@@ -27,7 +27,7 @@
   <insert
     id="insert"
     statementType="PREPARED"
-    parameterType="io.camunda.db.rdbms.domain.ExporterPositionModel"
+    parameterType="io.camunda.db.rdbms.write.domain.ExporterPositionModel"
     flushCache="true"
     timeout="20">
       INSERT INTO EXPORTER_POSITION (PARTITION_ID, EXPORTER, LAST_EXPORTED_POSITION, CREATED, LAST_UPDATED)
@@ -37,7 +37,7 @@
   <update
     id="update"
     statementType="PREPARED"
-    parameterType="io.camunda.db.rdbms.domain.ExporterPositionModel"
+    parameterType="io.camunda.db.rdbms.write.domain.ExporterPositionModel"
     flushCache="true"
     timeout="20">
       UPDATE EXPORTER_POSITION

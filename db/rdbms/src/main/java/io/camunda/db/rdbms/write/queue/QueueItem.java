@@ -5,13 +5,6 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.db.rdbms.domain;
+package io.camunda.db.rdbms.write.queue;
 
-import java.time.LocalDateTime;
-
-public record ExporterPositionModel(
-    Long partitionId,
-    String exporter,
-    Long lastExportedPosition,
-    LocalDateTime created,
-    LocalDateTime lastUpdated) {}
+public record QueueItem(ContextType contextType, Object id, String statementId, Object parameter) {}
