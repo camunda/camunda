@@ -79,4 +79,90 @@ public class DbTenantStateTest {
     // then
     assertThat(tenantKey).isEmpty();
   }
+
+  @Test
+  void shouldUpdateTenantName() {
+    // given
+    final long tenantKey = 1L;
+    final String tenantId = "tenant-1";
+    final String oldName = "Tenant One";
+    final String newName = "Updated Tenant";
+    final var tenantRecord =
+        new TenantRecord().setTenantKey(tenantKey).setTenantId(tenantId).setName(oldName);
+
+    tenantState.createTenant(tenantRecord);
+
+    // when
+    final var updatedRecord =
+        new TenantRecord().setTenantKey(tenantKey).setTenantId(tenantId).setName(newName);
+    tenantState.updateTenant(updatedRecord);
+
+    // then
+    final var persistedTenant = tenantState.getTenantByKey(tenantKey);
+    assertThat(persistedTenant).isPresent();
+    assertThat(persistedTenant.get().getName()).isEqualTo(newName);
+  }
+
+  @Test
+  void shouldUpdateTenantId() {
+    // given
+    final long tenantKey = 1L;
+    final String oldTenantId = "tenant-1";
+    final String newTenantId = "tenant-2";
+    final String tenantName = "Tenant One";
+    final var tenantRecord =
+        new TenantRecord().setTenantKey(tenantKey).setTenantId(oldTenantId).setName(tenantName);
+
+    tenantState.createTenant(tenantRecord);
+
+    // when
+    final var updatedRecord =
+        new TenantRecord().setTenantKey(tenantKey).setTenantId(newTenantId).setName(tenantName);
+    tenantState.updateTenant(updatedRecord);
+
+    // then
+    // Old tenant ID should not be found
+    final var oldKey = tenantState.getTenantKeyById(oldTenantId);
+    assertThat(oldKey).isEmpty();
+
+    // New tenant ID should be mapped to the tenantKey
+    final var newKey = tenantState.getTenantKeyById(newTenantId);
+    assertThat(newKey).isPresent();
+    assertThat(newKey.get()).isEqualTo(tenantKey);
+  }
+
+  @Test
+  void shouldUpdateTenantNameAndEntityKey() {
+    // given
+    final long tenantKey = 1L;
+    final String tenantId = "tenant-1";
+    final String oldName = "Tenant One";
+    final String newName = "Updated Tenant";
+    final long oldEntityKey = 123L;
+    final long newEntityKey = 456L;
+    final var tenantRecord =
+        new TenantRecord()
+            .setTenantKey(tenantKey)
+            .setTenantId(tenantId)
+            .setName(oldName)
+            .setEntityKey(oldEntityKey);
+
+    tenantState.createTenant(tenantRecord);
+
+    // when
+    final var updatedRecord =
+        new TenantRecord()
+            .setTenantKey(tenantKey)
+            .setTenantId(tenantId)
+            .setName(newName)
+            .setEntityKey(newEntityKey);
+
+    tenantState.updateTenant(updatedRecord);
+
+    // then
+    final var persistedTenant = tenantState.getTenantByKey(tenantKey);
+    assertThat(persistedTenant).isPresent();
+    assertThat(persistedTenant.get().getName()).isEqualTo(newName);
+    assertThat(persistedTenant.get().getEntityKey()).isEqualTo(newEntityKey);
+  }
 }
