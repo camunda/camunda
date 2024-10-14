@@ -14,10 +14,13 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ImmutableDecisionRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 final class DecisionHandlerTest {
@@ -40,10 +43,30 @@ final class DecisionHandlerTest {
   void shouldHandleRecord() {
     // given
     final Record<DecisionRecordValue> decisionRecord =
-        factory.generateRecord(ValueType.DECISION, r -> r.withIntent(ProcessIntent.CREATED));
+        factory.generateRecord(ValueType.DECISION, r -> r.withIntent(DecisionIntent.CREATED));
 
     // when - then
     assertThat(underTest.handlesRecord(decisionRecord)).isTrue();
+  }
+
+  @Test
+  void shouldNotHandleRecord() {
+    final Set<DecisionIntent> intents2Ignore =
+        Arrays.stream(DecisionIntent.values())
+            .filter(intent -> !intent.equals(DecisionIntent.CREATED))
+            .collect(Collectors.toSet());
+
+    intents2Ignore.stream()
+        .forEach(
+            intent -> {
+              // given
+              final Record<DecisionRecordValue> decisionRecord =
+                  factory.generateRecord(ValueType.DECISION, r -> r.withIntent(intent));
+              // when - then
+              assertThat(underTest.handlesRecord(decisionRecord))
+                  .as("Does not handle intent %s", intent)
+                  .isFalse();
+            });
   }
 
   @Test
@@ -59,7 +82,7 @@ final class DecisionHandlerTest {
     final Record<DecisionRecordValue> decisionRecord =
         factory.generateRecord(
             ValueType.DECISION,
-            r -> r.withIntent(ProcessIntent.CREATED).withValue(decisionRecordValue));
+            r -> r.withIntent(DecisionIntent.CREATED).withValue(decisionRecordValue));
 
     // when
     final var idList = underTest.generateIds(decisionRecord);
@@ -81,14 +104,14 @@ final class DecisionHandlerTest {
   @Test
   void shouldAddEntityOnFlush() {
     // given
-    final DecisionDefinitionEntity inputEntity = new DecisionDefinitionEntity();
+    final DecisionDefinitionEntity inputEntity = new DecisionDefinitionEntity().setId("111");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
     underTest.flush(inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).addWithId(indexName, "0", inputEntity);
+    verify(mockRequest, times(1)).addWithId(indexName, "111", inputEntity);
   }
 
   @Test
@@ -109,7 +132,7 @@ final class DecisionHandlerTest {
     final Record<DecisionRecordValue> decisionRecord =
         factory.generateRecord(
             ValueType.DECISION,
-            r -> r.withIntent(ProcessIntent.CREATED).withValue(decisionRecordValue));
+            r -> r.withIntent(DecisionIntent.CREATED).withValue(decisionRecordValue));
 
     // when
     final DecisionDefinitionEntity decisionDefinitionEntity = new DecisionDefinitionEntity();
