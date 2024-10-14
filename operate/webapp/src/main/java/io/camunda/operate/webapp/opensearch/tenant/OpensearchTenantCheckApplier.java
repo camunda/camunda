@@ -7,8 +7,8 @@
  */
 package io.camunda.operate.webapp.opensearch.tenant;
 
-import static io.camunda.operate.schema.indices.IndexDescriptor.TENANT_ID;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
+import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.TENANT_ID;
 
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;

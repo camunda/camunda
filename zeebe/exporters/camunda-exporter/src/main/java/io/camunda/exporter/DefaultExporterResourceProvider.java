@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter;
 
+import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.util.Set;
@@ -17,13 +18,39 @@ import java.util.Set;
  */
 public class DefaultExporterResourceProvider implements ExporterResourceProvider {
 
+  private String operateIndexPrefix;
+
+  @Override
+  public void init(final ExporterConfiguration configuration) {
+    operateIndexPrefix = configuration.getIndex().getPrefix();
+  }
+
   @Override
   public Set<IndexDescriptor> getIndexDescriptors() {
     return Set.of();
+    // TODO uncomment this to start creating Operate schema from exporter
+    //    return Set.of(
+    //        new DecisionIndex(operateIndexPrefix, true),
+    //        new DecisionRequirementsIndex(operateIndexPrefix, true),
+    //        new MetricIndex(operateIndexPrefix, true),
+    //        new ProcessIndex(operateIndexPrefix, true));
   }
 
   @Override
   public Set<IndexTemplateDescriptor> getIndexTemplateDescriptors() {
     return Set.of();
+    // TODO uncomment this to start creating Operate schema from exporter
+    //    return Set.of(
+    //        new DecisionInstanceTemplate(operateIndexPrefix, true),
+    //        new EventTemplate(operateIndexPrefix, true),
+    //        new FlowNodeInstanceTemplate(operateIndexPrefix, true),
+    //        new IncidentTemplate(operateIndexPrefix, true),
+    //        new JobTemplate(operateIndexPrefix, true),
+    //        new ListViewTemplate(operateIndexPrefix, true),
+    //        new MessageTemplate(operateIndexPrefix, true),
+    //        new PostImporterQueueTemplate(operateIndexPrefix, true),
+    //        new SequenceFlowTemplate(operateIndexPrefix, true),
+    //        new UserTaskTemplate(operateIndexPrefix, true),
+    //        new VariableTemplate(operateIndexPrefix, true));
   }
 }

@@ -15,6 +15,31 @@
             "justification": "The implementation package is not meant to be used directly, and as such does not need to maintain any backwards compatibility guarantees.",
             "matcher": "java-package",
             "match": "/io\\.camunda\\.zeebe\\.client\\.impl(\\..*)?/"
+          },
+          {
+            "justification": "The search endpoints are in ALPHA version for this release, and as such does not need to maintain any backwards compatibility guarantees.",
+            "matcher": "java-package",
+            "match": "/io\\.camunda\\.zeebe\\.client\\.protocol\\.rest(\\..*)?/"
+          },
+          {
+            "justification": "The search endpoints are in ALPHA version for this release, and as such does not need to maintain any backwards compatibility guarantees.",
+            "matcher": "java-package",
+            "match": "/io\\.camunda\\.zeebe\\.client\\.api\\.search\\.filter(\\..*)?/"
+          },
+          {
+            "justification": "The search endpoints are in ALPHA version for this release, and as such does not need to maintain any backwards compatibility guarantees.",
+            "matcher": "java-package",
+            "match": "/io\\.camunda\\.zeebe\\.client\\.api\\.search\\.query(\\..*)?/"
+          },
+          {
+            "justification": "The search endpoints are in ALPHA version for this release, and as such does not need to maintain any backwards compatibility guarantees.",
+            "matcher": "java-package",
+            "match": "/io\\.camunda\\.zeebe\\.client\\.api\\.search\\.sort(\\..*)?/"
+          },
+          {
+            "justification": "The search endpoints are in ALPHA version for this release, and as such does not need to maintain any backwards compatibility guarantees.",
+            "matcher": "java-package",
+            "match": "/io\\.camunda\\.zeebe\\.client\\.api\\.search\\.response(\\..*)?/"
           }
         ]
       }

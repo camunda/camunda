@@ -30,7 +30,7 @@ public class UserTaskEntity extends OperateZeebeEntity<UserTaskEntity> {
   private String externalReference;
   private String action;
   private List<String> changedAttributes;
-  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  private String tenantId = DEFAULT_TENANT_ID;
   private Integer priority;
 
   public Long getUserTaskKey() {

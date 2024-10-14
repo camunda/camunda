@@ -198,7 +198,8 @@ Before doing your first review, please have a look at this [guide](https://githu
 As a reviewer, you are encouraged to use the following [emoji code](#review-emoji-code) in your comments.
 
 The review should result in:
-- **Approving** the changes if there are only optional suggestions/minor issues 🔧, throughts 💭, or likes 👍
+- **Approving** the changes if there are only optional suggestions/minor issues 🔧, throughts 💭, or likes 👍.
+</br > In cases where ❌ suggestions are straightforward to apply from the reviewers perspective, e.g. "a one-liner"-change for which they don't consider another review needed, the reviewer can pre-approve a PR. This unblocks the author to merge right away when they addressed the required changes. In doubt the author can still decide to require another review, or proactively clarify disagreement with the suggestion. The main point here is that pre-approval puts the author back in charge to make a responsible decision on requiring another review or not and if not get the change merged without further delay.
 - **Requesting changes** if there are major issues ❌
 - **Commenting** if there are open questions ❓
 

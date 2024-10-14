@@ -7,16 +7,15 @@
  */
 package io.camunda.operate.zeebeimport.v8_6.processors;
 
-import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
+import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.schema.templates.UserTaskTemplate;
 import io.camunda.operate.store.BatchRequest;
-import io.camunda.operate.zeebeimport.processors.UserTaskZeebeRecordProcessor;
+import io.camunda.webapps.schema.descriptors.operate.template.UserTaskTemplate;
 import io.camunda.webapps.schema.entities.operate.UserTaskEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;

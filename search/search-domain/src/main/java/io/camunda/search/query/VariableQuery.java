@@ -24,8 +24,8 @@ public final record VariableQuery(VariableFilter filter, VariableSort sort, Sear
     return fn.apply(new Builder()).build();
   }
 
-  public static final class Builder extends AbstractQueryBuilder<Builder>
-      implements ObjectBuilder<VariableQuery> {
+  public static final class Builder extends SearchQueryBase.AbstractQueryBuilder<Builder>
+      implements TypedSearchQueryBuilder<VariableQuery, Builder, VariableFilter, VariableSort> {
 
     private static final VariableFilter EMPTY_FILTER = FilterBuilders.variable().build();
     private static final VariableSort EMPTY_SORT = SortOptionBuilders.variable().build();
@@ -33,19 +33,21 @@ public final record VariableQuery(VariableFilter filter, VariableSort sort, Sear
     private VariableFilter filter;
     private VariableSort sort;
 
+    @Override
     public Builder filter(final VariableFilter value) {
       filter = value;
+      return this;
+    }
+
+    @Override
+    public Builder sort(final VariableSort value) {
+      sort = value;
       return this;
     }
 
     public Builder filter(
         final Function<VariableFilter.Builder, ObjectBuilder<VariableFilter>> fn) {
       return filter(FilterBuilders.variable(fn));
-    }
-
-    public Builder sort(final VariableSort value) {
-      sort = value;
-      return this;
     }
 
     public Builder sort(final Function<VariableSort.Builder, ObjectBuilder<VariableSort>> fn) {

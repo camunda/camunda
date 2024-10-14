@@ -14,16 +14,23 @@ import static org.mockito.Mockito.mock;
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
+import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg.NodeCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
+import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import java.io.File;
 import java.security.cert.CertificateException;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -327,8 +334,122 @@ final class SystemContextTest {
         .hasMessageContaining("Failed configuring backup store S3");
   }
 
+  @RegressionTest("https://github.com/camunda/camunda/issues/12678")
+  void shouldThrowExceptionWithInvalidExporters() {
+    // given
+    final var brokerCfg = new BrokerCfg();
+    final List<String> exportersNames = Arrays.asList("unknown", "oops", "nope");
+    final Map<String, ExporterCfg> exporters = HashMap.newHashMap(exportersNames.size());
+
+    for (final String exporterName : exportersNames) {
+      final ExporterCfg exporterCfg = new ExporterCfg();
+      exporterCfg.setClassName(null);
+      exporterCfg.setJarPath("unknown".equals(exporterName) ? null : exporterName);
+      final Map<String, Object> args = HashMap.newHashMap(1);
+      args.put("any_arg", 1);
+      exporterCfg.setArgs(args);
+      exporters.put(exporterName, exporterCfg);
+    }
+    brokerCfg.setExporters(exporters);
+
+    // then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageStartingWith(
+            "Expected to find a 'className' configured for the exporter. Couldn't find a valid one for the following exporters ");
+  }
+
   private SystemContext initSystemContext(final BrokerCfg brokerCfg) {
     return new SystemContext(
         brokerCfg, mock(ActorScheduler.class), mock(AtomixCluster.class), mock(BrokerClient.class));
+  }
+
+  @Test
+  void shouldThrowInvalidConfigExceptionWhenConfigManagerGossiperHasNegativeValues() {
+    // given
+    final var brokerCfg = new BrokerCfg();
+    final var clusterCfg = brokerCfg.getCluster();
+
+    final var invalidconfigManagerCfg =
+        new ConfigManagerCfg(
+            new ClusterConfigurationGossiperConfig(
+                true, Duration.ofSeconds(10).negated(), Duration.ofSeconds(10).negated(), -1));
+    clusterCfg.setConfigManager(invalidconfigManagerCfg);
+
+    // when
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        // then
+        .isInstanceOf(InvalidConfigurationException.class)
+        .hasMessageStartingWith("Invalid ConfigManager configuration:")
+        .hasMessageContaining(
+            String.format("syncDelay must be positive: configured value = %d ms", -10000))
+        .hasMessageContaining(
+            String.format("syncRequestTimeout must be positive: configured value = %s ms", -10000))
+        .hasMessageContaining(
+            String.format("gossipFanout must be greater than 1: configured value = %d", -1));
+  }
+
+  @Test
+  void shouldThrowInvalidConfigExceptionWhenConfigManagerGossiperHasZeroValues() {
+    // given
+    final var brokerCfg = new BrokerCfg();
+    final var clusterCfg = brokerCfg.getCluster();
+
+    final var invalidConfigManagerCfg =
+        new ConfigManagerCfg(
+            new ClusterConfigurationGossiperConfig(
+                true, Duration.ofSeconds(0), Duration.ofSeconds(0), 0));
+    clusterCfg.setConfigManager(invalidConfigManagerCfg);
+
+    // when
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        // then
+        .isInstanceOf(InvalidConfigurationException.class)
+        .hasMessageStartingWith("Invalid ConfigManager configuration:")
+        .hasMessageContaining(
+            String.format("syncDelay must be positive: configured value = %d ms", 0))
+        .hasMessageContaining(
+            String.format("syncRequestTimeout must be positive: configured value = %s ms", 0))
+        .hasMessageContaining(
+            String.format("gossipFanout must be greater than 1: configured value = %d", 0));
+  }
+
+  @Test
+  void shouldThrowInvalidConfigExceptionWhenConfigManagerHasGossipFanoutTooSmall() {
+    // given
+    final var brokerCfg = new BrokerCfg();
+    final var clusterCfg = brokerCfg.getCluster();
+
+    final var invalidDynamicConfig =
+        new ConfigManagerCfg(
+            new ClusterConfigurationGossiperConfig(
+                true, Duration.ofSeconds(1), Duration.ofSeconds(1), 1));
+    clusterCfg.setConfigManager(invalidDynamicConfig);
+
+    // when
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        // then
+        .isInstanceOf(InvalidConfigurationException.class)
+        .hasMessageStartingWith("Invalid ConfigManager configuration:")
+        .hasMessageContaining(
+            String.format("gossipFanout must be greater than 1: configured value = %d", 1));
+  }
+
+  @Test
+  void shouldAllowInvalidSyncValuesInConfigManagerIfSyncIsNotEnabled() {
+    // given
+    final var brokerCfg = new BrokerCfg();
+    final var clusterCfg = brokerCfg.getCluster();
+
+    final var validConfig =
+        new ConfigManagerCfg(
+            new ClusterConfigurationGossiperConfig(
+                false, Duration.ofSeconds(1).negated(), Duration.ofSeconds(1).negated(), 3));
+    clusterCfg.setConfigManager(validConfig);
+
+    // when
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        // then
+        .doesNotThrowAnyException();
   }
 }

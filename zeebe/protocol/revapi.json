@@ -74,6 +74,21 @@
           "code": "java.class.removed",
           "old": "enum io.camunda.zeebe.protocol.record.value.ExecutionListenerEventType",
           "elementKind": "enum"
+        },
+        {
+          "justification": "JOB was added and released with 8.6 without any way to use it. For 8.7 the definitive types became available and JOB is not one of them.",
+          "code": "java.field.removed",
+          "old": "field io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.JOB"
+        },
+        {
+          "justification": "USER_GROUP was added and released with 8.6 without any way to use it. For 8.7 the definitive types became available and USER_GROUP is not one of them.",
+          "old": "field io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.USER_GROUP",
+          "code": "java.field.removed"
+        },
+        {
+          "justification": "USER_TASK was added and released with 8.6 without any way to use it. For 8.7 the definitive types became available and USER_TASK is not one of them.",
+          "old": "field io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.USER_TASK",
+          "code": "java.field.removed"
         }
       ]
     }

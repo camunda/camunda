@@ -70,6 +70,31 @@ test.beforeAll(async ({request}) => {
       {timeout: SETUP_WAITING_TIME},
     )
     .toHaveProperty('total', 10);
+
+  // Wait until all script tasks are in incident state
+  await expect
+    .poll(
+      async () => {
+        const response = await request.post(
+          `${config.endpoint}/v1/flownode-instances/search`,
+          {
+            data: {
+              filter: {
+                flowNodeId: 'ScriptTask',
+                state: 'ACTIVE',
+                incident: true,
+                processDefinitionKey:
+                  initialData.processV1.processDefinitionKey,
+              },
+            },
+          },
+        );
+
+        return await response.json();
+      },
+      {timeout: SETUP_WAITING_TIME},
+    )
+    .toHaveProperty('total', 10);
 });
 
 test.describe.serial('Process Instance Migration', () => {
@@ -92,7 +117,9 @@ test.describe.serial('Process Instance Migration', () => {
     const targetVersion = initialData.processV2.version.toString();
     const targetBpmnProcessId = initialData.processV2.bpmnProcessId;
 
-    await processesPage.navigateToProcesses({searchParams: {active: 'true'}});
+    await processesPage.navigateToProcesses({
+      searchParams: {active: 'true', incidents: 'true'},
+    });
 
     await filtersPanel.selectProcess(sourceBpmnProcessId);
     await filtersPanel.selectVersion(sourceVersion);
@@ -113,7 +140,7 @@ test.describe.serial('Process Instance Migration', () => {
     await processesPage.migrationModal.confirmButton.click();
 
     // Expect auto mapping for each flow node
-    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(18);
+    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(21);
 
     await expect(
       page.getByLabel(/target flow node for check payment/i),
@@ -169,6 +196,15 @@ test.describe.serial('Process Instance Migration', () => {
     await expect(
       page.getByLabel(/target flow node for message receive task/i),
     ).toHaveValue('MessageReceiveTask');
+    await expect(
+      page.getByLabel(/target flow node for business rule task/i),
+    ).toHaveValue('BusinessRuleTask');
+    await expect(
+      page.getByLabel(/target flow node for script task/i),
+    ).toHaveValue('ScriptTask');
+    await expect(
+      page.getByLabel(/target flow node for send task/i),
+    ).toHaveValue('SendTask');
 
     // Expect pre-selected process and version
     await expect(migrationView.targetProcessComboBox).toHaveValue(
@@ -251,6 +287,7 @@ test.describe.serial('Process Instance Migration', () => {
     await processesPage.navigateToProcesses({
       searchParams: {
         active: 'true',
+        incidents: 'true',
       },
     });
     await commonPage.expandOperationsPanel();
@@ -266,6 +303,7 @@ test.describe.serial('Process Instance Migration', () => {
     await processesPage.navigateToProcesses({
       searchParams: {
         active: 'true',
+        incidents: 'true',
         process: processV2.bpmnProcessId,
         version: processV2.version.toString(),
         operationId,
@@ -296,7 +334,9 @@ test.describe.serial('Process Instance Migration', () => {
     const targetVersion = initialData.processV3.version.toString();
     const targetBpmnProcessId = initialData.processV3.bpmnProcessId;
 
-    await processesPage.navigateToProcesses({searchParams: {active: 'true'}});
+    await processesPage.navigateToProcesses({
+      searchParams: {active: 'true', incidents: 'true'},
+    });
 
     await filtersPanel.selectProcess(sourceBpmnProcessId);
     await filtersPanel.selectVersion(sourceVersion);
@@ -397,11 +437,23 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     /**
-     * Map message receive task
+     * Map other tasks
      */
     await migrationView.mapFlowNode({
       sourceFlowNodeName: 'Message receive task',
       targetFlowNodeName: 'Message receive task 2',
+    });
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Business rule task',
+      targetFlowNodeName: 'Business rule task 2',
+    });
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Script task',
+      targetFlowNodeName: 'Script task 2',
+    });
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Send Task',
+      targetFlowNodeName: 'Send Task 2',
     });
 
     await migrationView.nextButton.click();
@@ -468,6 +520,84 @@ test.describe.serial('Process Instance Migration', () => {
     await commonPage.collapseOperationsPanel();
   });
 
+  test('Migrated tasks', async ({processesPage, processInstancePage, page}) => {
+    const {processV3} = initialData;
+
+    await processesPage.navigateToProcesses({
+      searchParams: {
+        active: 'true',
+        incidents: 'true',
+        process: processV3.bpmnProcessId,
+
+        version: processV3.version.toString(),
+      },
+    });
+
+    await processesPage.getNthProcessInstanceLink(0).click();
+
+    await processInstancePage.diagram.resetDiagramZoomButton.click();
+
+    /**
+     * Business rule task
+     */
+    await processInstancePage.diagram.clickFlowNode('Business rule task 2');
+    await processInstancePage.diagram.showMetaData();
+    await page.waitForSelector('.monaco-aria-container'); // wait until monaco is fully loaded
+
+    /**
+     * Expect that the incident for the business rule task has been migrated.
+     * The target task "Business rule task 2" has a different called decision "invalid2"
+     * which is expected to be overwritten with the decision key "invalid".
+     */
+    await expect(
+      processInstancePage.metadataModal.getByText(
+        "Expected to evaluate decision 'invalid', but no decision found for id 'invalid'",
+      ),
+    ).toBeVisible();
+
+    await processInstancePage.metadataModal
+      .getByRole('button', {name: /close/i})
+      .click();
+
+    /**
+     * Script task
+     */
+    await processInstancePage.diagram.clickFlowNode('Script task 2');
+    await processInstancePage.diagram.showMetaData();
+
+    /**
+     * Expect that the script task incident has been migrated.
+     * The target task "Script task 2" has a FEEL expression which would be
+     * evaluated immediately which is expected to be overwritten with the incident.
+     */
+    await expect(
+      processInstancePage.metadataModal.getByText('expected worker failure'),
+    ).toBeVisible();
+
+    await processInstancePage.metadataModal
+      .getByRole('button', {name: /close/i})
+      .click();
+
+    /**
+     * Send task
+     */
+    await processInstancePage.diagram.clickFlowNode('Send task 2');
+    await processInstancePage.diagram.showMetaData();
+
+    /**
+     * Expect that the active send task with task worker "foo" has been migrated.
+     * The target task "Send task 2" has the task type "failingTaskWorker", which would
+     * end up in an incident state. This is expected to be overwritten with the "foo" worker type.
+     */
+    await expect(
+      processInstancePage.metadataModal.getByText('expected worker failure'),
+    ).not.toBeVisible();
+
+    await processInstancePage.metadataModal
+      .getByRole('button', {name: /close/i})
+      .click();
+  });
+
   test('Migrated message events', async ({
     processesPage,
     processInstancePage,
@@ -478,6 +608,7 @@ test.describe.serial('Process Instance Migration', () => {
     await processesPage.navigateToProcesses({
       searchParams: {
         active: 'true',
+        incidents: 'true',
         process: processV3.bpmnProcessId,
         version: processV3.version.toString(),
       },
@@ -581,6 +712,7 @@ test.describe.serial('Process Instance Migration', () => {
     await processesPage.navigateToProcesses({
       searchParams: {
         active: 'true',
+        incidents: 'true',
         process: targetBpmnProcessId,
         version: targetVersion,
       },

@@ -8,7 +8,7 @@
 package io.camunda.operate.webapp.api.v1.entities;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import io.camunda.operate.schema.indices.DecisionIndex;
+import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import java.util.Objects;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)

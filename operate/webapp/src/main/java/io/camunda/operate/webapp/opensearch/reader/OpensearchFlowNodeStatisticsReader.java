@@ -7,11 +7,6 @@
  */
 package io.camunda.operate.webapp.opensearch.reader;
 
-import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_ID;
-import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_STATE;
-import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_TYPE;
-import static io.camunda.operate.schema.templates.ListViewTemplate.INCIDENT;
 import static io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations.TERMS_AGG_SIZE;
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.children;
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.parent;
@@ -22,9 +17,13 @@ import static io.camunda.operate.store.opensearch.dsl.QueryDSL.constantScore;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.withTenantCheck;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.ACTIVITY_ID;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.ACTIVITY_STATE;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.ACTIVITY_TYPE;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.INCIDENT;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.store.opensearch.dsl.RequestDSL;
 import io.camunda.operate.util.CollectionUtil;
@@ -34,6 +33,7 @@ import io.camunda.operate.webapp.opensearch.OpenSearchQueryHelper;
 import io.camunda.operate.webapp.reader.FlowNodeStatisticsReader;
 import io.camunda.operate.webapp.rest.dto.FlowNodeStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.FlowNodeState;
 import io.camunda.webapps.schema.entities.operate.FlowNodeType;
 import java.util.Collection;
@@ -58,7 +58,7 @@ public class OpensearchFlowNodeStatisticsReader implements FlowNodeStatisticsRea
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 
   @Override
-  public Collection<FlowNodeStatisticsDto> getFlowNodeStatistics(ListViewQueryDto query) {
+  public Collection<FlowNodeStatisticsDto> getFlowNodeStatistics(final ListViewQueryDto query) {
     final SearchRequest.Builder searchRequest;
 
     if (!query.isFinished()) {
@@ -72,7 +72,7 @@ public class OpensearchFlowNodeStatisticsReader implements FlowNodeStatisticsRea
   }
 
   private SearchRequest.Builder createQuery(
-      ListViewQueryDto query, RequestDSL.QueryType queryType) {
+      final ListViewQueryDto query, final RequestDSL.QueryType queryType) {
     final Map<String, Aggregation> subAggregations = new HashMap<>();
     if (query.isActive()) {
       subAggregations.put(AGG_ACTIVE_ACTIVITIES, getActiveFlowNodesAggregation());
@@ -129,7 +129,7 @@ public class OpensearchFlowNodeStatisticsReader implements FlowNodeStatisticsRea
   }
 
   private Map<String, FlowNodeStatisticsDto> runQueryAndCollectStats(
-      SearchRequest.Builder searchRequest) {
+      final SearchRequest.Builder searchRequest) {
     final Map<String, FlowNodeStatisticsDto> statisticsMap = new HashMap<>();
     final Map<String, Object> result = richOpenSearchClient.doc().searchAsMap(searchRequest);
     final Optional<Map<String, Object>> maybeActivities =
@@ -183,10 +183,10 @@ public class OpensearchFlowNodeStatisticsReader implements FlowNodeStatisticsRea
   }
 
   private void collectStatisticsFor(
-      Map<String, FlowNodeStatisticsDto> statisticsMap,
-      Map<String, Object> activities,
-      String aggName,
-      MapUpdater mapUpdater) {
+      final Map<String, FlowNodeStatisticsDto> statisticsMap,
+      final Map<String, Object> activities,
+      final String aggName,
+      final MapUpdater mapUpdater) {
     final Optional<List<Map<String, Object>>> maybeUniqueActivitiesBuckets =
         MapPath.from(activities)
             .getByPath("filter#" + aggName, "sterms#" + AGG_UNIQUE_ACTIVITIES, "buckets")

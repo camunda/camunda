@@ -20,10 +20,12 @@ import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.OperationEntity;
+import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceReference;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
+import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionItem;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryResponse;
@@ -44,6 +46,8 @@ import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.OperationItem;
 import io.camunda.zeebe.gateway.protocol.rest.ProblemDetail;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionItem;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceItem;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceReferenceItem;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResponse;
@@ -53,6 +57,8 @@ import io.camunda.zeebe.gateway.protocol.rest.UserResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskItem;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.VariableItem;
+import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQueryResponse;
 import io.camunda.zeebe.util.Either;
 import java.util.Arrays;
 import java.util.Collections;
@@ -62,6 +68,17 @@ import java.util.stream.Collectors;
 public final class SearchQueryResponseMapper {
 
   private SearchQueryResponseMapper() {}
+
+  public static ProcessDefinitionSearchQueryResponse toProcessDefinitionSearchQueryResponse(
+      final SearchQueryResult<ProcessDefinitionEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new ProcessDefinitionSearchQueryResponse()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toProcessDefinitions)
+                .orElseGet(Collections::emptyList));
+  }
 
   public static ProcessInstanceSearchQueryResponse toProcessInstanceSearchQueryResponse(
       final SearchQueryResult<ProcessInstanceEntity> result) {
@@ -170,6 +187,22 @@ public final class SearchQueryResponseMapper {
             ofNullable(result.sortValues()).map(Arrays::asList).orElseGet(Collections::emptyList));
   }
 
+  private static List<ProcessDefinitionItem> toProcessDefinitions(
+      final List<ProcessDefinitionEntity> processDefinitions) {
+    return processDefinitions.stream().map(SearchQueryResponseMapper::toProcessDefinition).toList();
+  }
+
+  public static ProcessDefinitionItem toProcessDefinition(final ProcessDefinitionEntity entity) {
+    return new ProcessDefinitionItem()
+        .processDefinitionKey(entity.key())
+        .name(entity.name())
+        .resourceName(entity.resourceName())
+        .version(entity.version())
+        .versionTag(entity.versionTag())
+        .processDefinitionId(entity.bpmnProcessId())
+        .tenantId(entity.tenantId());
+  }
+
   private static List<ProcessInstanceItem> toProcessInstances(
       final List<ProcessInstanceEntity> instances) {
     return instances.stream().map(SearchQueryResponseMapper::toProcessInstance).toList();
@@ -183,14 +216,13 @@ public final class SearchQueryResponseMapper {
         .processDefinitionVersion(p.processVersion())
         .processDefinitionVersionTag(p.processVersionTag())
         .processDefinitionKey(p.processDefinitionKey())
-        .rootProcessInstanceKey(p.rootProcessInstanceKey())
         .parentProcessInstanceKey(p.parentProcessInstanceKey())
         .parentFlowNodeInstanceKey(p.parentFlowNodeInstanceKey())
         .treePath(p.treePath())
         .startDate(p.startDate())
         .endDate(p.endDate())
         .state((p.state() == null) ? null : ProcessInstanceStateEnum.fromValue(p.state().name()))
-        .incident(p.incident())
+        .hasIncident(p.incident())
         .tenantId(p.tenantId());
   }
 
@@ -249,7 +281,7 @@ public final class SearchQueryResponseMapper {
         .processDefinitionId(instance.bpmnProcessId())
         .processInstanceKey(instance.processInstanceKey())
         .incidentKey(instance.incidentKey())
-        .incident(instance.incident())
+        .hasIncident(instance.incident())
         .startDate(instance.startDate())
         .endDate(instance.endDate())
         .state(FlowNodeInstanceItem.StateEnum.fromValue(instance.state().name()))
@@ -290,7 +322,7 @@ public final class SearchQueryResponseMapper {
 
   public static IncidentItem toIncident(final IncidentEntity t) {
     return new IncidentItem()
-        .key(t.key())
+        .incidentKey(t.key())
         .processDefinitionKey(t.processDefinitionKey())
         .processDefinitionId(t.bpmnProcessId())
         .processInstanceKey(t.processInstanceKey())
@@ -470,6 +502,33 @@ public final class SearchQueryResponseMapper {
       default:
         return DecisionDefinitionTypeEnum.UNKNOWN;
     }
+  }
+
+  public static VariableSearchQueryResponse toVariableSearchQueryResponse(
+      final SearchQueryResult<VariableEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new VariableSearchQueryResponse()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toVariables)
+                .orElseGet(Collections::emptyList));
+  }
+
+  private static List<VariableItem> toVariables(final List<VariableEntity> variableEntities) {
+    return variableEntities.stream().map(SearchQueryResponseMapper::toVariable).toList();
+  }
+
+  public static VariableItem toVariable(final VariableEntity variableEntity) {
+    return new VariableItem()
+        .variableKey(variableEntity.key())
+        .name(variableEntity.name())
+        .value(variableEntity.value())
+        .fullValue(variableEntity.fullValue())
+        .processInstanceKey(variableEntity.processInstanceKey())
+        .tenantId(variableEntity.tenantId())
+        .isTruncated(variableEntity.isPreview())
+        .scopeKey(variableEntity.scopeKey());
   }
 
   private record RuleIdentifier(String ruleId, int ruleIndex) {}

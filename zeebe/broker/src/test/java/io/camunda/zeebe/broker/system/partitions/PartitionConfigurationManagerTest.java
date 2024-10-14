@@ -18,6 +18,7 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.ExporterInitializationInfo;
+import io.camunda.zeebe.broker.exporter.util.TestExporterFactory;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.util.jar.ExternalJarRepository;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
@@ -130,6 +132,8 @@ final class PartitionConfigurationManagerTest {
     private final String exporterIdToEnable = "exporterA";
     private final String validExporterToInitialize = "exporterB";
     private final String exporterWithDifferentType = "exporterC";
+    private final String exporterWithCustomExporterFactory = "exporterWithFactory";
+    private final String exporterWithSameCustomExporterFactory = "exporterWithFactoryB";
     private final DynamicPartitionConfig partitionConfig =
         new DynamicPartitionConfig(
             new ExportersConfig(
@@ -150,14 +154,14 @@ final class PartitionConfigurationManagerTest {
     }
 
     private ExporterRepository getExporterRepository() {
-      final Map<String, ExporterDescriptor> exporters =
-          Map.of(
-              exporterIdToEnable,
+      final List<ExporterDescriptor> exporters =
+          List.of(
               new ExporterDescriptor(exporterIdToEnable, TestExporterA.class, Map.of()),
-              validExporterToInitialize,
               new ExporterDescriptor(validExporterToInitialize, TestExporterA.class, Map.of()),
-              exporterWithDifferentType,
-              new ExporterDescriptor(exporterWithDifferentType, TestExporterC.class, Map.of()));
+              new ExporterDescriptor(exporterWithDifferentType, TestExporterC.class, Map.of()),
+              new ExporterDescriptor(exporterWithCustomExporterFactory, new TestExporterFactory()),
+              new ExporterDescriptor(
+                  exporterWithSameCustomExporterFactory, new TestExporterFactory()));
       return new ExporterRepository(exporters, new ExternalJarRepository());
     }
 
@@ -186,6 +190,37 @@ final class PartitionConfigurationManagerTest {
       verify(mockExporterDirector)
           .enableExporter(
               eq(exporterIdToEnable), eq(new ExporterInitializationInfo(1, null)), any());
+    }
+
+    @Test
+    void shouldEnableExporterWithCustomFactoryAndUpdateConfigInContext() {
+      // given
+      partitionTransitionContext.setDynamicPartitionConfig(partitionConfig);
+      final ExporterDirector mockExporterDirector = mock(ExporterDirector.class);
+      when(mockExporterDirector.enableExporter(any(), any(), any()))
+          .thenReturn(testConcurrencyControl.createCompletedFuture());
+      partitionTransitionContext.setExporterDirector(mockExporterDirector);
+
+      // when
+      partitionConfigurationManager
+          .enableExporter(exporterWithCustomExporterFactory, 1, null)
+          .join();
+
+      // then
+      assertThat(
+              partitionTransitionContext
+                  .getDynamicPartitionConfig()
+                  .exporting()
+                  .exporters()
+                  .get(exporterWithCustomExporterFactory)
+                  .state())
+          .describedAs("Exporter state should be updated in the context")
+          .isEqualTo(State.ENABLED);
+      verify(mockExporterDirector)
+          .enableExporter(
+              eq(exporterWithCustomExporterFactory),
+              eq(new ExporterInitializationInfo(1, null)),
+              any());
     }
 
     @Test
@@ -221,6 +256,43 @@ final class PartitionConfigurationManagerTest {
           .enableExporter(
               eq(exporterIdToEnable),
               eq(new ExporterInitializationInfo(2, validExporterToInitialize)),
+              any());
+    }
+
+    @Test
+    void shouldEnableExporterWithCustomFactoryWithTheInitializationFromAnotherExporter() {
+      // given
+      partitionTransitionContext.setDynamicPartitionConfig(partitionConfig);
+      final ExporterDirector mockExporterDirector = mock(ExporterDirector.class);
+      when(mockExporterDirector.enableExporter(any(), any(), any()))
+          .thenReturn(testConcurrencyControl.createCompletedFuture());
+      partitionTransitionContext.setExporterDirector(mockExporterDirector);
+
+      // when
+      partitionConfigurationManager
+          .enableExporter(
+              exporterWithCustomExporterFactory, 2, exporterWithSameCustomExporterFactory)
+          .join();
+
+      // then
+      final ExporterState exporterState =
+          partitionTransitionContext
+              .getDynamicPartitionConfig()
+              .exporting()
+              .exporters()
+              .get(exporterWithCustomExporterFactory);
+      assertThat(exporterState)
+          .extracting(
+              ExporterState::state,
+              ExporterState::metadataVersion,
+              e -> e.initializedFrom().orElseThrow())
+          .describedAs("Exporter state should be updated in the context")
+          .contains(State.ENABLED, 2L, exporterWithSameCustomExporterFactory);
+
+      verify(mockExporterDirector)
+          .enableExporter(
+              eq(exporterWithCustomExporterFactory),
+              eq(new ExporterInitializationInfo(2, exporterWithSameCustomExporterFactory)),
               any());
     }
 

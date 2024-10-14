@@ -9,6 +9,8 @@ package io.camunda.service;
 
 import io.camunda.search.clients.VariableSearchClient;
 import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.VariableQuery;
@@ -45,5 +47,18 @@ public final class VariableServices
   public SearchQueryResult<VariableEntity> search(
       final Function<Builder, ObjectBuilder<VariableQuery>> fn) {
     return search(SearchQueryBuilders.variableSearchQuery(fn));
+  }
+
+  public VariableEntity getByKey(final Long key) {
+    final SearchQueryResult<VariableEntity> result =
+        search(SearchQueryBuilders.variableSearchQuery().filter(f -> f.variableKeys(key)).build());
+    if (result.total() < 1) {
+      throw new NotFoundException(String.format("Variable with key %d not found", key));
+    } else if (result.total() > 1) {
+      throw new CamundaSearchException(
+          String.format("Found Variable with key %d more than once", key));
+    } else {
+      return result.items().stream().findFirst().orElseThrow();
+    }
   }
 }

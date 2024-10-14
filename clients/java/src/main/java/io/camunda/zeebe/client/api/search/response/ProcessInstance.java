@@ -29,8 +29,6 @@ public interface ProcessInstance {
 
   Long getProcessDefinitionKey();
 
-  Long getRootProcessInstanceKey();
-
   Long getParentProcessInstanceKey();
 
   Long getParentFlowNodeInstanceKey();
@@ -43,7 +41,7 @@ public interface ProcessInstance {
 
   String getState();
 
-  Boolean getIncident();
+  Boolean getHasIncident();
 
   String getTenantId();
 }

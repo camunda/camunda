@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # set constants
-CAMUNDA_VERSION="8.6.0-alpha5"
+CAMUNDA_VERSION="8.6.2"
 ELASTICSEARCH_VERSION="8.13.4"
 EXPECTED_JAVA_VERSION=21
 
@@ -27,6 +27,9 @@ OPTIONS_HELP="Options:
 export ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME="io.camunda.zeebe.exporter.ElasticsearchExporter"
 export ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL="http://localhost:9200"
 export ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX="zeebe-record"
+export CAMUNDA_REST_QUERY_ENABLED=true
+export CAMUNDA_OPERATE_CSRFPREVENTIONENABLED=false
+export CAMUNDA_TASKLIST_CSRFPREVENTIONENABLED=false
 
 architectureRaw="$(uname -m)"
 case "${architectureRaw}" in

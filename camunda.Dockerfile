@@ -5,9 +5,9 @@
 # Both ubuntu and eclipse-temurin are pinned via digest and not by a strict version tag, as Renovate
 # has trouble with custom versioning schemes
 ARG BASE_IMAGE="ubuntu:noble"
-ARG BASE_DIGEST="sha256:dfc10878be8d8fc9c61cbff33166cb1d1fe44391539243703c72766894fa834a"
+ARG BASE_DIGEST="sha256:ab64a8382e935382638764d8719362bb50ee418d944c1f3d26e0c99fae49a345"
 ARG JDK_IMAGE="eclipse-temurin:21-jdk-noble"
-ARG JDK_DIGEST="sha256:48e264b4a3393475e0d778885687adf6012b3ff25f83b6a6bafbcd42a3ffcc65"
+ARG JDK_DIGEST="sha256:d0533ce5ff34f93610ce8830ef18ff9176858d1d123c56a0f4e3af29abcdb85b"
 
 # set to "build" to build camunda from scratch instead of using a distball
 ARG DIST="distball"

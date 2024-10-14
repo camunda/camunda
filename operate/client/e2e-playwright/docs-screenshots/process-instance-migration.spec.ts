@@ -52,7 +52,7 @@ test.describe('process instance migration', () => {
             completed: 0,
           },
         ],
-        processXml: open('orderProcess.bpmn'),
+        processXml: open('orderProcess_v3.bpmn'),
       }),
     );
 
@@ -193,7 +193,7 @@ test.describe('process instance migration', () => {
 
     await migrationView.nextButton.click();
 
-    await commonPage.addUpArrow(page.getByTestId('state-overlay'));
+    await commonPage.addUpArrow(page.getByTestId('state-overlay-active'));
     await commonPage.addUpArrow(page.getByTestId('modifications-overlay'));
 
     await page.screenshot({
@@ -232,9 +232,13 @@ test.describe('process instance migration', () => {
 
     await migrationView.confirmButton.click();
 
+    await migrationView.confirmMigration();
+
     await processesPage.diagram.moveCanvasHorizontally(-200);
 
-    await expect(page.getByTestId('state-overlay')).toBeVisible();
+    await expect(
+      page.getByTestId('state-overlay-checkPayment-active'),
+    ).toBeVisible();
     await expect(page.getByText(mockMigrationOperation.id)).toHaveCount(1);
 
     await page.screenshot({

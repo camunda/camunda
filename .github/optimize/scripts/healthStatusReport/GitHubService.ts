@@ -16,10 +16,10 @@ export class GitHubService {
   ) {}
 
   public getBranchesWithPrefix = async (refPrefix: string): Promise<string[]> => {
-    const releaseBranchesREfs = await this.fetchRefs(refPrefix);
+    const releaseBranchesREfs = await this.fetchRefs(refPrefix.split('/')[0]);
     const releaseBranches = releaseBranchesREfs
       .map((branch) =>
-        matchRegex(branch.ref, new RegExp(`refs\/heads\/(${refPrefix}\/\\d+.\\d+.*)`)),
+        matchRegex(branch.ref, new RegExp(`refs/heads/(${refPrefix}\\d+.\\d+)`)),
       )
       .filter((name): name is string => name !== undefined);
     return releaseBranches;

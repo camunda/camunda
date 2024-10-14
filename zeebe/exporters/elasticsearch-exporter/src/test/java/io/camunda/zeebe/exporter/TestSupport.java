@@ -132,7 +132,11 @@ final class TestSupport {
             ValueType.SBE_UNKNOWN,
             ValueType.NULL_VAL,
             ValueType.PROCESS_INSTANCE_RESULT,
-            ValueType.CLOCK);
+            ValueType.CLOCK,
+            ValueType.SCALE,
+            // these are not yet supported
+            ValueType.ROLE,
+            ValueType.TENANT);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 }

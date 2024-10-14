@@ -49,6 +49,7 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
 
   public UserRecord copy() {
     final var copy = new UserRecord();
+    copy.userKeyProp.setValue(getUserKey());
     copy.usernameProp.setValue(BufferUtil.cloneBuffer(getUsernameBuffer()));
     copy.nameProp.setValue(BufferUtil.cloneBuffer(getNameBuffer()));
     copy.emailProp.setValue(BufferUtil.cloneBuffer(getEmailBuffer()));

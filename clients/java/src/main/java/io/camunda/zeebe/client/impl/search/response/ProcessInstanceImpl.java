@@ -27,14 +27,13 @@ public class ProcessInstanceImpl implements ProcessInstance {
   private final Integer processDefinitionVersion;
   private final String processDefinitionVersionTag;
   private final Long processDefinitionKey;
-  private final Long rootProcessInstanceKey;
   private final Long parentProcessInstanceKey;
   private final Long parentFlowNodeInstanceKey;
   private final String treePath;
   private final String startDate;
   private final String endDate;
   private final String state;
-  private final Boolean incident;
+  private final Boolean hasIncident;
   private final String tenantId;
 
   public ProcessInstanceImpl(final ProcessInstanceItem item) {
@@ -44,14 +43,13 @@ public class ProcessInstanceImpl implements ProcessInstance {
     processDefinitionVersion = item.getProcessDefinitionVersion();
     processDefinitionVersionTag = item.getProcessDefinitionVersionTag();
     processDefinitionKey = item.getProcessDefinitionKey();
-    rootProcessInstanceKey = item.getRootProcessInstanceKey();
     parentProcessInstanceKey = item.getParentProcessInstanceKey();
     parentFlowNodeInstanceKey = item.getParentFlowNodeInstanceKey();
     treePath = item.getTreePath();
     startDate = item.getStartDate();
     endDate = item.getEndDate();
     state = Optional.ofNullable(item.getState()).map(Enum::toString).orElse(null);
-    incident = item.getIncident();
+    hasIncident = item.getHasIncident();
     tenantId = item.getTenantId();
   }
 
@@ -86,11 +84,6 @@ public class ProcessInstanceImpl implements ProcessInstance {
   }
 
   @Override
-  public Long getRootProcessInstanceKey() {
-    return rootProcessInstanceKey;
-  }
-
-  @Override
   public Long getParentProcessInstanceKey() {
     return parentProcessInstanceKey;
   }
@@ -121,8 +114,8 @@ public class ProcessInstanceImpl implements ProcessInstance {
   }
 
   @Override
-  public Boolean getIncident() {
-    return incident;
+  public Boolean getHasIncident() {
+    return hasIncident;
   }
 
   @Override

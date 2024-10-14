@@ -342,7 +342,7 @@ public class ClusteringRule extends ExternalResource {
 
     final var atomixCluster =
         new AtomixCluster(
-            brokerSpringConfig.clusterConfig(), Version.from(VersionUtil.getVersion()));
+            brokerSpringConfig.clusterConfig(), Version.from(VersionUtil.getVersion()), "Broker");
 
     final var scheduler =
         new ActorSchedulerConfiguration(
@@ -474,7 +474,7 @@ public class ClusteringRule extends ExternalResource {
                 actorConfig, IdleStrategySupplier.ofDefault(), actorClockConfiguration)
             .scheduler();
 
-    final var clusterConfiguration = new AtomixClusterConfiguration(clusterConfig);
+    final var clusterConfiguration = new AtomixClusterConfiguration(clusterConfig, actorConfig);
     final var atomixCluster = clusterConfiguration.atomixCluster();
     atomixCluster.start().join();
 

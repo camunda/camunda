@@ -12,9 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import io.camunda.exporter.config.ElasticsearchExporterConfiguration;
-import io.camunda.exporter.config.ElasticsearchProperties.IndexSettings;
-import io.camunda.exporter.schema.ElasticsearchEngineClient.MappingSource;
+import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.utils.TestSupport;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
@@ -42,9 +41,9 @@ public class ElasticsearchEngineClientIT {
   @BeforeAll
   public static void init() {
     // Create the low-level client
-    final var config = new ElasticsearchExporterConfiguration();
-    config.elasticsearch.getConnect().setUrl(CONTAINER.getHttpHostAddress());
-    elsClient = new ElasticsearchConnector(config.elasticsearch.getConnect()).createClient();
+    final var config = new ExporterConfiguration();
+    config.getConnect().setUrl(CONTAINER.getHttpHostAddress());
+    elsClient = new ElasticsearchConnector(config.getConnect()).createClient();
 
     elsEngineClient = new ElasticsearchEngineClient(elsClient);
   }
@@ -86,7 +85,7 @@ public class ElasticsearchEngineClientIT {
             "alias",
             Collections.emptyList(),
             "template_name",
-            "mappings.json");
+            "/mappings.json");
 
     final var settings = new IndexSettings();
     elsEngineClient.createIndexTemplate(indexTemplate, settings, true);
@@ -97,7 +96,7 @@ public class ElasticsearchEngineClientIT {
 
     assertThat(indexTemplates.size()).isEqualTo(1);
     validateMappings(
-        indexTemplates.getFirst().indexTemplate().template().mappings(), "mappings.json");
+        indexTemplates.getFirst().indexTemplate().template().mappings(), "/mappings.json");
   }
 
   @Test
@@ -105,24 +104,24 @@ public class ElasticsearchEngineClientIT {
     // given
     final var qualifiedIndexName = "full_name";
     final var descriptor =
-        SchemaTestUtil.mockIndex(qualifiedIndexName, "alias", "index_name", "mappings.json");
+        SchemaTestUtil.mockIndex(qualifiedIndexName, "alias", "index_name", "/mappings.json");
 
     // when
-    elsEngineClient.createIndex(descriptor);
+    elsEngineClient.createIndex(descriptor, new IndexSettings());
 
     // then
     final var index =
         elsClient.indices().get(req -> req.index(qualifiedIndexName)).get(qualifiedIndexName);
 
-    validateMappings(index.mappings(), "mappings.json");
+    validateMappings(index.mappings(), "/mappings.json");
   }
 
   @Test
   void shouldRetrieveAllIndexMappingsWithImplementationAgnosticReturnType() {
     final var index =
-        SchemaTestUtil.mockIndex("index_qualified_name", "alias", "index_name", "mappings.json");
+        SchemaTestUtil.mockIndex("index_qualified_name", "alias", "index_name", "/mappings.json");
 
-    elsEngineClient.createIndex(index);
+    elsEngineClient.createIndex(index, new IndexSettings());
 
     final var mappings = elsEngineClient.getMappings("*", MappingSource.INDEX);
 
@@ -145,7 +144,7 @@ public class ElasticsearchEngineClientIT {
   void shouldRetrieveAllIndexTemplateMappingsWithImplementationAgnosticReturnType() {
     final var template =
         SchemaTestUtil.mockIndexTemplate(
-            "index_name", "index_pattern.*", "alias", List.of(), "template_name", "mappings.json");
+            "index_name", "index_pattern.*", "alias", List.of(), "template_name", "/mappings.json");
 
     elsEngineClient.createIndexTemplate(template, new IndexSettings(), true);
 
@@ -166,11 +165,40 @@ public class ElasticsearchEngineClientIT {
   }
 
   @Test
+  void shouldCreateIndexTemplateIfSourceFileContainsSettings() throws IOException {
+    final var template =
+        SchemaTestUtil.mockIndexTemplate(
+            "index_name",
+            "index_pattern.*",
+            "alias",
+            List.of(),
+            "template_name",
+            "/mappings-and-settings.json");
+
+    elsEngineClient.createIndexTemplate(template, new IndexSettings(), true);
+
+    final var createdTemplate =
+        elsClient.indices().getIndexTemplate(req -> req.name("template_name")).indexTemplates();
+
+    assertThat(createdTemplate.size()).isEqualTo(1);
+    assertThat(
+            createdTemplate
+                .getFirst()
+                .indexTemplate()
+                .template()
+                .settings()
+                .index()
+                .refreshInterval()
+                .time())
+        .isEqualTo("2s");
+  }
+
+  @Test
   void shouldUpdateSettingsWithPutSettingsRequest() throws IOException {
     final var index =
-        SchemaTestUtil.mockIndex("index_name", "alias", "index_name", "mappings.json");
+        SchemaTestUtil.mockIndex("index_name", "alias", "index_name", "/mappings.json");
 
-    elsEngineClient.createIndex(index);
+    elsEngineClient.createIndex(index, new IndexSettings());
 
     final Map<String, String> newSettings = Map.of("index.lifecycle.name", "test");
     elsEngineClient.putSettings(List.of(index), newSettings);
@@ -180,6 +208,25 @@ public class ElasticsearchEngineClientIT {
     assertThat(indices.result().size()).isEqualTo(1);
     assertThat(indices.result().get("index_name").settings().index().lifecycle().name())
         .isEqualTo("test");
+  }
+
+  @Test
+  void shouldSetReplicasAndShardsFromConfigurationDuringIndexCreation() throws IOException {
+    final var index =
+        SchemaTestUtil.mockIndex("index_name", "alias", "index_name", "/mappings.json");
+
+    final var settings = new IndexSettings();
+    settings.setNumberOfReplicas(5);
+    settings.setNumberOfShards(10);
+    elsEngineClient.createIndex(index, settings);
+
+    final var indices = elsClient.indices().get(req -> req.index("index_name"));
+
+    assertThat(indices.result().size()).isEqualTo(1);
+    assertThat(indices.result().get("index_name").settings().index().numberOfReplicas())
+        .isEqualTo("5");
+    assertThat(indices.result().get("index_name").settings().index().numberOfShards())
+        .isEqualTo("10");
   }
 
   @Test

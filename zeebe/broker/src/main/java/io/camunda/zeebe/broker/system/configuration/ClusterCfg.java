@@ -15,6 +15,7 @@ import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -54,6 +55,7 @@ public final class ClusterCfg implements ConfigurationEntry {
   private MembershipCfg membership = new MembershipCfg();
   private RaftCfg raft = new RaftCfg();
   private CompressionAlgorithm messageCompression = CompressionAlgorithm.NONE;
+  private ConfigManagerCfg configManager = ConfigManagerCfg.defaultConfig();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -191,6 +193,56 @@ public final class ClusterCfg implements ConfigurationEntry {
     this.messageCompression = messageCompression;
   }
 
+  public ConfigManagerCfg getConfigManager() {
+    return configManager;
+  }
+
+  public void setConfigManager(final ConfigManagerCfg configManagerCfg) {
+    configManager = configManagerCfg;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        initialContactPoints,
+        partitionIds,
+        nodeId,
+        partitionsCount,
+        replicationFactor,
+        clusterSize,
+        clusterName,
+        heartbeatInterval,
+        electionTimeout,
+        membership,
+        raft,
+        messageCompression,
+        configManager);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ClusterCfg that = (ClusterCfg) o;
+    return nodeId == that.nodeId
+        && partitionsCount == that.partitionsCount
+        && replicationFactor == that.replicationFactor
+        && clusterSize == that.clusterSize
+        && Objects.equals(initialContactPoints, that.initialContactPoints)
+        && Objects.equals(partitionIds, that.partitionIds)
+        && Objects.equals(clusterName, that.clusterName)
+        && Objects.equals(heartbeatInterval, that.heartbeatInterval)
+        && Objects.equals(electionTimeout, that.electionTimeout)
+        && Objects.equals(membership, that.membership)
+        && Objects.equals(raft, that.raft)
+        && messageCompression == that.messageCompression
+        && Objects.equals(configManager, that.configManager);
+  }
+
   @Override
   public String toString() {
     return "ClusterCfg{"
@@ -219,6 +271,8 @@ public final class ClusterCfg implements ConfigurationEntry {
         + raft
         + ", messageCompression="
         + messageCompression
+        + ", configManagerCfg="
+        + configManager
         + '}';
   }
 }

@@ -7,11 +7,11 @@
  */
 package io.camunda.operate.elasticsearch.reader;
 
-import static io.camunda.operate.schema.indices.MetricIndex.EVENT;
-import static io.camunda.operate.schema.indices.MetricIndex.EVENT_TIME;
-import static io.camunda.operate.schema.indices.MetricIndex.VALUE;
 import static io.camunda.operate.store.elasticsearch.dao.Query.range;
 import static io.camunda.operate.store.elasticsearch.dao.Query.whereEquals;
+import static io.camunda.webapps.schema.descriptors.operate.index.MetricIndex.EVENT;
+import static io.camunda.webapps.schema.descriptors.operate.index.MetricIndex.EVENT_TIME;
+import static io.camunda.webapps.schema.descriptors.operate.index.MetricIndex.VALUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;

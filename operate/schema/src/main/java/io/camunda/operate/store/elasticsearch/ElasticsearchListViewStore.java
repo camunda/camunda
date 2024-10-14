@@ -16,11 +16,11 @@ import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.ListViewStore;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -49,8 +49,8 @@ public class ElasticsearchListViewStore implements ListViewStore {
   @Autowired private OperateProperties operateProperties;
 
   @Override
-  public Map<Long, String> getListViewIndicesForProcessInstances(List<Long> processInstanceIds)
-      throws IOException {
+  public Map<Long, String> getListViewIndicesForProcessInstances(
+      final List<Long> processInstanceIds) throws IOException {
     final List<String> processInstanceIdsAsStrings = map(processInstanceIds, Object::toString);
 
     final SearchRequest searchRequest =
@@ -67,7 +67,7 @@ public class ElasticsearchListViewStore implements ListViewStore {
               searchRequest,
               esClient,
               searchHits -> {
-                for (SearchHit searchHit : searchHits.getHits()) {
+                for (final SearchHit searchHit : searchHits.getHits()) {
                   final String indexName = searchHit.getIndex();
                   final Long id = Long.valueOf(searchHit.getId());
                   processInstanceId2IndexName.put(id, indexName);
@@ -84,7 +84,7 @@ public class ElasticsearchListViewStore implements ListViewStore {
   }
 
   @Override
-  public String findProcessInstanceTreePathFor(long processInstanceKey) {
+  public String findProcessInstanceTreePathFor(final long processInstanceKey) {
     final ElasticsearchUtil.QueryType queryType =
         operateProperties.getImporter().isReadArchivedParents()
             ? ElasticsearchUtil.QueryType.ALL
@@ -101,7 +101,7 @@ public class ElasticsearchListViewStore implements ListViewStore {
         return (String) hits.getHits()[0].getSourceAsMap().get(ListViewTemplate.TREE_PATH);
       }
       return null;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format(
               "Exception occurred, while searching for process instance tree path: %s",
@@ -111,7 +111,8 @@ public class ElasticsearchListViewStore implements ListViewStore {
   }
 
   @Override
-  public List<Long> getProcessInstanceKeysWithEmptyProcessVersionFor(Long processDefinitionKey) {
+  public List<Long> getProcessInstanceKeysWithEmptyProcessVersionFor(
+      final Long processDefinitionKey) {
     final QueryBuilder queryBuilder =
         constantScoreQuery(
             joinWithAnd(
@@ -126,7 +127,7 @@ public class ElasticsearchListViewStore implements ListViewStore {
           () -> {
             return ElasticsearchUtil.scrollKeysToList(searchRequest, esClient);
           });
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format(
               "Exception occurred, while obtaining process instance that has empty versions: %s",
