@@ -7,4 +7,24 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
-public interface TenantState {}
+import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
+import java.util.Optional;
+
+public interface TenantState {
+
+  /**
+   * Retrieves a tenant record by its key.
+   *
+   * @param tenantKey the key of the tenant to retrieve
+   * @return an Optional containing the tenant record if it exists, otherwise an empty Optional
+   */
+  Optional<TenantRecord> getTenantByKey(long tenantKey);
+
+  /**
+   * Retrieves a tenant key by its ID.
+   *
+   * @param tenantId the ID of the tenant to look up
+   * @return the key of the tenant if it exists, otherwise null
+   */
+  Long getTenantKeyById(String tenantId);
+}

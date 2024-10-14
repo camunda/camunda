@@ -17,6 +17,8 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.authorization.EntityTypeValue;
 import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
+import java.util.Optional;
 
 public class DbTenantState implements MutableTenantState {
 
@@ -50,5 +52,29 @@ public class DbTenantState implements MutableTenantState {
     tenantByIdColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.TENANT_BY_ID, transactionContext, tenantId, fkTenantKey);
+  }
+
+  @Override
+  public void createTenant(final TenantRecord tenantRecord) {
+    tenantKey.wrapLong(tenantRecord.getTenantKey());
+    tenantId.wrapString(tenantRecord.getTenantId());
+    persistedTenant.setTenant(tenantRecord);
+
+    tenantsColumnFamily.insert(tenantKey, persistedTenant);
+    tenantByIdColumnFamily.insert(tenantId, fkTenantKey);
+  }
+
+  @Override
+  public Optional<TenantRecord> getTenantByKey(final long tenantKey) {
+    this.tenantKey.wrapLong(tenantKey);
+    final PersistedTenant persistedTenant = tenantsColumnFamily.get(this.tenantKey);
+    return Optional.ofNullable(persistedTenant != null ? persistedTenant.getTenant() : null);
+  }
+
+  @Override
+  public Long getTenantKeyById(final String tenantId) {
+    this.tenantId.wrapString(tenantId);
+    final var fkTenantKey = tenantByIdColumnFamily.get(this.tenantId);
+    return fkTenantKey != null ? fkTenantKey.inner().getValue() : null;
   }
 }

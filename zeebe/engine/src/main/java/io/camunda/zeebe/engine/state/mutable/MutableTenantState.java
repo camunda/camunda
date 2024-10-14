@@ -8,5 +8,13 @@
 package io.camunda.zeebe.engine.state.mutable;
 
 import io.camunda.zeebe.engine.state.immutable.TenantState;
+import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 
-public interface MutableTenantState extends TenantState {}
+public interface MutableTenantState extends TenantState {
+  /**
+   * Creates a tenant in the state.
+   *
+   * @param tenantRecord the tenant record to add
+   */
+  void createTenant(TenantRecord tenantRecord);
+}
