@@ -24,6 +24,14 @@ import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1.DeployReso
 import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.StarterCfg;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
+import io.micrometer.core.instrument.Timer;
+import java.net.CookieManager;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpClient.Version;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -52,6 +60,9 @@ public class Starter extends App {
       new TypeReference<>() {};
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private final AppCfg appCfg;
+  private HttpClient httpClient;
+  private String operateUrl;
+  private Timer dataAvailabilityDelay;
 
   Starter(final AppCfg appCfg) {
     this.appCfg = appCfg;
@@ -64,8 +75,20 @@ public class Starter extends App {
     final String processId = starterCfg.getProcessId();
     final BlockingQueue<Future<?>> requestFutures = new ArrayBlockingQueue<>(5_000);
 
-    final ZeebeClient client = createZeebeClient();
+    dataAvailabilityDelay =
+        Timer.builder("zeebe.clients.observed.camunda.data.availability.delay")
+            .description(
+                "Duration Camunda needs to show data in Operate. Measured via creating an process instance and querying Operate API. Measured in seconds.")
+            .publishPercentileHistogram()
+            .minimumExpectedValue(Duration.ofMillis(10))
+            .register(prometheusRegistry);
 
+    httpClient =
+        HttpClient.newBuilder().cookieHandler(new CookieManager()).version(Version.HTTP_2).build();
+    operateUrl = starterCfg.getOperateUrl();
+    loginToOperate(operateUrl);
+
+    final ZeebeClient client = createZeebeClient();
     printTopology(client);
 
     final ScheduledExecutorService executorService =
@@ -137,6 +160,34 @@ public class Starter extends App {
     responseChecker.close();
   }
 
+  private void loginToOperate(final String operateUrl) {
+    // login to Operate
+    final String endpoint = operateUrl + "/api/login?username=demo&password=demo";
+    final var loginRequest =
+        HttpRequest.newBuilder()
+            .uri(URI.create(endpoint))
+            .POST(HttpRequest.BodyPublishers.noBody())
+            .build();
+
+    var login = false;
+    do {
+      LOG.debug("Sent log in request to {}", endpoint);
+      try {
+        final HttpResponse<String> response =
+            httpClient.send(loginRequest, BodyHandlers.ofString());
+        LOG.debug(
+            "Retrieved response with status {} and body {}",
+            response.statusCode(),
+            response.body());
+        login = response.statusCode() >= 200 && response.statusCode() < 300;
+      } catch (final Exception ex) {
+        THROTTLED_LOGGER.warn("Sending login request to {}", endpoint, ex);
+      }
+    } while (!login);
+
+    LOG.info("Successfully logged into Operate");
+  }
+
   private static HashMap<String, Object> deserializeVariables(final String variablesString) {
     final HashMap<String, Object> variables;
     try {
@@ -188,7 +239,7 @@ public class Starter extends App {
     }
   }
 
-  private static void startViaCommand(
+  private void startViaCommand(
       final StarterCfg starterCfg,
       final String processId,
       final BlockingQueue<Future<?>> requestFutures,
@@ -206,13 +257,58 @@ public class Starter extends App {
               .requestTimeout(starterCfg.getWithResultsTimeout())
               .send());
     } else {
-      requestFutures.put(
+      final long createPITime = System.currentTimeMillis();
+      final var createPIFuture =
           client
               .newCreateInstanceCommand()
               .bpmnProcessId(processId)
               .latestVersion()
               .variables(variables)
-              .send());
+              .send();
+
+      createPIFuture.whenComplete(
+          (processInstanceEvent, throwable) -> {
+            final long processInstanceKey = processInstanceEvent.getProcessInstanceKey();
+
+            final String endpoint =
+                starterCfg.getOperateUrl() + "v1/process-instances/" + processInstanceKey;
+            final var retrievePIRequest =
+                HttpRequest.newBuilder().uri(URI.create(endpoint)).GET().build();
+
+            var retrievedPI = false;
+            var retry = 0;
+            do {
+              if (retry++ > 0) {
+                try {
+                  Thread.sleep(10);
+                } catch (final InterruptedException e) {
+                  THROTTLED_LOGGER.warn("Interrupted on sleep");
+                }
+              }
+              LOG.debug(
+                  "Request PI with key {} from {} [retry: {}]",
+                  processInstanceKey,
+                  endpoint,
+                  retry);
+              try {
+                final HttpResponse<String> response =
+                    httpClient.send(retrievePIRequest, BodyHandlers.ofString());
+                LOG.debug(
+                    "Retrieved process instance with status {} and body {}",
+                    response.statusCode(),
+                    response.body());
+                retrievedPI = response.statusCode() >= 200 && response.statusCode() < 300;
+              } catch (final Exception ex) {
+                THROTTLED_LOGGER.warn("Error on retrieving process instance {}", endpoint, ex);
+              }
+            } while (!retrievedPI);
+            // TODO metrics update
+            final long pIAvailableToUser = System.currentTimeMillis();
+            final var delay = pIAvailableToUser - createPITime;
+            LOG.debug("Process instance was available in Operate after {} ms ", delay);
+            dataAvailabilityDelay.record(delay, TimeUnit.MILLISECONDS);
+          });
+      requestFutures.put(createPIFuture);
     }
   }
 

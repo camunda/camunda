@@ -39,6 +39,15 @@ public class StarterCfg {
 
   private boolean startViaMessage;
   private String msgName;
+  private String operateUrl;
+
+  public String getOperateUrl() {
+    return operateUrl;
+  }
+
+  public void setOperateUrl(final String operateUrl) {
+    this.operateUrl = operateUrl;
+  }
 
   public boolean isStartViaMessage() {
     return startViaMessage;
