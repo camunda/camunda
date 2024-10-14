@@ -8,7 +8,6 @@
 package io.camunda.exporter.utils;
 
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import org.springframework.util.StringUtils;
 
 public final class ExporterUtil {
 
@@ -17,7 +16,7 @@ public final class ExporterUtil {
   }
 
   public static String tenantOrDefault(final String tenantId) {
-    if (!StringUtils.hasLength(tenantId)) {
+    if (tenantId == null || tenantId.isEmpty()) {
       return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
     }
     return tenantId;
