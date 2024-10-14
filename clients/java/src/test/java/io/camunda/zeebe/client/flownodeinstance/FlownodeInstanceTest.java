@@ -49,7 +49,7 @@ public class FlownodeInstanceTest extends ClientRestTest {
                     .type("SERVICE_TASK")
                     .state("ACTIVE")
                     .processDefinitionKey(2L)
-                    .bpmnProcessId("complexProcess")
+                    .processDefinitionId("complexProcess")
                     .processInstanceKey(3L)
                     .flowNodeId("flowNodeId")
                     .hasIncident(true)
@@ -82,12 +82,12 @@ public class FlownodeInstanceTest extends ClientRestTest {
         .newFlownodeInstanceQuery()
         .sort(
             s ->
-                s.key()
+                s.flowNodeInstanceKey()
                     .processDefinitionKey()
                     .asc()
                     .processInstanceKey()
                     .asc()
-                    .bpmnProcessId()
+                    .processDefinitionId()
                     .asc()
                     .type()
                     .asc()
@@ -111,7 +111,7 @@ public class FlownodeInstanceTest extends ClientRestTest {
     assertThat(sorts.size()).isEqualTo(9);
     assertSort(sorts.get(0), "processDefinitionKey", "asc");
     assertSort(sorts.get(1), "processInstanceKey", "asc");
-    assertSort(sorts.get(2), "bpmnProcessId", "asc");
+    assertSort(sorts.get(2), "processDefinitionId", "asc");
     assertSort(sorts.get(3), "type", "asc");
     assertSort(sorts.get(4), "state", "asc");
     assertSort(sorts.get(5), "startDate", "desc");
