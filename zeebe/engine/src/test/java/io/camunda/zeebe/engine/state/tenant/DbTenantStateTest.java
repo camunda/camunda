@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.tenant;
 
+import static io.camunda.zeebe.engine.state.tenant.DbTenantState.TENANT_KEY_NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -72,12 +73,12 @@ public class DbTenantStateTest {
   }
 
   @Test
-  void shouldReturnNullIfTenantIdNotFound() {
+  void shouldReturnNegativeIfTenantIdNotFound() {
     // when
     final var retrievedKey = tenantState.getTenantKeyById("non-existing-tenant");
 
     // then
-    assertThat(retrievedKey).isNull();
+    assertThat(retrievedKey).isEqualTo(TENANT_KEY_NOT_FOUND);
   }
 
   @Test
@@ -85,6 +86,6 @@ public class DbTenantStateTest {
     // when
     final var tenantKey = tenantState.getTenantKeyById("non-existent-id");
     // then
-    assertThat(tenantKey).isNull();
+    assertThat(tenantKey).isEqualTo(TENANT_KEY_NOT_FOUND);
   }
 }

@@ -22,6 +22,8 @@ import java.util.Optional;
 
 public class DbTenantState implements MutableTenantState {
 
+  public static final long TENANT_KEY_NOT_FOUND = -1L;
+
   private final DbString tenantId = new DbString();
   private final DbLong tenantKey = new DbLong();
   private final PersistedTenant persistedTenant = new PersistedTenant();
@@ -75,6 +77,6 @@ public class DbTenantState implements MutableTenantState {
   public Long getTenantKeyById(final String tenantId) {
     this.tenantId.wrapString(tenantId);
     final var fkTenantKey = tenantByIdColumnFamily.get(this.tenantId);
-    return fkTenantKey != null ? fkTenantKey.inner().getValue() : null;
+    return fkTenantKey != null ? fkTenantKey.inner().getValue() : TENANT_KEY_NOT_FOUND;
   }
 }
