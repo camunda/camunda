@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {shallow} from 'enzyme';
-import {Tab, TabPanels, Tabs as CarbonTabs, TabList, TabsSkeleton} from '@carbon/react';
+import {mount, shallow} from 'enzyme';
+import {Tab, TabPanels, Tabs as CarbonTabs, TabList, TabsSkeleton, TabPanel} from '@carbon/react';
 
 import Tabs from './Tabs';
 
@@ -31,9 +31,9 @@ it('should display tabs properly', () => {
   expect(tabs.at(0).text()).toBe('tab1 title');
   expect(tabs.at(1).text()).toBe('tab2 title');
   expect(tabs.at(2).text()).toBe('disable title');
-  expect(panels.childAt(0).dive().text()).toBe('Tab1 content');
-  expect(panels.childAt(1).dive().text()).toBe('Tab2 content');
-  expect(panels.childAt(2).dive().text()).toBe('disabled content');
+  expect(panels.childAt(0).childAt(0).text()).toBe('Tab1 content');
+  expect(panels.childAt(1).childAt(0).text()).toBe('Tab2 content');
+  expect(panels.childAt(2).childAt(0).text()).toBe('disabled content');
 });
 
 it('should change tab on click', () => {
@@ -49,7 +49,7 @@ it('should change tab on click', () => {
     </Tabs>
   );
 
-  node.simulate('change', {selectedIndex: 1});
+  node.find(CarbonTabs).simulate('change', {selectedIndex: 1});
   expect(spy).toHaveBeenCalledWith('tab2');
 });
 
@@ -80,7 +80,7 @@ it('should use index values if no value prop is provided', () => {
   const tabs = node.find(CarbonTabs);
 
   expect(tabs.prop('selectedIndex')).toBe(0);
-  node.simulate('change', {selectedIndex: 1});
+  tabs.simulate('change', {selectedIndex: 1});
   expect(spy).toHaveBeenCalledWith(1);
 });
 
@@ -98,4 +98,37 @@ it('should show tabs skeleton if isLoading is set to true', () => {
 
   expect(node.find(TabList)).not.toExist();
   expect(node.find(TabsSkeleton)).toExist();
+});
+
+it('should not render tab content until it was opened', () => {
+  window.matchMedia = jest.fn(() => ({
+    matches: true,
+    media: '',
+    onchange: null,
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+  }));
+
+  const node = mount(
+    <Tabs>
+      <Tabs.Tab value={'a'} title="tab1 title">
+        Tab1 content
+      </Tabs.Tab>
+      <Tabs.Tab value={'b'} title="tab2 title">
+        Tab2 content
+      </Tabs.Tab>
+    </Tabs>
+  );
+
+  const tabs = node.find(TabPanel);
+  expect(tabs.at(0).text()).toBe('Tab1 content');
+  expect(tabs.at(1).text()).toBe('');
+
+  node.find(Tab).at(1).simulate('click');
+
+  expect(tabs.at(0).text()).toBe('Tab1 content');
+  expect(tabs.at(1).text()).toBe('Tab2 content');
 });
