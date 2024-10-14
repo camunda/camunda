@@ -50,27 +50,46 @@ runs:
         -D aether.syncContext.named.time=120
         -D maven.artifact.threads=32
         EOF
+    - name: Get cache path and keys
+      env:
+        HASH_FILES: ${{ hashFiles('**/pom.xml') }}
+        # it matters for caching as absolute paths on self-hosted and GitHub runners differ
+        # self-hosted: `/runner/` vs gh-hosted: `/home/runner`
+        KEY_PREFIX: ${{ runner.environment }}-${{ runner.os }}-mvn-${{ inputs.maven-cache-key-modifier }}
+      shell: sh
+      run: |
+        maven_version=$(./mvnw --version | head -n 1 | sed "s/Apache Maven \([[:digit:]]\.[[:digit:]]\.[[:digit:]]\).*/\1/g")
+        # Only cache release artifacts for Maven version 3.9+
+        # GitHub env variables are used instead of outputs, as outputs are not available in post steps
+        # https://github.com/actions/runner/issues/2009
+        if echo "3.9.0\n$maven_version" | sort --version-sort --check=quiet; then
+          # This is the path used by the `enhancedLocalRepository` set up in the 'Configure Maven' step.
+          # `aether.enhancedLocalRepository.remotePrefix` defaults to 'cached'
+          # `aether.enhancedLocalRepository.releasesPrefix` defaults to 'releases'
+          echo "MAVEN_CACHE_PATH=~/.m2/repository/cached/releases/" >> $GITHUB_ENV
+          echo "MAVEN_CACHE_KEY=${KEY_PREFIX}-${HASH_FILES}" >> $GITHUB_ENV
+          echo "MAVEN_CACHE_KEY_PREFIX=${KEY_PREFIX}" >> $GITHUB_ENV
+        else
+          echo "MAVEN_CACHE_PATH=~/.m2/repository/" >> $GITHUB_ENV
+          echo "MAVEN_CACHE_KEY=${KEY_PREFIX}-full-${HASH_FILES}" >> $GITHUB_ENV
+          echo "MAVEN_CACHE_KEY_PREFIX=${KEY_PREFIX}-full" >> $GITHUB_ENV
+        fi
     - name: Cache local Maven repository
       # Only use the full cache action if we're on main or stable/* branches
       if: ${{ startsWith(github.ref_name, 'stable/') || github.ref_name == 'main' }}
       uses: actions/cache@v4
       with:
-        # This is the path used by the `enhancedLocalRepository` set up in the 'Configure Maven' step.
-        # `aether.enhancedLocalRepository.remotePrefix` defaults to 'cached'
-        # `aether.enhancedLocalRepository.releasesPrefix` defaults to 'releases'
-        path: ~/.m2/repository/cached/releases/
-        # it matters for caching as absolute paths on self-hosted and GitHub runners differ
-        # self-hosted: `/runner/` vs gh-hosted: `/home/runner`
-        key: ${{ runner.environment }}-${{ runner.os }}-mvn-${{ inputs.maven-cache-key-modifier }}-${{ hashFiles('**/pom.xml') }}
+        path: ${{ env.MAVEN_CACHE_PATH }}
+        key: ${{ env.MAVEN_CACHE_KEY }}
         restore-keys: |
-          ${{ runner.environment }}-${{ runner.os }}-mvn-${{ inputs.maven-cache-key-modifier }}
+          ${{ env.MAVEN_CACHE_KEY_PREFIX }}
     - name: Restore maven cache
       # Restore cache (but don't save it) if we're not on main or stable/* branches
       if: ${{ !(startsWith(github.ref_name, 'stable/') || github.ref_name == 'main') }}
       uses: actions/cache/restore@v4
       with:
         # This has to match the 'Cache local Maven repository' step above
-        path: ~/.m2/repository/cached/releases/
-        key: ${{ runner.environment }}-${{ runner.os }}-mvn-${{ inputs.maven-cache-key-modifier }}-${{ hashFiles('**/pom.xml') }}
+        path: ${{ env.MAVEN_CACHE_PATH }}
+        key: ${{ env.MAVEN_CACHE_KEY }}
         restore-keys: |
-          ${{ runner.environment }}-${{ runner.os }}-mvn-${{ inputs.maven-cache-key-modifier }}
+          ${{ env.MAVEN_CACHE_KEY_PREFIX }}
