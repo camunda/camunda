@@ -28,5 +28,9 @@ final class AzureRestoreAcceptanceIT implements RestoreAcceptance {
     azureBackupStoreConfig.setConnectionString(AZURITE_CONTAINER.getConnectString());
     azureBackupStoreConfig.setBasePath(CONTAINER_NAME);
     backup.setAzure(azureBackupStoreConfig);
+
+    // This is a temporary workaround to ensure WAL is not empty. Azurite has a bug where reading
+    // empty blobs throws an error in the Azure client. Once it is fixed, we can revert this change.
+    cfg.getExperimental().getRocksdb().setDisableWal(false);
   }
 }
