@@ -7,9 +7,21 @@
  */
 package io.camunda.exporter;
 
+import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.handlers.AuthorizationRecordValueExportHandler;
+import io.camunda.exporter.handlers.DecisionHandler;
+import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.UserRecordValueExportHandler;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.index.AbstractIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
+import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
+import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -18,22 +30,40 @@ import java.util.Set;
  */
 public class DefaultExporterResourceProvider implements ExporterResourceProvider {
 
-  private String operateIndexPrefix;
+  private Map<? extends Class<? extends AbstractIndexDescriptor>, IndexDescriptor>
+      indexDescriptorsMap;
+
+  private Set<ExportHandler> exportHandlers;
 
   @Override
   public void init(final ExporterConfiguration configuration) {
-    operateIndexPrefix = configuration.getIndex().getPrefix();
+    final var operateIndexPrefix = configuration.getIndex().getPrefix();
+    final var isElasticsearch =
+        ConnectionTypes.from(configuration.getConnect().getType())
+            .equals(ConnectionTypes.ELASTICSEARCH);
+
+    indexDescriptorsMap =
+        Map.of(
+            DecisionIndex.class,
+            new DecisionIndex(operateIndexPrefix, isElasticsearch),
+            DecisionRequirementsIndex.class,
+            new DecisionRequirementsIndex(operateIndexPrefix, isElasticsearch),
+            MetricIndex.class,
+            new MetricIndex(operateIndexPrefix, isElasticsearch),
+            ProcessIndex.class,
+            new ProcessIndex(operateIndexPrefix, isElasticsearch));
+
+    exportHandlers =
+        Set.of(
+            new UserRecordValueExportHandler(),
+            new AuthorizationRecordValueExportHandler(),
+            new DecisionHandler(
+                indexDescriptorsMap.get(DecisionIndex.class).getFullQualifiedName()));
   }
 
   @Override
-  public Set<IndexDescriptor> getIndexDescriptors() {
-    return Set.of();
-    // TODO uncomment this to start creating Operate schema from exporter
-    //    return Set.of(
-    //        new DecisionIndex(operateIndexPrefix, true),
-    //        new DecisionRequirementsIndex(operateIndexPrefix, true),
-    //        new MetricIndex(operateIndexPrefix, true),
-    //        new ProcessIndex(operateIndexPrefix, true));
+  public Collection<IndexDescriptor> getIndexDescriptors() {
+    return indexDescriptorsMap.values();
   }
 
   @Override
@@ -52,5 +82,11 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
     //        new SequenceFlowTemplate(operateIndexPrefix, true),
     //        new UserTaskTemplate(operateIndexPrefix, true),
     //        new VariableTemplate(operateIndexPrefix, true));
+  }
+
+  @Override
+  public Set<ExportHandler> getExportHandlers() {
+    // Register all handlers here
+    return exportHandlers;
   }
 }

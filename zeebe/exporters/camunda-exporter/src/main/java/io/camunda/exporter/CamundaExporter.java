@@ -8,6 +8,7 @@
 package io.camunda.exporter;
 
 import static io.camunda.zeebe.protocol.record.ValueType.AUTHORIZATION;
+import static io.camunda.zeebe.protocol.record.ValueType.DECISION;
 import static io.camunda.zeebe.protocol.record.ValueType.USER;
 
 import co.elastic.clients.util.VisibleForTesting;
@@ -15,8 +16,6 @@ import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
-import io.camunda.exporter.handlers.AuthorizationRecordValueExportHandler;
-import io.camunda.exporter.handlers.UserRecordValueExportHandler;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.schema.IndexMappingProperty;
 import io.camunda.exporter.schema.IndexSchemaValidator;
@@ -35,6 +34,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -160,7 +160,7 @@ public class CamundaExporter implements Exporter {
     }
   }
 
-  private Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndices(
+  private Map<IndexDescriptor, Collection<IndexMappingProperty>> validateIndices(
       final IndexSchemaValidator schemaValidator, final SearchEngineClient searchEngineClient) {
     final var currentIndices =
         searchEngineClient.getMappings(
@@ -169,7 +169,7 @@ public class CamundaExporter implements Exporter {
     return schemaValidator.validateIndexMappings(currentIndices, provider.getIndexDescriptors());
   }
 
-  private Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexTemplates(
+  private Map<IndexDescriptor, Collection<IndexMappingProperty>> validateIndexTemplates(
       final IndexSchemaValidator schemaValidator, final SearchEngineClient searchEngineClient) {
     final var currentTemplates = searchEngineClient.getMappings("*", MappingSource.INDEX_TEMPLATE);
 
@@ -186,11 +186,9 @@ public class CamundaExporter implements Exporter {
   }
 
   private ExporterBatchWriter createBatchWriter() {
-    // TODO register all handlers here
-    return ExporterBatchWriter.Builder.begin()
-        .withHandler(new UserRecordValueExportHandler())
-        .withHandler(new AuthorizationRecordValueExportHandler())
-        .build();
+    final var builder = ExporterBatchWriter.Builder.begin();
+    provider.getExportHandlers().stream().forEach(builder::withHandler);
+    return builder.build();
   }
 
   private void scheduleDelayedFlush() {
@@ -227,7 +225,8 @@ public class CamundaExporter implements Exporter {
 
   private record ElasticsearchRecordFilter() implements RecordFilter {
     // TODO include other value types to export
-    private static final Set<ValueType> VALUE_TYPES_2_EXPORT = Set.of(USER, AUTHORIZATION);
+    private static final Set<ValueType> VALUE_TYPES_2_EXPORT =
+        Set.of(USER, AUTHORIZATION, DECISION);
 
     @Override
     public boolean acceptType(final RecordType recordType) {

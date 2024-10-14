@@ -194,6 +194,7 @@ final class CamundaExporterIT {
       final Set<IndexDescriptor> indexDescriptors,
       final Set<IndexTemplateDescriptor> templateDescriptors) {
     final var provider = mock(DefaultExporterResourceProvider.class, CALLS_REAL_METHODS);
+    provider.init(config);
     when(provider.getIndexDescriptors()).thenReturn(indexDescriptors);
     when(provider.getIndexTemplateDescriptors()).thenReturn(templateDescriptors);
 

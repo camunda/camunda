@@ -18,6 +18,7 @@ import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
@@ -132,7 +133,7 @@ public class ElasticsearchSchemaManagerIT {
     // when
     when(indexTemplate.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
 
-    final Map<IndexDescriptor, Set<IndexMappingProperty>> schemasToChange =
+    final Map<IndexDescriptor, Collection<IndexMappingProperty>> schemasToChange =
         Map.of(indexTemplate, Set.of());
     schemaManager.updateSchema(schemasToChange);
 
@@ -162,7 +163,7 @@ public class ElasticsearchSchemaManagerIT {
     newProperties.add(new IndexMappingProperty("foo", Map.of("type", "text")));
     newProperties.add(new IndexMappingProperty("bar", Map.of("type", "keyword")));
 
-    final Map<IndexDescriptor, Set<IndexMappingProperty>> schemasToChange =
+    final Map<IndexDescriptor, Collection<IndexMappingProperty>> schemasToChange =
         Map.of(index, newProperties);
 
     schemaManager.updateSchema(schemasToChange);

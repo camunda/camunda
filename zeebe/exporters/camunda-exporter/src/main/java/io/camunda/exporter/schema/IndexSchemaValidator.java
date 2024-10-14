@@ -63,10 +63,10 @@ public class IndexSchemaValidator {
    * @throws IndexSchemaValidationException if the existing indices cannot be updated with the given
    *     mappings.
    */
-  public Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexMappings(
-      final Map<String, IndexMapping> mappings, final Set<IndexDescriptor> indexDescriptors)
+  public Map<IndexDescriptor, Collection<IndexMappingProperty>> validateIndexMappings(
+      final Map<String, IndexMapping> mappings, final Collection<IndexDescriptor> indexDescriptors)
       throws IndexSchemaValidationException {
-    final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields = new HashMap<>();
+    final Map<IndexDescriptor, Collection<IndexMappingProperty>> newFields = new HashMap<>();
     for (final IndexDescriptor indexDescriptor : indexDescriptors) {
       final Map<String, IndexMapping> indexMappingsGroup =
           filterIndexMappings(mappings, indexDescriptor);
@@ -83,7 +83,7 @@ public class IndexSchemaValidator {
   private void validateDifferenceAndCollectNewFields(
       final IndexDescriptor indexDescriptor,
       final IndexMappingDifference difference,
-      final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields) {
+      final Map<IndexDescriptor, Collection<IndexMappingProperty>> newFields) {
     if (difference != null && !difference.equal()) {
       LOGGER.debug(
           "Index fields differ from expected. Index name: {}. Difference: {}.",

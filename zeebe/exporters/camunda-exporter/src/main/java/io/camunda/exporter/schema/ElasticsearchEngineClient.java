@@ -30,6 +30,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -84,7 +85,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
   @Override
   public void putMapping(
-      final IndexDescriptor indexDescriptor, final Set<IndexMappingProperty> newProperties) {
+      final IndexDescriptor indexDescriptor, final Collection<IndexMappingProperty> newProperties) {
     final PutMappingRequest request = putMappingRequest(indexDescriptor, newProperties);
 
     try {
@@ -238,7 +239,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   }
 
   private PutMappingRequest putMappingRequest(
-      final IndexDescriptor indexDescriptor, final Set<IndexMappingProperty> newProperties) {
+      final IndexDescriptor indexDescriptor, final Collection<IndexMappingProperty> newProperties) {
 
     return new PutMappingRequest.Builder()
         .index(indexDescriptor.getFullQualifiedName())
