@@ -34,20 +34,20 @@ public class RdbmsExporter implements Exporter {
 
   private long partitionId;
   private final RdbmsService rdbmsService;
-  private final RdbmsWriter rdbmsWriter;
+  private RdbmsWriter rdbmsWriter;
 
   private ExporterPositionModel exporterRdbmsPosition;
   private long lastPosition = -1;
 
   public RdbmsExporter(final RdbmsService rdbmsService) {
     this.rdbmsService = rdbmsService;
-    rdbmsWriter = rdbmsService.createWriter(partitionId);
   }
 
   @Override
   public void configure(final Context context) {
     partitionId = context.getPartitionId();
 
+    rdbmsWriter = rdbmsService.createWriter(partitionId);
     registerHandler();
 
     LOG.info("[RDBMS Exporter] RDBMS Exporter configured!");
