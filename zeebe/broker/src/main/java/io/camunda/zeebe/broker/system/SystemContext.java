@@ -127,19 +127,17 @@ public final class SystemContext {
 
     final var errors = new ArrayList<String>(0);
 
-    if (gossiper.enableSync()) {
-      if (!gossiper.syncDelay().isPositive()) {
-        errors.add(
-            String.format(
-                "syncDelay must be positive: configured value = %d ms",
-                gossiper.syncDelay().toMillis()));
-      }
-      if (!gossiper.syncRequestTimeout().isPositive()) {
-        errors.add(
-            String.format(
-                "syncRequestTimeout must be positive: configured value = %d ms",
-                gossiper.syncRequestTimeout().toMillis()));
-      }
+    if (!gossiper.syncDelay().isPositive()) {
+      errors.add(
+          String.format(
+              "syncDelay must be positive: configured value = %d ms",
+              gossiper.syncDelay().toMillis()));
+    }
+    if (!gossiper.syncRequestTimeout().isPositive()) {
+      errors.add(
+          String.format(
+              "syncRequestTimeout must be positive: configured value = %d ms",
+              gossiper.syncRequestTimeout().toMillis()));
     }
     if (gossiper.gossipFanout() < 2) {
       errors.add(

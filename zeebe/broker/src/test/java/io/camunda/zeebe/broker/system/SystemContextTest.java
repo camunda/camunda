@@ -373,7 +373,7 @@ final class SystemContextTest {
     final var invalidconfigManagerCfg =
         new ConfigManagerCfg(
             new ClusterConfigurationGossiperConfig(
-                true, Duration.ofSeconds(10).negated(), Duration.ofSeconds(10).negated(), -1));
+                Duration.ofSeconds(10).negated(), Duration.ofSeconds(10).negated(), -1));
     clusterCfg.setConfigManager(invalidconfigManagerCfg);
 
     // when
@@ -398,7 +398,7 @@ final class SystemContextTest {
     final var invalidConfigManagerCfg =
         new ConfigManagerCfg(
             new ClusterConfigurationGossiperConfig(
-                true, Duration.ofSeconds(0), Duration.ofSeconds(0), 0));
+                Duration.ofSeconds(0), Duration.ofSeconds(0), 0));
     clusterCfg.setConfigManager(invalidConfigManagerCfg);
 
     // when
@@ -423,7 +423,7 @@ final class SystemContextTest {
     final var invalidDynamicConfig =
         new ConfigManagerCfg(
             new ClusterConfigurationGossiperConfig(
-                true, Duration.ofSeconds(1), Duration.ofSeconds(1), 1));
+                Duration.ofSeconds(1), Duration.ofSeconds(1), 1));
     clusterCfg.setConfigManager(invalidDynamicConfig);
 
     // when
@@ -433,23 +433,5 @@ final class SystemContextTest {
         .hasMessageStartingWith("Invalid ConfigManager configuration:")
         .hasMessageContaining(
             String.format("gossipFanout must be greater than 1: configured value = %d", 1));
-  }
-
-  @Test
-  void shouldAllowInvalidSyncValuesInConfigManagerIfSyncIsNotEnabled() {
-    // given
-    final var brokerCfg = new BrokerCfg();
-    final var clusterCfg = brokerCfg.getCluster();
-
-    final var validConfig =
-        new ConfigManagerCfg(
-            new ClusterConfigurationGossiperConfig(
-                false, Duration.ofSeconds(1).negated(), Duration.ofSeconds(1).negated(), 3));
-    clusterCfg.setConfigManager(validConfig);
-
-    // when
-    assertThatCode(() -> initSystemContext(brokerCfg))
-        // then
-        .doesNotThrowAnyException();
   }
 }
