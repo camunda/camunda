@@ -65,6 +65,28 @@ public class DbTenantState implements MutableTenantState {
   }
 
   @Override
+  public void updateTenant(final TenantRecord updatedTenantRecord) {
+    tenantKey.wrapLong(updatedTenantRecord.getTenantKey());
+    final PersistedTenant persistedTenant = tenantsColumnFamily.get(tenantKey);
+
+    if (persistedTenant != null) {
+      final String oldTenantId = persistedTenant.getTenant().getTenantId();
+      final String newTenantId = updatedTenantRecord.getTenantId();
+
+      if (!oldTenantId.equals(newTenantId)) {
+        tenantId.wrapString(oldTenantId);
+        tenantByIdColumnFamily.deleteExisting(tenantId);
+
+        tenantId.wrapString(newTenantId);
+        tenantByIdColumnFamily.insert(tenantId, fkTenantKey);
+      }
+
+      persistedTenant.setTenant(updatedTenantRecord);
+      tenantsColumnFamily.update(tenantKey, persistedTenant);
+    }
+  }
+
+  @Override
   public Optional<TenantRecord> getTenantByKey(final long tenantKey) {
     this.tenantKey.wrapLong(tenantKey);
     return Optional.ofNullable(tenantsColumnFamily.get(this.tenantKey))
