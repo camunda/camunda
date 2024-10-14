@@ -49,6 +49,7 @@ import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -117,6 +118,7 @@ public final class EventAppliers implements EventApplier {
     registerClockAppliers(state);
     registerRoleAppliers(state);
     registerScalingAppliers(state);
+    registerTenantAppliers(state);
     return this;
   }
 
@@ -463,6 +465,10 @@ public final class EventAppliers implements EventApplier {
   private void registerScalingAppliers(final MutableProcessingState state) {
     register(ScaleIntent.SCALING_UP, new ScalingUpApplier(state.getRoutingState()));
     register(ScaleIntent.SCALED_UP, new ScaledUpApplier(state.getRoutingState()));
+  }
+
+  private void registerTenantAppliers(final MutableProcessingState state) {
+    register(TenantIntent.CREATED, new TenantCreatedApplier(state.getTenantState()));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {
