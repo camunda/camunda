@@ -7,51 +7,44 @@
  */
 package io.camunda.db.rdbms;
 
-import io.camunda.db.rdbms.queue.ExecutionQueue;
-import io.camunda.db.rdbms.service.ExporterPositionRdbmsService;
-import io.camunda.db.rdbms.service.ProcessDefinitionRdbmsService;
-import io.camunda.db.rdbms.service.ProcessInstanceRdbmsService;
-import io.camunda.db.rdbms.service.VariableRdbmsService;
+import io.camunda.db.rdbms.read.service.ProcessDefinitionReader;
+import io.camunda.db.rdbms.read.service.ProcessInstanceReader;
+import io.camunda.db.rdbms.read.service.VariableReader;
+import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.RdbmsWriterFactory;
 
 /** A holder for all rdbms services */
 public class RdbmsService {
 
-  private final ExecutionQueue executionQueue;
-  private final ExporterPositionRdbmsService exporterPositionRdbmsService;
-  private final ProcessDefinitionRdbmsService processDefinitionRdbmsService;
-  private final ProcessInstanceRdbmsService processInstanceRdbmsService;
-  private final VariableRdbmsService variableRdbmsService;
+  private final RdbmsWriterFactory rdbmsWriterFactory;
+  private final ProcessDefinitionReader processDefinitionReader;
+  private final ProcessInstanceReader processInstanceReader;
+  private final VariableReader variableReader;
 
   public RdbmsService(
-      final ExecutionQueue executionQueue,
-      final ExporterPositionRdbmsService exporterPositionRdbmsService,
-      final ProcessDefinitionRdbmsService processDefinitionRdbmsService,
-      final ProcessInstanceRdbmsService processInstanceRdbmsService,
-      final VariableRdbmsService variableRdbmsService) {
-    this.executionQueue = executionQueue;
-    this.exporterPositionRdbmsService = exporterPositionRdbmsService;
-    this.processDefinitionRdbmsService = processDefinitionRdbmsService;
-    this.processInstanceRdbmsService = processInstanceRdbmsService;
-    this.variableRdbmsService = variableRdbmsService;
+      final RdbmsWriterFactory rdbmsWriterFactory,
+      final ProcessDefinitionReader processDefinitionReader,
+      final ProcessInstanceReader processInstanceReader,
+      final VariableReader variableReader) {
+    this.rdbmsWriterFactory = rdbmsWriterFactory;
+    this.processDefinitionReader = processDefinitionReader;
+    this.processInstanceReader = processInstanceReader;
+    this.variableReader = variableReader;
   }
 
-  public ExporterPositionRdbmsService getExporterPositionRdbmsService() {
-    return exporterPositionRdbmsService;
+  public ProcessDefinitionReader getProcessDefinitionReader() {
+    return processDefinitionReader;
   }
 
-  public ProcessDefinitionRdbmsService getProcessDefinitionRdbmsService() {
-    return processDefinitionRdbmsService;
+  public ProcessInstanceReader getProcessInstanceReader() {
+    return processInstanceReader;
   }
 
-  public ProcessInstanceRdbmsService getProcessInstanceRdbmsService() {
-    return processInstanceRdbmsService;
+  public VariableReader getVariableReader() {
+    return variableReader;
   }
 
-  public VariableRdbmsService getVariableRdbmsService() {
-    return variableRdbmsService;
-  }
-
-  public ExecutionQueue executionQueue() {
-    return executionQueue;
+  public RdbmsWriter createWriter(final long partitionId) {
+    return rdbmsWriterFactory.createWriter(partitionId);
   }
 }

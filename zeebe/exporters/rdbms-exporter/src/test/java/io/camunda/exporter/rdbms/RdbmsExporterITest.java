@@ -10,7 +10,8 @@ package io.camunda.exporter.rdbms;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.domain.VariableModel;
+import io.camunda.db.rdbms.read.domain.VariableModel;
+import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValu
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,12 +44,14 @@ class RdbmsExporterITest {
 
   @Autowired private RdbmsService rdbmsService;
 
-  private RdbmsExporter exporter = new RdbmsExporter(rdbmsService);
+  private RdbmsExporter exporter;
 
   @BeforeEach
   void setUp() {
     exporter = new RdbmsExporter(rdbmsService);
-    exporter.configure(new ExporterContext(null, null, 0, null, null));
+    exporter.configure(
+        new ExporterContext(
+            null, new ExporterConfiguration("foo", Collections.emptyMap()), 0, null, null));
     exporter.open(controller);
   }
 
@@ -59,12 +63,12 @@ class RdbmsExporterITest {
     // when
     exporter.export(processInstanceRecord);
     // and we do a manual flush
-    rdbmsService.executionQueue().flush();
+    exporter.flushExecutionQueue();
 
     // then
     final var key =
         ((ProcessInstanceRecordValue) processInstanceRecord.getValue()).getProcessInstanceKey();
-    final var processInstance = rdbmsService.getProcessInstanceRdbmsService().findOne(key);
+    final var processInstance = rdbmsService.getProcessInstanceReader().findOne(key);
     assertThat(processInstance).isNotNull();
   }
 
@@ -85,16 +89,16 @@ class RdbmsExporterITest {
     // when
     recordList.forEach(record -> exporter.export(record));
     // and we do a manual flush
-    rdbmsService.executionQueue().flush();
+    exporter.flushExecutionQueue();
 
     // then
     final var key =
         ((ProcessInstanceRecordValue) processInstanceRecord.getValue()).getProcessInstanceKey();
-    final var processInstance = rdbmsService.getProcessInstanceRdbmsService().findOne(key);
+    final var processInstance = rdbmsService.getProcessInstanceReader().findOne(key);
     assertThat(processInstance).isNotNull();
 
     final VariableModel variable =
-        rdbmsService.getVariableRdbmsService().findOne(variableCreated.getKey());
+        rdbmsService.getVariableReader().findOne(variableCreated.getKey());
     final VariableRecordValue variableRecordValue =
         (VariableRecordValue) variableCreated.getValue();
     assertThat(variable).isNotNull();

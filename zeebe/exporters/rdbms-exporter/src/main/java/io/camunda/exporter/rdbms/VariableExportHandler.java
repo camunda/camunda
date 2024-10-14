@@ -7,18 +7,18 @@
  */
 package io.camunda.exporter.rdbms;
 
-import io.camunda.db.rdbms.domain.VariableModel;
-import io.camunda.db.rdbms.service.VariableRdbmsService;
+import io.camunda.db.rdbms.read.domain.VariableModel;
+import io.camunda.db.rdbms.write.service.VariableWriter;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 
 public class VariableExportHandler implements RdbmsExportHandler<VariableRecordValue> {
 
-  private final VariableRdbmsService variableRdbmsService;
+  private final VariableWriter variableWriter;
 
-  public VariableExportHandler(final VariableRdbmsService variableRdbmsService) {
-    this.variableRdbmsService = variableRdbmsService;
+  public VariableExportHandler(final VariableWriter variableWriter) {
+    this.variableWriter = variableWriter;
   }
 
   @Override
@@ -32,10 +32,10 @@ public class VariableExportHandler implements RdbmsExportHandler<VariableRecordV
   public void export(final Record<VariableRecordValue> record) {
     final VariableRecordValue value = record.getValue();
     if (record.getIntent() == VariableIntent.CREATED) {
-      variableRdbmsService.create(map(record.getKey(), value));
+      variableWriter.create(map(record.getKey(), value));
     } else if (record.getIntent() == VariableIntent.UPDATED
         || record.getIntent() == VariableIntent.MIGRATED) {
-      variableRdbmsService.update(map(record.getKey(), value));
+      variableWriter.update(map(record.getKey(), value));
     }
   }
 

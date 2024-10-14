@@ -7,7 +7,7 @@
  */
 package io.camunda.db.rdbms.fixtures;
 
-import io.camunda.db.rdbms.domain.ProcessInstanceDbModel;
+import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Random;

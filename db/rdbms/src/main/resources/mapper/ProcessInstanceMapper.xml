@@ -19,7 +19,6 @@
            pi.END_DATE,
            pi.TENANT_ID,
            NULL           as TREE_PATH,
-           NULL           as ROOT_PROCESS_INSTANCE_KEY,
            NULL           as INCIDENT,
            pi.PARENT_PROCESS_INSTANCE_KEY,
            pi.PARENT_ELEMENT_INSTANCE_KEY,
@@ -41,7 +40,7 @@
   </select>
 
   <!-- default search statement for databases supporting LIMIT/OFFSET-->
-  <select id="search" parameterType="io.camunda.db.rdbms.domain.ProcessInstanceDbFilter" resultMap="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchResultMap">
+  <select id="search" parameterType="io.camunda.db.rdbms.read.domain.ProcessInstanceDbFilter" resultMap="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchResultMap">
     SELECT
       pi.PROCESS_INSTANCE_KEY,
       pi.BPMN_PROCESS_ID,
@@ -51,7 +50,6 @@
       pi.END_DATE,
       pi.TENANT_ID,
       NULL as TREE_PATH,
-      NULL as ROOT_PROCESS_INSTANCE_KEY,
       NULL as INCIDENT,
       pi.PARENT_PROCESS_INSTANCE_KEY,
       pi.PARENT_ELEMENT_INSTANCE_KEY,
@@ -173,7 +171,6 @@
       <arg column="VERSION" javaType="java.lang.Integer"/>
       <arg column="PROCESS_DEFINITION_VERSION_TAG" javaType="java.lang.String"/>
       <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
-      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="PARENT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="PARENT_ELEMENT_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="TREE_PATH" javaType="java.lang.String"/>
@@ -188,7 +185,7 @@
 
   <insert
     id="insert"
-    parameterType="io.camunda.db.rdbms.domain.ProcessInstanceDbModel"
+    parameterType="io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel"
     flushCache="true">
     INSERT INTO PROCESS_INSTANCE (PROCESS_INSTANCE_KEY, BPMN_PROCESS_ID, PROCESS_DEFINITION_KEY, STATE, START_DATE, END_DATE, TENANT_ID, PARENT_PROCESS_INSTANCE_KEY, PARENT_ELEMENT_INSTANCE_KEY,
                                   VERSION)
@@ -199,7 +196,7 @@
   <update
     id="update"
     statementType="PREPARED"
-    parameterType="io.camunda.db.rdbms.domain.ProcessInstanceDbModel"
+    parameterType="io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel"
     flushCache="true"
     timeout="20">
     UPDATE PROCESS_INSTANCE p

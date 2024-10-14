@@ -5,12 +5,8 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.db.rdbms.queue;
+package io.camunda.db.rdbms.write.queue;
 
-import io.camunda.zeebe.scheduler.Actor;
-import io.camunda.zeebe.scheduler.ActorScheduler;
-import io.camunda.zeebe.scheduler.SchedulingHints;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
@@ -21,7 +17,7 @@ import org.apache.ibatis.session.TransactionIsolationLevel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ExecutionQueue extends Actor {
+public class ExecutionQueue {
 
   private static final Logger LOG = LoggerFactory.getLogger(ExecutionQueue.class);
 
@@ -31,19 +27,20 @@ public class ExecutionQueue extends Actor {
 
   private final Queue<QueueItem> queue = new ConcurrentLinkedQueue<>();
 
-  public ExecutionQueue(
-      final ActorScheduler actorScheduler, final SqlSessionFactory sessionFactory) {
-    this.sessionFactory = sessionFactory;
+  private final long partitionId; // for addressing the logger
+  private final Integer queueFlushLimit;
 
-    actorScheduler.submitActor(this, SchedulingHints.IO_BOUND);
-    actor.run(
-        () ->
-            actor.schedule(
-                Duration.ofSeconds(5), this::flushAndReschedule)); // TODO make timeout configurable
+  public ExecutionQueue(
+      final SqlSessionFactory sessionFactory,
+      final long partitionId,
+      final Integer queueFlushLimit) {
+    this.sessionFactory = sessionFactory;
+    this.partitionId = partitionId;
+    this.queueFlushLimit = queueFlushLimit;
   }
 
   public void executeInQueue(final QueueItem entry) {
-    LOG.debug("Added entry to queue: {}", entry);
+    LOG.debug("[RDBMS ExecutionQueue, Partition {}] Added entry to queue: {}", partitionId, entry);
     queue.add(entry);
     checkQueueForFlush();
   }
@@ -58,57 +55,61 @@ public class ExecutionQueue extends Actor {
 
   public void flush() {
     if (queue.isEmpty()) {
-      LOG.trace("Skip Flushing because execution queue is empty");
+      LOG.trace(
+          "[RDBMS ExecutionQueue, Partition {}] Skip Flushing because execution queue is empty",
+          partitionId);
       return;
     }
-    LOG.debug("[RDBMS Execution Queue] Flushing execution queue with {} items", queue.size());
+    LOG.debug(
+        "[RDBMS ExecutionQueue, Partition {}] Flushing execution queue with {} items",
+        partitionId,
+        queue.size());
 
     final var startMillis = System.currentTimeMillis();
-    final var queueSize = queue.size();
     final var session =
         sessionFactory.openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED);
 
+    var flushedElements = 0;
     try {
-      var preFlushListenersCalled = false;
       while (!queue.isEmpty()) {
         final var entry = queue.peek();
-        LOG.trace("[RDBMS Execution Queue] Executing entry: {}", entry);
+        LOG.trace("[RDBMS ExecutionQueue, Partition {}] Executing entry: {}", partitionId, entry);
         session.update(entry.statementId(), entry.parameter());
         queue.remove();
-
-        if (queue.isEmpty() && !postFlushListeners.isEmpty() && !preFlushListenersCalled) {
-          LOG.debug("[RDBMS Execution Queue] Call pre flush listeners");
-          preFlushListeners.forEach(FlushListener::onFlushSuccess);
-          preFlushListenersCalled = true;
-        }
+        flushedElements++;
       }
+
+      if (!preFlushListeners.isEmpty()) {
+        LOG.debug("[RDBMS ExecutionQueue, Partition {}] Call pre flush listeners", partitionId);
+        preFlushListeners.forEach(FlushListener::onFlushSuccess);
+      }
+
       session.flushStatements();
       session.commit();
       LOG.debug(
-          "[RDBMS Execution Queue] Commit queue with {} entries in {}ms",
-          queueSize,
+          "[RDBMS ExecutionQueue, Partition {}] Commit queue with {} entries in {}ms",
+          partitionId,
+          flushedElements,
           System.currentTimeMillis() - startMillis);
     } catch (final Exception e) {
-      LOG.error("Error while executing queue", e);
+      LOG.error("[RDBMS ExecutionQueue, Partition {}] Error while executing queue", partitionId, e);
       session.rollback();
     } finally {
       session.close();
       if (!postFlushListeners.isEmpty()) {
-        LOG.debug("[RDBMS Execution Queue] Call post flush listeners");
+        LOG.debug("[RDBMS ExecutionQueue, Partition {}] Call post flush listeners", partitionId);
         postFlushListeners.forEach(FlushListener::onFlushSuccess);
       }
     }
   }
 
   private void checkQueueForFlush() {
-    LOG.trace("Checking if queue is flushed. Queue size: {}", queue.size());
-    if (queue.size() > 50) {
+    LOG.trace(
+        "[RDBMS ExecutionQueue, Partition {}] Checking if queue is flushed. Queue size: {}",
+        partitionId,
+        queue.size());
+    if (queue.size() > queueFlushLimit) {
       flush();
     }
-  }
-
-  private void flushAndReschedule() {
-    flush();
-    actor.schedule(Duration.ofSeconds(5), this::flushAndReschedule);
   }
 }

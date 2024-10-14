@@ -5,25 +5,19 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.db.rdbms.service;
+package io.camunda.db.rdbms.write.service;
 
-import io.camunda.db.rdbms.domain.VariableModel;
-import io.camunda.db.rdbms.queue.ContextType;
-import io.camunda.db.rdbms.queue.ExecutionQueue;
-import io.camunda.db.rdbms.queue.QueueItem;
-import io.camunda.db.rdbms.sql.VariableMapper;
-import io.camunda.db.rdbms.sql.VariableMapper.VariableFilter;
-import java.util.List;
+import io.camunda.db.rdbms.read.domain.VariableModel;
+import io.camunda.db.rdbms.write.queue.ContextType;
+import io.camunda.db.rdbms.write.queue.ExecutionQueue;
+import io.camunda.db.rdbms.write.queue.QueueItem;
 
-public class VariableRdbmsService {
+public class VariableWriter {
 
   private final ExecutionQueue executionQueue;
-  private final VariableMapper variableMapper;
 
-  public VariableRdbmsService(
-      final ExecutionQueue executionQueue, final VariableMapper variableMapper) {
+  public VariableWriter(final ExecutionQueue executionQueue) {
     this.executionQueue = executionQueue;
-    this.variableMapper = variableMapper;
   }
 
   public void create(final VariableModel variable) {
@@ -42,13 +36,5 @@ public class VariableRdbmsService {
             variable.key(),
             "io.camunda.db.rdbms.sql.VariableMapper.update",
             variable));
-  }
-
-  public VariableModel findOne(final Long key) {
-    return variableMapper.findOne(key);
-  }
-
-  public List<VariableModel> findByProcessInstanceKey(final Long processInstanceKey) {
-    return variableMapper.find(new VariableFilter(processInstanceKey));
   }
 }

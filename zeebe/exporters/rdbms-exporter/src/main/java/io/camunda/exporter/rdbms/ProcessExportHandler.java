@@ -7,8 +7,8 @@
  */
 package io.camunda.exporter.rdbms;
 
-import io.camunda.db.rdbms.domain.ProcessDefinitionDbModel;
-import io.camunda.db.rdbms.service.ProcessDefinitionRdbmsService;
+import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
+import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
 import io.camunda.operate.zeebeimport.util.XMLUtil;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.zeebe.protocol.Protocol;
@@ -22,10 +22,10 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
 
   private static final Logger LOG = LoggerFactory.getLogger(ProcessExportHandler.class);
 
-  private final ProcessDefinitionRdbmsService processDefinitionRdbmsService;
+  private final ProcessDefinitionWriter processDefinitionWriter;
 
-  public ProcessExportHandler(final ProcessDefinitionRdbmsService processDefinitionRdbmsService) {
-    this.processDefinitionRdbmsService = processDefinitionRdbmsService;
+  public ProcessExportHandler(final ProcessDefinitionWriter processDefinitionWriter) {
+    this.processDefinitionWriter = processDefinitionWriter;
   }
 
   @Override
@@ -40,7 +40,7 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
   @Override
   public void export(final Record<Process> record) {
     final Process value = record.getValue();
-    processDefinitionRdbmsService.save(map(value));
+    processDefinitionWriter.save(map(value));
   }
 
   private ProcessDefinitionDbModel map(final Process value) {
