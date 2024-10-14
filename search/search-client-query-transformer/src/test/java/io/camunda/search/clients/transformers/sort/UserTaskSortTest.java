@@ -98,4 +98,55 @@ public class UserTaskSortTest extends AbstractSortTransformerTest {
 
     assertThat(completionDateDesc).isTrue();
   }
+
+  @Test
+  public void shouldApplySortConditionByDueDate() {
+    // given
+    final var userTaskStateFilter = FilterBuilders.userTask((f) -> f.states("CREATED"));
+    final var request =
+        SearchQueryBuilders.userTaskSearchQuery(
+            (q) -> q.filter(userTaskStateFilter).sort((s) -> s.dueDate().asc()));
+
+    // when
+    final var sort = transformRequest(request);
+
+    // then
+    Assertions.assertThat(sort).isNotNull();
+    Assertions.assertThat(sort).hasSize(2); // Assert has key + creationTime
+
+    // Check if "dueDate" is present in any position
+    final boolean dueDateAsc =
+        sort.stream()
+            .anyMatch(
+                s ->
+                    s.field().field().equals("dueDate") && s.field().order().equals(SortOrder.ASC));
+
+    assertThat(dueDateAsc).isTrue();
+  }
+
+  @Test
+  public void shouldApplySortConditionByFollowUpDate() {
+    // given
+    final var userTaskStateFilter = FilterBuilders.userTask((f) -> f.states("CREATED"));
+    final var request =
+        SearchQueryBuilders.userTaskSearchQuery(
+            (q) -> q.filter(userTaskStateFilter).sort((s) -> s.followUpDate().asc()));
+
+    // when
+    final var sort = transformRequest(request);
+
+    // then
+    Assertions.assertThat(sort).isNotNull();
+    Assertions.assertThat(sort).hasSize(2); // Assert has key + creationTime
+
+    // Check if "followUpDate" is present in any position
+    final boolean followUpDateAsc =
+        sort.stream()
+            .anyMatch(
+                s ->
+                    s.field().field().equals("followUpDate")
+                        && s.field().order().equals(SortOrder.ASC));
+
+    assertThat(followUpDateAsc).isTrue();
+  }
 }

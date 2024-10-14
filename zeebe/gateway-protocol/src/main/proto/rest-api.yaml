@@ -2560,7 +2560,7 @@ components:
         processInstanceKey:
           type: integer
           format: int64
-        tenantIds:
+        tenantId:
           type: string
         processDefinitionId:
           type: string
@@ -2621,7 +2621,7 @@ components:
         dueDate:
           type: string
           format: date-time
-        tenantIds:
+        tenantId:
           type: string
         externalFormReference:
           type: string

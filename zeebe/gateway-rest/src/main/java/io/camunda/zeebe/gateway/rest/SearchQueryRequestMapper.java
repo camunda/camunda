@@ -432,7 +432,7 @@ public final class SearchQueryRequestMapper {
                   .ifPresent(builder::processDefinitionKeys);
               Optional.ofNullable(f.getProcessInstanceKey())
                   .ifPresent(builder::processInstanceKeys);
-              Optional.ofNullable(f.getTenantIds()).ifPresent(builder::tenantIds);
+              Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
 
               Optional.ofNullable(f.getVariables())
                   .filter(variables -> !variables.isEmpty())
@@ -622,6 +622,8 @@ public final class SearchQueryRequestMapper {
       switch (field) {
         case "creationDate" -> builder.creationDate();
         case "completionDate" -> builder.completionDate();
+        case "followUpDate" -> builder.followUpDate();
+        case "dueDate" -> builder.dueDate();
         case "priority" -> builder.priority();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }

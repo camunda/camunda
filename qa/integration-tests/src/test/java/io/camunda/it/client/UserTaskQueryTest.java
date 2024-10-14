@@ -254,14 +254,14 @@ class UserTaskQueryTest {
   @Test
   public void shouldRetrieveTaskByTenantId() {
     final var resultDefaultTenant =
-        camundaClient.newUserTaskQuery().filter(f -> f.tentantId("<default>")).send().join();
+        camundaClient.newUserTaskQuery().filter(f -> f.tenantId("<default>")).send().join();
     assertThat(resultDefaultTenant.items().size()).isEqualTo(7);
     resultDefaultTenant
         .items()
-        .forEach(item -> assertThat(item.getTenantIds()).isEqualTo("<default>"));
+        .forEach(item -> assertThat(item.getTenantId()).isEqualTo("<default>"));
 
     final var resultNonExistent =
-        camundaClient.newUserTaskQuery().filter(f -> f.tentantId("<default123>")).send().join();
+        camundaClient.newUserTaskQuery().filter(f -> f.tenantId("<default123>")).send().join();
     assertThat(resultNonExistent.items().size()).isEqualTo(0);
   }
 

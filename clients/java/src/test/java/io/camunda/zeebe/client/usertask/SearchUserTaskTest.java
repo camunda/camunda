@@ -129,12 +129,12 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByTenantId() {
     // when
-    client.newUserTaskQuery().filter(f -> f.tentantId("tenant1")).send().join();
+    client.newUserTaskQuery().filter(f -> f.tenantId("tenant1")).send().join();
 
     // then
     final UserTaskSearchQueryRequest request =
         gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
-    assertThat(request.getFilter().getTenantIds()).isEqualTo("tenant1");
+    assertThat(request.getFilter().getTenantId()).isEqualTo("tenant1");
   }
 
   @Test
