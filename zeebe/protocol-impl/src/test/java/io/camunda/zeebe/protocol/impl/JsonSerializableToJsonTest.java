@@ -2515,7 +2515,8 @@ final class JsonSerializableToJsonTest {
                     .setEmail("foo@bar")
                     .setPassword("f00b4r")
                     .setUserType(UserType.DEFAULT)
-                    .addRoleKey(2L),
+                    .addRoleKey(2L)
+                    .addTenantId("tenant-id-1"),
         """
         {
           "userKey": 1,
@@ -2524,7 +2525,8 @@ final class JsonSerializableToJsonTest {
           "email": "foo@bar",
           "password": "f00b4r",
           "userType": "DEFAULT",
-          "roleKeysList": [2]
+          "roleKeysList": [2],
+          "tenantIdsList": ["tenant-id-1"]
         }
         """
       },
@@ -2548,7 +2550,8 @@ final class JsonSerializableToJsonTest {
           "email": "foo@bar",
           "password": "f00b4r",
           "userType": "REGULAR",
-          "roleKeysList": []
+          "roleKeysList": [],
+          "tenantIdsList": []
         }
         """
       },
