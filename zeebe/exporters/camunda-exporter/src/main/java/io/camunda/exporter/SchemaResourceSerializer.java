@@ -11,7 +11,6 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Map;
@@ -25,7 +24,8 @@ public final class SchemaResourceSerializer {
 
   public static Map<String, Object> serialize(
       final Function<JsonGenerator, jakarta.json.stream.JsonGenerator> jacksonGenerator,
-      final Consumer<jakarta.json.stream.JsonGenerator> serialize) {
+      final Consumer<jakarta.json.stream.JsonGenerator> serialize)
+      throws IOException {
     try (final var out = new StringWriter();
         final var jsonGenerator = new JsonFactory().createGenerator(out);
         final jakarta.json.stream.JsonGenerator jacksonJsonpGenerator =
@@ -34,9 +34,6 @@ public final class SchemaResourceSerializer {
       jacksonJsonpGenerator.flush();
 
       return MAPPER.readValue(out.toString(), new TypeReference<>() {});
-
-    } catch (final IOException e) {
-      throw new ElasticsearchExporterException("Serialisation failed", e);
     }
   }
 }

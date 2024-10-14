@@ -222,10 +222,15 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   }
 
   private Map<String, Object> propertyToMap(final Property property) {
-    return SchemaResourceSerializer.serialize(
-        (JacksonJsonpGenerator::new),
-        (jacksonJsonpGenerator) ->
-            property.serialize(jacksonJsonpGenerator, new JacksonJsonpMapper(MAPPER)));
+    try {
+      return SchemaResourceSerializer.serialize(
+          (JacksonJsonpGenerator::new),
+          (jacksonJsonpGenerator) ->
+              property.serialize(jacksonJsonpGenerator, new JacksonJsonpMapper(MAPPER)));
+    } catch (final IOException e) {
+      throw new ElasticsearchExporterException(
+          String.format("Failed to serialize property [%s]", property.toString()), e);
+    }
   }
 
   private String dynamicFromMappings(final TypeMapping mapping) {
