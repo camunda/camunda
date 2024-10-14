@@ -43,7 +43,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4
 
       - name: Login to Harbor registry
         uses: ./.github/actions/login-registry
@@ -138,7 +138,7 @@ jobs:
         run: yarn run e2e:ci:sm:headless
 
       - name: Upload logs
-        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4
         if: always()
         with:
           name: logs

@@ -54,6 +54,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
@@ -2735,7 +2736,32 @@ final class JsonSerializableToJsonTest {
             "entityKey": -1
           }
           """
-      }
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////// ScaleRecord ////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ScaleRecord (empty)",
+        (Supplier<ScaleRecord>) ScaleRecord::new,
+        """
+        {
+          "currentPartitionCount": -1,
+          "desiredPartitionCount": -1
+        }
+        """
+      },
+      {
+        "ScaleRecord",
+        (Supplier<ScaleRecord>)
+            () -> new ScaleRecord().setCurrentPartitionCount(3).setDesiredPartitionCount(5),
+        """
+        {
+         "currentPartitionCount": 3,
+         "desiredPartitionCount": 5
+        }
+        """
+      },
     };
   }
 

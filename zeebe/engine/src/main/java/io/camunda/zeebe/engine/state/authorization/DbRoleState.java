@@ -59,20 +59,42 @@ public class DbRoleState implements MutableRoleState {
   }
 
   @Override
-  public void createRole(final RoleRecord roleRecord) {
-    roleKey.wrapLong(roleRecord.getRoleKey());
-    persistedRole.setRole(roleRecord);
+  public void create(final RoleRecord roleRecord) {
+    final var key = roleRecord.getRoleKey();
+    final var name = roleRecord.getName();
+    roleKey.wrapLong(key);
+    persistedRole.setRoleKey(key);
+    persistedRole.setName(name);
     roleColumnFamily.insert(roleKey, persistedRole);
 
-    roleName.wrapString(roleRecord.getName());
+    roleName.wrapString(name);
     roleByNameColumnFamily.insert(roleName, fkRoleKey);
   }
 
   @Override
-  public Optional<RoleRecord> getRole(final long roleKey) {
+  public void update(final RoleRecord roleRecord) {
+    // retrieve record from the state
+    roleKey.wrapLong(roleRecord.getRoleKey());
+    final var persistedRole = roleColumnFamily.get(roleKey);
+
+    // remove old record from ROLE_BY_NAME cf
+    roleName.wrapString(persistedRole.getName());
+    roleByNameColumnFamily.deleteExisting(roleName);
+
+    // add new record to ROLE_BY_NAME cf
+    roleName.wrapString(roleRecord.getName());
+    roleByNameColumnFamily.insert(roleName, fkRoleKey);
+
+    persistedRole.setRoleKey(roleRecord.getRoleKey());
+    persistedRole.setName(roleRecord.getName());
+    roleColumnFamily.update(roleKey, persistedRole);
+  }
+
+  @Override
+  public Optional<PersistedRole> getRole(final long roleKey) {
     this.roleKey.wrapLong(roleKey);
     final var persistedRole = roleColumnFamily.get(this.roleKey);
-    return persistedRole != null ? Optional.of(persistedRole.getRole()) : Optional.empty();
+    return persistedRole != null ? Optional.of(persistedRole) : Optional.empty();
   }
 
   @Override
