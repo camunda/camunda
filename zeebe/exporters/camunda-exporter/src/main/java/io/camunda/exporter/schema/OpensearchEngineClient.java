@@ -7,6 +7,10 @@
  */
 package io.camunda.exporter.schema;
 
+import static io.camunda.exporter.utils.SearchEngineClientUtils.appendToFileSchemaSettings;
+import static io.camunda.exporter.utils.SearchEngineClientUtils.listIndices;
+import static io.camunda.exporter.utils.SearchEngineClientUtils.mapToSettings;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
@@ -25,7 +29,6 @@ import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonpDeserializer;
 import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.client.opensearch._types.mapping.Property;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch.generic.Body;
 import org.opensearch.client.opensearch.generic.Request;
@@ -148,8 +151,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
     } catch (final IOException e) {
       final var errMsg =
           String.format(
-              "settings PUT failed for the following indices [%s]",
-              SearchEngineClient.listIndices(indexDescriptors));
+              "settings PUT failed for the following indices [%s]", listIndices(indexDescriptors));
       LOG.error(errMsg, e);
       throw new ElasticsearchExporterException(errMsg, e);
     }
@@ -202,14 +204,13 @@ public class OpensearchEngineClient implements SearchEngineClient {
       final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings) {
 
     final org.opensearch.client.opensearch.indices.IndexSettings settings =
-        SearchEngineClient.mapToSettings(
+        mapToSettings(
             toAppendSettings,
-            MAPPER,
             (inp) ->
                 deserializeJson(
                     org.opensearch.client.opensearch.indices.IndexSettings._DESERIALIZER, inp));
     return new PutIndicesSettingsRequest.Builder()
-        .index(SearchEngineClient.listIndices(indexDescriptors))
+        .index(listIndices(indexDescriptors))
         .settings(settings)
         .build();
   }
@@ -258,11 +259,15 @@ public class OpensearchEngineClient implements SearchEngineClient {
 
   private PutMappingRequest putMappingRequest(
       final IndexDescriptor indexDescriptor, final Set<IndexMappingProperty> newProperties) {
+
+    final var opensearchProperties =
+        newProperties.stream()
+            .map(IndexMappingProperty::toOpensearchProperty)
+            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+
     return new PutMappingRequest.Builder()
         .index(indexDescriptor.getFullQualifiedName())
-        .properties(
-            IndexMappingProperty.toPropertiesMap(
-                newProperties, MAPPER, (inp) -> deserializeJson(Property._DESERIALIZER, inp)))
+        .properties(opensearchProperties)
         .build();
   }
 
@@ -275,7 +280,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
       final var templateFields =
           deserializeJson(
               IndexTemplateMapping._DESERIALIZER,
-              SearchEngineClient.appendToFileSchemaSettings(templateFile, settings, MAPPER));
+              appendToFileSchemaSettings(templateFile, settings));
 
       return new PutIndexTemplateRequest.Builder()
           .name(indexTemplateDescriptor.getTemplateName())
@@ -305,7 +310,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
       final var templateFields =
           deserializeJson(
               IndexTemplateMapping._DESERIALIZER,
-              SearchEngineClient.appendToFileSchemaSettings(templateFile, settings, MAPPER));
+              appendToFileSchemaSettings(templateFile, settings));
 
       return new CreateIndexRequest.Builder()
           .index(indexDescriptor.getFullQualifiedName())

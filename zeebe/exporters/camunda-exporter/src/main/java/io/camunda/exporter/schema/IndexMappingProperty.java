@@ -12,7 +12,6 @@ import static java.util.Map.entry;
 import co.elastic.clients.elasticsearch._types.mapping.Property;
 import co.elastic.clients.json.JsonpMapper;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.json.stream.JsonParser;
 import java.io.IOException;
@@ -22,15 +21,35 @@ import org.apache.commons.io.IOUtils;
 
 public record IndexMappingProperty(String name, Object typeDefinition) {
   private static final ObjectMapper MAPPER = new ObjectMapper();
-  private static final JsonpMapper JSONP_MAPPER = new JacksonJsonpMapper(MAPPER);
+  private static final JsonpMapper jsonpMapper = new JacksonJsonpMapper(MAPPER);
+  private static final org.opensearch.client.json.JsonpMapper opensearchJsonpMapper =
+      new org.opensearch.client.json.jackson.JacksonJsonpMapper(MAPPER);
 
   public Entry<String, Property> toElasticsearchProperty() {
-    try {
-      final var typeDefinitionParser = getTypeDefinitionParser();
-      final var elasticsearchProperty =
-          Property._DESERIALIZER.deserialize(typeDefinitionParser, JSONP_MAPPER);
+    final var typeDefinitionParser = getTypeDefinitionParser();
+    final var elasticsearchProperty =
+        Property._DESERIALIZER.deserialize(typeDefinitionParser, jsonpMapper);
 
-      return entry(name(), elasticsearchProperty);
+    return entry(name(), elasticsearchProperty);
+  }
+
+  public Entry<String, org.opensearch.client.opensearch._types.mapping.Property>
+      toOpensearchProperty() {
+    final var typeDefinitionParser = getTypeDefinitionParser();
+    final var opensearchProperty =
+        org.opensearch.client.opensearch._types.mapping.Property._DESERIALIZER.deserialize(
+            typeDefinitionParser, opensearchJsonpMapper);
+
+    return entry(name(), opensearchProperty);
+  }
+
+  private JsonParser getTypeDefinitionParser() {
+    try {
+      final var typeDefinitionJson =
+          IOUtils.toInputStream(
+              MAPPER.writeValueAsString(typeDefinition()), StandardCharsets.UTF_8);
+
+      return jsonpMapper.jsonProvider().createParser(typeDefinitionJson);
     } catch (final IOException e) {
       throw new IllegalStateException(
           String.format(
@@ -38,13 +57,6 @@ public record IndexMappingProperty(String name, Object typeDefinition) {
               this, Property.class.getName()),
           e);
     }
-  }
-
-  private JsonParser getTypeDefinitionParser() throws JsonProcessingException {
-    final var typeDefinitionJson =
-        IOUtils.toInputStream(MAPPER.writeValueAsString(typeDefinition()), StandardCharsets.UTF_8);
-
-    return JSONP_MAPPER.jsonProvider().createParser(typeDefinitionJson);
   }
 
   public static IndexMappingProperty createIndexMappingProperty(
