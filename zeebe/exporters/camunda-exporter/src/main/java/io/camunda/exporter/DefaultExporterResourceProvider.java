@@ -75,7 +75,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new ListViewProcessInstanceFromProcessInstanceHandler(
                 templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(), false),
             new VariableHandler(
-                templateDescriptorsMap.get(VariableTemplate.class).getFullQualifiedName(), 8191));
+                templateDescriptorsMap.get(VariableTemplate.class).getFullQualifiedName(),
+                configuration.getIndex().getVariableSizeThreshold()));
   }
 
   @Override

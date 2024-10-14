@@ -98,9 +98,11 @@ public class ExporterConfiguration {
   }
 
   public static final class IndexSettings {
+    public static final int DEFAULT_VARIABLE_SIZE_THRESHOLD = 8191;
     private String prefix = "operate";
     private Integer numberOfShards = 1;
     private Integer numberOfReplicas = 0;
+    private Integer variableSizeThreshold = DEFAULT_VARIABLE_SIZE_THRESHOLD;
 
     public String getPrefix() {
       return prefix;
@@ -124,6 +126,14 @@ public class ExporterConfiguration {
 
     public void setNumberOfReplicas(final Integer numberOfReplicas) {
       this.numberOfReplicas = numberOfReplicas;
+    }
+
+    public Integer getVariableSizeThreshold() {
+      return variableSizeThreshold;
+    }
+
+    public void setVariableSizeThreshold(final Integer variableSizeThreshold) {
+      this.variableSizeThreshold = variableSizeThreshold;
     }
 
     @Override
