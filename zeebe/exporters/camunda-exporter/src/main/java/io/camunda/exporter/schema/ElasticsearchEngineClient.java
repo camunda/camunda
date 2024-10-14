@@ -7,6 +7,10 @@
  */
 package io.camunda.exporter.schema;
 
+import static io.camunda.exporter.utils.SearchEngineClientUtils.appendToFileSchemaSettings;
+import static io.camunda.exporter.utils.SearchEngineClientUtils.listIndices;
+import static io.camunda.exporter.utils.SearchEngineClientUtils.mapToSettings;
+
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
@@ -19,25 +23,20 @@ import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplate
 import co.elastic.clients.elasticsearch.indices.put_index_template.IndexTemplateMapping;
 import co.elastic.clients.json.JsonData;
 import co.elastic.clients.json.JsonpDeserializer;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.exporter.exceptions.IndexSchemaValidationException;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -158,27 +157,16 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
   private PutIndicesSettingsRequest putIndexSettingsRequest(
       final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings) {
-    try (final var settingsStream =
-        IOUtils.toInputStream(
-            MAPPER.writeValueAsString(toAppendSettings), StandardCharsets.UTF_8)) {
-
-      return new PutIndicesSettingsRequest.Builder()
-          .index(listIndices(indexDescriptors))
-          .withJson(settingsStream)
-          .build();
-    } catch (final IOException e) {
-      throw new ElasticsearchExporterException(
-          String.format(
-              "Failed to serialise settings in PutSettingsRequest for indices %s",
-              listIndices(indexDescriptors)),
-          e);
-    }
-  }
-
-  private String listIndices(final List<IndexDescriptor> indexDescriptors) {
-    return indexDescriptors.stream()
-        .map(IndexDescriptor::getFullQualifiedName)
-        .collect(Collectors.joining(","));
+    final co.elastic.clients.elasticsearch.indices.IndexSettings settings =
+        mapToSettings(
+            toAppendSettings,
+            (inp) ->
+                deserializeJson(
+                    co.elastic.clients.elasticsearch.indices.IndexSettings._DESERIALIZER, inp));
+    return new PutIndicesSettingsRequest.Builder()
+        .index(listIndices(indexDescriptors))
+        .settings(settings)
+        .build();
   }
 
   public PutLifecycleRequest putLifecycleRequest(
@@ -241,9 +229,14 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   private PutMappingRequest putMappingRequest(
       final IndexDescriptor indexDescriptor, final Collection<IndexMappingProperty> newProperties) {
 
+    final var elsProperties =
+        newProperties.stream()
+            .map(IndexMappingProperty::toElasticsearchProperty)
+            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+
     return new PutMappingRequest.Builder()
         .index(indexDescriptor.getFullQualifiedName())
-        .withJson(IndexMappingProperty.toPropertiesJson(newProperties, MAPPER))
+        .properties(elsProperties)
         .build();
   }
 
@@ -255,21 +248,6 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
   private InputStream getResourceAsStream(final String classpathFileName) {
     return getClass().getResourceAsStream(classpathFileName);
-  }
-
-  private InputStream appendToFileSchemaSettings(
-      final InputStream file, final IndexSettings settingsToAppend) throws IOException {
-    final var map = MAPPER.readValue(file, new TypeReference<Map<String, Object>>() {});
-
-    final var settingsBlock =
-        (Map<String, Object>) map.computeIfAbsent("settings", k -> new HashMap<>());
-    final var indexBlock =
-        (Map<String, Object>) settingsBlock.computeIfAbsent("index", k -> new HashMap<>());
-
-    indexBlock.put("number_of_shards", settingsToAppend.getNumberOfShards());
-    indexBlock.put("number_of_replicas", settingsToAppend.getNumberOfReplicas());
-
-    return new ByteArrayInputStream(MAPPER.writeValueAsBytes(map));
   }
 
   private PutIndexTemplateRequest putIndexTemplateRequest(

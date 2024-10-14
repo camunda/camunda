@@ -82,9 +82,8 @@ public class CamundaExporter implements Exporter {
     clientAdapter = ClientAdapter.of(configuration);
     final var searchEngineClient = clientAdapter.getSearchEngineClient();
     final var schemaManager = clientAdapter.createSchemaManager(provider);
-    final var schemaValidator = new IndexSchemaValidator(schemaManager);
 
-    schemaStartup(schemaManager, schemaValidator, searchEngineClient);
+    schemaStartup(schemaManager, searchEngineClient);
     writer = createBatchWriter();
 
     scheduleDelayedFlush();
@@ -134,15 +133,13 @@ public class CamundaExporter implements Exporter {
   }
 
   private void schemaStartup(
-      final SchemaManager schemaManager,
-      final IndexSchemaValidator schemaValidator,
-      final SearchEngineClient searchEngineClient) {
+      final SchemaManager schemaManager, final SearchEngineClient searchEngineClient) {
     if (!configuration.isCreateSchema()) {
       LOG.info(
           "Will not make any changes to indices and index templates as [createSchema] is false");
       return;
     }
-
+    final var schemaValidator = new IndexSchemaValidator();
     final var newIndexProperties = validateIndices(schemaValidator, searchEngineClient);
     final var newIndexTemplateProperties =
         validateIndexTemplates(schemaValidator, searchEngineClient);
