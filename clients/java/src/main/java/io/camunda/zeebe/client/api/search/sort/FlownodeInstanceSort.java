@@ -19,13 +19,13 @@ import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRe
 
 public interface FlownodeInstanceSort extends SearchRequestSort<FlownodeInstanceSort> {
 
-  FlownodeInstanceSort key();
+  FlownodeInstanceSort flowNodeInstanceKey();
 
   FlownodeInstanceSort processInstanceKey();
 
   FlownodeInstanceSort processDefinitionKey();
 
-  FlownodeInstanceSort bpmnProcessId();
+  FlownodeInstanceSort processDefinitionId();
 
   FlownodeInstanceSort startDate();
 
