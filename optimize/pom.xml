@@ -26,7 +26,7 @@
     <elasticsearch.client.version>8.13.0</elasticsearch.client.version>
     <elasticsearch.client.test.version>7.17.24</elasticsearch.client.test.version>
     <opensearch.client.version>2.10.4</opensearch.client.version>
-    <awssdk.version>2.28.20</awssdk.version>
+    <awssdk.version>2.28.21</awssdk.version>
 
     <!--The least supported opensearch version we should test against-->
     <opensearch.test.version>2.10.0</opensearch.test.version>
