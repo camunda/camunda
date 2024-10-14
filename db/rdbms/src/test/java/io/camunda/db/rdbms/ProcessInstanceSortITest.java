@@ -42,16 +42,20 @@ public class ProcessInstanceSortITest {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter();
     final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
 
+    final Long processInstanceKey= ProcessInstanceFixtures.nextId();
+    final Long processInstanceKey2 = ProcessInstanceFixtures.nextId();
+    final Long processInstanceKey3 = ProcessInstanceFixtures.nextId();
+    final Long processInstanceKey4 = ProcessInstanceFixtures.nextId();
     createAndSaveProcessInstances(rdbmsWriter,
         List.of(
             ProcessInstanceFixtures.createRandomized(
-                b -> b.processInstanceKey(1L).bpmnProcessId("test-process-2")),
+                b -> b.processInstanceKey(processInstanceKey).bpmnProcessId("test-process-2")),
             ProcessInstanceFixtures.createRandomized(
-                b -> b.processInstanceKey(2L).bpmnProcessId("test-process-1")),
+                b -> b.processInstanceKey(processInstanceKey2).bpmnProcessId("test-process-1")),
             ProcessInstanceFixtures.createRandomized(
-                b -> b.processInstanceKey(3L).bpmnProcessId("test-process-4")),
+                b -> b.processInstanceKey(processInstanceKey3).bpmnProcessId("test-process-4")),
             ProcessInstanceFixtures.createRandomized(
-                b -> b.processInstanceKey(4L).bpmnProcessId("test-process-3"))));
+                b -> b.processInstanceKey(processInstanceKey4).bpmnProcessId("test-process-3"))));
 
     final var searchResult = processInstanceReader
             .search(
@@ -63,7 +67,7 @@ public class ProcessInstanceSortITest {
 
     assertThat(searchResult).hasSize(4);
     assertThat(searchResult.stream().map(ProcessInstanceEntity::key).toList())
-        .containsExactly(2L, 1L, 4L, 3L);
+        .containsExactly(processInstanceKey2, processInstanceKey, processInstanceKey4, processInstanceKey3);
   }
 
   @TestTemplate
@@ -72,12 +76,16 @@ public class ProcessInstanceSortITest {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter();
     final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
 
+    final Long processInstanceKey= ProcessInstanceFixtures.nextId();
+    final Long processInstanceKey2 = ProcessInstanceFixtures.nextId();
+    final Long processInstanceKey3 = ProcessInstanceFixtures.nextId();
+    final Long processInstanceKey4 = ProcessInstanceFixtures.nextId();
     createAndSaveProcessInstances(rdbmsWriter,
         List.of(
-            ProcessInstanceFixtures.createRandomized(b -> b.processInstanceKey(1L).version(2)),
-            ProcessInstanceFixtures.createRandomized(b -> b.processInstanceKey(2L).version(1)),
-            ProcessInstanceFixtures.createRandomized(b -> b.processInstanceKey(3L).version(4)),
-            ProcessInstanceFixtures.createRandomized(b -> b.processInstanceKey(4L).version(3))));
+            ProcessInstanceFixtures.createRandomized(b -> b.processInstanceKey(processInstanceKey).version(2)),
+            ProcessInstanceFixtures.createRandomized(b -> b.processInstanceKey(processInstanceKey2).version(1)),
+            ProcessInstanceFixtures.createRandomized(b -> b.processInstanceKey(processInstanceKey3).version(4)),
+            ProcessInstanceFixtures.createRandomized(b -> b.processInstanceKey(processInstanceKey4).version(3))));
 
     final var searchResult = processInstanceReader.search(
                 new ProcessInstanceDbFilter(
@@ -88,7 +96,7 @@ public class ProcessInstanceSortITest {
 
     assertThat(searchResult).hasSize(4);
     assertThat(searchResult.stream().map(ProcessInstanceEntity::key).toList())
-        .containsExactly(2L, 1L, 4L, 3L);
+        .containsExactly(processInstanceKey2, processInstanceKey, processInstanceKey4, processInstanceKey3);
   }
 
   @TestTemplate
@@ -98,16 +106,20 @@ public class ProcessInstanceSortITest {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter();
     final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
 
+    final Long processInstanceKey= ProcessInstanceFixtures.nextId();
+    final Long processInstanceKey2 = ProcessInstanceFixtures.nextId();
+    final Long processInstanceKey3 = ProcessInstanceFixtures.nextId();
+    final Long processInstanceKey4 = ProcessInstanceFixtures.nextId();
     createAndSaveProcessInstances(rdbmsWriter,
         List.of(
             ProcessInstanceFixtures.createRandomized(
-                b -> b.processInstanceKey(1L).processDefinitionKey(2L)),
+                b -> b.processInstanceKey(processInstanceKey).processDefinitionKey(processInstanceKey2)),
             ProcessInstanceFixtures.createRandomized(
-                b -> b.processInstanceKey(2L).processDefinitionKey(1L)),
+                b -> b.processInstanceKey(processInstanceKey2).processDefinitionKey(processInstanceKey)),
             ProcessInstanceFixtures.createRandomized(
-                b -> b.processInstanceKey(3L).processDefinitionKey(4L)),
+                b -> b.processInstanceKey(processInstanceKey3).processDefinitionKey(processInstanceKey4)),
             ProcessInstanceFixtures.createRandomized(
-                b -> b.processInstanceKey(4L).processDefinitionKey(3L))));
+                b -> b.processInstanceKey(processInstanceKey4).processDefinitionKey(processInstanceKey3))));
 
     final var searchResult = processInstanceReader.search(
                 new ProcessInstanceDbFilter(
@@ -118,7 +130,7 @@ public class ProcessInstanceSortITest {
 
     assertThat(searchResult).hasSize(4);
     assertThat(searchResult.stream().map(ProcessInstanceEntity::key).toList())
-        .containsExactly(2L, 1L, 4L, 3L);
+        .containsExactly(processInstanceKey2, processInstanceKey, processInstanceKey4, processInstanceKey3);
   }
 
   @TestTemplate
@@ -127,32 +139,36 @@ public class ProcessInstanceSortITest {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter();
     final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
 
+    final Long processInstanceKey= ProcessInstanceFixtures.nextId();
+    final Long processInstanceKey2 = ProcessInstanceFixtures.nextId();
+    final Long processInstanceKey3 = ProcessInstanceFixtures.nextId();
+    final Long processInstanceKey4 = ProcessInstanceFixtures.nextId();
     createAndSaveProcessDefinition(
         rdbmsWriter,
         ProcessDefinitionFixtures.createRandomized(
-            b -> b.processDefinitionKey(1L).name("Test Process 1")));
+            b -> b.processDefinitionKey(processInstanceKey).name("Test Process 1")));
     createAndSaveProcessDefinition(
         rdbmsWriter,
         ProcessDefinitionFixtures.createRandomized(
-            b -> b.processDefinitionKey(2L).name("Test Process 2")));
+            b -> b.processDefinitionKey(processInstanceKey2).name("Test Process 2")));
     createAndSaveProcessDefinition(
         rdbmsWriter,
         ProcessDefinitionFixtures.createRandomized(
-            b -> b.processDefinitionKey(3L).name("Test Process 3")));
+            b -> b.processDefinitionKey(processInstanceKey3).name("Test Process 3")));
     createAndSaveProcessDefinition(
         rdbmsWriter,
         ProcessDefinitionFixtures.createRandomized(
-            b -> b.processDefinitionKey(4L).name("Test Process 4")));
+            b -> b.processDefinitionKey(processInstanceKey4).name("Test Process 4")));
     createAndSaveProcessInstances(rdbmsWriter,
         List.of(
             ProcessInstanceFixtures.createRandomized(
-                b -> b.processInstanceKey(1L).processDefinitionKey(2L)),
+                b -> b.processInstanceKey(processInstanceKey).processDefinitionKey(processInstanceKey2)),
             ProcessInstanceFixtures.createRandomized(
-                b -> b.processInstanceKey(2L).processDefinitionKey(1L)),
+                b -> b.processInstanceKey(processInstanceKey2).processDefinitionKey(processInstanceKey)),
             ProcessInstanceFixtures.createRandomized(
-                b -> b.processInstanceKey(3L).processDefinitionKey(4L)),
+                b -> b.processInstanceKey(processInstanceKey3).processDefinitionKey(processInstanceKey4)),
             ProcessInstanceFixtures.createRandomized(
-                b -> b.processInstanceKey(4L).processDefinitionKey(3L))));
+                b -> b.processInstanceKey(processInstanceKey4).processDefinitionKey(processInstanceKey3))));
 
     final var searchResult = processInstanceReader.search(
                 new ProcessInstanceDbFilter(
@@ -163,7 +179,7 @@ public class ProcessInstanceSortITest {
 
     assertThat(searchResult).hasSize(4);
     assertThat(searchResult.stream().map(ProcessInstanceEntity::key).toList())
-        .containsExactly(2L, 1L, 4L, 3L);
+        .containsExactly(processInstanceKey2, processInstanceKey, processInstanceKey4, processInstanceKey3);
   }
 
   @TestTemplate
@@ -172,32 +188,36 @@ public class ProcessInstanceSortITest {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter();
     final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
 
+    final Long processInstanceKey= ProcessInstanceFixtures.nextId();
+    final Long processInstanceKey2 = ProcessInstanceFixtures.nextId();
+    final Long processInstanceKey3 = ProcessInstanceFixtures.nextId();
+    final Long processInstanceKey4 = ProcessInstanceFixtures.nextId();
     createAndSaveProcessDefinition(
         rdbmsWriter,
         ProcessDefinitionFixtures.createRandomized(
-            b -> b.processDefinitionKey(1L).versionTag("Version 1")));
+            b -> b.processDefinitionKey(processInstanceKey).versionTag("Version 1")));
     createAndSaveProcessDefinition(
         rdbmsWriter,
         ProcessDefinitionFixtures.createRandomized(
-            b -> b.processDefinitionKey(2L).versionTag("Version 2")));
+            b -> b.processDefinitionKey(processInstanceKey2).versionTag("Version 2")));
     createAndSaveProcessDefinition(
         rdbmsWriter,
         ProcessDefinitionFixtures.createRandomized(
-            b -> b.processDefinitionKey(3L).versionTag("Version 3")));
+            b -> b.processDefinitionKey(processInstanceKey3).versionTag("Version 3")));
     createAndSaveProcessDefinition(
         rdbmsWriter,
         ProcessDefinitionFixtures.createRandomized(
-            b -> b.processDefinitionKey(4L).versionTag("Version 4")));
+            b -> b.processDefinitionKey(processInstanceKey4).versionTag("Version 4")));
     createAndSaveProcessInstances(rdbmsWriter,
         List.of(
             ProcessInstanceFixtures.createRandomized(
-                b -> b.processInstanceKey(1L).processDefinitionKey(2L)),
+                b -> b.processInstanceKey(processInstanceKey).processDefinitionKey(processInstanceKey2)),
             ProcessInstanceFixtures.createRandomized(
-                b -> b.processInstanceKey(2L).processDefinitionKey(1L)),
+                b -> b.processInstanceKey(processInstanceKey2).processDefinitionKey(processInstanceKey)),
             ProcessInstanceFixtures.createRandomized(
-                b -> b.processInstanceKey(3L).processDefinitionKey(4L)),
+                b -> b.processInstanceKey(processInstanceKey3).processDefinitionKey(processInstanceKey4)),
             ProcessInstanceFixtures.createRandomized(
-                b -> b.processInstanceKey(4L).processDefinitionKey(3L))));
+                b -> b.processInstanceKey(processInstanceKey4).processDefinitionKey(processInstanceKey3))));
 
     final var searchResult =processInstanceReader.search(
                 new ProcessInstanceDbFilter(
@@ -208,7 +228,7 @@ public class ProcessInstanceSortITest {
 
     assertThat(searchResult).hasSize(4);
     assertThat(searchResult.stream().map(ProcessInstanceEntity::key).toList())
-        .containsExactly(2L, 1L, 4L, 3L);
+        .containsExactly(processInstanceKey2, processInstanceKey, processInstanceKey4, processInstanceKey3);
   }
 
   @TestTemplate
@@ -217,16 +237,20 @@ public class ProcessInstanceSortITest {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter();
     final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
 
+    final Long processInstanceKey= ProcessInstanceFixtures.nextId();
+    final Long processInstanceKey2 = ProcessInstanceFixtures.nextId();
+    final Long processInstanceKey3 = ProcessInstanceFixtures.nextId();
+    final Long processInstanceKey4 = ProcessInstanceFixtures.nextId();
     createAndSaveProcessInstances(rdbmsWriter,
         List.of(
             ProcessInstanceFixtures.createRandomized(
-                b -> b.processInstanceKey(1L).startDate(NOW.plusDays(2))),
+                b -> b.processInstanceKey(processInstanceKey).startDate(NOW.plusDays(2))),
             ProcessInstanceFixtures.createRandomized(
-                b -> b.processInstanceKey(2L).startDate(NOW.plusDays(1))),
+                b -> b.processInstanceKey(processInstanceKey2).startDate(NOW.plusDays(1))),
             ProcessInstanceFixtures.createRandomized(
-                b -> b.processInstanceKey(3L).startDate(NOW.plusDays(4))),
+                b -> b.processInstanceKey(processInstanceKey3).startDate(NOW.plusDays(4))),
             ProcessInstanceFixtures.createRandomized(
-                b -> b.processInstanceKey(4L).startDate(NOW.plusDays(3)))));
+                b -> b.processInstanceKey(processInstanceKey4).startDate(NOW.plusDays(3)))));
 
     final var searchResult = processInstanceReader.search(
                 new ProcessInstanceDbFilter(
@@ -237,7 +261,7 @@ public class ProcessInstanceSortITest {
 
     assertThat(searchResult).hasSize(4);
     assertThat(searchResult.stream().map(ProcessInstanceEntity::key).toList())
-        .containsExactly(2L, 1L, 4L, 3L);
+        .containsExactly(processInstanceKey2, processInstanceKey, processInstanceKey4, processInstanceKey3);
   }
 
   @TestTemplate
@@ -246,16 +270,20 @@ public class ProcessInstanceSortITest {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter();
     final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
 
+    final Long processInstanceKey= ProcessInstanceFixtures.nextId();
+    final Long processInstanceKey2 = ProcessInstanceFixtures.nextId();
+    final Long processInstanceKey3 = ProcessInstanceFixtures.nextId();
+    final Long processInstanceKey4 = ProcessInstanceFixtures.nextId();
     createAndSaveProcessInstances(rdbmsWriter,
         List.of(
             ProcessInstanceFixtures.createRandomized(
-                b -> b.processInstanceKey(1L).endDate(NOW.plusDays(2))),
+                b -> b.processInstanceKey(processInstanceKey).endDate(NOW.plusDays(2))),
             ProcessInstanceFixtures.createRandomized(
-                b -> b.processInstanceKey(2L).endDate(NOW.plusDays(1))),
+                b -> b.processInstanceKey(processInstanceKey2).endDate(NOW.plusDays(1))),
             ProcessInstanceFixtures.createRandomized(
-                b -> b.processInstanceKey(3L).endDate(NOW.plusDays(4))),
+                b -> b.processInstanceKey(processInstanceKey3).endDate(NOW.plusDays(4))),
             ProcessInstanceFixtures.createRandomized(
-                b -> b.processInstanceKey(4L).endDate(NOW.plusDays(3)))));
+                b -> b.processInstanceKey(processInstanceKey4).endDate(NOW.plusDays(3)))));
 
     final var searchResult = processInstanceReader.search(
                 new ProcessInstanceDbFilter(
@@ -266,7 +294,7 @@ public class ProcessInstanceSortITest {
 
     assertThat(searchResult).hasSize(4);
     assertThat(searchResult.stream().map(ProcessInstanceEntity::key).toList())
-        .containsExactly(2L, 1L, 4L, 3L);
+        .containsExactly(processInstanceKey2, processInstanceKey, processInstanceKey4, processInstanceKey3);
   }
 
   @TestTemplate
@@ -276,16 +304,20 @@ public class ProcessInstanceSortITest {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter();
     final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
 
+    final Long processInstanceKey= ProcessInstanceFixtures.nextId();
+    final Long processInstanceKey2 = ProcessInstanceFixtures.nextId();
+    final Long processInstanceKey3 = ProcessInstanceFixtures.nextId();
+    final Long processInstanceKey4 = ProcessInstanceFixtures.nextId();
     createAndSaveProcessInstances(rdbmsWriter,
         List.of(
             ProcessInstanceFixtures.createRandomized(
-                b -> b.processInstanceKey(1L).parentProcessInstanceKey(2L)),
+                b -> b.processInstanceKey(processInstanceKey).parentProcessInstanceKey(processInstanceKey2)),
             ProcessInstanceFixtures.createRandomized(
-                b -> b.processInstanceKey(2L).parentProcessInstanceKey(1L)),
+                b -> b.processInstanceKey(processInstanceKey2).parentProcessInstanceKey(processInstanceKey)),
             ProcessInstanceFixtures.createRandomized(
-                b -> b.processInstanceKey(3L).parentProcessInstanceKey(4L)),
+                b -> b.processInstanceKey(processInstanceKey3).parentProcessInstanceKey(processInstanceKey4)),
             ProcessInstanceFixtures.createRandomized(
-                b -> b.processInstanceKey(4L).parentProcessInstanceKey(3L))));
+                b -> b.processInstanceKey(processInstanceKey4).parentProcessInstanceKey(processInstanceKey3))));
 
     final var searchResult = processInstanceReader.search(
                 new ProcessInstanceDbFilter(
@@ -296,7 +328,7 @@ public class ProcessInstanceSortITest {
 
     assertThat(searchResult).hasSize(4);
     assertThat(searchResult.stream().map(ProcessInstanceEntity::key).toList())
-        .containsExactly(2L, 1L, 4L, 3L);
+        .containsExactly(processInstanceKey2, processInstanceKey, processInstanceKey4, processInstanceKey3);
   }
 
   @TestTemplate
@@ -305,16 +337,20 @@ public class ProcessInstanceSortITest {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter();
     final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
 
+    final Long processInstanceKey= ProcessInstanceFixtures.nextId();
+    final Long processInstanceKey2 = ProcessInstanceFixtures.nextId();
+    final Long processInstanceKey3 = ProcessInstanceFixtures.nextId();
+    final Long processInstanceKey4 = ProcessInstanceFixtures.nextId();
     createAndSaveProcessInstances(rdbmsWriter,
         List.of(
             ProcessInstanceFixtures.createRandomized(
-                b -> b.processInstanceKey(1L).tenantId("tenant-2")),
+                b -> b.processInstanceKey(processInstanceKey).tenantId("tenant-2")),
             ProcessInstanceFixtures.createRandomized(
-                b -> b.processInstanceKey(2L).tenantId("tenant-1")),
+                b -> b.processInstanceKey(processInstanceKey2).tenantId("tenant-1")),
             ProcessInstanceFixtures.createRandomized(
-                b -> b.processInstanceKey(3L).tenantId("tenant-4")),
+                b -> b.processInstanceKey(processInstanceKey3).tenantId("tenant-4")),
             ProcessInstanceFixtures.createRandomized(
-                b -> b.processInstanceKey(4L).tenantId("tenant-3"))));
+                b -> b.processInstanceKey(processInstanceKey4).tenantId("tenant-3"))));
 
     final var searchResult = processInstanceReader.search(
                 new ProcessInstanceDbFilter(
@@ -325,7 +361,7 @@ public class ProcessInstanceSortITest {
 
     assertThat(searchResult).hasSize(4);
     assertThat(searchResult.stream().map(ProcessInstanceEntity::key).toList())
-        .containsExactly(2L, 1L, 4L, 3L);
+        .containsExactly(processInstanceKey2, processInstanceKey, processInstanceKey4, processInstanceKey3);
   }
 
   @TestTemplate
@@ -335,26 +371,30 @@ public class ProcessInstanceSortITest {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter();
     final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
 
+    final Long processInstanceKey= ProcessInstanceFixtures.nextId();
+    final Long processInstanceKey2 = ProcessInstanceFixtures.nextId();
+    final Long processInstanceKey3 = ProcessInstanceFixtures.nextId();
+    final Long processInstanceKey4 = ProcessInstanceFixtures.nextId();
     createAndSaveProcessInstances(rdbmsWriter,
         List.of(
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.processInstanceKey(1L)
+                    b.processInstanceKey(processInstanceKey)
                         .bpmnProcessId("test-process-2")
                         .startDate(NOW.plusDays(1))),
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.processInstanceKey(2L)
+                    b.processInstanceKey(processInstanceKey2)
                         .bpmnProcessId("test-process-1")
                         .startDate(NOW.plusDays(1))),
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.processInstanceKey(3L)
+                    b.processInstanceKey(processInstanceKey3)
                         .bpmnProcessId("test-process-1")
                         .startDate(NOW.plusDays(2))),
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.processInstanceKey(4L)
+                    b.processInstanceKey(processInstanceKey4)
                         .bpmnProcessId("test-process-2")
                         .startDate(NOW.plusDays(2)))));
 
@@ -367,7 +407,7 @@ public class ProcessInstanceSortITest {
 
     assertThat(searchResult).hasSize(4);
     assertThat(searchResult.stream().map(ProcessInstanceEntity::key).toList())
-        .containsExactly(2L, 3L, 1L, 4L);
+        .containsExactly(processInstanceKey2, processInstanceKey3, processInstanceKey, processInstanceKey4);
   }
 
   @TestTemplate

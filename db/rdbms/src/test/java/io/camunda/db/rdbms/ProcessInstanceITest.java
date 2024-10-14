@@ -38,11 +38,12 @@ public class ProcessInstanceITest {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter();
     final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
 
+    final Long processInstanceKey = ProcessInstanceFixtures.nextId();
     createAndSaveProcessInstance(
         rdbmsWriter,
         ProcessInstanceFixtures.createRandomized(
             b ->
-                b.processInstanceKey(42L)
+                b.processInstanceKey(processInstanceKey)
                     .bpmnProcessId("test-process")
                     .processDefinitionKey(1337L)
                     .state(ProcessInstanceState.ACTIVE)
@@ -51,10 +52,10 @@ public class ProcessInstanceITest {
                     .parentElementInstanceKey(-1L)
                     .version(1)));
 
-    final var instance = processInstanceReader.findOne(42L);
+    final var instance = processInstanceReader.findOne(processInstanceKey);
 
     assertThat(instance).isNotNull();
-    assertThat(instance.key()).isEqualTo(42L);
+    assertThat(instance.key()).isEqualTo(processInstanceKey);
     assertThat(instance.bpmnProcessId()).isEqualTo("test-process");
     assertThat(instance.processDefinitionKey()).isEqualTo(1337L);
     assertThat(instance.state()).isEqualTo(ProcessInstanceState.ACTIVE);
@@ -71,11 +72,12 @@ public class ProcessInstanceITest {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter();
     final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
 
+    final Long processInstanceKey = ProcessInstanceFixtures.nextId();
     createAndSaveProcessInstance(
         rdbmsWriter,
         ProcessInstanceFixtures.createRandomized(
             b ->
-                b.processInstanceKey(42L)
+                b.processInstanceKey(processInstanceKey)
                     .bpmnProcessId("test-process")
                     .processDefinitionKey(1337L)
                     .state(ProcessInstanceState.ACTIVE)
@@ -97,7 +99,7 @@ public class ProcessInstanceITest {
 
     final var instance = searchResult.hits().getFirst();
 
-    assertThat(instance.key()).isEqualTo(42L);
+    assertThat(instance.key()).isEqualTo(processInstanceKey);
     assertThat(instance.bpmnProcessId()).isEqualTo("test-process");
     assertThat(instance.processDefinitionKey()).isEqualTo(1337L);
     assertThat(instance.state()).isEqualTo(ProcessInstanceState.ACTIVE);
@@ -172,12 +174,13 @@ public class ProcessInstanceITest {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter();
     final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
 
+    final Long processInstanceKey = ProcessInstanceFixtures.nextId();
     createAndSaveRandomProcessInstances(rdbmsWriter);
     createAndSaveProcessInstance(
         rdbmsWriter,
         ProcessInstanceFixtures.createRandomized(
             b ->
-                b.processInstanceKey(42L)
+                b.processInstanceKey(processInstanceKey)
                     .bpmnProcessId("test-process")
                     .processDefinitionKey(1337L)
                     .state(ProcessInstanceState.ACTIVE)
@@ -191,7 +194,7 @@ public class ProcessInstanceITest {
         processInstanceReader.search(
             new ProcessInstanceDbFilter(
                 new ProcessInstanceFilter.Builder()
-                    .processInstanceKeys(42L)
+                    .processInstanceKeys(processInstanceKey)
                     .processDefinitionIds("test-process")
                     .processDefinitionKeys(1337L)
                     .states(ProcessInstanceState.ACTIVE.name())
@@ -203,7 +206,7 @@ public class ProcessInstanceITest {
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.hits()).hasSize(1);
-    assertThat(searchResult.hits().getFirst().key()).isEqualTo(42L);
+    assertThat(searchResult.hits().getFirst().key()).isEqualTo(processInstanceKey);
   }
 
 }

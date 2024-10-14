@@ -14,25 +14,31 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
 public final class ProcessInstanceFixtures {
 
+  private static final AtomicLong ID_COUNTER = new AtomicLong();
   private static final Random RANDOM = new Random(System.nanoTime());
   private static final OffsetDateTime NOW = OffsetDateTime.now();
 
   private ProcessInstanceFixtures() {}
+
+  public static Long nextId() {
+    return ID_COUNTER.incrementAndGet();
+  }
 
   public static ProcessInstanceDbModel createRandomized(
       final Function<ProcessInstanceDbModelBuilder, ProcessInstanceDbModelBuilder>
           builderFunction) {
     final var builder =
         new ProcessInstanceDbModelBuilder()
-            .processInstanceKey(RANDOM.nextLong())
-            .processDefinitionKey(RANDOM.nextLong())
+            .processInstanceKey(nextId())
+            .processDefinitionKey(nextId())
             .bpmnProcessId("process-" + RANDOM.nextInt(1000))
-            .parentProcessInstanceKey(RANDOM.nextLong())
-            .parentElementInstanceKey(RANDOM.nextLong())
+            .parentProcessInstanceKey(nextId())
+            .parentElementInstanceKey(nextId())
             .startDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
             .endDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
             .version(RANDOM.nextInt(20))
