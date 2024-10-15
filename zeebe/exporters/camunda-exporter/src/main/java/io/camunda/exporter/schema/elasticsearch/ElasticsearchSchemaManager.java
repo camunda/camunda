@@ -5,10 +5,14 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.schema;
+package io.camunda.exporter.schema.elasticsearch;
 
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
+import io.camunda.exporter.schema.IndexMappingProperty;
+import io.camunda.exporter.schema.MappingSource;
+import io.camunda.exporter.schema.SchemaManager;
+import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.util.Collection;
