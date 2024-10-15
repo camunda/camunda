@@ -15,11 +15,11 @@ import {
   BulkDeleter,
   EmptyState,
   EntityList,
-  Icon,
   ReportTemplateModal,
   DashboardTemplateModal,
   KpiCreationModal,
 } from 'components';
+import {OptimizeDashboard} from 'icons';
 import {format} from 'dates';
 import {t} from 'translation';
 import {formatters, getEntityIcon} from 'services';
@@ -80,7 +80,7 @@ export default function CollectionEnitiesList({
             <EmptyState
               title={t('home.emptyState.title')}
               description={t('home.emptyState.description')}
-              icon={<Icon type="dashboard-optimize" />}
+              icon={<OptimizeDashboard />}
               actions={
                 <>
                   <Button size="md" onClick={() => openCreationModal('dashboard')}>
