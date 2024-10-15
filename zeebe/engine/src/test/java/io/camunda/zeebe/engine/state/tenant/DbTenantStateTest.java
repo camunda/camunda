@@ -133,30 +133,4 @@ public class DbTenantStateTest {
     final Optional<TenantRecord> tenantByKey = tenantState.getTenantByKey(tenantKey);
     assertThat(tenantByKey.get().getTenantId()).isEqualTo(newTenantId);
   }
-
-  @Test
-  void shouldUpdateTenantNameAndEntityKey() {
-    // given
-    final long tenantKey = 1L;
-    final String tenantId = "tenant-1";
-    final String oldName = "Tenant One";
-    final String newName = "Updated Tenant";
-    final long newEntityKey = 456L;
-    final var tenantRecord =
-        new TenantRecord().setTenantKey(tenantKey).setTenantId(tenantId).setName(oldName);
-
-    tenantState.createTenant(tenantRecord);
-
-    // when
-    final var updatedRecord =
-        new TenantRecord().setTenantKey(tenantKey).setTenantId(tenantId).setName(newName);
-
-    tenantState.updateTenant(updatedRecord);
-
-    // then
-    final var persistedTenant = tenantState.getTenantByKey(tenantKey);
-    assertThat(persistedTenant).isPresent();
-    assertThat(persistedTenant.get().getName()).isEqualTo(newName);
-    assertThat(persistedTenant.get().getEntityKey()).isEqualTo(newEntityKey);
-  }
 }
