@@ -17,6 +17,7 @@ package io.camunda.process.test.impl.assertions;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class AssertFormatUtil {
@@ -33,5 +34,11 @@ public class AssertFormatUtil {
     return names.stream()
         .map(elementName -> String.format("'%s'", elementName))
         .collect(Collectors.joining(", ", "[", "]"));
+  }
+
+  public static String formatVariables(final Map<String, String> variables) {
+    return variables.entrySet().stream()
+        .map(variable -> String.format("\t- '%s': %s", variable.getKey(), variable.getValue()))
+        .collect(Collectors.joining("\n"));
   }
 }

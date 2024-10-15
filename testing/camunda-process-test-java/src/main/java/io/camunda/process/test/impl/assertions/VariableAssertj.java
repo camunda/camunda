@@ -78,7 +78,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, Long> {
               AssertFormatUtil.formatProcessInstance(actual),
               AssertFormatUtil.formatNames(variableNames),
               AssertFormatUtil.formatNames(missingVariableNames),
-              formatVariables(actualVariables));
+              AssertFormatUtil.formatVariables(actualVariables));
       fail(failureMessage);
     }
 
@@ -121,7 +121,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, Long> {
               variableName,
               expectedValue,
               failureReason,
-              formatVariables(actualVariables));
+              AssertFormatUtil.formatVariables(actualVariables));
       fail(failureMessage);
     }
 
@@ -176,7 +176,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, Long> {
               AssertFormatUtil.formatProcessInstance(actual),
               toJson(expectedVariables),
               AssertFormatUtil.formatNames(notMatchingVariableNames),
-              formatVariables(actualVariables));
+              AssertFormatUtil.formatVariables(actualVariables));
       fail(failureMessage);
     }
 
@@ -186,12 +186,6 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, Long> {
   private Map<String, String> getProcessInstanceVariables() throws IOException {
     return dataSource.getVariablesByProcessInstanceKey(actual).stream()
         .collect(Collectors.toMap(VariableDto::getName, VariableDto::getValue));
-  }
-
-  private static String formatVariables(final Map<String, String> variables) {
-    return variables.entrySet().stream()
-        .map(variable -> String.format("\t- '%s': %s", variable.getKey(), variable.getValue()))
-        .collect(Collectors.joining("\n"));
   }
 
   private JsonNode readJson(final String value) {
