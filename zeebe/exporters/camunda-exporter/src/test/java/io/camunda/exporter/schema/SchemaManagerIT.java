@@ -109,6 +109,18 @@ public class SchemaManagerIT {
     return MAPPER.valueToTree(indexAsMap);
   }
 
+  private JsonNode elsIndexToNode(final co.elastic.clients.elasticsearch.indices.IndexState index)
+      throws IOException {
+    final var indexAsMap =
+        SchemaResourceSerializer.serialize(
+            co.elastic.clients.json.jackson.JacksonJsonpGenerator::new,
+            (gen) ->
+                index.serialize(
+                    gen, new co.elastic.clients.json.jackson.JacksonJsonpMapper(MAPPER)));
+
+    return MAPPER.valueToTree(indexAsMap);
+  }
+
   @Nested
   class ElasticsearchSchemaManagerTest {
     private static ElasticsearchClient elsClient;
@@ -206,33 +218,18 @@ public class SchemaManagerIT {
     }
 
     @Test
-    void shouldAppendToIndexMappingsWithNewProperties() throws IOException {
-      // given
-      final var schemaManager =
-          new SchemaManager(
-              searchEngineClient, Set.of(index), Set.of(), new ExporterConfiguration());
+    void shouldAppendToIndexMappingsWithNewProperties() throws Exception {
+      SchemaManagerIT.this.shouldAppendToIndexMappingsWithNewProperties(
+          () -> {
+            final var updatedIndex =
+                elsClient
+                    .indices()
+                    .get(req -> req.index(index.getFullQualifiedName()))
+                    .get(index.getFullQualifiedName());
 
-      schemaManager.initialiseResources();
-
-      // when
-      final var newProperties = new HashSet<IndexMappingProperty>();
-      newProperties.add(new IndexMappingProperty("foo", Map.of("type", "text")));
-      newProperties.add(new IndexMappingProperty("bar", Map.of("type", "keyword")));
-
-      final Map<IndexDescriptor, Collection<IndexMappingProperty>> schemasToChange =
-          Map.of(index, newProperties);
-
-      schemaManager.updateSchema(schemasToChange);
-
-      // then
-      final var updatedIndex =
-          elsClient
-              .indices()
-              .get(req -> req.index(index.getFullQualifiedName()))
-              .get(index.getFullQualifiedName());
-
-      assertThat(updatedIndex.mappings().properties().get("foo").isText()).isTrue();
-      assertThat(updatedIndex.mappings().properties().get("bar").isKeyword()).isTrue();
+            return elsIndexToNode(updatedIndex);
+          },
+          searchEngineClient);
     }
 
     @Test
