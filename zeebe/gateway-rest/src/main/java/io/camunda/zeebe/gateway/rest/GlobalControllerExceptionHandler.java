@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.util.Objects;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
@@ -78,9 +79,21 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
     return false;
   }
 
+  @Override
+  protected ResponseEntity<Object> handleExceptionInternal(
+      final Exception ex,
+      final Object body,
+      final HttpHeaders headers,
+      final HttpStatusCode statusCode,
+      final WebRequest request) {
+    Loggers.REST_LOGGER.debug(ex.getMessage(), ex);
+    return super.handleExceptionInternal(ex, body, headers, statusCode, request);
+  }
+
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ProblemDetail> handleAllExceptions(
       final Exception ex, final HttpServletRequest request) {
+    Loggers.REST_LOGGER.debug(ex.getMessage(), ex);
     final ProblemDetail problemDetail =
         ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
     problemDetail.setInstance(URI.create(request.getRequestURI()));

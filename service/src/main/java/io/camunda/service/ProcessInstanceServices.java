@@ -11,6 +11,7 @@ import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
@@ -85,7 +86,7 @@ public final class ProcessInstanceServices
     final SearchQueryResult<ProcessInstanceEntity> result =
         search(
             SearchQueryBuilders.processInstanceSearchQuery()
-                .filter(f -> f.processInstanceKeys(processInstanceKey))
+                .filter(f -> f.processInstanceKeys(Operation.eq(processInstanceKey)))
                 .build());
     if (result.total() < 1) {
       throw new NotFoundException(

@@ -2961,31 +2961,101 @@ components:
         filter:
           allOf:
             - $ref: "#/components/schemas/ProcessInstanceFilterRequest"
+    AdvancedIntegerFilter:
+      description: Advanced integer filter.
+      type: object
+      properties:
+        $eq:
+          type: integer
+          format: int32
+        $neq:
+          type: integer
+          format: int32
+        $gt:
+          type: integer
+          format: int32
+        $gte:
+          type: integer
+          format: int32
+        $lt:
+          type: integer
+          format: int32
+        $lte:
+          type: integer
+          format: int32
+    IntegerFilter:
+      description: Integer filter.
+      oneOf:
+        - type: integer
+          format: int32
+        - $ref: "#/components/schemas/AdvancedIntegerFilter"
+    AdvancedLongFilter:
+      description: Advanced integer filter.
+      type: object
+      properties:
+        $eq:
+          type: integer
+          format: int64
+        $neq:
+          type: integer
+          format: int64
+        $gt:
+          type: integer
+          format: int64
+        $gte:
+          type: integer
+          format: int64
+        $lt:
+          type: integer
+          format: int64
+        $lte:
+          type: integer
+          format: int64
+    LongFilter:
+      description: Integer filter.
+      oneOf:
+        - type: integer
+          format: int64
+        - $ref: "#/components/schemas/AdvancedLongFilter"
+    AdvancedStringFilter:
+      description: Advanced string filter.
+      type: object
+      properties:
+        $eq:
+          type: string
+        $in:
+          type: array
+          items:
+            type: string
+        $like:
+          type: string
+    StringFilter:
+      description: String filter.
+      oneOf:
+        - type: string
+        - $ref: "#/components/schemas/AdvancedStringFilter"
     ProcessInstanceFilterRequest:
       description: Process instance search filter.
       type: object
       properties:
         processInstanceKey:
-          type: integer
-          description: The key of this process instance.
-          format: int64
+          #description: The key of this process instance.
+          $ref: "#/components/schemas/LongFilter"
         processDefinitionId:
-          type: string
-          description: The process definition ID.
+          #description: The process definition ID.
+          $ref: "#/components/schemas/StringFilter"
         processDefinitionName:
           type: string
           description: The process definition name.
         processDefinitionVersion:
-          type: integer
-          description: The process definition version.
-          format: int32
+          #description: The process definition version.
+          $ref: "#/components/schemas/IntegerFilter"
         processDefinitionVersionTag:
           type: string
           description: The process definition version tag.
         processDefinitionKey:
-          type: integer
-          description: The process definition key.
-          format: int64
+          #description: The process definition key.
+          $ref: "#/components/schemas/LongFilter"
         parentProcessInstanceKey:
           type: integer
           description: The parent process instance key.

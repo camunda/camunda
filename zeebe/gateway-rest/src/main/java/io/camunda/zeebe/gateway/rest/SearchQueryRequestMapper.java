@@ -28,6 +28,7 @@ import io.camunda.search.filter.FilterBase;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.filter.IncidentFilter;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.UserFilter;
@@ -343,19 +344,87 @@ public final class SearchQueryRequestMapper {
     return builder.build();
   }
 
+  // TODO add common interface? (x-implements)
+  private static List<Operation<Integer>> mapIntegerFilterToOperation(final IntegerFilter filter) {
+    final var operations = new ArrayList<Operation<Integer>>();
+    if (filter.get$Eq() != null) {
+      operations.add(Operation.eq(filter.get$Eq()));
+    }
+    if (filter.get$Neq() != null) {
+      operations.add(Operation.neq(filter.get$Neq()));
+    }
+    if (filter.get$Gt() != null) {
+      operations.add(Operation.gt(filter.get$Gt()));
+    }
+    if (filter.get$Gte() != null) {
+      operations.add(Operation.gte(filter.get$Gte()));
+    }
+    if (filter.get$Lt() != null) {
+      operations.add(Operation.lt(filter.get$Lt()));
+    }
+    if (filter.get$Lte() != null) {
+      operations.add(Operation.lte(filter.get$Lte()));
+    }
+    return operations;
+  }
+
+  private static List<Operation<Long>> mapLongFilterToOperation(final LongFilter filter) {
+    final var operations = new ArrayList<Operation<Long>>();
+    if (filter.get$Eq() != null) {
+      operations.add(Operation.eq(filter.get$Eq()));
+    }
+    if (filter.get$Neq() != null) {
+      operations.add(Operation.neq(filter.get$Neq()));
+    }
+    if (filter.get$Gt() != null) {
+      operations.add(Operation.gt(filter.get$Gt()));
+    }
+    if (filter.get$Gte() != null) {
+      operations.add(Operation.gte(filter.get$Gte()));
+    }
+    if (filter.get$Lt() != null) {
+      operations.add(Operation.lt(filter.get$Lt()));
+    }
+    if (filter.get$Lte() != null) {
+      operations.add(Operation.lte(filter.get$Lte()));
+    }
+    return operations;
+  }
+
+  private static List<Operation<String>> mapStringFilterToOperation(final StringFilter filter) {
+    final var operations = new ArrayList<Operation<String>>();
+    if (filter.get$Eq() != null) {
+      operations.add(Operation.eq(filter.get$Eq()));
+    }
+    if (filter.get$In() != null && !filter.get$In().isEmpty()) {
+      operations.add(Operation.in(filter.get$In()));
+    }
+    if (filter.get$Like() != null) {
+      operations.add(Operation.like(filter.get$Like()));
+    }
+    return operations;
+  }
+
   private static ProcessInstanceFilter toProcessInstanceFilter(
       final ProcessInstanceFilterRequest filter) {
     final var builder = FilterBuilders.processInstance();
 
     if (filter != null) {
-      ofNullable(filter.getProcessInstanceKey()).ifPresent(builder::processInstanceKeys);
-      ofNullable(filter.getProcessDefinitionId()).ifPresent(builder::processDefinitionIds);
+      ofNullable(filter.getProcessInstanceKey())
+          .map(SearchQueryRequestMapper::mapLongFilterToOperation)
+          .ifPresent(builder::processInstanceKeys);
+      ofNullable(filter.getProcessDefinitionId())
+          .map(SearchQueryRequestMapper::mapStringFilterToOperation)
+          .ifPresent(builder::processDefinitionIds);
       ofNullable(filter.getProcessDefinitionName()).ifPresent(builder::processDefinitionNames);
       ofNullable(filter.getProcessDefinitionVersion())
+          .map(SearchQueryRequestMapper::mapIntegerFilterToOperation)
           .ifPresent(builder::processDefinitionVersions);
       ofNullable(filter.getProcessDefinitionVersionTag())
           .ifPresent(builder::processDefinitionVersionTags);
-      ofNullable(filter.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
+      ofNullable(filter.getProcessDefinitionKey())
+          .map(SearchQueryRequestMapper::mapLongFilterToOperation)
+          .ifPresent(builder::processDefinitionKeys);
       ofNullable(filter.getParentProcessInstanceKey())
           .ifPresent(builder::parentProcessInstanceKeys);
       ofNullable(filter.getParentFlowNodeInstanceKey())

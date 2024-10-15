@@ -12,12 +12,14 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.intTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
+import static io.camunda.util.CollectionUtil.addValuesToList;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.clients.transformers.filter.DateValueFilterTransformer.DateFieldFilter;
 import io.camunda.search.filter.DateValueFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
+import java.util.ArrayList;
 import java.util.List;
 
 public final class ProcessInstanceFilterTransformer
@@ -31,23 +33,28 @@ public final class ProcessInstanceFilterTransformer
 
   @Override
   public SearchQuery toSearchQuery(final ProcessInstanceFilter filter) {
-
-    return and(
-        getIsProcessInstanceQuery(),
-        longTerms("key", filter.processInstanceKeys()),
-        stringTerms("bpmnProcessId", filter.processDefinitionIds()),
-        stringTerms("processName", filter.processDefinitionNames()),
-        intTerms("processVersion", filter.processDefinitionVersions()),
-        stringTerms("processVersionTag", filter.processDefinitionVersionTags()),
-        longTerms("processDefinitionKey", filter.processDefinitionKeys()),
-        longTerms("parentProcessInstanceKey", filter.parentProcessInstanceKeys()),
-        longTerms("parentFlowNodeInstanceKey", filter.parentFlowNodeInstanceKeys()),
-        stringTerms("treePath", filter.treePaths()),
-        getDateQuery("startDate", filter.startDate()),
-        getDateQuery("endDate", filter.endDate()),
-        stringTerms("state", filter.states()),
-        getIncidentQuery(filter.hasIncident()),
-        stringTerms("tenantId", filter.tenantIds()));
+    List<SearchQuery> searchQueries = new ArrayList<>();
+    searchQueries.add(getIsProcessInstanceQuery());
+    searchQueries = addValuesToList(searchQueries, longTerms("key", filter.processInstanceKeys()));
+    searchQueries =
+        addValuesToList(searchQueries, stringTerms("bpmnProcessId", filter.processDefinitionIds()));
+    searchQueries.add(stringTerms("processName", filter.processDefinitionNames()));
+    searchQueries =
+        addValuesToList(
+            searchQueries, intTerms("processVersion", filter.processDefinitionVersions()));
+    searchQueries.add(stringTerms("processVersionTag", filter.processDefinitionVersionTags()));
+    searchQueries =
+        addValuesToList(
+            searchQueries, longTerms("processDefinitionKey", filter.processDefinitionKeys()));
+    searchQueries.add(longTerms("parentProcessInstanceKey", filter.parentProcessInstanceKeys()));
+    searchQueries.add(longTerms("parentFlowNodeInstanceKey", filter.parentFlowNodeInstanceKeys()));
+    searchQueries.add(stringTerms("treePath", filter.treePaths()));
+    searchQueries.add(getDateQuery("startDate", filter.startDate()));
+    searchQueries.add(getDateQuery("endDate", filter.endDate()));
+    searchQueries.add(stringTerms("state", filter.states()));
+    searchQueries.add(getIncidentQuery(filter.hasIncident()));
+    searchQueries.add(stringTerms("tenantId", filter.tenantIds()));
+    return and(searchQueries);
   }
 
   @Override
