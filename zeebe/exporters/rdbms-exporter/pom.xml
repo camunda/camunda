@@ -17,12 +17,6 @@
   <artifactId>rdbms-exporter</artifactId>
 
   <name>RDBMS Exporter</name>
-  <properties>
-    <mariadb-java-client.version>3.3.3</mariadb-java-client.version>
-    <mariadb.version>1.19.8</mariadb.version>
-    <version.postgresSqlTestcontainer>1.20.1</version.postgresSqlTestcontainer>
-    <version.postgresSql>42.7.4</version.postgresSql>
-  </properties>
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>

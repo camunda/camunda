@@ -7,7 +7,7 @@
  */
 package io.camunda.exporter.rdbms;
 
-import io.camunda.db.rdbms.read.domain.VariableModel;
+import io.camunda.db.rdbms.write.domain.VariableDbModel;
 import io.camunda.db.rdbms.write.service.VariableWriter;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
@@ -39,8 +39,8 @@ public class VariableExportHandler implements RdbmsExportHandler<VariableRecordV
     }
   }
 
-  private VariableModel map(final Long key, final VariableRecordValue value) {
-    return new VariableModel(
+  private VariableDbModel map(final Long key, final VariableRecordValue value) {
+    return new VariableDbModel(
         key,
         value.getProcessInstanceKey(),
         value.getScopeKey(),

@@ -5,9 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.db.rdbms.read.domain;
+package io.camunda.db.rdbms.write.domain;
 
-public record VariableModel(
+public record VariableDbModel(
     Long key,
     Long processInstanceKey,
     Long scopeKey,
