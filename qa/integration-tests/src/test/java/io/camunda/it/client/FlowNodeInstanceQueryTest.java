@@ -16,6 +16,7 @@ import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.client.api.search.response.FlowNodeInstance;
+import io.camunda.zeebe.client.api.search.response.SearchQueryResponse;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.time.Duration;
@@ -23,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Function;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -51,11 +53,10 @@ public class FlowNodeInstanceQueryTest {
   }
 
   @BeforeAll
-  public static void beforeAll() throws InterruptedException {
-
+  public static void beforeAll() {
     zeebeClient = testStandaloneCamunda.newClientBuilder().build();
 
-    final List<String> processes =
+    final var processes =
         List.of("service_tasks_v1.bpmn", "service_tasks_v2.bpmn", "incident_process_v1.bpmn");
     processes.forEach(
         process ->
@@ -68,7 +69,7 @@ public class FlowNodeInstanceQueryTest {
     PROCESS_INSTANCES.add(startProcessInstance("service_tasks_v2", "{\"path\":222}"));
     PROCESS_INSTANCES.add(startProcessInstance("incident_process_v1"));
     waitForProcessInstancesToStart(PROCESS_INSTANCES.size());
-    waitForProcessInstancesToExecute();
+
     // store a flow node instance for querying
     flowNodeInstance = zeebeClient.newFlownodeInstanceQuery().send().join().items().getFirst();
     flowNodeInstanceWithIncident =
@@ -128,18 +129,7 @@ public class FlowNodeInstanceQueryTest {
             .send()
             .join();
 
-    final List<Long> all =
-        resultAsc.items().stream().map(FlowNodeInstance::getFlowNodeInstanceKey).toList();
-    final List<Long> sortedAsc =
-        all.stream().sorted(Comparator.nullsLast(Comparator.naturalOrder())).toList();
-    final List<Long> sortedDesc =
-        all.stream().sorted(Comparator.nullsLast(Comparator.reverseOrder())).toList();
-
-    // then
-    assertThat(resultAsc.items().stream().map(FlowNodeInstance::getFlowNodeInstanceKey).toList())
-        .containsExactlyElementsOf(sortedAsc);
-    assertThat(resultDesc.items().stream().map(FlowNodeInstance::getFlowNodeInstanceKey).toList())
-        .containsExactlyElementsOf(sortedDesc);
+    assertSorted(resultAsc, resultDesc, FlowNodeInstance::getFlowNodeInstanceKey);
   }
 
   @Test
@@ -176,18 +166,7 @@ public class FlowNodeInstanceQueryTest {
             .send()
             .join();
 
-    final List<Long> all =
-        resultAsc.items().stream().map(FlowNodeInstance::getProcessInstanceKey).toList();
-    final List<Long> sortedAsc =
-        all.stream().sorted(Comparator.nullsLast(Comparator.naturalOrder())).toList();
-    final List<Long> sortedDesc =
-        all.stream().sorted(Comparator.nullsLast(Comparator.reverseOrder())).toList();
-
-    // then
-    assertThat(resultAsc.items().stream().map(FlowNodeInstance::getProcessInstanceKey).toList())
-        .containsExactlyElementsOf(sortedAsc);
-    assertThat(resultDesc.items().stream().map(FlowNodeInstance::getProcessInstanceKey).toList())
-        .containsExactlyElementsOf(sortedDesc);
+    assertSorted(resultAsc, resultDesc, FlowNodeInstance::getProcessInstanceKey);
   }
 
   @Test
@@ -257,18 +236,23 @@ public class FlowNodeInstanceQueryTest {
             .sort(s -> s.processDefinitionKey().desc())
             .send()
             .join();
+    assertSorted(resultAsc, resultDesc, FlowNodeInstance::getProcessDefinitionKey);
+  }
 
-    final var all =
-        resultAsc.items().stream().map(FlowNodeInstance::getProcessDefinitionKey).toList();
+  private static <T extends Comparable<T>> void assertSorted(
+      final SearchQueryResponse<FlowNodeInstance> resultAsc,
+      final SearchQueryResponse<FlowNodeInstance> resultDesc,
+      final Function<FlowNodeInstance, T> propertyExtractor) {
+    final var all = resultAsc.items().stream().map(propertyExtractor).toList();
     final var sortedAsc =
         all.stream().sorted(Comparator.nullsLast(Comparator.naturalOrder())).toList();
     final var sortedDesc =
         all.stream().sorted(Comparator.nullsLast(Comparator.reverseOrder())).toList();
 
     // then
-    assertThat(resultAsc.items().stream().map(FlowNodeInstance::getProcessDefinitionKey).toList())
+    assertThat(resultAsc.items().stream().map(propertyExtractor).toList())
         .containsExactlyElementsOf(sortedAsc);
-    assertThat(resultDesc.items().stream().map(FlowNodeInstance::getProcessDefinitionKey).toList())
+    assertThat(resultDesc.items().stream().map(propertyExtractor).toList())
         .containsExactlyElementsOf(sortedDesc);
   }
 
@@ -297,17 +281,7 @@ public class FlowNodeInstanceQueryTest {
     final var resultDesc =
         zeebeClient.newFlownodeInstanceQuery().sort(s -> s.incidentKey().desc()).send().join();
 
-    final var all = resultAsc.items().stream().map(FlowNodeInstance::getIncidentKey).toList();
-    final var sortedAsc =
-        all.stream().sorted(Comparator.nullsLast(Comparator.naturalOrder())).toList();
-    final var sortedDesc =
-        all.stream().sorted(Comparator.nullsLast(Comparator.reverseOrder())).toList();
-
-    // then
-    assertThat(resultAsc.items().stream().map(FlowNodeInstance::getIncidentKey).toList())
-        .containsExactlyElementsOf(sortedAsc);
-    assertThat(resultDesc.items().stream().map(FlowNodeInstance::getIncidentKey).toList())
-        .containsExactlyElementsOf(sortedDesc);
+    assertSorted(resultAsc, resultDesc, FlowNodeInstance::getIncidentKey);
   }
 
   @Test
@@ -331,17 +305,7 @@ public class FlowNodeInstanceQueryTest {
     final var resultDesc =
         zeebeClient.newFlownodeInstanceQuery().sort(s -> s.state().desc()).send().join();
 
-    final var all = resultAsc.items().stream().map(FlowNodeInstance::getState).toList();
-    final var sortedAsc =
-        all.stream().sorted(Comparator.nullsLast(Comparator.naturalOrder())).toList();
-    final var sortedDesc =
-        all.stream().sorted(Comparator.nullsLast(Comparator.reverseOrder())).toList();
-
-    // then
-    assertThat(resultAsc.items().stream().map(FlowNodeInstance::getState).toList())
-        .containsExactlyElementsOf(sortedAsc);
-    assertThat(resultDesc.items().stream().map(FlowNodeInstance::getState).toList())
-        .containsExactlyElementsOf(sortedDesc);
+    assertSorted(resultAsc, resultDesc, FlowNodeInstance::getState);
   }
 
   @Test
@@ -357,7 +321,7 @@ public class FlowNodeInstanceQueryTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().size()).isEqualTo(7);
     assertThat(result.items().getFirst().getIncident()).isEqualTo(hasIncident);
   }
 
@@ -384,17 +348,7 @@ public class FlowNodeInstanceQueryTest {
     final var resultDesc =
         zeebeClient.newFlownodeInstanceQuery().sort(s -> s.type().desc()).send().join();
 
-    final var all = resultAsc.items().stream().map(FlowNodeInstance::getType).toList();
-    final var sortedAsc =
-        all.stream().sorted(Comparator.nullsLast(Comparator.naturalOrder())).toList();
-    final var sortedDesc =
-        all.stream().sorted(Comparator.nullsLast(Comparator.reverseOrder())).toList();
-
-    // then
-    assertThat(resultAsc.items().stream().map(FlowNodeInstance::getType).toList())
-        .containsExactlyElementsOf(sortedAsc);
-    assertThat(resultDesc.items().stream().map(FlowNodeInstance::getType).toList())
-        .containsExactlyElementsOf(sortedDesc);
+    assertSorted(resultAsc, resultDesc, FlowNodeInstance::getType);
   }
 
   @Test
@@ -458,10 +412,6 @@ public class FlowNodeInstanceQueryTest {
               final var result = zeebeClient.newProcessInstanceQuery().send().join();
               assertThat(result.items().size()).isEqualTo(expectedProcessInstances);
             });
-  }
-
-  private static void waitForProcessInstancesToExecute() throws InterruptedException {
-    Thread.sleep(15000);
   }
 
   private static DeploymentEvent deployResource(final String resourceName) {
