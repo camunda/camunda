@@ -15,17 +15,16 @@ import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.UserRecordValueExportHandler;
 import io.camunda.exporter.handlers.VariableHandler;
-import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
+import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -46,6 +45,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   @Override
   public void init(final ExporterConfiguration configuration) {
     final var operateIndexPrefix = configuration.getIndex().getPrefix();
+    final var tasklistIndexPrefix = configuration.getIndex().getTasklistPrefix();
     final var isElasticsearch =
         ConnectionTypes.from(configuration.getConnect().getType())
             .equals(ConnectionTypes.ELASTICSEARCH);
@@ -66,7 +66,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             MetricIndex.class,
             new MetricIndex(operateIndexPrefix, isElasticsearch),
             ProcessIndex.class,
-            new ProcessIndex(operateIndexPrefix, isElasticsearch));
+            new ProcessIndex(operateIndexPrefix, isElasticsearch),
+            FormIndex.class,
+            new FormIndex(tasklistIndexPrefix, isElasticsearch));
 
     exportHandlers =
         Set.of(

@@ -9,18 +9,19 @@ package io.camunda.webapps.schema.entities.tasklist;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Objects;
 
 /* May be replaced by a common parent for both Tasklist and Operate */
-public abstract class TasklistEntity<T extends TasklistEntity<T>>
-    extends AbstractExporterEntity<T> {
+public abstract class TasklistEntity<T extends TasklistEntity<T>> extends AbstractExporterEntity<T>
+    implements TenantOwned {
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String id;
 
   private long key;
 
-  private String tenantId = DEFAULT_TENANT_ID;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Integer partitionId;
@@ -49,6 +50,7 @@ public abstract class TasklistEntity<T extends TasklistEntity<T>>
     this.key = key;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }
