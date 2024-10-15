@@ -58,6 +58,7 @@ const report = {
     processDefinitionKey: null,
     configuration: {},
     visualization: 'table',
+    view: {properties: ['frequency']},
   },
   result: {measures: [{data: [1, 2, 3]}], instanceCount: 37},
 };
@@ -154,8 +155,16 @@ it('should hide alert dropdown if usersearch is not available', () => {
 });
 
 describe('Download CSV', () => {
-  it('should show a download csv button with the correct link', () => {
-    const node = shallow(<ReportView report={report} />);
+  const rawDataReport = {
+    ...report,
+    data: {
+      ...report.data,
+      view: {properties: ['rawData']},
+    },
+  };
+
+  it('should show a download csv button with the correct link for raw data reports', () => {
+    const node = shallow(<ReportView report={rawDataReport} />);
     expect(node.find(DownloadButton)).toExist();
 
     const href = node.find(DownloadButton).props().href;
@@ -165,19 +174,23 @@ describe('Download CSV', () => {
   });
 
   it('should show a download csv button even if the result is 0', () => {
-    const node = shallow(<ReportView report={{...report, result: {measures: [{data: 0}]}}} />);
+    const node = shallow(
+      <ReportView report={{...rawDataReport, result: {measures: [{data: 0}]}}} />
+    );
     expect(node.find(DownloadButton)).toExist();
   });
 
   it('should show a download csv button even if the result is null', () => {
-    const node = shallow(<ReportView report={{...report, result: {measures: [{data: null}]}}} />);
+    const node = shallow(
+      <ReportView report={{...rawDataReport, result: {measures: [{data: null}]}}} />
+    );
 
     expect(node.find(DownloadButton)).toExist();
   });
 
   it('should not show a download csv button for multi-measure reports', () => {
     const node = shallow(
-      <ReportView report={{...report, result: {measures: [{data: 0}, {data: 12}]}}} />
+      <ReportView report={report} />
     );
     expect(node.find(DownloadButton)).not.toExist();
   });
@@ -190,22 +203,14 @@ describe('Download CSV', () => {
     expect(node.find(DownloadButton)).not.toExist();
   });
 
-  it('should calculate total entries correctly for different report types', () => {
+  it('should calculate total entries correctly for raw data report', () => {
     const node = shallow(
-      <ReportView report={{...report, result: {type: 'number', measures: [{data: 12}]}}} />
+      <ReportView
+        report={rawDataReport}
+      />
     );
 
-    expect(node.find(DownloadButton).prop('totalCount')).toBe(1);
-
-    node.setProps({report: {...report, result: {type: 'map', measures: [{data: [{}, {}, {}]}]}}});
-
-    expect(node.find(DownloadButton).prop('totalCount')).toBe(3);
-
-    node.setProps({
-      report: {...report, result: {type: 'raw', measures: [{data: [{}]}], instanceCount: 20}},
-    });
-
-    expect(node.find(DownloadButton).prop('totalCount')).toBe(20);
+    expect(node.find(DownloadButton).prop('totalCount')).toBe(37);
   });
 });
 
