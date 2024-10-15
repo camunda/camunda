@@ -146,4 +146,12 @@ public final class SchemaTestUtil {
 
     return MAPPER.valueToTree(templateAsMap);
   }
+
+  public static boolean mappingsMatch(final JsonNode mappings, final String fileName)
+      throws IOException {
+    try (final var expectedMappingsJson = SchemaTestUtil.class.getResourceAsStream(fileName)) {
+      final var expectedMappingsTree = new ObjectMapper().readTree(expectedMappingsJson);
+      return mappings.equals(expectedMappingsTree.get("mappings"));
+    }
+  }
 }

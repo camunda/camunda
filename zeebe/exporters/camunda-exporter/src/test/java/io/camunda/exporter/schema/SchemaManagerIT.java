@@ -9,6 +9,7 @@ package io.camunda.exporter.schema;
 
 import static io.camunda.exporter.schema.SchemaTestUtil.elsIndexTemplateToNode;
 import static io.camunda.exporter.schema.SchemaTestUtil.elsIndexToNode;
+import static io.camunda.exporter.schema.SchemaTestUtil.mappingsMatch;
 import static io.camunda.exporter.schema.SchemaTestUtil.opensearchIndexTemplateToNode;
 import static io.camunda.exporter.schema.SchemaTestUtil.opensearchIndexToNode;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -161,12 +162,10 @@ public class SchemaManagerIT {
     // then
     final var template = getTemplate.call();
 
-    try (final var expectedMappingsJson =
-        getClass().getResourceAsStream("/mappings-added-property.json")) {
-      final var expectedMappingsTree = new ObjectMapper().readTree(expectedMappingsJson);
-      assertThat(template.at("/index_template/template/mappings"))
-          .isEqualTo(expectedMappingsTree.get("mappings"));
-    }
+    assertThat(
+            mappingsMatch(
+                template.at("/index_template/template/mappings"), "/mappings-added-property.json"))
+        .isTrue();
   }
 
   @Nested
