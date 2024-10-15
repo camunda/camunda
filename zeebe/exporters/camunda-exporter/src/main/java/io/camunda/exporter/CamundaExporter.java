@@ -13,7 +13,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.USER;
 
 import co.elastic.clients.util.VisibleForTesting;
 import io.camunda.exporter.adapters.ClientAdapter;
-import io.camunda.exporter.config.ConnectionTypes;
+import io.camunda.exporter.config.ConfigValidator;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
@@ -65,12 +65,7 @@ public class CamundaExporter implements Exporter {
   public void configure(final Context context) {
     configuration = context.getConfiguration().instantiate(ExporterConfiguration.class);
     provider.init(configuration);
-    // TODO validate configuration
-    ConnectionTypes.from(
-        configuration
-            .getConnect()
-            .getType()); // this is here to validate the type, it will throw early if the type is
-    // not supported
+    ConfigValidator.validate(configuration);
     context.setFilter(new ElasticsearchRecordFilter());
     metrics = new CamundaExporterMetrics(context.getMeterRegistry());
     LOG.debug("Exporter configured with {}", configuration);
