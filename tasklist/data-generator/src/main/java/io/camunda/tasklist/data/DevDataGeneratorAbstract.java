@@ -241,11 +241,7 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
         .send()
         .join();
 
-    zeebeClient
-        .newDeployResourceCommand()
-        .addResourceFromClasspath("bigForm.form")
-        .send()
-        .join();
+    zeebeClient.newDeployResourceCommand().addResourceFromClasspath("bigForm.form").send().join();
 
     zeebeClient
         .newDeployResourceCommand()
@@ -253,17 +249,9 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
         .send()
         .join();
 
-    zeebeClient
-        .newDeployResourceCommand()
-        .addResourceFromClasspath("doTaskA.form")
-        .send()
-        .join();
+    zeebeClient.newDeployResourceCommand().addResourceFromClasspath("doTaskA.form").send().join();
 
-    zeebeClient
-        .newDeployResourceCommand()
-        .addResourceFromClasspath("doTaskB.form")
-        .send()
-        .join();
+    zeebeClient.newDeployResourceCommand().addResourceFromClasspath("doTaskB.form").send().join();
 
     zeebeClient
         .newDeployResourceCommand()
