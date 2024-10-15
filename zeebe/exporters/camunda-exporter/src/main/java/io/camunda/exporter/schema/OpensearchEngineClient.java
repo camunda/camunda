@@ -11,27 +11,11 @@ import static io.camunda.exporter.utils.SearchEngineClientUtils.appendToFileSche
 import static io.camunda.exporter.utils.SearchEngineClientUtils.listIndices;
 import static io.camunda.exporter.utils.SearchEngineClientUtils.mapToSettings;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.ElasticsearchException;
-import co.elastic.clients.elasticsearch._types.mapping.Property;
-import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
-import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
-import co.elastic.clients.elasticsearch.indices.Alias;
-import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
-import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
-import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
-import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
-import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplateItem;
-import co.elastic.clients.elasticsearch.indices.put_index_template.IndexTemplateMapping;
-import co.elastic.clients.json.JsonData;
-import co.elastic.clients.json.JsonpDeserializer;
-import co.elastic.clients.json.jackson.JacksonJsonpGenerator;
-import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.exporter.SchemaResourceSerializer;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
-import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.exporter.exceptions.IndexSchemaValidationException;
+import io.camunda.exporter.exceptions.OpensearchExporterException;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
@@ -42,29 +26,46 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.opensearch.client.json.JsonpDeserializer;
+import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
+import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch._types.mapping.TypeMapping;
+import org.opensearch.client.opensearch.generic.Body;
+import org.opensearch.client.opensearch.generic.Request;
+import org.opensearch.client.opensearch.generic.Requests;
+import org.opensearch.client.opensearch.indices.CreateIndexRequest;
+import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
+import org.opensearch.client.opensearch.indices.PutIndicesSettingsRequest;
+import org.opensearch.client.opensearch.indices.PutMappingRequest;
+import org.opensearch.client.opensearch.indices.get_index_template.IndexTemplateItem;
+import org.opensearch.client.opensearch.indices.put_index_template.IndexTemplateMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ElasticsearchEngineClient implements SearchEngineClient {
-  private static final Logger LOG = LoggerFactory.getLogger(ElasticsearchEngineClient.class);
+public class OpensearchEngineClient implements SearchEngineClient {
+  private static final Logger LOG = LoggerFactory.getLogger(OpensearchEngineClient.class);
   private static final ObjectMapper MAPPER = new ObjectMapper();
-  private final ElasticsearchClient client;
+  private static final String OPERATE_DELETE_ARCHIVED_POLICY =
+      "/schema/opensearch/create/policy/operate_delete_archived_indices.json";
+  private final OpenSearchClient client;
 
-  public ElasticsearchEngineClient(final ElasticsearchClient client) {
+  public OpensearchEngineClient(final OpenSearchClient client) {
     this.client = client;
   }
 
   @Override
   public void createIndex(final IndexDescriptor indexDescriptor, final IndexSettings settings) {
     final CreateIndexRequest request = createIndexRequest(indexDescriptor, settings);
+
     try {
       client.indices().create(request);
       LOG.debug("Index [{}] was successfully created", indexDescriptor.getIndexName());
-    } catch (final IOException | ElasticsearchException e) {
+    } catch (final IOException | OpenSearchException e) {
       final var errMsg =
           String.format("Index [%s] was not created", indexDescriptor.getIndexName());
       LOG.error(errMsg, e);
-      throw new ElasticsearchExporterException(errMsg, e);
+      throw new OpensearchExporterException(errMsg, e);
     }
   }
 
@@ -73,17 +74,28 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       final IndexTemplateDescriptor templateDescriptor,
       final IndexSettings settings,
       final boolean create) {
-    final PutIndexTemplateRequest request =
-        putIndexTemplateRequest(templateDescriptor, settings, create);
+
+    final PutIndexTemplateRequest request = putIndexTemplateRequest(templateDescriptor, settings);
 
     try {
+      if (create
+          && client
+              .indices()
+              .existsIndexTemplate(req -> req.name(templateDescriptor.getTemplateName()))
+              .value()) {
+        throw new OpensearchExporterException(
+            String.format(
+                "Cannot update template [%s] as create = true",
+                templateDescriptor.getTemplateName()));
+      }
+
       client.indices().putIndexTemplate(request);
       LOG.debug("Template [{}] was successfully created", templateDescriptor.getTemplateName());
-    } catch (final IOException | ElasticsearchException e) {
+    } catch (final IOException | OpenSearchException e) {
       final var errMsg =
           String.format("Template [%s] was NOT created", templateDescriptor.getTemplateName());
       LOG.error(errMsg, e);
-      throw new ElasticsearchExporterException(errMsg, e);
+      throw new OpensearchExporterException(errMsg, e);
     }
   }
 
@@ -95,11 +107,11 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     try {
       client.indices().putMapping(request);
       LOG.debug("Mapping in [{}] was successfully updated", indexDescriptor.getIndexName());
-    } catch (final IOException | ElasticsearchException e) {
+    } catch (final IOException | OpenSearchException e) {
       final var errMsg =
           String.format("Mapping in [%s] was NOT updated", indexDescriptor.getIndexName());
       LOG.error(errMsg, e);
-      throw new ElasticsearchExporterException(errMsg, e);
+      throw new OpensearchExporterException(errMsg, e);
     }
   }
 
@@ -108,7 +120,6 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       final String namePattern, final MappingSource mappingSource) {
     try {
       final Map<String, TypeMapping> mappings = getCurrentMappings(mappingSource, namePattern);
-
       return mappings.entrySet().stream()
           .collect(
               Collectors.toMap(
@@ -122,8 +133,8 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
                         .metaProperties(metaFromMappings(mappingsBlock))
                         .build();
                   }));
-    } catch (final IOException | ElasticsearchException e) {
-      throw new ElasticsearchExporterException(
+    } catch (final IOException | OpenSearchException e) {
+      throw new OpensearchExporterException(
           String.format(
               "Failed retrieving mappings from index/index templates with pattern [%s]",
               namePattern),
@@ -138,55 +149,98 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
     try {
       client.indices().putSettings(request);
-    } catch (final IOException | ElasticsearchException e) {
+    } catch (final IOException | OpenSearchException e) {
       final var errMsg =
           String.format(
               "settings PUT failed for the following indices [%s]", listIndices(indexDescriptors));
       LOG.error(errMsg, e);
-      throw new ElasticsearchExporterException(errMsg, e);
+      throw new OpensearchExporterException(errMsg, e);
     }
   }
 
   @Override
   public void putIndexLifeCyclePolicy(final String policyName, final String deletionMinAge) {
-    final PutLifecycleRequest request = putLifecycleRequest(policyName, deletionMinAge);
+    final var request = createIndexStateManagementPolicy(policyName, deletionMinAge);
 
-    try {
-      client.ilm().putLifecycle(request);
-    } catch (final IOException e) {
-      final var errMsg = String.format("Index lifecycle policy [%s] failed to PUT", policyName);
+    try (final var response = client.generic().execute(request)) {
+      if (response.getStatus() / 100 != 2) {
+        throw new OpensearchExporterException(
+            String.format(
+                "Creating index state management policy [%s] with min_deletion_age [%s] failed. Http response = [%s]",
+                policyName, deletionMinAge, response.getBody().get().bodyAsString()));
+      }
+
+    } catch (final IOException | OpenSearchException e) {
+      final var errMsg =
+          String.format("Failed to create index state management policy [%s]", policyName);
       LOG.error(errMsg, e);
-      throw new ElasticsearchExporterException(errMsg, e);
+      throw new OpensearchExporterException(errMsg, e);
+    }
+  }
+
+  public Request createIndexStateManagementPolicy(
+      final String policyName, final String deletionMinAge) {
+    try (final var policyJson = getClass().getResourceAsStream(OPERATE_DELETE_ARCHIVED_POLICY)) {
+      final var jsonMap = MAPPER.readTree(policyJson);
+      final var conditions =
+          (ObjectNode)
+              jsonMap
+                  .path("policy")
+                  .path("states")
+                  .path(0)
+                  .path("transitions")
+                  .path(0)
+                  .path("conditions");
+      conditions.put("min_index_age", deletionMinAge);
+
+      final var policy = MAPPER.writeValueAsBytes(jsonMap);
+
+      return Requests.builder()
+          .method("PUT")
+          .endpoint("_plugins/_ism/policies/" + policyName)
+          .body(Body.from(policy, "application/json"))
+          .build();
+
+    } catch (final IOException e) {
+      throw new OpensearchExporterException(
+          "Failed to deserialize policy file " + OPERATE_DELETE_ARCHIVED_POLICY, e);
     }
   }
 
   private PutIndicesSettingsRequest putIndexSettingsRequest(
       final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings) {
-    final co.elastic.clients.elasticsearch.indices.IndexSettings settings =
+
+    final org.opensearch.client.opensearch.indices.IndexSettings settings =
         mapToSettings(
             toAppendSettings,
             (inp) ->
                 deserializeJson(
-                    co.elastic.clients.elasticsearch.indices.IndexSettings._DESERIALIZER, inp));
+                    org.opensearch.client.opensearch.indices.IndexSettings._DESERIALIZER, inp));
     return new PutIndicesSettingsRequest.Builder()
         .index(listIndices(indexDescriptors))
         .settings(settings)
         .build();
   }
 
-  public PutLifecycleRequest putLifecycleRequest(
-      final String policyName, final String deletionMinAge) {
-    return new PutLifecycleRequest.Builder()
-        .name(policyName)
-        .policy(
-            policy ->
-                policy.phases(
-                    phase ->
-                        phase.delete(
-                            del ->
-                                del.minAge(m -> m.time(deletionMinAge))
-                                    .actions(JsonData.of(Map.of("delete", Map.of()))))))
-        .build();
+  private String dynamicFromMappings(final TypeMapping mapping) {
+    final var dynamic = mapping.dynamic();
+    return dynamic == null ? "strict" : dynamic.toString().toLowerCase();
+  }
+
+  private Map<String, Object> metaFromMappings(final TypeMapping mapping) {
+    return mapping.meta().entrySet().stream()
+        .collect(Collectors.toMap(Entry::getKey, ent -> ent.getValue().to(Object.class)));
+  }
+
+  private Set<IndexMappingProperty> propertiesFromMappings(final TypeMapping mapping) {
+    return mapping.properties().entrySet().stream()
+        .map(
+            p ->
+                new IndexMappingProperty.Builder()
+                    .name(p.getKey())
+                    .typeDefinition(Map.of("type", p.getValue()._kind().jsonValue()))
+                    .build())
+        .collect(Collectors.toSet());
   }
 
   private Map<String, TypeMapping> getCurrentMappings(
@@ -210,70 +264,25 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     }
   }
 
-  private Set<IndexMappingProperty> propertiesFromMappings(final TypeMapping mapping) {
-    return mapping.properties().entrySet().stream()
-        .map(
-            p ->
-                new IndexMappingProperty.Builder()
-                    .name(p.getKey())
-                    .typeDefinition(propertyToMap(p.getValue()))
-                    .build())
-        .collect(Collectors.toSet());
-  }
-
-  private Map<String, Object> propertyToMap(final Property property) {
-    try {
-      return SchemaResourceSerializer.serialize(
-          (JacksonJsonpGenerator::new),
-          (jacksonJsonpGenerator) ->
-              property.serialize(jacksonJsonpGenerator, new JacksonJsonpMapper(MAPPER)));
-    } catch (final IOException e) {
-      throw new ElasticsearchExporterException(
-          String.format("Failed to serialize property [%s]", property.toString()), e);
-    }
-  }
-
-  private String dynamicFromMappings(final TypeMapping mapping) {
-    final var dynamic = mapping.dynamic();
-    return dynamic == null ? "strict" : dynamic.toString().toLowerCase();
-  }
-
-  private Map<String, Object> metaFromMappings(final TypeMapping mapping) {
-    return mapping.meta().entrySet().stream()
-        .collect(Collectors.toMap(Entry::getKey, ent -> ent.getValue().to(Object.class)));
-  }
-
   private PutMappingRequest putMappingRequest(
       final IndexDescriptor indexDescriptor, final Collection<IndexMappingProperty> newProperties) {
 
-    final var elsProperties =
+    final var opensearchProperties =
         newProperties.stream()
-            .map(IndexMappingProperty::toElasticsearchProperty)
+            .map(IndexMappingProperty::toOpensearchProperty)
             .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
 
     return new PutMappingRequest.Builder()
         .index(indexDescriptor.getFullQualifiedName())
-        .properties(elsProperties)
+        .properties(opensearchProperties)
         .build();
   }
 
-  public <T> T deserializeJson(final JsonpDeserializer<T> deserializer, final InputStream json) {
-    try (final var parser = client._jsonpMapper().jsonProvider().createParser(json)) {
-      return deserializer.deserialize(parser, client._jsonpMapper());
-    }
-  }
-
-  private InputStream getResourceAsStream(final String classpathFileName) {
-    return getClass().getResourceAsStream(classpathFileName);
-  }
-
   private PutIndexTemplateRequest putIndexTemplateRequest(
-      final IndexTemplateDescriptor indexTemplateDescriptor,
-      final IndexSettings settings,
-      final Boolean create) {
+      final IndexTemplateDescriptor indexTemplateDescriptor, final IndexSettings settings) {
 
     try (final var templateFile =
-        getResourceAsStream(indexTemplateDescriptor.getMappingsClasspathFilename())) {
+        getClass().getResourceAsStream(indexTemplateDescriptor.getMappingsClasspathFilename())) {
 
       final var templateFields =
           deserializeJson(
@@ -285,14 +294,13 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
           .indexPatterns(indexTemplateDescriptor.getIndexPattern())
           .template(
               t ->
-                  t.aliases(indexTemplateDescriptor.getAlias(), Alias.of(a -> a))
+                  t.aliases(indexTemplateDescriptor.getAlias(), a -> a)
                       .mappings(templateFields.mappings())
                       .settings(templateFields.settings()))
           .composedOf(indexTemplateDescriptor.getComposedOf())
-          .create(create)
           .build();
     } catch (final IOException e) {
-      throw new ElasticsearchExporterException(
+      throw new OpensearchExporterException(
           "Failed to load file "
               + indexTemplateDescriptor.getMappingsClasspathFilename()
               + " from classpath.",
@@ -302,8 +310,9 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
   private CreateIndexRequest createIndexRequest(
       final IndexDescriptor indexDescriptor, final IndexSettings settings) {
+
     try (final var templateFile =
-        getResourceAsStream(indexDescriptor.getMappingsClasspathFilename())) {
+        getClass().getResourceAsStream(indexDescriptor.getMappingsClasspathFilename())) {
 
       final var templateFields =
           deserializeJson(
@@ -316,12 +325,21 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
           .mappings(templateFields.mappings())
           .settings(templateFields.settings())
           .build();
+
     } catch (final IOException e) {
-      throw new ElasticsearchExporterException(
-          "Failed to load file "
+      throw new OpensearchExporterException(
+          "Failed to load file: "
               + indexDescriptor.getMappingsClasspathFilename()
-              + " from classpath.",
+              + " from classpath",
           e);
+    }
+  }
+
+  private <T> T deserializeJson(final JsonpDeserializer<T> deserializer, final InputStream json) {
+    final JsonbJsonpMapper mapper = new JsonbJsonpMapper();
+
+    try (final var parser = mapper.jsonProvider().createParser(json)) {
+      return deserializer.deserialize(parser, mapper);
     }
   }
 }

@@ -9,6 +9,7 @@ package io.camunda.exporter.adapters;
 
 import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.schema.OpensearchEngineClient;
 import io.camunda.exporter.schema.SchemaManager;
 import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.store.BatchRequest;
@@ -22,18 +23,18 @@ import org.opensearch.client.opensearch.core.BulkRequest;
 class OpensearchAdapter implements ClientAdapter {
   private final OpenSearchClient client;
   private final ExporterConfiguration configuration;
+  private final OpensearchEngineClient searchEngineClient;
 
   OpensearchAdapter(final ExporterConfiguration configuration) {
     this.configuration = configuration;
     final var connector = new OpensearchConnector(configuration.getConnect());
     client = connector.createClient();
-    // FIXME add search engine client implementation for opensearch and instantiate it here
+    searchEngineClient = new OpensearchEngineClient(client);
   }
 
   @Override
   public SearchEngineClient getSearchEngineClient() {
-    // TODO return search engine client instance here
-    return null;
+    return searchEngineClient;
   }
 
   @Override
