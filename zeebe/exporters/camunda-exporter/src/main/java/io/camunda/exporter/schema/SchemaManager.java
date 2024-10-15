@@ -13,6 +13,7 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.util.Collection;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +33,29 @@ public class SchemaManager {
     this.indexDescriptors = indexDescriptors;
     this.indexTemplateDescriptors = indexTemplateDescriptors;
     this.config = config;
+  }
+
+  public void startup() {
+    if (!config.isCreateSchema()) {
+      LOG.info(
+          "Will not make any changes to indices and index templates as [createSchema] is false");
+      return;
+    }
+    final var schemaValidator = new IndexSchemaValidator();
+    final var newIndexProperties = validateIndices(schemaValidator, searchEngineClient);
+    final var newIndexTemplateProperties =
+        validateIndexTemplates(schemaValidator, searchEngineClient);
+    //  used to create any indices/templates which don't exist
+    initialiseResources();
+
+    //  used to update existing indices/templates
+    updateSchema(newIndexProperties);
+    updateSchema(newIndexTemplateProperties);
+
+    if (config.getRetention().isEnabled()) {
+      searchEngineClient.putIndexLifeCyclePolicy(
+          config.getRetention().getPolicyName(), config.getRetention().getMinimumAge());
+    }
   }
 
   public void initialiseResources() {
@@ -95,5 +119,24 @@ public class SchemaManager {
     settings.setNumberOfReplicas(templateReplicas);
 
     return settings;
+  }
+
+  private Map<IndexDescriptor, Collection<IndexMappingProperty>> validateIndices(
+      final IndexSchemaValidator schemaValidator, final SearchEngineClient searchEngineClient) {
+    final var currentIndices =
+        searchEngineClient.getMappings(config.getIndex().getPrefix() + "*", MappingSource.INDEX);
+
+    return schemaValidator.validateIndexMappings(currentIndices, indexDescriptors);
+  }
+
+  private Map<IndexDescriptor, Collection<IndexMappingProperty>> validateIndexTemplates(
+      final IndexSchemaValidator schemaValidator, final SearchEngineClient searchEngineClient) {
+    final var currentTemplates = searchEngineClient.getMappings("*", MappingSource.INDEX_TEMPLATE);
+
+    return schemaValidator.validateIndexMappings(
+        currentTemplates,
+        indexTemplateDescriptors.stream()
+            .map(IndexDescriptor.class::cast)
+            .collect(Collectors.toSet()));
   }
 }
