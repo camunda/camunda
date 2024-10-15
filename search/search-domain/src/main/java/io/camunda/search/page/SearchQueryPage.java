@@ -80,7 +80,7 @@ public record SearchQueryPage(
 
     @Override
     public SearchQueryPage build() {
-      return new SearchQueryPage(from, size, searchAfter, searchBefore);
+      return new SearchQueryPage(from, size, searchAfter, searchBefore).sanitize();
     }
   }
 }

@@ -46,7 +46,7 @@ Run camunda with `rdbmsPostgres` profile
 Start Postgres docker container:
 
 ```
-docker-compose up -d mariabb
+docker-compose up -d mariadb
 ```
 
 ## Start Camunda:
