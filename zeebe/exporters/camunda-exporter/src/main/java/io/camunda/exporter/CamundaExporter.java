@@ -64,8 +64,8 @@ public class CamundaExporter implements Exporter {
   @Override
   public void configure(final Context context) {
     configuration = context.getConfiguration().instantiate(ExporterConfiguration.class);
-    provider.init(configuration);
     ConfigValidator.validate(configuration);
+    provider.init(configuration);
     context.setFilter(new ElasticsearchRecordFilter());
     metrics = new CamundaExporterMetrics(context.getMeterRegistry());
     LOG.debug("Exporter configured with {}", configuration);
