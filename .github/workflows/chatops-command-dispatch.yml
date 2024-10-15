@@ -42,6 +42,7 @@ jobs:
             assign
             eng
             help
+            hold
             pm
             qa
 
