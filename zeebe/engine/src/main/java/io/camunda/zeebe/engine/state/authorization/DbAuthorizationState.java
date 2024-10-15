@@ -122,6 +122,16 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
   }
 
   @Override
+  public void deleteAuthorizationsByOwnerKeyPrefix(final long ownerKey) {
+    this.ownerKey.wrapLong(ownerKey);
+    resourceIdsByOwnerKeyResourceTypeAndPermissionColumnFamily.whileEqualPrefix(
+        this.ownerKey,
+        (compositeKey, resourceIdentifiers) -> {
+          resourceIdsByOwnerKeyResourceTypeAndPermissionColumnFamily.deleteExisting(compositeKey);
+        });
+  }
+
+  @Override
   public Set<String> getResourceIdentifiers(
       final Long ownerKey,
       final AuthorizationResourceType resourceType,
