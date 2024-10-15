@@ -7,14 +7,16 @@
  */
 package io.camunda.exporter.schema;
 
-import static io.camunda.exporter.schema.SchemaTestUtil.validateMappings;
+import static io.camunda.exporter.schema.SchemaTestUtil.elsIndexTemplateToNode;
+import static io.camunda.exporter.schema.SchemaTestUtil.elsIndexToNode;
+import static io.camunda.exporter.schema.SchemaTestUtil.opensearchIndexTemplateToNode;
+import static io.camunda.exporter.schema.SchemaTestUtil.opensearchIndexToNode;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.exporter.SchemaResourceSerializer;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
@@ -34,11 +36,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.opensearch.client.json.JsonpMapper;
-import org.opensearch.client.json.jackson.JacksonJsonpGenerator;
-import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.client.opensearch.indices.IndexState;
 import org.opensearch.testcontainers.OpensearchContainer;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -48,7 +46,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 public class SchemaManagerIT {
 
   private static final ExporterConfiguration CONFIG = new ExporterConfiguration();
-  private static final ObjectMapper MAPPER = new ObjectMapper();
   private IndexDescriptor index;
   private IndexTemplateDescriptor indexTemplate;
 
@@ -75,7 +72,7 @@ public class SchemaManagerIT {
   }
 
   void shouldAppendToIndexMappingsWithNewProperties(
-      final Callable<JsonNode> updatedIndex, final SearchEngineClient searchEngineClient)
+      final Callable<JsonNode> getUpdatedIndex, final SearchEngineClient searchEngineClient)
       throws Exception {
     // given
     final var schemaManager =
@@ -94,31 +91,82 @@ public class SchemaManagerIT {
     schemaManager.updateSchema(schemasToChange);
 
     // then
-    final var updatedIndexItem = updatedIndex.call();
+    final var updatedIndex = getUpdatedIndex.call();
 
-    assertThat(updatedIndexItem.at("/mappings/properties/foo/type").asText()).isEqualTo("text");
-    assertThat(updatedIndexItem.at("/mappings/properties/bar/type").asText()).isEqualTo("keyword");
+    assertThat(updatedIndex.at("/mappings/properties/foo/type").asText()).isEqualTo("text");
+    assertThat(updatedIndex.at("/mappings/properties/bar/type").asText()).isEqualTo("keyword");
   }
 
-  private JsonNode opensearchIndexToNode(final IndexState index) throws IOException {
-    final var indexAsMap =
-        SchemaResourceSerializer.serialize(
-            JacksonJsonpGenerator::new,
-            (gen) -> index.serialize(gen, new JacksonJsonpMapper(MAPPER)));
+  void shouldInheritDefaultSettingsIfNoIndexSpecificSettings(
+      final Callable<JsonNode> getRetrievedIndex, final SearchEngineClient searchEngineClient)
+      throws Exception {
+    // given
+    final var properties = new ExporterConfiguration();
+    properties.getIndex().setNumberOfReplicas(10);
+    properties.getIndex().setNumberOfShards(10);
 
-    return MAPPER.valueToTree(indexAsMap);
+    final var schemaManager =
+        new SchemaManager(searchEngineClient, Set.of(index), Set.of(indexTemplate), properties);
+
+    // when
+    schemaManager.initialiseResources();
+
+    // then
+    final var retrievedIndex = getRetrievedIndex.call();
+
+    assertThat(retrievedIndex.at("/settings/index/number_of_replicas").asInt()).isEqualTo(10);
+    assertThat(retrievedIndex.at("/settings/index/number_of_shards").asInt()).isEqualTo(10);
   }
 
-  private JsonNode elsIndexToNode(final co.elastic.clients.elasticsearch.indices.IndexState index)
-      throws IOException {
-    final var indexAsMap =
-        SchemaResourceSerializer.serialize(
-            co.elastic.clients.json.jackson.JacksonJsonpGenerator::new,
-            (gen) ->
-                index.serialize(
-                    gen, new co.elastic.clients.json.jackson.JacksonJsonpMapper(MAPPER)));
+  void shouldUseIndexSpecificSettingsIfSpecified(
+      final Callable<JsonNode> getRetrievedIndex, final SearchEngineClient searchEngineClient)
+      throws Exception {
+    // given
+    final var properties = new ExporterConfiguration();
+    properties.getIndex().setNumberOfReplicas(10);
+    properties.getIndex().setNumberOfShards(10);
+    properties.setReplicasByIndexName(Map.of("index_name", 5));
+    properties.setShardsByIndexName(Map.of("index_name", 5));
 
-    return MAPPER.valueToTree(indexAsMap);
+    final var schemaManager =
+        new SchemaManager(searchEngineClient, Set.of(index), Set.of(indexTemplate), properties);
+
+    // when
+    schemaManager.initialiseResources();
+
+    // then
+    final var retrievedIndex = getRetrievedIndex.call();
+
+    assertThat(retrievedIndex.at("/settings/index/number_of_replicas").asInt()).isEqualTo(5);
+    assertThat(retrievedIndex.at("/settings/index/number_of_shards").asInt()).isEqualTo(5);
+  }
+
+  void shouldOverwriteIndexTemplateIfMappingsFileChanged(
+      final Callable<JsonNode> getTemplate, final SearchEngineClient searchEngineClient)
+      throws Exception {
+    // given
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClient, Set.of(), Set.of(indexTemplate), new ExporterConfiguration());
+
+    schemaManager.initialiseResources();
+
+    // when
+    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
+
+    final Map<IndexDescriptor, Collection<IndexMappingProperty>> schemasToChange =
+        Map.of(indexTemplate, Set.of());
+    schemaManager.updateSchema(schemasToChange);
+
+    // then
+    final var template = getTemplate.call();
+
+    try (final var expectedMappingsJson =
+        getClass().getResourceAsStream("/mappings-added-property.json")) {
+      final var expectedMappingsTree = new ObjectMapper().readTree(expectedMappingsJson);
+      assertThat(template.at("/index_template/template/mappings"))
+          .isEqualTo(expectedMappingsTree.get("mappings"));
+    }
   }
 
   @Nested
@@ -145,76 +193,49 @@ public class SchemaManagerIT {
     }
 
     @Test
-    void shouldInheritDefaultSettingsIfNoIndexSpecificSettings() throws IOException {
-      final var properties = new ExporterConfiguration();
-      properties.getIndex().setNumberOfReplicas(10);
-      properties.getIndex().setNumberOfShards(10);
+    void shouldInheritDefaultSettingsIfNoIndexSpecificSettings() throws Exception {
+      SchemaManagerIT.this.shouldInheritDefaultSettingsIfNoIndexSpecificSettings(
+          () -> {
+            final var retrievedIndex =
+                elsClient
+                    .indices()
+                    .get(req -> req.index(index.getFullQualifiedName()))
+                    .get(index.getFullQualifiedName());
 
-      final var schemaManager =
-          new SchemaManager(searchEngineClient, Set.of(index), Set.of(indexTemplate), properties);
-
-      schemaManager.initialiseResources();
-
-      final var retrievedIndex =
-          elsClient
-              .indices()
-              .get(req -> req.index(index.getFullQualifiedName()))
-              .get(index.getFullQualifiedName());
-
-      assertThat(retrievedIndex.settings().index().numberOfReplicas()).isEqualTo("10");
-      assertThat(retrievedIndex.settings().index().numberOfShards()).isEqualTo("10");
+            return elsIndexToNode(retrievedIndex);
+          },
+          searchEngineClient);
     }
 
     @Test
-    void shouldUseIndexSpecificSettingsIfSpecified() throws IOException {
-      final var properties = new ExporterConfiguration();
-      properties.getIndex().setNumberOfReplicas(10);
-      properties.getIndex().setNumberOfShards(10);
-      properties.setReplicasByIndexName(Map.of("index_name", 5));
-      properties.setShardsByIndexName(Map.of("index_name", 5));
+    void shouldUseIndexSpecificSettingsIfSpecified() throws Exception {
+      SchemaManagerIT.this.shouldUseIndexSpecificSettingsIfSpecified(
+          () -> {
+            final var retrievedIndex =
+                elsClient
+                    .indices()
+                    .get(req -> req.index(index.getFullQualifiedName()))
+                    .get(index.getFullQualifiedName());
 
-      final var schemaManager =
-          new SchemaManager(searchEngineClient, Set.of(index), Set.of(indexTemplate), properties);
-
-      schemaManager.initialiseResources();
-
-      final var retrievedIndex =
-          elsClient
-              .indices()
-              .get(req -> req.index(index.getFullQualifiedName()))
-              .get(index.getFullQualifiedName());
-
-      assertThat(retrievedIndex.settings().index().numberOfReplicas()).isEqualTo("5");
-      assertThat(retrievedIndex.settings().index().numberOfShards()).isEqualTo("5");
+            return elsIndexToNode(retrievedIndex);
+          },
+          searchEngineClient);
     }
 
     @Test
-    void shouldOverwriteIndexTemplateIfMappingsFileChanged() throws IOException {
-      // given
-      final var schemaManager =
-          new SchemaManager(
-              searchEngineClient, Set.of(), Set.of(indexTemplate), new ExporterConfiguration());
+    void shouldOverwriteIndexTemplateIfMappingsFileChanged() throws Exception {
+      SchemaManagerIT.this.shouldOverwriteIndexTemplateIfMappingsFileChanged(
+          () -> {
+            final var template =
+                elsClient
+                    .indices()
+                    .getIndexTemplate(req -> req.name(indexTemplate.getTemplateName()))
+                    .indexTemplates()
+                    .getFirst();
 
-      schemaManager.initialiseResources();
-
-      // when
-      when(indexTemplate.getMappingsClasspathFilename())
-          .thenReturn("/mappings-added-property.json");
-
-      final Map<IndexDescriptor, Collection<IndexMappingProperty>> schemasToChange =
-          Map.of(indexTemplate, Set.of());
-      schemaManager.updateSchema(schemasToChange);
-
-      // then
-      final var template =
-          elsClient
-              .indices()
-              .getIndexTemplate(req -> req.name(indexTemplate.getTemplateName()))
-              .indexTemplates()
-              .getFirst();
-
-      validateMappings(
-          template.indexTemplate().template().mappings(), "/mappings-added-property.json");
+            return elsIndexTemplateToNode(template);
+          },
+          searchEngineClient);
     }
 
     @Test
@@ -263,7 +284,6 @@ public class SchemaManagerIT {
     private static final OpensearchContainer<?> CONTAINER =
         TestSupport.createDefaultOpensearchContainer();
 
-    private static final JsonpMapper JSON_MAPPER = new JacksonJsonpMapper(MAPPER);
     private static OpenSearchClient opensearchClient;
     private static SearchEngineClient searchEngineClient;
 
@@ -283,76 +303,50 @@ public class SchemaManagerIT {
     }
 
     @Test
-    void shouldInheritDefaultSettingsIfNoIndexSpecificSettings() throws IOException {
-      final var properties = new ExporterConfiguration();
-      properties.getIndex().setNumberOfReplicas(10);
-      properties.getIndex().setNumberOfShards(10);
+    void shouldInheritDefaultSettingsIfNoIndexSpecificSettings() throws Exception {
+      SchemaManagerIT.this.shouldInheritDefaultSettingsIfNoIndexSpecificSettings(
+          () -> {
+            final var retrievedIndex =
+                opensearchClient
+                    .indices()
+                    .get(req -> req.index(index.getFullQualifiedName()))
+                    .get(index.getFullQualifiedName());
 
-      final var schemaManager =
-          new SchemaManager(searchEngineClient, Set.of(index), Set.of(indexTemplate), properties);
-
-      schemaManager.initialiseResources();
-
-      final var retrievedIndex =
-          opensearchClient
-              .indices()
-              .get(req -> req.index(index.getFullQualifiedName()))
-              .get(index.getFullQualifiedName());
-
-      assertThat(retrievedIndex.settings().index().numberOfReplicas()).isEqualTo("10");
-      assertThat(retrievedIndex.settings().index().numberOfShards()).isEqualTo("10");
+            return opensearchIndexToNode(retrievedIndex);
+          },
+          searchEngineClient);
     }
 
     @Test
-    void shouldUseIndexSpecificSettingsIfSpecified() throws IOException {
-      final var properties = new ExporterConfiguration();
-      properties.getIndex().setNumberOfReplicas(10);
-      properties.getIndex().setNumberOfShards(10);
-      properties.setReplicasByIndexName(Map.of("index_name", 5));
-      properties.setShardsByIndexName(Map.of("index_name", 5));
+    void shouldUseIndexSpecificSettingsIfSpecified() throws Exception {
+      SchemaManagerIT.this.shouldUseIndexSpecificSettingsIfSpecified(
+          () -> {
+            final var retrievedIndex =
+                opensearchClient
+                    .indices()
+                    .get(req -> req.index(index.getFullQualifiedName()))
+                    .get(index.getFullQualifiedName());
 
-      final var schemaManager =
-          new SchemaManager(searchEngineClient, Set.of(index), Set.of(indexTemplate), properties);
-
-      schemaManager.initialiseResources();
-
-      final var retrievedIndex =
-          opensearchClient
-              .indices()
-              .get(req -> req.index(index.getFullQualifiedName()))
-              .get(index.getFullQualifiedName());
-
-      assertThat(retrievedIndex.settings().index().numberOfReplicas()).isEqualTo("5");
-      assertThat(retrievedIndex.settings().index().numberOfShards()).isEqualTo("5");
+            return opensearchIndexToNode(retrievedIndex);
+          },
+          searchEngineClient);
     }
 
     @Test
-    void shouldOverwriteIndexTemplateIfMappingsFileChanged() throws IOException {
-      // given
-      final var schemaManager =
-          new SchemaManager(
-              searchEngineClient, Set.of(), Set.of(indexTemplate), new ExporterConfiguration());
+    void shouldOverwriteIndexTemplateIfMappingsFileChanged() throws Exception {
 
-      schemaManager.initialiseResources();
+      SchemaManagerIT.this.shouldOverwriteIndexTemplateIfMappingsFileChanged(
+          () -> {
+            final var template =
+                opensearchClient
+                    .indices()
+                    .getIndexTemplate(req -> req.name(indexTemplate.getTemplateName()))
+                    .indexTemplates()
+                    .getFirst();
 
-      // when
-      when(indexTemplate.getMappingsClasspathFilename())
-          .thenReturn("/mappings-added-property.json");
-
-      final Map<IndexDescriptor, Collection<IndexMappingProperty>> schemasToChange =
-          Map.of(indexTemplate, Set.of());
-      schemaManager.updateSchema(schemasToChange);
-
-      // then
-      final var template =
-          opensearchClient
-              .indices()
-              .getIndexTemplate(req -> req.name(indexTemplate.getTemplateName()))
-              .indexTemplates()
-              .getFirst();
-
-      validateMappings(
-          template.indexTemplate().template().mappings(), "/mappings-added-property.json");
+            return opensearchIndexTemplateToNode(template);
+          },
+          searchEngineClient);
     }
 
     @Test
