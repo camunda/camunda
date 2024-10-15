@@ -111,6 +111,24 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
   }
 
   @Test
+  public void shouldNotHandleNotProcessRecord() {
+    // given
+    final ProcessInstanceRecordValue processInstanceRecordValue =
+        ImmutableProcessInstanceRecordValue.builder()
+            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+            .withBpmnElementType(BpmnElementType.SERVICE_TASK)
+            .build();
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r ->
+                r.withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+                    .withValue(processInstanceRecordValue));
+    // when - then
+    assertThat(underTest.handlesRecord(processInstanceRecord)).isFalse();
+  }
+
+  @Test
   public void shouldGenerateIds() {
     // given
     final long expectedId = 123;
@@ -155,7 +173,10 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
             .setProcessVersion(2)
             .setProcessDefinitionKey(444L)
             .setBpmnProcessId("bpmnProcessId")
-            .setPosition(123L);
+            .setPosition(123L)
+            .setStartDate(OffsetDateTime.now())
+            .setEndDate(OffsetDateTime.now())
+            .setState(ProcessInstanceState.ACTIVE);
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
@@ -163,6 +184,9 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     expectedUpdateFields.put(ListViewTemplate.PROCESS_VERSION, 2);
     expectedUpdateFields.put(ListViewTemplate.PROCESS_KEY, 444L);
     expectedUpdateFields.put(ListViewTemplate.BPMN_PROCESS_ID, "bpmnProcessId");
+    expectedUpdateFields.put(ListViewTemplate.STATE, ProcessInstanceState.ACTIVE);
+    expectedUpdateFields.put(ListViewTemplate.START_DATE, inputEntity.getStartDate());
+    expectedUpdateFields.put(ListViewTemplate.END_DATE, inputEntity.getEndDate());
     expectedUpdateFields.put(POSITION, 123L);
 
     // when
@@ -175,18 +199,6 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
   @Test
   void shouldUpdateEntityFromRecord() {
     // given
-    final ProcessInstanceRecordValue processInstanceRecordValue =
-        ImmutableProcessInstanceRecordValue.builder()
-            .from(factory.generateObject(ProcessInstanceRecordValue.class))
-            .withProcessInstanceKey(66L)
-            .withProcessDefinitionKey(222L)
-            .withBpmnProcessId("bpmnProcessId")
-            .withVersion(7)
-            .withTenantId("tenantId")
-            .withParentProcessInstanceKey(777L)
-            .withParentElementInstanceKey(111L)
-            .build();
-
     final long timestamp = new Date().getTime();
     final Record<ProcessInstanceRecordValue> processInstanceRecord =
         factory.generateRecord(
@@ -195,8 +207,8 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
                 r.withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
                     .withTimestamp(timestamp)
                     .withPartitionId(3)
-                    .withPosition(55L)
-                    .withValue(processInstanceRecordValue));
+                    .withPosition(55L));
+    final ProcessInstanceRecordValue processInstanceRecordValue = processInstanceRecord.getValue();
 
     // when
     final ProcessInstanceForListViewEntity processInstanceForListViewEntity =
@@ -204,21 +216,97 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     underTest.updateEntity(processInstanceRecord, processInstanceForListViewEntity);
 
     // then
-    assertThat(processInstanceForListViewEntity.getId()).isEqualTo("66");
-    assertThat(processInstanceForListViewEntity.getProcessInstanceKey()).isEqualTo(66L);
-    assertThat(processInstanceForListViewEntity.getKey()).isEqualTo(66L);
-    assertThat(processInstanceForListViewEntity.getTenantId()).isEqualTo("tenantId");
-    assertThat(processInstanceForListViewEntity.getPartitionId()).isEqualTo(3);
-    assertThat(processInstanceForListViewEntity.getPosition()).isEqualTo(55L);
-    assertThat(processInstanceForListViewEntity.getProcessDefinitionKey()).isEqualTo(222L);
-    assertThat(processInstanceForListViewEntity.getBpmnProcessId()).isEqualTo("bpmnProcessId");
-    assertThat(processInstanceForListViewEntity.getProcessVersion()).isEqualTo(7);
-    assertThat(processInstanceForListViewEntity.getProcessName()).isEqualTo("bpmnProcessId");
+    assertThat(processInstanceForListViewEntity.getId())
+        .isEqualTo(String.valueOf(processInstanceRecordValue.getProcessInstanceKey()));
+    assertThat(processInstanceForListViewEntity.getProcessInstanceKey())
+        .isEqualTo(processInstanceRecordValue.getProcessInstanceKey());
+    assertThat(processInstanceForListViewEntity.getKey())
+        .isEqualTo(processInstanceRecordValue.getProcessInstanceKey());
+    assertThat(processInstanceForListViewEntity.getTenantId())
+        .isEqualTo(processInstanceRecordValue.getTenantId());
+    assertThat(processInstanceForListViewEntity.getPartitionId())
+        .isEqualTo(processInstanceRecord.getPartitionId());
+    assertThat(processInstanceForListViewEntity.getPosition())
+        .isEqualTo(processInstanceRecord.getPosition());
+    assertThat(processInstanceForListViewEntity.getProcessDefinitionKey())
+        .isEqualTo(processInstanceRecordValue.getProcessDefinitionKey());
+    assertThat(processInstanceForListViewEntity.getBpmnProcessId())
+        .isEqualTo(processInstanceRecordValue.getBpmnProcessId());
+    assertThat(processInstanceForListViewEntity.getProcessVersion())
+        .isEqualTo(processInstanceRecordValue.getVersion());
+    // without ProcessCache implementation process name = bpmnProcessId
+    assertThat(processInstanceForListViewEntity.getProcessName())
+        .isEqualTo(processInstanceRecordValue.getBpmnProcessId());
     assertThat(processInstanceForListViewEntity.getState()).isEqualTo(ProcessInstanceState.ACTIVE);
     assertThat(processInstanceForListViewEntity.getStartDate())
         .isEqualTo(OffsetDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneOffset.UTC));
-    assertThat(processInstanceForListViewEntity.getParentProcessInstanceKey()).isEqualTo(777L);
-    assertThat(processInstanceForListViewEntity.getParentFlowNodeInstanceKey()).isEqualTo(111L);
-    assertThat(processInstanceForListViewEntity.getTreePath()).isEqualTo("PI_66");
+    assertThat(processInstanceForListViewEntity.getEndDate()).isNull();
+    assertThat(processInstanceForListViewEntity.getParentProcessInstanceKey())
+        .isEqualTo(processInstanceRecordValue.getParentProcessInstanceKey());
+    assertThat(processInstanceForListViewEntity.getParentFlowNodeInstanceKey())
+        .isEqualTo(processInstanceRecordValue.getParentElementInstanceKey());
+    assertThat(processInstanceForListViewEntity.getTreePath())
+        .isEqualTo("PI_" + processInstanceRecordValue.getProcessInstanceKey());
+  }
+
+  @Test
+  void shouldUpdateEndTimeForCompletedRecord() {
+    // given
+    final long timestamp = new Date().getTime();
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r -> r.withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED).withTimestamp(timestamp));
+
+    // when
+    final ProcessInstanceForListViewEntity processInstanceForListViewEntity =
+        new ProcessInstanceForListViewEntity();
+    underTest.updateEntity(processInstanceRecord, processInstanceForListViewEntity);
+
+    assertThat(processInstanceForListViewEntity.getEndDate())
+        .isEqualTo(OffsetDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneOffset.UTC));
+    assertThat(processInstanceForListViewEntity.getStartDate()).isNull();
+    assertThat(processInstanceForListViewEntity.getState())
+        .isEqualTo(ProcessInstanceState.COMPLETED);
+  }
+
+  @Test
+  void shouldUpdateEndTimeForTerminatedRecord() {
+    // given
+    final long timestamp = new Date().getTime();
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r -> r.withIntent(ProcessInstanceIntent.ELEMENT_TERMINATED).withTimestamp(timestamp));
+
+    // when
+    final ProcessInstanceForListViewEntity processInstanceForListViewEntity =
+        new ProcessInstanceForListViewEntity();
+    underTest.updateEntity(processInstanceRecord, processInstanceForListViewEntity);
+
+    assertThat(processInstanceForListViewEntity.getEndDate())
+        .isEqualTo(OffsetDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneOffset.UTC));
+    assertThat(processInstanceForListViewEntity.getStartDate()).isNull();
+    assertThat(processInstanceForListViewEntity.getState())
+        .isEqualTo(ProcessInstanceState.CANCELED);
+  }
+
+  @Test
+  void shouldUpdateStateForMigrateRecord() {
+    // given
+    final long timestamp = new Date().getTime();
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r -> r.withIntent(ProcessInstanceIntent.ELEMENT_MIGRATED).withTimestamp(timestamp));
+
+    // when
+    final ProcessInstanceForListViewEntity processInstanceForListViewEntity =
+        new ProcessInstanceForListViewEntity();
+    underTest.updateEntity(processInstanceRecord, processInstanceForListViewEntity);
+
+    assertThat(processInstanceForListViewEntity.getEndDate()).isNull();
+    assertThat(processInstanceForListViewEntity.getStartDate()).isNull();
+    assertThat(processInstanceForListViewEntity.getState()).isEqualTo(ProcessInstanceState.ACTIVE);
   }
 }
