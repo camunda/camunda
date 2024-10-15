@@ -23,7 +23,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(CamundaExporterITInvocationProvider.class)
 public class VariableHandlerIT {
 
-  private static final int variableThreshold = 8191;
+  private static final int DEFAULT_VARIABLE_SIZE_THRESHOLD = 8191;
 
   @TestTemplate
   void shouldExportVariable(final TestStandaloneBroker testBroker) {
@@ -77,7 +77,7 @@ public class VariableHandlerIT {
             .send()
             .join();
 
-    final String largeValue = "b".repeat(variableThreshold + 1);
+    final String largeValue = "b".repeat(DEFAULT_VARIABLE_SIZE_THRESHOLD + 1);
 
     final var processInstanceKey =
         client
@@ -111,7 +111,7 @@ public class VariableHandlerIT {
     assertThat(largeVariable.get().getFullValue()).isEqualTo("\"" + largeValue + "\"");
     assertThat(largeVariable.get().isTruncated()).isTrue();
     assertThat(largeVariable.get().getValue())
-        .isEqualTo("\"" + largeValue.substring(0, variableThreshold - 1));
+        .isEqualTo("\"" + largeValue.substring(0, DEFAULT_VARIABLE_SIZE_THRESHOLD - 1));
   }
 
   @TestTemplate
@@ -125,7 +125,7 @@ public class VariableHandlerIT {
             .send()
             .join();
 
-    final String largeValue = "b".repeat(variableThreshold + 1);
+    final String largeValue = "b".repeat(DEFAULT_VARIABLE_SIZE_THRESHOLD + 1);
 
     final var processInstanceKey =
         client
