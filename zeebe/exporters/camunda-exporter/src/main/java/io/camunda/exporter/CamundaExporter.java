@@ -173,7 +173,6 @@ public class CamundaExporter implements Exporter {
   }
 
   private boolean shouldFlush() {
-    // FIXME should compare against both batch size and memory limit
     return writer.getBatchSize() >= configuration.getBulk().getSize();
   }
 
