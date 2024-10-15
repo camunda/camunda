@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Process} from 'modules/types';
+import type {Process} from 'modules/types';
 
 function getProcessDisplayName(process: Process) {
   return process.name ?? process.bpmnProcessId;

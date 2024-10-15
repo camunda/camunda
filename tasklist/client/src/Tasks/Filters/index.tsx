@@ -10,7 +10,7 @@ import {memo} from 'react';
 import {OverflowMenu, OverflowMenuItem} from '@carbon/react';
 import {SortAscending, Checkmark} from '@carbon/react/icons';
 import {tracking} from 'modules/tracking';
-import {useTaskFilters, TaskFilters} from 'modules/hooks/useTaskFilters';
+import {useTaskFilters, type TaskFilters} from 'modules/hooks/useTaskFilters';
 import {t as _t} from 'i18next';
 import {useTranslation} from 'react-i18next';
 import styles from './styles.module.scss';

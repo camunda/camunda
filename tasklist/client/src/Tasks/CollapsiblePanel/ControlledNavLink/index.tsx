@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {NavLink, Path} from 'react-router-dom';
+import {NavLink, type Path} from 'react-router-dom';
 import cn from 'classnames';
 import styles from './styles.module.scss';
 

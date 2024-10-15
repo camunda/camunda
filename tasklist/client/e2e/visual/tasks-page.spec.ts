@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {expect, Route, Request} from '@playwright/test';
+import {expect, type Route, type Request} from '@playwright/test';
 import schema from '@/resources/bigForm.json' assert {type: 'json'};
 import {test} from '@/visual-fixtures';
 

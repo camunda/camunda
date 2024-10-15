@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Mocked} from 'vitest';
+import type {Mocked} from 'vitest';
 import {
   fireEvent,
   render,

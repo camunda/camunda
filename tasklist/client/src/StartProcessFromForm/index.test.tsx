@@ -20,7 +20,7 @@ import {http, HttpResponse} from 'msw';
 import * as formMocks from 'modules/mock-schema/mocks/form';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
-import {Process, Variable} from 'modules/types';
+import type {Process, Variable} from 'modules/types';
 
 const getWrapper = ({
   initialEntries,

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Process} from 'modules/types';
+import type {Process} from 'modules/types';
 
 const BPMN_XML = `
 <?xml version="1.0" encoding="UTF-8"?>
