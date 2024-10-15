@@ -7,20 +7,13 @@
  */
 package io.camunda.db.rdbms.sql;
 
-import io.camunda.db.rdbms.read.domain.VariableModel;
-import java.util.List;
+import io.camunda.db.rdbms.write.domain.VariableDbModel;
 
 public interface VariableMapper {
 
-  void insert(VariableModel variable);
+  void insert(VariableDbModel variable);
 
-  void update(VariableModel variable);
+  void update(VariableDbModel variable);
 
-  VariableModel findOne(Long key);
-
-  boolean exists(Long key);
-
-  List<VariableModel> find(VariableFilter filter);
-
-  record VariableFilter(Long processInstanceKey) {}
+  VariableDbModel findOne(Long key);
 }

@@ -7,10 +7,8 @@
  */
 package io.camunda.db.rdbms.read.service;
 
-import io.camunda.db.rdbms.read.domain.VariableModel;
 import io.camunda.db.rdbms.sql.VariableMapper;
-import io.camunda.db.rdbms.sql.VariableMapper.VariableFilter;
-import java.util.List;
+import io.camunda.db.rdbms.write.domain.VariableDbModel;
 
 public class VariableReader {
 
@@ -20,11 +18,7 @@ public class VariableReader {
     this.variableMapper = variableMapper;
   }
 
-  public VariableModel findOne(final Long key) {
+  public VariableDbModel findOne(final Long key) {
     return variableMapper.findOne(key);
-  }
-
-  public List<VariableModel> findByProcessInstanceKey(final Long processInstanceKey) {
-    return variableMapper.find(new VariableFilter(processInstanceKey));
   }
 }

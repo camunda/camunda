@@ -8,11 +8,10 @@
 package io.camunda.db.rdbms.sql;
 
 import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
-import java.util.Map;
 
 public interface ProcessDefinitionMapper {
 
   void insert(ProcessDefinitionDbModel processDeployment);
 
-  ProcessDefinitionDbModel findOne(Map<String, Object> parameters);
+  ProcessDefinitionDbModel findOne(long processDefinitionKey);
 }

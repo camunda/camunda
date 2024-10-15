@@ -15,34 +15,32 @@ import java.time.OffsetDateTime;
 import org.apache.ibatis.type.BaseTypeHandler;
 import org.apache.ibatis.type.JdbcType;
 
-/**
- * @since 3.4.5
- * @author Tomas Rohovsky
- */
 public class OffsetDateTimeToStringTypeHandler extends BaseTypeHandler<String> {
 
   @Override
-  public void setNonNullParameter(PreparedStatement ps, int i, String parameter, JdbcType jdbcType)
+  public void setNonNullParameter(
+      final PreparedStatement ps, final int i, final String parameter, final JdbcType jdbcType)
       throws SQLException {
     ps.setObject(i, parameter);
   }
 
   @Override
-  public String getNullableResult(ResultSet rs, String columnName) throws SQLException {
+  public String getNullableResult(final ResultSet rs, final String columnName) throws SQLException {
     return mapToISOString(rs.getObject(columnName, OffsetDateTime.class));
   }
 
   @Override
-  public String getNullableResult(ResultSet rs, int columnIndex) throws SQLException {
+  public String getNullableResult(final ResultSet rs, final int columnIndex) throws SQLException {
     return mapToISOString(rs.getObject(columnIndex, OffsetDateTime.class));
   }
 
   @Override
-  public String getNullableResult(CallableStatement cs, int columnIndex) throws SQLException {
+  public String getNullableResult(final CallableStatement cs, final int columnIndex)
+      throws SQLException {
     return mapToISOString(cs.getObject(columnIndex, OffsetDateTime.class));
   }
 
-  private String mapToISOString(OffsetDateTime offsetDateTime) {
+  private String mapToISOString(final OffsetDateTime offsetDateTime) {
     if (offsetDateTime == null) {
       return null;
     }

@@ -9,35 +9,29 @@ package io.camunda.db.rdbms.read.service;
 
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ProcessDefinitionReader {
 
   private final ProcessDefinitionMapper processDefinitionMapper;
-  private final HashMap<CacheKey, ProcessDefinitionDbModel> cache = new HashMap<>();
+  private final ConcurrentHashMap<Long, ProcessDefinitionDbModel> cache = new ConcurrentHashMap<>();
 
   public ProcessDefinitionReader(final ProcessDefinitionMapper processDefinitionMapper) {
     this.processDefinitionMapper = processDefinitionMapper;
   }
 
-  public Optional<ProcessDefinitionDbModel> findOne(
-      final Long processDefinitionKey, final long version) {
-    final var cacheKey = new CacheKey(processDefinitionKey, version);
-    if (!cache.containsKey(cacheKey)) {
-      final var result =
-          processDefinitionMapper.findOne(
-              Map.of("processDefinitionKey", processDefinitionKey, "version", version));
+  public Optional<ProcessDefinitionDbModel> findOne(final long processDefinitionKey) {
+    if (!cache.containsKey(processDefinitionKey)) {
+      final var processDefinition = processDefinitionMapper.findOne(processDefinitionKey);
 
-      if (result != null) {
-        cache.put(cacheKey, result);
-        return Optional.of(result);
+      if (processDefinition != null) {
+        final var result = cache.putIfAbsent(processDefinitionKey, processDefinition);
+        return Optional.of(Objects.requireNonNullElse(result, processDefinition));
       }
     }
 
-    return Optional.ofNullable(cache.get(cacheKey));
+    return Optional.ofNullable(cache.get(processDefinitionKey));
   }
-
-  private record CacheKey(Long processDefinitionKey, Long version) {}
 }

@@ -40,7 +40,7 @@
   </select>
 
   <!-- default search statement for databases supporting LIMIT/OFFSET-->
-  <select id="search" parameterType="io.camunda.db.rdbms.read.domain.ProcessInstanceDbFilter" resultMap="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchResultMap">
+  <select id="search" parameterType="io.camunda.db.rdbms.read.domain.ProcessInstanceDbQuery" resultMap="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchResultMap">
     SELECT
       pi.PROCESS_INSTANCE_KEY,
       pi.BPMN_PROCESS_ID,
