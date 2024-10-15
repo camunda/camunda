@@ -7,7 +7,7 @@
  */
 package io.camunda.db.rdbms.write.service;
 
-import io.camunda.db.rdbms.read.domain.VariableModel;
+import io.camunda.db.rdbms.write.domain.VariableDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
@@ -20,7 +20,7 @@ public class VariableWriter {
     this.executionQueue = executionQueue;
   }
 
-  public void create(final VariableModel variable) {
+  public void create(final VariableDbModel variable) {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.VARIABLE,
@@ -29,7 +29,7 @@ public class VariableWriter {
             variable));
   }
 
-  public void update(final VariableModel variable) {
+  public void update(final VariableDbModel variable) {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.VARIABLE,

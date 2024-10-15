@@ -5,13 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.db.rdbms.sql;
+package io.camunda.db.rdbms.write.queue;
 
-import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
+public interface PostFlushListener {
 
-public interface ProcessDefinitionMapper {
-
-  void insert(ProcessDefinitionDbModel processDeployment);
-
-  ProcessDefinitionDbModel findOne(long processDefinitionKey);
+  void onPostFlush();
 }

@@ -17,7 +17,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
-@Configuration
+@Configuration(proxyBeanMethods = false)
 @Import(RdbmsConfiguration.class)
 @ConditionalOnProperty(prefix = "camunda.database", name = "type", havingValue = "rdbms")
 public class RdbmsExporterConfiguration {

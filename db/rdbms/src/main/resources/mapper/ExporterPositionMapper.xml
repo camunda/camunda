@@ -27,9 +27,7 @@
   <insert
     id="insert"
     statementType="PREPARED"
-    parameterType="io.camunda.db.rdbms.write.domain.ExporterPositionModel"
-    flushCache="true"
-    timeout="20">
+    parameterType="io.camunda.db.rdbms.write.domain.ExporterPositionModel">
       INSERT INTO EXPORTER_POSITION (PARTITION_ID, EXPORTER, LAST_EXPORTED_POSITION, CREATED, LAST_UPDATED)
       VALUES (#{partitionId}, #{exporter}, #{lastExportedPosition}, #{created}, #{lastUpdated})
   </insert>
@@ -37,9 +35,7 @@
   <update
     id="update"
     statementType="PREPARED"
-    parameterType="io.camunda.db.rdbms.write.domain.ExporterPositionModel"
-    flushCache="true"
-    timeout="20">
+    parameterType="io.camunda.db.rdbms.write.domain.ExporterPositionModel">
       UPDATE EXPORTER_POSITION
       SET LAST_EXPORTED_POSITION = #{lastExportedPosition}, LAST_UPDATED = #{lastUpdated}
       WHERE PARTITION_ID = #{partitionId}

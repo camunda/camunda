@@ -73,7 +73,7 @@ public class SearchClientDatabaseConfiguration {
             .anyMatch(v -> "io.camunda.exporter.CamundaExporter".equals(v.getClassName()));
     return new SearchClients(searchClient, isCamundaExporterEnabled);
   }
-  
+
   @ConfigurationProperties("camunda.database")
   public static final class SearchClientProperties extends ConnectConfiguration {}
 }

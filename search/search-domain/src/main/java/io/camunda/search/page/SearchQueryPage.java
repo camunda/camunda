@@ -16,6 +16,8 @@ public record SearchQueryPage(
   public static final Integer DEFAULT_FROM = 0;
   public static final Integer DEFAULT_SIZE = 100;
 
+  public static final SearchQueryPage DEFAULT = new Builder().build();
+
   public boolean isNextPage() {
     return searchAfter != null || !isPreviousPage();
   }
@@ -34,14 +36,9 @@ public record SearchQueryPage(
   }
 
   public SearchQueryPage sanitize() {
-    final var newFrom =
-        (from == null) ? DEFAULT_FROM : Math.max(0, Math.min(SearchQueryPage.DEFAULT_FROM, from));
-    final var newSize =
-        (size == null) ? DEFAULT_SIZE : Math.max(0, Math.min(SearchQueryPage.DEFAULT_SIZE, size));
-
-    return new SearchQueryPage.Builder()
-        .from(newFrom)
-        .size(newSize)
+    return new Builder()
+        .from(from)
+        .size(size)
         .searchAfter(searchAfter)
         .searchBefore(searchBefore)
         .build();
@@ -80,7 +77,9 @@ public record SearchQueryPage(
 
     @Override
     public SearchQueryPage build() {
-      return new SearchQueryPage(from, size, searchAfter, searchBefore);
+      final var sanitizedFrom = (from == null) ? DEFAULT_FROM : Math.max(0, from);
+      final var sanitizedSize = (size == null) ? DEFAULT_SIZE : Math.max(0, size);
+      return new SearchQueryPage(sanitizedFrom, sanitizedSize, searchAfter, searchBefore);
     }
   }
 }

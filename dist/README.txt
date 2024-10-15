@@ -16,12 +16,12 @@ How to run
 1. Add the Elasticsearch exporter configuration in the configuration file config/application.yml
 
 zeebe:
-broker:
-exporters:
-elasticsearch:
-className: io.camunda.zeebe.exporter.ElasticsearchExporter
-args:
-url: http://localhost:9200
+  broker:
+    exporters:
+      elasticsearch:
+        className: io.camunda.zeebe.exporter.ElasticsearchExporter
+        args:
+          url: http://localhost:9200
 
 2. Run bin/camunda (or bin\camunda.bat on Windows)
 
@@ -46,7 +46,7 @@ Run camunda with `rdbmsPostgres` profile
 Start Postgres docker container:
 
 ```
-docker-compose up -d mariabb
+docker-compose up -d mariadb
 ```
 
 ## Start Camunda:
