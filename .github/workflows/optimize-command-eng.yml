@@ -45,10 +45,12 @@ jobs:
           ARG1=${{ github.event.client_payload.slash_command.args.unnamed.arg1 }}
           ARG2=${{ github.event.client_payload.slash_command.args.unnamed.arg2 }}
           REVIEWER="${ARG2//@/}"
+          COMMENTER="${{ github.event.client_payload.github.payload.comment.user.login }}"
           {
             echo "arg1=${ARG1}"
             echo "arg2=${ARG2}"
             echo "reviewer=${REVIEWER}"
+            echo "commenter=${COMMENTER}"
           } >> "$GITHUB_OUTPUT"
 
       - name: Get issue project
