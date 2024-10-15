@@ -194,35 +194,25 @@ public class SchemaManagerIT {
     @Test
     void shouldInheritDefaultSettingsIfNoIndexSpecificSettings() throws Exception {
       SchemaManagerIT.this.shouldInheritDefaultSettingsIfNoIndexSpecificSettings(
-          this::getIndexAsNode, searchEngineClient);
+          () -> getIndexAsNode(index.getFullQualifiedName()), searchEngineClient);
     }
 
     @Test
     void shouldUseIndexSpecificSettingsIfSpecified() throws Exception {
       SchemaManagerIT.this.shouldUseIndexSpecificSettingsIfSpecified(
-          this::getIndexAsNode, searchEngineClient);
+          () -> getIndexAsNode(index.getFullQualifiedName()), searchEngineClient);
     }
 
     @Test
     void shouldOverwriteIndexTemplateIfMappingsFileChanged() throws Exception {
       SchemaManagerIT.this.shouldOverwriteIndexTemplateIfMappingsFileChanged(
-          () -> {
-            final var template =
-                elsClient
-                    .indices()
-                    .getIndexTemplate(req -> req.name(indexTemplate.getTemplateName()))
-                    .indexTemplates()
-                    .getFirst();
-
-            return elsIndexTemplateToNode(template);
-          },
-          searchEngineClient);
+          () -> getIndexTemplateAsNode(indexTemplate.getTemplateName()), searchEngineClient);
     }
 
     @Test
     void shouldAppendToIndexMappingsWithNewProperties() throws Exception {
       SchemaManagerIT.this.shouldAppendToIndexMappingsWithNewProperties(
-          this::getIndexAsNode, searchEngineClient);
+          () -> getIndexAsNode(index.getFullQualifiedName()), searchEngineClient);
     }
 
     @Test
@@ -249,14 +239,21 @@ public class SchemaManagerIT {
                   .build());
     }
 
-    public JsonNode getIndexAsNode() throws IOException {
-      final var updatedIndex =
-          elsClient
-              .indices()
-              .get(req -> req.index(index.getFullQualifiedName()))
-              .get(index.getFullQualifiedName());
+    public JsonNode getIndexAsNode(final String indexName) throws IOException {
+      final var updatedIndex = elsClient.indices().get(req -> req.index(indexName)).get(indexName);
 
       return elsIndexToNode(updatedIndex);
+    }
+
+    public JsonNode getIndexTemplateAsNode(final String templateName) throws IOException {
+      final var template =
+          elsClient
+              .indices()
+              .getIndexTemplate(req -> req.name(templateName))
+              .indexTemplates()
+              .getFirst();
+
+      return elsIndexTemplateToNode(template);
     }
   }
 
@@ -287,46 +284,45 @@ public class SchemaManagerIT {
     @Test
     void shouldInheritDefaultSettingsIfNoIndexSpecificSettings() throws Exception {
       SchemaManagerIT.this.shouldInheritDefaultSettingsIfNoIndexSpecificSettings(
-          this::getIndexAsNode, searchEngineClient);
+          () -> getIndexAsNode(index.getFullQualifiedName()), searchEngineClient);
     }
 
     @Test
     void shouldUseIndexSpecificSettingsIfSpecified() throws Exception {
       SchemaManagerIT.this.shouldUseIndexSpecificSettingsIfSpecified(
-          this::getIndexAsNode, searchEngineClient);
+          () -> getIndexAsNode(index.getFullQualifiedName()), searchEngineClient);
     }
 
     @Test
     void shouldOverwriteIndexTemplateIfMappingsFileChanged() throws Exception {
 
       SchemaManagerIT.this.shouldOverwriteIndexTemplateIfMappingsFileChanged(
-          () -> {
-            final var template =
-                opensearchClient
-                    .indices()
-                    .getIndexTemplate(req -> req.name(indexTemplate.getTemplateName()))
-                    .indexTemplates()
-                    .getFirst();
-
-            return opensearchIndexTemplateToNode(template);
-          },
-          searchEngineClient);
+          () -> getIndexTemplateAsNode(indexTemplate.getTemplateName()), searchEngineClient);
     }
 
     @Test
     void shouldAppendToIndexMappingsWithNewProperties() throws Exception {
       SchemaManagerIT.this.shouldAppendToIndexMappingsWithNewProperties(
-          this::getIndexAsNode, searchEngineClient);
+          () -> getIndexAsNode(index.getFullQualifiedName()), searchEngineClient);
+    }
     }
 
-    private JsonNode getIndexAsNode() throws IOException {
+    private JsonNode getIndexAsNode(final String indexName) throws IOException {
       final var updatedIndex =
-          opensearchClient
-              .indices()
-              .get(req -> req.index(index.getFullQualifiedName()))
-              .get(index.getFullQualifiedName());
+          opensearchClient.indices().get(req -> req.index(indexName)).get(indexName);
 
       return opensearchIndexToNode(updatedIndex);
+    }
+
+    private JsonNode getIndexTemplateAsNode(final String templateName) throws IOException {
+      final var template =
+          opensearchClient
+              .indices()
+              .getIndexTemplate(req -> req.name(templateName))
+              .indexTemplates()
+              .getFirst();
+
+      return opensearchIndexTemplateToNode(template);
     }
   }
 }
