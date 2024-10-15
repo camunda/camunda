@@ -11,7 +11,7 @@ import io.camunda.zeebe.exporter.api.ExporterException;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
-public class ConfigValidator {
+public final class ConfigValidator {
   /**
    * Supported pattern for min_age property of ILM, we only support: days, hours, minutes and
    * seconds. Everything below seconds we don't expect as useful.
