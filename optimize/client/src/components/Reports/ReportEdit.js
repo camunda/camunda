@@ -9,7 +9,7 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import update from 'immutability-helper';
 import deepEqual from 'fast-deep-equal';
-import {Redirect, useLocation} from 'react-router-dom';
+import {useHistory, useLocation} from 'react-router-dom';
 import {Button, Toggle} from '@carbon/react';
 import classnames from 'classnames';
 
@@ -54,6 +54,7 @@ export function ReportEdit({report: initialReport, isNew, error, updateOverview}
   const {mightFail} = useErrorHandling();
   const location = useLocation();
   const isMounted = useRef(false);
+  const history = useHistory();
 
   function showSaveError(error) {
     setConflict(null);
@@ -300,7 +301,7 @@ export function ReportEdit({report: initialReport, isNew, error, updateOverview}
   }, [loadUpdatedReport, report, save]);
 
   if (redirect) {
-    return <Redirect to={redirect} />;
+    history.push(redirect);
   }
 
   const {name, description, data} = report;

@@ -7,7 +7,7 @@
  */
 
 import React, {useRef, useState} from 'react';
-import {Link, Redirect, useLocation} from 'react-router-dom';
+import {Link, useHistory, useLocation} from 'react-router-dom';
 import classnames from 'classnames';
 import {Button} from '@carbon/react';
 import {Edit, Share, TrashCan} from '@carbon/icons-react';
@@ -46,6 +46,7 @@ export default function ReportView({report, error, loadReport}) {
   const reportContainerRef = useRef();
   const [showReportRenderer, setShowReportRenderer] = useState(true);
   const {user} = useUser();
+  const history = useHistory();
 
   function showTable(sectionState) {
     if (sectionState !== 'maximized') {
@@ -83,7 +84,7 @@ export default function ReportView({report, error, loadReport}) {
   const {id, name, description, currentUserRole, data} = report;
 
   if (redirect) {
-    return <Redirect to={redirect} />;
+    history.push(redirect);
   }
 
   const isInstantPreview = data?.instantPreviewReport;

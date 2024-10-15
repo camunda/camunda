@@ -8,7 +8,7 @@
 
 import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
-import {useLocation} from 'react-router';
+import {useHistory, useLocation} from 'react-router-dom';
 
 import {Deleter, ReportRenderer, InstanceCount, DownloadButton, AlertsDropdown} from 'components';
 import {checkDeleteConflict} from 'services';
@@ -41,11 +41,10 @@ jest.mock('dates', () => ({
   format: () => 'some date',
 }));
 
-jest.mock('react-router', () => ({
-  ...jest.requireActual('react-router'),
-  useLocation: jest.fn().mockImplementation(() => {
-    return {pathname: '/report'};
-  }),
+jest.mock('react-router-dom', () => ({
+  ...jest.requireActual('react-router-dom'),
+  useLocation: jest.fn().mockReturnValue({pathname: '/report'}),
+  useHistory: jest.fn().mockReturnValue({push: jest.fn()}),
 }));
 
 const report = {
@@ -87,12 +86,13 @@ it('should open a deletion modal on delete button click', () => {
 });
 
 it('should redirect to the report list on report deletion', () => {
+  const spy = {push: jest.fn()};
+  useHistory.mockReturnValue(spy);
   const node = shallow(<ReportView report={report} />);
 
   node.find(Deleter).prop('onDelete')();
 
-  expect(node.find('Redirect')).toExist();
-  expect(node.props().to).toEqual('../../');
+  expect(spy.push).toHaveBeenCalledWith('../../');
 });
 
 it('should contain a ReportRenderer with the report evaluation result', () => {
