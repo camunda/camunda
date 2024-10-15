@@ -9,15 +9,16 @@
 import {shallow} from 'enzyme';
 
 import EmptyState from './EmptyState';
+import { OptimizeDashboard } from 'modules/icons';
 
 it('should render properly', () => {
   const node = shallow(
-    <EmptyState title="some title" description="here is a description" icon="report" />
+    <EmptyState title="some title" description="here is a description" icon={<OptimizeDashboard />} />
   );
 
   expect(node.find('.title')).toHaveText('some title');
   expect(node.find('.description')).toHaveText('here is a description');
-  expect(node.find('.icon')).toHaveText('report');
+  expect(node.find('svg')).toBeDefined();
 });
 
 it('should render actions', () => {
