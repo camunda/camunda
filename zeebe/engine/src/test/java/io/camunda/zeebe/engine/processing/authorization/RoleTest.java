@@ -52,4 +52,61 @@ public class RoleTest {
                 + name
                 + "', but a role with this name already exists");
   }
+
+  @Test
+  public void shouldUpdateRole() {
+    // given
+    final var name = UUID.randomUUID().toString();
+    final var createdRecord = ENGINE.role().newRole(name).create();
+
+    // when
+    final var newName = UUID.randomUUID().toString();
+    final var updatedRoleRecord =
+        ENGINE.role().updateRole(createdRecord.getValue().getRoleKey()).withName(newName).update();
+
+    final var updatedRole = updatedRoleRecord.getValue();
+    Assertions.assertThat(updatedRole).isNotNull().hasFieldOrPropertyWithValue("name", newName);
+  }
+
+  @Test
+  public void shouldRejectIfRoleIsNotPresent() {
+    // given
+    final var name = UUID.randomUUID().toString();
+    final var roleRecord = ENGINE.role().newRole(name).create();
+
+    // when
+    final var notPresentRoleKey = 1L;
+    final var notPresentUpdateRecord =
+        ENGINE.role().updateRole(notPresentRoleKey).expectRejection().update();
+
+    final var createdRole = roleRecord.getValue();
+    Assertions.assertThat(createdRole).isNotNull().hasFieldOrPropertyWithValue("name", name);
+
+    assertThat(notPresentUpdateRecord)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to update role with key '"
+                + notPresentRoleKey
+                + "', but a role with this key does not exists");
+  }
+
+  @Test
+  public void shouldRejectIfRoleWithSameNameIsPresent() {
+    // given
+    final var name = UUID.randomUUID().toString();
+    final var roleKey = ENGINE.role().newRole(name).create().getValue().getRoleKey();
+    final var anotherName = UUID.randomUUID().toString();
+    ENGINE.role().newRole(anotherName).create();
+
+    // when
+    final var notPresentUpdateRecord =
+        ENGINE.role().updateRole(roleKey).withName(anotherName).expectRejection().update();
+
+    assertThat(notPresentUpdateRecord)
+        .hasRejectionType(RejectionType.ALREADY_EXISTS)
+        .hasRejectionReason(
+            "Expected to update role with name '"
+                + anotherName
+                + "', but a role with this name already exists");
+  }
 }
