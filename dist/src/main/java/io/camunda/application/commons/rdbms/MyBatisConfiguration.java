@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.db.rdbms;
+package io.camunda.application.commons.rdbms;
 
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
@@ -72,36 +72,31 @@ public class MyBatisConfiguration {
 
   @Bean
   public MapperFactoryBean<ProcessInstanceMapper> processInstanceMapper(
-      final SqlSessionFactory sqlSessionFactory) throws Exception {
-    final MapperFactoryBean<ProcessInstanceMapper> factoryBean =
-        new MapperFactoryBean<>(ProcessInstanceMapper.class);
-    factoryBean.setSqlSessionFactory(sqlSessionFactory);
-    return factoryBean;
+      final SqlSessionFactory sqlSessionFactory) {
+    return createMapperFactoryBean(sqlSessionFactory, ProcessInstanceMapper.class);
   }
 
   @Bean
   public MapperFactoryBean<ProcessDefinitionMapper> processDeploymentMapper(
-      final SqlSessionFactory sqlSessionFactory) throws Exception {
-    final MapperFactoryBean<ProcessDefinitionMapper> factoryBean =
-        new MapperFactoryBean<>(ProcessDefinitionMapper.class);
-    factoryBean.setSqlSessionFactory(sqlSessionFactory);
-    return factoryBean;
+      final SqlSessionFactory sqlSessionFactory) {
+    return createMapperFactoryBean(sqlSessionFactory, ProcessDefinitionMapper.class);
   }
 
   @Bean
-  public MapperFactoryBean<VariableMapper> variableMapper(final SqlSessionFactory sqlSessionFactory)
-      throws Exception {
-    final MapperFactoryBean<VariableMapper> factoryBean =
-        new MapperFactoryBean<>(VariableMapper.class);
-    factoryBean.setSqlSessionFactory(sqlSessionFactory);
-    return factoryBean;
+  public MapperFactoryBean<VariableMapper> variableMapper(
+      final SqlSessionFactory sqlSessionFactory) {
+    return createMapperFactoryBean(sqlSessionFactory, VariableMapper.class);
   }
 
   @Bean
   public MapperFactoryBean<ExporterPositionMapper> exporterPosition(
-      final SqlSessionFactory sqlSessionFactory) throws Exception {
-    final MapperFactoryBean<ExporterPositionMapper> factoryBean =
-        new MapperFactoryBean<>(ExporterPositionMapper.class);
+      final SqlSessionFactory sqlSessionFactory) {
+    return createMapperFactoryBean(sqlSessionFactory, ExporterPositionMapper.class);
+  }
+
+  private <T> MapperFactoryBean<T> createMapperFactoryBean(
+      final SqlSessionFactory sqlSessionFactory, final Class<T> clazz) {
+    final MapperFactoryBean<T> factoryBean = new MapperFactoryBean<>(clazz);
     factoryBean.setSqlSessionFactory(sqlSessionFactory);
     return factoryBean;
   }
@@ -109,9 +104,9 @@ public class MyBatisConfiguration {
   private Properties getVendorProperties(final String vendorId) throws IOException {
     final Properties properties = new Properties();
     final var file = "db/vendor-properties/" + vendorId + ".properties";
-    try (var propertiesInputStream = getClass().getClassLoader().getResourceAsStream(file)) {
+    try (final var propertiesInputStream = getClass().getClassLoader().getResourceAsStream(file)) {
       if (propertiesInputStream != null) {
-        properties.load(getClass().getClassLoader().getResourceAsStream(file));
+        properties.load(propertiesInputStream);
       } else {
         LOGGER.debug("No vendor properties found for databaseId {}", vendorId);
       }

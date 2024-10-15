@@ -5,8 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.db.rdbms;
+package io.camunda.application.commons.rdbms;
 
+import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceReader;
 import io.camunda.db.rdbms.read.service.VariableReader;
@@ -16,11 +17,13 @@ import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
 import org.apache.ibatis.session.SqlSessionFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
-@Configuration
+@Configuration(proxyBeanMethods = false)
+@ConditionalOnProperty(prefix = "camunda.database", name = "type", havingValue = "rdbms")
 @Import(MyBatisConfiguration.class)
 public class RdbmsConfiguration {
 
@@ -43,7 +46,8 @@ public class RdbmsConfiguration {
 
   @Bean
   public RdbmsWriterFactory rdbmsWriterFactory(
-      final SqlSessionFactory sqlSessionFactory, ExporterPositionMapper exporterPositionMapper) {
+      final SqlSessionFactory sqlSessionFactory,
+      final ExporterPositionMapper exporterPositionMapper) {
     return new RdbmsWriterFactory(sqlSessionFactory, exporterPositionMapper);
   }
 
