@@ -17,6 +17,8 @@ package io.camunda.zeebe.client.incident;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.tomakehurst.wiremock.http.RequestMethod;
+import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.zeebe.client.protocol.rest.IncidentFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.IncidentFilterRequest.ErrorTypeEnum;
 import io.camunda.zeebe.client.protocol.rest.IncidentFilterRequest.StateEnum;
@@ -29,6 +31,18 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 public class SearchIncidentTest extends ClientRestTest {
+
+  @Test
+  void shouldGetIncident() {
+    // when
+    final long incidentKey = 0xC00L;
+    client.newIncidentGetRequest(incidentKey).send().join();
+
+    // then
+    final LoggedRequest request = gatewayService.getLastRequest();
+    assertThat(request.getUrl()).isEqualTo("/v2/incidents/" + incidentKey);
+    assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
+  }
 
   @Test
   public void shouldSearchIncidentWithEmptyQuery() {
