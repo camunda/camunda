@@ -16,7 +16,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.json.stream.JsonParser;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
 
 public record IndexMappingProperty(String name, Object typeDefinition) {
@@ -57,6 +59,28 @@ public record IndexMappingProperty(String name, Object typeDefinition) {
               this, Property.class.getName()),
           e);
     }
+  }
+
+  @Override
+  public String toString() {
+    final var typeDefinitionStr =
+        ((HashMap<String, Object>) typeDefinition)
+            .entrySet().stream()
+                .collect(
+                    Collectors.toMap(
+                        Entry::getKey,
+                        (ent) ->
+                            ent.getValue()
+                                + "["
+                                + ent.getValue().getClass().getSimpleName()
+                                + "]"));
+    return "IndexMappingProperty{"
+        + "name='"
+        + name
+        + '\''
+        + ", typeDefinition="
+        + typeDefinitionStr
+        + '}';
   }
 
   public static IndexMappingProperty createIndexMappingProperty(
