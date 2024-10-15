@@ -19,6 +19,8 @@ import static io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceFilterReques
 import static io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceFilterRequest.TypeEnum.SERVICE_TASK;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.tomakehurst.wiremock.http.RequestMethod;
+import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceSearchQueryRequest;
 import io.camunda.zeebe.client.protocol.rest.SearchQuerySortRequest;
@@ -119,6 +121,18 @@ public class FlownodeInstanceTest extends ClientRestTest {
     assertSort(sorts.get(6), "endDate", "desc");
     assertSort(sorts.get(7), "incidentKey", "asc");
     assertSort(sorts.get(8), "tenantId", "asc");
+  }
+
+  @Test
+  public void shouldGetFlownodeInstance() {
+    // when
+    final long flowNodeInstanceKey = 0xC00L;
+    client.newFlowNodeInstanceGetRequest(flowNodeInstanceKey).send().join();
+
+    // then
+    final LoggedRequest request = gatewayService.getLastRequest();
+    assertThat(request.getUrl()).isEqualTo("/v2/flownode-instances/" + flowNodeInstanceKey);
+    assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
   }
 
   private void assertSort(
