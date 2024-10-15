@@ -14,6 +14,7 @@ import io.camunda.search.clients.query.SearchQueryOption;
 import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import java.time.OffsetDateTime;
@@ -40,7 +41,7 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   public void shouldQueryByProcessInstanceKey() {
     // given
     final var processInstanceFilter =
-        FilterBuilders.processInstance(f -> f.processInstanceKeys(List.of(123L)));
+        FilterBuilders.processInstance(f -> f.processInstanceKeys(Operation.eq(123L)));
     final var searchQuery =
         SearchQueryBuilders.processInstanceSearchQuery(q -> q.filter(processInstanceFilter));
 
@@ -64,7 +65,7 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   public void shouldQueryByProcessDefinitionId() {
     // given
     final var processInstanceFilter =
-        FilterBuilders.processInstance(f -> f.processDefinitionIds(List.of("bpmn")));
+        FilterBuilders.processInstance(f -> f.processDefinitionIds(Operation.eq("bpmn")));
 
     // when
     final var searchRequest = transformQuery(processInstanceFilter);
@@ -110,7 +111,7 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   public void shouldQueryByProcessDefinitionVersion() {
     // given
     final var processInstanceFilter =
-        FilterBuilders.processInstance(f -> f.processDefinitionVersions(List.of(33)));
+        FilterBuilders.processInstance(f -> f.processDefinitionVersions(Operation.eq(33)));
     final var searchQuery =
         SearchQueryBuilders.processInstanceSearchQuery(q -> q.filter(processInstanceFilter));
 
@@ -158,7 +159,7 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   public void shouldQueryByProcessDefinitionKey() {
     // given
     final var processInstanceFilter =
-        FilterBuilders.processInstance(f -> f.processDefinitionKeys(List.of(567L)));
+        FilterBuilders.processInstance(f -> f.processDefinitionKeys(Operation.eq(567L)));
     final var searchQuery =
         SearchQueryBuilders.processInstanceSearchQuery(q -> q.filter(processInstanceFilter));
 

@@ -1,0 +1,4 @@
+logging:
+  level:
+    ROOT: INFO
+    io.camunda.zeebe.gateway.rest: DEBUG
