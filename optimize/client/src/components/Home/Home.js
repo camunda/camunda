@@ -62,7 +62,7 @@ export function Home({mightFail, user}) {
       setIsLoading(true);
       setSorting({key: sortBy, order: sortOrder});
       mightFail(
-        loadEntities(sortBy, sortOrder),
+        loadEntities(null, sortBy, sortOrder),
         (entities) => {
           setEntities(entities);
         },
