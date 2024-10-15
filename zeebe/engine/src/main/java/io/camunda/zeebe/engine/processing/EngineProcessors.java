@@ -43,6 +43,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.tenant.TenantProcessors;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.processing.user.UserProcessors;
 import io.camunda.zeebe.engine.processing.usertask.UserTaskProcessor;
@@ -245,6 +246,14 @@ public final class EngineProcessors {
 
     ScalingProcessors.addScalingProcessors(
         typedRecordProcessors, writers, keyGenerator, processingState);
+
+    TenantProcessors.addTenantProcessors(
+        typedRecordProcessors,
+        processingState.getTenantState(),
+        authCheckBehavior,
+        keyGenerator,
+        writers,
+        commandDistributionBehavior);
 
     return typedRecordProcessors;
   }

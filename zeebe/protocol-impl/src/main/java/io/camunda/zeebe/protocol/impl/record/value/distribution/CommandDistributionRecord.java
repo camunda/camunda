@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
+import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -47,6 +48,7 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
     RECORDS_BY_TYPE.put(ValueType.CLOCK, ClockRecord::new);
     RECORDS_BY_TYPE.put(ValueType.AUTHORIZATION, AuthorizationRecord::new);
     RECORDS_BY_TYPE.put(ValueType.ROLE, RoleRecord::new);
+    RECORDS_BY_TYPE.put(ValueType.TENANT, TenantRecord::new);
   }
 
   /*
