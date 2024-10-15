@@ -93,17 +93,21 @@ public class CamundaExporter implements Exporter {
 
   @Override
   public void close() {
-    try {
-      flush();
-      updateLastExportedPosition();
-    } catch (final Exception e) {
-      LOG.warn("Failed to flush records before closing exporter.", e);
+    if (writer != null) {
+      try {
+        flush();
+        updateLastExportedPosition();
+      } catch (final Exception e) {
+        LOG.warn("Failed to flush records before closing exporter.", e);
+      }
     }
 
-    try {
-      clientAdapter.close();
-    } catch (final Exception e) {
-      LOG.warn("Failed to close elasticsearch client", e);
+    if (clientAdapter != null) {
+      try {
+        clientAdapter.close();
+      } catch (final Exception e) {
+        LOG.warn("Failed to close elasticsearch client", e);
+      }
     }
 
     LOG.info("Exporter closed");
