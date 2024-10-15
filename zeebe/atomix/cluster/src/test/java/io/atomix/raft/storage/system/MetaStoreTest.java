@@ -185,11 +185,13 @@ class MetaStoreTest {
       // when
       metaStore.storeTerm(1L);
       metaStore.storeLastFlushedIndex(2L);
+      metaStore.storeCommitIndex(12);
       metaStore.storeVote(MemberId.from("a"));
 
       // then
       assertThat(metaStore.loadTerm()).isEqualTo(1L);
       assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(2L);
+      assertThat(metaStore.commitIndex()).isEqualTo(12);
       assertThat(metaStore.loadVote()).isEqualTo(MemberId.from("a"));
     }
   }

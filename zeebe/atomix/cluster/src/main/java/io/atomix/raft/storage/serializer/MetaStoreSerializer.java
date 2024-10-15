@@ -22,6 +22,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.storage.system.Configuration;
+import io.atomix.raft.storage.system.MetaStoreRecord;
 import java.time.Instant;
 import java.util.ArrayList;
 import org.agrona.DirectBuffer;
@@ -119,73 +120,58 @@ public class MetaStoreSerializer {
   }
 
   public void writeTerm(final long term, final MutableDirectBuffer buffer, final int offset) {
-    headerEncoder
-        .wrap(buffer, offset)
-        .blockLength(metaEncoder.sbeBlockLength())
-        .templateId(metaEncoder.sbeTemplateId())
-        .schemaId(metaEncoder.sbeSchemaId())
-        .version(metaEncoder.sbeSchemaVersion());
-
-    metaEncoder.wrap(buffer, offset + headerEncoder.encodedLength());
+    metaEncoder.wrapAndApplyHeader(buffer, offset, headerEncoder);
     metaEncoder.term(term);
   }
 
-  public long readTerm(final MutableDirectBuffer buffer, final int offset) {
-    headerDecoder.wrap(buffer, offset);
-    metaDecoder.wrap(
-        buffer,
-        offset + headerDecoder.encodedLength(),
-        headerDecoder.blockLength(),
-        headerDecoder.version());
-
+  public long readTerm(final DirectBuffer buffer, final int offset) {
+    metaDecoder.wrapAndApplyHeader(buffer, offset, headerDecoder);
     return metaDecoder.term();
   }
 
   public void writeVotedFor(
       final String memberId, final MutableDirectBuffer buffer, final int offset) {
-    headerEncoder
-        .wrap(buffer, offset)
-        .blockLength(metaEncoder.sbeBlockLength())
-        .templateId(metaEncoder.sbeTemplateId())
-        .schemaId(metaEncoder.sbeSchemaId())
-        .version(metaEncoder.sbeSchemaVersion());
-
-    metaEncoder.wrap(buffer, offset + headerEncoder.encodedLength());
+    metaEncoder.wrapAndApplyHeader(buffer, offset, headerEncoder);
     metaEncoder.votedFor(memberId);
   }
 
-  public String readVotedFor(final MutableDirectBuffer buffer, final int offset) {
-    headerDecoder.wrap(buffer, offset);
-    metaDecoder.wrap(
-        buffer,
-        offset + headerDecoder.encodedLength(),
-        headerDecoder.blockLength(),
-        headerDecoder.version());
-
+  public String readVotedFor(final DirectBuffer buffer, final int offset) {
+    metaDecoder.wrapAndApplyHeader(buffer, offset, headerDecoder);
     return metaDecoder.votedFor();
-  }
-
-  public long readLastFlushedIndex(final MutableDirectBuffer buffer, final int offset) {
-    headerDecoder.wrap(buffer, offset);
-    metaDecoder.wrap(
-        buffer,
-        offset + headerDecoder.encodedLength(),
-        headerDecoder.blockLength(),
-        headerDecoder.version());
-
-    return metaDecoder.lastFlushedIndex();
   }
 
   public void writeLastFlushedIndex(
       final long index, final MutableDirectBuffer buffer, final int offset) {
-    headerEncoder
-        .wrap(buffer, offset)
-        .blockLength(metaEncoder.sbeBlockLength())
-        .templateId(metaEncoder.sbeTemplateId())
-        .schemaId(metaEncoder.sbeSchemaId())
-        .version(metaEncoder.sbeSchemaVersion());
-
-    metaEncoder.wrap(buffer, offset + headerEncoder.encodedLength());
+    metaEncoder.wrapAndApplyHeader(buffer, offset, headerEncoder);
     metaEncoder.lastFlushedIndex(index);
+  }
+
+  public void writeCommitIndex(
+      final long index, final MutableDirectBuffer buffer, final int offset) {
+    metaEncoder.wrapAndApplyHeader(buffer, offset, headerEncoder);
+    metaEncoder.commitIndex(index);
+  }
+
+  public MetaStoreRecord readRecord(final DirectBuffer buffer, final int offset) {
+    metaDecoder.wrapAndApplyHeader(buffer, offset, headerDecoder);
+    final var term = metaDecoder.term();
+    final var lastFlushedIndex = metaDecoder.lastFlushedIndex();
+    final var commitIndex = commitIndexOrDefault(metaDecoder.commitIndex());
+    final var votedFor = metaDecoder.votedForLength() == 0 ? null : metaDecoder.votedFor();
+    return new MetaStoreRecord(term, lastFlushedIndex, commitIndex, votedFor);
+  }
+
+  public void writeRecord(
+      final MetaStoreRecord record, final MutableDirectBuffer buffer, final int offset) {
+    metaEncoder.wrapAndApplyHeader(buffer, offset, headerEncoder);
+    metaEncoder
+        .term(record.term())
+        .lastFlushedIndex(record.lastFlushedIndex())
+        .commitIndex(record.commitIndex())
+        .votedFor(record.votedFor());
+  }
+
+  private long commitIndexOrDefault(final long serializedCommitIndex) {
+    return serializedCommitIndex == MetaDecoder.commitIndexNullValue() ? 0 : serializedCommitIndex;
   }
 }
