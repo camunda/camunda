@@ -225,7 +225,12 @@ public final class EngineProcessors {
         config);
 
     ClockProcessors.addClockProcessors(
-        typedRecordProcessors, writers, keyGenerator, clock, commandDistributionBehavior);
+        typedRecordProcessors,
+        writers,
+        keyGenerator,
+        clock,
+        commandDistributionBehavior,
+        authCheckBehavior);
 
     AuthorizationProcessors.addAuthorizationProcessors(
         keyGenerator,
