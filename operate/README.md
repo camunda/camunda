@@ -147,6 +147,12 @@ To run these locally you can follow the steps below:
 
 ### Run Operate backend
 
+Run regular backend first (it must be run in parallel in order to have access to Elasticsearch):
+
+```
+make env-up
+```
+
 To run E2E dedicated backend (Zeebe on port 26503 + Operate on port 8081):
 
 ```
@@ -170,3 +176,25 @@ yarn start:e2e
 yarn test:e2e
 ```
 
+## Running Operate Update screenshots automation
+
+### Run Operate backend
+
+```
+make env-up
+```
+
+### Start Development Server
+
+```
+cd client
+yarn start
+```
+
+### Run Operate Update screenshots automation locally (in client directory)
+
+```
+yarn generate-screenshots
+```
+
+Note that this automation is currently not triggered automatically, so to trigger it for the main branch, this has to be done manually via the [action page](https://github.com/camunda/camunda/actions/workflows/operate-update-docs-screenshots.yml).
