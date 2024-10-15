@@ -111,7 +111,7 @@ final class DecisionHandlerTest {
     underTest.flush(inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).addWithId(indexName, "111", inputEntity);
+    verify(mockRequest, times(1)).add(indexName, inputEntity);
   }
 
   @Test
