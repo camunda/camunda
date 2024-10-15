@@ -7,11 +7,11 @@
  */
 package io.camunda.db.rdbms.read.service;
 
-import io.camunda.db.rdbms.read.domain.ProcessInstanceDbFilter;
+import io.camunda.db.rdbms.read.domain.ProcessInstanceDbQuery;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.search.entities.ProcessInstanceEntity;
-import io.camunda.search.page.SearchQueryPage;
 import java.util.List;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,29 +25,16 @@ public class ProcessInstanceReader {
     this.processInstanceMapper = processInstanceMapper;
   }
 
-  public ProcessInstanceEntity findOne(final Long processInstanceKey) {
+  public Optional<ProcessInstanceEntity> findOne(final long processInstanceKey) {
     LOG.trace("[RDBMS DB] Search for process instance with key {}", processInstanceKey);
-    return processInstanceMapper.findOne(processInstanceKey);
+    return Optional.ofNullable(processInstanceMapper.findOne(processInstanceKey));
   }
 
-  public SearchResult search(final ProcessInstanceDbFilter filter) {
-    final var sanitizedFilter = sanitizeFilter(filter);
-    LOG.trace("[RDBMS DB] Search for process instance with filter {}", sanitizedFilter);
-    final var totalHits = processInstanceMapper.count(sanitizedFilter);
-    final var hits = processInstanceMapper.search(sanitizedFilter);
+  public SearchResult search(final ProcessInstanceDbQuery filter) {
+    LOG.trace("[RDBMS DB] Search for process instance with filter {}", filter);
+    final var totalHits = processInstanceMapper.count(filter);
+    final var hits = processInstanceMapper.search(filter);
     return new SearchResult(hits, totalHits);
-  }
-
-  private ProcessInstanceDbFilter sanitizeFilter(final ProcessInstanceDbFilter filter) {
-    var sanitizedFilter = filter;
-
-    if (sanitizedFilter.page() == null) {
-      sanitizedFilter = sanitizedFilter.withPage(new SearchQueryPage.Builder().build());
-    } else {
-      sanitizedFilter = sanitizedFilter.withPage(sanitizedFilter.page().sanitize());
-    }
-
-    return sanitizedFilter;
   }
 
   public record SearchResult(List<ProcessInstanceEntity> hits, Integer total) {}

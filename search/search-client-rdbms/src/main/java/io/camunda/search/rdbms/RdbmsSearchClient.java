@@ -8,7 +8,7 @@
 package io.camunda.search.rdbms;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.domain.ProcessInstanceDbFilter;
+import io.camunda.db.rdbms.read.domain.ProcessInstanceDbQuery;
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
 import io.camunda.search.clients.DecisionInstanceSearchClient;
@@ -80,7 +80,9 @@ public class RdbmsSearchClient
     final var searchResult =
         rdbmsService
             .getProcessInstanceReader()
-            .search(new ProcessInstanceDbFilter(query.filter(), query.sort(), query.page()));
+            .search(
+                ProcessInstanceDbQuery.of(
+                    b -> b.filter(query.filter()).sort(query.sort()).page(query.page())));
 
     return new SearchQueryResult<>(searchResult.total(), searchResult.hits(), null);
   }

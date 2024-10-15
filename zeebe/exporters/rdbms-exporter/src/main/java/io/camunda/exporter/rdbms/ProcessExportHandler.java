@@ -11,7 +11,6 @@ import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
 import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
 import io.camunda.operate.zeebeimport.util.XMLUtil;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
@@ -30,11 +29,7 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
 
   @Override
   public boolean canExport(final Record<Process> record) {
-    // We get this Record on each partition, but just the one where the command was executed should
-    // export it!
-    final int originalPartitionId = Protocol.decodePartitionId(record.getKey());
-    return record.getIntent() == ProcessIntent.CREATED
-        && originalPartitionId == record.getPartitionId();
+    return record.getIntent() == ProcessIntent.CREATED;
   }
 
   @Override

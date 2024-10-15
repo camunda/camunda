@@ -22,8 +22,8 @@ public class ExecutionQueue {
   private static final Logger LOG = LoggerFactory.getLogger(ExecutionQueue.class);
 
   private final SqlSessionFactory sessionFactory;
-  private final List<FlushListener> preFlushListeners = new ArrayList<>();
-  private final List<FlushListener> postFlushListeners = new ArrayList<>();
+  private final List<PreFlushListener> preFlushListeners = new ArrayList<>();
+  private final List<PostFlushListener> postFlushListeners = new ArrayList<>();
 
   private final Queue<QueueItem> queue = new ConcurrentLinkedQueue<>();
 
@@ -45,11 +45,11 @@ public class ExecutionQueue {
     checkQueueForFlush();
   }
 
-  public void registerPreFlushListener(final FlushListener listener) {
+  public void registerPreFlushListener(final PreFlushListener listener) {
     preFlushListeners.add(listener);
   }
 
-  public void registerPostFlushListener(final FlushListener listener) {
+  public void registerPostFlushListener(final PostFlushListener listener) {
     postFlushListeners.add(listener);
   }
 
@@ -81,11 +81,15 @@ public class ExecutionQueue {
 
       if (!preFlushListeners.isEmpty()) {
         LOG.debug("[RDBMS ExecutionQueue, Partition {}] Call pre flush listeners", partitionId);
-        preFlushListeners.forEach(FlushListener::onFlushSuccess);
+        preFlushListeners.forEach(PreFlushListener::onPreFlush);
       }
 
       session.flushStatements();
       session.commit();
+      if (!postFlushListeners.isEmpty()) {
+        LOG.debug("[RDBMS ExecutionQueue, Partition {}] Call post flush listeners", partitionId);
+        postFlushListeners.forEach(PostFlushListener::onPostFlush);
+      }
       LOG.debug(
           "[RDBMS ExecutionQueue, Partition {}] Commit queue with {} entries in {}ms",
           partitionId,
@@ -96,10 +100,6 @@ public class ExecutionQueue {
       session.rollback();
     } finally {
       session.close();
-      if (!postFlushListeners.isEmpty()) {
-        LOG.debug("[RDBMS ExecutionQueue, Partition {}] Call post flush listeners", partitionId);
-        postFlushListeners.forEach(FlushListener::onFlushSuccess);
-      }
     }
   }
 
@@ -108,7 +108,7 @@ public class ExecutionQueue {
         "[RDBMS ExecutionQueue, Partition {}] Checking if queue is flushed. Queue size: {}",
         partitionId,
         queue.size());
-    if (queue.size() > queueFlushLimit) {
+    if (queue.size() >= queueFlushLimit) {
       flush();
     }
   }

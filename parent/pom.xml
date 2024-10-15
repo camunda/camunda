@@ -194,9 +194,9 @@
 
     <version.javassist>3.30.2-GA</version.javassist>
 
-    <version.mybatisSpring>3.0.4</version.mybatisSpring>
+    <version.mybatis-spring>3.0.4</version.mybatis-spring>
     <version.mybatis>3.5.16</version.mybatis>
-    <mybatis-spring-boot-starter.version>3.0.3</mybatis-spring-boot-starter.version>
+    <version.mybatis-spring-boot-starter>3.0.3</version.mybatis-spring-boot-starter>
 
     <!--    VERIFY WHETHER OPERATE WORKS WITH MOCKITO 5.11 -->
     <!--    <mockito.version>5.5.0</mockito.version>-->
@@ -1152,13 +1152,13 @@
       <dependency>
         <groupId>org.mybatis.spring.boot</groupId>
         <artifactId>mybatis-spring-boot-starter</artifactId>
-        <version>${mybatis-spring-boot-starter.version}</version>
+        <version>${version.mybatis-spring-boot-starter}</version>
       </dependency>
 
       <dependency>
         <groupId>org.mybatis</groupId>
         <artifactId>mybatis-spring</artifactId>
-        <version>${version.mybatisSpring}</version>
+        <version>${version.mybatis-spring}</version>
       </dependency>
 
       <dependency>

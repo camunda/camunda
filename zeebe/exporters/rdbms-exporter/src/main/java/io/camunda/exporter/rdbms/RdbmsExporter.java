@@ -19,12 +19,14 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashMap;
-import org.apache.commons.lang3.ThreadUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** https://docs.camunda.io/docs/next/components/zeebe/technical-concepts/process-lifecycles/ */
 public class RdbmsExporter implements Exporter {
+
+  /** The partition on which all process deployments are published */
+  public static final long PROCESS_DEFINITION_PARTITION = 1L;
 
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsExporter.class);
 
@@ -115,8 +117,10 @@ public class RdbmsExporter implements Exporter {
   }
 
   private void registerHandler() {
-    registeredHandlers.put(
-        ValueType.PROCESS, new ProcessExportHandler(rdbmsWriter.getProcessDefinitionWriter()));
+    if (partitionId == PROCESS_DEFINITION_PARTITION) {
+      registeredHandlers.put(
+          ValueType.PROCESS, new ProcessExportHandler(rdbmsWriter.getProcessDefinitionWriter()));
+    }
     registeredHandlers.put(
         ValueType.PROCESS_INSTANCE,
         new ProcessInstanceExportHandler(rdbmsWriter.getProcessInstanceWriter()));
@@ -145,17 +149,13 @@ public class RdbmsExporter implements Exporter {
 
   private void initializeRdbmsPosition() {
 
-    // TODO ... DIRTY we need to find a way that exports get opened AFTER the application is ready
-    while (true) {
-      try {
-        exporterRdbmsPosition = rdbmsWriter.getExporterPositionService().findOne(partitionId);
-        break;
-      } catch (final Exception e) {
-        LOG.warn(
-            "[RDBMS Exporter] Failed to initialize exporter position because Database is not ready, retrying ... {}",
-            e.getMessage());
-        ThreadUtils.sleepQuietly(Duration.ofMillis(1000));
-      }
+    try {
+      exporterRdbmsPosition = rdbmsWriter.getExporterPositionService().findOne(partitionId);
+    } catch (final Exception e) {
+      LOG.warn(
+          "[RDBMS Exporter] Failed to initialize exporter position because Database is not ready, retrying ... {}",
+          e.getMessage());
+      throw e;
     }
 
     if (exporterRdbmsPosition == null) {

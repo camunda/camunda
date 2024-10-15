@@ -9,7 +9,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="io.camunda.db.rdbms.sql.ProcessDefinitionMapper">
-  <select id="findOne" parameterType="hashMap"
+  <select id="findOne" parameterType="java.lang.Long"
     resultType="io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel">
     SELECT PROCESS_DEFINITION_KEY,
            BPMN_PROCESS_ID,
@@ -18,8 +18,7 @@
            VERSION_TAG,
            VERSION
     FROM PROCESS_DEFINITION
-    WHERE PROCESS_DEFINITION_KEY = #{processDefinitionKey}
-      AND version = #{version}
+    WHERE PROCESS_DEFINITION_KEY = #{id}
   </select>
 
   <insert

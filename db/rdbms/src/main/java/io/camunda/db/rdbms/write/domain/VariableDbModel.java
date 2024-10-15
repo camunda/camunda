@@ -5,9 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.db.rdbms.write.queue;
+package io.camunda.db.rdbms.write.domain;
 
-public interface FlushListener {
-
-  void onFlushSuccess();
-}
+public record VariableDbModel(
+    Long key,
+    Long processInstanceKey,
+    Long scopeKey,
+    String name,
+    String value,
+    boolean truncated,
+    String tenantId) {}
