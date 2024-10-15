@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -129,6 +130,8 @@ public class DbTenantStateTest {
     final var newKey = tenantState.getTenantKeyById(newTenantId);
     assertThat(newKey).isPresent();
     assertThat(newKey.get()).isEqualTo(tenantKey);
+    final Optional<TenantRecord> tenantByKey = tenantState.getTenantByKey(tenantKey);
+    assertThat(tenantByKey.get().getTenantId()).isEqualTo(newTenantId);
   }
 
   @Test
@@ -138,24 +141,15 @@ public class DbTenantStateTest {
     final String tenantId = "tenant-1";
     final String oldName = "Tenant One";
     final String newName = "Updated Tenant";
-    final long oldEntityKey = 123L;
     final long newEntityKey = 456L;
     final var tenantRecord =
-        new TenantRecord()
-            .setTenantKey(tenantKey)
-            .setTenantId(tenantId)
-            .setName(oldName)
-            .setEntityKey(oldEntityKey);
+        new TenantRecord().setTenantKey(tenantKey).setTenantId(tenantId).setName(oldName);
 
     tenantState.createTenant(tenantRecord);
 
     // when
     final var updatedRecord =
-        new TenantRecord()
-            .setTenantKey(tenantKey)
-            .setTenantId(tenantId)
-            .setName(newName)
-            .setEntityKey(newEntityKey);
+        new TenantRecord().setTenantKey(tenantKey).setTenantId(tenantId).setName(newName);
 
     tenantState.updateTenant(updatedRecord);
 
