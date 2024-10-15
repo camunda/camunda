@@ -16,6 +16,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.UserTaskEntity;
+import io.camunda.search.entities.UserTaskEntity.UserTaskState;
 import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
@@ -52,10 +53,10 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       "processDefinitionKey": 2,
                       "elementInstanceKey": 3,
                       "processDefinitionId": "b",
-                      "state": "s",
+                      "state": "CREATED",
                       "assignee": "a",
-                      "candidateUser": [],
-                      "candidateGroup": [],
+                      "candidateUsers": [],
+                      "candidateGroups": [],
                       "formKey": 0,
                       "elementId": "e",
                       "creationDate": "00:00:00.000Z+00:00",
@@ -86,10 +87,10 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       "processDefinitionKey": 2,
                       "elementInstanceKey": 3,
                       "processDefinitionId": "b",
-                      "state": "s",
+                      "state": "CREATED",
                       "assignee": "a",
-                      "candidateUser": [],
-                      "candidateGroup": [],
+                      "candidateUsers": [],
+                      "candidateGroups": [],
                       "formKey": 0,
                       "elementId": "e",
                       "creationDate": "00:00:00.000Z+00:00",
@@ -128,7 +129,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       "00:00:00.000Z+00:00", // creationTime
                       "00:00:00.000Z+00:00", // completionTime
                       "a", // assignee
-                      "s", // state
+                      UserTaskState.CREATED, // state
                       0L, // formKey (adjusted to match expected value)
                       2L, // processDefinitionId
                       1L, // processInstanceId
@@ -173,7 +174,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 "00:00:00.000Z+00:00",
                 "00:00:00.000Z+00:00",
                 "a",
-                "s",
+                UserTaskState.CREATED,
                 0L,
                 2L,
                 1L,

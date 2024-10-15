@@ -42,7 +42,7 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserT
 
   @Override
   public UserTaskFilter state(final String state) {
-    filter.setState(state);
+    filter.setState((state == null) ? null : UserTaskFilterRequest.StateEnum.fromValue(state));
     return this;
   }
 

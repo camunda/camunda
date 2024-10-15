@@ -2546,6 +2546,11 @@ components:
           format: int64
         state:
           type: string
+          enum:
+            - CREATED
+            - COMPLETED
+            - CANCELED
+            - FAILED
         assignee:
           type: string
         elementId:
@@ -2583,6 +2588,11 @@ components:
           format: int64
         state:
           type: string
+          enum:
+            - CREATED
+            - COMPLETED
+            - CANCELED
+            - FAILED
         assignee:
           type: string
         elementId:
@@ -2590,11 +2600,11 @@ components:
         elementInstanceKey:
           type: integer
           format: int64
-        candidateGroup:
+        candidateGroups:
           type: array
           items:
             type: string
-        candidateUser:
+        candidateUsers:
           type: array
           items:
             type: string
