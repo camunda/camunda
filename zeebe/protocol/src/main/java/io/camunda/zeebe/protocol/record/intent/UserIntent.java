@@ -20,7 +20,8 @@ public enum UserIntent implements Intent {
   CREATED(1),
   UPDATE(2),
   UPDATED(3),
-  DELETED(4);
+  DELETE(4),
+  DELETED(5);
 
   private final short value;
 
@@ -56,6 +57,8 @@ public enum UserIntent implements Intent {
       case 3:
         return UPDATED;
       case 4:
+        return DELETE;
+      case 5:
         return DELETED;
       default:
         return UNKNOWN;
