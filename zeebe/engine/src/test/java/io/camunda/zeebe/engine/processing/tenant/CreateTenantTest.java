@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,18 +27,11 @@ public class CreateTenantTest {
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  @DisplayName("should create tenant if no tenant with given key exists")
   @Test
   public void shouldCreateTenant() {
     // when
     final var createdTenantRecord =
-        ENGINE
-            .tenant()
-            .newTenant()
-            .withTenantId("tenant-123")
-            .withName("New Tenant")
-            .withEntityKey(345L)
-            .create();
+        ENGINE.tenant().newTenant().withTenantId("tenant-123").withName("New Tenant").create();
 
     // then
     final var createdTenant = createdTenantRecord.getValue();
@@ -45,7 +39,9 @@ public class CreateTenantTest {
         .isNotNull()
         .hasFieldOrPropertyWithValue("tenantId", "tenant-123")
         .hasFieldOrPropertyWithValue("name", "New Tenant")
-        .hasFieldOrPropertyWithValue("entityKey", 345L);
+        .hasFieldOrProperty("tenantKey")
+        .extracting("tenantKey", InstanceOfAssertFactories.LONG)
+        .isGreaterThan(0L);
   }
 
   @DisplayName("should reject tenant create command when tenant key already exists")
@@ -53,13 +49,7 @@ public class CreateTenantTest {
   public void shouldNotDuplicateTenant() {
     final var tenantId = UUID.randomUUID().toString();
     // given
-    ENGINE
-        .tenant()
-        .newTenant()
-        .withTenantId(tenantId)
-        .withName("Existing Tenant")
-        .withEntityKey(346L)
-        .create();
+    ENGINE.tenant().newTenant().withTenantId(tenantId).withName("Existing Tenant").create();
 
     // when
     final var duplicateTenantRecord =
@@ -68,7 +58,6 @@ public class CreateTenantTest {
             .newTenant()
             .withTenantId(tenantId)
             .withName("Duplicate Tenant")
-            .withEntityKey(347L)
             .expectRejection()
             .create();
 

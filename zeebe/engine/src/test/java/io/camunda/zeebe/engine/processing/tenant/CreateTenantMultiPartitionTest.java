@@ -40,13 +40,7 @@ public class CreateTenantMultiPartitionTest {
   @Test
   public void shouldDistributeTenantCreateCommand() {
     // when
-    ENGINE
-        .tenant()
-        .newTenant()
-        .withTenantId("tenant-123")
-        .withName("New Tenant")
-        .withEntityKey(345L)
-        .create();
+    ENGINE.tenant().newTenant().withTenantId("tenant-123").withName("New Tenant").create();
 
     // then
     assertThat(
@@ -93,7 +87,6 @@ public class CreateTenantMultiPartitionTest {
         .newTenant()
         .withTenantId("tenant-identity")
         .withName("Identity Tenant")
-        .withEntityKey(456L)
         .create();
 
     // then
@@ -113,13 +106,7 @@ public class CreateTenantMultiPartitionTest {
     }
 
     // when creating a tenant
-    ENGINE
-        .tenant()
-        .newTenant()
-        .withTenantId("tenant-queue")
-        .withName("Queued Tenant")
-        .withEntityKey(567L)
-        .create();
+    ENGINE.tenant().newTenant().withTenantId("tenant-queue").withName("Queued Tenant").create();
 
     // Create a role to ensure proper order
     final var roleName = UUID.randomUUID().toString();
