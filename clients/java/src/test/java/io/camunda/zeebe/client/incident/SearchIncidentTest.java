@@ -62,9 +62,9 @@ public class SearchIncidentTest extends ClientRestTest {
         .newIncidentQuery()
         .filter(
             f ->
-                f.key(1L)
+                f.incidentKey(1L)
                     .processDefinitionKey(2L)
-                    .bpmnProcessId("complexProcess")
+                    .processDefinitionId("complexProcess")
                     .processInstanceKey(3L)
                     .errorType("CALLED_DECISION_ERROR")
                     .errorMessage("Can't decide")
@@ -103,9 +103,9 @@ public class SearchIncidentTest extends ClientRestTest {
         .newIncidentQuery()
         .sort(
             s ->
-                s.key()
+                s.incidentKey()
                     .asc()
-                    .type()
+                    .errorType()
                     .asc()
                     .processDefinitionKey()
                     .asc()
@@ -113,7 +113,7 @@ public class SearchIncidentTest extends ClientRestTest {
                     .asc()
                     .tenantId()
                     .asc()
-                    .flowNodeInstanceId()
+                    .flowNodeInstanceKey()
                     .asc()
                     .flowNodeId()
                     .asc()
@@ -131,12 +131,12 @@ public class SearchIncidentTest extends ClientRestTest {
         gatewayService.getLastRequest(IncidentSearchQueryRequest.class);
     final List<SearchQuerySortRequest> sorts = request.getSort();
     assertThat(sorts).hasSize(10);
-    assertSort(sorts.get(0), "key", "asc");
-    assertSort(sorts.get(1), "type", "asc");
+    assertSort(sorts.get(0), "incidentKey", "asc");
+    assertSort(sorts.get(1), "errorType", "asc");
     assertSort(sorts.get(2), "processDefinitionKey", "asc");
     assertSort(sorts.get(3), "processInstanceKey", "asc");
     assertSort(sorts.get(4), "tenantId", "asc");
-    assertSort(sorts.get(5), "flowNodeInstanceId", "asc");
+    assertSort(sorts.get(5), "flowNodeInstanceKey", "asc");
     assertSort(sorts.get(6), "flowNodeId", "asc");
     assertSort(sorts.get(7), "state", "asc");
     assertSort(sorts.get(8), "jobKey", "asc");
