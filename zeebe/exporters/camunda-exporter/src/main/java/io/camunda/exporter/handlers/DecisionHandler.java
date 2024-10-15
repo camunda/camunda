@@ -71,6 +71,6 @@ public class DecisionHandler
 
   @Override
   public void flush(final DecisionDefinitionEntity entity, final BatchRequest batchRequest) {
-    batchRequest.addWithId(indexName, entity.getId(), entity);
+    batchRequest.add(indexName, entity);
   }
 }

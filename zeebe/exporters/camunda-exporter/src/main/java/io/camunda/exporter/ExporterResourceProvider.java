@@ -21,14 +21,14 @@ public interface ExporterResourceProvider {
   /**
    * This should return descriptors describing the desired state of all indices provided.
    *
-   * @return A {@link Set} of {@link IndexDescriptor}
+   * @return A {@link Collection} of {@link IndexDescriptor}
    */
   Collection<IndexDescriptor> getIndexDescriptors();
 
   /**
    * This should return descriptors describing the desired state of all index templates provided.
    *
-   * @return A {@link Set} of {@link IndexTemplateDescriptor}
+   * @return A {@link Collection} of {@link IndexTemplateDescriptor}
    */
   Collection<IndexTemplateDescriptor> getIndexTemplateDescriptors();
 
