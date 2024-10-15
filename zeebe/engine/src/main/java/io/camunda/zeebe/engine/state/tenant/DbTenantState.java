@@ -58,8 +58,10 @@ public class DbTenantState implements MutableTenantState {
   public void createTenant(final TenantRecord tenantRecord) {
     tenantKey.wrapLong(tenantRecord.getTenantKey());
     tenantId.wrapString(tenantRecord.getTenantId());
-    persistedTenant.setTenant(tenantRecord);
-
+    persistedTenant
+        .setTenantKey(tenantRecord.getTenantKey())
+        .setTenantId(tenantRecord.getTenantId())
+        .setName(tenantRecord.getName());
     tenantsColumnFamily.insert(tenantKey, persistedTenant);
     tenantByIdColumnFamily.insert(tenantId, fkTenantKey);
   }
@@ -70,7 +72,7 @@ public class DbTenantState implements MutableTenantState {
     final PersistedTenant persistedTenant = tenantsColumnFamily.get(tenantKey);
 
     if (persistedTenant != null) {
-      final String oldTenantId = persistedTenant.getTenant().getTenantId();
+      final String oldTenantId = persistedTenant.getTenantId();
       final String newTenantId = updatedTenantRecord.getTenantId();
 
       if (!oldTenantId.equals(newTenantId)) {
@@ -81,7 +83,11 @@ public class DbTenantState implements MutableTenantState {
         tenantByIdColumnFamily.insert(tenantId, fkTenantKey);
       }
 
-      persistedTenant.setTenant(updatedTenantRecord);
+      persistedTenant
+          .setTenantKey(updatedTenantRecord.getTenantKey())
+          .setTenantId(updatedTenantRecord.getTenantId())
+          .setName(updatedTenantRecord.getName());
+
       tenantsColumnFamily.update(tenantKey, persistedTenant);
     }
   }
@@ -89,8 +95,29 @@ public class DbTenantState implements MutableTenantState {
   @Override
   public Optional<TenantRecord> getTenantByKey(final long tenantKey) {
     this.tenantKey.wrapLong(tenantKey);
-    return Optional.ofNullable(tenantsColumnFamily.get(this.tenantKey))
-        .map(PersistedTenant::getTenant);
+    final PersistedTenant persistedTenant = tenantsColumnFamily.get(this.tenantKey);
+
+    if (persistedTenant != null) {
+      final TenantRecord tenantRecord = new TenantRecord();
+      tenantRecord
+          .setTenantKey(persistedTenant.getTenantKey())
+          .setTenantId(persistedTenant.getTenantId())
+          .setName(persistedTenant.getName());
+
+      // Retrieve entityKey if it exists for the tenant
+      final DbForeignKey<DbLong> fkTenantKey =
+          new DbForeignKey<>(this.tenantKey, ZbColumnFamilies.TENANTS);
+      final EntityTypeValue entityTypeValue =
+          entityByTenantColumnFamily.get(new DbCompositeKey<>(fkTenantKey, entityKey));
+
+      if (entityTypeValue != null) {
+        tenantRecord.setEntityKey(entityKey.getValue());
+      }
+
+      return Optional.of(tenantRecord);
+    }
+
+    return Optional.empty();
   }
 
   @Override
