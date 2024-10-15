@@ -175,7 +175,8 @@ public final class EngineProcessors {
             config,
             authCheckBehavior);
 
-    addDecisionProcessors(typedRecordProcessors, decisionBehavior, writers, processingState);
+    addDecisionProcessors(
+        typedRecordProcessors, decisionBehavior, writers, processingState, authCheckBehavior);
 
     JobEventProcessors.addJobProcessors(
         typedRecordProcessors,
@@ -398,11 +399,12 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final DecisionBehavior decisionBehavior,
       final Writers writers,
-      final MutableProcessingState processingState) {
+      final MutableProcessingState processingState,
+      final AuthorizationCheckBehavior authCheckBehavior) {
 
     final DecisionEvaluationEvaluteProcessor decisionEvaluationEvaluteProcessor =
         new DecisionEvaluationEvaluteProcessor(
-            decisionBehavior, processingState.getKeyGenerator(), writers);
+            decisionBehavior, processingState.getKeyGenerator(), writers, authCheckBehavior);
     typedRecordProcessors.onCommand(
         ValueType.DECISION_EVALUATION,
         DecisionEvaluationIntent.EVALUATE,

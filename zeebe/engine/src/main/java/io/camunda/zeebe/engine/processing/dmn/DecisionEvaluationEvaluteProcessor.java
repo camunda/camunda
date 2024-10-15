@@ -7,8 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.dmn;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
+
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -18,6 +22,8 @@ import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
@@ -33,19 +39,22 @@ public class DecisionEvaluationEvaluteProcessor
   private final DecisionBehavior decisionBehavior;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
+  private final AuthorizationCheckBehavior authCheckBehavior;
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
 
   public DecisionEvaluationEvaluteProcessor(
       final DecisionBehavior decisionBehavior,
       final KeyGenerator keyGenerator,
-      final Writers writers) {
+      final Writers writers,
+      final AuthorizationCheckBehavior authCheckBehavior) {
 
     this.decisionBehavior = decisionBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
+    this.authCheckBehavior = authCheckBehavior;
   }
 
   @Override
@@ -53,6 +62,23 @@ public class DecisionEvaluationEvaluteProcessor
 
     final DecisionEvaluationRecord record = command.getValue();
     final Either<Failure, PersistedDecision> decisionOrFailure = getDecision(record);
+
+    if (decisionOrFailure.isRight()) {
+      final var decision = decisionOrFailure.get();
+      final var authRequest =
+          new AuthorizationRequest(
+                  command, AuthorizationResourceType.DECISION_DEFINITION, PermissionType.CREATE)
+              .addResourceId(bufferAsString(decision.getDecisionId()));
+
+      if (!authCheckBehavior.isAuthorized(authRequest)) {
+        final var reason =
+            AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE.formatted(
+                authRequest.getPermissionType(), authRequest.getResourceType());
+        responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, reason);
+        rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, reason);
+        return;
+      }
+    }
 
     decisionOrFailure
         .flatMap(decisionBehavior::findParsedDrgByDecision)
