@@ -67,6 +67,7 @@ const test = base.extend<
         await use(authFile);
         return;
       }
+      console.log('baseURL', baseURL);
 
       // when using a baseURL containing domain + basePath, playwright expects a slash at the end of the baseURL when navigating and validating Urls
       // https://playwright.dev/docs/api/class-browser#browser-new-context-option-base-url

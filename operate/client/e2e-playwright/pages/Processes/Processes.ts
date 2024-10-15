@@ -63,9 +63,22 @@ export class Processes {
     options?: Parameters<Page['goto']>[1];
   }) {
     if (searchParams === undefined) {
-      await this.page.goto(Paths.processes());
+      await this.page.goto(Paths.processes(), options);
       return;
     }
+
+    console.log(
+      'navigateToProcesses path:',
+      `${Paths.processes()}?${convertToQueryString(searchParams)}`,
+    );
+
+    console.log(
+      'navigateToProcesses URL:',
+      new URL(
+        `${Paths.processes()}?${convertToQueryString(searchParams)}`,
+        'http://localhost:8080/operate/',
+      ),
+    );
 
     await this.page.goto(
       `${Paths.processes()}?${convertToQueryString(searchParams)}`,
