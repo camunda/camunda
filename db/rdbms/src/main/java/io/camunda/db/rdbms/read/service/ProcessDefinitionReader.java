@@ -9,6 +9,7 @@ package io.camunda.db.rdbms.read.service;
 
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -23,11 +24,11 @@ public class ProcessDefinitionReader {
 
   public Optional<ProcessDefinitionDbModel> findOne(final long processDefinitionKey) {
     if (!cache.containsKey(processDefinitionKey)) {
-      final var result = processDefinitionMapper.findOne(processDefinitionKey);
+      final var processDefinition = processDefinitionMapper.findOne(processDefinitionKey);
 
-      if (result != null) {
-        cache.put(processDefinitionKey, result);
-        return Optional.of(result);
+      if (processDefinition != null) {
+        final var result = cache.putIfAbsent(processDefinitionKey, processDefinition);
+        return Optional.of(Objects.requireNonNullElse(result, processDefinition));
       }
     }
 

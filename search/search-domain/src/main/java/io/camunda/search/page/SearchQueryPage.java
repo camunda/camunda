@@ -39,12 +39,7 @@ public record SearchQueryPage(
     final var newSize =
         (size == null) ? DEFAULT_SIZE : Math.max(0, Math.min(SearchQueryPage.DEFAULT_SIZE, size));
 
-    return new SearchQueryPage.Builder()
-        .from(newFrom)
-        .size(newSize)
-        .searchAfter(searchAfter)
-        .searchBefore(searchBefore)
-        .build();
+    return new SearchQueryPage(newFrom, newSize, searchAfter, searchBefore);
   }
 
   public static SearchQueryPage of(final Function<Builder, ObjectBuilder<SearchQueryPage>> fn) {
