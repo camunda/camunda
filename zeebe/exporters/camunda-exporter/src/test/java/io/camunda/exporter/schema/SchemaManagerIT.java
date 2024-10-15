@@ -71,7 +71,7 @@ public class SchemaManagerIT {
         .thenReturn(CONFIG.getIndex().getPrefix() + "template_index_qualified_name");
   }
 
-  void shouldAppendToIndexMappingsWithNewProperties(
+  private void shouldAppendToIndexMappingsWithNewProperties(
       final Callable<JsonNode> getUpdatedIndex, final SearchEngineClient searchEngineClient)
       throws Exception {
     // given
@@ -97,7 +97,7 @@ public class SchemaManagerIT {
     assertThat(updatedIndex.at("/mappings/properties/bar/type").asText()).isEqualTo("keyword");
   }
 
-  void shouldInheritDefaultSettingsIfNoIndexSpecificSettings(
+  private void shouldInheritDefaultSettingsIfNoIndexSpecificSettings(
       final Callable<JsonNode> getRetrievedIndex, final SearchEngineClient searchEngineClient)
       throws Exception {
     // given
@@ -118,7 +118,7 @@ public class SchemaManagerIT {
     assertThat(retrievedIndex.at("/settings/index/number_of_shards").asInt()).isEqualTo(10);
   }
 
-  void shouldUseIndexSpecificSettingsIfSpecified(
+  private void shouldUseIndexSpecificSettingsIfSpecified(
       final Callable<JsonNode> getRetrievedIndex, final SearchEngineClient searchEngineClient)
       throws Exception {
     // given
@@ -141,7 +141,7 @@ public class SchemaManagerIT {
     assertThat(retrievedIndex.at("/settings/index/number_of_shards").asInt()).isEqualTo(5);
   }
 
-  void shouldOverwriteIndexTemplateIfMappingsFileChanged(
+  private void shouldOverwriteIndexTemplateIfMappingsFileChanged(
       final Callable<JsonNode> getTemplate, final SearchEngineClient searchEngineClient)
       throws Exception {
     // given
@@ -195,31 +195,13 @@ public class SchemaManagerIT {
     @Test
     void shouldInheritDefaultSettingsIfNoIndexSpecificSettings() throws Exception {
       SchemaManagerIT.this.shouldInheritDefaultSettingsIfNoIndexSpecificSettings(
-          () -> {
-            final var retrievedIndex =
-                elsClient
-                    .indices()
-                    .get(req -> req.index(index.getFullQualifiedName()))
-                    .get(index.getFullQualifiedName());
-
-            return elsIndexToNode(retrievedIndex);
-          },
-          searchEngineClient);
+          this::getIndexAsNode, searchEngineClient);
     }
 
     @Test
     void shouldUseIndexSpecificSettingsIfSpecified() throws Exception {
       SchemaManagerIT.this.shouldUseIndexSpecificSettingsIfSpecified(
-          () -> {
-            final var retrievedIndex =
-                elsClient
-                    .indices()
-                    .get(req -> req.index(index.getFullQualifiedName()))
-                    .get(index.getFullQualifiedName());
-
-            return elsIndexToNode(retrievedIndex);
-          },
-          searchEngineClient);
+          this::getIndexAsNode, searchEngineClient);
     }
 
     @Test
@@ -241,16 +223,7 @@ public class SchemaManagerIT {
     @Test
     void shouldAppendToIndexMappingsWithNewProperties() throws Exception {
       SchemaManagerIT.this.shouldAppendToIndexMappingsWithNewProperties(
-          () -> {
-            final var updatedIndex =
-                elsClient
-                    .indices()
-                    .get(req -> req.index(index.getFullQualifiedName()))
-                    .get(index.getFullQualifiedName());
-
-            return elsIndexToNode(updatedIndex);
-          },
-          searchEngineClient);
+          this::getIndexAsNode, searchEngineClient);
     }
 
     @Test
@@ -275,6 +248,16 @@ public class SchemaManagerIT {
                   .name("world")
                   .typeDefinition(Map.of("type", "keyword"))
                   .build());
+    }
+
+    public JsonNode getIndexAsNode() throws IOException {
+      final var updatedIndex =
+          elsClient
+              .indices()
+              .get(req -> req.index(index.getFullQualifiedName()))
+              .get(index.getFullQualifiedName());
+
+      return elsIndexToNode(updatedIndex);
     }
   }
 
@@ -305,31 +288,13 @@ public class SchemaManagerIT {
     @Test
     void shouldInheritDefaultSettingsIfNoIndexSpecificSettings() throws Exception {
       SchemaManagerIT.this.shouldInheritDefaultSettingsIfNoIndexSpecificSettings(
-          () -> {
-            final var retrievedIndex =
-                opensearchClient
-                    .indices()
-                    .get(req -> req.index(index.getFullQualifiedName()))
-                    .get(index.getFullQualifiedName());
-
-            return opensearchIndexToNode(retrievedIndex);
-          },
-          searchEngineClient);
+          this::getIndexAsNode, searchEngineClient);
     }
 
     @Test
     void shouldUseIndexSpecificSettingsIfSpecified() throws Exception {
       SchemaManagerIT.this.shouldUseIndexSpecificSettingsIfSpecified(
-          () -> {
-            final var retrievedIndex =
-                opensearchClient
-                    .indices()
-                    .get(req -> req.index(index.getFullQualifiedName()))
-                    .get(index.getFullQualifiedName());
-
-            return opensearchIndexToNode(retrievedIndex);
-          },
-          searchEngineClient);
+          this::getIndexAsNode, searchEngineClient);
     }
 
     @Test
@@ -352,16 +317,17 @@ public class SchemaManagerIT {
     @Test
     void shouldAppendToIndexMappingsWithNewProperties() throws Exception {
       SchemaManagerIT.this.shouldAppendToIndexMappingsWithNewProperties(
-          () -> {
-            final var updatedIndex =
-                opensearchClient
-                    .indices()
-                    .get(req -> req.index(index.getFullQualifiedName()))
-                    .get(index.getFullQualifiedName());
+          this::getIndexAsNode, searchEngineClient);
+    }
 
-            return opensearchIndexToNode(updatedIndex);
-          },
-          searchEngineClient);
+    private JsonNode getIndexAsNode() throws IOException {
+      final var updatedIndex =
+          opensearchClient
+              .indices()
+              .get(req -> req.index(index.getFullQualifiedName()))
+              .get(index.getFullQualifiedName());
+
+      return opensearchIndexToNode(updatedIndex);
     }
   }
 }
