@@ -38,7 +38,7 @@ public class AssertFormatUtil {
 
   public static String formatVariables(final Map<String, String> variables) {
     return variables.entrySet().stream()
-        .map(variable -> String.format("\t- '%s': %s", variable.getKey(), variable.getValue()))
+        .map(variable -> String.format("- '%s': %s", variable.getKey(), variable.getValue()))
         .collect(Collectors.joining("\n"));
   }
 }
