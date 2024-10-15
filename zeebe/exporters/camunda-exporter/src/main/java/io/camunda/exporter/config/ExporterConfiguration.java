@@ -189,8 +189,6 @@ public class ExporterConfiguration {
     private int delay = 5;
     // bulk size before flush
     private int size = 1_000;
-    // memory limit of the bulk in bytes before flush
-    private int memoryLimit = 10 * 1024 * 1024;
 
     public int getDelay() {
       return delay;
@@ -208,24 +206,9 @@ public class ExporterConfiguration {
       this.size = size;
     }
 
-    public int getMemoryLimit() {
-      return memoryLimit;
-    }
-
-    public void setMemoryLimit(final int memoryLimit) {
-      this.memoryLimit = memoryLimit;
-    }
-
     @Override
     public String toString() {
-      return "BulkConfiguration{"
-          + "delay="
-          + delay
-          + ", size="
-          + size
-          + ", memoryLimit="
-          + memoryLimit
-          + '}';
+      return "BulkConfiguration{" + "delay=" + delay + ", size=" + size + '}';
     }
   }
 }
