@@ -241,6 +241,54 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
         .send()
         .join();
 
+    zeebeClient
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("bigForm.form")
+        .send()
+        .join();
+
+    zeebeClient
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("checkPayment.form")
+        .send()
+        .join();
+
+    zeebeClient
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("doTaskA.form")
+        .send()
+        .join();
+
+    zeebeClient
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("doTaskB.form")
+        .send()
+        .join();
+
+    zeebeClient
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("humanTaskForm.form")
+        .send()
+        .join();
+
+    zeebeClient
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("registerCabinBag.form")
+        .send()
+        .join();
+
+    zeebeClient
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("registerCarForRent.form")
+        .send()
+        .join();
+
+    zeebeClient
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("registerThePassenger.form")
+        .send()
+        .join();
+
     // Deploy Processes
     ZeebeTestUtil.deployProcess(zeebeClient, "startedByLinkedForm.bpmn");
     ZeebeTestUtil.deployProcess(zeebeClient, "formIdProcessDeployed.bpmn");

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="6c48892" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.3.0" camunda:diagramRelationId="5bcdae9b-b12b-40fd-9f1d-ba0a44716720">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.29.0-nightly.20241014" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.6.0" camunda:diagramRelationId="5bcdae9b-b12b-40fd-9f1d-ba0a44716720">
   <bpmn:process id="RequestAnnualLeave" isExecutable="true">
     <bpmn:startEvent id="StartEvent_AnnualLeaveRequested" name="Annual Leave Requested">
       <bpmn:outgoing>Flow_04x3sp2</bpmn:outgoing>
@@ -9,10 +9,16 @@
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_04x3sp2" sourceRef="StartEvent_AnnualLeaveRequested" targetRef="Task_RequestAnnualLeave" />
     <bpmn:userTask id="Task_RequestAnnualLeave" name="Request Annual Leave">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
       <bpmn:incoming>Flow_04x3sp2</bpmn:incoming>
       <bpmn:outgoing>Flow_0lmfnpy</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:userTask id="Task_ReviewRequest" name="Review Request">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
       <bpmn:incoming>Flow_0lmfnpy</bpmn:incoming>
       <bpmn:outgoing>Flow_0um0jym</bpmn:outgoing>
     </bpmn:userTask>
