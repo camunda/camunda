@@ -243,20 +243,18 @@ public final class FollowerRole extends ActiveRole {
       return;
     }
 
-    if (raft.getFirstCommitIndex() == 0 || raft.getState() == RaftContext.State.READY) {
-      final var timeSinceLastHeartbeatMs = System.currentTimeMillis() - raft.getLastHeartbeat();
-      final var leader =
-          Optional.ofNullable(raft.getLeader())
-              .map(DefaultRaftMember::memberId)
-              .map(MemberId::id)
-              .orElse("a known leader");
+    final var timeSinceLastHeartbeatMs = System.currentTimeMillis() - raft.getLastHeartbeat();
+    final var leader =
+        Optional.ofNullable(raft.getLeader())
+            .map(DefaultRaftMember::memberId)
+            .map(MemberId::id)
+            .orElse("a known leader");
 
-      log.info("No heartbeat from {} since {}ms", leader, timeSinceLastHeartbeatMs);
-      raft.getRaftRoleMetrics().countHeartbeatMiss();
+    log.info("No heartbeat from {} since {}ms", leader, timeSinceLastHeartbeatMs);
+    raft.getRaftRoleMetrics().countHeartbeatMiss();
 
-      raft.setLeader(null);
-      sendPollRequests();
-    }
+    raft.setLeader(null);
+    sendPollRequests();
   }
 
   private void handlePollResponse(
