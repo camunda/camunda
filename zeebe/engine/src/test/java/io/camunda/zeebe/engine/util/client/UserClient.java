@@ -34,6 +34,10 @@ public final class UserClient {
     return new UpdateUserClient(writer, userKey, userRecord);
   }
 
+  public DeleteUserClient deleteUser(final Long userKey) {
+    return new DeleteUserClient(writer, userKey);
+  }
+
   public static class UserCreationClient {
 
     private static final Function<Long, Record<UserRecordValue>> SUCCESS_SUPPLIER =
@@ -149,6 +153,62 @@ public final class UserClient {
     }
 
     public UpdateUserClient expectRejection() {
+      expectation = REJECTION_SUPPLIER;
+      return this;
+    }
+  }
+
+  public static class DeleteUserClient {
+    private static final Function<Long, Record<UserRecordValue>> SUCCESS_SUPPLIER =
+        (position) ->
+            RecordingExporter.userRecords()
+                .withIntent(UserIntent.DELETED)
+                .withSourceRecordPosition(position)
+                .getFirst();
+
+    private static final Function<Long, Record<UserRecordValue>> REJECTION_SUPPLIER =
+        (position) ->
+            RecordingExporter.userRecords()
+                .onlyCommandRejections()
+                .withIntent(UserIntent.DELETE)
+                .withSourceRecordPosition(position)
+                .getFirst();
+    private final CommandWriter writer;
+    private final UserRecord userRecord;
+    private Function<Long, Record<UserRecordValue>> expectation = SUCCESS_SUPPLIER;
+
+    public DeleteUserClient(final CommandWriter writer, final long userKey) {
+      this.writer = writer;
+      userRecord = new UserRecord();
+      userRecord.setUserKey(userKey);
+    }
+
+    public DeleteUserClient withUsername(final String username) {
+      userRecord.setUsername(username);
+      return this;
+    }
+
+    public DeleteUserClient withName(final String name) {
+      userRecord.setName(name);
+      return this;
+    }
+
+    public DeleteUserClient withEmail(final String email) {
+      userRecord.setEmail(email);
+      return this;
+    }
+
+    public DeleteUserClient withPassword(final String password) {
+      userRecord.setPassword(password);
+      return this;
+    }
+
+    public Record<UserRecordValue> delete() {
+      final long position = writer.writeCommand(UserIntent.DELETE, userRecord);
+      return expectation.apply(position);
+    }
+
+    public DeleteUserClient expectRejection() {
       expectation = REJECTION_SUPPLIER;
       return this;
     }
