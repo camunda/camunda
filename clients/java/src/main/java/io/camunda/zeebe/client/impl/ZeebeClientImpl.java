@@ -59,6 +59,7 @@ import io.camunda.zeebe.client.api.fetch.DecisionInstanceGetRequest;
 import io.camunda.zeebe.client.api.fetch.DecisionRequirementsGetRequest;
 import io.camunda.zeebe.client.api.fetch.DecisionRequirementsGetXmlRequest;
 import io.camunda.zeebe.client.api.fetch.IncidentGetRequest;
+import io.camunda.zeebe.client.api.fetch.FlowNodeInstanceGetRequest;
 import io.camunda.zeebe.client.api.fetch.ProcessDefinitionGetRequest;
 import io.camunda.zeebe.client.api.fetch.ProcessDefinitionGetXmlRequest;
 import io.camunda.zeebe.client.api.fetch.ProcessInstanceGetRequest;
@@ -109,6 +110,7 @@ import io.camunda.zeebe.client.impl.fetch.DecisionInstanceGetRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.DecisionRequirementsGetRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.DecisionRequirementsGetXmlRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.IncidentGetRequestImpl;
+import io.camunda.zeebe.client.impl.fetch.FlowNodeInstanceGetRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.ProcessDefinitionGetRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.ProcessDefinitionGetXmlRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.ProcessInstanceGetRequestImpl;
@@ -610,6 +612,11 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public FlownodeInstanceQuery newFlownodeInstanceQuery() {
     return new FlowNodeInstanceQueryImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public FlowNodeInstanceGetRequest newFlowNodeInstanceGetRequest(final long flowNodeInstanceKey) {
+    return new FlowNodeInstanceGetRequestImpl(httpClient, flowNodeInstanceKey);
   }
 
   @Override
