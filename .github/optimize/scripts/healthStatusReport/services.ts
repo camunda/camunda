@@ -23,8 +23,3 @@ export async function fetchUrl<T>(url: string, authHeader: string): Promise<T> {
 export function createJsonFile(fileName: string, json: Record<string, unknown>) {
   return fs.writeFileSync(fileName, JSON.stringify(json), 'utf-8');
 }
-
-export function matchRegex(string: string, regex: RegExp): string | undefined {
-  const match = string.match(regex);
-  return match?.[1];
-}
