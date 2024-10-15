@@ -53,7 +53,6 @@
     "start-backend-cloud": "node scripts/start-backend cloud",
     "start-backend-cloud:opensearch": "node scripts/start-backend cloud opensearch",
     "restart-backend": "curl http://localhost:8100/api/restartBackend",
-    "dependencies": "node scripts/dependencies.js",
     "prepare": "cd .. && husky client/.husky",
     "extract-sbom": "vite build --mode sbom"
   },
