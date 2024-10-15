@@ -69,6 +69,7 @@ public class FlowNodeInstanceQueryTest {
     PROCESS_INSTANCES.add(startProcessInstance("service_tasks_v2", "{\"path\":222}"));
     PROCESS_INSTANCES.add(startProcessInstance("incident_process_v1"));
     waitForProcessInstancesToStart(PROCESS_INSTANCES.size());
+    waitForFlowNodeInstances(7);
 
     // store a flow node instance for querying
     flowNodeInstance = zeebeClient.newFlownodeInstanceQuery().send().join().items().getFirst();
@@ -411,6 +412,17 @@ public class FlowNodeInstanceQueryTest {
             () -> {
               final var result = zeebeClient.newProcessInstanceQuery().send().join();
               assertThat(result.items().size()).isEqualTo(expectedProcessInstances);
+            });
+  }
+
+  private static void waitForFlowNodeInstances(final int expectedFlowNodeInstances) {
+    Awaitility.await("should wait until flow node instances are available")
+        .atMost(Duration.ofSeconds(60))
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result = zeebeClient.newFlownodeInstanceQuery().send().join();
+              assertThat(result.items().size()).isEqualTo(expectedFlowNodeInstances);
             });
   }
 
