@@ -15,7 +15,6 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
-import io.camunda.exporter.schema.elasticsearch.ElasticsearchSchemaManager;
 import io.camunda.exporter.utils.TestSupport;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
@@ -86,8 +85,7 @@ public class ElasticsearchSchemaManagerIT {
     properties.getIndex().setNumberOfShards(10);
 
     final var schemaManager =
-        new ElasticsearchSchemaManager(
-            searchEngineClient, Set.of(index), Set.of(indexTemplate), properties);
+        new SchemaManager(searchEngineClient, Set.of(index), Set.of(indexTemplate), properties);
 
     schemaManager.initialiseResources();
 
@@ -110,8 +108,7 @@ public class ElasticsearchSchemaManagerIT {
     properties.setShardsByIndexName(Map.of("index_name", 5));
 
     final var schemaManager =
-        new ElasticsearchSchemaManager(
-            searchEngineClient, Set.of(index), Set.of(indexTemplate), properties);
+        new SchemaManager(searchEngineClient, Set.of(index), Set.of(indexTemplate), properties);
 
     schemaManager.initialiseResources();
 
@@ -129,7 +126,7 @@ public class ElasticsearchSchemaManagerIT {
   void shouldOverwriteIndexTemplateIfMappingsFileChanged() throws IOException {
     // given
     final var schemaManager =
-        new ElasticsearchSchemaManager(
+        new SchemaManager(
             searchEngineClient, Set.of(), Set.of(indexTemplate), new ExporterConfiguration());
 
     schemaManager.initialiseResources();
@@ -157,8 +154,7 @@ public class ElasticsearchSchemaManagerIT {
   void shouldAppendToIndexMappingsWithNewProperties() throws IOException {
     // given
     final var schemaManager =
-        new ElasticsearchSchemaManager(
-            searchEngineClient, Set.of(index), Set.of(), new ExporterConfiguration());
+        new SchemaManager(searchEngineClient, Set.of(index), Set.of(), new ExporterConfiguration());
 
     schemaManager.initialiseResources();
 
@@ -188,10 +184,6 @@ public class ElasticsearchSchemaManagerIT {
     // given
     final var index =
         SchemaTestUtil.mockIndex("index_name", "alias", "index_name", "/mappings.json");
-
-    final var schemaManager =
-        new ElasticsearchSchemaManager(
-            searchEngineClient, Set.of(), Set.of(), new ExporterConfiguration());
 
     // when
     final var indexMapping = IndexMapping.from(index, new ObjectMapper());

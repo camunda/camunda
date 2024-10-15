@@ -39,8 +39,11 @@ class OpensearchAdapter implements ClientAdapter {
 
   @Override
   public SchemaManager createSchemaManager(final ExporterResourceProvider provider) {
-    // FIXME add SchemaManager implementation for opensearch and use it here
-    return null;
+    return new SchemaManager(
+        searchEngineClient,
+        provider.getIndexDescriptors(),
+        provider.getIndexTemplateDescriptors(),
+        configuration);
   }
 
   @Override

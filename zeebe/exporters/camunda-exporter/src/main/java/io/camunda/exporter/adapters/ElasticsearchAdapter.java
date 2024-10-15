@@ -14,7 +14,6 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.schema.SchemaManager;
 import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
-import io.camunda.exporter.schema.elasticsearch.ElasticsearchSchemaManager;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.ElasticsearchBatchRequest;
 import io.camunda.exporter.utils.ElasticsearchScriptBuilder;
@@ -40,7 +39,7 @@ class ElasticsearchAdapter implements ClientAdapter {
 
   @Override
   public SchemaManager createSchemaManager(final ExporterResourceProvider provider) {
-    return new ElasticsearchSchemaManager(
+    return new SchemaManager(
         searchEngineClient,
         provider.getIndexDescriptors(),
         provider.getIndexTemplateDescriptors(),
