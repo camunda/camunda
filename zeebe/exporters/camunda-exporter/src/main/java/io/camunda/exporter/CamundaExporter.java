@@ -81,7 +81,12 @@ public class CamundaExporter implements Exporter {
     this.controller = controller;
     clientAdapter = ClientAdapter.of(configuration);
     final var searchEngineClient = clientAdapter.getSearchEngineClient();
-    final var schemaManager = clientAdapter.createSchemaManager(provider);
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClient,
+            provider.getIndexDescriptors(),
+            provider.getIndexTemplateDescriptors(),
+            configuration);
 
     schemaStartup(schemaManager, searchEngineClient);
     writer = createBatchWriter();

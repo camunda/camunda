@@ -7,10 +7,8 @@
  */
 package io.camunda.exporter.adapters;
 
-import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.exporter.schema.SchemaManager;
 import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.store.BatchRequest;
 import java.io.IOException;
@@ -25,8 +23,6 @@ public interface ClientAdapter {
   }
 
   SearchEngineClient getSearchEngineClient();
-
-  SchemaManager createSchemaManager(final ExporterResourceProvider provider);
 
   BatchRequest createBatchRequest();
 

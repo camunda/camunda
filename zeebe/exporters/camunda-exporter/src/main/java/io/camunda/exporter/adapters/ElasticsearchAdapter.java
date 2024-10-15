@@ -9,9 +9,7 @@ package io.camunda.exporter.adapters;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
-import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.exporter.schema.SchemaManager;
 import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.exporter.store.BatchRequest;
@@ -21,12 +19,10 @@ import io.camunda.search.connect.es.ElasticsearchConnector;
 import java.io.IOException;
 
 class ElasticsearchAdapter implements ClientAdapter {
-  private final ExporterConfiguration configuration;
   private final ElasticsearchClient client;
   private final ElasticsearchEngineClient searchEngineClient;
 
   ElasticsearchAdapter(final ExporterConfiguration configuration) {
-    this.configuration = configuration;
     final var connector = new ElasticsearchConnector(configuration.getConnect());
     client = connector.createClient();
     searchEngineClient = new ElasticsearchEngineClient(client);
@@ -35,15 +31,6 @@ class ElasticsearchAdapter implements ClientAdapter {
   @Override
   public SearchEngineClient getSearchEngineClient() {
     return searchEngineClient;
-  }
-
-  @Override
-  public SchemaManager createSchemaManager(final ExporterResourceProvider provider) {
-    return new SchemaManager(
-        searchEngineClient,
-        provider.getIndexDescriptors(),
-        provider.getIndexTemplateDescriptors(),
-        configuration);
   }
 
   @Override
