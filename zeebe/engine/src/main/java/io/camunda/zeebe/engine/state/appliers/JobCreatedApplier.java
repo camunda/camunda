@@ -52,11 +52,7 @@ final class JobCreatedApplier implements TypedEventApplier<JobIntent, JobRecord>
 
   private ZeebeTaskListenerEventType toTaskListenerEventType(JobListenerEventType eventType) {
     return switch (eventType) {
-      case CREATE -> ZeebeTaskListenerEventType.create;
-      case ASSIGNMENT -> ZeebeTaskListenerEventType.assignment;
-      case UPDATE -> ZeebeTaskListenerEventType.update;
       case COMPLETE -> ZeebeTaskListenerEventType.complete;
-      case CANCEL -> ZeebeTaskListenerEventType.cancel;
       default -> throw new IllegalStateException("Unexpected value: " + eventType);
     };
   }
