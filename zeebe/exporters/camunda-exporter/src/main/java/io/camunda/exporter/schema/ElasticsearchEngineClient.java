@@ -12,6 +12,7 @@ import static io.camunda.exporter.utils.SearchEngineClientUtils.listIndices;
 import static io.camunda.exporter.utils.SearchEngineClientUtils.mapToSettings;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.mapping.Property;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
@@ -59,7 +60,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     try {
       client.indices().create(request);
       LOG.debug("Index [{}] was successfully created", indexDescriptor.getIndexName());
-    } catch (final IOException e) {
+    } catch (final IOException | ElasticsearchException e) {
       final var errMsg =
           String.format("Index [%s] was not created", indexDescriptor.getIndexName());
       LOG.error(errMsg, e);
@@ -78,7 +79,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     try {
       client.indices().putIndexTemplate(request);
       LOG.debug("Template [{}] was successfully created", templateDescriptor.getTemplateName());
-    } catch (final IOException e) {
+    } catch (final IOException | ElasticsearchException e) {
       final var errMsg =
           String.format("Template [%s] was NOT created", templateDescriptor.getTemplateName());
       LOG.error(errMsg, e);
@@ -94,7 +95,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     try {
       client.indices().putMapping(request);
       LOG.debug("Mapping in [{}] was successfully updated", indexDescriptor.getIndexName());
-    } catch (final IOException e) {
+    } catch (final IOException | ElasticsearchException e) {
       final var errMsg =
           String.format("Mapping in [%s] was NOT updated", indexDescriptor.getIndexName());
       LOG.error(errMsg, e);
@@ -121,7 +122,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
                         .metaProperties(metaFromMappings(mappingsBlock))
                         .build();
                   }));
-    } catch (final IOException e) {
+    } catch (final IOException | ElasticsearchException e) {
       throw new ElasticsearchExporterException(
           String.format(
               "Failed retrieving mappings from index/index templates with pattern [%s]",
@@ -137,7 +138,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
     try {
       client.indices().putSettings(request);
-    } catch (final IOException e) {
+    } catch (final IOException | ElasticsearchException e) {
       final var errMsg =
           String.format(
               "settings PUT failed for the following indices [%s]", listIndices(indexDescriptors));

@@ -10,8 +10,8 @@ package io.camunda.exporter;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.exporter.utils.TestSupport;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
@@ -77,7 +77,8 @@ public class CamundaExporterAuthenticationIT {
 
     // then
     assertThatThrownBy(() -> exporter.open(controller))
-        .isInstanceOf(ElasticsearchException.class)
+        .isInstanceOf(ElasticsearchExporterException.class)
+        .cause()
         .hasMessageContaining("unable to authenticate user");
   }
 }

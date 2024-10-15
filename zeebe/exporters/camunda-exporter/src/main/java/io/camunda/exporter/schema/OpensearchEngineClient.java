@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonpDeserializer;
 import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch.generic.Body;
 import org.opensearch.client.opensearch.generic.Request;
@@ -60,7 +61,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
     try {
       client.indices().create(request);
       LOG.debug("Index [{}] was successfully created", indexDescriptor.getIndexName());
-    } catch (final IOException e) {
+    } catch (final IOException | OpenSearchException e) {
       final var errMsg =
           String.format("Index [%s] was not created", indexDescriptor.getIndexName());
       LOG.error(errMsg, e);
@@ -90,7 +91,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
 
       client.indices().putIndexTemplate(request);
       LOG.debug("Template [{}] was successfully created", templateDescriptor.getTemplateName());
-    } catch (final IOException e) {
+    } catch (final IOException | OpenSearchException e) {
       final var errMsg =
           String.format("Template [%s] was NOT created", templateDescriptor.getTemplateName());
       LOG.error(errMsg, e);
@@ -106,7 +107,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
     try {
       client.indices().putMapping(request);
       LOG.debug("Mapping in [{}] was successfully updated", indexDescriptor.getIndexName());
-    } catch (final IOException e) {
+    } catch (final IOException | OpenSearchException e) {
       final var errMsg =
           String.format("Mapping in [%s] was NOT updated", indexDescriptor.getIndexName());
       LOG.error(errMsg, e);
@@ -132,7 +133,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
                         .metaProperties(metaFromMappings(mappingsBlock))
                         .build();
                   }));
-    } catch (final IOException e) {
+    } catch (final IOException | OpenSearchException e) {
       throw new OpensearchExporterException(
           String.format(
               "Failed retrieving mappings from index/index templates with pattern [%s]",
@@ -148,7 +149,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
 
     try {
       client.indices().putSettings(request);
-    } catch (final IOException e) {
+    } catch (final IOException | OpenSearchException e) {
       final var errMsg =
           String.format(
               "settings PUT failed for the following indices [%s]", listIndices(indexDescriptors));
@@ -169,7 +170,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
                 policyName, deletionMinAge, response.getBody().get().bodyAsString()));
       }
 
-    } catch (final IOException e) {
+    } catch (final IOException | OpenSearchException e) {
       final var errMsg =
           String.format("Failed to create index state management policy [%s]", policyName);
       LOG.error(errMsg, e);
