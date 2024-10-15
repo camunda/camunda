@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
@@ -15,13 +16,17 @@ import io.camunda.zeebe.protocol.record.intent.UserIntent;
 
 public class UserDeletedApplier implements TypedEventApplier<UserIntent, UserRecord> {
   private final MutableUserState userState;
+  private final MutableAuthorizationState authorizationState;
 
   public UserDeletedApplier(final MutableProcessingState processingState) {
     userState = processingState.getUserState();
+    authorizationState = processingState.getAuthorizationState();
   }
 
   @Override
   public void applyState(final long key, final UserRecord value) {
+    authorizationState.deleteAuthorizationsByOwnerKeyPrefix(value.getUserKey());
+    authorizationState.deleteOwnerTypeByKey(value.getUserKey());
     userState.deleteUser(value.getUserKey());
   }
 }
