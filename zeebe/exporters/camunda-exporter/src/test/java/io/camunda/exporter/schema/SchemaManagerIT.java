@@ -7,12 +7,12 @@
  */
 package io.camunda.exporter.schema;
 
-import static io.camunda.exporter.schema.SchemaTestUtil.elsIndexTemplateToNode;
-import static io.camunda.exporter.schema.SchemaTestUtil.elsIndexToNode;
 import static io.camunda.exporter.schema.SchemaTestUtil.elsPolicyToNode;
+import static io.camunda.exporter.schema.SchemaTestUtil.getElsIndexAsNode;
+import static io.camunda.exporter.schema.SchemaTestUtil.getElsIndexTemplateAsNode;
+import static io.camunda.exporter.schema.SchemaTestUtil.getOpensearchIndexAsNode;
+import static io.camunda.exporter.schema.SchemaTestUtil.getOpensearchIndexTemplateAsNode;
 import static io.camunda.exporter.schema.SchemaTestUtil.mappingsMatch;
-import static io.camunda.exporter.schema.SchemaTestUtil.opensearchIndexTemplateToNode;
-import static io.camunda.exporter.schema.SchemaTestUtil.opensearchIndexToNode;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
@@ -362,56 +362,57 @@ public class SchemaManagerIT {
     @Test
     void shouldInheritDefaultSettingsIfNoIndexSpecificSettings() throws Exception {
       SchemaManagerIT.this.shouldInheritDefaultSettingsIfNoIndexSpecificSettings(
-          () -> getIndexAsNode(index.getFullQualifiedName()), searchEngineClient);
+          () -> getElsIndexAsNode(index.getFullQualifiedName(), elsClient), searchEngineClient);
     }
 
     @Test
     void shouldUseIndexSpecificSettingsIfSpecified() throws Exception {
       SchemaManagerIT.this.shouldUseIndexSpecificSettingsIfSpecified(
-          () -> getIndexAsNode(index.getFullQualifiedName()), searchEngineClient);
+          () -> getElsIndexAsNode(index.getFullQualifiedName(), elsClient), searchEngineClient);
     }
 
     @Test
     void shouldOverwriteIndexTemplateIfMappingsFileChanged() throws Exception {
       SchemaManagerIT.this.shouldOverwriteIndexTemplateIfMappingsFileChanged(
-          () -> getIndexTemplateAsNode(indexTemplate.getTemplateName()), searchEngineClient);
+          () -> getElsIndexTemplateAsNode(indexTemplate.getTemplateName(), elsClient),
+          searchEngineClient);
     }
 
     @Test
     void shouldAppendToIndexMappingsWithNewProperties() throws Exception {
       SchemaManagerIT.this.shouldAppendToIndexMappingsWithNewProperties(
-          () -> getIndexAsNode(index.getFullQualifiedName()), searchEngineClient);
+          () -> getElsIndexAsNode(index.getFullQualifiedName(), elsClient), searchEngineClient);
     }
 
     @Test
     void shouldCreateAllSchemasIfCreateEnabled() throws Exception {
       SchemaManagerIT.this.shouldCreateAllSchemasIfCreateEnabled(
-          () -> getIndexAsNode(index.getFullQualifiedName()),
-          () -> getIndexTemplateAsNode(indexTemplate.getTemplateName()),
+          () -> getElsIndexAsNode(index.getFullQualifiedName(), elsClient),
+          () -> getElsIndexTemplateAsNode(indexTemplate.getTemplateName(), elsClient),
           searchEngineClient);
     }
 
     @Test
     void shouldUpdateAllSchemasIfUpdateEnabled() throws Exception {
       shouldUpdateSchemasCorrectlyIfCreateEnabled(
-          () -> getIndexAsNode(index.getFullQualifiedName()),
-          () -> getIndexTemplateAsNode(indexTemplate.getTemplateName()),
+          () -> getElsIndexAsNode(index.getFullQualifiedName(), elsClient),
+          () -> getElsIndexTemplateAsNode(indexTemplate.getTemplateName(), elsClient),
           searchEngineClient);
     }
 
     @Test
     void shouldCreateNewSchemasIfNewIndexDescriptorAddedToExistingSchemas() throws Exception {
       SchemaManagerIT.this.shouldCreateNewSchemasIfNewIndexDescriptorAddedToExistingSchemas(
-          () -> getIndexAsNode("new_index_qualified"),
-          () -> getIndexTemplateAsNode("new_template_name"),
+          () -> getElsIndexAsNode("new_index_qualified", elsClient),
+          () -> getElsIndexTemplateAsNode("new_template_name", elsClient),
           searchEngineClient);
     }
 
     @Test
     void shouldNotPutAnySchemasIfCreatedDisabled() {
       SchemaManagerIT.this.shouldNotPutAnySchemasIfCreatedDisabled(
-          () -> getIndexAsNode(index.getFullQualifiedName()),
-          () -> getIndexTemplateAsNode(indexTemplate.getTemplateName()),
+          () -> getElsIndexAsNode(index.getFullQualifiedName(), elsClient),
+          () -> getElsIndexTemplateAsNode(indexTemplate.getTemplateName(), elsClient),
           searchEngineClient);
     }
 
@@ -424,7 +425,8 @@ public class SchemaManagerIT {
     @Test
     void shouldCreateIndexInAdditionToTemplateFromTemplateDescriptor() throws Exception {
       SchemaManagerIT.this.shouldCreateIndexInAdditionToTemplateFromTemplateDescriptor(
-          () -> getIndexAsNode(indexTemplate.getFullQualifiedName()), searchEngineClient);
+          () -> getElsIndexAsNode(indexTemplate.getFullQualifiedName(), elsClient),
+          searchEngineClient);
     }
 
     @Test
@@ -449,23 +451,6 @@ public class SchemaManagerIT {
                   .name("world")
                   .typeDefinition(Map.of("type", "keyword"))
                   .build());
-    }
-
-    public JsonNode getIndexAsNode(final String indexName) throws IOException {
-      final var updatedIndex = elsClient.indices().get(req -> req.index(indexName)).get(indexName);
-
-      return elsIndexToNode(updatedIndex);
-    }
-
-    public JsonNode getIndexTemplateAsNode(final String templateName) throws IOException {
-      final var template =
-          elsClient
-              .indices()
-              .getIndexTemplate(req -> req.name(templateName))
-              .indexTemplates()
-              .getFirst();
-
-      return elsIndexTemplateToNode(template);
     }
 
     private JsonNode getPolicy(final String policyName) throws IOException {
@@ -503,57 +488,61 @@ public class SchemaManagerIT {
     @Test
     void shouldInheritDefaultSettingsIfNoIndexSpecificSettings() throws Exception {
       SchemaManagerIT.this.shouldInheritDefaultSettingsIfNoIndexSpecificSettings(
-          () -> getIndexAsNode(index.getFullQualifiedName()), searchEngineClient);
+          () -> getOpensearchIndexAsNode(index.getFullQualifiedName(), opensearchClient),
+          searchEngineClient);
     }
 
     @Test
     void shouldUseIndexSpecificSettingsIfSpecified() throws Exception {
       SchemaManagerIT.this.shouldUseIndexSpecificSettingsIfSpecified(
-          () -> getIndexAsNode(index.getFullQualifiedName()), searchEngineClient);
+          () -> getOpensearchIndexAsNode(index.getFullQualifiedName(), opensearchClient),
+          searchEngineClient);
     }
 
     @Test
     void shouldOverwriteIndexTemplateIfMappingsFileChanged() throws Exception {
 
       SchemaManagerIT.this.shouldOverwriteIndexTemplateIfMappingsFileChanged(
-          () -> getIndexTemplateAsNode(indexTemplate.getTemplateName()), searchEngineClient);
+          () -> getOpensearchIndexTemplateAsNode(indexTemplate.getTemplateName(), opensearchClient),
+          searchEngineClient);
     }
 
     @Test
     void shouldAppendToIndexMappingsWithNewProperties() throws Exception {
       SchemaManagerIT.this.shouldAppendToIndexMappingsWithNewProperties(
-          () -> getIndexAsNode(index.getFullQualifiedName()), searchEngineClient);
+          () -> getOpensearchIndexAsNode(index.getFullQualifiedName(), opensearchClient),
+          searchEngineClient);
     }
 
     @Test
     void shouldCreateAllSchemasIfCreateEnabled() throws Exception {
       SchemaManagerIT.this.shouldCreateAllSchemasIfCreateEnabled(
-          () -> getIndexAsNode(index.getFullQualifiedName()),
-          () -> getIndexTemplateAsNode(indexTemplate.getTemplateName()),
+          () -> getOpensearchIndexAsNode(index.getFullQualifiedName(), opensearchClient),
+          () -> getOpensearchIndexTemplateAsNode(indexTemplate.getTemplateName(), opensearchClient),
           searchEngineClient);
     }
 
     @Test
     void shouldUpdateAllSchemasIfUpdateEnabled() throws Exception {
       shouldUpdateSchemasCorrectlyIfCreateEnabled(
-          () -> getIndexAsNode(index.getFullQualifiedName()),
-          () -> getIndexTemplateAsNode(indexTemplate.getTemplateName()),
+          () -> getOpensearchIndexAsNode(index.getFullQualifiedName(), opensearchClient),
+          () -> getOpensearchIndexTemplateAsNode(indexTemplate.getTemplateName(), opensearchClient),
           searchEngineClient);
     }
 
     @Test
     void shouldCreateNewSchemasIfNewIndexDescriptorAddedToExistingSchemas() throws Exception {
       SchemaManagerIT.this.shouldCreateNewSchemasIfNewIndexDescriptorAddedToExistingSchemas(
-          () -> getIndexAsNode("new_index_qualified"),
-          () -> getIndexTemplateAsNode("new_template_name"),
+          () -> getOpensearchIndexAsNode("new_index_qualified", opensearchClient),
+          () -> getOpensearchIndexTemplateAsNode("new_template_name", opensearchClient),
           searchEngineClient);
     }
 
     @Test
     void shouldNotPutAnySchemasIfCreatedDisabled() {
       SchemaManagerIT.this.shouldNotPutAnySchemasIfCreatedDisabled(
-          () -> getIndexAsNode(index.getFullQualifiedName()),
-          () -> getIndexTemplateAsNode(indexTemplate.getTemplateName()),
+          () -> getOpensearchIndexAsNode(index.getFullQualifiedName(), opensearchClient),
+          () -> getOpensearchIndexTemplateAsNode(indexTemplate.getTemplateName(), opensearchClient),
           searchEngineClient);
     }
 
@@ -566,25 +555,8 @@ public class SchemaManagerIT {
     @Test
     void shouldCreateIndexInAdditionToTemplateFromTemplateDescriptor() throws Exception {
       SchemaManagerIT.this.shouldCreateIndexInAdditionToTemplateFromTemplateDescriptor(
-          () -> getIndexAsNode(indexTemplate.getFullQualifiedName()), searchEngineClient);
-    }
-
-    private JsonNode getIndexAsNode(final String indexName) throws IOException {
-      final var updatedIndex =
-          opensearchClient.indices().get(req -> req.index(indexName)).get(indexName);
-
-      return opensearchIndexToNode(updatedIndex);
-    }
-
-    private JsonNode getIndexTemplateAsNode(final String templateName) throws IOException {
-      final var template =
-          opensearchClient
-              .indices()
-              .getIndexTemplate(req -> req.name(templateName))
-              .indexTemplates()
-              .getFirst();
-
-      return opensearchIndexTemplateToNode(template);
+          () -> getOpensearchIndexAsNode(indexTemplate.getFullQualifiedName(), opensearchClient),
+          searchEngineClient);
     }
 
     private JsonNode getPolicy(final String policyName) throws IOException {
