@@ -83,7 +83,10 @@ public class VariableFilterTransformer implements FilterTransformer<VariableFilt
     return stringTerms("tenantId", tenant);
   }
 
-  private SearchQuery getIsTruncatedQuery(final boolean isTruncated) {
+  private SearchQuery getIsTruncatedQuery(final Boolean isTruncated) {
+    if (isTruncated == null) {
+      return null;
+    }
     return term("isPreview", isTruncated);
   }
 }

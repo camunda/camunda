@@ -54,14 +54,14 @@ public class VariableQueryController {
           RestErrorMapper.createProblemDetail(
               HttpStatus.BAD_REQUEST,
               e.getMessage(),
-              "Validation failed for UserTask Search Query");
+              "Validation failed for Variable Search Query");
       return RestErrorMapper.mapProblemToResponse(problemDetail);
     } catch (final Exception e) {
       final var problemDetail =
           RestErrorMapper.createProblemDetail(
               HttpStatus.INTERNAL_SERVER_ERROR,
               e.getMessage(),
-              "Failed to execute UserTask Search Query");
+              "Failed to execute Variable Search Query");
       return RestErrorMapper.mapProblemToResponse(problemDetail);
     }
   }

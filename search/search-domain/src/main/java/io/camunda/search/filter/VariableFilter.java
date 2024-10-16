@@ -22,7 +22,7 @@ public final record VariableFilter(
     List<Long> processInstanceKeys,
     List<Long> variableKeys,
     List<String> tenantIds,
-    boolean isTruncated)
+    Boolean isTruncated)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<VariableFilter> {
@@ -31,7 +31,7 @@ public final record VariableFilter(
     private List<Long> processInstanceKeys;
     private List<Long> variableKeys;
     private List<String> tenantIds;
-    private boolean isTruncated;
+    private Boolean isTruncated;
 
     public Builder variable(final List<VariableValueFilter> values) {
       variableFilters = addValuesToList(variableFilters, values);
@@ -83,7 +83,7 @@ public final record VariableFilter(
       return this;
     }
 
-    public Builder isTruncated(final boolean value) {
+    public Builder isTruncated(final Boolean value) {
       isTruncated = value;
       return this;
     }
