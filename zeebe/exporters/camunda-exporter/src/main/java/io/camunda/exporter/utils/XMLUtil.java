@@ -35,11 +35,11 @@ import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
-public class XMLUtil {
+public final class XMLUtil {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(XMLUtil.class);
 
-  private static XMLUtil INSTANCE;
+  private static XMLUtil instance;
 
   private final SAXParserFactory saxParserFactory;
 
@@ -57,10 +57,10 @@ public class XMLUtil {
   }
 
   public static XMLUtil getInstance() {
-    if (INSTANCE == null) {
-      INSTANCE = new XMLUtil();
+    if (instance == null) {
+      instance = new XMLUtil();
     }
-    return INSTANCE;
+    return instance;
   }
 
   public Optional<ProcessEntity> extractDiagramData(
