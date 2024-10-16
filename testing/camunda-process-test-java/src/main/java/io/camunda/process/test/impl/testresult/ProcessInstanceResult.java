@@ -7,7 +7,6 @@
  */
 package io.camunda.process.test.impl.testresult;
 
-import io.camunda.process.test.impl.assertions.AssertFormatUtil;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,16 +39,5 @@ public class ProcessInstanceResult {
 
   public void setVariables(final Map<String, String> variables) {
     this.variables = variables;
-  }
-
-  @Override
-  public String toString() {
-    String formattedVariables = "<None>";
-    if (!variables.isEmpty()) {
-      formattedVariables = AssertFormatUtil.formatVariables(variables);
-    }
-    return String.format(
-        "Process instance: %d [process-id: '%s']\n\nVariables:\n%s",
-        processInstanceKey, processId, formattedVariables);
   }
 }

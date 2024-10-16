@@ -9,7 +9,6 @@ package io.camunda.process.test.impl.testresult;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class ProcessTestResult {
 
@@ -22,18 +21,5 @@ public class ProcessTestResult {
   public void setProcessInstanceTestResults(
       final List<ProcessInstanceResult> processInstanceResults) {
     this.processInstanceResults = processInstanceResults;
-  }
-
-  @Override
-  public String toString() {
-    final String formattedResults =
-        processInstanceResults.stream()
-            .map(ProcessInstanceResult::toString)
-            .collect(Collectors.joining("\n---------------------\n\n"));
-    return "Process test results:\n"
-        + "=====================\n\n"
-        + formattedResults
-        + "\n"
-        + "=====================\n";
   }
 }
