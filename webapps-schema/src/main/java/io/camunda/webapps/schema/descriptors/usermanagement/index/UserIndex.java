@@ -7,9 +7,9 @@
  */
 package io.camunda.webapps.schema.descriptors.usermanagement.index;
 
-import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.usermanagement.UserManagementIndexDescriptor;
 
-public class UserIndex extends AbstractIndexDescriptor {
+public class UserIndex extends UserManagementIndexDescriptor {
   public static final String INDEX_NAME = "users";
   public static final String INDEX_VERSION = "8.7.0";
 
@@ -42,11 +42,6 @@ public class UserIndex extends AbstractIndexDescriptor {
   @Override
   public String getVersion() {
     return INDEX_VERSION;
-  }
-
-  @Override
-  public String getComponentName() {
-    return "";
   }
 
   @Override
