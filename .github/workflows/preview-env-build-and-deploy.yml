@@ -195,7 +195,7 @@ jobs:
           revision: ${{ env.BRANCH_NAME }}
           argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
           app_name: camunda-${{ steps.sanitize.outputs.branch_name }}
-          app_url: https://${{ steps.sanitize.outputs.branch_name }}.camunda.camunda.cloud
+          app_url: https://${{ steps.sanitize.outputs.branch_name }}.camunda.camunda.cloud/operate
           argocd_arguments: ${{ env.argocd_arguments }}
           argocd_server: argocd.int.camunda.com
 
