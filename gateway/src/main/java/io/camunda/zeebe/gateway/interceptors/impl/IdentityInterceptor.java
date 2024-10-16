@@ -76,9 +76,10 @@ public final class IdentityInterceptor implements ServerInterceptor {
       identity.authentication().verifyToken(token);
     } catch (final TokenVerificationException e) {
       LOGGER.debug(
-          "Denying call {} as the token could not be fully verified. Error message: {}",
+          "Denying call {} as the token could not be verified successfully. Error message: {}",
           methodDescriptor.getFullMethodName(),
-          e.getMessage());
+          e.getMessage(),
+          e);
 
       return deny(
           call,
