@@ -85,7 +85,8 @@ final class CommandApiRequestHandler
 
     if (processingPaused.getOrDefault(partitionId, false)) {
       return Either.left(
-          errorWriter.internalError("Processing paused for partition '%s'", partitionId));
+          errorWriter.partitionUnavailable(
+              String.format("Processing paused for partition '%s'", partitionId)));
     }
 
     final var command = reader.getMessageDecoder();
