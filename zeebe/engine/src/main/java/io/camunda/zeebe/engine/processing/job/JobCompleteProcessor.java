@@ -85,9 +85,21 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
             // to store the variable for merge, to handle concurrent commands
             eventHandle.triggeringProcessEvent(value);
 
-            // TODO explain here why we retrieve intermediate state and not the `regular` user task
+            /*
+             We retrieve the intermediate user task state rather than the regular user task record
+             because the intermediate state captures the exact data provided during the original
+             user task command (e.g., COMPLETE, ASSIGN). This data includes variables, actions,
+             and other command-related details that may not yet be reflected in the persisted user
+             task record, that can be accessed via `userTaskState.getUserTask`.
+
+             When task listeners are involved, it's essential to preserve this original state
+             until all task listeners have been executed. Retrieving the intermediate state here
+             ensures that the finalization of the user task command uses the correct, unmodified
+             data as originally intended by the user. Once all task listeners have been processed
+             and the original user task command is finalized, the intermediate state is cleared.
+            */
             final var userTask =
-                userTaskState.getUserTaskIntermediateState(elementInstance.getUserTaskKey());
+                userTaskState.getIntermediateState(elementInstance.getUserTaskKey()).getRecord();
             commandWriter.appendFollowUpCommand(
                 userTask.getUserTaskKey(), UserTaskIntent.COMPLETE_TASK_LISTENER, userTask);
             return;

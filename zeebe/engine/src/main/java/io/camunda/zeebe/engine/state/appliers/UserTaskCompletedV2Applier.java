@@ -30,7 +30,7 @@ public final class UserTaskCompletedV2Applier
   @Override
   public void applyState(final long key, final UserTaskRecord value) {
     userTaskState.delete(key);
-    userTaskState.deleteUserTaskIntermediateState(key);
+    userTaskState.deleteIntermediateState(key);
 
     final long elementInstanceKey = value.getElementInstanceKey();
     final ElementInstance elementInstance = elementInstanceState.getInstance(elementInstanceKey);

@@ -26,6 +26,6 @@ public final class UserTaskCompletingV2Applier
   @Override
   public void applyState(final long key, final UserTaskRecord value) {
     userTaskState.updateUserTaskLifecycleState(key, LifecycleState.COMPLETING);
-    userTaskState.createUserTaskIntermediateState(value);
+    userTaskState.storeIntermediateState(value, LifecycleState.COMPLETING);
   }
 }

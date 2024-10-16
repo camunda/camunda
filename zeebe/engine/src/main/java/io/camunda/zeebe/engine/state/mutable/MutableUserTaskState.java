@@ -14,13 +14,13 @@ public interface MutableUserTaskState extends UserTaskState {
 
   void create(final UserTaskRecord userTask);
 
-  void createUserTaskIntermediateState(final UserTaskRecord userTask);
-
   void update(final UserTaskRecord userTask);
 
   void updateUserTaskLifecycleState(final long userTaskKey, final LifecycleState newLifecycleState);
 
   void delete(final long userTaskKey);
 
-  void deleteUserTaskIntermediateState(final long userTaskKey);
+  void storeIntermediateState(final UserTaskRecord userTask, final LifecycleState lifecycleState);
+
+  void deleteIntermediateState(final long userTaskKey);
 }
