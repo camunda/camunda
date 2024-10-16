@@ -39,11 +39,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-search-domain</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-query-transformer</artifactId>
     </dependency>
 
@@ -274,6 +269,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>identity-spring-boot-autoconfigure</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-core</artifactId>
     </dependency>
 
     <dependency>
