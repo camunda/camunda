@@ -31,8 +31,8 @@ jest.mock('hooks', () => ({
   useUser: jest.fn().mockReturnValue({user: {authorizations: [], name: 'userName'}}),
 }));
 
-const UserMenu = () => {
-  const menu = useUserMenu();
+const UserMenu = ({version}: {version?: string}) => {
+  const menu = useUserMenu(version);
   return <div {...(menu as ComponentProps<'div'>)} />;
 };
 
@@ -54,4 +54,11 @@ it('should hide logout button if specified by the ui config', () => {
 
   const logout = node.props().bottomElements[0];
   expect(logout).not.toBeDefined();
+});
+
+it('should display verison info in user menu', () => {
+  const node = shallow(<UserMenu version="1.0.0" />);
+
+  const version = node.props().version;
+  expect(version).toBe('1.0.0');
 });

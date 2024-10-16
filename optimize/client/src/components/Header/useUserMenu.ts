@@ -16,7 +16,7 @@ import {isLogoutHidden} from 'config';
 import {showError} from 'notifications';
 import {useErrorHandling, useUser} from 'hooks';
 
-export default function useUserMenu() {
+export default function useUserMenu(optimizeVersion?: string) {
   const [logoutHidden, setLogoutHidden] = useState(false);
   const history = useHistory();
   const {mightFail} = useErrorHandling();
@@ -27,6 +27,7 @@ export default function useUserMenu() {
   }, [mightFail, user]);
 
   const menu: Exclude<C3NavigationProps['userSideBar'], undefined> = {
+    version: optimizeVersion,
     ariaLabel: t('common.user.label').toString(),
     customElements: {
       profile: {
