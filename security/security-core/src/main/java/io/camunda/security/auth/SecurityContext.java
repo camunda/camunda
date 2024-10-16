@@ -23,6 +23,10 @@ public record SecurityContext(Authentication authentication, Authorization autho
     return builderFunction.apply(new Builder()).build();
   }
 
+  public static SecurityContext withoutAuthentication() {
+    return new Builder().build();
+  }
+
   public static class Builder {
     private Authentication authentication;
     private Authorization authorization;
