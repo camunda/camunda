@@ -149,11 +149,15 @@ public class ErrorMapperTest extends RestControllerTest {
       value = ErrorCode.class,
       names = {
         "INTERNAL_ERROR",
+        //        "PARTITION_LEADER_MISMATCH",
         "UNSUPPORTED_MESSAGE",
         "INVALID_CLIENT_VERSION",
         "MALFORMED_REQUEST",
         "INVALID_MESSAGE_TEMPLATE",
         "INVALID_DEPLOYMENT_PARTITION",
+        //        "PROCESS_NOT_FOUND",
+        //        "RESOURCE_EXHAUSTED",
+        //        "PARTITION_UNAVAILABLE",
         "SBE_UNKNOWN",
         "NULL_VAL"
       })
