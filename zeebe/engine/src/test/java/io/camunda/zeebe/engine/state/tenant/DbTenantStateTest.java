@@ -130,6 +130,8 @@ public class DbTenantStateTest {
     final var newKey = tenantState.getTenantKeyById(newTenantId);
     assertThat(newKey).isPresent();
     assertThat(newKey.get()).isEqualTo(tenantKey);
+    // Get the record created from the persisted tenant
+    // to ensure the tenant ID was updated in the persistedTenant
     final Optional<TenantRecord> tenantByKey = tenantState.getTenantByKey(tenantKey);
     assertThat(tenantByKey.get().getTenantId()).isEqualTo(newTenantId);
   }

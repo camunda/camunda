@@ -58,10 +58,7 @@ public class DbTenantState implements MutableTenantState {
   public void createTenant(final TenantRecord tenantRecord) {
     tenantKey.wrapLong(tenantRecord.getTenantKey());
     tenantId.wrapString(tenantRecord.getTenantId());
-    persistedTenant
-        .setTenantKey(tenantRecord.getTenantKey())
-        .setTenantId(tenantRecord.getTenantId())
-        .setName(tenantRecord.getName());
+    persistedTenant.wrap(tenantRecord);
     tenantsColumnFamily.insert(tenantKey, persistedTenant);
     tenantByIdColumnFamily.insert(tenantId, fkTenantKey);
   }
@@ -83,11 +80,7 @@ public class DbTenantState implements MutableTenantState {
         tenantByIdColumnFamily.insert(tenantId, fkTenantKey);
       }
 
-      persistedTenant
-          .setTenantKey(updatedTenantRecord.getTenantKey())
-          .setTenantId(updatedTenantRecord.getTenantId())
-          .setName(updatedTenantRecord.getName());
-
+      persistedTenant.wrap(updatedTenantRecord);
       tenantsColumnFamily.update(tenantKey, persistedTenant);
     }
   }
@@ -105,8 +98,6 @@ public class DbTenantState implements MutableTenantState {
           .setName(persistedTenant.getName());
 
       // Retrieve entityKey if it exists for the tenant
-      final DbForeignKey<DbLong> fkTenantKey =
-          new DbForeignKey<>(this.tenantKey, ZbColumnFamilies.TENANTS);
       final EntityTypeValue entityTypeValue =
           entityByTenantColumnFamily.get(new DbCompositeKey<>(fkTenantKey, entityKey));
 

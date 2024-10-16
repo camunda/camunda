@@ -11,6 +11,7 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public class PersistedTenant extends UnpackedObject implements DbValue {
@@ -87,14 +88,15 @@ public class PersistedTenant extends UnpackedObject implements DbValue {
   }
 
   /**
-   * Copies the current PersistedTenant.
+   * Wraps the provided TenantRecord into this PersistedTenant instance. Copies the tenant key,
+   * tenant ID, and tenant name from the TenantRecord to the corresponding properties of this
+   * persisted tenant, allowing the current instance to reflect the state of the provided record.
    *
-   * @return a new instance of PersistedTenant
+   * @param tenantRecord the TenantRecord from which to copy the data
    */
-  public PersistedTenant copy() {
-    return new PersistedTenant()
-        .setTenantKey(getTenantKey())
-        .setTenantId(getTenantId())
-        .setName(getName());
+  public void wrap(final TenantRecord tenantRecord) {
+    tenantKeyProp.setValue(tenantRecord.getTenantKey());
+    tenantIdProp.setValue(tenantRecord.getTenantId());
+    nameProp.setValue(tenantRecord.getName());
   }
 }
