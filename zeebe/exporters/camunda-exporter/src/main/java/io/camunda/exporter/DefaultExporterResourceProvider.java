@@ -11,6 +11,7 @@ import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.handlers.AuthorizationRecordValueExportHandler;
 import io.camunda.exporter.handlers.DecisionHandler;
+import io.camunda.exporter.handlers.DecisionRequirementsHandler;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.UserRecordValueExportHandler;
@@ -80,7 +81,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(), false),
             new VariableHandler(
                 templateDescriptorsMap.get(VariableTemplate.class).getFullQualifiedName(),
-                configuration.getIndex().getVariableSizeThreshold()));
+                configuration.getIndex().getVariableSizeThreshold()),
+            new DecisionRequirementsHandler(
+                indexDescriptorsMap.get(DecisionRequirementsIndex.class).getFullQualifiedName()));
   }
 
   @Override
