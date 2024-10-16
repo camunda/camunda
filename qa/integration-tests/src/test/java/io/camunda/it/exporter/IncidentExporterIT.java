@@ -10,9 +10,9 @@ package io.camunda.it.exporter;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.it.utils.CamundaExporterITInvocationProvider;
-import io.camunda.webapps.schema.entities.operate.ErrorType;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.search.filter.IncidentFilter;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.util.UUID;
