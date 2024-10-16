@@ -17,8 +17,8 @@ import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.IncidentHandler;
 import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
+import io.camunda.exporter.handlers.UserHandler;
 import io.camunda.exporter.handlers.SequenceFlowHandler;
-import io.camunda.exporter.handlers.UserRecordValueExportHandler;
 import io.camunda.exporter.handlers.VariableHandler;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
@@ -34,6 +34,7 @@ import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueT
 import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -85,11 +86,13 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             ProcessIndex.class,
             new ProcessIndex(operateIndexPrefix, isElasticsearch),
             FormIndex.class,
-            new FormIndex(tasklistIndexPrefix, isElasticsearch));
+            new FormIndex(tasklistIndexPrefix, isElasticsearch),
+            UserIndex.class,
+            new UserIndex("", isElasticsearch));
 
     exportHandlers =
         Set.of(
-            new UserRecordValueExportHandler(),
+            new UserHandler(indexDescriptorsMap.get(UserIndex.class).getFullQualifiedName()),
             new AuthorizationRecordValueExportHandler(),
             new DecisionHandler(
                 indexDescriptorsMap.get(DecisionIndex.class).getFullQualifiedName()),
