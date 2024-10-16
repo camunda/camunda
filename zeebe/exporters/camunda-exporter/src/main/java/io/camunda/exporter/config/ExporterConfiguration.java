@@ -98,7 +98,7 @@ public class ExporterConfiguration {
   }
 
   public static final class IndexSettings {
-    private String prefix = "camunda-record";
+    private String prefix = "";
     private Integer numberOfShards = 1;
     private Integer numberOfReplicas = 0;
 

@@ -20,15 +20,19 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
   protected String indexPrefix;
   protected boolean isElasticsearch;
+  private final String componentPrefix;
 
-  public AbstractIndexDescriptor(final String indexPrefix, final boolean isElasticsearch) {
+  public AbstractIndexDescriptor(
+      final String indexPrefix, final String componentPrefix, final boolean isElasticsearch) {
     this.indexPrefix = indexPrefix;
+    this.componentPrefix = componentPrefix;
     this.isElasticsearch = isElasticsearch;
   }
 
   @Override
   public String getFullQualifiedName() {
-    return String.format("%s-%s-%s_", getIndexPrefix(), getIndexName(), getVersion());
+    return String.format(
+        "%s-%s-%s-%s_", getIndexPrefix(), componentPrefix, getIndexName(), getVersion());
   }
 
   @Override

@@ -22,7 +22,28 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
 
   @Override
   public void init(final ExporterConfiguration configuration) {
-    operateIndexPrefix = configuration.getIndex().getPrefix();
+    final var globalPrefix = configuration.getIndex().getPrefix();
+    final var isElasticsearch =
+        ConnectionTypes.from(configuration.getConnect().getType())
+            .equals(ConnectionTypes.ELASTICSEARCH);
+
+    indexDescriptorsMap =
+        Map.of(
+            DecisionIndex.class,
+            new DecisionIndex(globalPrefix, isElasticsearch),
+            DecisionRequirementsIndex.class,
+            new DecisionRequirementsIndex(globalPrefix, isElasticsearch),
+            MetricIndex.class,
+            new MetricIndex(globalPrefix, isElasticsearch),
+            ProcessIndex.class,
+            new ProcessIndex(globalPrefix, isElasticsearch));
+
+    exportHandlers =
+        Set.of(
+            new UserRecordValueExportHandler(),
+            new AuthorizationRecordValueExportHandler(),
+            new DecisionHandler(
+                indexDescriptorsMap.get(DecisionIndex.class).getFullQualifiedName()));
   }
 
   @Override
