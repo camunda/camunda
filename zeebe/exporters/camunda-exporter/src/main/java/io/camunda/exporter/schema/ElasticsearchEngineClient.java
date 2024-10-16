@@ -12,6 +12,8 @@ import static io.camunda.exporter.utils.SearchEngineClientUtils.listIndices;
 import static io.camunda.exporter.utils.SearchEngineClientUtils.mapToSettings;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import co.elastic.clients.elasticsearch._types.mapping.Property;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
 import co.elastic.clients.elasticsearch.indices.Alias;
@@ -23,7 +25,10 @@ import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplate
 import co.elastic.clients.elasticsearch.indices.put_index_template.IndexTemplateMapping;
 import co.elastic.clients.json.JsonData;
 import co.elastic.clients.json.JsonpDeserializer;
+import co.elastic.clients.json.jackson.JacksonJsonpGenerator;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.exporter.SchemaResourceSerializer;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.exporter.exceptions.IndexSchemaValidationException;
@@ -55,7 +60,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     try {
       client.indices().create(request);
       LOG.debug("Index [{}] was successfully created", indexDescriptor.getIndexName());
-    } catch (final IOException e) {
+    } catch (final IOException | ElasticsearchException e) {
       final var errMsg =
           String.format("Index [%s] was not created", indexDescriptor.getIndexName());
       LOG.error(errMsg, e);
@@ -74,7 +79,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     try {
       client.indices().putIndexTemplate(request);
       LOG.debug("Template [{}] was successfully created", templateDescriptor.getTemplateName());
-    } catch (final IOException e) {
+    } catch (final IOException | ElasticsearchException e) {
       final var errMsg =
           String.format("Template [%s] was NOT created", templateDescriptor.getTemplateName());
       LOG.error(errMsg, e);
@@ -90,7 +95,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     try {
       client.indices().putMapping(request);
       LOG.debug("Mapping in [{}] was successfully updated", indexDescriptor.getIndexName());
-    } catch (final IOException e) {
+    } catch (final IOException | ElasticsearchException e) {
       final var errMsg =
           String.format("Mapping in [%s] was NOT updated", indexDescriptor.getIndexName());
       LOG.error(errMsg, e);
@@ -117,7 +122,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
                         .metaProperties(metaFromMappings(mappingsBlock))
                         .build();
                   }));
-    } catch (final IOException e) {
+    } catch (final IOException | ElasticsearchException e) {
       throw new ElasticsearchExporterException(
           String.format(
               "Failed retrieving mappings from index/index templates with pattern [%s]",
@@ -133,7 +138,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
     try {
       client.indices().putSettings(request);
-    } catch (final IOException e) {
+    } catch (final IOException | ElasticsearchException e) {
       final var errMsg =
           String.format(
               "settings PUT failed for the following indices [%s]", listIndices(indexDescriptors));
@@ -211,9 +216,21 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
             p ->
                 new IndexMappingProperty.Builder()
                     .name(p.getKey())
-                    .typeDefinition(Map.of("type", p.getValue()._kind().jsonValue()))
+                    .typeDefinition(propertyToMap(p.getValue()))
                     .build())
         .collect(Collectors.toSet());
+  }
+
+  private Map<String, Object> propertyToMap(final Property property) {
+    try {
+      return SchemaResourceSerializer.serialize(
+          (JacksonJsonpGenerator::new),
+          (jacksonJsonpGenerator) ->
+              property.serialize(jacksonJsonpGenerator, new JacksonJsonpMapper(MAPPER)));
+    } catch (final IOException e) {
+      throw new ElasticsearchExporterException(
+          String.format("Failed to serialize property [%s]", property.toString()), e);
+    }
   }
 
   private String dynamicFromMappings(final TypeMapping mapping) {

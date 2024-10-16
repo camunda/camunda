@@ -7,6 +7,7 @@
  */
 
 import {shallow, mount} from 'enzyme';
+import {act} from 'react';
 
 import {BPMNDiagram, Table} from 'components';
 
@@ -131,12 +132,11 @@ it('should apply previously defined target values to input fields', async () => 
 
 it('should set invalid property for input if value is invalid', async () => {
   const node = mount(<DurationHeatmapModal {...validProps} />);
-  node.setProps({open: true});
-  await flushPromises();
 
-  node.instance().setTarget('value', 'a')('invalid');
-
-  await node.update();
+  await act(async () => {
+    node.setProps({open: true});
+    node.instance().setTarget('value', 'a')('invalid');
+  });
 
   expect(node.find('.selection > [type="number"]').first().props()).toHaveProperty('invalid', true);
 });

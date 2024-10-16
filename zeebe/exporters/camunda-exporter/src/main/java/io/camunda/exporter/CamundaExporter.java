@@ -9,12 +9,13 @@ package io.camunda.exporter;
 
 import static io.camunda.zeebe.protocol.record.ValueType.AUTHORIZATION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION;
+import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.ValueType.USER;
 import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
 
 import co.elastic.clients.util.VisibleForTesting;
 import io.camunda.exporter.adapters.ClientAdapter;
-import io.camunda.exporter.config.ConnectionTypes;
+import io.camunda.exporter.config.ConfigValidator;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
@@ -65,13 +66,8 @@ public class CamundaExporter implements Exporter {
   @Override
   public void configure(final Context context) {
     configuration = context.getConfiguration().instantiate(ExporterConfiguration.class);
+    ConfigValidator.validate(configuration);
     provider.init(configuration);
-    // TODO validate configuration
-    ConnectionTypes.from(
-        configuration
-            .getConnect()
-            .getType()); // this is here to validate the type, it will throw early if the type is
-    // not supported
     context.setFilter(new ElasticsearchRecordFilter());
     metrics = new CamundaExporterMetrics(context.getMeterRegistry());
     LOG.debug("Exporter configured with {}", configuration);
@@ -94,17 +90,21 @@ public class CamundaExporter implements Exporter {
 
   @Override
   public void close() {
-    try {
-      flush();
-      updateLastExportedPosition();
-    } catch (final Exception e) {
-      LOG.warn("Failed to flush records before closing exporter.", e);
+    if (writer != null) {
+      try {
+        flush();
+        updateLastExportedPosition();
+      } catch (final Exception e) {
+        LOG.warn("Failed to flush records before closing exporter.", e);
+      }
     }
 
-    try {
-      clientAdapter.close();
-    } catch (final Exception e) {
-      LOG.warn("Failed to close elasticsearch client", e);
+    if (clientAdapter != null) {
+      try {
+        clientAdapter.close();
+      } catch (final Exception e) {
+        LOG.warn("Failed to close elasticsearch client", e);
+      }
     }
 
     LOG.info("Exporter closed");
@@ -179,7 +179,6 @@ public class CamundaExporter implements Exporter {
   }
 
   private boolean shouldFlush() {
-    // FIXME should compare against both batch size and memory limit
     return writer.getBatchSize() >= configuration.getBulk().getSize();
   }
 
@@ -224,7 +223,7 @@ public class CamundaExporter implements Exporter {
   private record ElasticsearchRecordFilter() implements RecordFilter {
     // TODO include other value types to export
     private static final Set<ValueType> VALUE_TYPES_2_EXPORT =
-        Set.of(USER, AUTHORIZATION, DECISION, VARIABLE);
+        Set.of(USER, AUTHORIZATION, DECISION, PROCESS_INSTANCE, VARIABLE);
 
     @Override
     public boolean acceptType(final RecordType recordType) {

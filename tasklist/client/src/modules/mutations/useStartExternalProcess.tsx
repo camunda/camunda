@@ -6,10 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMutation, UseMutationOptions} from '@tanstack/react-query';
+import {useMutation, type UseMutationOptions} from '@tanstack/react-query';
 import {api} from 'modules/api';
-import {RequestError, request} from 'modules/request';
-import {ProcessInstance} from 'modules/types';
+import {type RequestError, request} from 'modules/request';
+import type {ProcessInstance} from 'modules/types';
 
 function useStartExternalProcess(
   options: Pick<

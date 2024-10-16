@@ -7,8 +7,6 @@
  */
 package io.camunda.exporter.config;
 
-import io.camunda.zeebe.exporter.api.ExporterException;
-
 public enum ConnectionTypes {
   ELASTICSEARCH("elasticsearch"),
   OPENSEARCH("opensearch");
@@ -24,10 +22,6 @@ public enum ConnectionTypes {
   }
 
   public static ConnectionTypes from(final String type) {
-    try {
-      return valueOf(type.toUpperCase());
-    } catch (final IllegalArgumentException e) {
-      throw new ExporterException("Unsupported connection type: " + type);
-    }
+    return valueOf(type.toUpperCase());
   }
 }

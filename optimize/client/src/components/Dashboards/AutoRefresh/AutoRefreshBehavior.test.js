@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
+import {shallow} from 'enzyme';
 
 import AutoRefreshBehavior from './AutoRefreshBehavior';
 
@@ -19,20 +19,20 @@ const ReportSpy = jest.fn();
 const interval = 600;
 
 it('should register an interval with the specified interval duration and function', () => {
-  mount(<AutoRefreshBehavior loadTileData={ReportSpy} interval={interval} />);
+  shallow(<AutoRefreshBehavior loadTileData={ReportSpy} interval={interval} />);
 
   expect(setInterval).toHaveBeenCalledTimes(1);
 });
 
 it('should clear the interval when component is unmounted', () => {
-  const node = mount(<AutoRefreshBehavior loadTileData={ReportSpy} interval={interval} />);
+  const node = shallow(<AutoRefreshBehavior loadTileData={ReportSpy} interval={interval} />);
   node.unmount();
 
   expect(clearInterval).toHaveBeenCalledTimes(1);
 });
 
 it('should update the interval when the interval property changes', () => {
-  const node = mount(<AutoRefreshBehavior loadTileData={ReportSpy} interval={interval} />);
+  const node = shallow(<AutoRefreshBehavior loadTileData={ReportSpy} interval={interval} />);
 
   clearInterval.mockClear();
   node.setProps({interval: 1000});
@@ -42,7 +42,7 @@ it('should update the interval when the interval property changes', () => {
 });
 
 it('should invoke the loadTileData function after the interval duration ends', async () => {
-  mount(<AutoRefreshBehavior loadTileData={ReportSpy} interval={interval} />);
+  shallow(<AutoRefreshBehavior loadTileData={ReportSpy} interval={interval} />);
   jest.advanceTimersByTime(700);
   expect(ReportSpy).toHaveBeenCalled();
 });

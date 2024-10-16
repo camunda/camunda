@@ -6,10 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Mixpanel} from 'mixpanel-browser';
+import {type Mixpanel} from 'mixpanel-browser';
 import {getStage} from 'modules/utils/getStage';
-import {CurrentUser} from 'modules/types';
-import {TaskFilters} from 'modules/hooks/useTaskFilters';
+import type {CurrentUser} from 'modules/types';
+import type {TaskFilters} from 'modules/hooks/useTaskFilters';
 
 const EVENT_PREFIX = 'tasklist:';
 type Events =

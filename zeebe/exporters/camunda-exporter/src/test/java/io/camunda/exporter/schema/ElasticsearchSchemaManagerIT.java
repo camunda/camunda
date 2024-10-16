@@ -34,7 +34,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 public class ElasticsearchSchemaManagerIT {
   @Container
-  private static final ElasticsearchContainer CONTAINER = TestSupport.createDefaultContainer();
+  private static final ElasticsearchContainer CONTAINER =
+      TestSupport.createDefeaultElasticsearchContainer();
 
   private static final ExporterConfiguration CONFIG = new ExporterConfiguration();
   private static ElasticsearchClient elsClient;

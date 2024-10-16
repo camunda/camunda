@@ -65,10 +65,10 @@
     <version.httpcore5>5.2.5</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
     <version.identity>8.6.0</version.identity>
-    <version.surefire>3.5.0</version.surefire>
+    <version.surefire>3.5.1</version.surefire>
     <version.jackson>2.18.0</version.jackson>
     <version.java-grpc-prometheus>0.6.0</version.java-grpc-prometheus>
-    <version.junit>5.11.1</version.junit>
+    <version.junit>5.11.2</version.junit>
     <version.junit4>4.13.2</version.junit4>
     <version.log4j>2.24.1</version.log4j>
     <version.minlog>1.3.1</version.minlog>
@@ -78,7 +78,7 @@
     <version.netty>4.1.114.Final</version.netty>
     <version.objenesis>3.4</version.objenesis>
     <version.opensearch>2.14.0</version.opensearch>
-    <version.opensearch.testcontainers>2.1.0</version.opensearch.testcontainers>
+    <version.opensearch.testcontainers>2.1.1</version.opensearch.testcontainers>
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>3.25.5</version.protobuf>
     <version.protobuf-common>2.45.1</version.protobuf-common>
@@ -139,7 +139,7 @@
     <version.postgresql>42.7.4</version.postgresql>
     <version.h2>2.3.232</version.h2>
     <version.aws-signing>2.3.1</version.aws-signing>
-    <version.reactor-netty>1.1.22</version.reactor-netty>
+    <version.reactor-netty>1.1.23</version.reactor-netty>
     <version.tc-keycloak>3.3.1</version.tc-keycloak>
     <version.jakarta-activation>2.1.3</version.jakarta-activation>
     <version.jakarta.json-api>2.1.3</version.jakarta.json-api>
@@ -1863,7 +1863,7 @@
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-core</artifactId>
-        <version>3.6.10</version>
+        <version>3.6.11</version>
       </dependency>
 
       <!-- between com.github.dasniko:testcontainers-keycloak and its own dependencies -->

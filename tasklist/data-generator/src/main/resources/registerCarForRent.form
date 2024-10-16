@@ -1,0 +1,167 @@
+{
+  "components": [
+    {
+      "type": "image",
+      "alt": "The Camunda logo",
+      "id": "Field_19vtr2a",
+      "source": "https://camunda.com/wp-content/uploads/2020/05/logo-camunda-black.svg",
+      "layout": {
+        "row": "Row_0sj7vyj"
+      }
+    },
+    {
+      "values": [
+        {
+          "label": "Toyota",
+          "value": "Toyota"
+        },
+        {
+          "label": "Honda",
+          "value": "Honda"
+        },
+        {
+          "label": "Nissan",
+          "value": "Nissan"
+        }
+      ],
+      "label": "Car Brand",
+      "type": "select",
+      "id": "Field_00trkfo",
+      "key": "field_0jl5t5q",
+      "layout": {
+        "row": "Row_1vevoe6"
+      }
+    },
+    {
+      "label": "Car Name",
+      "type": "textfield",
+      "id": "Field_047l87q",
+      "key": "field_1rkz2ta",
+      "layout": {
+        "row": "Row_0m5qvgk"
+      }
+    },
+    {
+      "label": "Car description",
+      "type": "textarea",
+      "id": "Field_11sds9w",
+      "key": "field_0onvu4s",
+      "layout": {
+        "row": "Row_024q6ol"
+      }
+    },
+    {
+      "label": "Doors",
+      "type": "number",
+      "id": "Field_07gt7bs",
+      "key": "field_0j9aisq",
+      "layout": {
+        "row": "Row_0nstm1j"
+      }
+    },
+    {
+      "subtype": "date",
+      "dateLabel": "Available From",
+      "type": "datetime",
+      "id": "Field_1d61wnn",
+      "key": "field_02e3dhj",
+      "layout": {
+        "row": "Row_19kzflz"
+      }
+    },
+    {
+      "values": [
+        {
+          "label": "Air Conditioning",
+          "value": "2"
+        },
+        {
+          "label": "Heated Seats",
+          "value": "1"
+        },
+        {
+          "label": "Reversing Camera",
+          "value": "value3"
+        }
+      ],
+      "label": "Optionals",
+      "type": "checklist",
+      "id": "Field_18o0458",
+      "key": "field_18pq77y",
+      "layout": {
+        "row": "Row_1bl0beo"
+      }
+    },
+    {
+      "values": [
+        {
+          "label": "Mileage: unlimited",
+          "value": "Mileage: unlimited"
+        },
+        {
+          "label": "Third Party Liability",
+          "value": "Third Party Liability"
+        },
+        {
+          "label": "Cancel Protection",
+          "value": "Cancel Protection"
+        }
+      ],
+      "label": "Includes",
+      "type": "taglist",
+      "id": "Field_0aodmri",
+      "key": "field_0tdv0tj",
+      "layout": {
+        "row": "Row_04gwkdf"
+      }
+    },
+    {
+      "values": [
+        {
+          "label": "Automatic",
+          "value": "A"
+        },
+        {
+          "label": "Manual",
+          "value": "M"
+        }
+      ],
+      "label": "Gear",
+      "type": "radio",
+      "id": "Field_0n2lhe6",
+      "key": "field_0owaj9b",
+      "layout": {
+        "row": "Row_0ffeplh"
+      }
+    },
+    {
+      "label": "Offers Roadside Assistance",
+      "type": "checkbox",
+      "id": "Field_0f2aenc",
+      "key": "field_1rm4yc8",
+      "layout": {
+        "row": "Row_19tb02c"
+      }
+    },
+    {
+      "action": "reset",
+      "label": "Reset",
+      "type": "button",
+      "id": "Field_19zscy1",
+      "key": "field_1qcelqr",
+      "properties": {},
+      "layout": {
+        "row": "Row_1hps091"
+      }
+    }
+  ],
+  "type": "default",
+  "id": "registerCarForRent",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.6.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.29.0-nightly.20241014"
+  },
+  "schemaVersion": 16
+}

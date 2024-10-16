@@ -7,7 +7,6 @@
  */
 
 import {Component} from 'react';
-import {Redirect} from 'react-router-dom';
 import {Column, Grid, Stack} from '@carbon/react';
 
 import {t} from 'translation';
@@ -116,7 +115,7 @@ export class Collection extends Component {
     const currentTab = match.params.viewMode || 'home';
 
     if (redirect) {
-      return <Redirect to={redirect} />;
+      return this.props.history.push(redirect);
     }
 
     return (

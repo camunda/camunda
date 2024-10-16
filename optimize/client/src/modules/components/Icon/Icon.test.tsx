@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {mount} from 'enzyme';
+import {shallow} from 'enzyme';
 
 import Icon from './Icon';
 
@@ -17,25 +17,25 @@ jest.mock('./icons', () => {
 });
 
 it('should render without crashing', () => {
-  mount(<Icon type="plus" />);
+  shallow(<Icon type="plus" />);
 });
 
 it('should render an inline SVG', () => {
-  const node = mount(<Icon type="plus" />);
+  const node = shallow(<Icon type="plus" />);
 
-  expect(node.find('svg')).toExist();
+  expect(node.find('plus')).toExist();
 });
 
 it('should be possible to provide a classname to the Icon', () => {
-  const node = mount(<Icon type="plus" className="customClassname" />);
+  const node = shallow(<Icon type="plus" className="customClassname" />);
 
   expect(node.find('.customClassname')).toExist();
 });
 
 it('should be possible to provide a size to the Icon', () => {
-  const node = mount(<Icon type="plus" size="10px" />);
+  const node = shallow(<Icon type="plus" size="10px" />);
 
-  expect(node.find('svg')).toHaveProp('style', {
+  expect(node.find('plus')).toHaveProp('style', {
     minWidth: '10px',
     minHeight: '10px',
     maxWidth: '10px',

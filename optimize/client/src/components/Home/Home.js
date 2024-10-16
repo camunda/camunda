@@ -7,7 +7,7 @@
  */
 
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {Redirect} from 'react-router-dom';
+import {useHistory} from 'react-router-dom';
 import {parseISO} from 'date-fns';
 import {Button, Grid, Column} from '@carbon/react';
 import {CopyFile, Edit, Save, TrashCan} from '@carbon/icons-react';
@@ -53,6 +53,7 @@ export function Home({mightFail, user}) {
   const [editingCollection, setEditingCollection] = useState(null);
   const [sorting, setSorting] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const history = useHistory();
 
   const fileInput = useRef();
 
@@ -106,7 +107,7 @@ export function Home({mightFail, user}) {
   };
 
   if (redirect) {
-    return <Redirect to={redirect} />;
+    history.push(redirect);
   }
 
   const isEditor = user?.authorizations.includes('entity_editor');

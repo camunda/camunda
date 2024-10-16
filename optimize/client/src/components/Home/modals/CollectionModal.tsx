@@ -7,7 +7,7 @@
  */
 
 import {ReactNode, useState} from 'react';
-import {Redirect} from 'react-router-dom';
+import {useHistory} from 'react-router-dom';
 import {Button, Form, TextInput} from '@carbon/react';
 
 import {Modal} from 'components';
@@ -43,7 +43,8 @@ export function CollectionModal({
   const [redirect, setRedirect] = useState<string | null>(null);
   const [displaySourcesModal, setDisplaySourcesModal] = useState(false);
   const {mightFail} = useErrorHandling();
-
+  const history = useHistory();
+  
   const confirm = () => {
     if (!name || loading) {
       return;
@@ -79,7 +80,7 @@ export function CollectionModal({
   };
 
   if (redirect) {
-    return <Redirect to={`/collection/${redirect}/`} />;
+    history.push(`/collection/${redirect}/`);
   }
 
   return (
