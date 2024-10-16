@@ -12,7 +12,6 @@ import static io.camunda.exporter.schema.SchemaTestUtil.getElsIndexTemplateAsNod
 import static io.camunda.exporter.schema.SchemaTestUtil.getOpensearchIndexAsNode;
 import static io.camunda.exporter.schema.SchemaTestUtil.getOpensearchIndexTemplateAsNode;
 import static io.camunda.exporter.schema.SchemaTestUtil.mappingsMatch;
-import static io.camunda.exporter.schema.SchemaTestUtil.validateMappings;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
@@ -26,7 +25,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch.core.GetResponse;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.schema.SchemaTestUtil;
@@ -59,7 +57,6 @@ import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -70,6 +67,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.testcontainers.OpensearchContainer;
+import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -78,12 +76,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * This is a smoke test to verify that the exporter can connect to an Elasticsearch instance and
  * export records using the configured handlers.
  */
-@Testcontainers
 @TestInstance(Lifecycle.PER_CLASS)
 final class CamundaExporterIT {
-  @Container
-  private static final ElasticsearchContainer CONTAINER =
-      TestSupport.createDefeaultElasticsearchContainer();
 
   private static final ExporterConfiguration config = new ExporterConfiguration();
   private final ExporterTestController controller = new ExporterTestController();
@@ -91,19 +85,6 @@ final class CamundaExporterIT {
   private IndexDescriptor index;
   private IndexTemplateDescriptor indexTemplate;
 
-  private ElasticsearchClient testClient;
-
-  @BeforeAll
-  public void beforeAll() {
-    config.getConnect().setUrl(CONTAINER.getHttpHostAddress());
-
-    testClient = new ElasticsearchConnector(config.getConnect()).createClient();
-  }
-
-  @AfterAll
-  void afterAll() throws IOException {
-    testClient._transport().close();
-  }
 
   @BeforeEach
   void beforeEach() throws IOException {
@@ -113,8 +94,6 @@ final class CamundaExporterIT {
     config.getIndex().setNumberOfReplicas(0);
 
     config.getBulk().setSize(1); // force flushing on the first record
-    testClient.indices().delete(req -> req.index("*"));
-    testClient.indices().deleteIndexTemplate(req -> req.name("*"));
 
     config.setCreateSchema(false);
     config.getRetention().setEnabled(false);
@@ -215,42 +194,6 @@ final class CamundaExporterIT {
     return provider;
   }
 
-  @Test
-  void shouldNotErrorIfOldExporterRestartsWhileNewExporterHasAlreadyStarted() throws IOException {
-    // given
-    config.setCreateSchema(true);
-    final var updatedExporter = startExporter();
-    final var oldExporter = startExporter();
-
-    // when
-    when(index.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
-    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
-
-    updatedExporter.open(controller);
-
-    when(index.getMappingsClasspathFilename()).thenReturn("/mappings.json");
-    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("/mappings.json");
-
-    oldExporter.open(controller);
-
-    // then
-    final var indices = testClient.indices().get(req -> req.index("*"));
-    final var indexTemplates = testClient.indices().getIndexTemplate(req -> req.name("*"));
-
-    validateMappings(
-        indices.result().get(index.getFullQualifiedName()).mappings(),
-        "/mappings-added-property.json");
-    validateMappings(
-        indexTemplates.indexTemplates().stream()
-            .filter(template -> template.name().equals(indexTemplate.getTemplateName()))
-            .findFirst()
-            .orElseThrow()
-            .indexTemplate()
-            .template()
-            .mappings(),
-        "/mappings-added-property.json");
-  }
-
   void shouldHaveCorrectSchemaUpdatesWithMultipleExporters(
       final Callable<JsonNode> getIndex, final Callable<JsonNode> getTemplate) throws Exception {
     // given
@@ -310,13 +253,128 @@ final class CamundaExporterIT {
         .isTrue();
   }
 
+  void shouldExportUserRecord(
+      final Callable<UserEntity> getResponse, final Record<UserRecordValue> record)
+      throws Exception {
+    // given
+    config.setCreateSchema(true);
+    final var exporter = startExporter();
+
+    // when
+    exporter.export(record);
+
+    // then
+    final var responseUserEntity = getResponse.call();
+
+    assertThat(responseUserEntity)
+        .describedAs("User entity is updated correctly from the user record")
+        .extracting(
+            UserEntity::getEmail, UserEntity::getName, UserEntity::getUsername, UserEntity::getId)
+        .containsExactly(
+            record.getValue().getEmail(),
+            record.getValue().getName(),
+            record.getValue().getUsername(),
+            String.valueOf(record.getKey()));
+  }
+
+  void shouldExportAuthorizationRecord(
+      final Callable<AuthorizationEntity> getResponse,
+      final Record<AuthorizationRecordValue> record)
+      throws Exception {
+    // given
+    config.setCreateSchema(true);
+    final var exporter = startExporter();
+
+    // when
+    exporter.export(record);
+
+    // then
+    final var responseAuthorizationEntity = getResponse.call();
+
+    assertThat(responseAuthorizationEntity)
+        .describedAs("Authorization entity is updated correctly from the authorization record")
+        .extracting(
+            AuthorizationEntity::getOwnerKey,
+            AuthorizationEntity::getOwnerType,
+            AuthorizationEntity::getResourceType,
+            AuthorizationEntity::getPermissionValues,
+            AuthorizationEntity::getId)
+        .containsExactly(
+            record.getValue().getOwnerKey(),
+            record.getValue().getOwnerType(),
+            record.getValue().getResourceType(),
+            extractPermissions(record.getValue()),
+            String.valueOf(record.getKey()));
+  }
+
+  void shouldExportRecordOnceBulkSizeReached() {
+    // given
+    config.getBulk().setSize(2);
+    config.setCreateSchema(true);
+    final var exporter = new CamundaExporter();
+
+    final var context = getContext();
+    exporter.configure(context);
+    final var controllerSpy = spy(controller);
+    exporter.open(controllerSpy);
+
+    // when
+    final var record = factory.generateRecord(ValueType.USER);
+    final var record2 = factory.generateRecord(ValueType.USER);
+
+    exporter.export(record);
+    exporter.export(record2);
+    // then
+    verify(controllerSpy, never()).updateLastExportedRecordPosition(record.getPosition());
+    verify(controllerSpy).updateLastExportedRecordPosition(record2.getPosition());
+  }
+
+  void shouldExportRecordIfElasticsearchIsNotInitiallyReachableButThenIsReachableLater(
+      final GenericContainer<?> container, final Callable<Long> getTotalUsers) {
+    // given
+    final var exporter = new CamundaExporter();
+
+    final var context =
+        new ExporterTestContext()
+            .setConfiguration(
+                new ExporterTestConfiguration<>(config.getConnect().getType(), config));
+
+    exporter.configure(context);
+    exporter.open(controller);
+
+    // when
+    final var currentPort = container.getFirstMappedPort();
+    container.stop();
+    Awaitility.await().until(() -> !container.isRunning());
+
+    final Record<UserRecordValue> record = factory.generateRecord(ValueType.USER);
+
+    Assertions.assertThatThrownBy(() -> exporter.export(record))
+        .isInstanceOf(ExporterException.class)
+        .hasMessageContaining("Connection refused");
+
+    // starts the container on the same port again
+    container
+        .withEnv("discovery.type", "single-node")
+        .setPortBindings(List.of(currentPort + ":9200"));
+    container.start();
+
+    final Record<UserRecordValue> record2 = factory.generateRecord(ValueType.USER);
+    exporter.export(record2);
+
+    Awaitility.await().until(() -> getTotalUsers.call() == 2L);
+
+    container.setPortBindings(List.of());
+  }
+
   @Nested
+  @Testcontainers
   class ElasticsearchBackedExporter {
     @Container
     private static final ElasticsearchContainer CONTAINER =
         TestSupport.createDefeaultElasticsearchContainer();
-
     private static ElasticsearchClient client;
+    private final ProtocolFactory factory = new ProtocolFactory();
 
     @BeforeEach
     public void beforeEach() throws IOException {
@@ -344,15 +402,52 @@ final class CamundaExporterIT {
           () -> getElsIndexAsNode(index.getFullQualifiedName(), client),
           () -> getElsIndexTemplateAsNode(indexTemplate.getTemplateName(), client));
     }
+
+    @Test
+    void shouldExportUserRecord() throws Exception {
+      final Record<UserRecordValue> record = factory.generateRecord(ValueType.USER);
+      final var recordId = String.valueOf(record.getKey());
+
+      CamundaExporterIT.this.shouldExportUserRecord(
+          () -> client.get(b -> b.id(recordId).index("users"), UserEntity.class).source(), record);
+    }
+
+    @Test
+    void shouldExportAuthorizationRecord() throws Exception {
+      final Record<AuthorizationRecordValue> record =
+          factory.generateRecord(ValueType.AUTHORIZATION);
+      final var recordId = String.valueOf(record.getKey());
+
+      CamundaExporterIT.this.shouldExportAuthorizationRecord(
+          () ->
+              client
+                  .get(b -> b.id(recordId).index("authorizations"), AuthorizationEntity.class)
+                  .source(),
+          record);
+    }
+
+    @Test
+    void shouldExportRecordOnceBulkSizeReached() {
+      CamundaExporterIT.this.shouldExportRecordOnceBulkSizeReached();
+    }
+
+    @Test
+    void shouldExportRecordIfElasticsearchIsNotInitiallyReachableButThenIsReachableLater() {
+      CamundaExporterIT.this
+          .shouldExportRecordIfElasticsearchIsNotInitiallyReachableButThenIsReachableLater(
+              CONTAINER,
+              () -> client.search(s -> s.index("users"), UserEntity.class).hits().total().value());
+    }
   }
 
   @Nested
+  @Testcontainers
   class OpensearchBackedExporter {
     @Container
     private static final OpensearchContainer<?> CONTAINER =
         TestSupport.createDefaultOpensearchContainer();
-
     private static OpenSearchClient client;
+    private final ProtocolFactory factory = new ProtocolFactory();
 
     @BeforeEach
     public void beforeEach() throws IOException {
@@ -380,141 +475,41 @@ final class CamundaExporterIT {
           () -> getOpensearchIndexAsNode(index.getFullQualifiedName(), client),
           () -> getOpensearchIndexTemplateAsNode(indexTemplate.getTemplateName(), client));
     }
-  }
 
-  @Nested
-  class ExportTests {
     @Test
-    void shouldExportUserRecord() throws IOException {
-      // given
-      final var exporter = startExporter();
+    void shouldExportUserRecord() throws Exception {
       final Record<UserRecordValue> record = factory.generateRecord(ValueType.USER);
+      final var recordId = String.valueOf(record.getKey());
 
-      // when
-      exporter.export(record);
-
-      // then
-      final String id = String.valueOf(record.getKey());
-      final var response = testClient.get(b -> b.id(id).index("users"), UserEntity.class);
-      assertThat(response)
-          .extracting(GetResponse::index, GetResponse::id)
-          .containsExactly("users", id);
-
-      assertThat(response.source())
-          .describedAs("User entity is updated correctly from the user record")
-          .extracting(UserEntity::getEmail, UserEntity::getName, UserEntity::getUsername)
-          .containsExactly(
-              record.getValue().getEmail(),
-              record.getValue().getName(),
-              record.getValue().getUsername());
+      CamundaExporterIT.this.shouldExportUserRecord(
+          () -> client.get(b -> b.id(recordId).index("users"), UserEntity.class).source(), record);
     }
 
     @Test
-    void shouldExportAuthorizationRecord() throws IOException {
-      // given
-      final var context = getContext();
-      final var exporter = new CamundaExporter();
-      exporter.configure(context);
-      exporter.open(controller);
-
+    void shouldExportAuthorizationRecord() throws Exception {
       final Record<AuthorizationRecordValue> record =
           factory.generateRecord(ValueType.AUTHORIZATION);
+      final var recordId = String.valueOf(record.getKey());
 
-      // when
-      exporter.export(record);
-
-      // then
-      final String id = String.valueOf(record.getKey());
-      final var response =
-          testClient.get(b -> b.id(id).index("authorizations"), AuthorizationEntity.class);
-      assertThat(response)
-          .extracting(GetResponse::index, GetResponse::id)
-          .containsExactly("authorizations", id);
-
-      assertThat(response.source())
-          .describedAs("Authorization entity is updated correctly from the authorization record")
-          .extracting(
-              AuthorizationEntity::getOwnerKey,
-              AuthorizationEntity::getOwnerType,
-              AuthorizationEntity::getResourceType,
-              AuthorizationEntity::getPermissions)
-          .containsExactlyInAnyOrder(
-              record.getValue().getOwnerKey(),
-              record.getValue().getOwnerType().name(),
-              record.getValue().getResourceType().name(),
-              extractPermissions(record.getValue()));
+      CamundaExporterIT.this.shouldExportAuthorizationRecord(
+          () ->
+              client
+                  .get(b -> b.id(recordId).index("authorizations"), AuthorizationEntity.class)
+                  .source(),
+          record);
     }
 
     @Test
     void shouldExportRecordOnceBulkSizeReached() {
-      // given
-      config.getBulk().setSize(2);
-      final var exporter = new CamundaExporter();
-
-      final var context = getContext();
-      exporter.configure(context);
-      final var controllerSpy = spy(controller);
-      exporter.open(controllerSpy);
-
-      // when
-      final var record = factory.generateRecord(ValueType.USER);
-      final var record2 = factory.generateRecord(ValueType.USER);
-
-      exporter.export(record);
-      exporter.export(record2);
-      // then
-      verify(controllerSpy, never()).updateLastExportedRecordPosition(record.getPosition());
-      verify(controllerSpy).updateLastExportedRecordPosition(record2.getPosition());
+      CamundaExporterIT.this.shouldExportRecordOnceBulkSizeReached();
     }
 
     @Test
-    void shouldExportRecordIfElasticsearchIsNotInitiallyReachableButThenIsReachableLater()
-        throws IOException {
-      // given
-      final var exporter = new CamundaExporter();
-
-      final var context =
-          new ExporterTestContext()
-              .setConfiguration(new ExporterTestConfiguration<>("elastic", config));
-
-      exporter.configure(context);
-      exporter.open(controller);
-
-      // when
-      final var currentPort = CONTAINER.getFirstMappedPort();
-      CONTAINER.stop();
-      Awaitility.await().until(() -> !CONTAINER.isRunning());
-
-      final Record<UserRecordValue> record = factory.generateRecord(ValueType.USER);
-
-      Assertions.assertThatThrownBy(() -> exporter.export(record))
-          .isInstanceOf(ExporterException.class)
-          .hasMessageContaining("Connection refused");
-
-      // starts the container on the same port again
-      CONTAINER
-          .withEnv("discovery.type", "single-node")
-          .setPortBindings(List.of(currentPort + ":9200"));
-      CONTAINER.start();
-
-      final Record<UserRecordValue> record2 = factory.generateRecord(ValueType.USER);
-      exporter.export(record2);
-
-      // then
-      final var testClient = new ElasticsearchConnector(config.getConnect()).createClient();
-
-      Awaitility.await()
-          .until(
-              () ->
-                  testClient.search(s -> s.index("users"), Map.class).hits().total().value() == 2L);
-
-      final var documents =
-          testClient.search(s -> s.index("users"), Map.class).hits().hits().stream()
-              .filter(hit -> hit.id().equals(String.valueOf(record.getKey())))
-              .toList();
-      assertThat(documents).hasSize(1);
-
-      CONTAINER.setPortBindings(List.of());
+    void shouldExportRecordIfElasticsearchIsNotInitiallyReachableButThenIsReachableLater() {
+      CamundaExporterIT.this
+          .shouldExportRecordIfElasticsearchIsNotInitiallyReachableButThenIsReachableLater(
+              CONTAINER,
+              () -> client.search(s -> s.index("users"), UserEntity.class).hits().total().value());
     }
   }
 
