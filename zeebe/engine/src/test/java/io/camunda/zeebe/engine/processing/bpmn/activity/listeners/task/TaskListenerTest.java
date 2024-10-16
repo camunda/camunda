@@ -228,7 +228,7 @@ public class TaskListenerTest {
   @Test
   public void shouldEvaluateExpressionsForTaskListeners() {
     final long processInstanceKey =
-        createProcessInstance(
+        createProcessInstanceWithVariables(
             createProcessWithZeebeUserTask(
                 t ->
                     t.zeebeTaskListener(
@@ -455,10 +455,10 @@ public class TaskListenerTest {
   }
 
   private long createProcessInstance(final BpmnModelInstance modelInstance) {
-    return createProcessInstance(modelInstance, Collections.emptyMap());
+    return createProcessInstanceWithVariables(modelInstance, Collections.emptyMap());
   }
 
-  private long createProcessInstance(
+  private long createProcessInstanceWithVariables(
       final BpmnModelInstance modelInstance, final Map<String, Object> processVariables) {
     ENGINE.deployment().withXmlResource(modelInstance).deploy();
     return ENGINE

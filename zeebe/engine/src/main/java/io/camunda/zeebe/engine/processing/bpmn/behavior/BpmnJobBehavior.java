@@ -7,10 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
-import static io.camunda.zeebe.util.Either.right;
-import static java.util.Optional.of;
-import static java.util.Optional.ofNullable;
-
 import com.google.common.base.Strings;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
@@ -45,6 +41,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import org.agrona.DirectBuffer;
 import org.apache.commons.lang3.StringUtils;
@@ -98,31 +95,31 @@ public final class BpmnJobBehavior {
     return evaluateJobExpressions(jobWorkerProps, context)
         .map(
             p ->
-                of(taskRecordValue.getAssignee())
+                Optional.of(taskRecordValue.getAssignee())
                     .map(BpmnJobBehavior::notBlankOrNull)
                     .map(p::assignee)
                     .orElse(p))
         .map(
             p ->
-                ofNullable(taskRecordValue.getCandidateGroupsList())
+                Optional.ofNullable(taskRecordValue.getCandidateGroupsList())
                     .map(BpmnJobBehavior::asNotEmptyListLiteralOrNull)
                     .map(p::candidateGroups)
                     .orElse(p))
         .map(
             p ->
-                ofNullable(taskRecordValue.getCandidateUsersList())
+                Optional.ofNullable(taskRecordValue.getCandidateUsersList())
                     .map(BpmnJobBehavior::asNotEmptyListLiteralOrNull)
                     .map(p::candidateUsers)
                     .orElse(p))
         .map(
             p ->
-                of(taskRecordValue.getDueDate())
+                Optional.of(taskRecordValue.getDueDate())
                     .map(BpmnJobBehavior::notBlankOrNull)
                     .map(p::dueDate)
                     .orElse(p))
         .map(
             p ->
-                of(taskRecordValue.getFollowUpDate())
+                Optional.of(taskRecordValue.getFollowUpDate())
                     .map(BpmnJobBehavior::notBlankOrNull)
                     .map(p::followUpDate)
                     .orElse(p));
@@ -262,7 +259,7 @@ public final class BpmnJobBehavior {
                                 type.getExpression()),
                             ErrorType.EXTRACT_VALUE_ERROR,
                             scopeKey))
-                    : right(result));
+                    : Either.right(result));
   }
 
   private Either<Failure, Long> evalRetriesExp(final Expression retries, final long scopeKey) {
