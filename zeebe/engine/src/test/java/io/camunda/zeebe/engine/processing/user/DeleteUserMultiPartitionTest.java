@@ -14,13 +14,17 @@ import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -128,5 +132,56 @@ public class DeleteUserMultiPartitionTest {
                 .withIntent(CommandDistributionIntent.ENQUEUED))
         .extracting(r -> r.getValue().getQueueId())
         .containsOnly(DistributionQueue.IDENTITY.getQueueId());
+  }
+
+  @Test
+  public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
+    final var userRecord =
+        ENGINE
+            .user()
+            .newUser("foobar")
+            .withName("Foo Bar")
+            .withEmail("foo@bar.com")
+            .withPassword("password")
+            .create();
+
+    // given the user creation distribution is intercepted
+    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
+      interceptUserCreateForPartition(partitionId);
+    }
+
+    // when
+    ENGINE
+        .user()
+        .deleteUser(userRecord.getKey())
+        .withUsername("foobar")
+        .withName("Bar Foo")
+        .withEmail("bar@foo.com")
+        .withPassword("password")
+        .delete();
+
+    // Increase time to trigger a redistribution
+    ENGINE.increaseTime(Duration.ofMinutes(1));
+
+    // then
+    assertThat(
+            RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
+                .limit(2))
+        .extracting(r -> r.getValue().getValueType(), r -> r.getValue().getIntent())
+        .containsExactly(
+            Assertions.tuple(ValueType.USER, UserIntent.CREATE),
+            Assertions.tuple(ValueType.USER, UserIntent.DELETE));
+  }
+
+  private void interceptUserCreateForPartition(final int partitionId) {
+    final var hasInterceptedPartition = new AtomicBoolean(false);
+    ENGINE.interceptInterPartitionCommands(
+        (receiverPartitionId, valueType, intent, recordKey, command) -> {
+          if (hasInterceptedPartition.get()) {
+            return true;
+          }
+          hasInterceptedPartition.set(true);
+          return !(receiverPartitionId == partitionId && intent == UserIntent.CREATE);
+        });
   }
 }
