@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.AUTHORIZATION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.ValueType.USER;
+import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
 
 import co.elastic.clients.util.VisibleForTesting;
 import io.camunda.exporter.adapters.ClientAdapter;
@@ -222,7 +223,7 @@ public class CamundaExporter implements Exporter {
   private record ElasticsearchRecordFilter() implements RecordFilter {
     // TODO include other value types to export
     private static final Set<ValueType> VALUE_TYPES_2_EXPORT =
-        Set.of(USER, AUTHORIZATION, DECISION, PROCESS_INSTANCE);
+        Set.of(USER, AUTHORIZATION, DECISION, PROCESS_INSTANCE, VARIABLE);
 
     @Override
     public boolean acceptType(final RecordType recordType) {

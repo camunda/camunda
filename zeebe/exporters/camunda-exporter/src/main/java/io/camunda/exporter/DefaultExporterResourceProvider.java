@@ -14,6 +14,7 @@ import io.camunda.exporter.handlers.DecisionHandler;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.UserRecordValueExportHandler;
+import io.camunda.exporter.handlers.VariableHandler;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.index.AbstractIndexDescriptor;
@@ -22,6 +23,7 @@ import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsI
 import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -47,7 +49,11 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             .equals(ConnectionTypes.ELASTICSEARCH);
 
     templateDescriptorsMap =
-        Map.of(ListViewTemplate.class, new ListViewTemplate(operateIndexPrefix, isElasticsearch));
+        Map.of(
+            ListViewTemplate.class,
+            new ListViewTemplate(operateIndexPrefix, isElasticsearch),
+            VariableTemplate.class,
+            new VariableTemplate(operateIndexPrefix, isElasticsearch));
 
     indexDescriptorsMap =
         Map.of(
@@ -67,7 +73,10 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new DecisionHandler(
                 indexDescriptorsMap.get(DecisionIndex.class).getFullQualifiedName()),
             new ListViewProcessInstanceFromProcessInstanceHandler(
-                templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(), false));
+                templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(), false),
+            new VariableHandler(
+                templateDescriptorsMap.get(VariableTemplate.class).getFullQualifiedName(),
+                configuration.getIndex().getVariableSizeThreshold()));
   }
 
   @Override
