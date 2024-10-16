@@ -16,6 +16,7 @@ import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.IncidentHandler;
 import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
+import io.camunda.exporter.handlers.SequenceFlowHandler;
 import io.camunda.exporter.handlers.UserRecordValueExportHandler;
 import io.camunda.exporter.handlers.VariableHandler;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
@@ -28,6 +29,7 @@ import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import java.util.Collection;
@@ -42,10 +44,10 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
 
   private Map<? extends Class<? extends AbstractIndexDescriptor>, IndexDescriptor>
       indexDescriptorsMap;
-
-  private Set<ExportHandler> exportHandlers;
   private Map<Class<? extends IndexTemplateDescriptor>, IndexTemplateDescriptor>
       templateDescriptorsMap;
+
+  private Set<ExportHandler> exportHandlers;
 
   @Override
   public void init(final ExporterConfiguration configuration) {
@@ -64,7 +66,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             PostImporterQueueTemplate.class,
             new PostImporterQueueTemplate(operateIndexPrefix, isElasticsearch),
             IncidentTemplate.class,
-            new IncidentTemplate(operateIndexPrefix, isElasticsearch));
+            new IncidentTemplate(operateIndexPrefix, isElasticsearch),
+            SequenceFlowTemplate.class,
+            new SequenceFlowTemplate(operateIndexPrefix, isElasticsearch));
 
     indexDescriptorsMap =
         Map.of(
@@ -95,7 +99,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new PostImporterQueueFromIncidentHandler(
                 templateDescriptorsMap.get(PostImporterQueueTemplate.class).getFullQualifiedName()),
             new IncidentHandler(
-                templateDescriptorsMap.get(IncidentTemplate.class).getFullQualifiedName(), false));
+                templateDescriptorsMap.get(IncidentTemplate.class).getFullQualifiedName(), false),
+            new SequenceFlowHandler(
+                templateDescriptorsMap.get(SequenceFlowTemplate.class).getFullQualifiedName()));
   }
 
   @Override
