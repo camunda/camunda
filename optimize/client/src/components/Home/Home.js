@@ -24,8 +24,8 @@ import {
   EmptyState,
   KpiCreationModal,
   EntityList,
-  Icon,
 } from 'components';
+import {OptimizeDashboard} from 'icons';
 import {
   formatters,
   createEntity,
@@ -122,7 +122,7 @@ export function Home({mightFail, user}) {
               <EmptyState
                 title={t('home.emptyState.title')}
                 description={t('home.emptyState.description')}
-                icon={<Icon type="dashboard-optimize" />}
+                icon={<OptimizeDashboard />}
                 actions={
                   <>
                     <Button size="md" onClick={() => setCreating('dashboard')}>
