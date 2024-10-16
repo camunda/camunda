@@ -69,7 +69,7 @@ final class BackupEndpointTest {
               503),
           Arguments.of(
               new BrokerErrorException(new BrokerError(ErrorCode.PARTITION_UNAVAILABLE, "failure")),
-              503),
+              500),
           Arguments.of(
               new BrokerErrorException(new BrokerError(ErrorCode.INTERNAL_ERROR, "failure")), 500),
           Arguments.of(

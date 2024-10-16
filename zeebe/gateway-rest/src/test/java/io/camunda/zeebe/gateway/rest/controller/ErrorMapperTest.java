@@ -149,15 +149,11 @@ public class ErrorMapperTest extends RestControllerTest {
       value = ErrorCode.class,
       names = {
         "INTERNAL_ERROR",
-        //        "PARTITION_LEADER_MISMATCH",
         "UNSUPPORTED_MESSAGE",
         "INVALID_CLIENT_VERSION",
         "MALFORMED_REQUEST",
         "INVALID_MESSAGE_TEMPLATE",
         "INVALID_DEPLOYMENT_PARTITION",
-        //        "PROCESS_NOT_FOUND",
-        //        "RESOURCE_EXHAUSTED",
-        //        "PARTITION_UNAVAILABLE",
         "SBE_UNKNOWN",
         "NULL_VAL"
       })
@@ -522,6 +518,35 @@ public class ErrorMapperTest extends RestControllerTest {
         .isEqualTo(HttpStatus.TOO_MANY_REQUESTS)
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
+  }
+
+  @Test
+  void shouldYieldUnavailableWhenPartitionPausesProcessing() {
+    // given
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerError(ErrorCode.PARTITION_UNAVAILABLE, "Just an error"))));
+
+    final var request = new UserTaskCompletionRequest();
+    final var expectedBody =
+        ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, "Just an error");
+    expectedBody.setTitle(ErrorCode.PARTITION_UNAVAILABLE.name());
+    expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
+
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_BASE_URL + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(Mono.just(request), UserTaskCompletionRequest.class)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
         .expectBody(ProblemDetail.class)
         .isEqualTo(expectedBody);
   }
