@@ -35,7 +35,7 @@ import io.camunda.operate.zeebeimport.post.AbstractIncidentPostImportAction;
 import io.camunda.operate.zeebeimport.post.AdditionalData;
 import io.camunda.operate.zeebeimport.post.PendingIncidentsBatch;
 import io.camunda.operate.zeebeimport.post.PostImportAction;
-import io.camunda.webapps.schema.descriptors.operate.template.AbstractTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;

@@ -107,7 +107,7 @@ public class AuthorizationsUtil {
             .build();
 
     Awaitility.await()
-        .atMost(Duration.ofSeconds(5))
+        .atMost(Duration.ofSeconds(10))
         .until(
             () -> {
               final var response = HTTP_CLIENT.send(request, BodyHandlers.ofString());

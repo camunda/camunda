@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.schema.opensearch;
 
-import static io.camunda.webapps.schema.descriptors.operate.index.AbstractIndexDescriptor.SCHEMA_FOLDER_OPENSEARCH;
+import static io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor.SCHEMA_FOLDER_OPENSEARCH;
 import static java.lang.String.format;
 
 import com.fasterxml.jackson.core.type.TypeReference;

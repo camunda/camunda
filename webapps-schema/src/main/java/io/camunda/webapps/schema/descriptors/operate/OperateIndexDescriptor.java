@@ -5,18 +5,18 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.schema.util;
+package io.camunda.webapps.schema.descriptors.operate;
 
-import io.camunda.webapps.schema.descriptors.operate.OperateIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 
-public class TestDynamicIndex extends OperateIndexDescriptor {
+public abstract class OperateIndexDescriptor extends AbstractIndexDescriptor {
 
-  public TestDynamicIndex(final String indexPrefix, final boolean isElasticsearch) {
+  public OperateIndexDescriptor(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
   }
 
   @Override
-  public String getIndexName() {
-    return "testdynamicindex";
+  public String getComponentName() {
+    return "operate";
   }
 }

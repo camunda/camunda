@@ -19,7 +19,7 @@ import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.schema.util.SchemaTestHelper;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-import io.camunda.webapps.schema.descriptors.operate.index.AbstractIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.OperateIndexDescriptor;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -102,25 +102,12 @@ public class ElasticsearchSchemaTestHelper implements SchemaTestHelper {
   }
 
   @Override
-  public void setReadOnly(final String indexName, final boolean readOnly) {
-    final UpdateSettingsRequest updateSettingsRequest =
-        new UpdateSettingsRequest()
-            .indices(indexName)
-            .settings(Map.of("index.blocks.read_only", readOnly));
-    try {
-      esClient.indices().putSettings(updateSettingsRequest, RequestOptions.DEFAULT);
-    } catch (final IOException e) {
-      throw new OperateRuntimeException(e);
-    }
-  }
-
-  @Override
   public void createIndex(
       final IndexDescriptor indexDescriptor,
       final String indexName,
       final String indexSchemaFilename) {
     schemaManager.createIndex(
-        new AbstractIndexDescriptor(properties.getElasticsearch().getIndexPrefix(), true) {
+        new OperateIndexDescriptor(properties.getElasticsearch().getIndexPrefix(), true) {
           @Override
           public String getIndexName() {
             return indexDescriptor.getIndexName();
@@ -132,5 +119,18 @@ public class ElasticsearchSchemaTestHelper implements SchemaTestHelper {
           }
         },
         indexSchemaFilename);
+  }
+
+  @Override
+  public void setReadOnly(final String indexName, final boolean readOnly) {
+    final UpdateSettingsRequest updateSettingsRequest =
+        new UpdateSettingsRequest()
+            .indices(indexName)
+            .settings(Map.of("index.blocks.read_only", readOnly));
+    try {
+      esClient.indices().putSettings(updateSettingsRequest, RequestOptions.DEFAULT);
+    } catch (final IOException e) {
+      throw new OperateRuntimeException(e);
+    }
   }
 }
