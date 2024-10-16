@@ -140,19 +140,24 @@ final class CamundaExporterIT {
     verify(spiedController, times(2)).scheduleCancellableTask(eq(Duration.ofSeconds(2)), any());
   }
 
-  @Test
   void shouldUpdateExporterPositionAfterFlushing() {
     // given
-    final var exporter = startExporter();
+    final var exporter = new CamundaExporter(mockResourceProvider(Set.of(), Set.of()));
+
+    final var context = getContext();
+    exporter.configure(context);
+
+    final var exporterController = new ExporterTestController();
+    exporter.open(exporterController);
 
     // when
     final Record<UserRecordValue> record = factory.generateRecord(ValueType.USER);
-    assertThat(controller.getPosition()).isEqualTo(-1);
+    assertThat(exporterController.getPosition()).isEqualTo(-1);
 
     exporter.export(record);
 
     // then
-    assertThat(controller.getPosition()).isEqualTo(record.getPosition());
+    assertThat(exporterController.getPosition()).isEqualTo(record.getPosition());
   }
 
   private Exporter startExporter() {
@@ -436,6 +441,11 @@ final class CamundaExporterIT {
               CONTAINER,
               () -> client.search(s -> s.index("users"), UserEntity.class).hits().total().value());
     }
+
+    @Test
+    void shouldUpdateExporterPositionAfterFlushing() {
+      CamundaExporterIT.this.shouldUpdateExporterPositionAfterFlushing();
+    }
   }
 
   @Nested
@@ -509,6 +519,11 @@ final class CamundaExporterIT {
           .shouldExportRecordIfElasticsearchIsNotInitiallyReachableButThenIsReachableLater(
               CONTAINER,
               () -> client.search(s -> s.index("users"), UserEntity.class).hits().total().value());
+    }
+
+    @Test
+    void shouldUpdateExporterPositionAfterFlushing() {
+      CamundaExporterIT.this.shouldUpdateExporterPositionAfterFlushing();
     }
   }
 
