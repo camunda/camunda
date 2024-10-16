@@ -14,6 +14,7 @@ import io.camunda.exporter.handlers.DecisionHandler;
 import io.camunda.exporter.handlers.DecisionRequirementsHandler;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHandler;
+import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
 import io.camunda.exporter.handlers.UserRecordValueExportHandler;
 import io.camunda.exporter.handlers.VariableHandler;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
@@ -24,6 +25,7 @@ import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsI
 import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import java.util.Collection;
@@ -56,7 +58,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             ListViewTemplate.class,
             new ListViewTemplate(operateIndexPrefix, isElasticsearch),
             VariableTemplate.class,
-            new VariableTemplate(operateIndexPrefix, isElasticsearch));
+            new VariableTemplate(operateIndexPrefix, isElasticsearch),
+            PostImporterQueueTemplate.class,
+            new PostImporterQueueTemplate(operateIndexPrefix, isElasticsearch));
 
     indexDescriptorsMap =
         Map.of(
@@ -83,7 +87,12 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 templateDescriptorsMap.get(VariableTemplate.class).getFullQualifiedName(),
                 configuration.getIndex().getVariableSizeThreshold()),
             new DecisionRequirementsHandler(
-                indexDescriptorsMap.get(DecisionRequirementsIndex.class).getFullQualifiedName()));
+                indexDescriptorsMap.get(DecisionRequirementsIndex.class).getFullQualifiedName(),
+                configuration.getIndex().getVariableSizeThreshold()),
+            new PostImporterQueueFromIncidentHandler(
+                templateDescriptorsMap
+                    .get(PostImporterQueueTemplate.class)
+                    .getFullQualifiedName()));
   }
 
   @Override
