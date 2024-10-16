@@ -27,13 +27,14 @@ import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.api.model.Ports;
 import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.exporter.entities.AuthorizationEntity;
-import io.camunda.exporter.entities.UserEntity;
 import io.camunda.exporter.schema.SchemaTestUtil;
 import io.camunda.exporter.utils.TestSupport;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity;
+import io.camunda.webapps.schema.entities.usermanagement.Permission;
+import io.camunda.webapps.schema.entities.usermanagement.UserEntity;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
@@ -43,7 +44,6 @@ import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.io.IOException;
@@ -184,13 +184,13 @@ final class CamundaExporterIT {
     return exporter;
   }
 
-  private Map<PermissionType, List<String>> extractPermissions(
-      final AuthorizationRecordValue record) {
+  private List<Permission> extractPermissions(final AuthorizationRecordValue record) {
     return record.getPermissions().stream()
-        .collect(
-            Collectors.toMap(
-                AuthorizationRecordValue.PermissionValue::getPermissionType,
-                AuthorizationRecordValue.PermissionValue::getResourceIds));
+        .map(
+            permissionValue ->
+                new Permission(
+                    permissionValue.getPermissionType().name(), permissionValue.getResourceIds()))
+        .collect(Collectors.toList());
   }
 
   private Context getContext() {
@@ -338,11 +338,11 @@ final class CamundaExporterIT {
               AuthorizationEntity::getOwnerKey,
               AuthorizationEntity::getOwnerType,
               AuthorizationEntity::getResourceType,
-              AuthorizationEntity::getPermissionValues)
-          .containsExactly(
+              AuthorizationEntity::getPermissions)
+          .containsExactlyInAnyOrder(
               record.getValue().getOwnerKey(),
-              record.getValue().getOwnerType(),
-              record.getValue().getResourceType(),
+              record.getValue().getOwnerType().name(),
+              record.getValue().getResourceType().name(),
               extractPermissions(record.getValue()));
     }
 

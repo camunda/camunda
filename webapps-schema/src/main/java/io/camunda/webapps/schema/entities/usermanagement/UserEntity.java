@@ -5,11 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.entities;
+package io.camunda.webapps.schema.entities.usermanagement;
 
-import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 
-public class UserEntity implements ExporterEntity<UserEntity> {
+public class UserEntity extends AbstractExporterEntity<UserEntity> {
 
   public static final String DEFAULT_TENANT_IDENTIFIER = "<default>";
   private String id;
