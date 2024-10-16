@@ -51,7 +51,6 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
@@ -79,25 +78,23 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @TestInstance(Lifecycle.PER_CLASS)
 final class CamundaExporterIT {
 
-  private static final ExporterConfiguration config = new ExporterConfiguration();
+  private static final ExporterConfiguration CONFIG = new ExporterConfiguration();
   private final ExporterTestController controller = new ExporterTestController();
   private final ProtocolFactory factory = new ProtocolFactory();
   private IndexDescriptor index;
   private IndexTemplateDescriptor indexTemplate;
 
-
   @BeforeEach
   void beforeEach() throws IOException {
-    config.getConnect().setType("elasticsearch");
-    config.getIndex().setPrefix("camunda-record");
-    config.getIndex().setNumberOfShards(1);
-    config.getIndex().setNumberOfReplicas(0);
+    CONFIG.getIndex().setPrefix("camunda-record");
+    CONFIG.getIndex().setNumberOfShards(1);
+    CONFIG.getIndex().setNumberOfReplicas(0);
 
-    config.getBulk().setSize(1); // force flushing on the first record
+    CONFIG.getBulk().setSize(1); // force flushing on the first record
 
-    config.setCreateSchema(false);
-    config.getRetention().setEnabled(false);
-    config.getRetention().setMinimumAge("30d");
+    CONFIG.setCreateSchema(false);
+    CONFIG.getRetention().setEnabled(false);
+    CONFIG.getRetention().setMinimumAge("30d");
 
     indexTemplate =
         SchemaTestUtil.mockIndexTemplate(
@@ -110,26 +107,26 @@ final class CamundaExporterIT {
 
     index =
         SchemaTestUtil.mockIndex(
-            config.getIndex().getPrefix() + "qualified_name",
+            CONFIG.getIndex().getPrefix() + "qualified_name",
             "alias",
             "index_name",
             "/mappings.json");
 
     when(indexTemplate.getFullQualifiedName())
-        .thenReturn(config.getIndex().getPrefix() + "template_index_qualified_name");
+        .thenReturn(CONFIG.getIndex().getPrefix() + "template_index_qualified_name");
   }
 
   @Test
   void shouldPeriodicallyFlushBasedOnConfiguration() {
     // given
     final var duration = 2;
-    config.getBulk().setDelay(duration);
+    CONFIG.getBulk().setDelay(duration);
 
     final var exporter = new CamundaExporter();
 
     final var context =
         new ExporterTestContext()
-            .setConfiguration(new ExporterTestConfiguration<>("elastic", config));
+            .setConfiguration(new ExporterTestConfiguration<>("elastic", CONFIG));
 
     exporter.configure(context);
 
@@ -180,14 +177,14 @@ final class CamundaExporterIT {
 
   private Context getContext() {
     return new ExporterTestContext()
-        .setConfiguration(new ExporterTestConfiguration<>("elastic", config));
+        .setConfiguration(new ExporterTestConfiguration<>("elastic", CONFIG));
   }
 
   private ExporterResourceProvider mockResourceProvider(
       final Set<IndexDescriptor> indexDescriptors,
       final Set<IndexTemplateDescriptor> templateDescriptors) {
     final var provider = mock(DefaultExporterResourceProvider.class, CALLS_REAL_METHODS);
-    provider.init(config);
+    provider.init(CONFIG);
     when(provider.getIndexDescriptors()).thenReturn(indexDescriptors);
     when(provider.getIndexTemplateDescriptors()).thenReturn(templateDescriptors);
 
@@ -197,7 +194,7 @@ final class CamundaExporterIT {
   void shouldHaveCorrectSchemaUpdatesWithMultipleExporters(
       final Callable<JsonNode> getIndex, final Callable<JsonNode> getTemplate) throws Exception {
     // given
-    config.setCreateSchema(true);
+    CONFIG.setCreateSchema(true);
 
     final var exporter1 = startExporter();
     final var exporter2 = startExporter();
@@ -225,7 +222,7 @@ final class CamundaExporterIT {
   void shouldNotErrorIfOldExporterRestartsWhileNewExporterHasAlreadyStarted(
       final Callable<JsonNode> getIndex, final Callable<JsonNode> getTemplate) throws Exception {
     // given
-    config.setCreateSchema(true);
+    CONFIG.setCreateSchema(true);
     final var updatedExporter = startExporter();
     final var oldExporter = startExporter();
 
@@ -257,7 +254,7 @@ final class CamundaExporterIT {
       final Callable<UserEntity> getResponse, final Record<UserRecordValue> record)
       throws Exception {
     // given
-    config.setCreateSchema(true);
+    CONFIG.setCreateSchema(true);
     final var exporter = startExporter();
 
     // when
@@ -282,7 +279,7 @@ final class CamundaExporterIT {
       final Record<AuthorizationRecordValue> record)
       throws Exception {
     // given
-    config.setCreateSchema(true);
+    CONFIG.setCreateSchema(true);
     final var exporter = startExporter();
 
     // when
@@ -297,20 +294,20 @@ final class CamundaExporterIT {
             AuthorizationEntity::getOwnerKey,
             AuthorizationEntity::getOwnerType,
             AuthorizationEntity::getResourceType,
-            AuthorizationEntity::getPermissionValues,
+            AuthorizationEntity::getPermissions,
             AuthorizationEntity::getId)
         .containsExactly(
             record.getValue().getOwnerKey(),
-            record.getValue().getOwnerType(),
-            record.getValue().getResourceType(),
+            String.valueOf(record.getValue().getOwnerType()),
+            String.valueOf(record.getValue().getResourceType()),
             extractPermissions(record.getValue()),
             String.valueOf(record.getKey()));
   }
 
   void shouldExportRecordOnceBulkSizeReached() {
     // given
-    config.getBulk().setSize(2);
-    config.setCreateSchema(true);
+    CONFIG.getBulk().setSize(2);
+    CONFIG.setCreateSchema(true);
     final var exporter = new CamundaExporter();
 
     final var context = getContext();
@@ -337,7 +334,7 @@ final class CamundaExporterIT {
     final var context =
         new ExporterTestContext()
             .setConfiguration(
-                new ExporterTestConfiguration<>(config.getConnect().getType(), config));
+                new ExporterTestConfiguration<>(CONFIG.getConnect().getType(), CONFIG));
 
     exporter.configure(context);
     exporter.open(controller);
@@ -373,6 +370,7 @@ final class CamundaExporterIT {
     @Container
     private static final ElasticsearchContainer CONTAINER =
         TestSupport.createDefeaultElasticsearchContainer();
+
     private static ElasticsearchClient client;
     private final ProtocolFactory factory = new ProtocolFactory();
 
@@ -384,9 +382,9 @@ final class CamundaExporterIT {
 
     @BeforeAll
     public static void init() {
-      config.getConnect().setUrl(CONTAINER.getHttpHostAddress());
-      config.getConnect().setType("elasticsearch");
-      client = new ElasticsearchConnector(config.getConnect()).createClient();
+      CONFIG.getConnect().setUrl(CONTAINER.getHttpHostAddress());
+      CONFIG.getConnect().setType("elasticsearch");
+      client = new ElasticsearchConnector(CONFIG.getConnect()).createClient();
     }
 
     @Test
@@ -446,20 +444,21 @@ final class CamundaExporterIT {
     @Container
     private static final OpensearchContainer<?> CONTAINER =
         TestSupport.createDefaultOpensearchContainer();
+
     private static OpenSearchClient client;
     private final ProtocolFactory factory = new ProtocolFactory();
 
     @BeforeEach
     public void beforeEach() throws IOException {
-      client.indices().delete(req -> req.index(config.getIndex().getPrefix() + "*"));
+      client.indices().delete(req -> req.index(CONFIG.getIndex().getPrefix() + "*"));
       client.indices().deleteIndexTemplate(req -> req.name("*"));
     }
 
     @BeforeAll
     public static void init() {
-      config.getConnect().setUrl(CONTAINER.getHttpHostAddress());
-      config.getConnect().setType("opensearch");
-      client = new OpensearchConnector(config.getConnect()).createClient();
+      CONFIG.getConnect().setUrl(CONTAINER.getHttpHostAddress());
+      CONFIG.getConnect().setType("opensearch");
+      client = new OpensearchConnector(CONFIG.getConnect()).createClient();
     }
 
     @Test
@@ -521,9 +520,9 @@ final class CamundaExporterIT {
       final var exporter = new CamundaExporter();
       final var context =
           new ExporterTestContext()
-              .setConfiguration(new ExporterTestConfiguration<>("elastic", config));
+              .setConfiguration(new ExporterTestConfiguration<>("elastic", CONFIG));
 
-      config.getConnect().setType("mysql");
+      CONFIG.getConnect().setType("mysql");
 
       // when - then
       assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
@@ -535,9 +534,9 @@ final class CamundaExporterIT {
       final var exporter = new CamundaExporter();
       final var context =
           new ExporterTestContext()
-              .setConfiguration(new ExporterTestConfiguration<>("elastic", config));
+              .setConfiguration(new ExporterTestConfiguration<>("elastic", CONFIG));
 
-      config.getIndex().setPrefix("i_am_invalid");
+      CONFIG.getIndex().setPrefix("i_am_invalid");
 
       // when - then
       assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
@@ -550,9 +549,9 @@ final class CamundaExporterIT {
       final var exporter = new CamundaExporter();
       final var context =
           new ExporterTestContext()
-              .setConfiguration(new ExporterTestConfiguration<>("elastic", config));
+              .setConfiguration(new ExporterTestConfiguration<>("elastic", CONFIG));
 
-      config.getIndex().setNumberOfShards(invalidNumberOfShards);
+      CONFIG.getIndex().setNumberOfShards(invalidNumberOfShards);
 
       // when - then
       assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
@@ -565,8 +564,8 @@ final class CamundaExporterIT {
       final var exporter = new CamundaExporter();
       final var context =
           new ExporterTestContext()
-              .setConfiguration(new ExporterTestConfiguration<>("elastic", config));
-      config.getRetention().setMinimumAge(invalidMinAge);
+              .setConfiguration(new ExporterTestConfiguration<>("elastic", CONFIG));
+      CONFIG.getRetention().setMinimumAge(invalidMinAge);
 
       // when - then
       assertThatCode(() -> exporter.configure(context))
@@ -581,8 +580,8 @@ final class CamundaExporterIT {
       final var exporter = new CamundaExporter();
       final var context =
           new ExporterTestContext()
-              .setConfiguration(new ExporterTestConfiguration<>("elastic", config));
-      config.getIndex().setNumberOfReplicas(-1);
+              .setConfiguration(new ExporterTestConfiguration<>("elastic", CONFIG));
+      CONFIG.getIndex().setNumberOfReplicas(-1);
 
       // when - then
       assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
