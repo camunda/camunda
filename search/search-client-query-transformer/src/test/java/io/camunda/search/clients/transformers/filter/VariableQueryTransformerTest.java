@@ -30,22 +30,17 @@ public class VariableQueryTransformerTest extends AbstractTransformerTest {
     final var queryVariant = searchRequest.queryOption();
     assertThat(queryVariant)
         .isInstanceOfSatisfying(
-            SearchBoolQuery.class,
-            (t) -> {
-              assertThat(t.must().get(0).queryOption())
-                  .isInstanceOfSatisfying(
-                      SearchTermQuery.class,
-                      (term) -> {
-                        assertThat(term.field()).isEqualTo("key");
-                        assertThat(term.value().longValue()).isEqualTo(12345L);
-                      });
+            SearchTermQuery.class, // Now expecting SearchTermQuery directly
+            (term) -> {
+              assertThat(term.field()).isEqualTo("key");
+              assertThat(term.value().longValue()).isEqualTo(12345L);
             });
   }
 
   @Test
   public void shouldQueryByScopeKey() {
     // given
-    final var filter = FilterBuilders.variable((f) -> f.scopeKeys(67890L));
+    final var filter = FilterBuilders.variable((f) -> f.scopeKeys(12345L));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -54,22 +49,17 @@ public class VariableQueryTransformerTest extends AbstractTransformerTest {
     final var queryVariant = searchRequest.queryOption();
     assertThat(queryVariant)
         .isInstanceOfSatisfying(
-            SearchBoolQuery.class,
-            (t) -> {
-              assertThat(t.must().get(0).queryOption())
-                  .isInstanceOfSatisfying(
-                      SearchTermQuery.class,
-                      (term) -> {
-                        assertThat(term.field()).isEqualTo("scopeKey");
-                        assertThat(term.value().longValue()).isEqualTo(67890L);
-                      });
+            SearchTermQuery.class, // Now expecting SearchTermQuery directly
+            (term) -> {
+              assertThat(term.field()).isEqualTo("scopeKey");
+              assertThat(term.value().longValue()).isEqualTo(12345L);
             });
   }
 
   @Test
   public void shouldQueryByProcessInstanceKey() {
     // given
-    final var filter = FilterBuilders.variable((f) -> f.processInstanceKeys(54321L));
+    final var filter = FilterBuilders.variable((f) -> f.processInstanceKeys(12345L));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -78,22 +68,17 @@ public class VariableQueryTransformerTest extends AbstractTransformerTest {
     final var queryVariant = searchRequest.queryOption();
     assertThat(queryVariant)
         .isInstanceOfSatisfying(
-            SearchBoolQuery.class,
-            (t) -> {
-              assertThat(t.must().get(0).queryOption())
-                  .isInstanceOfSatisfying(
-                      SearchTermQuery.class,
-                      (term) -> {
-                        assertThat(term.field()).isEqualTo("processInstanceKey");
-                        assertThat(term.value().longValue()).isEqualTo(54321L);
-                      });
+            SearchTermQuery.class, // Now expecting SearchTermQuery directly
+            (term) -> {
+              assertThat(term.field()).isEqualTo("processInstanceKey");
+              assertThat(term.value().longValue()).isEqualTo(12345L);
             });
   }
 
   @Test
   public void shouldQueryByTenantId() {
     // given
-    final var filter = FilterBuilders.variable((f) -> f.tenantIds("tenant1"));
+    final var filter = FilterBuilders.variable((f) -> f.tenantIds("tenantId"));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -102,15 +87,10 @@ public class VariableQueryTransformerTest extends AbstractTransformerTest {
     final var queryVariant = searchRequest.queryOption();
     assertThat(queryVariant)
         .isInstanceOfSatisfying(
-            SearchBoolQuery.class,
-            (t) -> {
-              assertThat(t.must().get(0).queryOption())
-                  .isInstanceOfSatisfying(
-                      SearchTermQuery.class,
-                      (term) -> {
-                        assertThat(term.field()).isEqualTo("tenantId");
-                        assertThat(term.value().stringValue()).isEqualTo("tenant1");
-                      });
+            SearchTermQuery.class, // Now expecting SearchTermQuery directly
+            (term) -> {
+              assertThat(term.field()).isEqualTo("tenantId");
+              assertThat(term.value().stringValue()).isEqualTo("tenantId");
             });
   }
 
@@ -128,32 +108,40 @@ public class VariableQueryTransformerTest extends AbstractTransformerTest {
     // then
     final var queryVariant = searchRequest.queryOption();
 
+    // Ensure the outer query is a SearchBoolQuery
     assertThat(queryVariant)
         .isInstanceOfSatisfying(
             SearchBoolQuery.class,
             outerBoolQuery -> {
               assertThat(outerBoolQuery.must()).isNotEmpty();
 
-              final SearchQuery outerMustQuery = outerBoolQuery.must().get(0);
-              assertThat(outerMustQuery.queryOption()).isInstanceOf(SearchBoolQuery.class);
+              final SearchQuery nameMustQuery = outerBoolQuery.must().get(0);
+              assertThat(nameMustQuery.queryOption()).isInstanceOf(SearchTermQuery.class);
 
-              final SearchBoolQuery innerBoolQuery = (SearchBoolQuery) outerMustQuery.queryOption();
-              assertThat(innerBoolQuery.must()).hasSize(2);
+              final SearchQuery valueMustQuery = outerBoolQuery.must().get(1);
+              assertThat(valueMustQuery.queryOption()).isInstanceOf(SearchTermQuery.class);
 
-              assertThat(innerBoolQuery.must().get(0).queryOption())
+              final SearchTermQuery innerNameTermQuery =
+                  (SearchTermQuery) nameMustQuery.queryOption();
+              final SearchTermQuery innerValueTermQuery =
+                  (SearchTermQuery) valueMustQuery.queryOption();
+
+              // Ensure name query is correct
+              assertThat(innerNameTermQuery)
                   .isInstanceOfSatisfying(
                       SearchTermQuery.class,
-                      termQuery -> {
-                        assertThat(termQuery.field()).isEqualTo("name");
-                        assertThat(termQuery.value().value()).isEqualTo("test");
+                      (term) -> {
+                        assertThat(term.field()).isEqualTo("name");
+                        assertThat(term.value().stringValue()).isEqualTo("test");
                       });
 
-              assertThat(innerBoolQuery.must().get(1).queryOption())
+              // Ensure value query is correct
+              assertThat(innerValueTermQuery)
                   .isInstanceOfSatisfying(
                       SearchTermQuery.class,
-                      termQuery -> {
-                        assertThat(termQuery.field()).isEqualTo("value");
-                        assertThat(termQuery.value().value()).isEqualTo("testValue");
+                      (term) -> {
+                        assertThat(term.field()).isEqualTo("value");
+                        assertThat(term.value().stringValue()).isEqualTo("testValue");
                       });
             });
   }
