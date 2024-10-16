@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
+import co.elastic.clients.elasticsearch.ilm.get_lifecycle.Lifecycle;
 import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplateItem;
 import co.elastic.clients.json.JsonpMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -145,6 +146,15 @@ public final class SchemaTestUtil {
             (gen) -> indexTemplate.serialize(gen, OPENSEARCH_JSON_MAPPER));
 
     return MAPPER.valueToTree(templateAsMap);
+  }
+
+  public static JsonNode elsPolicyToNode(final Lifecycle lifecyclePolicy) throws IOException {
+    final var policyAsMap =
+        SchemaResourceSerializer.serialize(
+            co.elastic.clients.json.jackson.JacksonJsonpGenerator::new,
+            (gen) -> lifecyclePolicy.serialize(gen, ELS_JSON_MAPPER));
+
+    return MAPPER.valueToTree(policyAsMap);
   }
 
   public static boolean mappingsMatch(final JsonNode mappings, final String fileName)

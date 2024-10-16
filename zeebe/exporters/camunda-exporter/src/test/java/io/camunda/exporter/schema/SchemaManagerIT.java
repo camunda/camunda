@@ -9,13 +9,16 @@ package io.camunda.exporter.schema;
 
 import static io.camunda.exporter.schema.SchemaTestUtil.elsIndexTemplateToNode;
 import static io.camunda.exporter.schema.SchemaTestUtil.elsIndexToNode;
+import static io.camunda.exporter.schema.SchemaTestUtil.elsPolicyToNode;
 import static io.camunda.exporter.schema.SchemaTestUtil.mappingsMatch;
 import static io.camunda.exporter.schema.SchemaTestUtil.opensearchIndexTemplateToNode;
 import static io.camunda.exporter.schema.SchemaTestUtil.opensearchIndexToNode;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration;
@@ -38,6 +41,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch.generic.Requests;
 import org.opensearch.testcontainers.OpensearchContainer;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -46,7 +51,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 public class SchemaManagerIT {
 
-  private static final ExporterConfiguration CONFIG = new ExporterConfiguration();
+  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static ExporterConfiguration config = new ExporterConfiguration();
   private IndexDescriptor index;
   private IndexTemplateDescriptor indexTemplate;
 
@@ -63,13 +69,15 @@ public class SchemaManagerIT {
 
     index =
         SchemaTestUtil.mockIndex(
-            CONFIG.getIndex().getPrefix() + "qualified_name",
+            config.getIndex().getPrefix() + "qualified_name",
             "alias",
             "index_name",
             "/mappings.json");
 
     when(indexTemplate.getFullQualifiedName())
-        .thenReturn(CONFIG.getIndex().getPrefix() + "template_index_qualified_name");
+        .thenReturn(config.getIndex().getPrefix() + "template_index_qualified_name");
+
+    config = new ExporterConfiguration();
   }
 
   private void shouldAppendToIndexMappingsWithNewProperties(
@@ -168,6 +176,166 @@ public class SchemaManagerIT {
         .isTrue();
   }
 
+  void shouldCreateAllSchemasIfCreateEnabled(
+      final Callable<JsonNode> getIndex,
+      final Callable<JsonNode> getTemplate,
+      final SearchEngineClient searchEngineClient)
+      throws Exception {
+    // given
+    config.setCreateSchema(true);
+    final var schemaManager =
+        new SchemaManager(searchEngineClient, Set.of(index), Set.of(indexTemplate), config);
+
+    // when
+    schemaManager.startup();
+
+    // then
+    final var retrievedIndex = getIndex.call();
+    final var retrievedIndexTemplate = getTemplate.call();
+
+    assertThat(mappingsMatch(retrievedIndex.get("mappings"), "/mappings.json")).isTrue();
+    assertThat(
+            mappingsMatch(
+                retrievedIndexTemplate.at("/index_template/template/mappings"), "/mappings.json"))
+        .isTrue();
+  }
+
+  void shouldUpdateSchemasCorrectlyIfCreateEnabled(
+      final Callable<JsonNode> getIndex,
+      final Callable<JsonNode> getTemplate,
+      final SearchEngineClient searchEngineClient)
+      throws Exception {
+    // given
+    config.setCreateSchema(true);
+    final var schemaManager =
+        new SchemaManager(searchEngineClient, Set.of(index), Set.of(indexTemplate), config);
+
+    schemaManager.startup();
+
+    // when
+    when(index.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
+    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
+
+    schemaManager.startup();
+
+    // then
+    final var retrievedIndex = getIndex.call();
+    final var retrievedIndexTemplate = getTemplate.call();
+
+    assertThat(mappingsMatch(retrievedIndex.get("mappings"), "/mappings-added-property.json"))
+        .isTrue();
+    assertThat(
+            mappingsMatch(
+                retrievedIndexTemplate.at("/index_template/template/mappings"),
+                "/mappings-added-property.json"))
+        .isTrue();
+  }
+
+  void shouldCreateNewSchemasIfNewIndexDescriptorAddedToExistingSchemas(
+      final Callable<JsonNode> getIndex,
+      final Callable<JsonNode> getTemplate,
+      final SearchEngineClient searchEngineClient)
+      throws Exception {
+    // given
+    config.setCreateSchema(true);
+    final var indices = new HashSet<IndexDescriptor>();
+    final var indexTemplates = new HashSet<IndexTemplateDescriptor>();
+
+    indices.add(index);
+    indexTemplates.add(indexTemplate);
+
+    final var schemaManager =
+        new SchemaManager(searchEngineClient, indices, indexTemplates, config);
+
+    schemaManager.startup();
+
+    // when
+    final var newIndex =
+        SchemaTestUtil.mockIndex(
+            "new_index_qualified", "new_alias", "new_index", "/mappings-added-property.json");
+    final var newIndexTemplate =
+        SchemaTestUtil.mockIndexTemplate(
+            "new_template_name",
+            "new_test*",
+            "new_template_alias",
+            Collections.emptyList(),
+            "new_template_name",
+            "/mappings-added-property.json");
+
+    when(newIndexTemplate.getFullQualifiedName())
+        .thenReturn(config.getIndex().getPrefix() + "new_template_index_qualified_name");
+
+    indices.add(newIndex);
+    indexTemplates.add(newIndexTemplate);
+
+    schemaManager.startup();
+
+    // then
+    final var retrievedNewIndex = getIndex.call();
+    final var retrievedNewTemplate = getTemplate.call();
+
+    assertThat(mappingsMatch(retrievedNewIndex.get("mappings"), "/mappings-added-property.json"))
+        .isTrue();
+    assertThat(
+            mappingsMatch(
+                retrievedNewTemplate.at("/index_template/template/mappings"),
+                "/mappings-added-property.json"))
+        .isTrue();
+  }
+
+  void shouldNotPutAnySchemasIfCreatedDisabled(
+      final Callable<JsonNode> getIndex,
+      final Callable<JsonNode> getTemplate,
+      final SearchEngineClient searchEngineClient) {
+    // given
+    config.setCreateSchema(false);
+
+    final var schemaManager =
+        new SchemaManager(searchEngineClient, Set.of(index), Set.of(indexTemplate), config);
+
+    schemaManager.startup();
+
+    // then
+    assertThatThrownBy(getIndex::call)
+        .isInstanceOfAny(ElasticsearchException.class, OpenSearchException.class)
+        .hasMessageContaining("no such index");
+    assertThatThrownBy(getTemplate::call)
+        .isInstanceOfAny(ElasticsearchException.class, OpenSearchException.class)
+        .hasMessageContaining(String.format("[%s] not found", indexTemplate.getTemplateName()));
+  }
+
+  void shouldCreateLifeCyclePoliciesOnStartupIfEnabled(
+      final Callable<JsonNode> getPolicy, final SearchEngineClient searchEngineClient)
+      throws Exception {
+    config.setCreateSchema(true);
+    config.getRetention().setEnabled(true);
+    config.getRetention().setPolicyName("policy_name");
+
+    final var schemaManager = new SchemaManager(searchEngineClient, Set.of(), Set.of(), config);
+
+    schemaManager.startup();
+
+    final var policy = getPolicy.call();
+
+    assertThat(policy.get("policy")).isNotNull();
+  }
+
+  void shouldCreateIndexInAdditionToTemplateFromTemplateDescriptor(
+      final Callable<JsonNode> getIndex, final SearchEngineClient searchEngineClient)
+      throws Exception {
+    config.setCreateSchema(true);
+
+    final var schemaManager =
+        new SchemaManager(searchEngineClient, Set.of(), Set.of(indexTemplate), config);
+
+    schemaManager.startup();
+
+    final var retrievedIndex = getIndex.call();
+
+    assertThat(retrievedIndex.at("/settings/index/provided_name").asText())
+        .isEqualTo(indexTemplate.getFullQualifiedName());
+  }
+
   @Nested
   class ElasticsearchSchemaManagerTest {
     private static ElasticsearchClient elsClient;
@@ -185,8 +353,8 @@ public class SchemaManagerIT {
 
     @BeforeAll
     public static void init() {
-      CONFIG.getConnect().setUrl(CONTAINER.getHttpHostAddress());
-      elsClient = new ElasticsearchConnector(CONFIG.getConnect()).createClient();
+      config.getConnect().setUrl(CONTAINER.getHttpHostAddress());
+      elsClient = new ElasticsearchConnector(config.getConnect()).createClient();
 
       searchEngineClient = new ElasticsearchEngineClient(elsClient);
     }
@@ -213,6 +381,50 @@ public class SchemaManagerIT {
     void shouldAppendToIndexMappingsWithNewProperties() throws Exception {
       SchemaManagerIT.this.shouldAppendToIndexMappingsWithNewProperties(
           () -> getIndexAsNode(index.getFullQualifiedName()), searchEngineClient);
+    }
+
+    @Test
+    void shouldCreateAllSchemasIfCreateEnabled() throws Exception {
+      SchemaManagerIT.this.shouldCreateAllSchemasIfCreateEnabled(
+          () -> getIndexAsNode(index.getFullQualifiedName()),
+          () -> getIndexTemplateAsNode(indexTemplate.getTemplateName()),
+          searchEngineClient);
+    }
+
+    @Test
+    void shouldUpdateAllSchemasIfUpdateEnabled() throws Exception {
+      shouldUpdateSchemasCorrectlyIfCreateEnabled(
+          () -> getIndexAsNode(index.getFullQualifiedName()),
+          () -> getIndexTemplateAsNode(indexTemplate.getTemplateName()),
+          searchEngineClient);
+    }
+
+    @Test
+    void shouldCreateNewSchemasIfNewIndexDescriptorAddedToExistingSchemas() throws Exception {
+      SchemaManagerIT.this.shouldCreateNewSchemasIfNewIndexDescriptorAddedToExistingSchemas(
+          () -> getIndexAsNode("new_index_qualified"),
+          () -> getIndexTemplateAsNode("new_template_name"),
+          searchEngineClient);
+    }
+
+    @Test
+    void shouldNotPutAnySchemasIfCreatedDisabled() {
+      SchemaManagerIT.this.shouldNotPutAnySchemasIfCreatedDisabled(
+          () -> getIndexAsNode(index.getFullQualifiedName()),
+          () -> getIndexTemplateAsNode(indexTemplate.getTemplateName()),
+          searchEngineClient);
+    }
+
+    @Test
+    void shouldCreateLifeCyclePoliciesOnStartupIfEnabled() throws Exception {
+      SchemaManagerIT.this.shouldCreateLifeCyclePoliciesOnStartupIfEnabled(
+          () -> getPolicy(config.getRetention().getPolicyName()), searchEngineClient);
+    }
+
+    @Test
+    void shouldCreateIndexInAdditionToTemplateFromTemplateDescriptor() throws Exception {
+      SchemaManagerIT.this.shouldCreateIndexInAdditionToTemplateFromTemplateDescriptor(
+          () -> getIndexAsNode(indexTemplate.getFullQualifiedName()), searchEngineClient);
     }
 
     @Test
@@ -255,6 +467,13 @@ public class SchemaManagerIT {
 
       return elsIndexTemplateToNode(template);
     }
+
+    private JsonNode getPolicy(final String policyName) throws IOException {
+      final var policy =
+          elsClient.ilm().getLifecycle(req -> req.name(policyName)).result().get(policyName);
+
+      return elsPolicyToNode(policy);
+    }
   }
 
   @Nested
@@ -268,15 +487,15 @@ public class SchemaManagerIT {
 
     @BeforeEach
     public void beforeEach() throws IOException {
-      opensearchClient.indices().delete(req -> req.index("*"));
+      opensearchClient.indices().delete(req -> req.index(config.getIndex().getPrefix() + "*"));
       opensearchClient.indices().deleteIndexTemplate(req -> req.name("*"));
     }
 
     @BeforeAll
     public static void init() {
       // Create the low-level client
-      CONFIG.getConnect().setUrl(CONTAINER.getHttpHostAddress());
-      opensearchClient = new OpensearchConnector(CONFIG.getConnect()).createClient();
+      config.getConnect().setUrl(CONTAINER.getHttpHostAddress());
+      opensearchClient = new OpensearchConnector(config.getConnect()).createClient();
 
       searchEngineClient = new OpensearchEngineClient(opensearchClient);
     }
@@ -305,6 +524,49 @@ public class SchemaManagerIT {
       SchemaManagerIT.this.shouldAppendToIndexMappingsWithNewProperties(
           () -> getIndexAsNode(index.getFullQualifiedName()), searchEngineClient);
     }
+
+    @Test
+    void shouldCreateAllSchemasIfCreateEnabled() throws Exception {
+      SchemaManagerIT.this.shouldCreateAllSchemasIfCreateEnabled(
+          () -> getIndexAsNode(index.getFullQualifiedName()),
+          () -> getIndexTemplateAsNode(indexTemplate.getTemplateName()),
+          searchEngineClient);
+    }
+
+    @Test
+    void shouldUpdateAllSchemasIfUpdateEnabled() throws Exception {
+      shouldUpdateSchemasCorrectlyIfCreateEnabled(
+          () -> getIndexAsNode(index.getFullQualifiedName()),
+          () -> getIndexTemplateAsNode(indexTemplate.getTemplateName()),
+          searchEngineClient);
+    }
+
+    @Test
+    void shouldCreateNewSchemasIfNewIndexDescriptorAddedToExistingSchemas() throws Exception {
+      SchemaManagerIT.this.shouldCreateNewSchemasIfNewIndexDescriptorAddedToExistingSchemas(
+          () -> getIndexAsNode("new_index_qualified"),
+          () -> getIndexTemplateAsNode("new_template_name"),
+          searchEngineClient);
+    }
+
+    @Test
+    void shouldNotPutAnySchemasIfCreatedDisabled() {
+      SchemaManagerIT.this.shouldNotPutAnySchemasIfCreatedDisabled(
+          () -> getIndexAsNode(index.getFullQualifiedName()),
+          () -> getIndexTemplateAsNode(indexTemplate.getTemplateName()),
+          searchEngineClient);
+    }
+
+    @Test
+    void shouldCreateLifeCyclePoliciesOnStartupIfEnabled() throws Exception {
+      SchemaManagerIT.this.shouldCreateLifeCyclePoliciesOnStartupIfEnabled(
+          () -> getPolicy(config.getRetention().getPolicyName()), searchEngineClient);
+    }
+
+    @Test
+    void shouldCreateIndexInAdditionToTemplateFromTemplateDescriptor() throws Exception {
+      SchemaManagerIT.this.shouldCreateIndexInAdditionToTemplateFromTemplateDescriptor(
+          () -> getIndexAsNode(indexTemplate.getFullQualifiedName()), searchEngineClient);
     }
 
     private JsonNode getIndexAsNode(final String indexName) throws IOException {
@@ -323,6 +585,13 @@ public class SchemaManagerIT {
               .getFirst();
 
       return opensearchIndexTemplateToNode(template);
+    }
+
+    private JsonNode getPolicy(final String policyName) throws IOException {
+      final var request =
+          Requests.builder().method("GET").endpoint("_plugins/_ism/policies/" + policyName).build();
+
+      return MAPPER.readTree(opensearchClient.generic().execute(request).getBody().get().body());
     }
   }
 }
