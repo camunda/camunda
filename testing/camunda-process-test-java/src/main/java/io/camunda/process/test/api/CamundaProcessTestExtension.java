@@ -20,6 +20,7 @@ import static org.junit.platform.commons.util.ReflectionUtils.makeAccessible;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
+import io.camunda.process.test.impl.extension.CamundaProcessTestResultPrinter;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
@@ -28,6 +29,7 @@ import io.camunda.zeebe.client.ZeebeClient;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -66,19 +68,19 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
   /** The JUnit extension store key of the context. */
   public static final String STORE_KEY_CONTEXT = "camunda-process-test-context";
 
-  /** The JUNIT extension store key of the latest test result. */
-  public static final String STORE_KEY_TEST_RESULT = "camunda-process-test-result";
-
   private final List<ZeebeClient> createdClients = new ArrayList<>();
 
   private final CamundaContainerRuntimeBuilder containerRuntimeBuilder;
+  private final CamundaProcessTestResultPrinter processTestResultPrinter;
 
   private CamundaContainerRuntime containerRuntime;
-
   private CamundaProcessTestResultCollector processTestResultCollector;
 
-  CamundaProcessTestExtension(final CamundaContainerRuntimeBuilder containerRuntimeBuilder) {
+  CamundaProcessTestExtension(
+      final CamundaContainerRuntimeBuilder containerRuntimeBuilder,
+      final Consumer<String> testResultPrintStream) {
     this.containerRuntimeBuilder = containerRuntimeBuilder;
+    processTestResultPrinter = new CamundaProcessTestResultPrinter(testResultPrintStream);
   }
 
   /**
@@ -97,7 +99,7 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
    * </pre>
    */
   public CamundaProcessTestExtension() {
-    this(CamundaContainerRuntime.newBuilder());
+    this(CamundaContainerRuntime.newBuilder(), System.err::println);
   }
 
   @Override
@@ -172,7 +174,6 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
   public void afterEach(final ExtensionContext extensionContext) throws Exception {
     // collect test results
     final ProcessTestResult testResult = processTestResultCollector.collect();
-    extensionContext.getStore(NAMESPACE).put(STORE_KEY_TEST_RESULT, testResult);
 
     // reset assertions
     CamundaAssert.reset();
@@ -180,6 +181,15 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
     createdClients.forEach(ZeebeClient::close);
     // close the runtime
     containerRuntime.close();
+
+    // print test results
+    if (isTestFailed(extensionContext)) {
+      processTestResultPrinter.print(testResult);
+    }
+  }
+
+  private static boolean isTestFailed(final ExtensionContext extensionContext) {
+    return extensionContext.getExecutionException().isPresent();
   }
 
   // ============ Configuration options =================
