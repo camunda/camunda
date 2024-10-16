@@ -109,6 +109,9 @@ public interface ActivatedJob {
    */
   String toJson();
 
+  // TODO: use Enum in the future
+  String getJobListenerEventType();
+
   /**
    * @return the identifier of the tenant that owns the job
    */

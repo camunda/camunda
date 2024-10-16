@@ -95,7 +95,8 @@ public final class ResponseMapper {
         .deadline(job.getDeadline())
         .variables(job.getVariables())
         .customHeaders(job.getCustomHeadersObjectMap())
-        .tenantId(job.getTenantId());
+        .tenantId(job.getTenantId())
+        .jobListenerEventType(job.getJobListenerEventType().name());
   }
 
   public static ResponseEntity<Object> toMessageCorrelationResponse(

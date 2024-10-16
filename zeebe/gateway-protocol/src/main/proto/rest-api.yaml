@@ -3776,6 +3776,9 @@ components:
         tenantId:
           description: The ID of the tenant that owns the job
           type: string
+        jobListenerEventType:
+          description: The job listener event type
+          type: string
     JobFailRequest:
       type: object
       properties:
