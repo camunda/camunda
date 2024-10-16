@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import co.elastic.clients.elasticsearch.ilm.get_lifecycle.Lifecycle;
 import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplateItem;
@@ -26,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import org.opensearch.client.json.jackson.JacksonJsonpGenerator;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
+import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.indices.IndexState;
 
 public final class SchemaTestUtil {
@@ -155,6 +157,44 @@ public final class SchemaTestUtil {
             (gen) -> lifecyclePolicy.serialize(gen, ELS_JSON_MAPPER));
 
     return MAPPER.valueToTree(policyAsMap);
+  }
+
+  public static JsonNode getOpensearchIndexAsNode(
+      final String indexName, final OpenSearchClient client) throws IOException {
+    final var updatedIndex = client.indices().get(req -> req.index(indexName)).get(indexName);
+
+    return opensearchIndexToNode(updatedIndex);
+  }
+
+  public static JsonNode getOpensearchIndexTemplateAsNode(
+      final String templateName, final OpenSearchClient client) throws IOException {
+    final var template =
+        client
+            .indices()
+            .getIndexTemplate(req -> req.name(templateName))
+            .indexTemplates()
+            .getFirst();
+
+    return opensearchIndexTemplateToNode(template);
+  }
+
+  public static JsonNode getElsIndexAsNode(final String indexName, final ElasticsearchClient client)
+      throws IOException {
+    final var updatedIndex = client.indices().get(req -> req.index(indexName)).get(indexName);
+
+    return elsIndexToNode(updatedIndex);
+  }
+
+  public static JsonNode getElsIndexTemplateAsNode(
+      final String templateName, final ElasticsearchClient client) throws IOException {
+    final var template =
+        client
+            .indices()
+            .getIndexTemplate(req -> req.name(templateName))
+            .indexTemplates()
+            .getFirst();
+
+    return elsIndexTemplateToNode(template);
   }
 
   public static boolean mappingsMatch(final JsonNode mappings, final String fileName)
