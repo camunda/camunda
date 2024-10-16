@@ -2543,9 +2543,11 @@ components:
       properties:
         userTaskKey:
           type: integer
+          description: The key for this user task.
           format: int64
         state:
           type: string
+          description: The state of the user task.
           enum:
             - CREATED
             - COMPLETED
@@ -2553,22 +2555,30 @@ components:
             - FAILED
         assignee:
           type: string
+          description: The assignee of the user task.
         elementId:
           type: string
+          description: The element id of the user task.
         candidateGroup:
           type: string
+          description: The candidate group for this user task.
         candidateUser:
           type: string
+          description: The candidate user for this user task.
         processDefinitionKey:
           type: integer
+          description: The key of the process definition.
           format: int64
         processInstanceKey:
           type: integer
+          description: The key of the process instance.
           format: int64
         tenantId:
           type: string
+          description: Tenant id of this user task.
         processDefinitionId:
           type: string
+          description: The id of the process definition.
         variables:
           type: array
           items:
@@ -2578,16 +2588,20 @@ components:
       properties:
         name:
           type: string
+          description: Name of the variable.
         value:
           type: string
+          description: The value of the variable.
     UserTaskItem:
       type: object
       properties:
         userTaskKey:
           type: integer
+          description: The key for this user task.
           format: int64
         state:
           type: string
+          description: The state of the user task.
           enum:
             - CREATED
             - COMPLETED
@@ -2595,51 +2609,68 @@ components:
             - FAILED
         assignee:
           type: string
+          description: The assignee of the user task.
         elementId:
           type: string
+          description: The element id of the user task.
         elementInstanceKey:
           type: integer
+          description: The key of the element instance.
           format: int64
         candidateGroups:
           type: array
+          description: The candidate groups for this user task.
           items:
             type: string
         candidateUsers:
           type: array
+          description: The candidate users for this user task.
           items:
             type: string
         processDefinitionId:
           type: string
+          description: The id of the process definition.
         processDefinitionKey:
           type: integer
+          description: The key of the process definition.
           format: int64
         processInstanceKey:
           type: integer
+          description: The key of the process instance.
           format: int64
         formKey:
           type: integer
+          description: The key of the form.
           format: int64
         creationDate:
           type: string
+          description: The creation date of a user task.
           format: date-time
         completionDate:
           type: string
+          description: The completion date of a user task.
           format: date-time
         followUpDate:
           type: string
+          description: The follow date of a user task.
           format: date-time
         dueDate:
           type: string
+          description: The due date of a user task.
           format: date-time
         tenantId:
           type: string
+          description: Tenant id of this user task.
         externalFormReference:
           type: string
+          description: The external form reference.
         processDefinitionVersion:
           type: integer
+          description: The version of the process definition.
           format: int32
         customHeaders:
           type: object
+          description: Custom headers for the user task.
           additionalProperties:
             type: string
         priority:
