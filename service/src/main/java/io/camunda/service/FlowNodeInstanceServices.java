@@ -14,7 +14,8 @@ import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.search.security.auth.Authentication;
+import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.SecurityContext;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -41,7 +42,8 @@ public final class FlowNodeInstanceServices
 
   @Override
   public SearchQueryResult<FlowNodeInstanceEntity> search(final FlowNodeInstanceQuery query) {
-    return flowNodeInstanceSearchClient.searchFlowNodeInstances(query, authentication);
+    return flowNodeInstanceSearchClient.searchFlowNodeInstances(
+        query, SecurityContext.of(s -> s.withAuthentication(authentication)));
   }
 
   public SearchQueryResult<FlowNodeInstanceEntity> search(

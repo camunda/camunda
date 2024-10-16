@@ -14,7 +14,8 @@ import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.search.security.auth.Authentication;
+import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.SecurityContext;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.Optional;
@@ -35,7 +36,8 @@ public class ProcessDefinitionServices
 
   @Override
   public SearchQueryResult<ProcessDefinitionEntity> search(final ProcessDefinitionQuery query) {
-    return processDefinitionSearchClient.searchProcessDefinitions(query, authentication);
+    return processDefinitionSearchClient.searchProcessDefinitions(
+        query, SecurityContext.of(s -> s.withAuthentication(authentication)));
   }
 
   @Override

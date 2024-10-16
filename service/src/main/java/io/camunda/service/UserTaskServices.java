@@ -15,7 +15,8 @@ import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.UserTaskQuery.Builder;
-import io.camunda.search.security.auth.Authentication;
+import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.SecurityContext;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -48,7 +49,8 @@ public final class UserTaskServices
 
   @Override
   public SearchQueryResult<UserTaskEntity> search(final UserTaskQuery query) {
-    return userTaskSearchClient.searchUserTasks(query, authentication);
+    return userTaskSearchClient.searchUserTasks(
+        query, SecurityContext.of(s -> s.withAuthentication(authentication)));
   }
 
   public SearchQueryResult<UserTaskEntity> search(

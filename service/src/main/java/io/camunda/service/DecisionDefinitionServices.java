@@ -18,7 +18,8 @@ import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.search.security.auth.Authentication;
+import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.SecurityContext;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -57,7 +58,8 @@ public final class DecisionDefinitionServices
 
   @Override
   public SearchQueryResult<DecisionDefinitionEntity> search(final DecisionDefinitionQuery query) {
-    return decisionDefinitionSearchClient.searchDecisionDefinitions(query, authentication);
+    return decisionDefinitionSearchClient.searchDecisionDefinitions(
+        query, SecurityContext.of(s -> s.withAuthentication(authentication)));
   }
 
   public SearchQueryResult<DecisionDefinitionEntity> search(
@@ -75,7 +77,9 @@ public final class DecisionDefinitionServices
                 q.filter(f -> f.decisionRequirementsKeys(decisionRequirementsKey))
                     .resultConfig(r -> r.xml().include()));
     return decisionRequirementSearchClient
-        .searchDecisionRequirements(decisionRequirementsQuery, authentication)
+        .searchDecisionRequirements(
+            decisionRequirementsQuery,
+            SecurityContext.of(s -> s.withAuthentication(authentication)))
         .items()
         .stream()
         .findFirst()
