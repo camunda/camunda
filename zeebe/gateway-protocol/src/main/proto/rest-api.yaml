@@ -2742,7 +2742,7 @@ components:
           description: Version tag of this process definition.
           type: string
         processDefinitionId:
-          description: Process definition id of this process definition.
+          description: Process definition ID of this process definition.
           type: string
         tenantId:
           description: Tenant id of this process definition.
