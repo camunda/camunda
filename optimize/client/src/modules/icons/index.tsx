@@ -6,5 +6,5 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-export {default as CamundaLogo} from './CamundaLogo';
-export {default as OptimizeDashboard} from './OptimizeDashboard';
+export {default as CamundaLogo} from './camunda-logo.svg';
+export {default as OptimizeDashboard} from './optimize-dashboard.svg';

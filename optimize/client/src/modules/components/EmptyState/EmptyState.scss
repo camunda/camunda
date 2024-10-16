@@ -6,7 +6,7 @@
   background-color: var(--cds-layer);
   align-items: flex-start;
 
-  svg {
+  > svg {
     margin-right: spacing.$spacing-06;
     width: 5rem;
     height: 5rem;
