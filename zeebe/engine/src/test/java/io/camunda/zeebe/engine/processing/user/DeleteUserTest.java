@@ -16,7 +16,6 @@ import java.util.UUID;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.jupiter.api.DisplayName;
 
 public class DeleteUserTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
@@ -25,7 +24,6 @@ public class DeleteUserTest {
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  @DisplayName("should delete a user if the user exists")
   @Test
   public void shouldDeleteAUser() {
     final var username = UUID.randomUUID().toString();
@@ -57,24 +55,13 @@ public class DeleteUserTest {
         .hasFieldOrPropertyWithValue("password", "Foo Bar");
   }
 
-  @DisplayName("should reject the command if user does not exist")
   @Test
   public void shouldRejectTheCommandIfUserDoesNotExist() {
-    final var username = UUID.randomUUID().toString();
-    final var userRecord =
-        ENGINE
-            .user()
-            .newUser(username)
-            .withName("Foo Bar")
-            .withEmail("foo@bar.com")
-            .withPassword("password")
-            .create();
-
     final var userNotFoundRejection =
         ENGINE
             .user()
-            .deleteUser(-1L)
-            .withUsername(userRecord.getValue().getUsername())
+            .deleteUser(1234L)
+            .withUsername("foobar")
             .withName("Bar Foo")
             .withEmail("foo@bar.blah")
             .withPassword("Foo Bar")
@@ -84,6 +71,6 @@ public class DeleteUserTest {
     assertThat(userNotFoundRejection)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to delete user with key -1, but a user with this key does not exist");
+            "Expected to delete user with key 1234, but a user with this key does not exist");
   }
 }
