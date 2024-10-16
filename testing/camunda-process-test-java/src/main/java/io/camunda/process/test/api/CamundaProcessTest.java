@@ -15,7 +15,6 @@
  */
 package io.camunda.process.test.api;
 
-import io.camunda.process.test.impl.extension.CamundaProcessTestResultPrinter;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
@@ -61,5 +60,4 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
 @ExtendWith(CamundaProcessTestExtension.class)
-@ExtendWith(CamundaProcessTestResultPrinter.class)
 public @interface CamundaProcessTest {}
