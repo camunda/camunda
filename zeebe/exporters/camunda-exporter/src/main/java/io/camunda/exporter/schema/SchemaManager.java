@@ -60,7 +60,9 @@ public class SchemaManager {
 
   public void initialiseResources() {
     final var existingTemplateNames =
-        searchEngineClient.getMappings("*", MappingSource.INDEX_TEMPLATE).keySet();
+        searchEngineClient
+            .getMappings(config.getIndex().getPrefix() + "*", MappingSource.INDEX_TEMPLATE)
+            .keySet();
     final var existingIndexNames =
         searchEngineClient
             .getMappings(config.getIndex().getPrefix() + "*", MappingSource.INDEX)
@@ -131,7 +133,9 @@ public class SchemaManager {
 
   private Map<IndexDescriptor, Collection<IndexMappingProperty>> validateIndexTemplates(
       final IndexSchemaValidator schemaValidator, final SearchEngineClient searchEngineClient) {
-    final var currentTemplates = searchEngineClient.getMappings("*", MappingSource.INDEX_TEMPLATE);
+    final var currentTemplates =
+        searchEngineClient.getMappings(
+            config.getIndex().getPrefix() + "*", MappingSource.INDEX_TEMPLATE);
 
     return schemaValidator.validateIndexMappings(
         currentTemplates,
