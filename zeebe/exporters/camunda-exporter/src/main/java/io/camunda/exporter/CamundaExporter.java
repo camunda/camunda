@@ -60,7 +60,7 @@ public class CamundaExporter implements Exporter {
     configuration = context.getConfiguration().instantiate(ExporterConfiguration.class);
     ConfigValidator.validate(configuration);
     provider.init(configuration);
-    context.setFilter(new ElasticsearchRecordFilter());
+    context.setFilter(new CamundaExporterRecordFilter());
     metrics = new CamundaExporterMetrics(context.getMeterRegistry());
     LOG.debug("Exporter configured with {}", configuration);
   }
@@ -158,8 +158,6 @@ public class CamundaExporter implements Exporter {
 
   private void flush() {
     try {
-      // TODO revisit the need to pass the BulkRequestBuilder and the ElasticsearchScriptBuilder as
-      // params here
       metrics.recordBulkSize(writer.getBatchSize());
       final BatchRequest batchRequest = clientAdapter.createBatchRequest();
       writer.flush(batchRequest);
@@ -173,7 +171,7 @@ public class CamundaExporter implements Exporter {
     controller.updateLastExportedRecordPosition(lastPosition);
   }
 
-  private record ElasticsearchRecordFilter() implements RecordFilter {
+  private record CamundaExporterRecordFilter() implements RecordFilter {
     // TODO include other value types to export
     private static final Set<ValueType> VALUE_TYPES_2_EXPORT =
         Set.of(USER, AUTHORIZATION, DECISION, PROCESS_INSTANCE, VARIABLE);
