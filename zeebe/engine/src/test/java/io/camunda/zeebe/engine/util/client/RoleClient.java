@@ -35,6 +35,10 @@ public class RoleClient {
     return new RoleAddEntityClient(writer, key);
   }
 
+  public RoleRemoveEntityClient removeEntity(final long key) {
+    return new RoleRemoveEntityClient(writer, key);
+  }
+
   public static class RoleCreationClient {
 
     private static final Function<Long, Record<RoleRecordValue>> SUCCESS_SUPPLIER =
@@ -156,6 +160,53 @@ public class RoleClient {
     }
 
     public RoleAddEntityClient expectRejection() {
+      expectation = REJECTION_SUPPLIER;
+      return this;
+    }
+  }
+
+  public static class RoleRemoveEntityClient {
+
+    private static final Function<Long, Record<RoleRecordValue>> SUCCESS_SUPPLIER =
+        (position) ->
+            RecordingExporter.roleRecords()
+                .withIntent(RoleIntent.ENTITY_REMOVED)
+                .withSourceRecordPosition(position)
+                .getFirst();
+
+    private static final Function<Long, Record<RoleRecordValue>> REJECTION_SUPPLIER =
+        (position) ->
+            RecordingExporter.roleRecords()
+                .onlyCommandRejections()
+                .withIntent(RoleIntent.REMOVE_ENTITY)
+                .withSourceRecordPosition(position)
+                .getFirst();
+    private final CommandWriter writer;
+    private final RoleRecord roleRecord;
+    private Function<Long, Record<RoleRecordValue>> expectation = SUCCESS_SUPPLIER;
+
+    public RoleRemoveEntityClient(final CommandWriter writer, final long key) {
+      this.writer = writer;
+      roleRecord = new RoleRecord();
+      roleRecord.setRoleKey(key);
+    }
+
+    public RoleRemoveEntityClient withEntityKey(final long entityKey) {
+      roleRecord.setEntityKey(entityKey);
+      return this;
+    }
+
+    public RoleRemoveEntityClient withEntityType(final EntityType entityType) {
+      roleRecord.setEntityType(entityType);
+      return this;
+    }
+
+    public Record<RoleRecordValue> remove() {
+      final long position = writer.writeCommand(RoleIntent.REMOVE_ENTITY, roleRecord);
+      return expectation.apply(position);
+    }
+
+    public RoleRemoveEntityClient expectRejection() {
       expectation = REJECTION_SUPPLIER;
       return this;
     }
