@@ -33,6 +33,10 @@ public class UserProcessors {
             ValueType.USER,
             UserIntent.UPDATE,
             new UserUpdateProcessor(keyGenerator, processingState, writers, distributionBehavior))
+        .onCommand(
+            ValueType.USER,
+            UserIntent.DELETE,
+            new UserDeleteProcessor(keyGenerator, processingState, writers, distributionBehavior))
         .withListener(new DefaultUserCreator(processingState, config));
   }
 }
