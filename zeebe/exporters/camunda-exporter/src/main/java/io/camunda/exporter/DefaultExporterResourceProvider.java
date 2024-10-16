@@ -29,9 +29,9 @@ import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHa
 import io.camunda.exporter.handlers.ListViewVariableFromVariableHandler;
 import io.camunda.exporter.handlers.MetricFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
+import io.camunda.exporter.handlers.UserHandler;
 import io.camunda.exporter.handlers.ProcessHandler;
 import io.camunda.exporter.handlers.SequenceFlowHandler;
-import io.camunda.exporter.handlers.UserRecordValueExportHandler;
 import io.camunda.exporter.handlers.VariableHandler;
 import io.camunda.exporter.utils.XMLUtil;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
@@ -50,6 +50,7 @@ import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueT
 import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import java.util.Collection;
@@ -111,10 +112,13 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new FormIndex(globalPrefix, isElasticsearch),
             TasklistMetricIndex.class,
             new TasklistMetricIndex(globalPrefix, isElasticsearch));
+            new FormIndex(tasklistIndexPrefix, isElasticsearch),
+            UserIndex.class,
+            new UserIndex("", isElasticsearch));
 
     exportHandlers =
         Set.of(
-            new UserRecordValueExportHandler(),
+            new UserHandler(indexDescriptorsMap.get(UserIndex.class).getFullQualifiedName()),
             new AuthorizationRecordValueExportHandler(),
             new DecisionHandler(
                 indexDescriptorsMap.get(DecisionIndex.class).getFullQualifiedName()),
