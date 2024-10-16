@@ -19,14 +19,9 @@ import io.camunda.exporter.config.ConfigValidator;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
-import io.camunda.exporter.schema.IndexMappingProperty;
-import io.camunda.exporter.schema.IndexSchemaValidator;
-import io.camunda.exporter.schema.MappingSource;
 import io.camunda.exporter.schema.SchemaManager;
-import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.ExporterBatchWriter;
-import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
@@ -36,10 +31,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.time.Duration;
-import java.util.Collection;
-import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,9 +70,15 @@ public class CamundaExporter implements Exporter {
     this.controller = controller;
     clientAdapter = ClientAdapter.of(configuration);
     final var searchEngineClient = clientAdapter.getSearchEngineClient();
-    final var schemaManager = clientAdapter.createSchemaManager(provider);
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClient,
+            provider.getIndexDescriptors(),
+            provider.getIndexTemplateDescriptors(),
+            configuration);
 
-    schemaStartup(schemaManager, searchEngineClient);
+    schemaManager.startup();
+
     writer = createBatchWriter();
 
     scheduleDelayedFlush();
@@ -131,51 +129,6 @@ public class CamundaExporter implements Exporter {
       // fails then the exporter will be invoked with the same record again.
       updateLastExportedPosition();
     }
-  }
-
-  private void schemaStartup(
-      final SchemaManager schemaManager, final SearchEngineClient searchEngineClient) {
-    if (!configuration.isCreateSchema()) {
-      LOG.info(
-          "Will not make any changes to indices and index templates as [createSchema] is false");
-      return;
-    }
-    final var schemaValidator = new IndexSchemaValidator();
-    final var newIndexProperties = validateIndices(schemaValidator, searchEngineClient);
-    final var newIndexTemplateProperties =
-        validateIndexTemplates(schemaValidator, searchEngineClient);
-    //  used to create any indices/templates which don't exist
-    schemaManager.initialiseResources();
-
-    //  used to update existing indices/templates
-    schemaManager.updateSchema(newIndexProperties);
-    schemaManager.updateSchema(newIndexTemplateProperties);
-
-    if (configuration.getRetention().isEnabled()) {
-      searchEngineClient.putIndexLifeCyclePolicy(
-          configuration.getRetention().getPolicyName(),
-          configuration.getRetention().getMinimumAge());
-    }
-  }
-
-  private Map<IndexDescriptor, Collection<IndexMappingProperty>> validateIndices(
-      final IndexSchemaValidator schemaValidator, final SearchEngineClient searchEngineClient) {
-    final var currentIndices =
-        searchEngineClient.getMappings(
-            configuration.getIndex().getPrefix() + "*", MappingSource.INDEX);
-
-    return schemaValidator.validateIndexMappings(currentIndices, provider.getIndexDescriptors());
-  }
-
-  private Map<IndexDescriptor, Collection<IndexMappingProperty>> validateIndexTemplates(
-      final IndexSchemaValidator schemaValidator, final SearchEngineClient searchEngineClient) {
-    final var currentTemplates = searchEngineClient.getMappings("*", MappingSource.INDEX_TEMPLATE);
-
-    return schemaValidator.validateIndexMappings(
-        currentTemplates,
-        provider.getIndexTemplateDescriptors().stream()
-            .map(IndexDescriptor.class::cast)
-            .collect(Collectors.toSet()));
   }
 
   private boolean shouldFlush() {

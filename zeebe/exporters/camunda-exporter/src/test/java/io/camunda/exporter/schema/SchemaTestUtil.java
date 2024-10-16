@@ -12,17 +12,29 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
+import co.elastic.clients.elasticsearch.ilm.get_lifecycle.Lifecycle;
+import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplateItem;
+import co.elastic.clients.json.JsonpMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.exporter.SchemaResourceSerializer;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import org.opensearch.client.json.jackson.JacksonJsonpGenerator;
+import org.opensearch.client.json.jackson.JacksonJsonpMapper;
+import org.opensearch.client.opensearch.indices.IndexState;
 
 public final class SchemaTestUtil {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final JsonpMapper ELS_JSON_MAPPER =
+      new co.elastic.clients.json.jackson.JacksonJsonpMapper(MAPPER);
+  private static final org.opensearch.client.json.JsonpMapper OPENSEARCH_JSON_MAPPER =
+      new JacksonJsonpMapper(MAPPER);
 
   private SchemaTestUtil() {}
 
@@ -93,6 +105,63 @@ public final class SchemaTestUtil {
           MAPPER.readValue(
               expectedMappings, new TypeReference<Map<String, Map<String, Object>>>() {});
       return (Map<String, Map<String, Object>>) jsonMap.get("mappings").get("properties");
+    }
+  }
+
+  public static JsonNode opensearchIndexToNode(final IndexState index) throws IOException {
+    final var indexAsMap =
+        SchemaResourceSerializer.serialize(
+            JacksonJsonpGenerator::new, (gen) -> index.serialize(gen, OPENSEARCH_JSON_MAPPER));
+
+    return MAPPER.valueToTree(indexAsMap);
+  }
+
+  public static JsonNode elsIndexToNode(
+      final co.elastic.clients.elasticsearch.indices.IndexState index) throws IOException {
+    final var indexAsMap =
+        SchemaResourceSerializer.serialize(
+            co.elastic.clients.json.jackson.JacksonJsonpGenerator::new,
+            (gen) -> index.serialize(gen, ELS_JSON_MAPPER));
+
+    return MAPPER.valueToTree(indexAsMap);
+  }
+
+  public static JsonNode elsIndexTemplateToNode(final IndexTemplateItem indexTemplate)
+      throws IOException {
+    final var templateAsMap =
+        SchemaResourceSerializer.serialize(
+            co.elastic.clients.json.jackson.JacksonJsonpGenerator::new,
+            (gen) -> indexTemplate.serialize(gen, ELS_JSON_MAPPER));
+
+    return MAPPER.valueToTree(templateAsMap);
+  }
+
+  public static JsonNode opensearchIndexTemplateToNode(
+      final org.opensearch.client.opensearch.indices.get_index_template.IndexTemplateItem
+          indexTemplate)
+      throws IOException {
+    final var templateAsMap =
+        SchemaResourceSerializer.serialize(
+            JacksonJsonpGenerator::new,
+            (gen) -> indexTemplate.serialize(gen, OPENSEARCH_JSON_MAPPER));
+
+    return MAPPER.valueToTree(templateAsMap);
+  }
+
+  public static JsonNode elsPolicyToNode(final Lifecycle lifecyclePolicy) throws IOException {
+    final var policyAsMap =
+        SchemaResourceSerializer.serialize(
+            co.elastic.clients.json.jackson.JacksonJsonpGenerator::new,
+            (gen) -> lifecyclePolicy.serialize(gen, ELS_JSON_MAPPER));
+
+    return MAPPER.valueToTree(policyAsMap);
+  }
+
+  public static boolean mappingsMatch(final JsonNode mappings, final String fileName)
+      throws IOException {
+    try (final var expectedMappingsJson = SchemaTestUtil.class.getResourceAsStream(fileName)) {
+      final var expectedMappingsTree = new ObjectMapper().readTree(expectedMappingsJson);
+      return mappings.equals(expectedMappingsTree.get("mappings"));
     }
   }
 }
