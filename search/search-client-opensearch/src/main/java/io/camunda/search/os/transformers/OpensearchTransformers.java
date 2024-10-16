@@ -7,6 +7,7 @@
  */
 package io.camunda.search.os.transformers;
 
+import io.camunda.search.clients.aggregator.SearchTermsAggregator;
 import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
@@ -29,6 +30,7 @@ import io.camunda.search.clients.source.SearchSourceConfig;
 import io.camunda.search.clients.source.SearchSourceFilter;
 import io.camunda.search.clients.transformers.SearchTransfomer;
 import io.camunda.search.clients.types.TypedValue;
+import io.camunda.search.os.transformers.aggregator.TermsAggregationTransformer;
 import io.camunda.search.os.transformers.query.BoolQueryTransformer;
 import io.camunda.search.os.transformers.query.ConstantScoreQueryTransformer;
 import io.camunda.search.os.transformers.query.ExistsQueryTransformer;
@@ -96,6 +98,7 @@ public final class OpensearchTransformers {
     mappers.put(SearchTermsQuery.class, new TermsQueryTransformer(mappers));
     mappers.put(SearchWildcardQuery.class, new WildcardQueryTransformer(mappers));
     mappers.put(SearchHasParentQuery.class, new HasParentQueryTransformer(mappers));
+    mappers.put(SearchTermsAggregator.class, new TermsAggregationTransformer(mappers));
 
     // sort
     mappers.put(SearchSortOptions.class, new SortOptionsTransformer(mappers));
