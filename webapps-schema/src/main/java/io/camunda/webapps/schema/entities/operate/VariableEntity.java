@@ -63,7 +63,7 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
     return isPreview;
   }
 
-  public VariableEntity setIsPreview(final Boolean preview) {
+  public VariableEntity setIsPreview(final boolean preview) {
     isPreview = preview;
     return this;
   }
