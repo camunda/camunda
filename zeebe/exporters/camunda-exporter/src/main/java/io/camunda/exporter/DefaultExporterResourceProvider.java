@@ -12,7 +12,11 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.handlers.AuthorizationRecordValueExportHandler;
 import io.camunda.exporter.handlers.DecisionHandler;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.ListViewFlowNodeFromIncidentHandler;
+import io.camunda.exporter.handlers.ListViewFlowNodeFromJobHandler;
+import io.camunda.exporter.handlers.ListViewFlowNodeFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHandler;
+import io.camunda.exporter.handlers.ListViewVariableFromVariableHandler;
 import io.camunda.exporter.handlers.UserRecordValueExportHandler;
 import io.camunda.exporter.handlers.VariableHandler;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
@@ -80,7 +84,15 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(), false),
             new VariableHandler(
                 templateDescriptorsMap.get(VariableTemplate.class).getFullQualifiedName(),
-                configuration.getIndex().getVariableSizeThreshold()));
+                configuration.getIndex().getVariableSizeThreshold()),
+            new ListViewFlowNodeFromIncidentHandler(
+                templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(), false),
+            new ListViewFlowNodeFromJobHandler(
+                templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(), false),
+            new ListViewFlowNodeFromProcessInstanceHandler(
+                templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(), false),
+            new ListViewVariableFromVariableHandler(
+                templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(), false));
   }
 
   @Override
