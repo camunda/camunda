@@ -45,6 +45,7 @@ export default function GroupBy({report, onChange, variables}) {
             label={label()}
             disabled={!enabled(report) || !variables || !variables[key]?.length}
           >
+            <Select.Search />
             {variables?.[key]?.map(({name, label}, idx) => {
               return <Select.Option key={idx} value={key + '_' + name} label={label || name} />;
             })}

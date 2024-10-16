@@ -6,13 +6,44 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {BaseSyntheticEvent, Children, cloneElement, ComponentProps, ReactNode} from 'react';
-import {MenuItemSelectable} from '@carbon/react';
+import {
+  BaseSyntheticEvent,
+  Children,
+  ComponentProps,
+  createContext,
+  ReactElement,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 import {MenuDropdown} from '@camunda/camunda-optimize-composite-components';
 
-import {ignoreFragments, isReactElement} from 'services';
+import {ignoreFragments} from 'services';
 import classnames from 'classnames';
 import {t} from 'translation';
+
+import {Search} from './Search';
+import {Submenu} from './Submenu';
+import {Option} from './Option';
+
+export const SelectContext = createContext<{
+  children: ReactElement[];
+  filteredChildren: ReactElement[];
+  setFilteredChildren: (children: ReactElement[]) => void;
+  onChange?: (value: any) => void;
+  value?: any;
+}>({
+  children: [],
+  filteredChildren: [],
+  setFilteredChildren: () => {},
+});
+
+export function useSelectContext() {
+  if (!SelectContext) {
+    throw new Error('Select compound components cannot be rendered outside the Select component');
+  }
+  return useContext(SelectContext);
+}
 
 export interface SelectProps<T extends object | string | number = string>
   extends Omit<ComponentProps<typeof MenuDropdown>, 'label' | 'onChange'> {
@@ -26,32 +57,12 @@ export interface SelectProps<T extends object | string | number = string>
 
 export default function Select<T extends object | string | number>(props: SelectProps<T>) {
   const {labelText, helperText, ...rest} = props;
-  const renderChildrenWithProps = (children: ReactNode) => {
-    return Children.toArray(children)
-      .filter(isReactElement)
-      .map((child) => {
-        const newProps: SubmenuProps | OptionProps = {
-          ...child.props,
-          label: child.props.label?.toString() || '',
-        };
+  const childrenArray = ignoreFragments(props.children);
+  const [filteredChildren, setFilteredChildren] = useState(childrenArray);
 
-        if (child.type === Select.Submenu) {
-          newProps.selected = Children.toArray(child.props.children).some(
-            (child) => isReactElement(child) && child.props.value === props.value
-          );
-
-          newProps.children = renderChildrenWithProps(child.props.children);
-        } else if (child.type === Select.Option) {
-          newProps.onChange = onChange;
-          newProps.selected = child.props.value === props.value;
-        } else {
-          console.error('Select `children` should be either an `Submenu` or `Option` component.');
-          return null;
-        }
-
-        return child && cloneElement(child, newProps);
-      });
-  };
+  useEffect(() => {
+    setFilteredChildren(ignoreFragments(props.children));
+  }, [props.children]);
 
   const getLabel = (children = props.children) => {
     let label;
@@ -79,58 +90,40 @@ export default function Select<T extends object | string | number>(props: Select
     }
   };
 
-  const children = ignoreFragments(props.children);
-
   return (
-    <div className={classnames('Select', props.className)}>
-      {labelText && (
-        <div className="cds--text-input__label-wrapper">
-          <label htmlFor={props.id} className="cds--label">
-            {labelText}
-          </label>
-        </div>
-      )}
-      <MenuDropdown
-        {...rest}
-        onChange={(e: any) => onChange(e)}
-        label={props.placeholder || getLabel() || t('common.select').toString()}
-        menuTarget={document.querySelector<HTMLElement>('.fullscreen')}
-      >
-        {renderChildrenWithProps(children)}
-      </MenuDropdown>
-      {helperText && !props.invalid && <div className="cds--form__helper-text">{helperText}</div>}
-    </div>
+    <SelectContext.Provider
+      value={{
+        children: childrenArray,
+        filteredChildren,
+        setFilteredChildren,
+        onChange,
+        value: props.value,
+      }}
+    >
+      <div className={classnames('Select', props.className)}>
+        {labelText && (
+          <div className="cds--text-input__label-wrapper">
+            <label htmlFor={props.id} className="cds--label">
+              {labelText}
+            </label>
+          </div>
+        )}
+        <MenuDropdown
+          {...rest}
+          onChange={onChange}
+          label={props.placeholder || getLabel() || t('common.select').toString()}
+          menuTarget={document.querySelector<HTMLElement>('.fullscreen')}
+        >
+          {filteredChildren}
+        </MenuDropdown>
+        {helperText && !props.invalid && <div className="cds--form__helper-text">{helperText}</div>}
+      </div>
+    </SelectContext.Provider>
   );
 }
 
-type SubmenuProps = Omit<ComponentProps<typeof MenuItemSelectable>, 'label'> & {
-  label?: string | JSX.Element[];
-  children?: ReactNode;
-  disabled?: boolean;
-};
+Select.Submenu = Submenu;
 
-Select.Submenu = function Submenu(props: SubmenuProps) {
-  return (
-    // @ts-ignore
-    // To make disabled state work, we can't pass children to it
-    <MenuItemSelectable className="Submenu" {...props} label={props.label?.toString() || ''}>
-      {!props.disabled && props.children}
-    </MenuItemSelectable>
-  );
-};
+Select.Option = Option;
 
-type OptionProps<T extends object | string | number = string> = SubmenuProps & {
-  value?: T;
-};
-
-Select.Option = function Option<T extends object | string | number = string>(
-  props: OptionProps<T>
-) {
-  return (
-    // @ts-ignore
-    // To make disabled state work, we can't pass children to it
-    <MenuItemSelectable className="Option" {...props} label={props.label?.toString() || ''}>
-      {!props.disabled && props.children}
-    </MenuItemSelectable>
-  );
-};
+Select.Search = Search;
