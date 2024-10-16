@@ -42,5 +42,15 @@ public class RoleProcessors {
             keyGenerator,
             writers,
             commandDistributionBehavior));
+    typedRecordProcessors.onCommand(
+        ValueType.ROLE,
+        RoleIntent.REMOVE_ENTITY,
+        new RoleRemoveEntityProcessor(
+            processingState.getRoleState(),
+            processingState.getUserState(),
+            authCheckBehavior,
+            keyGenerator,
+            writers,
+            commandDistributionBehavior));
   }
 }
