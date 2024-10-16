@@ -8,12 +8,9 @@
 package io.camunda.zeebe.gateway.rest;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import io.atomix.cluster.messaging.MessagingException.ConnectionClosed;
-import io.camunda.service.UserTaskServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.PartitionNotFoundException;
 import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
@@ -22,8 +19,8 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerErrorResponse;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.rest.TopologyControllerTest.TestTopologyApplication;
-import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.msgpack.spec.MsgpackException;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.netty.channel.ConnectTimeoutException;
 import java.net.ConnectException;
@@ -235,8 +232,8 @@ public class ErrorMapperTest {
   @Test
   public void shouldReturnGatewayTimeoutOnTimeoutException() {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
-        .thenReturn(CompletableFuture.failedFuture(new TimeoutException("Oh noes, timeouts!")));
+    brokerResponseFutureSupplier =
+        () -> CompletableFuture.failedFuture(new TimeoutException("Oh noes, timeouts!"));
 
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
@@ -266,8 +263,8 @@ public class ErrorMapperTest {
   public void shouldReturnBadGatewayOnConnectionClosed() {
     // given
     final var errorMsg = "Oh noes, connection closed!";
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
-        .thenReturn(CompletableFuture.failedFuture(new ConnectionClosed(errorMsg)));
+    brokerResponseFutureSupplier =
+        () -> CompletableFuture.failedFuture(new ConnectionClosed(errorMsg));
 
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
@@ -297,10 +294,10 @@ public class ErrorMapperTest {
   @Test
   public void shouldReturnServiceUnavailableOnConnectTimeoutException() {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
-        .thenReturn(
+    brokerResponseFutureSupplier =
+        () ->
             CompletableFuture.failedFuture(
-                new ConnectTimeoutException("Oh noes, connection timeouts!")));
+                new ConnectTimeoutException("Oh noes, connection timeouts!"));
 
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
@@ -329,9 +326,8 @@ public class ErrorMapperTest {
   @Test
   public void shouldReturnServiceUnavailableOnConnectException() {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
-        .thenReturn(
-            CompletableFuture.failedFuture(new ConnectException("Oh noes, connection timeouts!")));
+    brokerResponseFutureSupplier =
+        () -> CompletableFuture.failedFuture(new ConnectException("Oh noes, connection timeouts!"));
 
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
@@ -360,8 +356,8 @@ public class ErrorMapperTest {
   @Test
   public void shouldReturnServiceUnavailableOnPartitionNotFoundException() {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
-        .thenReturn(CompletableFuture.failedFuture(new PartitionNotFoundException(1)));
+    brokerResponseFutureSupplier =
+        () -> CompletableFuture.failedFuture(new PartitionNotFoundException(1));
 
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
@@ -389,9 +385,9 @@ public class ErrorMapperTest {
 
   @Test
   public void shouldReturnBadRequestOnMsgpackException() {
-    // given;
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
-        .thenReturn(CompletableFuture.failedFuture(new MsgpackException("Oh noes, msg parsing!")));
+    // given
+    brokerResponseFutureSupplier =
+        () -> CompletableFuture.failedFuture(new MsgpackException("Oh noes, msg parsing!"));
 
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
@@ -420,9 +416,8 @@ public class ErrorMapperTest {
   @Test
   public void shouldReturnBadRequestOnJsonParseException() {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
-        .thenReturn(
-            CompletableFuture.failedFuture(new JsonParseException("Oh noes, json parsing!")));
+    brokerResponseFutureSupplier =
+        () -> CompletableFuture.failedFuture(new JsonParseException("Oh noes, json parsing!"));
 
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
@@ -451,10 +446,10 @@ public class ErrorMapperTest {
   @Test
   public void shouldReturnBadRequestOnIllegalArgumentException() {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
-        .thenReturn(
+    brokerResponseFutureSupplier =
+        () ->
             CompletableFuture.failedFuture(
-                new IllegalArgumentException("Oh noes, illegal arguments!")));
+                new IllegalArgumentException("Oh noes, illegal arguments!"));
 
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
@@ -483,8 +478,8 @@ public class ErrorMapperTest {
   @Test
   public void shouldReturnTooManyRequestsOnRequestRetriesExhaustedException() {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
-        .thenReturn(CompletableFuture.failedFuture(new RequestRetriesExhaustedException()));
+    brokerResponseFutureSupplier =
+        () -> CompletableFuture.failedFuture(new RequestRetriesExhaustedException());
 
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
