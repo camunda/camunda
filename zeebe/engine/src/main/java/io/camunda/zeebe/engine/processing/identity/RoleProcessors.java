@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.identity;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.immutable.RoleState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -18,7 +18,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 public class RoleProcessors {
   public static void addRoleProcessors(
       final TypedRecordProcessors typedRecordProcessors,
-      final RoleState roleState,
+      final ProcessingState processingState,
       final AuthorizationCheckBehavior authCheckBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
@@ -27,11 +27,25 @@ public class RoleProcessors {
         ValueType.ROLE,
         RoleIntent.CREATE,
         new RoleCreateProcessor(
-            roleState, authCheckBehavior, keyGenerator, writers, commandDistributionBehavior));
+            processingState.getRoleState(),
+            authCheckBehavior,
+            keyGenerator,
+            writers,
+            commandDistributionBehavior));
     typedRecordProcessors.onCommand(
         ValueType.ROLE,
         RoleIntent.UPDATE,
         new RoleUpdateProcessor(
             roleState, keyGenerator, authCheckBehavior, writers, commandDistributionBehavior));
+    typedRecordProcessors.onCommand(
+        ValueType.ROLE,
+        RoleIntent.ADD_ENTITY,
+        new RoleAddEntityProcessor(
+            processingState.getRoleState(),
+            processingState.getUserState(),
+            authCheckBehavior,
+            keyGenerator,
+            writers,
+            commandDistributionBehavior));
   }
 }
