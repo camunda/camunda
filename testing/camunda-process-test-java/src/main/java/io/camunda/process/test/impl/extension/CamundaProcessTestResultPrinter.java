@@ -7,28 +7,44 @@
  */
 package io.camunda.process.test.impl.extension;
 
-import io.camunda.process.test.api.CamundaProcessTestExtension;
+import io.camunda.process.test.impl.assertions.AssertFormatUtil;
+import io.camunda.process.test.impl.testresult.ProcessInstanceResult;
 import io.camunda.process.test.impl.testresult.ProcessTestResult;
-import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.ExtensionContext.Store;
-import org.junit.jupiter.api.extension.TestWatcher;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
-public class CamundaProcessTestResultPrinter implements TestWatcher {
+public class CamundaProcessTestResultPrinter {
 
-  @Override
-  public void testFailed(final ExtensionContext context, final Throwable cause) {
-    final ProcessTestResult processTestResult = getTestResult(context);
-    System.err.println(processTestResult);
+  private final Consumer<String> printStream;
+
+  public CamundaProcessTestResultPrinter(final Consumer<String> printStream) {
+    this.printStream = printStream;
   }
 
-  private static ProcessTestResult getTestResult(final ExtensionContext context) {
-    final Store store = context.getStore(CamundaProcessTestExtension.NAMESPACE);
-    final Object processTestResult = store.get(CamundaProcessTestExtension.STORE_KEY_TEST_RESULT);
+  public void print(final ProcessTestResult result) {
+    final String formattedResult = format(result);
+    printStream.accept(formattedResult);
+  }
 
-    if (processTestResult == null) {
-      throw new IllegalStateException("No process test result found");
+  private String format(final ProcessTestResult result) {
+    final String formattedResults =
+        result.getProcessInstanceTestResults().stream()
+            .map(this::format)
+            .collect(Collectors.joining("\n---------------------\n\n"));
+    return "Process test results:\n"
+        + "=====================\n\n"
+        + formattedResults
+        + "\n"
+        + "=====================\n";
+  }
+
+  private String format(final ProcessInstanceResult result) {
+    String formattedVariables = "<None>";
+    if (!result.getVariables().isEmpty()) {
+      formattedVariables = AssertFormatUtil.formatVariables(result.getVariables());
     }
-
-    return (ProcessTestResult) processTestResult;
+    return String.format(
+        "Process instance: %d [process-id: '%s']\n\nVariables:\n%s",
+        result.getProcessInstanceKey(), result.getProcessId(), formattedVariables);
   }
 }
