@@ -13,13 +13,22 @@ import io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity;
 import io.camunda.webapps.schema.entities.usermanagement.Permission;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.PermissionValue;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-public class AuthorizationRecordValueExportHandler
+public class AuthorizationHandler
     implements ExportHandler<AuthorizationEntity, AuthorizationRecordValue> {
+  private static final Set<Intent> SUPPORTED_INTENTS = Set.of(AuthorizationIntent.PERMISSION_ADDED);
+  private final String indexName;
+
+  public AuthorizationHandler(final String indexName) {
+    this.indexName = indexName;
+  }
 
   @Override
   public ValueType getHandledValueType() {
@@ -33,7 +42,7 @@ public class AuthorizationRecordValueExportHandler
 
   @Override
   public boolean handlesRecord(final Record<AuthorizationRecordValue> record) {
-    return getHandledValueType().equals(record.getValueType());
+    return SUPPORTED_INTENTS.contains(record.getIntent());
   }
 
   @Override
@@ -64,7 +73,7 @@ public class AuthorizationRecordValueExportHandler
   }
 
   private String getIndexName() {
-    return "authorizations";
+    return indexName;
   }
 
   private List<Permission> getPermissions(final List<PermissionValue> permissionValues) {

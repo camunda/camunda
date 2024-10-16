@@ -9,7 +9,7 @@ package io.camunda.exporter;
 
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.exporter.handlers.AuthorizationRecordValueExportHandler;
+import io.camunda.exporter.handlers.AuthorizationHandler;
 import io.camunda.exporter.handlers.DecisionEvaluationHandler;
 import io.camunda.exporter.handlers.DecisionHandler;
 import io.camunda.exporter.handlers.DecisionRequirementsHandler;
@@ -50,6 +50,7 @@ import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueT
 import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
@@ -114,12 +115,15 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new TasklistMetricIndex(globalPrefix, isElasticsearch));
             new FormIndex(tasklistIndexPrefix, isElasticsearch),
             UserIndex.class,
-            new UserIndex("", isElasticsearch));
+            new UserIndex("", isElasticsearch),
+            AuthorizationIndex.class,
+            new AuthorizationIndex("", isElasticsearch));
 
     exportHandlers =
         Set.of(
             new UserHandler(indexDescriptorsMap.get(UserIndex.class).getFullQualifiedName()),
-            new AuthorizationRecordValueExportHandler(),
+            new AuthorizationHandler(
+                indexDescriptorsMap.get(AuthorizationIndex.class).getFullQualifiedName()),
             new DecisionHandler(
                 indexDescriptorsMap.get(DecisionIndex.class).getFullQualifiedName()),
             new ListViewProcessInstanceFromProcessInstanceHandler(
