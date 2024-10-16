@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.util.FeatureFlags;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -39,7 +40,14 @@ import org.junit.Test;
 
 public final class CallActivityTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  public static final boolean ENABLE_STRAIGHT_THROUGH_PROCESSING_LOOP_DETECTOR = false;
+
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withFeatureFlags(
+              new FeatureFlags(
+                  true, false, true, true, ENABLE_STRAIGHT_THROUGH_PROCESSING_LOOP_DETECTOR, true));
 
   private static final String PROCESS_ID_PARENT = "wf-parent";
   private static final String PROCESS_ID_CHILD = "wf-child";
@@ -1054,6 +1062,46 @@ public final class CallActivityTest {
             parentInstance.getProcessDefinitionKey(),
             childInstance.getProcessDefinitionKey())
         .hasOnlyCallingElementPath(ca1Index, ca2Index);
+  }
+
+  @Test
+  public void shouldLimitDescendantDepth() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("Loop")
+                .startEvent()
+                .exclusiveGateway("failsafe")
+                .defaultFlow()
+                .callActivity(
+                    "go_deeper",
+                    b ->
+                        b.zeebeProcessId("Loop")
+                            .zeebeInputExpression("depth + 1", "depth")
+                            .zeebePropagateAllParentVariables(false))
+                .endEvent("done")
+                .moveToLastExclusiveGateway()
+                .conditionExpression("depth > 1010")
+                .userTask("inspect_failure")
+                .endEvent("failed")
+                .done())
+        .deploy();
+
+    // when
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("Loop").withVariable("depth", 1).create();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst().getValue())
+        .describedAs("Expect that incident is raised due to the depth limit")
+        .hasErrorMessage(
+            """
+        The call activity has reached the maximum depth of 1000. This is likely due to a recursive call. \
+        Cancel the root process instance if this was unintentional. Otherwise, consider increasing the \
+        maximum depth, or use process instance modification to adjust the process instance.\
+        """);
   }
 
   private void deployDefaultParentAndChildProcess() {

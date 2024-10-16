@@ -67,7 +67,26 @@ public final class CallActivityProcessor
   @Override
   public Either<Failure, ?> onActivate(
       final ExecutableCallActivity element, final BpmnElementContext context) {
-    return variableMappingBehavior.applyInputMappings(context, element);
+    return variableMappingBehavior
+        .applyInputMappings(context, element)
+        .flatMap(
+            ok -> {
+              final var processInstance =
+                  stateBehavior.getElementInstance(context.getProcessInstanceKey());
+              final int calledProcessDepth = processInstance.getCalledProcessDepth();
+              if (calledProcessDepth >= 1000) {
+                return Either.left(
+                    new Failure(
+                        """
+                        The call activity has reached the maximum depth of 1000. \
+                        This is likely due to a recursive call. \
+                        Cancel the root process instance if this was unintentional. \
+                        Otherwise, consider increasing the maximum depth, \
+                        or use process instance modification to adjust the process instance.""",
+                        ErrorType.CALLED_ELEMENT_ERROR));
+              }
+              return Either.right(null);
+            });
   }
 
   @Override
