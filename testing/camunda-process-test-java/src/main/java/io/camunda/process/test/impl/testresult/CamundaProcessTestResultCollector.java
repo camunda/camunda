@@ -8,6 +8,8 @@
 package io.camunda.process.test.impl.testresult;
 
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
+import io.camunda.process.test.impl.client.FlowNodeInstanceDto;
+import io.camunda.process.test.impl.client.IncidentDto;
 import io.camunda.process.test.impl.client.ProcessInstanceDto;
 import io.camunda.process.test.impl.client.VariableDto;
 import java.io.IOException;
@@ -54,6 +56,7 @@ public class CamundaProcessTestResultCollector {
     result.setProcessInstanceKey(processInstanceKey);
     result.setProcessId(processInstance.getBpmnProcessId());
     result.setVariables(collectVariables(processInstanceKey));
+    result.setOpenIncidents(collectOpenIncidents(processInstanceKey));
 
     return result;
   }
@@ -66,5 +69,35 @@ public class CamundaProcessTestResultCollector {
       LOG.warn("Failed to collect process instance variables for key '{}'", processInstanceKey, e);
     }
     return Collections.emptyMap();
+  }
+
+  private List<OpenIncident> collectOpenIncidents(final long processInstanceKey) {
+    try {
+      return dataSource.getFlowNodeInstancesByProcessInstanceKey(processInstanceKey).stream()
+          .filter(FlowNodeInstanceDto::isIncident)
+          .map(this::getIncident)
+          .collect(Collectors.toList());
+    } catch (final IOException e) {
+      LOG.warn(
+          "Failed to collect incidents for process instance with key '{}'", processInstanceKey, e);
+    }
+    return Collections.emptyList();
+  }
+
+  private OpenIncident getIncident(final FlowNodeInstanceDto flowNodeInstance) {
+    final OpenIncident openIncident = new OpenIncident();
+    openIncident.setFlowNodeId(flowNodeInstance.getFlowNodeId());
+    openIncident.setFlowNodeName(flowNodeInstance.getFlowNodeName());
+
+    try {
+      final IncidentDto incident = dataSource.getIncidentByKey(flowNodeInstance.getIncidentKey());
+      openIncident.setType(incident.getType());
+      openIncident.setMessage(incident.getMessage());
+
+    } catch (final IOException e) {
+      openIncident.setType("?");
+      openIncident.setMessage("?");
+    }
+    return openIncident;
   }
 }

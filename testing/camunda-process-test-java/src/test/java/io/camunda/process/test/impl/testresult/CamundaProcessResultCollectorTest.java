@@ -13,6 +13,8 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
+import io.camunda.process.test.impl.client.FlowNodeInstanceDto;
+import io.camunda.process.test.impl.client.IncidentDto;
 import io.camunda.process.test.impl.client.ProcessInstanceDto;
 import io.camunda.process.test.impl.client.VariableDto;
 import java.io.IOException;
@@ -81,7 +83,8 @@ public class CamundaProcessResultCollectorTest {
         .contains(tuple(1L, "process-a"), tuple(2L, "process-b"));
 
     assertThat(result.getProcessInstanceTestResults())
-        .allMatch(processInstanceResult -> processInstanceResult.getVariables().isEmpty());
+        .allMatch(processInstanceResult -> processInstanceResult.getVariables().isEmpty())
+        .allMatch(processInstanceResult -> processInstanceResult.getOpenIncidents().isEmpty());
   }
 
   @Test
@@ -117,6 +120,72 @@ public class CamundaProcessResultCollectorTest {
         .containsEntry("var-3", "3");
   }
 
+  @Test
+  void shouldReturnOpenIncidents() throws IOException {
+    // given
+    final ProcessInstanceDto processInstance1 = newProcessInstance(1L, "process-a");
+    final ProcessInstanceDto processInstance2 = newProcessInstance(2L, "process-b");
+    when(camundaDataSource.findProcessInstances())
+        .thenReturn(Arrays.asList(processInstance1, processInstance2));
+
+    final FlowNodeInstanceDto flowNodeInstance1 = newFlownodeInstance("task-a", "A");
+    flowNodeInstance1.setIncident(true);
+    flowNodeInstance1.setIncidentKey(10L);
+
+    final FlowNodeInstanceDto flowNodeInstance2 = newFlownodeInstance("task-b", "B");
+    flowNodeInstance2.setIncident(true);
+    flowNodeInstance2.setIncidentKey(11L);
+
+    when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(processInstance1.getKey()))
+        .thenReturn(Arrays.asList(flowNodeInstance1, flowNodeInstance2));
+
+    final FlowNodeInstanceDto flowNodeInstance3 = newFlownodeInstance("task-c", "C");
+    flowNodeInstance3.setIncident(true);
+    flowNodeInstance3.setIncidentKey(12L);
+
+    when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(processInstance2.getKey()))
+        .thenReturn(Collections.singletonList(flowNodeInstance3));
+
+    final IncidentDto incident1 = newIncident("JOB_NO_RETRIES", "No retries left.");
+    final IncidentDto incident2 =
+        newIncident("EXTRACT_VALUE_ERROR", "Failed to evaluate expression.");
+    final IncidentDto incident3 =
+        newIncident("UNHANDLED_ERROR_EVENT", "No error catch event found.");
+
+    when(camundaDataSource.getIncidentByKey(flowNodeInstance1.getIncidentKey()))
+        .thenReturn(incident1);
+    when(camundaDataSource.getIncidentByKey(flowNodeInstance2.getIncidentKey()))
+        .thenReturn(incident2);
+    when(camundaDataSource.getIncidentByKey(flowNodeInstance3.getIncidentKey()))
+        .thenReturn(incident3);
+
+    // when
+    final ProcessTestResult result = resultCollector.collect();
+
+    // then
+    assertThat(result.getProcessInstanceTestResults()).hasSize(2);
+
+    assertThat(result.getProcessInstanceTestResults().get(0).getOpenIncidents())
+        .hasSize(2)
+        .extracting(
+            OpenIncident::getType,
+            OpenIncident::getMessage,
+            OpenIncident::getFlowNodeId,
+            OpenIncident::getFlowNodeName)
+        .contains(
+            tuple("JOB_NO_RETRIES", "No retries left.", "task-a", "A"),
+            tuple("EXTRACT_VALUE_ERROR", "Failed to evaluate expression.", "task-b", "B"));
+
+    assertThat(result.getProcessInstanceTestResults().get(1).getOpenIncidents())
+        .hasSize(1)
+        .extracting(
+            OpenIncident::getType,
+            OpenIncident::getMessage,
+            OpenIncident::getFlowNodeId,
+            OpenIncident::getFlowNodeName)
+        .contains(tuple("UNHANDLED_ERROR_EVENT", "No error catch event found.", "task-c", "C"));
+  }
+
   private static ProcessInstanceDto newProcessInstance(
       final long processInstanceKey, final String processId) {
     final ProcessInstanceDto processInstance = new ProcessInstanceDto();
@@ -130,5 +199,20 @@ public class CamundaProcessResultCollectorTest {
     variable.setName(variableName);
     variable.setValue(variableValue);
     return variable;
+  }
+
+  private static FlowNodeInstanceDto newFlownodeInstance(
+      final String elementId, final String elementName) {
+    final FlowNodeInstanceDto flowNodeInstance = new FlowNodeInstanceDto();
+    flowNodeInstance.setFlowNodeId(elementId);
+    flowNodeInstance.setFlowNodeName(elementName);
+    return flowNodeInstance;
+  }
+
+  private static IncidentDto newIncident(final String type, final String message) {
+    final IncidentDto incident = new IncidentDto();
+    incident.setType(type);
+    incident.setMessage(message);
+    return incident;
   }
 }
