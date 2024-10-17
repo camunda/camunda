@@ -34,6 +34,7 @@ import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.ResourceResponse;
 import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserCreateResponse;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskJobData;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
@@ -95,6 +96,8 @@ public final class ResponseMapper {
         .deadline(job.getDeadline())
         .variables(job.getVariables())
         .customHeaders(job.getCustomHeadersObjectMap())
+        // TODO: check for null
+        .userTaskJobData(new UserTaskJobData().assignee(job.getUserTaskJobData().getAssignee()))
         .tenantId(job.getTenantId());
   }
 
