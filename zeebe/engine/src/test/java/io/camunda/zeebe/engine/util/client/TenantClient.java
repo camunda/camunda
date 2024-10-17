@@ -32,6 +32,17 @@ public class TenantClient {
     return new TenantCreationClient(writer);
   }
 
+  /**
+   * Creates a new {@link TenantUpdateClient} for updating a tenant. The client uses the internal
+   * command writer to submit tenant update commands.
+   *
+   * @param tenantKey the key of the tenant to be updated
+   * @return a new instance of {@link TenantUpdateClient}
+   */
+  public TenantUpdateClient updateTenant(final long tenantKey) {
+    return new TenantUpdateClient(writer, tenantKey);
+  }
+
   public static class TenantCreationClient {
 
     private static final Function<Long, Record<TenantRecordValue>> SUCCESS_SUPPLIER =
@@ -83,7 +94,7 @@ public class TenantClient {
     /**
      * Sets the entityKey for the tenant record.
      *
-     * @param entityKey the name of the tenant
+     * @param entityKey the key of the tenant entity
      * @return this instance
      */
     public TenantCreationClient withEntityKey(final Long entityKey) {
@@ -107,6 +118,87 @@ public class TenantClient {
      * @return this instance with rejection expectation
      */
     public TenantCreationClient expectRejection() {
+      expectation = REJECTION_SUPPLIER;
+      return this;
+    }
+  }
+
+  public static class TenantUpdateClient {
+
+    private static final Function<Long, Record<TenantRecordValue>> SUCCESS_SUPPLIER =
+        (position) ->
+            RecordingExporter.tenantRecords()
+                .withIntent(TenantIntent.UPDATED)
+                .withSourceRecordPosition(position)
+                .getFirst();
+
+    private static final Function<Long, Record<TenantRecordValue>> REJECTION_SUPPLIER =
+        (position) ->
+            RecordingExporter.tenantRecords()
+                .onlyCommandRejections()
+                .withIntent(TenantIntent.UPDATE)
+                .withSourceRecordPosition(position)
+                .getFirst();
+
+    private final CommandWriter writer;
+    private final TenantRecord tenantRecord;
+    private Function<Long, Record<TenantRecordValue>> expectation = SUCCESS_SUPPLIER;
+
+    public TenantUpdateClient(final CommandWriter writer, final long tenantKey) {
+      this.writer = writer;
+      tenantRecord = new TenantRecord();
+      tenantRecord.setTenantKey(tenantKey);
+    }
+
+    /**
+     * Sets the tenantId for the tenant record.
+     *
+     * @param tenantId the ID to set for the tenant
+     * @return this instance
+     */
+    public TenantUpdateClient withTenantId(final String tenantId) {
+      tenantRecord.setTenantId(tenantId);
+      return this;
+    }
+
+    /**
+     * Sets the name for the tenant record.
+     *
+     * @param name the name of the tenant
+     * @return this instance
+     */
+    public TenantUpdateClient withName(final String name) {
+      tenantRecord.setName(name);
+      return this;
+    }
+
+    /**
+     * Sets the entityKey for the tenant record.
+     *
+     * @param entityKey the key of the tenant entity
+     * @return this instance
+     */
+    public TenantUpdateClient withEntityKey(final Long entityKey) {
+      tenantRecord.setEntityKey(entityKey);
+      return this;
+    }
+
+    /**
+     * Submits the update command for the tenant record and returns the updated record.
+     *
+     * @return the updated tenant record
+     */
+    public Record<TenantRecordValue> update() {
+      final long position = writer.writeCommand(TenantIntent.UPDATE, tenantRecord);
+      return expectation.apply(position);
+    }
+
+    /**
+     * Expects the tenant update to be rejected.
+     *
+     * @return this instance with rejection expectation
+     */
+    public TenantUpdateClient expectRejection() {
       expectation = REJECTION_SUPPLIER;
       return this;
     }
