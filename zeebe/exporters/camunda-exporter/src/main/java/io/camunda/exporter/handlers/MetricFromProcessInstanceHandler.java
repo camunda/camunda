@@ -51,12 +51,12 @@ public class MetricFromProcessInstanceHandler
 
   @Override
   public List<String> generateIds(final Record<ProcessInstanceRecordValue> record) {
-    return List.of();
+    return List.of(String.valueOf(record.getValue().getProcessInstanceKey()));
   }
 
   @Override
   public MetricEntity createNewEntity(final String id) {
-    return new MetricEntity();
+    return new MetricEntity().setId(id);
   }
 
   @Override

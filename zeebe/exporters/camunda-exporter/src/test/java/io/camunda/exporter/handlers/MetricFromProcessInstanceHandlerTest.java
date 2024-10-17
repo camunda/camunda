@@ -80,13 +80,14 @@ final class MetricFromProcessInstanceHandlerTest {
     // given
     final Record<ProcessInstanceRecordValue> processInstanceRecord =
         generateRecord(ProcessInstanceIntent.ELEMENT_ACTIVATING);
+    final long processInstanceKey = processInstanceRecord.getValue().getProcessInstanceKey();
 
     // when
     final var ids = underTest.generateIds(processInstanceRecord);
 
     // then
     assertThat(ids).isNotNull();
-    assertThat(ids).isEmpty();
+    assertThat(ids).containsExactly(String.valueOf(processInstanceKey));
   }
 
   @Test
@@ -96,7 +97,7 @@ final class MetricFromProcessInstanceHandlerTest {
 
     // then
     assertThat(entity).isNotNull();
-    assertThat(entity.getId()).isNull();
+    assertThat(entity.getId()).isEqualTo("id");
   }
 
   @Test
