@@ -8,10 +8,18 @@
 package io.camunda.operate.connect;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.operate.property.ElasticsearchProperties;
+import io.camunda.operate.property.OperateElasticsearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.plugin.search.header.CustomHeader;
 import io.camunda.plugin.search.header.DatabaseCustomHeaderSupplier;
@@ -28,9 +36,34 @@ import org.apache.http.protocol.BasicHttpContext;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 class ElasticsearchConnectorTest {
+
+  @Test
+  public void shouldNotDoClusterHealthCheckWhenDisabled() {
+    final OperateProperties operateProperties = new OperateProperties();
+    final OperateElasticsearchProperties esProperties = new OperateElasticsearchProperties();
+    esProperties.setHealthCheckEnabled(false);
+    operateProperties.setElasticsearch(esProperties);
+    final ElasticsearchConnector connector = spy(new ElasticsearchConnector(operateProperties));
+
+    connector.createEsClient(esProperties, mock());
+
+    verify(connector, never()).checkHealth(any(RestHighLevelClient.class));
+  }
+
+  @Test
+  public void shouldDoClusterHealthCheckWhenDefaultPropertyValuesUsed() {
+    final OperateProperties operateProperties = new OperateProperties();
+    final OperateElasticsearchProperties esProperties = new OperateElasticsearchProperties();
+    operateProperties.setElasticsearch(esProperties);
+    final ElasticsearchConnector connector = spy(new ElasticsearchConnector(operateProperties));
+    doReturn(true).when(connector).checkHealth(any(RestHighLevelClient.class));
+
+    connector.createEsClient(esProperties, mock());
+
+    verify(connector, times(1)).checkHealth(any(RestHighLevelClient.class));
+  }
 
   @Test
   void shouldApplyRequestInterceptorsInOrderForNativeRestClient() {
@@ -39,10 +72,9 @@ class ElasticsearchConnectorTest {
     final PluginRepository pluginRepository = new PluginRepository();
     pluginRepository.load(
         List.of(new PluginConfiguration("plg1", TestPlugin.class.getName(), null)));
-    final var connector = Mockito.spy(new ElasticsearchConnector());
-    Mockito.doReturn(true).when(connector).checkHealth(Mockito.any(ElasticsearchClient.class));
+    final var connector = spy(new ElasticsearchConnector(operateProperties));
+    doReturn(true).when(connector).checkHealth(any(ElasticsearchClient.class));
     connector.setEsClientRepository(pluginRepository);
-    connector.setOperateProperties(operateProperties);
     final var client = connector.elasticsearchClient();
 
     // when
@@ -66,9 +98,8 @@ class ElasticsearchConnectorTest {
     final PluginRepository pluginRepository = new PluginRepository();
     pluginRepository.load(
         List.of(new PluginConfiguration("plg1", TestPlugin.class.getName(), null)));
-    final var connector = Mockito.spy(new ElasticsearchConnector());
-    Mockito.doReturn(true).when(connector).checkHealth(Mockito.any(RestHighLevelClient.class));
-    connector.setOperateProperties(operateProperties);
+    final var connector = spy(new ElasticsearchConnector(operateProperties));
+    doReturn(true).when(connector).checkHealth(any(RestHighLevelClient.class));
     final var client = connector.createEsClient(esProperties, pluginRepository);
 
     // when
