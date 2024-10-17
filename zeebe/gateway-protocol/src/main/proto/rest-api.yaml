@@ -588,7 +588,7 @@ paths:
         Set a precise, static time for the Zeebe engine’s internal clock.
         When the clock is pinned, it remains at the specified time and does not advance.
         To change the time, the clock must be pinned again with a new timestamp.
-        
+
         :::note
         This endpoint is an [alpha feature](/reference/alpha-features.md) and may be subject to change
         in future releases.
@@ -624,7 +624,7 @@ paths:
         Resets the Zeebe engine’s internal clock to the current system time, enabling it to tick in real-time.
         This operation is useful for returning the clock to
         normal behavior after it has been pinned to a specific time.
-        
+
         :::note
         This endpoint is an [alpha feature](/reference/alpha-features.md) and may be subject to change
         in future releases.
@@ -2287,10 +2287,10 @@ components:
           type: string
           description: State of this incident with a defined set of values.
           enum:
-          - ACTIVE
-          - MIGRATED
-          - RESOLVED
-          - PENDING
+            - ACTIVE
+            - MIGRATED
+            - RESOLVED
+            - PENDING
         jobKey:
           type: integer
           description: The job key, if exists, associated with this incident.
@@ -2787,6 +2787,41 @@ components:
         tenantId:
           description: The ID of the tenant that owns the job
           type: string
+        userTaskJobData:
+          $ref: "#/components/schemas/UserTaskJobData"
+    UserTaskJobData:
+      type: object
+      properties:
+        userTaskKey:
+          description: user task key
+          type: integer
+          format: int64
+        assignee:
+          description: assignee of the task
+          type: string
+        candidateGroupsList:
+          description: candidate groups
+          type: array
+          items:
+            type: string
+        candidateUsersList:
+          description: candidate users
+          type: array
+          items:
+            type: string
+        dueDate:
+          description: due date of the task
+          type: string
+        followUpDate:
+          description: follow up date of the task
+          type: string
+        formKey:
+          description: form key of the user task
+          type: integer
+          format: int64
+        priority:
+          description: priority of the task
+          type: integer
     JobFailRequest:
       type: object
       properties:

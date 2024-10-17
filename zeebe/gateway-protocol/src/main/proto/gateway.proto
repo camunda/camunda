@@ -83,6 +83,27 @@ message ActivatedJob {
   string variables = 13;
   // the id of the tenant that owns the job
   string tenantId = 14;
+  // user task job data if available
+  UserTaskJobData userTaskJobData = 15;
+}
+
+message UserTaskJobData{
+  // the user task key
+  int64 userTaskKey = 1;
+  // the assignee of the user task
+  string assignee = 2;
+  // a list of candidate groups
+  repeated string candidateGroupsList = 3;
+  // a list of candidate users
+  repeated string candidateUsersList = 4;
+  // due date of a task
+  string dueDateProp = 5;
+  // follow up date of a task
+  string followUpDate = 6;
+  // user task form key
+  int64 formKey = 7;
+  // priority of the task
+  int32 priority = 8;
 }
 
 message CancelProcessInstanceRequest {
