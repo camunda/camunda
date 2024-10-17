@@ -8,10 +8,4 @@
 package io.camunda.db.rdbms.write.domain;
 
 public record VariableDbModel(
-    Long key,
-    Long processInstanceKey,
-    Long scopeKey,
-    String name,
-    String value,
-    boolean truncated,
-    String tenantId) {}
+    Long key, String name, String value, Long scopeKey, Long processInstanceKey, String tenantId) {}

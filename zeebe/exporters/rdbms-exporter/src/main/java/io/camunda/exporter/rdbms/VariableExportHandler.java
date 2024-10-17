@@ -42,11 +42,10 @@ public class VariableExportHandler implements RdbmsExportHandler<VariableRecordV
   private VariableDbModel map(final Long key, final VariableRecordValue value) {
     return new VariableDbModel(
         key,
-        value.getProcessInstanceKey(),
-        value.getScopeKey(),
         value.getName(),
         value.getValue(),
-        false,
+        value.getScopeKey(),
+        value.getProcessInstanceKey(),
         value.getTenantId());
   }
 }

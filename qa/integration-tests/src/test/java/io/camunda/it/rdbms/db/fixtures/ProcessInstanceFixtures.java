@@ -10,29 +10,13 @@ package io.camunda.it.rdbms.db.fixtures;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
-import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Random;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
-public final class ProcessInstanceFixtures {
-
-  private static final AtomicLong ID_COUNTER = new AtomicLong();
-  private static final Random RANDOM = new Random(System.nanoTime());
-  private static final OffsetDateTime NOW = OffsetDateTime.now();
+public final class ProcessInstanceFixtures extends CommonFixtures {
 
   private ProcessInstanceFixtures() {}
-
-  public static Long nextKey() {
-    return ID_COUNTER.incrementAndGet();
-  }
-
-  public static String nextStringId() {
-    return UUID.randomUUID().toString();
-  }
 
   public static ProcessInstanceDbModel createRandomized(
       final Function<ProcessInstanceDbModelBuilder, ProcessInstanceDbModelBuilder>
