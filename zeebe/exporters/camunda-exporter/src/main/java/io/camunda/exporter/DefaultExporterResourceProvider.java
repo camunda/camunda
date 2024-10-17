@@ -89,9 +89,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             FormIndex.class,
             new FormIndex(tasklistIndexPrefix, isElasticsearch),
             UserIndex.class,
-            new UserIndex("identity", isElasticsearch),
+            new UserIndex(operateIndexPrefix, isElasticsearch),
             AuthorizationIndex.class,
-            new AuthorizationIndex("identity", isElasticsearch));
+            new AuthorizationIndex(operateIndexPrefix, isElasticsearch));
 
     exportHandlers =
         Set.of(
