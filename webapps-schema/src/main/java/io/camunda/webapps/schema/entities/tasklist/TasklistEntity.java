@@ -46,8 +46,9 @@ public abstract class TasklistEntity<T extends TasklistEntity<T>> extends Abstra
     return key;
   }
 
-  public void setKey(final long key) {
+  public T setKey(final long key) {
     this.key = key;
+    return (T) this;
   }
 
   @Override
@@ -55,16 +56,18 @@ public abstract class TasklistEntity<T extends TasklistEntity<T>> extends Abstra
     return tenantId;
   }
 
-  public void setTenantId(final String tenantId) {
+  public T setTenantId(final String tenantId) {
     this.tenantId = tenantId;
+    return (T) this;
   }
 
   public Integer getPartitionId() {
     return partitionId;
   }
 
-  public void setPartitionId(final int partitionId) {
+  public T setPartitionId(final int partitionId) {
     this.partitionId = partitionId;
+    return (T) this;
   }
 
   @Override
