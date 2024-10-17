@@ -27,11 +27,13 @@ import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@ZeebeIntegration
+@Disabled("Disabled until https://github.com/camunda/camunda/issues/23706 has been fixed!")
+//@ZeebeIntegration
 class IncidentQueryTest {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(IncidentQueryTest.class);
