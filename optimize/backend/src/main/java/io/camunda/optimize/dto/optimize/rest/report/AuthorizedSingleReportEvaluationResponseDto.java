@@ -40,35 +40,12 @@ public class AuthorizedSingleReportEvaluationResponseDto<T, D extends ReportDefi
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = super.hashCode();
-    final Object $result = getResult();
-    result = result * PRIME + ($result == null ? 43 : $result.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof AuthorizedSingleReportEvaluationResponseDto)) {
-      return false;
-    }
-    final AuthorizedSingleReportEvaluationResponseDto<?, ?> other =
-        (AuthorizedSingleReportEvaluationResponseDto<?, ?>) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    final Object this$result = getResult();
-    final Object other$result = other.getResult();
-    if (this$result == null ? other$result != null : !this$result.equals(other$result)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

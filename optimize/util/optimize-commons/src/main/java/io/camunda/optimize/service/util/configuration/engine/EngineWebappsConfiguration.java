@@ -38,35 +38,12 @@ public class EngineWebappsConfiguration {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $endpoint = getEndpoint();
-    result = result * PRIME + ($endpoint == null ? 43 : $endpoint.hashCode());
-    result = result * PRIME + (isEnabled() ? 79 : 97);
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof EngineWebappsConfiguration)) {
-      return false;
-    }
-    final EngineWebappsConfiguration other = (EngineWebappsConfiguration) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$endpoint = getEndpoint();
-    final Object other$endpoint = other.getEndpoint();
-    if (this$endpoint == null ? other$endpoint != null : !this$endpoint.equals(other$endpoint)) {
-      return false;
-    }
-    if (isEnabled() != other.isEnabled()) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

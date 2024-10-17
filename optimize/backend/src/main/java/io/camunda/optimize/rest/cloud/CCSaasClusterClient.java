@@ -144,38 +144,12 @@ public class CCSaasClusterClient extends AbstractCCSaaSClient {
 
     @Override
     public int hashCode() {
-      final int PRIME = 59;
-      int result = 1;
-      final Object $uuid = getUuid();
-      result = result * PRIME + ($uuid == null ? 43 : $uuid.hashCode());
-      final Object $urls = getUrls();
-      result = result * PRIME + ($urls == null ? 43 : $urls.hashCode());
-      return result;
+      return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
     }
 
     @Override
     public boolean equals(final Object o) {
-      if (o == this) {
-        return true;
-      }
-      if (!(o instanceof ClusterMetadata)) {
-        return false;
-      }
-      final ClusterMetadata other = (ClusterMetadata) o;
-      if (!other.canEqual((Object) this)) {
-        return false;
-      }
-      final Object this$uuid = getUuid();
-      final Object other$uuid = other.getUuid();
-      if (this$uuid == null ? other$uuid != null : !this$uuid.equals(other$uuid)) {
-        return false;
-      }
-      final Object this$urls = getUrls();
-      final Object other$urls = other.getUrls();
-      if (this$urls == null ? other$urls != null : !this$urls.equals(other$urls)) {
-        return false;
-      }
-      return true;
+      return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
     }
 
     @Override

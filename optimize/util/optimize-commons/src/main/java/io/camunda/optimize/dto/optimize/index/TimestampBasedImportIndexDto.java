@@ -48,36 +48,12 @@ public class TimestampBasedImportIndexDto extends ImportIndexDto<IngestedDataSou
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = super.hashCode();
-    final Object $esTypeIndexRefersTo = getEsTypeIndexRefersTo();
-    result = result * PRIME + ($esTypeIndexRefersTo == null ? 43 : $esTypeIndexRefersTo.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof TimestampBasedImportIndexDto)) {
-      return false;
-    }
-    final TimestampBasedImportIndexDto other = (TimestampBasedImportIndexDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    final Object this$esTypeIndexRefersTo = getEsTypeIndexRefersTo();
-    final Object other$esTypeIndexRefersTo = other.getEsTypeIndexRefersTo();
-    if (this$esTypeIndexRefersTo == null
-        ? other$esTypeIndexRefersTo != null
-        : !this$esTypeIndexRefersTo.equals(other$esTypeIndexRefersTo)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

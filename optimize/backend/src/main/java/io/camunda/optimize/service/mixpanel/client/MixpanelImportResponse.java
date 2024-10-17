@@ -50,35 +50,12 @@ public class MixpanelImportResponse {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $error = getError();
-    result = result * PRIME + ($error == null ? 43 : $error.hashCode());
-    result = result * PRIME + getNumberOfRecordsImported();
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof MixpanelImportResponse)) {
-      return false;
-    }
-    final MixpanelImportResponse other = (MixpanelImportResponse) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$error = getError();
-    final Object other$error = other.getError();
-    if (this$error == null ? other$error != null : !this$error.equals(other$error)) {
-      return false;
-    }
-    if (getNumberOfRecordsImported() != other.getNumberOfRecordsImported()) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

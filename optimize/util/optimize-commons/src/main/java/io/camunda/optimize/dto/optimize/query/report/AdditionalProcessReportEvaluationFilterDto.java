@@ -35,32 +35,12 @@ public class AdditionalProcessReportEvaluationFilterDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $filter = getFilter();
-    result = result * PRIME + ($filter == null ? 43 : $filter.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof AdditionalProcessReportEvaluationFilterDto)) {
-      return false;
-    }
-    final AdditionalProcessReportEvaluationFilterDto other =
-        (AdditionalProcessReportEvaluationFilterDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$filter = getFilter();
-    final Object other$filter = other.getFilter();
-    if (this$filter == null ? other$filter != null : !this$filter.equals(other$filter)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

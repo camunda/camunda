@@ -71,34 +71,12 @@ public abstract class IdentityWithMetadataResponseDto extends IdentityDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = super.hashCode();
-    final Object $name = getName();
-    result = result * PRIME + ($name == null ? 43 : $name.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof IdentityWithMetadataResponseDto)) {
-      return false;
-    }
-    final IdentityWithMetadataResponseDto other = (IdentityWithMetadataResponseDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    final Object this$name = getName();
-    final Object other$name = other.getName();
-    if (this$name == null ? other$name != null : !this$name.equals(other$name)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

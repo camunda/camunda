@@ -45,30 +45,7 @@ public class DeleteIndexIfExistsStep extends UpgradeStep {
   }
 
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof DeleteIndexIfExistsStep)) {
-      return false;
-    }
-    final DeleteIndexIfExistsStep other = (DeleteIndexIfExistsStep) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    final Object this$indexName = this.indexName;
-    final Object other$indexName = other.indexName;
-    if (this$indexName == null
-        ? other$indexName != null
-        : !this$indexName.equals(other$indexName)) {
-      return false;
-    }
-    if (this.indexVersion != other.indexVersion) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   protected boolean canEqual(final Object other) {
@@ -76,12 +53,7 @@ public class DeleteIndexIfExistsStep extends UpgradeStep {
   }
 
   public int hashCode() {
-    final int PRIME = 59;
-    int result = super.hashCode();
-    final Object $indexName = this.indexName;
-    result = result * PRIME + ($indexName == null ? 43 : $indexName.hashCode());
-    result = result * PRIME + this.indexVersion;
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   public String getIndexName() {

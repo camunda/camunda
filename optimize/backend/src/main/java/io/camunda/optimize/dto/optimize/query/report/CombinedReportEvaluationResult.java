@@ -84,43 +84,12 @@ public class CombinedReportEvaluationResult extends ReportEvaluationResult {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = super.hashCode();
-    final Object $reportEvaluationResults = getReportEvaluationResults();
-    result =
-        result * PRIME
-            + ($reportEvaluationResults == null ? 43 : $reportEvaluationResults.hashCode());
-    final long $instanceCount = getInstanceCount();
-    result = result * PRIME + (int) ($instanceCount >>> 32 ^ $instanceCount);
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof CombinedReportEvaluationResult)) {
-      return false;
-    }
-    final CombinedReportEvaluationResult other = (CombinedReportEvaluationResult) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    final Object this$reportEvaluationResults = getReportEvaluationResults();
-    final Object other$reportEvaluationResults = other.getReportEvaluationResults();
-    if (this$reportEvaluationResults == null
-        ? other$reportEvaluationResults != null
-        : !this$reportEvaluationResults.equals(other$reportEvaluationResults)) {
-      return false;
-    }
-    if (getInstanceCount() != other.getInstanceCount()) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

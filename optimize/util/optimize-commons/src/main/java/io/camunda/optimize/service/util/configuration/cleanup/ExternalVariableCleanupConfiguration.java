@@ -35,28 +35,12 @@ public class ExternalVariableCleanupConfiguration {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    result = result * PRIME + (isEnabled() ? 79 : 97);
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof ExternalVariableCleanupConfiguration)) {
-      return false;
-    }
-    final ExternalVariableCleanupConfiguration other = (ExternalVariableCleanupConfiguration) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (isEnabled() != other.isEnabled()) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

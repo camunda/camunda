@@ -38,27 +38,7 @@ public class ValidationErrorResponseDto extends ErrorResponseDto {
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof ValidationErrorResponseDto)) {
-      return false;
-    }
-    final ValidationErrorResponseDto other = (ValidationErrorResponseDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    final Object this$validationErrors = getValidationErrors();
-    final Object other$validationErrors = other.getValidationErrors();
-    if (this$validationErrors == null
-        ? other$validationErrors != null
-        : !this$validationErrors.equals(other$validationErrors)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override
@@ -68,11 +48,7 @@ public class ValidationErrorResponseDto extends ErrorResponseDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = super.hashCode();
-    final Object $validationErrors = getValidationErrors();
-    result = result * PRIME + ($validationErrors == null ? 43 : $validationErrors.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   public static class ValidationError {
@@ -109,40 +85,12 @@ public class ValidationErrorResponseDto extends ErrorResponseDto {
 
     @Override
     public int hashCode() {
-      final int PRIME = 59;
-      int result = 1;
-      final Object $property = getProperty();
-      result = result * PRIME + ($property == null ? 43 : $property.hashCode());
-      final Object $errorMessage = getErrorMessage();
-      result = result * PRIME + ($errorMessage == null ? 43 : $errorMessage.hashCode());
-      return result;
+      return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
     }
 
     @Override
     public boolean equals(final Object o) {
-      if (o == this) {
-        return true;
-      }
-      if (!(o instanceof ValidationError)) {
-        return false;
-      }
-      final ValidationError other = (ValidationError) o;
-      if (!other.canEqual((Object) this)) {
-        return false;
-      }
-      final Object this$property = getProperty();
-      final Object other$property = other.getProperty();
-      if (this$property == null ? other$property != null : !this$property.equals(other$property)) {
-        return false;
-      }
-      final Object this$errorMessage = getErrorMessage();
-      final Object other$errorMessage = other.getErrorMessage();
-      if (this$errorMessage == null
-          ? other$errorMessage != null
-          : !this$errorMessage.equals(other$errorMessage)) {
-        return false;
-      }
-      return true;
+      return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
     }
 
     @Override

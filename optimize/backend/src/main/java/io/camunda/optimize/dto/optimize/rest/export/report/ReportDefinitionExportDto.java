@@ -62,36 +62,12 @@ public abstract class ReportDefinitionExportDto extends OptimizeEntityExportDto 
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = super.hashCode();
-    final Object $collectionId = getCollectionId();
-    result = result * PRIME + ($collectionId == null ? 43 : $collectionId.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof ReportDefinitionExportDto)) {
-      return false;
-    }
-    final ReportDefinitionExportDto other = (ReportDefinitionExportDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    final Object this$collectionId = getCollectionId();
-    final Object other$collectionId = other.getCollectionId();
-    if (this$collectionId == null
-        ? other$collectionId != null
-        : !this$collectionId.equals(other$collectionId)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

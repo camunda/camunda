@@ -60,41 +60,7 @@ public class SnapshotInfoDto {
   }
 
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof SnapshotInfoDto)) {
-      return false;
-    }
-    final SnapshotInfoDto other = (SnapshotInfoDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$snapshotName = this.getSnapshotName();
-    final Object other$snapshotName = other.getSnapshotName();
-    if (this$snapshotName == null
-        ? other$snapshotName != null
-        : !this$snapshotName.equals(other$snapshotName)) {
-      return false;
-    }
-    final Object this$state = this.getState();
-    final Object other$state = other.getState();
-    if (this$state == null ? other$state != null : !this$state.equals(other$state)) {
-      return false;
-    }
-    final Object this$startTime = this.getStartTime();
-    final Object other$startTime = other.getStartTime();
-    if (this$startTime == null
-        ? other$startTime != null
-        : !this$startTime.equals(other$startTime)) {
-      return false;
-    }
-    final Object this$failures = this.getFailures();
-    final Object other$failures = other.getFailures();
-    if (this$failures == null ? other$failures != null : !this$failures.equals(other$failures)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   protected boolean canEqual(final Object other) {
@@ -102,17 +68,7 @@ public class SnapshotInfoDto {
   }
 
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $snapshotName = this.getSnapshotName();
-    result = result * PRIME + ($snapshotName == null ? 43 : $snapshotName.hashCode());
-    final Object $state = this.getState();
-    result = result * PRIME + ($state == null ? 43 : $state.hashCode());
-    final Object $startTime = this.getStartTime();
-    result = result * PRIME + ($startTime == null ? 43 : $startTime.hashCode());
-    final Object $failures = this.getFailures();
-    result = result * PRIME + ($failures == null ? 43 : $failures.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   public String toString() {

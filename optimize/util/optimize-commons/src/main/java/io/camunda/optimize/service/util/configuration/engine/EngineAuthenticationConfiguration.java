@@ -52,42 +52,12 @@ public class EngineAuthenticationConfiguration {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    result = result * PRIME + (isEnabled() ? 79 : 97);
-    final Object $password = getPassword();
-    result = result * PRIME + ($password == null ? 43 : $password.hashCode());
-    final Object $user = getUser();
-    result = result * PRIME + ($user == null ? 43 : $user.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof EngineAuthenticationConfiguration)) {
-      return false;
-    }
-    final EngineAuthenticationConfiguration other = (EngineAuthenticationConfiguration) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (isEnabled() != other.isEnabled()) {
-      return false;
-    }
-    final Object this$password = getPassword();
-    final Object other$password = other.getPassword();
-    if (this$password == null ? other$password != null : !this$password.equals(other$password)) {
-      return false;
-    }
-    final Object this$user = getUser();
-    final Object other$user = other.getUser();
-    if (this$user == null ? other$user != null : !this$user.equals(other$user)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

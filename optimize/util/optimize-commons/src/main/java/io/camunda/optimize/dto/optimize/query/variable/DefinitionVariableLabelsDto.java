@@ -48,40 +48,12 @@ public class DefinitionVariableLabelsDto implements OptimizeDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $definitionKey = getDefinitionKey();
-    result = result * PRIME + ($definitionKey == null ? 43 : $definitionKey.hashCode());
-    final Object $labels = getLabels();
-    result = result * PRIME + ($labels == null ? 43 : $labels.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof DefinitionVariableLabelsDto)) {
-      return false;
-    }
-    final DefinitionVariableLabelsDto other = (DefinitionVariableLabelsDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$definitionKey = getDefinitionKey();
-    final Object other$definitionKey = other.getDefinitionKey();
-    if (this$definitionKey == null
-        ? other$definitionKey != null
-        : !this$definitionKey.equals(other$definitionKey)) {
-      return false;
-    }
-    final Object this$labels = getLabels();
-    final Object other$labels = other.getLabels();
-    if (this$labels == null ? other$labels != null : !this$labels.equals(other$labels)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

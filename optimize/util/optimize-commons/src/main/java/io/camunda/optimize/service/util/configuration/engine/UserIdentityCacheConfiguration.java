@@ -20,20 +20,7 @@ public class UserIdentityCacheConfiguration extends IdentityCacheConfiguration {
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof UserIdentityCacheConfiguration)) {
-      return false;
-    }
-    final UserIdentityCacheConfiguration other = (UserIdentityCacheConfiguration) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override
@@ -43,8 +30,7 @@ public class UserIdentityCacheConfiguration extends IdentityCacheConfiguration {
 
   @Override
   public int hashCode() {
-    final int result = super.hashCode();
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override

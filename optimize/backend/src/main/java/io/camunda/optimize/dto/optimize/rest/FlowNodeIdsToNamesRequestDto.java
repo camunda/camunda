@@ -56,59 +56,12 @@ public class FlowNodeIdsToNamesRequestDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $processDefinitionKey = getProcessDefinitionKey();
-    result =
-        result * PRIME + ($processDefinitionKey == null ? 43 : $processDefinitionKey.hashCode());
-    final Object $processDefinitionVersion = getProcessDefinitionVersion();
-    result =
-        result * PRIME
-            + ($processDefinitionVersion == null ? 43 : $processDefinitionVersion.hashCode());
-    final Object $tenantId = getTenantId();
-    result = result * PRIME + ($tenantId == null ? 43 : $tenantId.hashCode());
-    final Object $nodeIds = getNodeIds();
-    result = result * PRIME + ($nodeIds == null ? 43 : $nodeIds.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof FlowNodeIdsToNamesRequestDto)) {
-      return false;
-    }
-    final FlowNodeIdsToNamesRequestDto other = (FlowNodeIdsToNamesRequestDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$processDefinitionKey = getProcessDefinitionKey();
-    final Object other$processDefinitionKey = other.getProcessDefinitionKey();
-    if (this$processDefinitionKey == null
-        ? other$processDefinitionKey != null
-        : !this$processDefinitionKey.equals(other$processDefinitionKey)) {
-      return false;
-    }
-    final Object this$processDefinitionVersion = getProcessDefinitionVersion();
-    final Object other$processDefinitionVersion = other.getProcessDefinitionVersion();
-    if (this$processDefinitionVersion == null
-        ? other$processDefinitionVersion != null
-        : !this$processDefinitionVersion.equals(other$processDefinitionVersion)) {
-      return false;
-    }
-    final Object this$tenantId = getTenantId();
-    final Object other$tenantId = other.getTenantId();
-    if (this$tenantId == null ? other$tenantId != null : !this$tenantId.equals(other$tenantId)) {
-      return false;
-    }
-    final Object this$nodeIds = getNodeIds();
-    final Object other$nodeIds = other.getNodeIds();
-    if (this$nodeIds == null ? other$nodeIds != null : !this$nodeIds.equals(other$nodeIds)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

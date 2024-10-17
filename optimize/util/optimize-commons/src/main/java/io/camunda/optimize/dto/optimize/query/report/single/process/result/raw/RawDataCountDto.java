@@ -53,39 +53,12 @@ public class RawDataCountDto implements RawDataInstanceDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final long $incidents = getIncidents();
-    result = result * PRIME + (int) ($incidents >>> 32 ^ $incidents);
-    final long $openIncidents = getOpenIncidents();
-    result = result * PRIME + (int) ($openIncidents >>> 32 ^ $openIncidents);
-    final long $userTasks = getUserTasks();
-    result = result * PRIME + (int) ($userTasks >>> 32 ^ $userTasks);
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof RawDataCountDto)) {
-      return false;
-    }
-    final RawDataCountDto other = (RawDataCountDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (getIncidents() != other.getIncidents()) {
-      return false;
-    }
-    if (getOpenIncidents() != other.getOpenIncidents()) {
-      return false;
-    }
-    if (getUserTasks() != other.getUserTasks()) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

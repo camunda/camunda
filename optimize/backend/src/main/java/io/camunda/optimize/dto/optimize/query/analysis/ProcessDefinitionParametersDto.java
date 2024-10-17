@@ -92,83 +92,12 @@ public class ProcessDefinitionParametersDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $processDefinitionKey = getProcessDefinitionKey();
-    result =
-        result * PRIME + ($processDefinitionKey == null ? 43 : $processDefinitionKey.hashCode());
-    final Object $processDefinitionVersions = getProcessDefinitionVersions();
-    result =
-        result * PRIME
-            + ($processDefinitionVersions == null ? 43 : $processDefinitionVersions.hashCode());
-    final Object $tenantIds = getTenantIds();
-    result = result * PRIME + ($tenantIds == null ? 43 : $tenantIds.hashCode());
-    final Object $minimumDeviationFromAvg = getMinimumDeviationFromAvg();
-    result =
-        result * PRIME
-            + ($minimumDeviationFromAvg == null ? 43 : $minimumDeviationFromAvg.hashCode());
-    final Object $disconsiderAutomatedTasks = getDisconsiderAutomatedTasks();
-    result =
-        result * PRIME
-            + ($disconsiderAutomatedTasks == null ? 43 : $disconsiderAutomatedTasks.hashCode());
-    final Object $filters = getFilters();
-    result = result * PRIME + ($filters == null ? 43 : $filters.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof ProcessDefinitionParametersDto)) {
-      return false;
-    }
-    final ProcessDefinitionParametersDto other = (ProcessDefinitionParametersDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$processDefinitionKey = getProcessDefinitionKey();
-    final Object other$processDefinitionKey = other.getProcessDefinitionKey();
-    if (this$processDefinitionKey == null
-        ? other$processDefinitionKey != null
-        : !this$processDefinitionKey.equals(other$processDefinitionKey)) {
-      return false;
-    }
-    final Object this$processDefinitionVersions = getProcessDefinitionVersions();
-    final Object other$processDefinitionVersions = other.getProcessDefinitionVersions();
-    if (this$processDefinitionVersions == null
-        ? other$processDefinitionVersions != null
-        : !this$processDefinitionVersions.equals(other$processDefinitionVersions)) {
-      return false;
-    }
-    final Object this$tenantIds = getTenantIds();
-    final Object other$tenantIds = other.getTenantIds();
-    if (this$tenantIds == null
-        ? other$tenantIds != null
-        : !this$tenantIds.equals(other$tenantIds)) {
-      return false;
-    }
-    final Object this$minimumDeviationFromAvg = getMinimumDeviationFromAvg();
-    final Object other$minimumDeviationFromAvg = other.getMinimumDeviationFromAvg();
-    if (this$minimumDeviationFromAvg == null
-        ? other$minimumDeviationFromAvg != null
-        : !this$minimumDeviationFromAvg.equals(other$minimumDeviationFromAvg)) {
-      return false;
-    }
-    final Object this$disconsiderAutomatedTasks = getDisconsiderAutomatedTasks();
-    final Object other$disconsiderAutomatedTasks = other.getDisconsiderAutomatedTasks();
-    if (this$disconsiderAutomatedTasks == null
-        ? other$disconsiderAutomatedTasks != null
-        : !this$disconsiderAutomatedTasks.equals(other$disconsiderAutomatedTasks)) {
-      return false;
-    }
-    final Object this$filters = getFilters();
-    final Object other$filters = other.getFilters();
-    if (this$filters == null ? other$filters != null : !this$filters.equals(other$filters)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

@@ -46,42 +46,12 @@ public class DefinitionTenantsRequestDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $versions = getVersions();
-    result = result * PRIME + ($versions == null ? 43 : $versions.hashCode());
-    final Object $filterByCollectionScope = getFilterByCollectionScope();
-    result =
-        result * PRIME
-            + ($filterByCollectionScope == null ? 43 : $filterByCollectionScope.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof DefinitionTenantsRequestDto)) {
-      return false;
-    }
-    final DefinitionTenantsRequestDto other = (DefinitionTenantsRequestDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$versions = getVersions();
-    final Object other$versions = other.getVersions();
-    if (this$versions == null ? other$versions != null : !this$versions.equals(other$versions)) {
-      return false;
-    }
-    final Object this$filterByCollectionScope = getFilterByCollectionScope();
-    final Object other$filterByCollectionScope = other.getFilterByCollectionScope();
-    if (this$filterByCollectionScope == null
-        ? other$filterByCollectionScope != null
-        : !this$filterByCollectionScope.equals(other$filterByCollectionScope)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

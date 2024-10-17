@@ -173,63 +173,12 @@ public class DecisionReportDataDto extends SingleReportDataDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $filter = getFilter();
-    result = result * PRIME + ($filter == null ? 43 : $filter.hashCode());
-    final Object $view = getView();
-    result = result * PRIME + ($view == null ? 43 : $view.hashCode());
-    final Object $groupBy = getGroupBy();
-    result = result * PRIME + ($groupBy == null ? 43 : $groupBy.hashCode());
-    final Object $distributedBy = getDistributedBy();
-    result = result * PRIME + ($distributedBy == null ? 43 : $distributedBy.hashCode());
-    final Object $visualization = getVisualization();
-    result = result * PRIME + ($visualization == null ? 43 : $visualization.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof DecisionReportDataDto)) {
-      return false;
-    }
-    final DecisionReportDataDto other = (DecisionReportDataDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$filter = getFilter();
-    final Object other$filter = other.getFilter();
-    if (this$filter == null ? other$filter != null : !this$filter.equals(other$filter)) {
-      return false;
-    }
-    final Object this$view = getView();
-    final Object other$view = other.getView();
-    if (this$view == null ? other$view != null : !this$view.equals(other$view)) {
-      return false;
-    }
-    final Object this$groupBy = getGroupBy();
-    final Object other$groupBy = other.getGroupBy();
-    if (this$groupBy == null ? other$groupBy != null : !this$groupBy.equals(other$groupBy)) {
-      return false;
-    }
-    final Object this$distributedBy = getDistributedBy();
-    final Object other$distributedBy = other.getDistributedBy();
-    if (this$distributedBy == null
-        ? other$distributedBy != null
-        : !this$distributedBy.equals(other$distributedBy)) {
-      return false;
-    }
-    final Object this$visualization = getVisualization();
-    final Object other$visualization = other.getVisualization();
-    if (this$visualization == null
-        ? other$visualization != null
-        : !this$visualization.equals(other$visualization)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

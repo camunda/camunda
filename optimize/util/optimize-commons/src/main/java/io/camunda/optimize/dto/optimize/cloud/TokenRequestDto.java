@@ -78,56 +78,12 @@ public class TokenRequestDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $clientId = getClientId();
-    result = result * PRIME + ($clientId == null ? 43 : $clientId.hashCode());
-    final Object $clientSecret = getClientSecret();
-    result = result * PRIME + ($clientSecret == null ? 43 : $clientSecret.hashCode());
-    final Object $audience = getAudience();
-    result = result * PRIME + ($audience == null ? 43 : $audience.hashCode());
-    final Object $grantType = getGrantType();
-    result = result * PRIME + ($grantType == null ? 43 : $grantType.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof TokenRequestDto)) {
-      return false;
-    }
-    final TokenRequestDto other = (TokenRequestDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$clientId = getClientId();
-    final Object other$clientId = other.getClientId();
-    if (this$clientId == null ? other$clientId != null : !this$clientId.equals(other$clientId)) {
-      return false;
-    }
-    final Object this$clientSecret = getClientSecret();
-    final Object other$clientSecret = other.getClientSecret();
-    if (this$clientSecret == null
-        ? other$clientSecret != null
-        : !this$clientSecret.equals(other$clientSecret)) {
-      return false;
-    }
-    final Object this$audience = getAudience();
-    final Object other$audience = other.getAudience();
-    if (this$audience == null ? other$audience != null : !this$audience.equals(other$audience)) {
-      return false;
-    }
-    final Object this$grantType = getGrantType();
-    final Object other$grantType = other.getGrantType();
-    if (this$grantType == null
-        ? other$grantType != null
-        : !this$grantType.equals(other$grantType)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

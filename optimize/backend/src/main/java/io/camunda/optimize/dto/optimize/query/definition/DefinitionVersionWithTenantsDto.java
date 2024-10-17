@@ -80,50 +80,12 @@ public class DefinitionVersionWithTenantsDto extends SimpleDefinitionDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = super.hashCode();
-    final Object $version = getVersion();
-    result = result * PRIME + ($version == null ? 43 : $version.hashCode());
-    final Object $versionTag = getVersionTag();
-    result = result * PRIME + ($versionTag == null ? 43 : $versionTag.hashCode());
-    final Object $tenants = getTenants();
-    result = result * PRIME + ($tenants == null ? 43 : $tenants.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof DefinitionVersionWithTenantsDto)) {
-      return false;
-    }
-    final DefinitionVersionWithTenantsDto other = (DefinitionVersionWithTenantsDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    final Object this$version = getVersion();
-    final Object other$version = other.getVersion();
-    if (this$version == null ? other$version != null : !this$version.equals(other$version)) {
-      return false;
-    }
-    final Object this$versionTag = getVersionTag();
-    final Object other$versionTag = other.getVersionTag();
-    if (this$versionTag == null
-        ? other$versionTag != null
-        : !this$versionTag.equals(other$versionTag)) {
-      return false;
-    }
-    final Object this$tenants = getTenants();
-    final Object other$tenants = other.getTenants();
-    if (this$tenants == null ? other$tenants != null : !this$tenants.equals(other$tenants)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

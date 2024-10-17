@@ -68,59 +68,12 @@ public class ProcessOverviewDto implements OptimizeDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $owner = getOwner();
-    result = result * PRIME + ($owner == null ? 43 : $owner.hashCode());
-    final Object $processDefinitionKey = getProcessDefinitionKey();
-    result =
-        result * PRIME + ($processDefinitionKey == null ? 43 : $processDefinitionKey.hashCode());
-    final Object $digest = getDigest();
-    result = result * PRIME + ($digest == null ? 43 : $digest.hashCode());
-    final Object $lastKpiEvaluationResults = getLastKpiEvaluationResults();
-    result =
-        result * PRIME
-            + ($lastKpiEvaluationResults == null ? 43 : $lastKpiEvaluationResults.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof ProcessOverviewDto)) {
-      return false;
-    }
-    final ProcessOverviewDto other = (ProcessOverviewDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$owner = getOwner();
-    final Object other$owner = other.getOwner();
-    if (this$owner == null ? other$owner != null : !this$owner.equals(other$owner)) {
-      return false;
-    }
-    final Object this$processDefinitionKey = getProcessDefinitionKey();
-    final Object other$processDefinitionKey = other.getProcessDefinitionKey();
-    if (this$processDefinitionKey == null
-        ? other$processDefinitionKey != null
-        : !this$processDefinitionKey.equals(other$processDefinitionKey)) {
-      return false;
-    }
-    final Object this$digest = getDigest();
-    final Object other$digest = other.getDigest();
-    if (this$digest == null ? other$digest != null : !this$digest.equals(other$digest)) {
-      return false;
-    }
-    final Object this$lastKpiEvaluationResults = getLastKpiEvaluationResults();
-    final Object other$lastKpiEvaluationResults = other.getLastKpiEvaluationResults();
-    if (this$lastKpiEvaluationResults == null
-        ? other$lastKpiEvaluationResults != null
-        : !this$lastKpiEvaluationResults.equals(other$lastKpiEvaluationResults)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

@@ -78,63 +78,12 @@ public class DashboardReportTileDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $id = getId();
-    result = result * PRIME + ($id == null ? 43 : $id.hashCode());
-    final Object $position = getPosition();
-    result = result * PRIME + ($position == null ? 43 : $position.hashCode());
-    final Object $dimensions = getDimensions();
-    result = result * PRIME + ($dimensions == null ? 43 : $dimensions.hashCode());
-    final Object $type = getType();
-    result = result * PRIME + ($type == null ? 43 : $type.hashCode());
-    final Object $configuration = getConfiguration();
-    result = result * PRIME + ($configuration == null ? 43 : $configuration.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof DashboardReportTileDto)) {
-      return false;
-    }
-    final DashboardReportTileDto other = (DashboardReportTileDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$id = getId();
-    final Object other$id = other.getId();
-    if (this$id == null ? other$id != null : !this$id.equals(other$id)) {
-      return false;
-    }
-    final Object this$position = getPosition();
-    final Object other$position = other.getPosition();
-    if (this$position == null ? other$position != null : !this$position.equals(other$position)) {
-      return false;
-    }
-    final Object this$dimensions = getDimensions();
-    final Object other$dimensions = other.getDimensions();
-    if (this$dimensions == null
-        ? other$dimensions != null
-        : !this$dimensions.equals(other$dimensions)) {
-      return false;
-    }
-    final Object this$type = getType();
-    final Object other$type = other.getType();
-    if (this$type == null ? other$type != null : !this$type.equals(other$type)) {
-      return false;
-    }
-    final Object this$configuration = getConfiguration();
-    final Object other$configuration = other.getConfiguration();
-    if (this$configuration == null
-        ? other$configuration != null
-        : !this$configuration.equals(other$configuration)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override
