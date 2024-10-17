@@ -14,7 +14,8 @@ import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.search.security.auth.Authentication;
+import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.SecurityContext;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -32,6 +33,8 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -58,7 +61,15 @@ public final class ProcessInstanceServices
 
   @Override
   public SearchQueryResult<ProcessInstanceEntity> search(final ProcessInstanceQuery query) {
-    return processInstanceSearchClient.searchProcessInstances(query, authentication);
+    return processInstanceSearchClient.searchProcessInstances(
+        query,
+        SecurityContext.of(
+            s ->
+                s.withAuthentication(authentication)
+                    .withAuthorization(
+                        a ->
+                            a.resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+                                .permissionType(PermissionType.READ_INSTANCE))));
   }
 
   public SearchQueryResult<ProcessInstanceEntity> search(

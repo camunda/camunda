@@ -13,7 +13,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.document.api.DocumentMetadataModel;
-import io.camunda.search.security.auth.Authentication;
+import io.camunda.security.auth.Authentication;
 import io.camunda.service.DocumentServices;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;

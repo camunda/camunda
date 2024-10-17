@@ -10,6 +10,7 @@ package io.camunda.zeebe.protocol.record.value;
 public enum PermissionType {
   CREATE,
   READ,
+  READ_INSTANCE,
   UPDATE,
   DELETE
 }

@@ -12,7 +12,7 @@ import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
-import io.camunda.search.security.auth.Authentication;
+import io.camunda.security.auth.Authentication;
 import io.camunda.service.SignalServices;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;

@@ -5,27 +5,29 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.service.security.auth;
+package io.camunda.security.auth;
 
-import static io.camunda.util.CollectionUtil.addValuesToList;
+import static java.util.Collections.unmodifiableList;
 
-import io.camunda.search.filter.FilterBase;
-import io.camunda.util.ObjectBuilder;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 public record Authentication(
     String authenticatedUserId,
     List<String> authenticatedGroupIds,
     List<String> authenticatedTenantIds,
-    String token)
-    implements FilterBase {
+    String token) {
 
-  public static final class Builder
-      implements ObjectBuilder<io.camunda.search.security.auth.Authentication> {
+  public static Authentication of(final Function<Builder, Builder> builderFunction) {
+    return builderFunction.apply(new Builder()).build();
+  }
+
+  public static final class Builder {
 
     private String user;
-    private List<String> groups;
-    private List<String> tenants;
+    private final List<String> groups = new ArrayList<>();
+    private final List<String> tenants = new ArrayList<>();
     private String token;
 
     public Builder user(final String value) {
@@ -38,7 +40,9 @@ public record Authentication(
     }
 
     public Builder groups(final List<String> values) {
-      groups = addValuesToList(groups, values);
+      if (values != null) {
+        groups.addAll(values);
+      }
       return this;
     }
 
@@ -47,7 +51,9 @@ public record Authentication(
     }
 
     public Builder tenants(final List<String> values) {
-      tenants = addValuesToList(tenants, values);
+      if (values != null) {
+        tenants.addAll(values);
+      }
       return this;
     }
 
@@ -56,9 +62,8 @@ public record Authentication(
       return this;
     }
 
-    @Override
-    public io.camunda.search.security.auth.Authentication build() {
-      return new io.camunda.search.security.auth.Authentication(user, groups, tenants, token);
+    public Authentication build() {
+      return new Authentication(user, unmodifiableList(groups), unmodifiableList(tenants), token);
     }
   }
 }
