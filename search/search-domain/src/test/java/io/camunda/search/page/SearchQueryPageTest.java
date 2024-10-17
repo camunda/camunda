@@ -31,7 +31,7 @@ class SearchQueryPageTest {
     return Stream.of(
         Arguments.arguments(0, 20, 0, 20),
         Arguments.arguments(0, 20, 0, 20),
-        Arguments.arguments(0, 2000, 0, 100),
+        Arguments.arguments(0, 2000, 0, 1000),
         Arguments.arguments(-100, 20, 0, 20),
         Arguments.arguments(null, 20, 0, 20),
         Arguments.arguments(0, null, 0, 100),
