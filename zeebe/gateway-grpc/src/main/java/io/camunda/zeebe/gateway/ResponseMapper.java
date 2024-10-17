@@ -55,6 +55,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskJobData;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import java.util.ArrayList;
@@ -350,6 +351,8 @@ public final class ResponseMapper {
   }
 
   private static ActivatedJob toActivatedJob(final long jobKey, final JobRecord job) {
+    final UserTaskJobData userTaskJobData = job.getUserTaskJobData();
+
     return ActivatedJob.newBuilder()
         .setKey(jobKey)
         .setType(bufferAsString(job.getTypeBuffer()))
@@ -365,6 +368,10 @@ public final class ResponseMapper {
         .setDeadline(job.getDeadline())
         .setVariables(bufferAsJson(job.getVariablesBuffer()))
         .setTenantId(job.getTenantId())
+        .setUserTaskJobData(
+            GatewayOuterClass.UserTaskJobData.newBuilder()
+                .setAssignee(userTaskJobData.getAssignee())
+                .build())
         .build();
   }
 

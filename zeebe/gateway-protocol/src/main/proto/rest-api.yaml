@@ -3817,6 +3817,41 @@ components:
         tenantId:
           description: The ID of the tenant that owns the job
           type: string
+        userTaskJobData:
+          $ref: "#/components/schemas/UserTaskJobData"
+    UserTaskJobData:
+      type: object
+      properties:
+        userTaskKey:
+          description: user task key
+          type: integer
+          format: int64
+        assignee:
+          description: assignee of the task
+          type: string
+        candidateGroupsList:
+          description: candidate groups
+          type: array
+          items:
+            type: string
+        candidateUsersList:
+          description: candidate users
+          type: array
+          items:
+            type: string
+        dueDate:
+          description: due date of the task
+          type: string
+        followUpDate:
+          description: follow up date of the task
+          type: string
+        formKey:
+          description: form key of the user task
+          type: integer
+          format: int64
+        priority:
+          description: priority of the task
+          type: integer
     JobFailRequest:
       type: object
       properties:
