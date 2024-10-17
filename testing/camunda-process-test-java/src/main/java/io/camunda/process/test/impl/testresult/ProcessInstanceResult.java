@@ -7,7 +7,9 @@
  */
 package io.camunda.process.test.impl.testresult;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ProcessInstanceResult {
@@ -16,6 +18,8 @@ public class ProcessInstanceResult {
   private String processId;
 
   private Map<String, String> variables = new HashMap<>();
+
+  private List<OpenIncident> openIncidents = new ArrayList<>();
 
   public long getProcessInstanceKey() {
     return processInstanceKey;
@@ -39,5 +43,13 @@ public class ProcessInstanceResult {
 
   public void setVariables(final Map<String, String> variables) {
     this.variables = variables;
+  }
+
+  public List<OpenIncident> getOpenIncidents() {
+    return openIncidents;
+  }
+
+  public void setOpenIncidents(final List<OpenIncident> openIncidents) {
+    this.openIncidents = openIncidents;
   }
 }
