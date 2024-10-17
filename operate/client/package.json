@@ -76,7 +76,7 @@
     "@types/jest": "29.5.13",
     "@types/lodash": "4.17.10",
     "@types/mixpanel-browser": "2.50.1",
-    "@types/node": "20.16.11",
+    "@types/node": "20.16.12",
     "@types/react": "18.3.11",
     "@types/react-dom": "18.3.1",
     "@types/react-transition-group": "4.4.11",
