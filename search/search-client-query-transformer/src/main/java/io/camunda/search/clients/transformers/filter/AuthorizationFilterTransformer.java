@@ -19,14 +19,14 @@ public class AuthorizationFilterTransformer implements FilterTransformer<Authori
   @Override
   public SearchQuery toSearchQuery(final AuthorizationFilter filter) {
     return and(
-        filter.ownerKey() == null ? null : term("value.ownerKey", filter.ownerKey()),
-        filter.ownerType() == null ? null : term("value.ownerType", filter.ownerType()),
-        filter.resourceKey() == null ? null : term("value.resourceKey", filter.resourceKey()),
-        filter.resourceType() == null ? null : term("value.resourceType", filter.resourceType()));
+        filter.ownerKey() == null ? null : term("ownerKey", filter.ownerKey()),
+        filter.ownerType() == null ? null : term("ownerType", filter.ownerType()),
+        filter.resourceKey() == null ? null : term("resourceKey", filter.resourceKey()),
+        filter.resourceType() == null ? null : term("resourceType", filter.resourceType()));
   }
 
   @Override
   public List<String> toIndices(final AuthorizationFilter filter) {
-    return List.of("zeebe-record-authorization");
+    return List.of("authorizations-8.7.0_alias");
   }
 }

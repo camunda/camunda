@@ -409,10 +409,15 @@ final class CamundaExporterIT {
     @Test
     void shouldExportUserRecord() throws Exception {
       final Record<UserRecordValue> record = factory.generateRecord(ValueType.USER);
+
       final var recordId = String.valueOf(record.getKey());
 
       CamundaExporterIT.this.shouldExportUserRecord(
-          () -> client.get(b -> b.id(recordId).index("users"), UserEntity.class).source(), record);
+          () ->
+              client
+                  .get(b -> b.id(recordId).index("camunda-record-users-8.7.0_"), UserEntity.class)
+                  .source(),
+          record);
     }
 
     @Test
@@ -424,7 +429,9 @@ final class CamundaExporterIT {
       CamundaExporterIT.this.shouldExportAuthorizationRecord(
           () ->
               client
-                  .get(b -> b.id(recordId).index("authorizations"), AuthorizationEntity.class)
+                  .get(
+                      b -> b.id(recordId).index("camunda-record-authorizations-8.7.0_"),
+                      AuthorizationEntity.class)
                   .source(),
           record);
     }
@@ -439,7 +446,12 @@ final class CamundaExporterIT {
       CamundaExporterIT.this
           .shouldExportRecordIfElasticsearchIsNotInitiallyReachableButThenIsReachableLater(
               CONTAINER,
-              () -> client.search(s -> s.index("users"), UserEntity.class).hits().total().value());
+              () ->
+                  client
+                      .search(s -> s.index("camunda-record-users-8.7.0_"), UserEntity.class)
+                      .hits()
+                      .total()
+                      .value());
     }
 
     @Test
@@ -491,7 +503,11 @@ final class CamundaExporterIT {
       final var recordId = String.valueOf(record.getKey());
 
       CamundaExporterIT.this.shouldExportUserRecord(
-          () -> client.get(b -> b.id(recordId).index("users"), UserEntity.class).source(), record);
+          () ->
+              client
+                  .get(b -> b.id(recordId).index("camunda-record-users-8.7.0_"), UserEntity.class)
+                  .source(),
+          record);
     }
 
     @Test
@@ -503,7 +519,9 @@ final class CamundaExporterIT {
       CamundaExporterIT.this.shouldExportAuthorizationRecord(
           () ->
               client
-                  .get(b -> b.id(recordId).index("authorizations"), AuthorizationEntity.class)
+                  .get(
+                      b -> b.id(recordId).index("camunda-record-authorizations-8.7.0_"),
+                      AuthorizationEntity.class)
                   .source(),
           record);
     }
@@ -518,7 +536,12 @@ final class CamundaExporterIT {
       CamundaExporterIT.this
           .shouldExportRecordIfElasticsearchIsNotInitiallyReachableButThenIsReachableLater(
               CONTAINER,
-              () -> client.search(s -> s.index("users"), UserEntity.class).hits().total().value());
+              () ->
+                  client
+                      .search(s -> s.index("camunda-record-users-8.7.0_"), UserEntity.class)
+                      .hits()
+                      .total()
+                      .value());
     }
 
     @Test
