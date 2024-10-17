@@ -22,10 +22,13 @@ class ElasticsearchAdapter implements ClientAdapter {
   private final ElasticsearchClient client;
   private final ElasticsearchEngineClient searchEngineClient;
 
+  // TODO: private final ElasticsearchAsyncClient asyncClient;
+
   ElasticsearchAdapter(final ExporterConfiguration configuration) {
     final var connector = new ElasticsearchConnector(configuration.getConnect());
     client = connector.createClient();
     searchEngineClient = new ElasticsearchEngineClient(client);
+    // TODO: asyncClient = connector.createAsyncClient(); // for Archiver
   }
 
   @Override

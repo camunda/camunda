@@ -15,6 +15,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
 
 import co.elastic.clients.util.VisibleForTesting;
 import io.camunda.exporter.adapters.ClientAdapter;
+import io.camunda.exporter.archiver.Archiver;
 import io.camunda.exporter.config.ConfigValidator;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
@@ -45,6 +46,8 @@ public class CamundaExporter implements Exporter {
   private long lastPosition = -1;
   private final ExporterResourceProvider provider;
   private CamundaExporterMetrics metrics;
+  private int partitionId;
+  private Archiver archiver;
 
   public CamundaExporter() {
     this(new DefaultExporterResourceProvider());
@@ -57,12 +60,15 @@ public class CamundaExporter implements Exporter {
 
   @Override
   public void configure(final Context context) {
+    partitionId = context.getPartitionId();
     configuration = context.getConfiguration().instantiate(ExporterConfiguration.class);
     ConfigValidator.validate(configuration);
     provider.init(configuration);
     context.setFilter(new CamundaExporterRecordFilter());
     metrics = new CamundaExporterMetrics(context.getMeterRegistry());
     LOG.debug("Exporter configured with {}", configuration);
+
+    archiver = provider.getArchiver(partitionId);
   }
 
   @Override
@@ -84,10 +90,14 @@ public class CamundaExporter implements Exporter {
     scheduleDelayedFlush();
 
     LOG.info("Exporter opened");
+
+    archiver.startArchiving();
   }
 
   @Override
   public void close() {
+    archiver.stopArchiving();
+
     if (writer != null) {
       try {
         flush();
