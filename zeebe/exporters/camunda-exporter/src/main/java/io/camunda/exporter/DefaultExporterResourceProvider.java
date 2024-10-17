@@ -90,9 +90,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new DecisionRequirementsHandler(
                 indexDescriptorsMap.get(DecisionRequirementsIndex.class).getFullQualifiedName()),
             new PostImporterQueueFromIncidentHandler(
-                templateDescriptorsMap
-                    .get(PostImporterQueueTemplate.class)
-                    .getFullQualifiedName()),
+                templateDescriptorsMap.get(PostImporterQueueTemplate.class).getFullQualifiedName()),
             new FormHandler(indexDescriptorsMap.get(FormIndex.class).getFullQualifiedName()));
   }
 
