@@ -12,6 +12,7 @@ import static io.camunda.util.CollectionUtil.withoutNull;
 
 import io.camunda.search.clients.query.SearchHasParentQuery.Builder;
 import io.camunda.search.clients.query.SearchMatchQuery.SearchMatchQueryOperator;
+import io.camunda.search.filter.Operation;
 import io.camunda.util.ObjectBuilder;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -198,6 +199,14 @@ public final class SearchQueryBuilders {
     return SearchRangeQuery.of(q -> q.field(field).gt(gt)).toSearchQuery();
   }
 
+  public static <A> SearchQuery gte(final String field, final A gte) {
+    return SearchRangeQuery.of(q -> q.field(field).gte(gte)).toSearchQuery();
+  }
+
+  public static <A> SearchQuery lt(final String field, final A lt) {
+    return SearchRangeQuery.of(q -> q.field(field).lt(lt)).toSearchQuery();
+  }
+
   public static <A> SearchQuery lte(final String field, final A lte) {
     return SearchRangeQuery.of(q -> q.field(field).lte(lte)).toSearchQuery();
   }
@@ -261,6 +270,50 @@ public final class SearchQueryBuilders {
       return term(field, fieldValues.get(0));
     } else {
       return SearchTermsQuery.of(q -> q.field(field).intTerms(fieldValues)).toSearchQuery();
+    }
+  }
+
+  public static List<SearchQuery> intTerms(
+      final String field, final List<Operation<Integer>> operations) {
+    return operatorTermGeneric(field, operations, (op) -> term(field, op.value()));
+  }
+
+  public static List<SearchQuery> longTerms(
+      final String field, final List<Operation<Long>> operations) {
+    return operatorTermGeneric(field, operations, (op) -> term(field, op.value()));
+  }
+
+  public static List<SearchQuery> stringTerms(
+      final String field, final List<Operation<String>> operations) {
+    return operatorTermGeneric(field, operations, (op) -> term(field, op.value()));
+  }
+
+  public static <A> List<SearchQuery> operatorTermGeneric(
+      final String field,
+      final List<Operation<A>> operations,
+      final Function<Operation<A>, SearchQuery> termSearchQuery) {
+    if (operations == null || operations.isEmpty()) {
+      return null;
+    } else {
+      final List<SearchQuery> searchQueries = new ArrayList<>();
+      for (final Operation<A> operation : operations) {
+        searchQueries.add(
+            switch (operation.operator()) {
+              case EQUALS -> termSearchQuery.apply(operation);
+              case NOT_EQUALS -> null;
+              case GREATER_THAN -> gt(field, operation.value());
+              case GREATER_THAN_EQUALS -> gte(field, operation.value());
+              case LOWER_THAN -> lt(field, operation.value());
+              case LOWER_THAN_EQUALS -> lte(field, operation.value());
+              // FIXME string operations
+              case IN ->
+                  SearchTermsQuery.of(
+                          q -> q.field(field).stringTerms((List<String>) operation.values()))
+                      .toSearchQuery();
+              case LIKE -> wildcardQuery(field, (String) operation.value());
+            });
+      }
+      return searchQueries;
     }
   }
 

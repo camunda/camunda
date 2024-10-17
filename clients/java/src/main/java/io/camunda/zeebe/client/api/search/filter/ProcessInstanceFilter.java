@@ -16,14 +16,23 @@
 package io.camunda.zeebe.client.api.search.filter;
 
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
+import io.camunda.zeebe.client.protocol.rest.IntegerFilter;
+import io.camunda.zeebe.client.protocol.rest.LongFilter;
+import io.camunda.zeebe.client.protocol.rest.StringFilter;
 
 public interface ProcessInstanceFilter extends SearchRequestFilter {
 
   /** Filter by processInstanceKey */
   ProcessInstanceFilter processInstanceKey(final Long processInstanceKey);
 
+  /** Filter by processInstanceKey using LongFilter */
+  ProcessInstanceFilter processInstanceKey(final LongFilter processInstanceKeyFilter);
+
   /** Filter by processDefinitionId */
   ProcessInstanceFilter processDefinitionId(final String processDefinitionId);
+
+  /** Filter by processDefinitionId using StringFilter */
+  ProcessInstanceFilter processDefinitionId(final StringFilter processDefinitionIdFilter);
 
   /** Filter by processDefinitionName */
   ProcessInstanceFilter processDefinitionName(final String processDefinitionName);
@@ -31,11 +40,18 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
   /** Filter by processDefinitionVersion */
   ProcessInstanceFilter processDefinitionVersion(final Integer processDefinitionVersion);
 
+  /** Filter by processDefinitionVersion using IntegerFilter */
+  ProcessInstanceFilter processDefinitionVersion(
+      final IntegerFilter processDefinitionVersionFilter);
+
   /** Filter by processDefinitionVersionTag */
   ProcessInstanceFilter processDefinitionVersionTag(final String processDefinitionVersionTag);
 
   /** Filter by processDefinitionKey */
   ProcessInstanceFilter processDefinitionKey(final Long processDefinitionKey);
+
+  /** Filter by processDefinitionKey using LongFilter */
+  ProcessInstanceFilter processDefinitionKey(final LongFilter processDefinitionKeyFilter);
 
   /** Filter by parentProcessInstanceKey */
   ProcessInstanceFilter parentProcessInstanceKey(final Long parentProcessInstanceKey);

@@ -17,8 +17,11 @@ package io.camunda.zeebe.client.impl.search.filter;
 
 import io.camunda.zeebe.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
+import io.camunda.zeebe.client.protocol.rest.IntegerFilter;
+import io.camunda.zeebe.client.protocol.rest.LongFilter;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateEnum;
+import io.camunda.zeebe.client.protocol.rest.StringFilter;
 
 public class ProcessInstanceFilterImpl
     extends TypedSearchRequestPropertyProvider<ProcessInstanceFilterRequest>
@@ -32,13 +35,29 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter processInstanceKey(final Long processInstanceKey) {
-    filter.setProcessInstanceKey(processInstanceKey);
+    final LongFilter filter = new LongFilter();
+    filter.set$Eq(processInstanceKey);
+    this.filter.setProcessInstanceKey(filter);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter processInstanceKey(final LongFilter processInstanceKeyFilter) {
+    filter.setProcessInstanceKey(processInstanceKeyFilter);
     return this;
   }
 
   @Override
   public ProcessInstanceFilter processDefinitionId(final String processDefinitionId) {
-    filter.processDefinitionId(processDefinitionId);
+    final StringFilter filter = new StringFilter();
+    filter.set$Eq(processDefinitionId);
+    this.filter.processDefinitionId(filter);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter processDefinitionId(final StringFilter processDefinitionIdFilter) {
+    filter.processDefinitionId(processDefinitionIdFilter);
     return this;
   }
 
@@ -50,7 +69,16 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter processDefinitionVersion(final Integer processDefinitionVersion) {
-    filter.setProcessDefinitionVersion(processDefinitionVersion);
+    final IntegerFilter filter = new IntegerFilter();
+    filter.set$Eq(processDefinitionVersion);
+    this.filter.setProcessDefinitionVersion(filter);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter processDefinitionVersion(
+      final IntegerFilter processDefinitionVersionFilter) {
+    filter.setProcessDefinitionVersion(processDefinitionVersionFilter);
     return this;
   }
 
@@ -63,7 +91,15 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter processDefinitionKey(final Long processDefinitionKey) {
-    filter.setProcessDefinitionKey(processDefinitionKey);
+    final LongFilter filter = new LongFilter();
+    filter.set$Eq(processDefinitionKey);
+    this.filter.setProcessDefinitionKey(filter);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter processDefinitionKey(final LongFilter processDefinitionKeyFilter) {
+    filter.setProcessDefinitionKey(processDefinitionKeyFilter);
     return this;
   }
 

@@ -146,6 +146,12 @@
 
     <dependency>
       <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot</artifactId>
+      <version>3.3.4</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-autoconfigure</artifactId>
     </dependency>
 
@@ -157,6 +163,11 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
     </dependency>
 
     <dependency>
@@ -400,6 +411,8 @@
                 <library>spring-boot</library>
                 <jdk8>true</jdk8>
                 <openApiNullable>false</openApiNullable>
+                <!-- Don't use interface instead generate a class with all properties -->
+                <useOneOfInterfaces>false</useOneOfInterfaces>
               </configOptions>
             </configuration>
           </execution>
