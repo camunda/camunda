@@ -50,7 +50,7 @@ function getTabValue(pathname) {
   if (!!pathname.match(/\/analysis\/taskAnalysis(\/?)$/) || !!pathname.match(/\/analysis(\/?)$/)) {
     return 0;
   }
-  if (!!pathname.match(/\/analysis\/branchAnalysis(\/?)$/)) {
+  if (pathname.match(/\/analysis\/branchAnalysis(\/?)$/)) {
     return 1;
   }
   return 2;

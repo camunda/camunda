@@ -74,7 +74,7 @@ export default class DurationFilter extends Component<
       <Modal size="sm" open onClose={this.props.close} className="DurationFilter" isOverflowVisible>
         <Modal.Header
           title={t('common.filter.modalHeader', {
-            type: t('common.filter.types.processInstanceDuration'),
+            type: t('common.filter.types.processInstanceDuration').toString(),
           })}
         />
         <Modal.Content>

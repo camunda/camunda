@@ -23,7 +23,7 @@ jest.mock('services', () => {
   return {
     ...rest,
     createEntity: jest.fn().mockReturnValue('id'),
-    evaluateReport: jest.fn().mockImplementation((report: any) => report),
+    evaluateReport: jest.fn().mockImplementation((report: unknown) => report),
   };
 });
 
@@ -36,7 +36,7 @@ jest.mock('react-router-dom', () => ({
 jest.mock('hooks', () => ({
   ...jest.requireActual('hooks'),
   useErrorHandling: () => ({
-    mightFail: jest.fn().mockImplementation(async (data, cb, err, finallyFunc) => {
+    mightFail: jest.fn().mockImplementation(async (data, cb, _err, finallyFunc) => {
       await cb(data);
       finallyFunc?.();
     }),

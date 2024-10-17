@@ -12,7 +12,6 @@ import {TextInput, Button} from '@carbon/react';
 
 import {BPMNDiagram, TenantInfo} from 'components';
 import {loadProcessDefinitionXml} from 'services';
-import {getOptimizeProfile} from 'config';
 
 import RenameVariablesModal from './RenameVariablesModal';
 import DiagramModal from './DiagramModal';

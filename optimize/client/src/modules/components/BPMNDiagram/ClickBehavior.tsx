@@ -111,7 +111,7 @@ export default class ClickBehavior extends Component<ClickBehaviorProps> {
   };
 
   roundEdges = () => {
-    this.props.viewer?.get<RegistryElement>('elementRegistry').forEach((element, gfx) => {
+    this.props.viewer?.get<RegistryElement>('elementRegistry').forEach((_element, gfx) => {
       const outline = gfx.querySelector('.djs-outline');
       if (outline) {
         outline.setAttribute('rx', '14px');

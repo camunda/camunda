@@ -176,6 +176,8 @@ export function camelCaseToLabel(type: string) {
 export function objectifyResult<T extends readonly {key: string; value: unknown}[]>(
   result: T
 ): {[K in T[number]['key']]: Extract<T[number], {key: K}>['value']} {
+  // This is really hard to type
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return result.reduce<any>((acc, {key, value}) => {
     acc[key] = value;
     return acc;

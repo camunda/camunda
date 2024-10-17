@@ -19,17 +19,16 @@ import {getCollection, formatters} from 'services';
 import {t} from 'translation';
 import {showError} from 'notifications';
 import {getOptimizeProfile, areTenantsAvailable, getMaxNumDataSourcesForReport} from 'config';
+import {useErrorHandling} from 'hooks';
 
 import {loadTenants} from './service';
 import DefinitionEditor from './DefinitionEditor';
 
 import './DefinitionList.scss';
-import {useDocs, useErrorHandling} from 'hooks';
 
 const {formatVersions, formatTenants} = formatters;
 
 export default function DefinitionList({
-  location,
   definitions = [],
   type,
   onChange,

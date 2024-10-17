@@ -131,7 +131,7 @@ export default function Heatmap({report, context}) {
       <HeatmapOverlay
         data={resultObj}
         tooltipOptions={{alwaysShow}}
-        formatter={(data, id) => {
+        formatter={(_data, id) => {
           if (
             result.measures.every(
               (measure) => measure.data.find((entry) => entry.key === id)?.value === null

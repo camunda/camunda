@@ -42,7 +42,7 @@ export default function RollingFilter({filter, onChange}) {
         size="sm"
         className="number"
         value={value}
-        onChange={(evt, {value}) => {
+        onChange={(_evt, {value}) => {
           setValue(value);
           updateValue(value);
         }}

@@ -71,7 +71,7 @@ it('should not resolve a promise from a function that was called if another call
     .fn()
     .mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve(2), 100)));
 
-  async function caller(fn: any) {
+  async function caller(fn: (...args: unknown[]) => unknown) {
     const result = await debouncePromise(fn, 300);
     spy(result);
   }

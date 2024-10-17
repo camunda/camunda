@@ -197,13 +197,13 @@ it('should use original data as result data if report cant be evaluated on cance
 it('should set conflict state when conflict happens on save button click', async () => {
   const conflictedItems = [{id: '1', name: 'alert', type: 'alert'}];
 
-  mightFail.mockImplementationOnce((promise, cb, err) => err({status: 409, conflictedItems}));
+  mightFail.mockImplementationOnce((_promise, _cb, err) => err({status: 409, conflictedItems}));
 
   const node = shallow(<ReportEdit {...props} />);
 
   try {
     node.find('EntityNameForm').simulate('save');
-  } catch (e) {
+  } catch (_e) {
     expect(node.find('ConflictModal').prop('conflict').type).toEqual('save');
     expect(node.find('ConflictModal').prop('conflict').items).toEqual(conflictedItems);
   }
@@ -274,7 +274,7 @@ it('should only resolve the save promise if a decision for conflicts has been ma
   });
   const node = shallow(<ReportEdit {...props} />);
 
-  mightFail.mockImplementationOnce((promise, cb, err) =>
+  mightFail.mockImplementationOnce((_promise, _cb, err) =>
     err({status: 409, conflictedItems: [{id: '1', name: 'alert', type: 'alert'}]})
   );
 
@@ -332,7 +332,7 @@ it('should show loading indicator if specified by children components', () => {
 
 it('should pass the error to reportRenderer if evaluation fails', async () => {
   const testError = {status: 400, message: 'testError', reportDefinition: report};
-  const mightFail = (promise, cb, err) => err(testError);
+  const mightFail = (_promise, _cb, err) => err(testError);
   useErrorHandling.mockReturnValueOnce({
     mightFail,
   });

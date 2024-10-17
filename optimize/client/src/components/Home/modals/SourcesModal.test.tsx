@@ -10,7 +10,7 @@ import {ReactElement} from 'react';
 import {runAllEffects} from '__mocks__/react';
 import {shallow} from 'enzyme';
 
-import {areTenantsAvailable, getOptimizeProfile} from 'config';
+import {areTenantsAvailable} from 'config';
 
 import {getDefinitionsWithTenants, getTenantsWithDefinitions} from './service';
 import SourcesModal from './SourcesModal';
@@ -152,7 +152,7 @@ it('should filter definitions by tenant', async () => {
 
   await runAllEffects();
 
-  const toolbar = shallow(node.find('Table').prop<any>('toolbar'));
+  const toolbar = shallow<ReactElement>(node.find('Table').prop('toolbar'));
   toolbar.find('TableToolbarSearch').prop<(target: HTMLInputElement) => void>('onChange')?.({
     target: {value: 'engineering'},
   } as unknown as HTMLInputElement);
@@ -193,9 +193,9 @@ it('should change the selected tenants based on the popover in C7', async () => 
   await runAllEffects();
   await node.update();
 
-  const tenantPopover = (node.find('Table').prop('body') as any)[0][3];
+  const tenantPopover = (node.find('Table').prop('body') as ReactElement[][])?.[0]?.[3];
 
-  tenantPopover.props.onChange([{id: 'test'}]);
+  tenantPopover?.props.onChange([{id: 'test'}]);
 
   node.find('.confirm').simulate('click');
 
@@ -225,5 +225,5 @@ it('should display the only tenant value as text in self managed mode', async ()
   await runAllEffects();
   await node.update();
 
-  expect((node.find('Table').prop('body') as any)[0][3]).toEqual(<>Default</>);
+  expect((node.find('Table').prop('body') as ReactElement[][])?.[0]?.[3]).toEqual(<>Default</>);
 });

@@ -14,9 +14,22 @@ import {useUser} from 'hooks';
 
 import './Tracking.scss';
 
+type Mixpanel = {
+  track: (eventName: string, properties?: Record<string, unknown>) => void;
+  identify: (userId: string) => void;
+  register: (properties: Record<string, unknown>) => void;
+  init: (token: string, options: Record<string, unknown>) => void;
+};
+
+type Osano = {
+  cm: {
+    addEventListener: (eventName: string, callback: (event: {ANALYTICS: string}) => void) => void;
+  };
+};
+
 declare const window: {
-  mixpanel: any;
-  Osano: any;
+  mixpanel: Mixpanel;
+  Osano: Osano;
 } & Window;
 
 let trackingEnabled = false;
@@ -47,16 +60,13 @@ export default function Tracking() {
       if (enabled && osanoScriptUrl) {
         await loadOsanoScript(osanoScriptUrl);
 
-        window.Osano?.cm?.addEventListener(
-          'osano-cm-consent-saved',
-          async ({ANALYTICS}: {ANALYTICS: string}) => {
-            if (ANALYTICS === 'ACCEPT') {
-              await initMixpanel();
-              setInitialized(true);
-              trackingEnabled = true;
-            }
+        window.Osano?.cm?.addEventListener('osano-cm-consent-saved', async ({ANALYTICS}) => {
+          if (ANALYTICS === 'ACCEPT') {
+            await initMixpanel();
+            setInitialized(true);
+            trackingEnabled = true;
           }
-        );
+        });
       }
     })();
   }, []);

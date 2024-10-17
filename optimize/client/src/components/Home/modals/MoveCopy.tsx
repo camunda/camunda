@@ -56,7 +56,7 @@ export default function MoveCopy({
     }
 
     const params = {
-      entityType: t('dashboard.label'),
+      entityType: t('dashboard.label').toString(),
       number: containedReports,
     };
     if (containedReports > 1) {

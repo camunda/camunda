@@ -31,17 +31,12 @@ export default class Statistics extends React.Component {
   }
 
   loadFlowNodeNames = () => {
-    return new Promise(async (resolve) =>
-      this.setState(
-        {
-          flowNodeNames: await getFlowNodeNames(
-            this.props.config.processDefinitionKey,
-            this.props.config.processDefinitionVersions[0],
-            this.props.config.tenantIds[0]
-          ),
-        },
-        resolve
-      )
+    return new Promise((resolve) =>
+      getFlowNodeNames(
+        this.props.config.processDefinitionKey,
+        this.props.config.processDefinitionVersions[0],
+        this.props.config.tenantIds[0]
+      ).then((flowNodeNames) => this.setState({flowNodeNames}, resolve))
     );
   };
 
@@ -257,7 +252,7 @@ export default class Statistics extends React.Component {
           },
         },
         hover: {
-          onHover: (e, activeElements) => {
+          onHover: (_e, activeElements) => {
             const canvas = viewer.get('canvas');
             const classMark = 'PartHighlight';
             if (activeElements.length > 0 && !isInside) {

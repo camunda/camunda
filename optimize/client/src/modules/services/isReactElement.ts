@@ -8,6 +8,6 @@
 
 import {ReactElement, ReactNode} from 'react';
 
-export default function isReactElement<P = any>(child: ReactNode): child is ReactElement<P> {
+export default function isReactElement<P = unknown>(child: ReactNode): child is ReactElement<P> {
   return !!child && typeof child === 'object' && 'type' in child;
 }

@@ -15,7 +15,7 @@ import MultiEmailInput from './MultiEmailInput';
 const props = {
   emails: ['email1@hotmail.com', 'email2@gmail.com'],
   onChange: jest.fn(),
-  titleText: 'test'
+  titleText: 'test',
 };
 
 beforeEach(() => props.onChange.mockClear());
@@ -80,6 +80,6 @@ it('should remove email when remove button is clicked on removable tag', () => {
   const node = shallow(<MultiEmailInput {...props} />);
 
   props.onChange.mockClear();
-  node.find(MultiValueInput).dive().find('RemovableTag').at(0).prop<Function>('onRemove')();
+  node.find(MultiValueInput).dive().find('RemovableTag').at(0).prop<jest.Mock>('onRemove')();
   expect(props.onChange).toHaveBeenCalledWith(['email2@gmail.com'], true);
 });
