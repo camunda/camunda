@@ -25,10 +25,16 @@ public class TenantProcessors {
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
-    typedRecordProcessors.onCommand(
-        ValueType.TENANT,
-        TenantIntent.CREATE,
-        new TenantCreateProcessor(
-            tenantState, authCheckBehavior, keyGenerator, writers, commandDistributionBehavior));
+    typedRecordProcessors
+        .onCommand(
+            ValueType.TENANT,
+            TenantIntent.CREATE,
+            new TenantCreateProcessor(
+                tenantState, authCheckBehavior, keyGenerator, writers, commandDistributionBehavior))
+        .onCommand(
+            ValueType.TENANT,
+            TenantIntent.UPDATE,
+            new TenantUpdateProcessor(
+                tenantState, authCheckBehavior, writers, commandDistributionBehavior));
   }
 }
