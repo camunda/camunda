@@ -18,7 +18,6 @@ import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.client.api.search.response.Incident;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -33,7 +32,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Disabled("Disabled until https://github.com/camunda/camunda/issues/23706 has been fixed!")
-// @ZeebeIntegration
 class IncidentQueryTest {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(IncidentQueryTest.class);
