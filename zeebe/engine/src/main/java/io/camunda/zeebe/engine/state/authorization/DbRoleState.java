@@ -18,6 +18,10 @@ import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public class DbRoleState implements MutableRoleState {
@@ -107,6 +111,22 @@ public class DbRoleState implements MutableRoleState {
   }
 
   @Override
+  public void delete(final RoleRecord roleRecord) {
+    roleKey.wrapLong(roleRecord.getRoleKey());
+    roleName.wrapString(roleRecord.getName());
+    // remove the role from the role by name column family
+    roleByNameColumnFamily.deleteExisting(roleName);
+    // remove all entities associated with the role
+    entityTypeByRoleColumnFamily.whileEqualPrefix(
+        fkRoleKey,
+        (compositeKey, entityTypeValue) -> {
+          entityTypeByRoleColumnFamily.deleteExisting(compositeKey);
+        });
+    // remove the role
+    roleColumnFamily.deleteExisting(roleKey);
+  }
+
+  @Override
   public Optional<PersistedRole> getRole(final long roleKey) {
     this.roleKey.wrapLong(roleKey);
     final var persistedRole = roleColumnFamily.get(this.roleKey);
@@ -126,5 +146,20 @@ public class DbRoleState implements MutableRoleState {
     this.entityKey.wrapLong(entityKey);
     final var result = entityTypeByRoleColumnFamily.get(fkRoleKeyAndEntityKey);
     return Optional.ofNullable(result).map(EntityTypeValue::getEntityType);
+  }
+
+  @Override
+  public Map<EntityType, List<Long>> getEntitiesByType(final long roleKey) {
+    final Map<EntityType, List<Long>> entitiesMap = new HashMap<>();
+    this.roleKey.wrapLong(roleKey);
+    entityTypeByRoleColumnFamily.whileEqualPrefix(
+        fkRoleKey,
+        (compositeKey, entityTypeValue) -> {
+          final var entityType = entityTypeValue.getEntityType();
+          final var entityKey = compositeKey.second().getValue();
+          entitiesMap.putIfAbsent(entityType, new ArrayList<>());
+          entitiesMap.get(entityType).add(entityKey);
+        });
+    return entitiesMap;
   }
 }
