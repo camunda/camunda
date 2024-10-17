@@ -37,22 +37,9 @@ public class DeleteUserTest {
             .create();
 
     final var deletedUser =
-        ENGINE
-            .user()
-            .deleteUser(userRecord.getKey())
-            .withUsername(userRecord.getValue().getUsername())
-            .withName("Bar Foo")
-            .withEmail("foo@bar.blah")
-            .withPassword("Foo Bar")
-            .delete()
-            .getValue();
+        ENGINE.user().deleteUser(userRecord.getKey()).withUsername("").delete().getValue();
 
-    assertThat(deletedUser)
-        .isNotNull()
-        .hasFieldOrPropertyWithValue("username", username)
-        .hasFieldOrPropertyWithValue("name", "Bar Foo")
-        .hasFieldOrPropertyWithValue("email", "foo@bar.blah")
-        .hasFieldOrPropertyWithValue("password", "Foo Bar");
+    assertThat(deletedUser).isNotNull().hasFieldOrPropertyWithValue("userKey", userRecord.getKey());
   }
 
   @Test
