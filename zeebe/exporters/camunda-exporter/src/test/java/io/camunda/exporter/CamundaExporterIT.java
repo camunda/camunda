@@ -102,7 +102,7 @@ final class CamundaExporterIT {
             "test*",
             "template_alias",
             Collections.emptyList(),
-            "template_name",
+            CONFIG.getIndex().getPrefix() + "template_name",
             "/mappings.json");
 
     index =
