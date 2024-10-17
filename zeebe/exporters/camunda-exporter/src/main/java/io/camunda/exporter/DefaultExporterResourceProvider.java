@@ -13,6 +13,7 @@ import io.camunda.exporter.handlers.AuthorizationRecordValueExportHandler;
 import io.camunda.exporter.handlers.DecisionHandler;
 import io.camunda.exporter.handlers.DecisionRequirementsHandler;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.IncidentHandler;
 import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
 import io.camunda.exporter.handlers.UserRecordValueExportHandler;
@@ -24,6 +25,7 @@ import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
@@ -60,7 +62,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             VariableTemplate.class,
             new VariableTemplate(operateIndexPrefix, isElasticsearch),
             PostImporterQueueTemplate.class,
-            new PostImporterQueueTemplate(operateIndexPrefix, isElasticsearch));
+            new PostImporterQueueTemplate(operateIndexPrefix, isElasticsearch),
+            IncidentTemplate.class,
+            new IncidentTemplate(operateIndexPrefix, isElasticsearch));
 
     indexDescriptorsMap =
         Map.of(
@@ -89,9 +93,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new DecisionRequirementsHandler(
                 indexDescriptorsMap.get(DecisionRequirementsIndex.class).getFullQualifiedName()),
             new PostImporterQueueFromIncidentHandler(
-                templateDescriptorsMap
-                    .get(PostImporterQueueTemplate.class)
-                    .getFullQualifiedName()));
+                templateDescriptorsMap.get(PostImporterQueueTemplate.class).getFullQualifiedName()),
+            new IncidentHandler(
+                templateDescriptorsMap.get(IncidentTemplate.class).getFullQualifiedName(), false));
   }
 
   @Override
