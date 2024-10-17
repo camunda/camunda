@@ -18,8 +18,13 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.Permissio
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class AuthorizationRecordValueExportHandler
+public class AuthorizationHandler
     implements ExportHandler<AuthorizationEntity, AuthorizationRecordValue> {
+  private final String indexName;
+
+  public AuthorizationHandler(final String indexName) {
+    this.indexName = indexName;
+  }
 
   @Override
   public ValueType getHandledValueType() {
@@ -64,7 +69,7 @@ public class AuthorizationRecordValueExportHandler
   }
 
   private String getIndexName() {
-    return "authorizations";
+    return indexName;
   }
 
   private List<Permission> getPermissions(final List<PermissionValue> permissionValues) {
