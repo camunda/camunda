@@ -105,93 +105,7 @@ public class VariableAggregationContext {
   }
 
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof VariableAggregationContext)) {
-      return false;
-    }
-    final VariableAggregationContext other = (VariableAggregationContext) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$variableName = this.getVariableName();
-    final Object other$variableName = other.getVariableName();
-    if (this$variableName == null
-        ? other$variableName != null
-        : !this$variableName.equals(other$variableName)) {
-      return false;
-    }
-    final Object this$variableType = this.getVariableType();
-    final Object other$variableType = other.getVariableType();
-    if (this$variableType == null
-        ? other$variableType != null
-        : !this$variableType.equals(other$variableType)) {
-      return false;
-    }
-    final Object this$variablePath = this.getVariablePath();
-    final Object other$variablePath = other.getVariablePath();
-    if (this$variablePath == null
-        ? other$variablePath != null
-        : !this$variablePath.equals(other$variablePath)) {
-      return false;
-    }
-    final Object this$nestedVariableNameField = this.getNestedVariableNameField();
-    final Object other$nestedVariableNameField = other.getNestedVariableNameField();
-    if (this$nestedVariableNameField == null
-        ? other$nestedVariableNameField != null
-        : !this$nestedVariableNameField.equals(other$nestedVariableNameField)) {
-      return false;
-    }
-    final Object this$nestedVariableValueFieldLabel = this.getNestedVariableValueFieldLabel();
-    final Object other$nestedVariableValueFieldLabel = other.getNestedVariableValueFieldLabel();
-    if (this$nestedVariableValueFieldLabel == null
-        ? other$nestedVariableValueFieldLabel != null
-        : !this$nestedVariableValueFieldLabel.equals(other$nestedVariableValueFieldLabel)) {
-      return false;
-    }
-    final Object this$timezone = this.getTimezone();
-    final Object other$timezone = other.getTimezone();
-    if (this$timezone == null ? other$timezone != null : !this$timezone.equals(other$timezone)) {
-      return false;
-    }
-    final Object this$customBucketDto = this.getCustomBucketDto();
-    final Object other$customBucketDto = other.getCustomBucketDto();
-    if (this$customBucketDto == null
-        ? other$customBucketDto != null
-        : !this$customBucketDto.equals(other$customBucketDto)) {
-      return false;
-    }
-    final Object this$dateUnit = this.getDateUnit();
-    final Object other$dateUnit = other.getDateUnit();
-    if (this$dateUnit == null ? other$dateUnit != null : !this$dateUnit.equals(other$dateUnit)) {
-      return false;
-    }
-    if (!java.util.Arrays.deepEquals(this.getIndexNames(), other.getIndexNames())) {
-      return false;
-    }
-    final Object this$variableRangeMinMaxStats = this.getVariableRangeMinMaxStats();
-    final Object other$variableRangeMinMaxStats = other.getVariableRangeMinMaxStats();
-    if (this$variableRangeMinMaxStats == null
-        ? other$variableRangeMinMaxStats != null
-        : !this$variableRangeMinMaxStats.equals(other$variableRangeMinMaxStats)) {
-      return false;
-    }
-    final Object this$combinedRangeMinMaxStats = this.getCombinedRangeMinMaxStats();
-    final Object other$combinedRangeMinMaxStats = other.getCombinedRangeMinMaxStats();
-    if (this$combinedRangeMinMaxStats == null
-        ? other$combinedRangeMinMaxStats != null
-        : !this$combinedRangeMinMaxStats.equals(other$combinedRangeMinMaxStats)) {
-      return false;
-    }
-    final Object this$filterContext = this.getFilterContext();
-    final Object other$filterContext = other.getFilterContext();
-    if (this$filterContext == null
-        ? other$filterContext != null
-        : !this$filterContext.equals(other$filterContext)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   protected boolean canEqual(final Object other) {
@@ -199,42 +113,7 @@ public class VariableAggregationContext {
   }
 
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $variableName = this.getVariableName();
-    result = result * PRIME + ($variableName == null ? 43 : $variableName.hashCode());
-    final Object $variableType = this.getVariableType();
-    result = result * PRIME + ($variableType == null ? 43 : $variableType.hashCode());
-    final Object $variablePath = this.getVariablePath();
-    result = result * PRIME + ($variablePath == null ? 43 : $variablePath.hashCode());
-    final Object $nestedVariableNameField = this.getNestedVariableNameField();
-    result =
-        result * PRIME
-            + ($nestedVariableNameField == null ? 43 : $nestedVariableNameField.hashCode());
-    final Object $nestedVariableValueFieldLabel = this.getNestedVariableValueFieldLabel();
-    result =
-        result * PRIME
-            + ($nestedVariableValueFieldLabel == null
-                ? 43
-                : $nestedVariableValueFieldLabel.hashCode());
-    final Object $timezone = this.getTimezone();
-    result = result * PRIME + ($timezone == null ? 43 : $timezone.hashCode());
-    final Object $customBucketDto = this.getCustomBucketDto();
-    result = result * PRIME + ($customBucketDto == null ? 43 : $customBucketDto.hashCode());
-    final Object $dateUnit = this.getDateUnit();
-    result = result * PRIME + ($dateUnit == null ? 43 : $dateUnit.hashCode());
-    result = result * PRIME + java.util.Arrays.deepHashCode(this.getIndexNames());
-    final Object $variableRangeMinMaxStats = this.getVariableRangeMinMaxStats();
-    result =
-        result * PRIME
-            + ($variableRangeMinMaxStats == null ? 43 : $variableRangeMinMaxStats.hashCode());
-    final Object $combinedRangeMinMaxStats = this.getCombinedRangeMinMaxStats();
-    result =
-        result * PRIME
-            + ($combinedRangeMinMaxStats == null ? 43 : $combinedRangeMinMaxStats.hashCode());
-    final Object $filterContext = this.getFilterContext();
-    result = result * PRIME + ($filterContext == null ? 43 : $filterContext.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   public String toString() {

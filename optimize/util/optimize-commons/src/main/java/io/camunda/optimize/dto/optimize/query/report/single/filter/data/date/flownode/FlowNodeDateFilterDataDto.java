@@ -55,36 +55,12 @@ public abstract class FlowNodeDateFilterDataDto<START> extends DateFilterDataDto
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = super.hashCode();
-    final Object $flowNodeIds = getFlowNodeIds();
-    result = result * PRIME + ($flowNodeIds == null ? 43 : $flowNodeIds.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof FlowNodeDateFilterDataDto)) {
-      return false;
-    }
-    final FlowNodeDateFilterDataDto<?> other = (FlowNodeDateFilterDataDto<?>) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    final Object this$flowNodeIds = getFlowNodeIds();
-    final Object other$flowNodeIds = other.getFlowNodeIds();
-    if (this$flowNodeIds == null
-        ? other$flowNodeIds != null
-        : !this$flowNodeIds.equals(other$flowNodeIds)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   public static final class Fields {

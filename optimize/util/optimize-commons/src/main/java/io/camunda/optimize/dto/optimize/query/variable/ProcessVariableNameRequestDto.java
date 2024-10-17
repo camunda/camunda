@@ -65,47 +65,12 @@ public class ProcessVariableNameRequestDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $processesToQuery = getProcessesToQuery();
-    result = result * PRIME + ($processesToQuery == null ? 43 : $processesToQuery.hashCode());
-    final Object $filter = getFilter();
-    result = result * PRIME + ($filter == null ? 43 : $filter.hashCode());
-    final Object $timezone = getTimezone();
-    result = result * PRIME + ($timezone == null ? 43 : $timezone.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof ProcessVariableNameRequestDto)) {
-      return false;
-    }
-    final ProcessVariableNameRequestDto other = (ProcessVariableNameRequestDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$processesToQuery = getProcessesToQuery();
-    final Object other$processesToQuery = other.getProcessesToQuery();
-    if (this$processesToQuery == null
-        ? other$processesToQuery != null
-        : !this$processesToQuery.equals(other$processesToQuery)) {
-      return false;
-    }
-    final Object this$filter = getFilter();
-    final Object other$filter = other.getFilter();
-    if (this$filter == null ? other$filter != null : !this$filter.equals(other$filter)) {
-      return false;
-    }
-    final Object this$timezone = getTimezone();
-    final Object other$timezone = other.getTimezone();
-    if (this$timezone == null ? other$timezone != null : !this$timezone.equals(other$timezone)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

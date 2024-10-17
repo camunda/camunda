@@ -198,55 +198,12 @@ public class TableColumnDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    result = result * PRIME + (isIncludeNewVariables() ? 79 : 97);
-    final Object $excludedColumns = getExcludedColumns();
-    result = result * PRIME + ($excludedColumns == null ? 43 : $excludedColumns.hashCode());
-    final Object $includedColumns = getIncludedColumns();
-    result = result * PRIME + ($includedColumns == null ? 43 : $includedColumns.hashCode());
-    final Object $columnOrder = getColumnOrder();
-    result = result * PRIME + ($columnOrder == null ? 43 : $columnOrder.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof TableColumnDto)) {
-      return false;
-    }
-    final TableColumnDto other = (TableColumnDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (isIncludeNewVariables() != other.isIncludeNewVariables()) {
-      return false;
-    }
-    final Object this$excludedColumns = getExcludedColumns();
-    final Object other$excludedColumns = other.getExcludedColumns();
-    if (this$excludedColumns == null
-        ? other$excludedColumns != null
-        : !this$excludedColumns.equals(other$excludedColumns)) {
-      return false;
-    }
-    final Object this$includedColumns = getIncludedColumns();
-    final Object other$includedColumns = other.getIncludedColumns();
-    if (this$includedColumns == null
-        ? other$includedColumns != null
-        : !this$includedColumns.equals(other$includedColumns)) {
-      return false;
-    }
-    final Object this$columnOrder = getColumnOrder();
-    final Object other$columnOrder = other.getColumnOrder();
-    if (this$columnOrder == null
-        ? other$columnOrder != null
-        : !this$columnOrder.equals(other$columnOrder)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

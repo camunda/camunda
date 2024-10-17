@@ -68,54 +68,12 @@ public class RawDataFlowNodeDataDto implements RawDataInstanceDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $id = getId();
-    result = result * PRIME + ($id == null ? 43 : $id.hashCode());
-    final Object $name = getName();
-    result = result * PRIME + ($name == null ? 43 : $name.hashCode());
-    final Object $startDate = getStartDate();
-    result = result * PRIME + ($startDate == null ? 43 : $startDate.hashCode());
-    final Object $endDate = getEndDate();
-    result = result * PRIME + ($endDate == null ? 43 : $endDate.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof RawDataFlowNodeDataDto)) {
-      return false;
-    }
-    final RawDataFlowNodeDataDto other = (RawDataFlowNodeDataDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$id = getId();
-    final Object other$id = other.getId();
-    if (this$id == null ? other$id != null : !this$id.equals(other$id)) {
-      return false;
-    }
-    final Object this$name = getName();
-    final Object other$name = other.getName();
-    if (this$name == null ? other$name != null : !this$name.equals(other$name)) {
-      return false;
-    }
-    final Object this$startDate = getStartDate();
-    final Object other$startDate = other.getStartDate();
-    if (this$startDate == null
-        ? other$startDate != null
-        : !this$startDate.equals(other$startDate)) {
-      return false;
-    }
-    final Object this$endDate = getEndDate();
-    final Object other$endDate = other.getEndDate();
-    if (this$endDate == null ? other$endDate != null : !this$endDate.equals(other$endDate)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

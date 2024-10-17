@@ -33,25 +33,11 @@ public class RollingFlowNodeDateFilterDataDto
 
   @Override
   public int hashCode() {
-    final int result = super.hashCode();
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof RollingFlowNodeDateFilterDataDto)) {
-      return false;
-    }
-    final RollingFlowNodeDateFilterDataDto other = (RollingFlowNodeDateFilterDataDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 }

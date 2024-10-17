@@ -43,33 +43,12 @@ public class VariableIngestionConfiguration {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final long $maxBatchRequestBytes = getMaxBatchRequestBytes();
-    result = result * PRIME + (int) ($maxBatchRequestBytes >>> 32 ^ $maxBatchRequestBytes);
-    result = result * PRIME + getMaxRequests();
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof VariableIngestionConfiguration)) {
-      return false;
-    }
-    final VariableIngestionConfiguration other = (VariableIngestionConfiguration) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (getMaxBatchRequestBytes() != other.getMaxBatchRequestBytes()) {
-      return false;
-    }
-    if (getMaxRequests() != other.getMaxRequests()) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

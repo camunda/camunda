@@ -117,67 +117,12 @@ public class UpgradeStepLogEntryDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $indexName = getIndexName();
-    result = result * PRIME + ($indexName == null ? 43 : $indexName.hashCode());
-    final Object $optimizeVersion = getOptimizeVersion();
-    result = result * PRIME + ($optimizeVersion == null ? 43 : $optimizeVersion.hashCode());
-    final Object $stepType = getStepType();
-    result = result * PRIME + ($stepType == null ? 43 : $stepType.hashCode());
-    final Object $stepNumber = getStepNumber();
-    result = result * PRIME + ($stepNumber == null ? 43 : $stepNumber.hashCode());
-    final Object $appliedDate = getAppliedDate();
-    result = result * PRIME + ($appliedDate == null ? 43 : $appliedDate.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof UpgradeStepLogEntryDto)) {
-      return false;
-    }
-    final UpgradeStepLogEntryDto other = (UpgradeStepLogEntryDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$indexName = getIndexName();
-    final Object other$indexName = other.getIndexName();
-    if (this$indexName == null
-        ? other$indexName != null
-        : !this$indexName.equals(other$indexName)) {
-      return false;
-    }
-    final Object this$optimizeVersion = getOptimizeVersion();
-    final Object other$optimizeVersion = other.getOptimizeVersion();
-    if (this$optimizeVersion == null
-        ? other$optimizeVersion != null
-        : !this$optimizeVersion.equals(other$optimizeVersion)) {
-      return false;
-    }
-    final Object this$stepType = getStepType();
-    final Object other$stepType = other.getStepType();
-    if (this$stepType == null ? other$stepType != null : !this$stepType.equals(other$stepType)) {
-      return false;
-    }
-    final Object this$stepNumber = getStepNumber();
-    final Object other$stepNumber = other.getStepNumber();
-    if (this$stepNumber == null
-        ? other$stepNumber != null
-        : !this$stepNumber.equals(other$stepNumber)) {
-      return false;
-    }
-    final Object this$appliedDate = getAppliedDate();
-    final Object other$appliedDate = other.getAppliedDate();
-    if (this$appliedDate == null
-        ? other$appliedDate != null
-        : !this$appliedDate.equals(other$appliedDate)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

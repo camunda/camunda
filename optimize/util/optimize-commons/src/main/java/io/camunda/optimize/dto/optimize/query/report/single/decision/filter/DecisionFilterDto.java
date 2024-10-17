@@ -59,40 +59,12 @@ public abstract class DecisionFilterDto<DATA extends FilterDataDto> {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $data = getData();
-    result = result * PRIME + ($data == null ? 43 : $data.hashCode());
-    final Object $appliedTo = getAppliedTo();
-    result = result * PRIME + ($appliedTo == null ? 43 : $appliedTo.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof DecisionFilterDto)) {
-      return false;
-    }
-    final DecisionFilterDto<?> other = (DecisionFilterDto<?>) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$data = getData();
-    final Object other$data = other.getData();
-    if (this$data == null ? other$data != null : !this$data.equals(other$data)) {
-      return false;
-    }
-    final Object this$appliedTo = getAppliedTo();
-    final Object other$appliedTo = other.getAppliedTo();
-    if (this$appliedTo == null
-        ? other$appliedTo != null
-        : !this$appliedTo.equals(other$appliedTo)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

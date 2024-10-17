@@ -58,38 +58,12 @@ public class IdentitySearchResultResponseDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $result = getResult();
-    result = result * PRIME + ($result == null ? 43 : $result.hashCode());
-    final Object $scoreDoc = getScoreDoc();
-    result = result * PRIME + ($scoreDoc == null ? 43 : $scoreDoc.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof IdentitySearchResultResponseDto)) {
-      return false;
-    }
-    final IdentitySearchResultResponseDto other = (IdentitySearchResultResponseDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$result = getResult();
-    final Object other$result = other.getResult();
-    if (this$result == null ? other$result != null : !this$result.equals(other$result)) {
-      return false;
-    }
-    final Object this$scoreDoc = getScoreDoc();
-    final Object other$scoreDoc = other.getScoreDoc();
-    if (this$scoreDoc == null ? other$scoreDoc != null : !this$scoreDoc.equals(other$scoreDoc)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

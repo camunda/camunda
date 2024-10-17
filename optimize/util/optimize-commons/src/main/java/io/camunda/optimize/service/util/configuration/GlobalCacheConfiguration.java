@@ -72,76 +72,12 @@ public class GlobalCacheConfiguration {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $tenants = getTenants();
-    result = result * PRIME + ($tenants == null ? 43 : $tenants.hashCode());
-    final Object $definitions = getDefinitions();
-    result = result * PRIME + ($definitions == null ? 43 : $definitions.hashCode());
-    final Object $definitionEngines = getDefinitionEngines();
-    result = result * PRIME + ($definitionEngines == null ? 43 : $definitionEngines.hashCode());
-    final Object $cloudUsers = getCloudUsers();
-    result = result * PRIME + ($cloudUsers == null ? 43 : $cloudUsers.hashCode());
-    final Object $cloudTenantAuthorizations = getCloudTenantAuthorizations();
-    result =
-        result * PRIME
-            + ($cloudTenantAuthorizations == null ? 43 : $cloudTenantAuthorizations.hashCode());
-    final Object $users = getUsers();
-    result = result * PRIME + ($users == null ? 43 : $users.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof GlobalCacheConfiguration)) {
-      return false;
-    }
-    final GlobalCacheConfiguration other = (GlobalCacheConfiguration) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$tenants = getTenants();
-    final Object other$tenants = other.getTenants();
-    if (this$tenants == null ? other$tenants != null : !this$tenants.equals(other$tenants)) {
-      return false;
-    }
-    final Object this$definitions = getDefinitions();
-    final Object other$definitions = other.getDefinitions();
-    if (this$definitions == null
-        ? other$definitions != null
-        : !this$definitions.equals(other$definitions)) {
-      return false;
-    }
-    final Object this$definitionEngines = getDefinitionEngines();
-    final Object other$definitionEngines = other.getDefinitionEngines();
-    if (this$definitionEngines == null
-        ? other$definitionEngines != null
-        : !this$definitionEngines.equals(other$definitionEngines)) {
-      return false;
-    }
-    final Object this$cloudUsers = getCloudUsers();
-    final Object other$cloudUsers = other.getCloudUsers();
-    if (this$cloudUsers == null
-        ? other$cloudUsers != null
-        : !this$cloudUsers.equals(other$cloudUsers)) {
-      return false;
-    }
-    final Object this$cloudTenantAuthorizations = getCloudTenantAuthorizations();
-    final Object other$cloudTenantAuthorizations = other.getCloudTenantAuthorizations();
-    if (this$cloudTenantAuthorizations == null
-        ? other$cloudTenantAuthorizations != null
-        : !this$cloudTenantAuthorizations.equals(other$cloudTenantAuthorizations)) {
-      return false;
-    }
-    final Object this$users = getUsers();
-    final Object other$users = other.getUsers();
-    if (this$users == null ? other$users != null : !this$users.equals(other$users)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

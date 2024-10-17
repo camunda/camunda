@@ -112,74 +112,12 @@ public class MixpanelConfiguration {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $apiHost = getApiHost();
-    result = result * PRIME + ($apiHost == null ? 43 : $apiHost.hashCode());
-    final Object $importPath = getImportPath();
-    result = result * PRIME + ($importPath == null ? 43 : $importPath.hashCode());
-    final Object $token = getToken();
-    result = result * PRIME + ($token == null ? 43 : $token.hashCode());
-    final Object $projectId = getProjectId();
-    result = result * PRIME + ($projectId == null ? 43 : $projectId.hashCode());
-    final Object $properties = getProperties();
-    result = result * PRIME + ($properties == null ? 43 : $properties.hashCode());
-    final Object $serviceAccount = getServiceAccount();
-    result = result * PRIME + ($serviceAccount == null ? 43 : $serviceAccount.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof MixpanelConfiguration)) {
-      return false;
-    }
-    final MixpanelConfiguration other = (MixpanelConfiguration) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$apiHost = getApiHost();
-    final Object other$apiHost = other.getApiHost();
-    if (this$apiHost == null ? other$apiHost != null : !this$apiHost.equals(other$apiHost)) {
-      return false;
-    }
-    final Object this$importPath = getImportPath();
-    final Object other$importPath = other.getImportPath();
-    if (this$importPath == null
-        ? other$importPath != null
-        : !this$importPath.equals(other$importPath)) {
-      return false;
-    }
-    final Object this$token = getToken();
-    final Object other$token = other.getToken();
-    if (this$token == null ? other$token != null : !this$token.equals(other$token)) {
-      return false;
-    }
-    final Object this$projectId = getProjectId();
-    final Object other$projectId = other.getProjectId();
-    if (this$projectId == null
-        ? other$projectId != null
-        : !this$projectId.equals(other$projectId)) {
-      return false;
-    }
-    final Object this$properties = getProperties();
-    final Object other$properties = other.getProperties();
-    if (this$properties == null
-        ? other$properties != null
-        : !this$properties.equals(other$properties)) {
-      return false;
-    }
-    final Object this$serviceAccount = getServiceAccount();
-    final Object other$serviceAccount = other.getServiceAccount();
-    if (this$serviceAccount == null
-        ? other$serviceAccount != null
-        : !this$serviceAccount.equals(other$serviceAccount)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override
@@ -252,49 +190,12 @@ public class MixpanelConfiguration {
 
     @Override
     public int hashCode() {
-      final int PRIME = 59;
-      int result = 1;
-      final Object $stage = getStage();
-      result = result * PRIME + ($stage == null ? 43 : $stage.hashCode());
-      final Object $organizationId = getOrganizationId();
-      result = result * PRIME + ($organizationId == null ? 43 : $organizationId.hashCode());
-      final Object $clusterId = getClusterId();
-      result = result * PRIME + ($clusterId == null ? 43 : $clusterId.hashCode());
-      return result;
+      return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
     }
 
     @Override
     public boolean equals(final Object o) {
-      if (o == this) {
-        return true;
-      }
-      if (!(o instanceof TrackingProperties)) {
-        return false;
-      }
-      final TrackingProperties other = (TrackingProperties) o;
-      if (!other.canEqual((Object) this)) {
-        return false;
-      }
-      final Object this$stage = getStage();
-      final Object other$stage = other.getStage();
-      if (this$stage == null ? other$stage != null : !this$stage.equals(other$stage)) {
-        return false;
-      }
-      final Object this$organizationId = getOrganizationId();
-      final Object other$organizationId = other.getOrganizationId();
-      if (this$organizationId == null
-          ? other$organizationId != null
-          : !this$organizationId.equals(other$organizationId)) {
-        return false;
-      }
-      final Object this$clusterId = getClusterId();
-      final Object other$clusterId = other.getClusterId();
-      if (this$clusterId == null
-          ? other$clusterId != null
-          : !this$clusterId.equals(other$clusterId)) {
-        return false;
-      }
-      return true;
+      return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
     }
 
     @Override
@@ -348,38 +249,12 @@ public class MixpanelConfiguration {
 
     @Override
     public int hashCode() {
-      final int PRIME = 59;
-      int result = 1;
-      final Object $username = getUsername();
-      result = result * PRIME + ($username == null ? 43 : $username.hashCode());
-      final Object $secret = getSecret();
-      result = result * PRIME + ($secret == null ? 43 : $secret.hashCode());
-      return result;
+      return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
     }
 
     @Override
     public boolean equals(final Object o) {
-      if (o == this) {
-        return true;
-      }
-      if (!(o instanceof ServiceAccount)) {
-        return false;
-      }
-      final ServiceAccount other = (ServiceAccount) o;
-      if (!other.canEqual((Object) this)) {
-        return false;
-      }
-      final Object this$username = getUsername();
-      final Object other$username = other.getUsername();
-      if (this$username == null ? other$username != null : !this$username.equals(other$username)) {
-        return false;
-      }
-      final Object this$secret = getSecret();
-      final Object other$secret = other.getSecret();
-      if (this$secret == null ? other$secret != null : !this$secret.equals(other$secret)) {
-        return false;
-      }
-      return true;
+      return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
     }
 
     @Override

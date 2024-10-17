@@ -28,30 +28,11 @@ public class LastKpiEvaluationResultsDto implements OptimizeDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $reportIdToValue = getReportIdToValue();
-    result = result * PRIME + ($reportIdToValue == null ? 43 : $reportIdToValue.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof LastKpiEvaluationResultsDto)) {
-      return false;
-    }
-    final LastKpiEvaluationResultsDto other = (LastKpiEvaluationResultsDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (reportIdToValue == null
-        ? other.reportIdToValue != null
-        : !reportIdToValue.equals(other.reportIdToValue)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 }

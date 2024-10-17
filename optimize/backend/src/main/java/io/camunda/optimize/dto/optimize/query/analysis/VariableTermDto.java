@@ -87,80 +87,12 @@ public class VariableTermDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $variableName = getVariableName();
-    result = result * PRIME + ($variableName == null ? 43 : $variableName.hashCode());
-    final Object $variableTerm = getVariableTerm();
-    result = result * PRIME + ($variableTerm == null ? 43 : $variableTerm.hashCode());
-    final Object $instanceCount = getInstanceCount();
-    result = result * PRIME + ($instanceCount == null ? 43 : $instanceCount.hashCode());
-    final Object $outlierRatio = getOutlierRatio();
-    result = result * PRIME + ($outlierRatio == null ? 43 : $outlierRatio.hashCode());
-    final Object $nonOutlierRatio = getNonOutlierRatio();
-    result = result * PRIME + ($nonOutlierRatio == null ? 43 : $nonOutlierRatio.hashCode());
-    final Object $outlierToAllInstancesRatio = getOutlierToAllInstancesRatio();
-    result =
-        result * PRIME
-            + ($outlierToAllInstancesRatio == null ? 43 : $outlierToAllInstancesRatio.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof VariableTermDto)) {
-      return false;
-    }
-    final VariableTermDto other = (VariableTermDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$variableName = getVariableName();
-    final Object other$variableName = other.getVariableName();
-    if (this$variableName == null
-        ? other$variableName != null
-        : !this$variableName.equals(other$variableName)) {
-      return false;
-    }
-    final Object this$variableTerm = getVariableTerm();
-    final Object other$variableTerm = other.getVariableTerm();
-    if (this$variableTerm == null
-        ? other$variableTerm != null
-        : !this$variableTerm.equals(other$variableTerm)) {
-      return false;
-    }
-    final Object this$instanceCount = getInstanceCount();
-    final Object other$instanceCount = other.getInstanceCount();
-    if (this$instanceCount == null
-        ? other$instanceCount != null
-        : !this$instanceCount.equals(other$instanceCount)) {
-      return false;
-    }
-    final Object this$outlierRatio = getOutlierRatio();
-    final Object other$outlierRatio = other.getOutlierRatio();
-    if (this$outlierRatio == null
-        ? other$outlierRatio != null
-        : !this$outlierRatio.equals(other$outlierRatio)) {
-      return false;
-    }
-    final Object this$nonOutlierRatio = getNonOutlierRatio();
-    final Object other$nonOutlierRatio = other.getNonOutlierRatio();
-    if (this$nonOutlierRatio == null
-        ? other$nonOutlierRatio != null
-        : !this$nonOutlierRatio.equals(other$nonOutlierRatio)) {
-      return false;
-    }
-    final Object this$outlierToAllInstancesRatio = getOutlierToAllInstancesRatio();
-    final Object other$outlierToAllInstancesRatio = other.getOutlierToAllInstancesRatio();
-    if (this$outlierToAllInstancesRatio == null
-        ? other$outlierToAllInstancesRatio != null
-        : !this$outlierToAllInstancesRatio.equals(other$outlierToAllInstancesRatio)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

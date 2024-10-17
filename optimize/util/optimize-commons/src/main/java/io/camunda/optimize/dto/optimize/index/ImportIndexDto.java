@@ -62,56 +62,12 @@ public abstract class ImportIndexDto<T extends DataSourceDto> implements Optimiz
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $lastImportExecutionTimestamp = getLastImportExecutionTimestamp();
-    result =
-        result * PRIME
-            + ($lastImportExecutionTimestamp == null
-                ? 43
-                : $lastImportExecutionTimestamp.hashCode());
-    final Object $timestampOfLastEntity = getTimestampOfLastEntity();
-    result =
-        result * PRIME + ($timestampOfLastEntity == null ? 43 : $timestampOfLastEntity.hashCode());
-    final Object $dataSource = getDataSource();
-    result = result * PRIME + ($dataSource == null ? 43 : $dataSource.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof ImportIndexDto)) {
-      return false;
-    }
-    final ImportIndexDto<?> other = (ImportIndexDto<?>) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$lastImportExecutionTimestamp = getLastImportExecutionTimestamp();
-    final Object other$lastImportExecutionTimestamp = other.getLastImportExecutionTimestamp();
-    if (this$lastImportExecutionTimestamp == null
-        ? other$lastImportExecutionTimestamp != null
-        : !this$lastImportExecutionTimestamp.equals(other$lastImportExecutionTimestamp)) {
-      return false;
-    }
-    final Object this$timestampOfLastEntity = getTimestampOfLastEntity();
-    final Object other$timestampOfLastEntity = other.getTimestampOfLastEntity();
-    if (this$timestampOfLastEntity == null
-        ? other$timestampOfLastEntity != null
-        : !this$timestampOfLastEntity.equals(other$timestampOfLastEntity)) {
-      return false;
-    }
-    final Object this$dataSource = getDataSource();
-    final Object other$dataSource = other.getDataSource();
-    if (this$dataSource == null
-        ? other$dataSource != null
-        : !this$dataSource.equals(other$dataSource)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

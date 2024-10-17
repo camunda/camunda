@@ -50,42 +50,12 @@ public class EntityData {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $subEntityCounts = getSubEntityCounts();
-    result = result * PRIME + ($subEntityCounts == null ? 43 : $subEntityCounts.hashCode());
-    final Object $roleCounts = getRoleCounts();
-    result = result * PRIME + ($roleCounts == null ? 43 : $roleCounts.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof EntityData)) {
-      return false;
-    }
-    final EntityData other = (EntityData) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$subEntityCounts = getSubEntityCounts();
-    final Object other$subEntityCounts = other.getSubEntityCounts();
-    if (this$subEntityCounts == null
-        ? other$subEntityCounts != null
-        : !this$subEntityCounts.equals(other$subEntityCounts)) {
-      return false;
-    }
-    final Object this$roleCounts = getRoleCounts();
-    final Object other$roleCounts = other.getRoleCounts();
-    if (this$roleCounts == null
-        ? other$roleCounts != null
-        : !this$roleCounts.equals(other$roleCounts)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

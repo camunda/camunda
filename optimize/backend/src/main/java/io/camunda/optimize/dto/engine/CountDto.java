@@ -27,29 +27,12 @@ public class CountDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final long $count = getCount();
-    result = result * PRIME + (int) ($count >>> 32 ^ $count);
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof CountDto)) {
-      return false;
-    }
-    final CountDto other = (CountDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (getCount() != other.getCount()) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

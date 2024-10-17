@@ -76,62 +76,12 @@ public class OnboardingResponseDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    result = result * PRIME + (isEnabled() ? 79 : 97);
-    final Object $appCuesScriptUrl = getAppCuesScriptUrl();
-    result = result * PRIME + ($appCuesScriptUrl == null ? 43 : $appCuesScriptUrl.hashCode());
-    final Object $orgId = getOrgId();
-    result = result * PRIME + ($orgId == null ? 43 : $orgId.hashCode());
-    final Object $clusterId = getClusterId();
-    result = result * PRIME + ($clusterId == null ? 43 : $clusterId.hashCode());
-    final Object $salesPlanType = getSalesPlanType();
-    result = result * PRIME + ($salesPlanType == null ? 43 : $salesPlanType.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof OnboardingResponseDto)) {
-      return false;
-    }
-    final OnboardingResponseDto other = (OnboardingResponseDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (isEnabled() != other.isEnabled()) {
-      return false;
-    }
-    final Object this$appCuesScriptUrl = getAppCuesScriptUrl();
-    final Object other$appCuesScriptUrl = other.getAppCuesScriptUrl();
-    if (this$appCuesScriptUrl == null
-        ? other$appCuesScriptUrl != null
-        : !this$appCuesScriptUrl.equals(other$appCuesScriptUrl)) {
-      return false;
-    }
-    final Object this$orgId = getOrgId();
-    final Object other$orgId = other.getOrgId();
-    if (this$orgId == null ? other$orgId != null : !this$orgId.equals(other$orgId)) {
-      return false;
-    }
-    final Object this$clusterId = getClusterId();
-    final Object other$clusterId = other.getClusterId();
-    if (this$clusterId == null
-        ? other$clusterId != null
-        : !this$clusterId.equals(other$clusterId)) {
-      return false;
-    }
-    final Object this$salesPlanType = getSalesPlanType();
-    final Object other$salesPlanType = other.getSalesPlanType();
-    if (this$salesPlanType == null
-        ? other$salesPlanType != null
-        : !this$salesPlanType.equals(other$salesPlanType)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

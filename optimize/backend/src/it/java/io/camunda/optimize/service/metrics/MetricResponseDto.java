@@ -66,65 +66,12 @@ public class MetricResponseDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $name = getName();
-    result = result * PRIME + ($name == null ? 43 : $name.hashCode());
-    final Object $description = getDescription();
-    result = result * PRIME + ($description == null ? 43 : $description.hashCode());
-    final Object $baseUnit = getBaseUnit();
-    result = result * PRIME + ($baseUnit == null ? 43 : $baseUnit.hashCode());
-    final Object $measurements = getMeasurements();
-    result = result * PRIME + ($measurements == null ? 43 : $measurements.hashCode());
-    final Object $availableTags = getAvailableTags();
-    result = result * PRIME + ($availableTags == null ? 43 : $availableTags.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof MetricResponseDto)) {
-      return false;
-    }
-    final MetricResponseDto other = (MetricResponseDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$name = getName();
-    final Object other$name = other.getName();
-    if (this$name == null ? other$name != null : !this$name.equals(other$name)) {
-      return false;
-    }
-    final Object this$description = getDescription();
-    final Object other$description = other.getDescription();
-    if (this$description == null
-        ? other$description != null
-        : !this$description.equals(other$description)) {
-      return false;
-    }
-    final Object this$baseUnit = getBaseUnit();
-    final Object other$baseUnit = other.getBaseUnit();
-    if (this$baseUnit == null ? other$baseUnit != null : !this$baseUnit.equals(other$baseUnit)) {
-      return false;
-    }
-    final Object this$measurements = getMeasurements();
-    final Object other$measurements = other.getMeasurements();
-    if (this$measurements == null
-        ? other$measurements != null
-        : !this$measurements.equals(other$measurements)) {
-      return false;
-    }
-    final Object this$availableTags = getAvailableTags();
-    final Object other$availableTags = other.getAvailableTags();
-    if (this$availableTags == null
-        ? other$availableTags != null
-        : !this$availableTags.equals(other$availableTags)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override
@@ -171,40 +118,12 @@ public class MetricResponseDto {
 
     @Override
     public int hashCode() {
-      final int PRIME = 59;
-      int result = 1;
-      final Object $statistic = getStatistic();
-      result = result * PRIME + ($statistic == null ? 43 : $statistic.hashCode());
-      final Object $value = getValue();
-      result = result * PRIME + ($value == null ? 43 : $value.hashCode());
-      return result;
+      return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
     }
 
     @Override
     public boolean equals(final Object o) {
-      if (o == this) {
-        return true;
-      }
-      if (!(o instanceof StatisticDto)) {
-        return false;
-      }
-      final StatisticDto other = (StatisticDto) o;
-      if (!other.canEqual((Object) this)) {
-        return false;
-      }
-      final Object this$statistic = getStatistic();
-      final Object other$statistic = other.getStatistic();
-      if (this$statistic == null
-          ? other$statistic != null
-          : !this$statistic.equals(other$statistic)) {
-        return false;
-      }
-      final Object this$value = getValue();
-      final Object other$value = other.getValue();
-      if (this$value == null ? other$value != null : !this$value.equals(other$value)) {
-        return false;
-      }
-      return true;
+      return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
     }
 
     @Override
@@ -246,38 +165,12 @@ public class MetricResponseDto {
 
     @Override
     public int hashCode() {
-      final int PRIME = 59;
-      int result = 1;
-      final Object $tag = getTag();
-      result = result * PRIME + ($tag == null ? 43 : $tag.hashCode());
-      final Object $values = getValues();
-      result = result * PRIME + ($values == null ? 43 : $values.hashCode());
-      return result;
+      return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
     }
 
     @Override
     public boolean equals(final Object o) {
-      if (o == this) {
-        return true;
-      }
-      if (!(o instanceof TagDto)) {
-        return false;
-      }
-      final TagDto other = (TagDto) o;
-      if (!other.canEqual((Object) this)) {
-        return false;
-      }
-      final Object this$tag = getTag();
-      final Object other$tag = other.getTag();
-      if (this$tag == null ? other$tag != null : !this$tag.equals(other$tag)) {
-        return false;
-      }
-      final Object this$values = getValues();
-      final Object other$values = other.getValues();
-      if (this$values == null ? other$values != null : !this$values.equals(other$values)) {
-        return false;
-      }
-      return true;
+      return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
     }
 
     @Override

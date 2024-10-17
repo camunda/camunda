@@ -69,32 +69,7 @@ public class PaginationScrollableDto extends PaginationDto {
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof PaginationScrollableDto)) {
-      return false;
-    }
-    final PaginationScrollableDto other = (PaginationScrollableDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    final Object this$scrollId = getScrollId();
-    final Object other$scrollId = other.getScrollId();
-    if (this$scrollId == null ? other$scrollId != null : !this$scrollId.equals(other$scrollId)) {
-      return false;
-    }
-    final Object this$scrollTimeout = getScrollTimeout();
-    final Object other$scrollTimeout = other.getScrollTimeout();
-    if (this$scrollTimeout == null
-        ? other$scrollTimeout != null
-        : !this$scrollTimeout.equals(other$scrollTimeout)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override
@@ -104,13 +79,7 @@ public class PaginationScrollableDto extends PaginationDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = super.hashCode();
-    final Object $scrollId = getScrollId();
-    result = result * PRIME + ($scrollId == null ? 43 : $scrollId.hashCode());
-    final Object $scrollTimeout = getScrollTimeout();
-    result = result * PRIME + ($scrollTimeout == null ? 43 : $scrollTimeout.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @JsonIgnore

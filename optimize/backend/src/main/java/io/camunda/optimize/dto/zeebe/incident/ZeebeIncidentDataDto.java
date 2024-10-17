@@ -159,65 +159,7 @@ public class ZeebeIncidentDataDto implements IncidentRecordValue {
   }
 
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof ZeebeIncidentDataDto)) {
-      return false;
-    }
-    final ZeebeIncidentDataDto other = (ZeebeIncidentDataDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$errorMessage = this.getErrorMessage();
-    final Object other$errorMessage = other.getErrorMessage();
-    if (this$errorMessage == null
-        ? other$errorMessage != null
-        : !this$errorMessage.equals(other$errorMessage)) {
-      return false;
-    }
-    final Object this$bpmnProcessId = this.getBpmnProcessId();
-    final Object other$bpmnProcessId = other.getBpmnProcessId();
-    if (this$bpmnProcessId == null
-        ? other$bpmnProcessId != null
-        : !this$bpmnProcessId.equals(other$bpmnProcessId)) {
-      return false;
-    }
-    final Object this$elementId = this.getElementId();
-    final Object other$elementId = other.getElementId();
-    if (this$elementId == null
-        ? other$elementId != null
-        : !this$elementId.equals(other$elementId)) {
-      return false;
-    }
-    if (this.getElementInstanceKey() != other.getElementInstanceKey()) {
-      return false;
-    }
-    if (this.getProcessInstanceKey() != other.getProcessInstanceKey()) {
-      return false;
-    }
-    if (this.getProcessDefinitionKey() != other.getProcessDefinitionKey()) {
-      return false;
-    }
-    if (this.getJobKey() != other.getJobKey()) {
-      return false;
-    }
-    final Object this$errorType = this.getErrorType();
-    final Object other$errorType = other.getErrorType();
-    if (this$errorType == null
-        ? other$errorType != null
-        : !this$errorType.equals(other$errorType)) {
-      return false;
-    }
-    if (this.getVariableScopeKey() != other.getVariableScopeKey()) {
-      return false;
-    }
-    final Object this$tenantId = this.getTenantId();
-    final Object other$tenantId = other.getTenantId();
-    if (this$tenantId == null ? other$tenantId != null : !this$tenantId.equals(other$tenantId)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   protected boolean canEqual(final Object other) {
@@ -225,29 +167,7 @@ public class ZeebeIncidentDataDto implements IncidentRecordValue {
   }
 
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $errorMessage = this.getErrorMessage();
-    result = result * PRIME + ($errorMessage == null ? 43 : $errorMessage.hashCode());
-    final Object $bpmnProcessId = this.getBpmnProcessId();
-    result = result * PRIME + ($bpmnProcessId == null ? 43 : $bpmnProcessId.hashCode());
-    final Object $elementId = this.getElementId();
-    result = result * PRIME + ($elementId == null ? 43 : $elementId.hashCode());
-    final long $elementInstanceKey = this.getElementInstanceKey();
-    result = result * PRIME + (int) ($elementInstanceKey >>> 32 ^ $elementInstanceKey);
-    final long $processInstanceKey = this.getProcessInstanceKey();
-    result = result * PRIME + (int) ($processInstanceKey >>> 32 ^ $processInstanceKey);
-    final long $processDefinitionKey = this.getProcessDefinitionKey();
-    result = result * PRIME + (int) ($processDefinitionKey >>> 32 ^ $processDefinitionKey);
-    final long $jobKey = this.getJobKey();
-    result = result * PRIME + (int) ($jobKey >>> 32 ^ $jobKey);
-    final Object $errorType = this.getErrorType();
-    result = result * PRIME + ($errorType == null ? 43 : $errorType.hashCode());
-    final long $variableScopeKey = this.getVariableScopeKey();
-    result = result * PRIME + (int) ($variableScopeKey >>> 32 ^ $variableScopeKey);
-    final Object $tenantId = this.getTenantId();
-    result = result * PRIME + ($tenantId == null ? 43 : $tenantId.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   public static final class Fields {

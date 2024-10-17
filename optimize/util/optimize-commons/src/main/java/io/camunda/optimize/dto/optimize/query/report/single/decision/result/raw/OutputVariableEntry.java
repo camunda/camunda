@@ -12,7 +12,6 @@ import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 public class OutputVariableEntry extends VariableEntry {
 
@@ -45,22 +44,12 @@ public class OutputVariableEntry extends VariableEntry {
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), values);
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (!(o instanceof OutputVariableEntry)) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    final OutputVariableEntry that = (OutputVariableEntry) o;
-    return Objects.equals(values, that.values);
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   public List<Object> getValues() {

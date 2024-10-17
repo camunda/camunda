@@ -73,44 +73,12 @@ public class CookieConfiguration {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    result = result * PRIME + (isSameSiteFlagEnabled() ? 79 : 97);
-    final Object $cookieSecureMode = getCookieSecureMode();
-    result = result * PRIME + ($cookieSecureMode == null ? 43 : $cookieSecureMode.hashCode());
-    final Object $maxSize = getMaxSize();
-    result = result * PRIME + ($maxSize == null ? 43 : $maxSize.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof CookieConfiguration)) {
-      return false;
-    }
-    final CookieConfiguration other = (CookieConfiguration) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (isSameSiteFlagEnabled() != other.isSameSiteFlagEnabled()) {
-      return false;
-    }
-    final Object this$cookieSecureMode = getCookieSecureMode();
-    final Object other$cookieSecureMode = other.getCookieSecureMode();
-    if (this$cookieSecureMode == null
-        ? other$cookieSecureMode != null
-        : !this$cookieSecureMode.equals(other$cookieSecureMode)) {
-      return false;
-    }
-    final Object this$maxSize = getMaxSize();
-    final Object other$maxSize = other.getMaxSize();
-    if (this$maxSize == null ? other$maxSize != null : !this$maxSize.equals(other$maxSize)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

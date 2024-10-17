@@ -96,52 +96,12 @@ public class DecisionDefinitionOptimizeDto extends DefinitionOptimizeResponseDto
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = super.hashCode();
-    final Object $dmn10Xml = getDmn10Xml();
-    result = result * PRIME + ($dmn10Xml == null ? 43 : $dmn10Xml.hashCode());
-    final Object $inputVariableNames = getInputVariableNames();
-    result = result * PRIME + ($inputVariableNames == null ? 43 : $inputVariableNames.hashCode());
-    final Object $outputVariableNames = getOutputVariableNames();
-    result = result * PRIME + ($outputVariableNames == null ? 43 : $outputVariableNames.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof DecisionDefinitionOptimizeDto)) {
-      return false;
-    }
-    final DecisionDefinitionOptimizeDto other = (DecisionDefinitionOptimizeDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    final Object this$dmn10Xml = getDmn10Xml();
-    final Object other$dmn10Xml = other.getDmn10Xml();
-    if (this$dmn10Xml == null ? other$dmn10Xml != null : !this$dmn10Xml.equals(other$dmn10Xml)) {
-      return false;
-    }
-    final Object this$inputVariableNames = getInputVariableNames();
-    final Object other$inputVariableNames = other.getInputVariableNames();
-    if (this$inputVariableNames == null
-        ? other$inputVariableNames != null
-        : !this$inputVariableNames.equals(other$inputVariableNames)) {
-      return false;
-    }
-    final Object this$outputVariableNames = getOutputVariableNames();
-    final Object other$outputVariableNames = other.getOutputVariableNames();
-    if (this$outputVariableNames == null
-        ? other$outputVariableNames != null
-        : !this$outputVariableNames.equals(other$outputVariableNames)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override
