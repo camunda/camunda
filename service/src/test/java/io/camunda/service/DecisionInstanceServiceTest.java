@@ -18,6 +18,7 @@ import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.SecurityContext;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -68,7 +69,7 @@ class DecisionInstanceServiceTest {
         .searchDecisionInstances(
             SearchQueryBuilders.decisionInstanceSearchQuery(
                 q -> q.filter(f -> f.decisionInstanceKeys(decisionInstanceKey))),
-            null);
+            SecurityContext.withoutAuthentication());
   }
 
   @Test
@@ -94,6 +95,6 @@ class DecisionInstanceServiceTest {
                         .page(p -> p.size(20))
                         .resultConfig(
                             r -> r.evaluatedInputs().exclude().evaluatedOutputs().exclude())),
-            null);
+            SecurityContext.withoutAuthentication());
   }
 }

@@ -17,7 +17,8 @@ import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.result.DecisionInstanceQueryResultConfig;
-import io.camunda.search.security.auth.Authentication;
+import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.SecurityContext;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -86,7 +87,8 @@ public final class DecisionInstanceServices
   private SearchQueryResult<DecisionInstanceEntity> baseSearch(
       final Function<DecisionInstanceQuery.Builder, ObjectBuilder<DecisionInstanceQuery>> fn) {
     return decisionInstanceSearchClient.searchDecisionInstances(
-        decisionInstanceSearchQuery(fn), authentication);
+        decisionInstanceSearchQuery(fn),
+        SecurityContext.of(s -> s.withAuthentication(authentication)));
   }
 
   private DecisionInstanceQueryResultConfig defaultSearchResultConfig() {

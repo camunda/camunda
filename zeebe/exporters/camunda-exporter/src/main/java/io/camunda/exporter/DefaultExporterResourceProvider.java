@@ -10,11 +10,18 @@ package io.camunda.exporter;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.handlers.AuthorizationRecordValueExportHandler;
+import io.camunda.exporter.handlers.DecisionEvaluationHandler;
 import io.camunda.exporter.handlers.DecisionHandler;
+import io.camunda.exporter.handlers.DecisionRequirementsHandler;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.IncidentHandler;
 import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHandler;
+import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
+import io.camunda.exporter.handlers.ProcessHandler;
+import io.camunda.exporter.handlers.SequenceFlowHandler;
 import io.camunda.exporter.handlers.UserRecordValueExportHandler;
 import io.camunda.exporter.handlers.VariableHandler;
+import io.camunda.exporter.utils.XMLUtil;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
@@ -22,7 +29,11 @@ import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import java.util.Collection;
@@ -37,10 +48,10 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
 
   private Map<? extends Class<? extends AbstractIndexDescriptor>, IndexDescriptor>
       indexDescriptorsMap;
-
-  private Set<ExportHandler> exportHandlers;
   private Map<Class<? extends IndexTemplateDescriptor>, IndexTemplateDescriptor>
       templateDescriptorsMap;
+
+  private Set<ExportHandler> exportHandlers;
 
   @Override
   public void init(final ExporterConfiguration configuration) {
@@ -55,7 +66,15 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             ListViewTemplate.class,
             new ListViewTemplate(operateIndexPrefix, isElasticsearch),
             VariableTemplate.class,
-            new VariableTemplate(operateIndexPrefix, isElasticsearch));
+            new VariableTemplate(operateIndexPrefix, isElasticsearch),
+            PostImporterQueueTemplate.class,
+            new PostImporterQueueTemplate(operateIndexPrefix, isElasticsearch),
+            IncidentTemplate.class,
+            new IncidentTemplate(operateIndexPrefix, isElasticsearch),
+            SequenceFlowTemplate.class,
+            new SequenceFlowTemplate(operateIndexPrefix, isElasticsearch),
+            DecisionInstanceTemplate.class,
+            new DecisionInstanceTemplate(operateIndexPrefix, isElasticsearch));
 
     indexDescriptorsMap =
         Map.of(
@@ -80,7 +99,19 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(), false),
             new VariableHandler(
                 templateDescriptorsMap.get(VariableTemplate.class).getFullQualifiedName(),
-                configuration.getIndex().getVariableSizeThreshold()));
+                configuration.getIndex().getVariableSizeThreshold()),
+            new DecisionRequirementsHandler(
+                indexDescriptorsMap.get(DecisionRequirementsIndex.class).getFullQualifiedName()),
+            new PostImporterQueueFromIncidentHandler(
+                templateDescriptorsMap.get(PostImporterQueueTemplate.class).getFullQualifiedName()),
+            new IncidentHandler(
+                templateDescriptorsMap.get(IncidentTemplate.class).getFullQualifiedName(), false),
+            new SequenceFlowHandler(
+                templateDescriptorsMap.get(SequenceFlowTemplate.class).getFullQualifiedName()),
+            new DecisionEvaluationHandler(
+                templateDescriptorsMap.get(DecisionInstanceTemplate.class).getFullQualifiedName()),
+            new ProcessHandler(
+                indexDescriptorsMap.get(ProcessIndex.class).getFullQualifiedName(), new XMLUtil()));
   }
 
   @Override

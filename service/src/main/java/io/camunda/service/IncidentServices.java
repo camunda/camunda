@@ -14,7 +14,8 @@ import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.search.security.auth.Authentication;
+import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.SecurityContext;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -43,7 +44,8 @@ public class IncidentServices
 
   @Override
   public SearchQueryResult<IncidentEntity> search(final IncidentQuery query) {
-    return incidentSearchClient.searchIncidents(query, authentication);
+    return incidentSearchClient.searchIncidents(
+        query, SecurityContext.of(s -> s.withAuthentication(authentication)));
   }
 
   @Override

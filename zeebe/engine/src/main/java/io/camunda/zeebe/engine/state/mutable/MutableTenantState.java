@@ -16,5 +16,12 @@ public interface MutableTenantState extends TenantState {
    *
    * @param tenantRecord the tenant record to add
    */
-  void createTenant(TenantRecord tenantRecord);
+  void createTenant(final TenantRecord tenantRecord);
+
+  /**
+   * Updates the tenant record associated with the given tenant key.
+   *
+   * @param updatedTenantRecord the updated tenant record with new values
+   */
+  void updateTenant(final TenantRecord updatedTenantRecord);
 }

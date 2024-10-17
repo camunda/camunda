@@ -19,7 +19,7 @@ public final record UserTaskEntity(
     String creationTime,
     String completionTime,
     String assignee,
-    String state,
+    UserTaskState state,
     Long formKey,
     Long processDefinitionId, // equivalent to processKey
     Long processInstanceId, // equivalent to processInstanceKey
@@ -32,4 +32,11 @@ public final record UserTaskEntity(
     String externalFormReference,
     Integer processDefinitionVersion,
     Map<String, String> customHeaders,
-    Integer priority) {}
+    Integer priority) {
+  public enum UserTaskState {
+    CREATED,
+    COMPLETED,
+    CANCELED,
+    FAILED
+  }
+}

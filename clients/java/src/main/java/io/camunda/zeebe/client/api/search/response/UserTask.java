@@ -35,10 +35,10 @@ public interface UserTask {
   Long getElementInstanceKey();
 
   /** Candidate groups for the task */
-  List<String> getCandidateGroup();
+  List<String> getCandidateGroups();
 
   /** Candidate users for the task */
-  List<String> getCandidateUser();
+  List<String> getCandidateUsers();
 
   /** BPMN process id of the process associated with this task */
   String getBpmnProcessId();

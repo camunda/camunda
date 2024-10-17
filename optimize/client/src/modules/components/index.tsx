@@ -7,7 +7,6 @@
  */
 
 export {Tabs} from './Tabs';
-export {Icon} from './Icon';
 export {ActionItem} from './ActionItem';
 export {Modal} from './Modal';
 export {Select} from './Select';

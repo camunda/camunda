@@ -21,8 +21,8 @@ import io.camunda.zeebe.client.impl.search.query.SearchQuerySortBase;
 public class IncidentSortImpl extends SearchQuerySortBase<IncidentSort> implements IncidentSort {
 
   @Override
-  public IncidentSort key() {
-    return field("key");
+  public IncidentSort incidentKey() {
+    return field("incidentKey");
   }
 
   @Override
@@ -36,8 +36,8 @@ public class IncidentSortImpl extends SearchQuerySortBase<IncidentSort> implemen
   }
 
   @Override
-  public IncidentSort type() {
-    return field("type");
+  public IncidentSort errorType() {
+    return field("errorType");
   }
 
   @Override
@@ -46,8 +46,8 @@ public class IncidentSortImpl extends SearchQuerySortBase<IncidentSort> implemen
   }
 
   @Override
-  public IncidentSort flowNodeInstanceId() {
-    return field("flowNodeInstanceId");
+  public IncidentSort flowNodeInstanceKey() {
+    return field("flowNodeInstanceKey");
   }
 
   @Override

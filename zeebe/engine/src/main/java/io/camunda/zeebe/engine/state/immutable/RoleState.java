@@ -9,6 +9,8 @@ package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.state.authorization.PersistedRole;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface RoleState {
@@ -18,4 +20,6 @@ public interface RoleState {
   Optional<Long> getRoleKeyByName(String roleName);
 
   Optional<EntityType> getEntityType(long roleKey, long entityKey);
+
+  Map<EntityType, List<Long>> getEntitiesByType(long roleKey);
 }

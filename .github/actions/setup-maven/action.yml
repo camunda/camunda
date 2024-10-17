@@ -10,6 +10,10 @@ inputs:
     description: Java distribution to be used
     required: false
     default: 'temurin'
+  maven-cache-key-modifier:
+    description: A modifier key used for the maven cache, can be used to create isolated caches for certain jobs.
+    default: "optimize"
+    required: false
   maven-version:
     description: Maven version to be used
     required: false
@@ -36,11 +40,11 @@ runs:
     with:
       java-version: ${{ inputs.java-version }}
       distribution: ${{ inputs.distribution }}
-      cache: "maven"
   - name: Setup Maven
-    uses: stCarolas/setup-maven@v5
+    uses: ./.github/actions/setup-maven-dist
     with:
       maven-version: ${{ inputs.maven-version }}
+      set-mvnw: true
   - name: 'Create settings.xml'
     uses: s4u/maven-settings-action@7802f6aec16c9098b4798ad1f1d8ac75198194bd # v3.0.0
     with:
@@ -52,6 +56,10 @@ runs:
           "password": "${{ steps.secrets.outputs.NEXUS_PASSWORD }}"
         }]
       mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
+  - name: Configure Maven
+    uses: ./.github/actions/setup-maven-cache
+    with:
+      maven-cache-key-modifier: ${{ inputs.maven-cache-key-modifier }}
   # workaround, maven has troubles creating a subdirectory of a non existing directory
   - shell: bash
     run: mkdir -p ${{ github.workspace }}/optimize/backend/target/classes/

@@ -19,7 +19,7 @@ import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.sources.DefaultObjectMapperConfiguration;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.search.security.auth.Authentication;
+import io.camunda.security.auth.Authentication;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.client.protocol.rest.UserRequest;

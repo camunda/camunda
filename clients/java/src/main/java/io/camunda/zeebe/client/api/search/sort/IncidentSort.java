@@ -19,17 +19,17 @@ import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRe
 
 public interface IncidentSort extends SearchRequestSort<IncidentSort> {
 
-  IncidentSort key();
+  IncidentSort incidentKey();
 
   IncidentSort processDefinitionKey();
 
   IncidentSort processInstanceKey();
 
-  IncidentSort type();
+  IncidentSort errorType();
 
   IncidentSort flowNodeId();
 
-  IncidentSort flowNodeInstanceId();
+  IncidentSort flowNodeInstanceKey();
 
   IncidentSort creationTime();
 

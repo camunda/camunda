@@ -10,11 +10,14 @@ package io.camunda.search.clients.transformers.filter;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.search.security.auth.Authentication;
+import io.camunda.security.auth.Authentication;
 
-public final class AuthenticationTransformer implements FilterTransformer<Authentication> {
+public final class AuthenticationTransformer {
 
-  @Override
+  public static final AuthenticationTransformer INSTANCE = new AuthenticationTransformer();
+
+  private AuthenticationTransformer() {}
+
   public SearchQuery toSearchQuery(final Authentication value) {
     // TODO: intermediate implementation, needs to handle cases where
     // tenancy is enabled but caller is not assigned to any tenant.

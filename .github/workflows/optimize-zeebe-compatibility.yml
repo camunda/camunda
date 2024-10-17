@@ -28,6 +28,7 @@ jobs:
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
         with:
+          maven-cache-key-modifier: optimize-tests
           secrets: ${{ toJSON(secrets) }}
           java-version: ${{ steps.pom-info.outputs.java_version }}
       - name: Login to Harbor registry

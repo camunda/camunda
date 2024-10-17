@@ -125,4 +125,46 @@ public class RoleStateTest {
     final var entityType = roleState.getEntityType(roleKey, 2L).get();
     assertThat(entityType).isEqualTo(EntityType.USER);
   }
+
+  @Test
+  void shouldDeleteRole() {
+    // given
+    final long roleKey = 1L;
+    final String roleName = "foo";
+    final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName(roleName);
+    roleState.create(roleRecord);
+    roleRecord.setEntityKey(1L).setEntityType(EntityType.USER);
+    roleState.addEntity(roleRecord);
+
+    // when
+    roleState.delete(roleRecord);
+
+    // then
+    final var deletedRole = roleState.getRole(roleKey);
+    assertThat(deletedRole).isEmpty();
+    final var deletedEntity = roleState.getEntityType(roleKey, 1L);
+    assertThat(deletedEntity).isEmpty();
+    final var deletedRoleKeyByName = roleState.getRoleKeyByName(roleName);
+    assertThat(deletedRoleKeyByName).isEmpty();
+  }
+
+  @Test
+  void shouldReturnEntityByType() {
+    // given
+    final long roleKey = 1L;
+    final String roleName = "foo";
+    final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName(roleName);
+    roleState.create(roleRecord);
+    roleRecord.setEntityKey(1L).setEntityType(EntityType.USER);
+    roleState.addEntity(roleRecord);
+    roleRecord.setEntityKey(2L).setEntityType(EntityType.UNSPECIFIED);
+    roleState.addEntity(roleRecord);
+
+    // when
+    final var entities = roleState.getEntitiesByType(roleKey);
+
+    // then
+    assertThat(entities.get(EntityType.USER)).containsExactly(1L);
+    assertThat(entities.get(EntityType.UNSPECIFIED)).containsExactly(2L);
+  }
 }

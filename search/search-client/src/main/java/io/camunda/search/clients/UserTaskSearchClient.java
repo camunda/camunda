@@ -10,10 +10,10 @@ package io.camunda.search.clients;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserTaskQuery;
-import io.camunda.search.security.auth.Authentication;
+import io.camunda.security.auth.SecurityContext;
 
 public interface UserTaskSearchClient {
 
   SearchQueryResult<UserTaskEntity> searchUserTasks(
-      UserTaskQuery filter, Authentication authentication);
+      UserTaskQuery filter, SecurityContext securityContext);
 }

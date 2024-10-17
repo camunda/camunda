@@ -19,6 +19,7 @@ import io.camunda.zeebe.client.api.search.response.Incident;
 import io.camunda.zeebe.client.protocol.rest.IncidentItem;
 import io.camunda.zeebe.client.protocol.rest.IncidentItem.ErrorTypeEnum;
 import io.camunda.zeebe.client.protocol.rest.IncidentItem.StateEnum;
+import java.util.Objects;
 
 public class IncidentImpl implements Incident {
 
@@ -73,11 +74,6 @@ public class IncidentImpl implements Incident {
   }
 
   @Override
-  public String getErrorType() {
-    return errorType.getValue();
-  }
-
-  @Override
   public String getErrorMessage() {
     return errorMessage;
   }
@@ -115,5 +111,52 @@ public class IncidentImpl implements Incident {
   @Override
   public String getTenantId() {
     return tenantId;
+  }
+
+  @Override
+  public String getErrorType() {
+    return errorType.getValue();
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        incidentKey,
+        processDefinitionKey,
+        processDefinitionId,
+        processInstanceKey,
+        errorType,
+        errorMessage,
+        flowNodeId,
+        flowNodeInstanceKey,
+        creationTime,
+        state,
+        jobKey,
+        treePath,
+        tenantId);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final IncidentImpl incident = (IncidentImpl) o;
+    return Objects.equals(incidentKey, incident.incidentKey)
+        && Objects.equals(processDefinitionKey, incident.processDefinitionKey)
+        && Objects.equals(processDefinitionId, incident.processDefinitionId)
+        && Objects.equals(processInstanceKey, incident.processInstanceKey)
+        && errorType == incident.errorType
+        && Objects.equals(errorMessage, incident.errorMessage)
+        && Objects.equals(flowNodeId, incident.flowNodeId)
+        && Objects.equals(flowNodeInstanceKey, incident.flowNodeInstanceKey)
+        && Objects.equals(creationTime, incident.creationTime)
+        && state == incident.state
+        && Objects.equals(jobKey, incident.jobKey)
+        && Objects.equals(treePath, incident.treePath)
+        && Objects.equals(tenantId, incident.tenantId);
   }
 }

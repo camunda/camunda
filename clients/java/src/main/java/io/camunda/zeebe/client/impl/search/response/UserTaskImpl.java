@@ -45,12 +45,12 @@ public class UserTaskImpl implements UserTask {
 
   public UserTaskImpl(final UserTaskItem item) {
     userTaskKey = item.getUserTaskKey();
-    state = item.getState();
+    state = item.getState().getValue();
     assignee = item.getAssignee();
     elementId = item.getElementId();
     elementInstanceKey = item.getElementInstanceKey();
-    candidateGroup = item.getCandidateGroup();
-    candidateUser = item.getCandidateUser();
+    candidateGroup = item.getCandidateGroups();
+    candidateUser = item.getCandidateUsers();
     bpmnProcessId = item.getProcessDefinitionId();
     processDefinitionKey = item.getProcessDefinitionKey();
     processInstanceKey = item.getProcessInstanceKey();
@@ -92,12 +92,12 @@ public class UserTaskImpl implements UserTask {
   }
 
   @Override
-  public List<String> getCandidateGroup() {
+  public List<String> getCandidateGroups() {
     return candidateGroup;
   }
 
   @Override
-  public List<String> getCandidateUser() {
+  public List<String> getCandidateUsers() {
     return candidateUser;
   }
 

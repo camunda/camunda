@@ -10,10 +10,10 @@ package io.camunda.search.clients;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.search.security.auth.Authentication;
+import io.camunda.security.auth.SecurityContext;
 
 public interface DecisionInstanceSearchClient {
 
   SearchQueryResult<DecisionInstanceEntity> searchDecisionInstances(
-      DecisionInstanceQuery filter, Authentication authentication);
+      DecisionInstanceQuery filter, SecurityContext securityContext);
 }

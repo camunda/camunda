@@ -96,7 +96,7 @@ jobs:
       # Build backend
       - name: Build backend
         run: |
-          mvn -T1C clean deploy -B -PskipFrontendBuild -DskipTests -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+          ./mvnw -T1C clean deploy -B -PskipFrontendBuild -DskipTests -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
 
       #########################################################################
       # Docker login and image tagging
@@ -147,7 +147,7 @@ jobs:
       - name: Deploy - Nexus SNAPSHOT
         if: ${{ env.IS_DEFAULT_BRANCH == 'true' }}
         run: |
-          mvn -f tasklist org.sonatype.plugins:nexus-staging-maven-plugin:deploy-staged -DskipTests=true -PskipFrontendBuild -B -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+          ./mvnw -f tasklist org.sonatype.plugins:nexus-staging-maven-plugin:deploy-staged -DskipTests=true -PskipFrontendBuild -B -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
 
       #########################################################################
       # Collect information about build status for central statistics with CI Analytics

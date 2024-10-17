@@ -21,4 +21,16 @@ public final class ExporterUtil {
     }
     return tenantId;
   }
+
+  public static String toStringOrNull(final Object object) {
+    return toStringOrDefault(object, null);
+  }
+
+  public static String toStringOrDefault(final Object object, final String defaultString) {
+    return object == null ? defaultString : object.toString();
+  }
+
+  public static String trimWhitespace(final String str) {
+    return (str == null) ? null : str.strip();
+  }
 }

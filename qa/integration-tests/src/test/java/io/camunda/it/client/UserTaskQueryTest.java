@@ -183,7 +183,7 @@ class UserTaskQueryTest {
         camundaClient.newUserTaskQuery().filter(f -> f.candidateGroup("group")).send().join();
     assertThat(result.items().size()).isEqualTo(1);
 
-    result.items().forEach(item -> assertThat(item.getCandidateGroup()).isEqualTo(expectedGroup));
+    result.items().forEach(item -> assertThat(item.getCandidateGroups()).isEqualTo(expectedGroup));
   }
 
   @Test
@@ -193,7 +193,7 @@ class UserTaskQueryTest {
         camundaClient.newUserTaskQuery().filter(f -> f.candidateUser("user")).send().join();
     assertThat(result.items().size()).isEqualTo(1);
 
-    result.items().forEach(item -> assertThat(item.getCandidateUser()).isEqualTo(expectedUser));
+    result.items().forEach(item -> assertThat(item.getCandidateUsers()).isEqualTo(expectedUser));
   }
 
   @Test

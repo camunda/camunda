@@ -15,7 +15,8 @@ import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.search.query.VariableQuery.Builder;
-import io.camunda.search.security.auth.Authentication;
+import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.SecurityContext;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -41,7 +42,8 @@ public final class VariableServices
 
   @Override
   public SearchQueryResult<VariableEntity> search(final VariableQuery query) {
-    return variableSearchClient.searchVariables(query, authentication);
+    return variableSearchClient.searchVariables(
+        query, SecurityContext.of(s -> s.withAuthentication(authentication)));
   }
 
   public SearchQueryResult<VariableEntity> search(

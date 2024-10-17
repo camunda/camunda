@@ -25,7 +25,7 @@ public interface IncidentFilter extends SearchRequestFilter {
    * @param value the key of the incidents
    * @return the updated filter
    */
-  IncidentFilter key(final Long value);
+  IncidentFilter incidentKey(final Long value);
 
   /**
    * Filters incidents by the process definition key.
@@ -36,12 +36,12 @@ public interface IncidentFilter extends SearchRequestFilter {
   IncidentFilter processDefinitionKey(final Long value);
 
   /**
-   * Filters incidents by the bpmn process id.
+   * Filters incidents by the process definition id.
    *
    * @param value the bpmn process id of the process definition
    * @return the updated filter
    */
-  IncidentFilter bpmnProcessId(final String value);
+  IncidentFilter processDefinitionId(final String value);
 
   /**
    * Filters incidents by the process instance key.
@@ -52,7 +52,7 @@ public interface IncidentFilter extends SearchRequestFilter {
   IncidentFilter processInstanceKey(final Long value);
 
   /**
-   * Filters incidents by the error type.
+   * Filters incidents by the type.
    *
    * @param errorType the error type of incident
    * @return the updated filter
