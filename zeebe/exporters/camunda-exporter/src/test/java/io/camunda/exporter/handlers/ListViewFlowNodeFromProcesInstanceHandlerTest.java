@@ -9,25 +9,22 @@ package io.camunda.exporter.handlers;
 
 import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.POSITION;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.entities.operate.FlowNodeState;
+import io.camunda.webapps.schema.entities.operate.FlowNodeType;
+import io.camunda.webapps.schema.entities.operate.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ListViewJoinRelation;
-import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
-import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -36,12 +33,12 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
-public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
+public class ListViewFlowNodeFromProcesInstanceHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-list-view";
-  private final ListViewProcessInstanceFromProcessInstanceHandler underTest =
-      new ListViewProcessInstanceFromProcessInstanceHandler(indexName, false);
+  private final ListViewFlowNodeFromProcessInstanceHandler underTest =
+      new ListViewFlowNodeFromProcessInstanceHandler(indexName, false);
 
   @Test
   public void testGetHandledValueType() {
@@ -50,11 +47,11 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
 
   @Test
   public void testGetEntityType() {
-    assertThat(underTest.getEntityType()).isEqualTo(ProcessInstanceForListViewEntity.class);
+    assertThat(underTest.getEntityType()).isEqualTo(FlowNodeInstanceForListViewEntity.class);
   }
 
   @Test
-  public void shouldHandleRecord() {
+  public void testHandlesRecord() {
     final Set<ProcessInstanceIntent> intents2Handle =
         Set.of(
             ProcessInstanceIntent.ELEMENT_ACTIVATING,
@@ -77,7 +74,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     final ProcessInstanceRecordValue processInstanceRecordValue =
         ImmutableProcessInstanceRecordValue.builder()
             .from(factory.generateObject(ProcessInstanceRecordValue.class))
-            .withBpmnElementType(BpmnElementType.PROCESS)
+            .withBpmnElementType(BpmnElementType.SERVICE_TASK)
             .build();
     final Record<ProcessInstanceRecordValue> processInstanceRecord =
         factory.generateRecord(
@@ -111,12 +108,12 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
   }
 
   @Test
-  public void shouldNotHandleNotProcessRecord() {
+  public void shouldNotHandleProcessRecord() {
     // given
     final ProcessInstanceRecordValue processInstanceRecordValue =
         ImmutableProcessInstanceRecordValue.builder()
             .from(factory.generateObject(ProcessInstanceRecordValue.class))
-            .withBpmnElementType(BpmnElementType.SERVICE_TASK)
+            .withBpmnElementType(BpmnElementType.PROCESS)
             .build();
     final Record<ProcessInstanceRecordValue> processInstanceRecord =
         factory.generateRecord(
@@ -131,12 +128,10 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
   @Test
   public void shouldGenerateIds() {
     // given
-    final long expectedId = 123;
     final ProcessInstanceRecordValue processInstanceRecordValue =
         ImmutableProcessInstanceRecordValue.builder()
-            .from(factory.generateObject(ProcessInstanceRecordValue.class))
-            .withBpmnElementType(BpmnElementType.PROCESS)
-            .withProcessInstanceKey(expectedId)
+            .from(factory.generateObject(DecisionRecordValue.class))
+            .withBpmnElementType(BpmnElementType.SERVICE_TASK)
             .build();
 
     final Record<ProcessInstanceRecordValue> processInstanceRecord =
@@ -150,7 +145,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     final var idList = underTest.generateIds(processInstanceRecord);
 
     // then
-    assertThat(idList).containsExactly(String.valueOf(expectedId));
+    assertThat(idList).containsExactly(String.valueOf(processInstanceRecord.getKey()));
   }
 
   @Test
@@ -164,36 +159,36 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
   }
 
   @Test
-  void shouldAddEntityOnFlush() {
+  void shouldUpsertEntityOnFlush() {
     // given
-    final ProcessInstanceForListViewEntity inputEntity =
-        new ProcessInstanceForListViewEntity()
+    final FlowNodeInstanceForListViewEntity inputEntity =
+        new FlowNodeInstanceForListViewEntity()
             .setId("111")
-            .setProcessName("process")
-            .setProcessVersion(2)
-            .setProcessDefinitionKey(444L)
-            .setBpmnProcessId("bpmnProcessId")
             .setPosition(123L)
-            .setStartDate(OffsetDateTime.now())
-            .setEndDate(OffsetDateTime.now())
-            .setState(ProcessInstanceState.ACTIVE);
+            .setProcessInstanceKey(66L)
+            .setPartitionId(3)
+            .setActivityId("A")
+            .setActivityType(FlowNodeType.CALL_ACTIVITY)
+            .setActivityState(FlowNodeState.ACTIVE);
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
-    expectedUpdateFields.put(ListViewTemplate.PROCESS_NAME, "process");
-    expectedUpdateFields.put(ListViewTemplate.PROCESS_VERSION, 2);
-    expectedUpdateFields.put(ListViewTemplate.PROCESS_KEY, 444L);
-    expectedUpdateFields.put(ListViewTemplate.BPMN_PROCESS_ID, "bpmnProcessId");
-    expectedUpdateFields.put(ListViewTemplate.STATE, ProcessInstanceState.ACTIVE);
-    expectedUpdateFields.put(ListViewTemplate.START_DATE, inputEntity.getStartDate());
-    expectedUpdateFields.put(ListViewTemplate.END_DATE, inputEntity.getEndDate());
     expectedUpdateFields.put(POSITION, 123L);
+    expectedUpdateFields.put(ListViewTemplate.ACTIVITY_ID, "A");
+    expectedUpdateFields.put(ListViewTemplate.ACTIVITY_TYPE, FlowNodeType.CALL_ACTIVITY);
+    expectedUpdateFields.put(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.ACTIVE);
 
     // when
     underTest.flush(inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).upsert(indexName, "111", inputEntity, expectedUpdateFields);
+    verify(mockRequest, times(1))
+        .upsertWithRouting(
+            indexName,
+            inputEntity.getId(),
+            inputEntity,
+            expectedUpdateFields,
+            String.valueOf(inputEntity.getProcessInstanceKey()));
   }
 
   @Test
@@ -203,7 +198,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     final ProcessInstanceRecordValue processInstanceRecordValue =
         ImmutableProcessInstanceRecordValue.builder()
             .from(factory.generateObject(ProcessInstanceRecordValue.class))
-            .withBpmnElementType(BpmnElementType.PROCESS)
+            .withBpmnElementType(BpmnElementType.SERVICE_TASK)
             .build();
 
     final Record<ProcessInstanceRecordValue> processInstanceRecord =
@@ -217,54 +212,41 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
                     .withValue(processInstanceRecordValue));
 
     // when
-    final ProcessInstanceForListViewEntity processInstanceForListViewEntity =
-        new ProcessInstanceForListViewEntity();
-    underTest.updateEntity(processInstanceRecord, processInstanceForListViewEntity);
+    final FlowNodeInstanceForListViewEntity flowNodeInstanceForListViewEntity =
+        new FlowNodeInstanceForListViewEntity();
+    underTest.updateEntity(processInstanceRecord, flowNodeInstanceForListViewEntity);
 
     // then
-    assertThat(processInstanceForListViewEntity.getId())
-        .isEqualTo(String.valueOf(processInstanceRecordValue.getProcessInstanceKey()));
-    assertThat(processInstanceForListViewEntity.getProcessInstanceKey())
+    assertThat(flowNodeInstanceForListViewEntity.getId())
+        .isEqualTo(String.valueOf(processInstanceRecord.getKey()));
+    assertThat(flowNodeInstanceForListViewEntity.getKey())
+        .isEqualTo(processInstanceRecord.getKey());
+    assertThat(flowNodeInstanceForListViewEntity.getProcessInstanceKey())
         .isEqualTo(processInstanceRecordValue.getProcessInstanceKey());
-    assertThat(processInstanceForListViewEntity.getKey())
-        .isEqualTo(processInstanceRecordValue.getProcessInstanceKey());
-    assertThat(processInstanceForListViewEntity.getTenantId())
+    assertThat(flowNodeInstanceForListViewEntity.getTenantId())
         .isEqualTo(processInstanceRecordValue.getTenantId());
-    assertThat(processInstanceForListViewEntity.getPartitionId())
+    assertThat(flowNodeInstanceForListViewEntity.getPartitionId())
         .isEqualTo(processInstanceRecord.getPartitionId());
-    assertThat(processInstanceForListViewEntity.getPosition())
+    assertThat(flowNodeInstanceForListViewEntity.getPosition())
         .isEqualTo(processInstanceRecord.getPosition());
-    assertThat(processInstanceForListViewEntity.getProcessDefinitionKey())
-        .isEqualTo(processInstanceRecordValue.getProcessDefinitionKey());
-    assertThat(processInstanceForListViewEntity.getBpmnProcessId())
-        .isEqualTo(processInstanceRecordValue.getBpmnProcessId());
-    assertThat(processInstanceForListViewEntity.getProcessVersion())
-        .isEqualTo(processInstanceRecordValue.getVersion());
-    // without ProcessCache implementation process name = bpmnProcessId
-    assertThat(processInstanceForListViewEntity.getProcessName())
-        .isEqualTo(processInstanceRecordValue.getBpmnProcessId());
-    assertThat(processInstanceForListViewEntity.getState()).isEqualTo(ProcessInstanceState.ACTIVE);
-    assertThat(processInstanceForListViewEntity.getStartDate())
-        .isEqualTo(OffsetDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneOffset.UTC));
-    assertThat(processInstanceForListViewEntity.getEndDate()).isNull();
-    assertThat(processInstanceForListViewEntity.getParentProcessInstanceKey())
-        .isEqualTo(processInstanceRecordValue.getParentProcessInstanceKey());
-    assertThat(processInstanceForListViewEntity.getParentFlowNodeInstanceKey())
-        .isEqualTo(processInstanceRecordValue.getParentElementInstanceKey());
-    assertThat(processInstanceForListViewEntity.getJoinRelation())
-        .isEqualTo(new ListViewJoinRelation(ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION));
-    assertThat(processInstanceForListViewEntity.getTreePath())
-        .isEqualTo("PI_" + processInstanceRecordValue.getProcessInstanceKey());
+    assertThat(flowNodeInstanceForListViewEntity.getActivityId())
+        .isEqualTo(processInstanceRecordValue.getElementId());
+    assertThat(flowNodeInstanceForListViewEntity.getActivityState())
+        .isEqualTo(FlowNodeState.ACTIVE);
+    assertThat(flowNodeInstanceForListViewEntity.getJoinRelation())
+        .isEqualTo(
+            new ListViewJoinRelation(ListViewTemplate.ACTIVITIES_JOIN_RELATION)
+                .setParent(processInstanceRecordValue.getProcessInstanceKey()));
   }
 
   @Test
-  void shouldUpdateEndTimeForCompletedRecord() {
+  void shouldUpdateStateForCompletedRecord() {
     // given
     final long timestamp = new Date().getTime();
     final ProcessInstanceRecordValue processInstanceRecordValue =
         ImmutableProcessInstanceRecordValue.builder()
             .from(factory.generateObject(ProcessInstanceRecordValue.class))
-            .withBpmnElementType(BpmnElementType.PROCESS)
+            .withBpmnElementType(BpmnElementType.SERVICE_TASK)
             .build();
     final Record<ProcessInstanceRecordValue> processInstanceRecord =
         factory.generateRecord(
@@ -275,15 +257,10 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
                     .withValue(processInstanceRecordValue));
 
     // when then
-    final ProcessInstanceForListViewEntity processInstanceForListViewEntity =
-        new ProcessInstanceForListViewEntity();
-    underTest.updateEntity(processInstanceRecord, processInstanceForListViewEntity);
+    final FlowNodeInstanceForListViewEntity entity = new FlowNodeInstanceForListViewEntity();
+    underTest.updateEntity(processInstanceRecord, entity);
 
-    assertThat(processInstanceForListViewEntity.getEndDate())
-        .isEqualTo(OffsetDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneOffset.UTC));
-    assertThat(processInstanceForListViewEntity.getStartDate()).isNull();
-    assertThat(processInstanceForListViewEntity.getState())
-        .isEqualTo(ProcessInstanceState.COMPLETED);
+    assertThat(entity.getActivityState()).isEqualTo(FlowNodeState.COMPLETED);
   }
 
   @Test
@@ -293,7 +270,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     final ProcessInstanceRecordValue processInstanceRecordValue =
         ImmutableProcessInstanceRecordValue.builder()
             .from(factory.generateObject(ProcessInstanceRecordValue.class))
-            .withBpmnElementType(BpmnElementType.PROCESS)
+            .withBpmnElementType(BpmnElementType.SERVICE_TASK)
             .build();
     final Record<ProcessInstanceRecordValue> processInstanceRecord =
         factory.generateRecord(
@@ -304,33 +281,9 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
                     .withValue(processInstanceRecordValue));
 
     // when then
-    final ProcessInstanceForListViewEntity processInstanceForListViewEntity =
-        new ProcessInstanceForListViewEntity();
-    underTest.updateEntity(processInstanceRecord, processInstanceForListViewEntity);
+    final FlowNodeInstanceForListViewEntity entity = new FlowNodeInstanceForListViewEntity();
+    underTest.updateEntity(processInstanceRecord, entity);
 
-    assertThat(processInstanceForListViewEntity.getEndDate())
-        .isEqualTo(OffsetDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneOffset.UTC));
-    assertThat(processInstanceForListViewEntity.getStartDate()).isNull();
-    assertThat(processInstanceForListViewEntity.getState())
-        .isEqualTo(ProcessInstanceState.CANCELED);
-  }
-
-  @Test
-  void shouldUpdateStateForMigrateRecord() {
-    // given
-    final long timestamp = new Date().getTime();
-    final Record<ProcessInstanceRecordValue> processInstanceRecord =
-        factory.generateRecord(
-            ValueType.PROCESS_INSTANCE,
-            r -> r.withIntent(ProcessInstanceIntent.ELEMENT_MIGRATED).withTimestamp(timestamp));
-
-    // when then
-    final ProcessInstanceForListViewEntity processInstanceForListViewEntity =
-        new ProcessInstanceForListViewEntity();
-    underTest.updateEntity(processInstanceRecord, processInstanceForListViewEntity);
-
-    assertThat(processInstanceForListViewEntity.getEndDate()).isNull();
-    assertThat(processInstanceForListViewEntity.getStartDate()).isNull();
-    assertThat(processInstanceForListViewEntity.getState()).isEqualTo(ProcessInstanceState.ACTIVE);
+    assertThat(entity.getActivityState()).isEqualTo(FlowNodeState.TERMINATED);
   }
 }
