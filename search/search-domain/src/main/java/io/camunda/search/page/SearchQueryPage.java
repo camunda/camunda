@@ -15,6 +15,7 @@ public record SearchQueryPage(
 
   public static final Integer DEFAULT_FROM = 0;
   public static final Integer DEFAULT_SIZE = 100;
+  public static final Integer MAX_SIZE = 1000;
 
   public boolean isNextPage() {
     return searchAfter != null || !isPreviousPage();
@@ -35,9 +36,9 @@ public record SearchQueryPage(
 
   public SearchQueryPage sanitize() {
     final var newFrom =
-        (from == null) ? DEFAULT_FROM : Math.max(0, Math.min(SearchQueryPage.DEFAULT_FROM, from));
+        (from == null) ? DEFAULT_FROM : Math.max(0, from);
     final var newSize =
-        (size == null) ? DEFAULT_SIZE : Math.max(0, Math.min(SearchQueryPage.DEFAULT_SIZE, size));
+        (size == null) ? DEFAULT_SIZE : Math.max(0, Math.min(SearchQueryPage.MAX_SIZE, size));
 
     return new SearchQueryPage(newFrom, newSize, searchAfter, searchBefore);
   }
