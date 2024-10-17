@@ -13,29 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.api.search.sort;
+package io.camunda.zeebe.client.api.fetch;
 
-import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestSort;
+import io.camunda.zeebe.client.api.command.FinalCommandStep;
+import io.camunda.zeebe.client.api.search.response.Incident;
 
-public interface IncidentSort extends SearchRequestSort<IncidentSort> {
-
-  IncidentSort incidentKey();
-
-  IncidentSort processDefinitionKey();
-
-  IncidentSort processInstanceKey();
-
-  IncidentSort errorType();
-
-  IncidentSort flowNodeId();
-
-  IncidentSort flowNodeInstanceKey();
-
-  IncidentSort creationTime();
-
-  IncidentSort state();
-
-  IncidentSort jobKey();
-
-  IncidentSort tenantId();
-}
+public interface IncidentGetRequest extends FinalCommandStep<Incident> {}
