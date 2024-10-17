@@ -10,6 +10,7 @@ package io.camunda.exporter;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.handlers.AuthorizationRecordValueExportHandler;
+import io.camunda.exporter.handlers.DecisionEvaluationHandler;
 import io.camunda.exporter.handlers.DecisionHandler;
 import io.camunda.exporter.handlers.DecisionRequirementsHandler;
 import io.camunda.exporter.handlers.ExportHandler;
@@ -26,6 +27,7 @@ import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
@@ -68,7 +70,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             IncidentTemplate.class,
             new IncidentTemplate(operateIndexPrefix, isElasticsearch),
             SequenceFlowTemplate.class,
-            new SequenceFlowTemplate(operateIndexPrefix, isElasticsearch));
+            new SequenceFlowTemplate(operateIndexPrefix, isElasticsearch),
+            DecisionInstanceTemplate.class,
+            new DecisionInstanceTemplate(operateIndexPrefix, isElasticsearch));
 
     indexDescriptorsMap =
         Map.of(
@@ -101,7 +105,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new IncidentHandler(
                 templateDescriptorsMap.get(IncidentTemplate.class).getFullQualifiedName(), false),
             new SequenceFlowHandler(
-                templateDescriptorsMap.get(SequenceFlowTemplate.class).getFullQualifiedName()));
+                templateDescriptorsMap.get(SequenceFlowTemplate.class).getFullQualifiedName()),
+            new DecisionEvaluationHandler(
+                templateDescriptorsMap.get(DecisionInstanceTemplate.class).getFullQualifiedName());
   }
 
   @Override
