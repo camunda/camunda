@@ -97,9 +97,7 @@ public class IndexTemplateDescriptorsConfigurator {
       final OperateProperties operateProperties,
       final DatabaseInfo databaseInfo,
       final IndexPrefixHolder indexPrefixHolder) {
-    return new DecisionInstanceTemplate(
-        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
-        databaseInfo.isElasticsearchDb()) {
+    return new DecisionInstanceTemplate("", databaseInfo.isElasticsearchDb()) {
       @Override
       public String getIndexPrefix() {
         return indexPrefixHolder.getIndexPrefix();
@@ -112,9 +110,7 @@ public class IndexTemplateDescriptorsConfigurator {
       final OperateProperties operateProperties,
       final DatabaseInfo databaseInfo,
       final IndexPrefixHolder indexPrefixHolder) {
-    return new EventTemplate(
-        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
-        databaseInfo.isElasticsearchDb()) {
+    return new EventTemplate("", databaseInfo.isElasticsearchDb()) {
       @Override
       public String getIndexPrefix() {
         return indexPrefixHolder.getIndexPrefix();
@@ -127,9 +123,7 @@ public class IndexTemplateDescriptorsConfigurator {
       final OperateProperties operateProperties,
       final DatabaseInfo databaseInfo,
       final IndexPrefixHolder indexPrefixHolder) {
-    return new FlowNodeInstanceTemplate(
-        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
-        databaseInfo.isElasticsearchDb()) {
+    return new FlowNodeInstanceTemplate("", databaseInfo.isElasticsearchDb()) {
       @Override
       public String getIndexPrefix() {
         return indexPrefixHolder.getIndexPrefix();
@@ -142,9 +136,7 @@ public class IndexTemplateDescriptorsConfigurator {
       final OperateProperties operateProperties,
       final DatabaseInfo databaseInfo,
       final IndexPrefixHolder indexPrefixHolder) {
-    return new IncidentTemplate(
-        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
-        databaseInfo.isElasticsearchDb()) {
+    return new IncidentTemplate("", databaseInfo.isElasticsearchDb()) {
       @Override
       public String getIndexPrefix() {
         return indexPrefixHolder.getIndexPrefix();
@@ -157,9 +149,7 @@ public class IndexTemplateDescriptorsConfigurator {
       final OperateProperties operateProperties,
       final DatabaseInfo databaseInfo,
       final IndexPrefixHolder indexPrefixHolder) {
-    return new ListViewTemplate(
-        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
-        databaseInfo.isElasticsearchDb()) {
+    return new ListViewTemplate("", databaseInfo.isElasticsearchDb()) {
       @Override
       public String getIndexPrefix() {
         return indexPrefixHolder.getIndexPrefix();
@@ -187,9 +177,7 @@ public class IndexTemplateDescriptorsConfigurator {
       final OperateProperties operateProperties,
       final DatabaseInfo databaseInfo,
       final IndexPrefixHolder indexPrefixHolder) {
-    return new PostImporterQueueTemplate(
-        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
-        databaseInfo.isElasticsearchDb()) {
+    return new PostImporterQueueTemplate("", databaseInfo.isElasticsearchDb()) {
       @Override
       public String getIndexPrefix() {
         return indexPrefixHolder.getIndexPrefix();
@@ -202,9 +190,7 @@ public class IndexTemplateDescriptorsConfigurator {
       final OperateProperties operateProperties,
       final DatabaseInfo databaseInfo,
       final IndexPrefixHolder indexPrefixHolder) {
-    return new SequenceFlowTemplate(
-        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
-        databaseInfo.isElasticsearchDb()) {
+    return new SequenceFlowTemplate("", databaseInfo.isElasticsearchDb()) {
       @Override
       public String getIndexPrefix() {
         return indexPrefixHolder.getIndexPrefix();
@@ -217,9 +203,7 @@ public class IndexTemplateDescriptorsConfigurator {
       final OperateProperties operateProperties,
       final DatabaseInfo databaseInfo,
       final IndexPrefixHolder indexPrefixHolder) {
-    return new UserTaskTemplate(
-        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
-        databaseInfo.isElasticsearchDb()) {
+    return new UserTaskTemplate("", databaseInfo.isElasticsearchDb()) {
       @Override
       public String getIndexPrefix() {
         return indexPrefixHolder.getIndexPrefix();
@@ -232,9 +216,7 @@ public class IndexTemplateDescriptorsConfigurator {
       final OperateProperties operateProperties,
       final DatabaseInfo databaseInfo,
       final IndexPrefixHolder indexPrefixHolder) {
-    return new JobTemplate(
-        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
-        databaseInfo.isElasticsearchDb()) {
+    return new JobTemplate("", databaseInfo.isElasticsearchDb()) {
       @Override
       public String getIndexPrefix() {
         return indexPrefixHolder.getIndexPrefix();
@@ -247,9 +229,7 @@ public class IndexTemplateDescriptorsConfigurator {
       final OperateProperties operateProperties,
       final DatabaseInfo databaseInfo,
       final IndexPrefixHolder indexPrefixHolder) {
-    return new VariableTemplate(
-        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
-        databaseInfo.isElasticsearchDb()) {
+    return new VariableTemplate("", databaseInfo.isElasticsearchDb()) {
       @Override
       public String getIndexPrefix() {
         return indexPrefixHolder.getIndexPrefix();
