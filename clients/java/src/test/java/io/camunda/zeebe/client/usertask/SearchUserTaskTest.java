@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.zeebe.client.protocol.rest.UserTaskFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.UserTaskSearchQueryRequest;
 import io.camunda.zeebe.client.protocol.rest.UserTaskVariableFilterRequest;
 import io.camunda.zeebe.client.util.ClientRestTest;
@@ -52,12 +53,12 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByState() {
     // when
-    client.newUserTaskQuery().filter(f -> f.state("completed")).send().join();
+    client.newUserTaskQuery().filter(f -> f.state("COMPLETED")).send().join();
 
     // then
     final UserTaskSearchQueryRequest request =
         gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
-    assertThat(request.getFilter().getState()).isEqualTo("completed");
+    assertThat(request.getFilter().getState()).isEqualTo(UserTaskFilterRequest.StateEnum.COMPLETED);
   }
 
   @Test

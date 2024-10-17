@@ -19,6 +19,7 @@ import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
+import io.camunda.search.entities.UserTaskEntity.UserTaskState;
 import io.camunda.search.filter.DateValueFilter;
 import io.camunda.search.filter.DecisionDefinitionFilter;
 import io.camunda.search.filter.DecisionInstanceFilter;
@@ -422,7 +423,9 @@ public final class SearchQueryRequestMapper {
         .ifPresent(
             f -> {
               Optional.ofNullable(f.getUserTaskKey()).ifPresent(builder::userTaskKeys);
-              Optional.ofNullable(f.getState()).ifPresent(builder::states);
+              Optional.ofNullable(f.getState())
+                  .ifPresent(
+                      s -> builder.states(String.valueOf(UserTaskState.valueOf(s.getValue()))));
               Optional.ofNullable(f.getProcessDefinitionId()).ifPresent(builder::bpmnProcessIds);
               Optional.ofNullable(f.getElementId()).ifPresent(builder::elementIds);
               Optional.ofNullable(f.getAssignee()).ifPresent(builder::assignees);
