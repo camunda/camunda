@@ -8,11 +8,9 @@
 package io.camunda.operate.schema.indices;
 
 import io.camunda.operate.conditions.DatabaseInfo;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.backup.Prio4Backup;
 import io.camunda.webapps.schema.descriptors.operate.OperateIndexDescriptor;
 import jakarta.annotation.PostConstruct;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -20,15 +18,12 @@ public class MigrationRepositoryIndex extends OperateIndexDescriptor implements 
 
   public static final String INDEX_NAME = "migration-steps-repository";
 
-  @Autowired private OperateProperties properties;
-
   public MigrationRepositoryIndex() {
-    super(null, false);
+    super("", false);
   }
 
   @PostConstruct
   public void init() {
-    indexPrefix = properties.getIndexPrefix(DatabaseInfo.getCurrent());
     isElasticsearch = DatabaseInfo.isElasticsearch();
   }
 
@@ -40,10 +35,5 @@ public class MigrationRepositoryIndex extends OperateIndexDescriptor implements 
   @Override
   public String getVersion() {
     return "1.1.0";
-  }
-
-  @Override
-  public String getIndexPrefix() {
-    return properties.getIndexPrefix();
   }
 }
