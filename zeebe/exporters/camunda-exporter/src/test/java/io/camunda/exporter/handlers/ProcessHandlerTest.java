@@ -13,6 +13,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.utils.XMLUtil;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -29,7 +30,7 @@ import org.junit.jupiter.api.Test;
 public class ProcessHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-process";
-  private final ProcessHandler underTest = new ProcessHandler(indexName);
+  private final ProcessHandler underTest = new ProcessHandler(indexName, new XMLUtil());
 
   @Test
   void testGetHandledValueType() {

@@ -35,15 +35,13 @@ import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
-public final class XMLUtil {
+public class XMLUtil {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(XMLUtil.class);
 
-  private static XMLUtil instance;
-
   private final SAXParserFactory saxParserFactory;
 
-  private XMLUtil() {
+  public XMLUtil() {
     saxParserFactory = SAXParserFactory.newInstance();
     saxParserFactory.setNamespaceAware(true);
     try {
@@ -54,13 +52,6 @@ public final class XMLUtil {
     } catch (final Exception e) {
       throw new ExporterException("Error creating SAXParser", e);
     }
-  }
-
-  public static XMLUtil getInstance() {
-    if (instance == null) {
-      instance = new XMLUtil();
-    }
-    return instance;
   }
 
   public Optional<ProcessEntity> extractDiagramData(

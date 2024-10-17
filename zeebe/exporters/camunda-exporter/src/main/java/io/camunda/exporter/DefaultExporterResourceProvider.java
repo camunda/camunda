@@ -21,6 +21,7 @@ import io.camunda.exporter.handlers.SequenceFlowHandler;
 import io.camunda.exporter.handlers.ProcessHandler;
 import io.camunda.exporter.handlers.UserRecordValueExportHandler;
 import io.camunda.exporter.handlers.VariableHandler;
+import io.camunda.exporter.utils.XMLUtil;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
@@ -109,7 +110,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 templateDescriptorsMap.get(SequenceFlowTemplate.class).getFullQualifiedName()),
             new DecisionEvaluationHandler(
                 templateDescriptorsMap.get(DecisionInstanceTemplate.class).getFullQualifiedName()),
-            new ProcessHandler(indexDescriptorsMap.get(ProcessIndex.class).getFullQualifiedName()));
+            new ProcessHandler(indexDescriptorsMap.get(ProcessIndex.class).getFullQualifiedName(), new XMLUtil()));
   }
 
   @Override

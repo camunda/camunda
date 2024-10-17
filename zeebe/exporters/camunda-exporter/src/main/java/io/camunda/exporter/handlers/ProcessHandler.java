@@ -22,9 +22,11 @@ import java.util.Optional;
 public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
 
   private final String indexName;
+  private final XMLUtil xmlUtil;
 
-  public ProcessHandler(final String indexName) {
+  public ProcessHandler(final String indexName, final XMLUtil xmlUtil) {
     this.indexName = indexName;
+    this.xmlUtil = xmlUtil;
   }
 
   @Override
@@ -74,7 +76,7 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
     }
 
     final Optional<ProcessEntity> diagramData =
-        XMLUtil.getInstance().extractDiagramData(byteArray, process.getBpmnProcessId());
+        xmlUtil.extractDiagramData(byteArray, process.getBpmnProcessId());
     diagramData.ifPresent(
         processEntity ->
             entity
