@@ -62,7 +62,7 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
     final var persistedRecord = roleState.getRole(record.getRoleKey());
     if (persistedRecord.isEmpty()) {
       final var errorMessage =
-          "Expected to update role with key '%s', but a role with this key does not exists"
+          "Expected to update role with key '%s', but a role with this key does not exist."
               .formatted(record.getRoleKey());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
@@ -71,7 +71,7 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
 
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.ROLE, PermissionType.UPDATE)
-            .addResourceId(record.getName());
+            .addResourceId(persistedRecord.get().getName());
     if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
       final var errorMessage =
           UNAUTHORIZED_ERROR_MESSAGE.formatted(
@@ -85,7 +85,7 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
     final var entityType = record.getEntityType();
     if (!isEntityPresent(entityKey, entityType)) {
       final var errorMessage =
-          "Expected to add entity with key '%s' and type '%s' to role with key '%s', the entity does not exists"
+          "Expected to add an entity with key '%s' and type '%s' to role with key '%s', but the entity doesn't exist."
               .formatted(entityKey, entityType, record.getRoleKey());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
