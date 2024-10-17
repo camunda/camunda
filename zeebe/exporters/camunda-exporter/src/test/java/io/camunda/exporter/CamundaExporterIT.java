@@ -7,7 +7,11 @@
  */
 package io.camunda.exporter;
 
-import static io.camunda.exporter.schema.SchemaTestUtil.validateMappings;
+import static io.camunda.exporter.schema.SchemaTestUtil.getElsIndexAsNode;
+import static io.camunda.exporter.schema.SchemaTestUtil.getElsIndexTemplateAsNode;
+import static io.camunda.exporter.schema.SchemaTestUtil.getOpensearchIndexAsNode;
+import static io.camunda.exporter.schema.SchemaTestUtil.getOpensearchIndexTemplateAsNode;
+import static io.camunda.exporter.schema.SchemaTestUtil.mappingsMatch;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
@@ -21,19 +25,17 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch.core.GetResponse;
-import com.github.dockerjava.api.model.ExposedPort;
-import com.github.dockerjava.api.model.HostConfig;
-import com.github.dockerjava.api.model.PortBinding;
-import com.github.dockerjava.api.model.Ports;
+import com.fasterxml.jackson.databind.JsonNode;
 import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.exporter.entities.AuthorizationEntity;
-import io.camunda.exporter.entities.UserEntity;
 import io.camunda.exporter.schema.SchemaTestUtil;
 import io.camunda.exporter.utils.TestSupport;
 import io.camunda.search.connect.es.ElasticsearchConnector;
+import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity;
+import io.camunda.webapps.schema.entities.usermanagement.Permission;
+import io.camunda.webapps.schema.entities.usermanagement.UserEntity;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
@@ -43,20 +45,17 @@ import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -65,6 +64,9 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.testcontainers.OpensearchContainer;
+import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -73,47 +75,26 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * This is a smoke test to verify that the exporter can connect to an Elasticsearch instance and
  * export records using the configured handlers.
  */
-@Testcontainers
 @TestInstance(Lifecycle.PER_CLASS)
 final class CamundaExporterIT {
-  @Container
-  private static final ElasticsearchContainer CONTAINER =
-      TestSupport.createDefeaultElasticsearchContainer();
 
-  private final ExporterConfiguration config = new ExporterConfiguration();
+  private static final ExporterConfiguration CONFIG = new ExporterConfiguration();
   private final ExporterTestController controller = new ExporterTestController();
   private final ProtocolFactory factory = new ProtocolFactory();
   private IndexDescriptor index;
   private IndexTemplateDescriptor indexTemplate;
 
-  private ElasticsearchClient testClient;
-
-  @BeforeAll
-  public void beforeAll() {
-    config.getConnect().setUrl(CONTAINER.getHttpHostAddress());
-
-    testClient = new ElasticsearchConnector(config.getConnect()).createClient();
-  }
-
-  @AfterAll
-  void afterAll() throws IOException {
-    testClient._transport().close();
-  }
-
   @BeforeEach
   void beforeEach() throws IOException {
-    config.getConnect().setType("elasticsearch");
-    config.getIndex().setPrefix("camunda-record");
-    config.getIndex().setNumberOfShards(1);
-    config.getIndex().setNumberOfReplicas(0);
+    CONFIG.getIndex().setPrefix("camunda-record");
+    CONFIG.getIndex().setNumberOfShards(1);
+    CONFIG.getIndex().setNumberOfReplicas(0);
 
-    config.getBulk().setSize(1); // force flushing on the first record
-    testClient.indices().delete(req -> req.index("*"));
-    testClient.indices().deleteIndexTemplate(req -> req.name("*"));
+    CONFIG.getBulk().setSize(1); // force flushing on the first record
 
-    config.setCreateSchema(false);
-    config.getRetention().setEnabled(false);
-    config.getRetention().setMinimumAge("30d");
+    CONFIG.setCreateSchema(false);
+    CONFIG.getRetention().setEnabled(false);
+    CONFIG.getRetention().setMinimumAge("30d");
 
     indexTemplate =
         SchemaTestUtil.mockIndexTemplate(
@@ -126,26 +107,26 @@ final class CamundaExporterIT {
 
     index =
         SchemaTestUtil.mockIndex(
-            config.getIndex().getPrefix() + "qualified_name",
+            CONFIG.getIndex().getPrefix() + "qualified_name",
             "alias",
             "index_name",
             "/mappings.json");
 
     when(indexTemplate.getFullQualifiedName())
-        .thenReturn(config.getIndex().getPrefix() + "template_index_qualified_name");
+        .thenReturn(CONFIG.getIndex().getPrefix() + "template_index_qualified_name");
   }
 
   @Test
   void shouldPeriodicallyFlushBasedOnConfiguration() {
     // given
     final var duration = 2;
-    config.getBulk().setDelay(duration);
+    CONFIG.getBulk().setDelay(duration);
 
     final var exporter = new CamundaExporter();
 
     final var context =
         new ExporterTestContext()
-            .setConfiguration(new ExporterTestConfiguration<>("elastic", config));
+            .setConfiguration(new ExporterTestConfiguration<>("elastic", CONFIG));
 
     exporter.configure(context);
 
@@ -159,19 +140,24 @@ final class CamundaExporterIT {
     verify(spiedController, times(2)).scheduleCancellableTask(eq(Duration.ofSeconds(2)), any());
   }
 
-  @Test
   void shouldUpdateExporterPositionAfterFlushing() {
     // given
-    final var exporter = startExporter();
+    final var exporter = new CamundaExporter(mockResourceProvider(Set.of(), Set.of()));
+
+    final var context = getContext();
+    exporter.configure(context);
+
+    final var exporterController = new ExporterTestController();
+    exporter.open(exporterController);
 
     // when
     final Record<UserRecordValue> record = factory.generateRecord(ValueType.USER);
-    assertThat(controller.getPosition()).isEqualTo(-1);
+    assertThat(exporterController.getPosition()).isEqualTo(-1);
 
     exporter.export(record);
 
     // then
-    assertThat(controller.getPosition()).isEqualTo(record.getPosition());
+    assertThat(exporterController.getPosition()).isEqualTo(record.getPosition());
   }
 
   private Exporter startExporter() {
@@ -185,394 +171,359 @@ final class CamundaExporterIT {
     return exporter;
   }
 
-  private Map<PermissionType, List<String>> extractPermissions(
-      final AuthorizationRecordValue record) {
+  private List<Permission> extractPermissions(final AuthorizationRecordValue record) {
     return record.getPermissions().stream()
-        .collect(
-            Collectors.toMap(
-                AuthorizationRecordValue.PermissionValue::getPermissionType,
-                AuthorizationRecordValue.PermissionValue::getResourceIds));
+        .map(
+            permissionValue ->
+                new Permission(
+                    permissionValue.getPermissionType().name(), permissionValue.getResourceIds()))
+        .collect(Collectors.toList());
   }
 
   private Context getContext() {
     return new ExporterTestContext()
-        .setConfiguration(new ExporterTestConfiguration<>("elastic", config));
+        .setConfiguration(new ExporterTestConfiguration<>("elastic", CONFIG));
   }
 
   private ExporterResourceProvider mockResourceProvider(
       final Set<IndexDescriptor> indexDescriptors,
       final Set<IndexTemplateDescriptor> templateDescriptors) {
     final var provider = mock(DefaultExporterResourceProvider.class, CALLS_REAL_METHODS);
-    provider.init(config);
+    provider.init(CONFIG);
     when(provider.getIndexDescriptors()).thenReturn(indexDescriptors);
     when(provider.getIndexTemplateDescriptors()).thenReturn(templateDescriptors);
 
     return provider;
   }
 
-  @Nested
-  class RollingUpdateTests {
-    @Test
-    void shouldHaveCorrectSchemaUpdatesWithMultipleExporters() throws IOException {
-      // given
-      config.setCreateSchema(true);
+  void shouldHaveCorrectSchemaUpdatesWithMultipleExporters(
+      final Callable<JsonNode> getIndex, final Callable<JsonNode> getTemplate) throws Exception {
+    // given
+    CONFIG.setCreateSchema(true);
 
-      final var exporter1 = startExporter();
-      final var exporter2 = startExporter();
+    final var exporter1 = startExporter();
+    final var exporter2 = startExporter();
 
-      when(index.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
-      when(indexTemplate.getMappingsClasspathFilename())
-          .thenReturn("/mappings-added-property.json");
+    when(index.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
+    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
 
-      // when
-      exporter1.open(controller);
-      exporter2.open(controller);
+    // when
+    exporter1.open(controller);
+    exporter2.open(controller);
 
-      // then
-      final var indices = testClient.indices().get(req -> req.index("*"));
-      final var indexTemplates = testClient.indices().getIndexTemplate(req -> req.name("*"));
+    // then
+    final var retrievedIndex = getIndex.call();
+    final var retrievedIndexTemplate = getTemplate.call();
 
-      validateMappings(
-          indices.result().get(index.getFullQualifiedName()).mappings(),
-          "/mappings-added-property.json");
-      validateMappings(
-          indexTemplates.indexTemplates().stream()
-              .filter(template -> template.name().equals(indexTemplate.getTemplateName()))
-              .findFirst()
-              .orElseThrow()
-              .indexTemplate()
-              .template()
-              .mappings(),
-          "/mappings-added-property.json");
-    }
+    assertThat(mappingsMatch(retrievedIndex.get("mappings"), "/mappings-added-property.json"))
+        .isTrue();
+    assertThat(
+            mappingsMatch(
+                retrievedIndexTemplate.at("/index_template/template/mappings"),
+                "/mappings-added-property.json"))
+        .isTrue();
+  }
 
-    @Test
-    void shouldNotErrorIfOldExporterRestartsWhileNewExporterHasAlreadyStarted() throws IOException {
-      // given
-      config.setCreateSchema(true);
-      final var updatedExporter = startExporter();
-      final var oldExporter = startExporter();
+  void shouldNotErrorIfOldExporterRestartsWhileNewExporterHasAlreadyStarted(
+      final Callable<JsonNode> getIndex, final Callable<JsonNode> getTemplate) throws Exception {
+    // given
+    CONFIG.setCreateSchema(true);
+    final var updatedExporter = startExporter();
+    final var oldExporter = startExporter();
 
-      // when
-      when(index.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
-      when(indexTemplate.getMappingsClasspathFilename())
-          .thenReturn("/mappings-added-property.json");
+    // when
+    when(index.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
+    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
 
-      updatedExporter.open(controller);
+    updatedExporter.open(controller);
 
-      when(index.getMappingsClasspathFilename()).thenReturn("/mappings.json");
-      when(indexTemplate.getMappingsClasspathFilename()).thenReturn("/mappings.json");
+    when(index.getMappingsClasspathFilename()).thenReturn("/mappings.json");
+    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("/mappings.json");
 
-      oldExporter.open(controller);
+    oldExporter.open(controller);
 
-      // then
-      final var indices = testClient.indices().get(req -> req.index("*"));
-      final var indexTemplates = testClient.indices().getIndexTemplate(req -> req.name("*"));
+    // then
+    final var retrievedIndex = getIndex.call();
+    final var retrievedIndexTemplate = getTemplate.call();
 
-      validateMappings(
-          indices.result().get(index.getFullQualifiedName()).mappings(),
-          "/mappings-added-property.json");
-      validateMappings(
-          indexTemplates.indexTemplates().stream()
-              .filter(template -> template.name().equals(indexTemplate.getTemplateName()))
-              .findFirst()
-              .orElseThrow()
-              .indexTemplate()
-              .template()
-              .mappings(),
-          "/mappings-added-property.json");
-    }
+    assertThat(mappingsMatch(retrievedIndex.get("mappings"), "/mappings-added-property.json"))
+        .isTrue();
+    assertThat(
+            mappingsMatch(
+                retrievedIndexTemplate.at("/index_template/template/mappings"),
+                "/mappings-added-property.json"))
+        .isTrue();
+  }
+
+  void shouldExportUserRecord(
+      final Callable<UserEntity> getResponse, final Record<UserRecordValue> record)
+      throws Exception {
+    // given
+    CONFIG.setCreateSchema(true);
+    final var exporter = startExporter();
+
+    // when
+    exporter.export(record);
+
+    // then
+    final var responseUserEntity = getResponse.call();
+
+    assertThat(responseUserEntity)
+        .describedAs("User entity is updated correctly from the user record")
+        .extracting(
+            UserEntity::getEmail, UserEntity::getName, UserEntity::getUsername, UserEntity::getId)
+        .containsExactly(
+            record.getValue().getEmail(),
+            record.getValue().getName(),
+            record.getValue().getUsername(),
+            String.valueOf(record.getKey()));
+  }
+
+  void shouldExportAuthorizationRecord(
+      final Callable<AuthorizationEntity> getResponse,
+      final Record<AuthorizationRecordValue> record)
+      throws Exception {
+    // given
+    CONFIG.setCreateSchema(true);
+    final var exporter = startExporter();
+
+    // when
+    exporter.export(record);
+
+    // then
+    final var responseAuthorizationEntity = getResponse.call();
+
+    assertThat(responseAuthorizationEntity)
+        .describedAs("Authorization entity is updated correctly from the authorization record")
+        .extracting(
+            AuthorizationEntity::getOwnerKey,
+            AuthorizationEntity::getOwnerType,
+            AuthorizationEntity::getResourceType,
+            AuthorizationEntity::getPermissions,
+            AuthorizationEntity::getId)
+        .containsExactly(
+            record.getValue().getOwnerKey(),
+            String.valueOf(record.getValue().getOwnerType()),
+            String.valueOf(record.getValue().getResourceType()),
+            extractPermissions(record.getValue()),
+            String.valueOf(record.getKey()));
+  }
+
+  void shouldExportRecordOnceBulkSizeReached() {
+    // given
+    CONFIG.getBulk().setSize(2);
+    CONFIG.setCreateSchema(true);
+    final var exporter = new CamundaExporter();
+
+    final var context = getContext();
+    exporter.configure(context);
+    final var controllerSpy = spy(controller);
+    exporter.open(controllerSpy);
+
+    // when
+    final var record = factory.generateRecord(ValueType.USER);
+    final var record2 = factory.generateRecord(ValueType.USER);
+
+    exporter.export(record);
+    exporter.export(record2);
+    // then
+    verify(controllerSpy, never()).updateLastExportedRecordPosition(record.getPosition());
+    verify(controllerSpy).updateLastExportedRecordPosition(record2.getPosition());
+  }
+
+  void shouldExportRecordIfElasticsearchIsNotInitiallyReachableButThenIsReachableLater(
+      final GenericContainer<?> container, final Callable<Long> getTotalUsers) {
+    // given
+    final var exporter = new CamundaExporter();
+
+    final var context =
+        new ExporterTestContext()
+            .setConfiguration(
+                new ExporterTestConfiguration<>(CONFIG.getConnect().getType(), CONFIG));
+
+    exporter.configure(context);
+    exporter.open(controller);
+
+    // when
+    final var currentPort = container.getFirstMappedPort();
+    container.stop();
+    Awaitility.await().until(() -> !container.isRunning());
+
+    final Record<UserRecordValue> record = factory.generateRecord(ValueType.USER);
+
+    Assertions.assertThatThrownBy(() -> exporter.export(record))
+        .isInstanceOf(ExporterException.class)
+        .hasMessageContaining("Connection refused");
+
+    // starts the container on the same port again
+    container
+        .withEnv("discovery.type", "single-node")
+        .setPortBindings(List.of(currentPort + ":9200"));
+    container.start();
+
+    final Record<UserRecordValue> record2 = factory.generateRecord(ValueType.USER);
+    exporter.export(record2);
+
+    Awaitility.await().until(() -> getTotalUsers.call() == 2L);
+
+    container.setPortBindings(List.of());
   }
 
   @Nested
-  class SchemaTests {
-    @Test
-    void shouldCreateAllSchemasIfCreateEnabled() throws IOException {
-      // given
-      config.setCreateSchema(true);
-      startExporter();
+  @Testcontainers
+  class ElasticsearchBackedExporter {
+    @Container
+    private static final ElasticsearchContainer CONTAINER =
+        TestSupport.createDefeaultElasticsearchContainer();
 
-      // then
-      final var indices = testClient.indices().get(req -> req.index("*"));
-      final var indexTemplates =
-          testClient.indices().getIndexTemplate(req -> req.name("template_name"));
+    private static ElasticsearchClient client;
+    private final ProtocolFactory factory = new ProtocolFactory();
 
-      validateMappings(
-          Objects.requireNonNull(indices.result().get(index.getFullQualifiedName()).mappings()),
-          "/mappings.json");
-      validateMappings(
-          indexTemplates.indexTemplates().get(0).indexTemplate().template().mappings(),
-          "/mappings.json");
+    @BeforeEach
+    public void beforeEach() throws IOException {
+      client.indices().delete(req -> req.index("*"));
+      client.indices().deleteIndexTemplate(req -> req.name("*"));
+    }
+
+    @BeforeAll
+    public static void init() {
+      CONFIG.getConnect().setUrl(CONTAINER.getHttpHostAddress());
+      CONFIG.getConnect().setType("elasticsearch");
+      client = new ElasticsearchConnector(CONFIG.getConnect()).createClient();
     }
 
     @Test
-    void shouldUpdateSchemasCorrectlyIfCreateEnabled() throws IOException {
-      // given
-      config.setCreateSchema(true);
-      final var exporter = startExporter();
-
-      // when
-      when(index.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
-      when(indexTemplate.getMappingsClasspathFilename())
-          .thenReturn("/mappings-added-property.json");
-
-      exporter.open(controller);
-
-      // then
-      final var indices = testClient.indices().get(req -> req.index("*"));
-      final var indexTemplates =
-          testClient.indices().getIndexTemplate(req -> req.name("template_name"));
-
-      validateMappings(
-          indices.result().get(index.getFullQualifiedName()).mappings(),
-          "/mappings-added-property.json");
-      validateMappings(
-          indexTemplates.indexTemplates().getFirst().indexTemplate().template().mappings(),
-          "/mappings-added-property.json");
+    void shouldHaveCorrectSchemaUpdatesWithMultipleExporters() throws Exception {
+      CamundaExporterIT.this.shouldHaveCorrectSchemaUpdatesWithMultipleExporters(
+          () -> getElsIndexAsNode(index.getFullQualifiedName(), client),
+          () -> getElsIndexTemplateAsNode(indexTemplate.getTemplateName(), client));
     }
 
     @Test
-    void shouldCreateNewSchemasIfNewIndexDescriptorAddedToExistingSchemas() throws IOException {
-      // given
-      config.setCreateSchema(true);
-      final var resourceProvider = mockResourceProvider(Set.of(index), Set.of(indexTemplate));
-      final var exporter = new CamundaExporter(resourceProvider);
-      final var context = getContext();
-      exporter.configure(context);
-      exporter.open(controller);
-
-      // when
-      final var newIndex =
-          SchemaTestUtil.mockIndex(
-              "new_index_qualified", "new_alias", "new_index", "/mappings-added-property.json");
-      final var newIndexTemplate =
-          SchemaTestUtil.mockIndexTemplate(
-              "new_template_name",
-              "new_test*",
-              "new_template_alias",
-              Collections.emptyList(),
-              "new_template_name",
-              "/mappings-added-property.json");
-
-      when(newIndexTemplate.getFullQualifiedName())
-          .thenReturn(config.getIndex().getPrefix() + "new_template_index_qualified_name");
-
-      when(resourceProvider.getIndexDescriptors()).thenReturn(Set.of(index, newIndex));
-      when(resourceProvider.getIndexTemplateDescriptors())
-          .thenReturn(Set.of(indexTemplate, newIndexTemplate));
-
-      exporter.open(controller);
-
-      // then
-      final var indices = testClient.indices().get(req -> req.index("*"));
-      final var indexTemplates = testClient.indices().getIndexTemplate(req -> req.name("*"));
-
-      validateMappings(
-          indices.result().get(newIndex.getFullQualifiedName()).mappings(),
-          "/mappings-added-property.json");
-      validateMappings(
-          indexTemplates.indexTemplates().stream()
-              .filter(template -> template.name().equals("new_template_name"))
-              .findFirst()
-              .orElseThrow()
-              .indexTemplate()
-              .template()
-              .mappings(),
-          "/mappings-added-property.json");
+    void shouldNotErrorIfOldExporterRestartsWhileNewExporterHasAlreadyStarted() throws Exception {
+      CamundaExporterIT.this.shouldNotErrorIfOldExporterRestartsWhileNewExporterHasAlreadyStarted(
+          () -> getElsIndexAsNode(index.getFullQualifiedName(), client),
+          () -> getElsIndexTemplateAsNode(indexTemplate.getTemplateName(), client));
     }
 
     @Test
-    void shouldNotPutAnySchemasIfCreatedDisabled() throws IOException {
-      // given
-      config.setCreateSchema(false);
-
-      startExporter();
-
-      // then
-      final var indices = testClient.indices().get(req -> req.index("*"));
-      final var indexTemplates =
-          testClient.indices().getIndexTemplate(req -> req.name("template_name*"));
-
-      assertThat(indices.result().size()).isEqualTo(0);
-      assertThat(indexTemplates.indexTemplates().size()).isEqualTo(0);
-    }
-
-    @Test
-    void shouldCreateLifeCyclePoliciesOnStartupIfEnabled() throws IOException {
-      config.setCreateSchema(true);
-      config.getRetention().setEnabled(true);
-      config.getRetention().setPolicyName("policy_name");
-
-      startExporter();
-
-      final var policies = testClient.ilm().getLifecycle();
-
-      assertThat(policies.get("policy_name")).isNotNull();
-    }
-
-    @Test
-    void shouldNotCreateLifeCyclePoliciesIfDisabled() throws IOException {
-      config.setCreateSchema(true);
-      config.getRetention().setEnabled(false);
-      config.getRetention().setPolicyName("not_created_policy");
-
-      startExporter();
-      final var policies = testClient.ilm().getLifecycle();
-
-      assertThat(policies.get("not_created_policy")).isNull();
-    }
-
-    @Test
-    void shouldCreateIndexInAdditionToTemplateFromTemplateDescriptor() throws IOException {
-      config.setCreateSchema(true);
-
-      startExporter();
-
-      final var indices =
-          testClient.indices().get(req -> req.index(indexTemplate.getFullQualifiedName()));
-      assertThat(indices.result().size()).isEqualTo(1);
-    }
-  }
-
-  @Nested
-  class ExportTests {
-    @Test
-    void shouldExportUserRecord() throws IOException {
-      // given
-      final var exporter = startExporter();
+    void shouldExportUserRecord() throws Exception {
       final Record<UserRecordValue> record = factory.generateRecord(ValueType.USER);
+      final var recordId = String.valueOf(record.getKey());
 
-      // when
-      exporter.export(record);
-
-      // then
-      final String id = String.valueOf(record.getKey());
-      final var response = testClient.get(b -> b.id(id).index("users"), UserEntity.class);
-      assertThat(response)
-          .extracting(GetResponse::index, GetResponse::id)
-          .containsExactly("users", id);
-
-      assertThat(response.source())
-          .describedAs("User entity is updated correctly from the user record")
-          .extracting(UserEntity::getEmail, UserEntity::getName, UserEntity::getUsername)
-          .containsExactly(
-              record.getValue().getEmail(),
-              record.getValue().getName(),
-              record.getValue().getUsername());
+      CamundaExporterIT.this.shouldExportUserRecord(
+          () -> client.get(b -> b.id(recordId).index("users"), UserEntity.class).source(), record);
     }
 
     @Test
-    void shouldExportAuthorizationRecord() throws IOException {
-      // given
-      final var context = getContext();
-      final var exporter = new CamundaExporter();
-      exporter.configure(context);
-      exporter.open(controller);
-
+    void shouldExportAuthorizationRecord() throws Exception {
       final Record<AuthorizationRecordValue> record =
           factory.generateRecord(ValueType.AUTHORIZATION);
+      final var recordId = String.valueOf(record.getKey());
 
-      // when
-      exporter.export(record);
-
-      // then
-      final String id = String.valueOf(record.getKey());
-      final var response =
-          testClient.get(b -> b.id(id).index("authorizations"), AuthorizationEntity.class);
-      assertThat(response)
-          .extracting(GetResponse::index, GetResponse::id)
-          .containsExactly("authorizations", id);
-
-      assertThat(response.source())
-          .describedAs("Authorization entity is updated correctly from the authorization record")
-          .extracting(
-              AuthorizationEntity::getOwnerKey,
-              AuthorizationEntity::getOwnerType,
-              AuthorizationEntity::getResourceType,
-              AuthorizationEntity::getPermissionValues)
-          .containsExactly(
-              record.getValue().getOwnerKey(),
-              record.getValue().getOwnerType(),
-              record.getValue().getResourceType(),
-              extractPermissions(record.getValue()));
+      CamundaExporterIT.this.shouldExportAuthorizationRecord(
+          () ->
+              client
+                  .get(b -> b.id(recordId).index("authorizations"), AuthorizationEntity.class)
+                  .source(),
+          record);
     }
 
     @Test
     void shouldExportRecordOnceBulkSizeReached() {
-      // given
-      config.getBulk().setSize(2);
-      final var exporter = new CamundaExporter();
-
-      final var context = getContext();
-      exporter.configure(context);
-      final var controllerSpy = spy(controller);
-      exporter.open(controllerSpy);
-
-      // when
-      final var record = factory.generateRecord(ValueType.USER);
-      final var record2 = factory.generateRecord(ValueType.USER);
-
-      exporter.export(record);
-      exporter.export(record2);
-      // then
-      verify(controllerSpy, never()).updateLastExportedRecordPosition(record.getPosition());
-      verify(controllerSpy).updateLastExportedRecordPosition(record2.getPosition());
+      CamundaExporterIT.this.shouldExportRecordOnceBulkSizeReached();
     }
 
     @Test
-    void shouldExportRecordIfElasticsearchIsNotInitiallyReachableButThenIsReachableLater()
-        throws IOException {
-      // given
-      final var exporter = new CamundaExporter();
+    void shouldExportRecordIfElasticsearchIsNotInitiallyReachableButThenIsReachableLater() {
+      CamundaExporterIT.this
+          .shouldExportRecordIfElasticsearchIsNotInitiallyReachableButThenIsReachableLater(
+              CONTAINER,
+              () -> client.search(s -> s.index("users"), UserEntity.class).hits().total().value());
+    }
 
-      final var context =
-          new ExporterTestContext()
-              .setConfiguration(new ExporterTestConfiguration<>("elastic", config));
+    @Test
+    void shouldUpdateExporterPositionAfterFlushing() {
+      CamundaExporterIT.this.shouldUpdateExporterPositionAfterFlushing();
+    }
+  }
 
-      exporter.configure(context);
-      exporter.open(controller);
+  @Nested
+  @Testcontainers
+  class OpensearchBackedExporter {
+    @Container
+    private static final OpensearchContainer<?> CONTAINER =
+        TestSupport.createDefaultOpensearchContainer();
 
-      // when
-      final var currentPort = CONTAINER.getFirstMappedPort();
-      CONTAINER.stop();
-      Awaitility.await().until(() -> !CONTAINER.isRunning());
+    private static OpenSearchClient client;
+    private final ProtocolFactory factory = new ProtocolFactory();
 
+    @BeforeEach
+    public void beforeEach() throws IOException {
+      client.indices().delete(req -> req.index(CONFIG.getIndex().getPrefix() + "*"));
+      client.indices().deleteIndexTemplate(req -> req.name("*"));
+    }
+
+    @BeforeAll
+    public static void init() {
+      CONFIG.getConnect().setUrl(CONTAINER.getHttpHostAddress());
+      CONFIG.getConnect().setType("opensearch");
+      client = new OpensearchConnector(CONFIG.getConnect()).createClient();
+    }
+
+    @Test
+    void shouldHaveCorrectSchemaUpdatesWithMultipleExporters() throws Exception {
+      CamundaExporterIT.this.shouldHaveCorrectSchemaUpdatesWithMultipleExporters(
+          () -> getOpensearchIndexAsNode(index.getFullQualifiedName(), client),
+          () -> getOpensearchIndexTemplateAsNode(indexTemplate.getTemplateName(), client));
+    }
+
+    @Test
+    void shouldNotErrorIfOldExporterRestartsWhileNewExporterHasAlreadyStarted() throws Exception {
+      CamundaExporterIT.this.shouldNotErrorIfOldExporterRestartsWhileNewExporterHasAlreadyStarted(
+          () -> getOpensearchIndexAsNode(index.getFullQualifiedName(), client),
+          () -> getOpensearchIndexTemplateAsNode(indexTemplate.getTemplateName(), client));
+    }
+
+    @Test
+    void shouldExportUserRecord() throws Exception {
       final Record<UserRecordValue> record = factory.generateRecord(ValueType.USER);
+      final var recordId = String.valueOf(record.getKey());
 
-      Assertions.assertThatThrownBy(() -> exporter.export(record))
-          .isInstanceOf(ExporterException.class)
-          .hasMessageContaining("Connection refused");
+      CamundaExporterIT.this.shouldExportUserRecord(
+          () -> client.get(b -> b.id(recordId).index("users"), UserEntity.class).source(), record);
+    }
 
-      // starts the container on the same port again
-      CONTAINER
-          .withEnv("discovery.type", "single-node")
-          .withExposedPorts(9200)
-          .withCreateContainerCmdModifier(
-              cmd ->
-                  cmd.withHostConfig(
-                      new HostConfig()
-                          .withPortBindings(
-                              new PortBinding(
-                                  Ports.Binding.bindPort(currentPort), new ExposedPort(9200)))))
-          .start();
-      Awaitility.await().until(CONTAINER::isRunning);
+    @Test
+    void shouldExportAuthorizationRecord() throws Exception {
+      final Record<AuthorizationRecordValue> record =
+          factory.generateRecord(ValueType.AUTHORIZATION);
+      final var recordId = String.valueOf(record.getKey());
 
-      final Record<UserRecordValue> record2 = factory.generateRecord(ValueType.USER);
-      exporter.export(record2);
+      CamundaExporterIT.this.shouldExportAuthorizationRecord(
+          () ->
+              client
+                  .get(b -> b.id(recordId).index("authorizations"), AuthorizationEntity.class)
+                  .source(),
+          record);
+    }
 
-      // then
-      final var testClient = new ElasticsearchConnector(config.getConnect()).createClient();
+    @Test
+    void shouldExportRecordOnceBulkSizeReached() {
+      CamundaExporterIT.this.shouldExportRecordOnceBulkSizeReached();
+    }
 
-      Awaitility.await()
-          .until(
-              () ->
-                  testClient.search(s -> s.index("users"), Map.class).hits().total().value() == 2L);
+    @Test
+    void shouldExportRecordIfElasticsearchIsNotInitiallyReachableButThenIsReachableLater() {
+      CamundaExporterIT.this
+          .shouldExportRecordIfElasticsearchIsNotInitiallyReachableButThenIsReachableLater(
+              CONTAINER,
+              () -> client.search(s -> s.index("users"), UserEntity.class).hits().total().value());
+    }
 
-      final var documents =
-          testClient.search(s -> s.index("users"), Map.class).hits().hits().stream()
-              .filter(hit -> hit.id().equals(String.valueOf(record.getKey())))
-              .toList();
-      assertThat(documents).hasSize(1);
+    @Test
+    void shouldUpdateExporterPositionAfterFlushing() {
+      CamundaExporterIT.this.shouldUpdateExporterPositionAfterFlushing();
     }
   }
 
@@ -584,9 +535,9 @@ final class CamundaExporterIT {
       final var exporter = new CamundaExporter();
       final var context =
           new ExporterTestContext()
-              .setConfiguration(new ExporterTestConfiguration<>("elastic", config));
+              .setConfiguration(new ExporterTestConfiguration<>("elastic", CONFIG));
 
-      config.getConnect().setType("mysql");
+      CONFIG.getConnect().setType("mysql");
 
       // when - then
       assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
@@ -598,9 +549,9 @@ final class CamundaExporterIT {
       final var exporter = new CamundaExporter();
       final var context =
           new ExporterTestContext()
-              .setConfiguration(new ExporterTestConfiguration<>("elastic", config));
+              .setConfiguration(new ExporterTestConfiguration<>("elastic", CONFIG));
 
-      config.getIndex().setPrefix("i_am_invalid");
+      CONFIG.getIndex().setPrefix("i_am_invalid");
 
       // when - then
       assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
@@ -613,9 +564,9 @@ final class CamundaExporterIT {
       final var exporter = new CamundaExporter();
       final var context =
           new ExporterTestContext()
-              .setConfiguration(new ExporterTestConfiguration<>("elastic", config));
+              .setConfiguration(new ExporterTestConfiguration<>("elastic", CONFIG));
 
-      config.getIndex().setNumberOfShards(invalidNumberOfShards);
+      CONFIG.getIndex().setNumberOfShards(invalidNumberOfShards);
 
       // when - then
       assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
@@ -628,8 +579,8 @@ final class CamundaExporterIT {
       final var exporter = new CamundaExporter();
       final var context =
           new ExporterTestContext()
-              .setConfiguration(new ExporterTestConfiguration<>("elastic", config));
-      config.getRetention().setMinimumAge(invalidMinAge);
+              .setConfiguration(new ExporterTestConfiguration<>("elastic", CONFIG));
+      CONFIG.getRetention().setMinimumAge(invalidMinAge);
 
       // when - then
       assertThatCode(() -> exporter.configure(context))
@@ -644,8 +595,8 @@ final class CamundaExporterIT {
       final var exporter = new CamundaExporter();
       final var context =
           new ExporterTestContext()
-              .setConfiguration(new ExporterTestConfiguration<>("elastic", config));
-      config.getIndex().setNumberOfReplicas(-1);
+              .setConfiguration(new ExporterTestConfiguration<>("elastic", CONFIG));
+      CONFIG.getIndex().setNumberOfReplicas(-1);
 
       // when - then
       assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);

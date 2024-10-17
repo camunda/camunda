@@ -91,6 +91,9 @@ public class CamundaExporterITInvocationProvider
                               "http://" + elasticsearchContainer.getHttpHostAddress())
                           .withProperty("zeebe.broker.gateway.enable", true)
                           .withProperty("camunda.rest.query.enabled", true)
+                          .withProperty(
+                              "camunda.database.url",
+                              "http://" + elasticsearchContainer.getHttpHostAddress())
                           .start();
                   closeables.add(testBroker);
                   testBrokers.put(entry.getKey(), testBroker);

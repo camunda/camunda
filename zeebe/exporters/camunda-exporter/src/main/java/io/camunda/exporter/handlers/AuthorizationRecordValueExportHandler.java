@@ -7,16 +7,15 @@
  */
 package io.camunda.exporter.handlers;
 
-import io.camunda.exporter.entities.AuthorizationEntity;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity;
+import io.camunda.webapps.schema.entities.usermanagement.Permission;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.PermissionValue;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 public class AuthorizationRecordValueExportHandler
@@ -53,9 +52,9 @@ public class AuthorizationRecordValueExportHandler
     final AuthorizationRecordValue value = record.getValue();
     entity
         .setOwnerKey(value.getOwnerKey())
-        .setOwnerType(value.getOwnerType())
-        .setResourceType(value.getResourceType())
-        .setPermissionValues(getPermissionMap(value.getPermissions()));
+        .setOwnerType(value.getOwnerType().name())
+        .setResourceType(value.getResourceType().name())
+        .setPermissions(getPermissions(value.getPermissions()));
   }
 
   @Override
@@ -68,10 +67,12 @@ public class AuthorizationRecordValueExportHandler
     return "authorizations";
   }
 
-  private Map<PermissionType, List<String>> getPermissionMap(
-      final List<PermissionValue> permissionValues) {
+  private List<Permission> getPermissions(final List<PermissionValue> permissionValues) {
     return permissionValues.stream()
-        .collect(
-            Collectors.toMap(PermissionValue::getPermissionType, PermissionValue::getResourceIds));
+        .map(
+            permissionValue ->
+                new Permission(
+                    permissionValue.getPermissionType().name(), permissionValue.getResourceIds()))
+        .collect(Collectors.toList());
   }
 }

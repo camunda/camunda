@@ -29,4 +29,8 @@ public class UserTaskRecordValue extends UnpackedObject implements DbValue {
   public void setRecordWithoutVariables(final UserTaskRecord record) {
     recordProp.getValue().wrapWithoutVariables(record);
   }
+
+  public void setRecord(final UserTaskRecord record) {
+    recordProp.getValue().wrap(record);
+  }
 }

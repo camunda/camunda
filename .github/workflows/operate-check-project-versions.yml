@@ -24,16 +24,17 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Maven
-        uses: stCarolas/setup-maven@v4.5
+        uses: ./.github/actions/setup-maven-dist
         with:
           maven-version: 3.8.6
+          set-mvnw: true
 
       - name: Check versions
         env:
           RELEASE_VERSION: ${{ inputs.releaseVersion }}
           BRANCH_NAME: ${{ inputs.branch }}
         run: |
-          IDENTITY_VERSION=$(mvn -f operate help:evaluate -Dexpression=version.identity -q -DforceStdout)
+          IDENTITY_VERSION=$(./mvnw -f operate help:evaluate -Dexpression=version.identity -q -DforceStdout)
 
           if [[ $IDENTITY_VERSION != $RELEASE_VERSION ]]; then
             echo "Please update Identity versions!"

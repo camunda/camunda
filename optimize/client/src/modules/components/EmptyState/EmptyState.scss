@@ -4,31 +4,17 @@
   padding: 2.5rem;
   display: flex;
   background-color: var(--cds-layer);
-  align-items: center;
+  align-items: flex-start;
 
-  .icon {
+  > svg {
     margin-right: spacing.$spacing-06;
-    align-self: start;
-    width: 80px;
-    height: 80px;
+    width: 5rem;
+    height: 5rem;
     color: #ff8201;
-
-    .Icon {
-      width: 100%;
-      height: 100%;
-    }
-
-    svg {
-      width: inherit;
-      height: inherit;
-      max-width: initial;
-      max-height: initial;
-    }
   }
 
   .content {
-    margin-top: 5px;
-    padding-bottom: 5px;
+    margin-block: 0.5rem;
 
     .title {
       font-weight: 500;

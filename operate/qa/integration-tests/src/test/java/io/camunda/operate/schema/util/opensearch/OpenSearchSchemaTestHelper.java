@@ -20,7 +20,7 @@ import io.camunda.operate.schema.util.SchemaTestHelper;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-import io.camunda.webapps.schema.descriptors.operate.index.AbstractIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.OperateIndexDescriptor;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -102,7 +102,7 @@ public class OpenSearchSchemaTestHelper implements SchemaTestHelper {
       final String indexName,
       final String indexSchemaFilename) {
     schemaManager.createIndex(
-        new AbstractIndexDescriptor(properties.getOpensearch().getIndexPrefix(), false) {
+        new OperateIndexDescriptor(properties.getOpensearch().getIndexPrefix(), false) {
           @Override
           public String getIndexName() {
             return indexDescriptor.getIndexName();

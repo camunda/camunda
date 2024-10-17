@@ -31,6 +31,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-connect</artifactId>
     </dependency>
 
@@ -140,12 +145,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol-test-util</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>com.github.docker-java</groupId>
-      <artifactId>docker-java-api</artifactId>
       <scope>test</scope>
     </dependency>
 

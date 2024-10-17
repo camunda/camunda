@@ -98,9 +98,14 @@ public class ExporterConfiguration {
   }
 
   public static final class IndexSettings {
+    public static final int DEFAULT_VARIABLE_SIZE_THRESHOLD = 8191;
     private String prefix = "operate";
+
+    // TODO consolidate tasklist and operate prefixes
+    private String tasklistPrefix = "tasklist";
     private Integer numberOfShards = 1;
     private Integer numberOfReplicas = 0;
+    private Integer variableSizeThreshold = DEFAULT_VARIABLE_SIZE_THRESHOLD;
 
     public String getPrefix() {
       return prefix;
@@ -108,6 +113,14 @@ public class ExporterConfiguration {
 
     public void setPrefix(final String prefix) {
       this.prefix = prefix;
+    }
+
+    public String getTasklistPrefix() {
+      return tasklistPrefix;
+    }
+
+    public void setTasklistPrefix(final String tasklistPrefix) {
+      this.tasklistPrefix = tasklistPrefix;
     }
 
     public Integer getNumberOfShards() {
@@ -124,6 +137,14 @@ public class ExporterConfiguration {
 
     public void setNumberOfReplicas(final Integer numberOfReplicas) {
       this.numberOfReplicas = numberOfReplicas;
+    }
+
+    public Integer getVariableSizeThreshold() {
+      return variableSizeThreshold;
+    }
+
+    public void setVariableSizeThreshold(final Integer variableSizeThreshold) {
+      this.variableSizeThreshold = variableSizeThreshold;
     }
 
     @Override

@@ -116,6 +116,10 @@ public final class SearchResponseMapper {
     return new SearchQueryResponseImpl<>(incidents, page);
   }
 
+  public static Incident toIncidentGetResponse(final IncidentItem response) {
+    return new IncidentImpl(response);
+  }
+
   private static SearchResponsePage toSearchResponsePage(
       final SearchQueryPageResponse pageResponse) {
     return new SearchResponsePageImpl(

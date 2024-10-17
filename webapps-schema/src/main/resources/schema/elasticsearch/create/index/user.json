@@ -1,0 +1,25 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "key": {
+        "type": "long"
+      },
+      "name": {
+        "type": "keyword"
+      },
+      "username": {
+        "type": "keyword"
+      },
+      "email": {
+        "type": "keyword"
+      },
+      "password": {
+        "type": "keyword"
+      }
+    }
+  }
+}

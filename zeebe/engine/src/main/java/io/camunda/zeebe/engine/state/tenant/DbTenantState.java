@@ -58,17 +58,57 @@ public class DbTenantState implements MutableTenantState {
   public void createTenant(final TenantRecord tenantRecord) {
     tenantKey.wrapLong(tenantRecord.getTenantKey());
     tenantId.wrapString(tenantRecord.getTenantId());
-    persistedTenant.setTenant(tenantRecord);
-
+    persistedTenant.wrap(tenantRecord);
     tenantsColumnFamily.insert(tenantKey, persistedTenant);
     tenantByIdColumnFamily.insert(tenantId, fkTenantKey);
   }
 
   @Override
+  public void updateTenant(final TenantRecord updatedTenantRecord) {
+    tenantKey.wrapLong(updatedTenantRecord.getTenantKey());
+    final PersistedTenant persistedTenant = tenantsColumnFamily.get(tenantKey);
+
+    if (persistedTenant != null) {
+      final String oldTenantId = persistedTenant.getTenantId();
+      final String newTenantId = updatedTenantRecord.getTenantId();
+
+      if (!oldTenantId.equals(newTenantId)) {
+        tenantId.wrapString(oldTenantId);
+        tenantByIdColumnFamily.deleteExisting(tenantId);
+
+        tenantId.wrapString(newTenantId);
+        tenantByIdColumnFamily.insert(tenantId, fkTenantKey);
+      }
+
+      persistedTenant.wrap(updatedTenantRecord);
+      tenantsColumnFamily.update(tenantKey, persistedTenant);
+    }
+  }
+
+  @Override
   public Optional<TenantRecord> getTenantByKey(final long tenantKey) {
     this.tenantKey.wrapLong(tenantKey);
-    return Optional.ofNullable(tenantsColumnFamily.get(this.tenantKey))
-        .map(PersistedTenant::getTenant);
+    final PersistedTenant persistedTenant = tenantsColumnFamily.get(this.tenantKey);
+
+    if (persistedTenant != null) {
+      final TenantRecord tenantRecord = new TenantRecord();
+      tenantRecord
+          .setTenantKey(persistedTenant.getTenantKey())
+          .setTenantId(persistedTenant.getTenantId())
+          .setName(persistedTenant.getName());
+
+      // Retrieve entityKey if it exists for the tenant
+      final EntityTypeValue entityTypeValue =
+          entityByTenantColumnFamily.get(new DbCompositeKey<>(fkTenantKey, entityKey));
+
+      if (entityTypeValue != null) {
+        tenantRecord.setEntityKey(entityKey.getValue());
+      }
+
+      return Optional.of(tenantRecord);
+    }
+
+    return Optional.empty();
   }
 
   @Override
