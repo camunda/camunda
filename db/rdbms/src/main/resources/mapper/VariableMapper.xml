@@ -72,8 +72,19 @@
       <foreach collection="filter.tenantIds" item="value" open="(" separator=", " close=")">#{value}</foreach>
     </if>
 
-    <!-- advanced filters on variable name -->
-    <!-- TODO -->
+    <!-- advanced filters on variable name / values -->
+    <if test="filter.variableFilters != null and !filter.variableFilters.isEmpty()">
+      AND (
+      <foreach collection="filter.variableFilters" item="variableFilter">
+        (VAR_NAME = #{variableFilter}
+        <if test="variableFilter.eq != null">
+          AND VAR_VALUE = #{variableFilter.eq}
+        </if>
+        )
+        OR
+      </foreach>
+      false )
+    </if>
 
   </sql>
 
