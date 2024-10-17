@@ -14,10 +14,6 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 public class DefaultExporterResourceProviderTest {
-  //  for each test check the name matches the format
-  //  check the versions regex matches the fullqualifiedname for both template and indices
-  //  check the index prefix matches what we expect
-
   @Test
   void shouldHaveCorrectDetailsForDefaultEmptyPrefix() {
     final var config = new ExporterConfiguration();
