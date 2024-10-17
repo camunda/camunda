@@ -27,8 +27,8 @@ public class FlownodeInstanceSortImpl extends SearchQuerySortBase<FlownodeInstan
   }
 
   @Override
-  public FlownodeInstanceSort key() {
-    return field("key");
+  public FlownodeInstanceSort flowNodeInstanceKey() {
+    return field("flowNodeInstanceKey");
   }
 
   @Override
@@ -42,8 +42,8 @@ public class FlownodeInstanceSortImpl extends SearchQuerySortBase<FlownodeInstan
   }
 
   @Override
-  public FlownodeInstanceSort bpmnProcessId() {
-    return field("bpmnProcessId");
+  public FlownodeInstanceSort processDefinitionId() {
+    return field("processDefinitionId");
   }
 
   @Override
