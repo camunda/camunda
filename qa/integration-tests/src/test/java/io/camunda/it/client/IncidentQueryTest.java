@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -36,7 +37,6 @@ class IncidentQueryTest {
   private static final Logger LOGGER = LoggerFactory.getLogger(IncidentQueryTest.class);
 
   private static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
-  private static final List<ProcessInstanceEvent> PROCESS_INSTANCES = new ArrayList<>();
 
   private static ZeebeClient zeebeClient;
 
@@ -51,7 +51,7 @@ class IncidentQueryTest {
   }
 
   @BeforeAll
-  static void beforeAll() throws InterruptedException {
+  static void beforeAll() {
     zeebeClient = testStandaloneCamunda.newClientBuilder().build();
 
     final var processes =
@@ -63,14 +63,19 @@ class IncidentQueryTest {
 
     waitForProcessesToBeDeployed();
 
-    PROCESS_INSTANCES.add(startProcessInstance("service_tasks_v1"));
-    PROCESS_INSTANCES.add(startProcessInstance("service_tasks_v2", "{\"path\":222}"));
-    PROCESS_INSTANCES.add(startProcessInstance("incident_process_v1"));
+    startProcessInstance("service_tasks_v1");
+    startProcessInstance("service_tasks_v2", "{\"path\":222}");
+    startProcessInstance("incident_process_v1");
 
     waitForProcessInstancesToStart(3);
     waitForProcessInstancesToExecute(3);
 
     incident = zeebeClient.newIncidentQuery().send().join().items().getFirst();
+  }
+
+  @AfterAll
+  static void afterAll() {
+    DEPLOYED_PROCESSES.clear();
   }
 
   @Test
@@ -133,17 +138,6 @@ class IncidentQueryTest {
     assertThat(result.items().size()).isEqualTo(1);
     assertThat(result.items().getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
   }
-
-  // TODO:
-  // - processDefinitionKey
-  // - processDefinitionId
-  // - errorType
-  // - errorMessage
-  // - flowNodeId
-  // - creationTime
-  // - jobKey
-  // - treePath
-  // - tenantId
 
   @Test
   void shouldFilterByState() {
@@ -449,9 +443,6 @@ class IncidentQueryTest {
         .containsExactlyElementsOf(sortedDesc);
   }
 
-  // Implement the following tests for the remaining fields: type, processDefinitionKey,
-  // processInstanceKey, tenantId, flowNodeInstanceId, flowNodeId, state, jobKey, creationTime
-
   private static void waitForProcessesToBeDeployed() {
     Awaitility.await("should deploy processes and import in Operate")
         .atMost(Duration.ofSeconds(15))
@@ -474,16 +465,14 @@ class IncidentQueryTest {
             });
   }
 
-  private static void waitForProcessInstancesToExecute(final int expectedProcessInstances)
-      throws InterruptedException {
+  private static void waitForProcessInstancesToExecute(final int expectedProcessInstances) {
     Awaitility.await("should receive data from ES")
         .atMost(Duration.ofMinutes(1))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
-            () -> {
-              assertThat(zeebeClient.newProcessInstanceQuery().send().join().items().size())
-                  .isEqualTo(expectedProcessInstances);
-            });
+            () ->
+                assertThat(zeebeClient.newProcessInstanceQuery().send().join().items().size())
+                    .isEqualTo(expectedProcessInstances));
   }
 
   private static DeploymentEvent deployResource(final String resourceName) {
