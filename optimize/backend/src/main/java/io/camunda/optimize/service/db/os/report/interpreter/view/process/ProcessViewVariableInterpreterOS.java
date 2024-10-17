@@ -5,39 +5,44 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.service.db.es.report.interpreter.view.process;
+package io.camunda.optimize.service.db.os.report.interpreter.view.process;
 
+import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.and;
+import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.exists;
+import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.term;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_VARIABLE;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
 import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableNameField;
 import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableTypeField;
 import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableValueFieldForType;
 
-import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
-import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
-import co.elastic.clients.elasticsearch._types.aggregations.FilterAggregate;
-import co.elastic.clients.elasticsearch._types.aggregations.NestedAggregate;
-import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.VariableViewPropertyDto;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
+import io.camunda.optimize.service.db.os.report.interpreter.RawResult;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.interpreter.view.process.ProcessViewVariableInterpreterHelper;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.plan.process.ProcessView;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
-import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
+import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
+import io.camunda.optimize.util.types.MapUtil;
 import jakarta.ws.rs.BadRequestException;
 import java.util.Map;
 import java.util.Set;
+import org.opensearch.client.opensearch._types.aggregations.Aggregate;
+import org.opensearch.client.opensearch._types.aggregations.Aggregation;
+import org.opensearch.client.opensearch._types.aggregations.FilterAggregate;
+import org.opensearch.client.opensearch._types.aggregations.NestedAggregate;
+import org.opensearch.client.opensearch.core.SearchResponse;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@Conditional(ElasticSearchCondition.class)
-public class ProcessViewVariableInterpreterES
-    extends AbstractProcessViewMultiAggregationInterpreterES {
+@Conditional(OpenSearchCondition.class)
+public class ProcessViewVariableInterpreterOS
+    extends AbstractProcessViewMultiAggregationInterpreterOS {
   private static final String NESTED_VARIABLE_AGGREGATION = "nestedVariableAggregation";
   private static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
 
@@ -55,7 +60,7 @@ public class ProcessViewVariableInterpreterES
   }
 
   @Override
-  public Map<String, Aggregation.Builder.ContainerBuilder> createAggregations(
+  public Map<String, Aggregation> createAggregations(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     final VariableViewPropertyDto variableViewDto =
         ProcessViewVariableInterpreterHelper.getVariableViewDto(context);
@@ -65,48 +70,36 @@ public class ProcessViewVariableInterpreterES
           "Only numeric variable types are supported for reports with view on variables!");
     }
 
-    final Aggregation.Builder.ContainerBuilder builder =
+    final Map<String, Aggregation> aggs =
+        getAggregationStrategies(context.getReportData()).stream()
+            .map(
+                strategy ->
+                    strategy.createAggregation(
+                        null, getNestedVariableValueFieldForType(variableType)))
+            .collect(MapUtil.pairCollector());
+
+    final Aggregation filteredVariablesAggregation =
         new Aggregation.Builder()
             .filter(
-                f ->
-                    f.bool(
-                        bb ->
-                            bb.must(
-                                    mm ->
-                                        mm.term(
-                                            t ->
-                                                t.field(getNestedVariableNameField())
-                                                    .value(variableViewDto.getName())))
-                                .must(
-                                    mm ->
-                                        mm.term(
-                                            t ->
-                                                t.field(getNestedVariableTypeField())
-                                                    .value(variableType.getId())))
-                                .must(
-                                    mm ->
-                                        mm.exists(
-                                            e ->
-                                                e.field(
-                                                    getNestedVariableValueFieldForType(
-                                                        variableType))))));
+                and(
+                    term(getNestedVariableNameField(), variableViewDto.getName()),
+                    term(getNestedVariableTypeField(), variableType.getId()),
+                    exists(getNestedVariableValueFieldForType(variableType))))
+            .aggregations(aggs)
+            .build();
 
-    getAggregationStrategies(context.getReportData()).stream()
-        .map(
-            strategy ->
-                strategy.createAggregationBuilder(
-                    null, getNestedVariableValueFieldForType(variableType)))
-        .forEach((k) -> builder.aggregations(k.key(), k.value().build()));
+    final Aggregation aggregation =
+        new Aggregation.Builder()
+            .nested(n -> n.path(VARIABLES))
+            .aggregations(FILTERED_VARIABLES_AGGREGATION, filteredVariablesAggregation)
+            .build();
 
-    final Aggregation.Builder.ContainerBuilder aggBuilder =
-        new Aggregation.Builder().nested(n -> n.path(VARIABLES));
-    aggBuilder.aggregations(FILTERED_VARIABLES_AGGREGATION, a -> builder);
-    return Map.of(NESTED_VARIABLE_AGGREGATION, aggBuilder);
+    return Map.of(NESTED_VARIABLE_AGGREGATION, aggregation);
   }
 
   @Override
   public CompositeCommandResult.ViewResult retrieveResult(
-      final ResponseBody<?> response,
+      final SearchResponse<RawResult> response,
       final Map<String, Aggregate> aggs,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     final NestedAggregate nested =
