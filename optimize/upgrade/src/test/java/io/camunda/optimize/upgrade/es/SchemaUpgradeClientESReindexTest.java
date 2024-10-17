@@ -31,6 +31,7 @@ import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
+import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
@@ -39,7 +40,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import lombok.SneakyThrows;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.elasticsearch.client.Response;
@@ -54,9 +54,6 @@ import org.mockito.stubbing.OngoingStubbing;
 
 @ExtendWith(MockitoExtension.class)
 public class SchemaUpgradeClientESReindexTest {
-  @RegisterExtension
-  LogCapturer logCapturer = LogCapturer.create().captureForType(SchemaUpgradeClientES.class);
-
   @Mock private ElasticSearchSchemaManager schemaManager;
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS, strictness = Mock.Strictness.LENIENT)
@@ -66,7 +63,11 @@ public class SchemaUpgradeClientESReindexTest {
   @Mock private OptimizeIndexNameService indexNameService;
   @Mock private ElasticSearchMetadataService metadataService;
   @Mock private TaskInfo taskInfo;
+
   private SchemaUpgradeClient<?, ?> underTest;
+
+  @RegisterExtension
+  LogCapturer logCapturer = LogCapturer.create().captureForType(SchemaUpgradeClientES.class);
 
   @BeforeEach
   public void init() {
@@ -137,7 +138,7 @@ public class SchemaUpgradeClientESReindexTest {
   public void testReindexSkippedDueToEqualDocCount() throws IOException {
     // given
     final String index1 = "index1";
-    final String index2 = "index2";
+    final String index2 = "index1";
 
     mockCountResponseFromIndex(index1, 1L);
     mockCountResponseFromIndex(index2, 1L);
@@ -228,20 +229,29 @@ public class SchemaUpgradeClientESReindexTest {
     verify(elasticsearchClient).submitReindexTask(any(ReindexRequest.class));
   }
 
-  @SneakyThrows
   private void mockReindexStatus(final String taskId, final TaskResponse.Status inProgressStatus) {
-    final Response completedResponse =
-        createEsResponse(
-            new TaskResponse(
-                true,
-                new TaskResponse.Task(taskId, new TaskResponse.Status(20L, 6L, 6L, 8L)),
-                null,
-                null));
+    final Response completedResponse;
+    try {
+      completedResponse =
+          createEsResponse(
+              new TaskResponse(
+                  true,
+                  new TaskResponse.Task(taskId, new TaskResponse.Status(20L, 6L, 6L, 8L)),
+                  null,
+                  null));
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException(e);
+    }
     Response progressResponse = null;
     if (inProgressStatus != null) {
-      progressResponse =
-          createEsResponse(
-              new TaskResponse(false, new TaskResponse.Task(taskId, inProgressStatus), null, null));
+      try {
+        progressResponse =
+            createEsResponse(
+                new TaskResponse(
+                    false, new TaskResponse.Task(taskId, inProgressStatus), null, null));
+      } catch (IOException e) {
+        throw new OptimizeRuntimeException(e);
+      }
     }
     OngoingStubbing<Response> responseOngoingStubbing = whenReindexStatusRequest(taskId);
     if (progressResponse != null) {
@@ -270,23 +280,25 @@ public class SchemaUpgradeClientESReindexTest {
         .toString();
   }
 
-  @SneakyThrows
   private OngoingStubbing<Response> whenReindexStatusRequest(final String taskId) {
-    return when(
-        elasticsearchClient.performRequest(
-            argThat(
-                argument ->
-                    argument != null
-                        && argument.getMethod().equals(HttpGet.METHOD_NAME)
-                        && argument.getEndpoint().equals("/_tasks/" + taskId))));
+    try {
+      return when(
+          elasticsearchClient.performRequest(
+              argThat(
+                  argument ->
+                      argument != null
+                          && argument.getMethod().equals(HttpGet.METHOD_NAME)
+                          && argument.getEndpoint().equals("/_tasks/" + taskId))));
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException(e);
+    }
   }
 
-  @SneakyThrows
   private void mockCountResponseFromIndex(final String indexName, final long count) {
     when(elasticsearchClient.countWithoutPrefix(matches(indexName))).thenAnswer(a -> count);
   }
 
-  private Response createEsResponse(final TaskResponse taskResponse) throws IOException {
+  private Response createEsResponse(TaskResponse taskResponse) throws IOException {
     final Response mockedReindexResponse = mock(Response.class);
 
     final HttpEntity httpEntity = mock(HttpEntity.class);

@@ -206,6 +206,13 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   }
 
   @Override
+  public BatchRequest delete(final String index, final String id) {
+    LOGGER.debug("Add delete request for index {} and id {}", index, id);
+    bulkRequestBuilder.operations(op -> op.delete(del -> del.index(index).id(id)));
+    return this;
+  }
+
+  @Override
   public void execute() throws PersistenceException {
     execute(false);
   }

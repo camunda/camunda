@@ -36,6 +36,15 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
 
   ELEMENT_MIGRATED((short) 11),
 
+  /**
+   * Represents the intent that signals about the completion of execution listener job, allowing
+   * either the creation of the next execution listener job or the finalization of the process
+   * element activation (for `start` listeners) or completion (for `end` listeners) phases.
+   *
+   * <p>Until this intent is written, the execution of the process element is paused, ensuring that
+   * all operations defined by the listener are fully executed before proceeding with the element's
+   * activation or completion.
+   */
   COMPLETE_EXECUTION_LISTENER((short) 12);
 
   private static final Set<ProcessInstanceIntent> PROCESS_INSTANCE_COMMANDS = EnumSet.of(CANCEL);

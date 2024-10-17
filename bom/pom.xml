@@ -13,7 +13,7 @@
 
   <groupId>io.camunda</groupId>
   <artifactId>zeebe-bom</artifactId>
-  <version>8.6.0-SNAPSHOT</version>
+  <version>8.7.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Zeebe BOM</name>
@@ -43,7 +43,7 @@
     <license.header>${maven.multiModuleProjectDirectory}/parent/COPYING-HEADER.txt</license.header>
 
     <plugin.version.flatten>1.6.0</plugin.version.flatten>
-    <plugin.version.javadoc>3.10.0</plugin.version.javadoc>
+    <plugin.version.javadoc>3.10.1</plugin.version.javadoc>
     <plugin.version.license>4.6</plugin.version.license>
     <plugin.version.spotless>2.43.0</plugin.version.spotless>
 

@@ -17,7 +17,7 @@ import {
   fr as dateLocaleFr,
   de as dateLocaleDe,
   es as dateLocaleEs,
-  Locale,
+  type Locale,
 } from 'date-fns/locale';
 
 type LocaleConfig = {

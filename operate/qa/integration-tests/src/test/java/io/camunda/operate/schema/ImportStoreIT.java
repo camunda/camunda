@@ -20,7 +20,6 @@ import io.camunda.operate.schema.elasticsearch.ElasticsearchSchemaManager;
 import io.camunda.operate.schema.indices.ImportPositionIndex;
 import io.camunda.operate.schema.opensearch.OpensearchSchemaManager;
 import io.camunda.operate.schema.util.SchemaTestHelper;
-import io.camunda.operate.schema.util.TestTemplate;
 import io.camunda.operate.schema.util.elasticsearch.ElasticsearchSchemaTestHelper;
 import io.camunda.operate.schema.util.opensearch.OpenSearchSchemaTestHelper;
 import io.camunda.operate.store.ImportStore;
@@ -28,6 +27,7 @@ import io.camunda.operate.store.elasticsearch.ElasticsearchImportStore;
 import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.store.opensearch.OpensearchImportStore;
+import io.camunda.operate.util.IndexPrefixHolder;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,7 +40,8 @@ import org.springframework.test.context.ContextConfiguration;
 @ContextConfiguration(
     classes = {
       ImportPositionIndex.class,
-      TestTemplate.class,
+      IndexTemplateDescriptorsConfigurator.class,
+      IndexPrefixHolder.class,
       ElasticsearchSchemaManager.class,
       ElasticsearchImportStore.class,
       OpensearchSchemaManager.class,

@@ -17,13 +17,12 @@ import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
-@Getter
 public abstract class AbstractZeebeRecordFetcher<T> {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(AbstractZeebeRecordFetcher.class);
   protected final int partitionId;
   protected final ConfigurationService configurationService;
   private int dynamicBatchSize;
@@ -169,5 +168,29 @@ public abstract class AbstractZeebeRecordFetcher<T> {
     } else {
       consecutiveEmptyPages = 0;
     }
+  }
+
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  public ConfigurationService getConfigurationService() {
+    return configurationService;
+  }
+
+  public int getDynamicBatchSize() {
+    return dynamicBatchSize;
+  }
+
+  public int getConsecutiveSuccessfulFetches() {
+    return consecutiveSuccessfulFetches;
+  }
+
+  public int getConsecutiveEmptyPages() {
+    return consecutiveEmptyPages;
+  }
+
+  public Deque<Integer> getBatchSizeDeque() {
+    return batchSizeDeque;
   }
 }

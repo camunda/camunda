@@ -8,13 +8,13 @@
 package io.camunda.optimize.service.db.os.report.interpreter.util;
 
 import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.opensearch.client.opensearch._types.aggregations.CalendarInterval;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class AggregateByDateUnitMapperOS {
+
   private static final String UNSUPPORTED_UNIT_STRING = "Unsupported unit: ";
+
+  private AggregateByDateUnitMapperOS() {}
 
   public static CalendarInterval mapToCalendarInterval(final AggregateByDateUnit unit) {
     switch (unit) {

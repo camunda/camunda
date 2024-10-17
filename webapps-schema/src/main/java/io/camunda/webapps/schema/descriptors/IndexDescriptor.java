@@ -8,6 +8,9 @@
 package io.camunda.webapps.schema.descriptors;
 
 public interface IndexDescriptor {
+
+  String TENANT_ID = "tenantId";
+
   String getFullQualifiedName();
 
   String getAlias();
@@ -16,5 +19,17 @@ public interface IndexDescriptor {
 
   String getMappingsClasspathFilename();
 
+  @Deprecated
+  default String getSchemaClasspathFilename() {
+    return getMappingsClasspathFilename();
+  }
+
+  @Deprecated
+  default String getDerivedIndexNamePattern() {
+    return getFullQualifiedName() + "*";
+  }
+
   String getAllVersionsIndexNameRegexPattern();
+
+  String getVersion();
 }

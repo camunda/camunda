@@ -10,6 +10,7 @@ package io.camunda.application.commons.clustering;
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.ClusterConfig;
 import io.atomix.utils.Version;
+import io.camunda.application.commons.actor.ActorSchedulerConfiguration.SchedulerConfiguration;
 import io.camunda.zeebe.util.VersionUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -19,15 +20,26 @@ import org.springframework.context.annotation.Configuration;
 public final class AtomixClusterConfiguration {
 
   private final ClusterConfig config;
+  private final String actorSchedulerName;
 
   @Autowired
-  public AtomixClusterConfiguration(final ClusterConfig config) {
+  public AtomixClusterConfiguration(
+      final ClusterConfig config, final SchedulerConfiguration schedulerConfiguration) {
+
     this.config = config;
+    actorSchedulerName =
+        schedulerConfiguration != null
+                && schedulerConfiguration.schedulerPrefix() != null
+                && schedulerConfiguration.nodeId() != null
+            ? String.format(
+                "%s-%s", schedulerConfiguration.schedulerPrefix(), schedulerConfiguration.nodeId())
+            : "";
   }
 
   @Bean(destroyMethod = "stop")
   public AtomixCluster atomixCluster() {
-    final var atomixCluster = new AtomixCluster(config, Version.from(VersionUtil.getVersion()));
+    final var atomixCluster =
+        new AtomixCluster(config, Version.from(VersionUtil.getVersion()), actorSchedulerName);
     atomixCluster.start();
     return atomixCluster;
   }

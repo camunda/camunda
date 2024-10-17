@@ -15,6 +15,7 @@ import io.camunda.operate.property.OperateOpensearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
+import io.camunda.operate.util.IndexPrefixHolder;
 import io.camunda.operate.util.TestUtil;
 import java.io.IOException;
 import org.opensearch.client.opensearch._types.ExpandWildcard;
@@ -34,8 +35,9 @@ public class OpensearchContainerManager extends SearchContainerManager {
   public OpensearchContainerManager(
       final RichOpenSearchClient richOpenSearchClient,
       final OperateProperties operateProperties,
-      final SchemaManager schemaManager) {
-    super(operateProperties, schemaManager);
+      final SchemaManager schemaManager,
+      final IndexPrefixHolder indexPrefixHolder) {
+    super(operateProperties, schemaManager, indexPrefixHolder);
     this.richOpenSearchClient = richOpenSearchClient;
   }
 

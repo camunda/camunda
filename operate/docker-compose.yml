@@ -76,7 +76,7 @@ services:
     command: [ "sysctl", "-w", "vm.max_map_count=262144" ]
 
   opensearch:
-    image: opensearchproject/opensearch:2.17.0
+    image: opensearchproject/opensearch:2.17.1
     container_name: opensearch
     depends_on:
       - opensearch-init

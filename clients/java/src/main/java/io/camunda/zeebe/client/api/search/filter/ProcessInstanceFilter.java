@@ -19,26 +19,23 @@ import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRe
 
 public interface ProcessInstanceFilter extends SearchRequestFilter {
 
-  /** Filter by key */
-  ProcessInstanceFilter key(final Long key);
+  /** Filter by processInstanceKey */
+  ProcessInstanceFilter processInstanceKey(final Long processInstanceKey);
 
-  /** Filter by bpmnProcessId */
-  ProcessInstanceFilter bpmnProcessId(final String bpmnProcessId);
+  /** Filter by processDefinitionId */
+  ProcessInstanceFilter processDefinitionId(final String processDefinitionId);
 
-  /** Filter by processName */
-  ProcessInstanceFilter processName(final String processName);
+  /** Filter by processDefinitionName */
+  ProcessInstanceFilter processDefinitionName(final String processDefinitionName);
 
-  /** Filter by processVersion */
-  ProcessInstanceFilter processVersion(final Integer processVersion);
+  /** Filter by processDefinitionVersion */
+  ProcessInstanceFilter processDefinitionVersion(final Integer processDefinitionVersion);
 
-  /** Filter by processVersionTag */
-  ProcessInstanceFilter processVersionTag(final String processVersionTag);
+  /** Filter by processDefinitionVersionTag */
+  ProcessInstanceFilter processDefinitionVersionTag(final String processDefinitionVersionTag);
 
   /** Filter by processDefinitionKey */
   ProcessInstanceFilter processDefinitionKey(final Long processDefinitionKey);
-
-  /** Filter by rootProcessInstanceKey */
-  ProcessInstanceFilter rootProcessInstanceKey(final Long rootProcessInstanceKey);
 
   /** Filter by parentProcessInstanceKey */
   ProcessInstanceFilter parentProcessInstanceKey(final Long parentProcessInstanceKey);
@@ -58,8 +55,8 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
   /** Filter by state */
   ProcessInstanceFilter state(final String state);
 
-  /** Filter by incident */
-  ProcessInstanceFilter incident(final Boolean incident);
+  /** Filter by hasIncident */
+  ProcessInstanceFilter hasIncident(final Boolean hasIncident);
 
   /** Filter by tenantId */
   ProcessInstanceFilter tenantId(final String tenantId);

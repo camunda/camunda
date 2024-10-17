@@ -18,24 +18,15 @@ import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Conditional(CCSaaSCondition.class)
 @Component
 public class CamundaSaaSDefinitionAuthorizationService
     implements DataSourceDefinitionAuthorizationService {
 
-  @Override
-  public List<TenantDto> resolveAuthorizedTenantsForProcess(
-      final String userId,
-      final SimpleDefinitionDto definitionDto,
-      final List<String> tenantIds,
-      final Set<String> engines) {
-    return Collections.singletonList(ZEEBE_DEFAULT_TENANT);
-  }
+  public CamundaSaaSDefinitionAuthorizationService() {}
 
   @Override
   public boolean isAuthorizedToAccessDefinition(
@@ -45,6 +36,15 @@ public class CamundaSaaSDefinitionAuthorizationService
       final DefinitionType definitionType,
       final List<String> tenantIds) {
     return true;
+  }
+
+  @Override
+  public List<TenantDto> resolveAuthorizedTenantsForProcess(
+      final String userId,
+      final SimpleDefinitionDto definitionDto,
+      final List<String> tenantIds,
+      final Set<String> engines) {
+    return Collections.singletonList(ZEEBE_DEFAULT_TENANT);
   }
 
   @Override

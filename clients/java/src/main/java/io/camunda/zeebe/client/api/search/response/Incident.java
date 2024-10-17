@@ -17,11 +17,11 @@ package io.camunda.zeebe.client.api.search.response;
 
 public interface Incident {
 
-  Long getKey();
+  Long getIncidentKey();
 
   Long getProcessDefinitionKey();
 
-  String getBpmnProcessId();
+  String getProcessDefinitionId();
 
   Long getProcessInstanceKey();
 

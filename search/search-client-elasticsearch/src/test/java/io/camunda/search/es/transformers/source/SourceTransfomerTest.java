@@ -11,9 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch.core.search.SourceConfig;
 import io.camunda.search.clients.source.SearchSourceConfig;
+import io.camunda.search.clients.transformers.SearchTransfomer;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import io.camunda.search.es.util.ESQuerySerializer;
-import io.camunda.search.transformers.SearchTransfomer;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Stream;

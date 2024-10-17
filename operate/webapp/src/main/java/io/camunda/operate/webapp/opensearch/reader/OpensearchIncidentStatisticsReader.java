@@ -7,11 +7,6 @@
  */
 package io.camunda.operate.webapp.opensearch.reader;
 
-import static io.camunda.operate.schema.templates.ListViewTemplate.INCIDENT;
-import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_KEY;
-import static io.camunda.operate.schema.templates.ListViewTemplate.STATE;
 import static io.camunda.operate.store.opensearch.OpensearchIncidentStore.ACTIVE_INCIDENT_QUERY;
 import static io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations.TERMS_AGG_SIZE;
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.cardinalityAggregation;
@@ -21,11 +16,13 @@ import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.withSubaggr
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.INCIDENT;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_KEY;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.STATE;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.schema.indices.ProcessIndex;
-import io.camunda.operate.schema.templates.IncidentTemplate;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.ConversionUtils;
@@ -37,6 +34,9 @@ import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByErrorMsgStatistic
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByProcessGroupStatisticsDto;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
 import java.util.HashMap;
@@ -138,7 +138,7 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
     return result;
   }
 
-  private List<LongTermsBucket> searchAggBuckets(Query query) {
+  private List<LongTermsBucket> searchAggBuckets(final Query query) {
     final var searchRequestBuilder =
         searchRequestBuilder(processInstanceTemplate, ONLY_RUNTIME)
             .query(withTenantCheck(query))
@@ -162,7 +162,7 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
   }
 
   private Map<Long, IncidentByProcessStatisticsDto> updateActiveInstances(
-      Map<Long, IncidentByProcessStatisticsDto> statistics) {
+      final Map<Long, IncidentByProcessStatisticsDto> statistics) {
     final Map<Long, IncidentByProcessStatisticsDto> results = new HashMap<>(statistics);
     final Query query =
         withTenantCheck(
@@ -189,7 +189,7 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
   }
 
   private Set<IncidentsByProcessGroupStatisticsDto> collectStatisticsForProcessGroups(
-      Map<Long, IncidentByProcessStatisticsDto> incidentsByProcessMap) {
+      final Map<Long, IncidentByProcessStatisticsDto> incidentsByProcessMap) {
     final Set<IncidentsByProcessGroupStatisticsDto> result =
         new TreeSet<>(IncidentsByProcessGroupStatisticsDto.COMPARATOR);
 
@@ -197,7 +197,7 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
         processReader.getProcessesGrouped(new ProcessRequestDto());
 
     // iterate over process groups (bpmnProcessId)
-    for (List<ProcessEntity> processes : processGroups.values()) {
+    for (final List<ProcessEntity> processes : processGroups.values()) {
       final IncidentsByProcessGroupStatisticsDto stat = new IncidentsByProcessGroupStatisticsDto();
       stat.setBpmnProcessId(processes.get(0).getBpmnProcessId());
       stat.setTenantId(processes.get(0).getTenantId());
@@ -210,7 +210,7 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
       long maxVersion = 0;
 
       // iterate over process versions
-      for (ProcessEntity processEntity : processes) {
+      for (final ProcessEntity processEntity : processes) {
         IncidentByProcessStatisticsDto statForProcess =
             incidentsByProcessMap.get(processEntity.getKey());
         if (statForProcess != null) {
@@ -242,7 +242,7 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
     return result;
   }
 
-  private Query createQueryForProcessesByPermission(IdentityPermission permission) {
+  private Query createQueryForProcessesByPermission(final IdentityPermission permission) {
     final PermissionsService.ResourcesAllowed allowed =
         permissionsService.getProcessesWithPermission(permission);
     if (allowed == null) {
@@ -254,7 +254,7 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
   }
 
   private IncidentsByErrorMsgStatisticsDto getIncidentsByErrorMsgStatistic(
-      Map<Long, ProcessEntity> processes, LongTermsBucket errorMessageBucket) {
+      final Map<Long, ProcessEntity> processes, final LongTermsBucket errorMessageBucket) {
     record ErrorMessage(String errorMessage) {}
 
     final ErrorMessage errorMessage =

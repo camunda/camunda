@@ -16,23 +16,28 @@ import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.time.Duration;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 @Conditional(CCSaaSCondition.class)
 public class MixpanelDataScheduler extends AbstractScheduledService
     implements ConfigurationReloadable {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(MixpanelDataScheduler.class);
   private final ConfigurationService configurationService;
   private final MixpanelReportingService mixpanelReportingService;
+
+  public MixpanelDataScheduler(
+      final ConfigurationService configurationService,
+      final MixpanelReportingService mixpanelReportingService) {
+    this.configurationService = configurationService;
+    this.mixpanelReportingService = mixpanelReportingService;
+  }
 
   @PostConstruct
   public void init() {
@@ -48,7 +53,7 @@ public class MixpanelDataScheduler extends AbstractScheduledService
       try {
         mixpanelReportingService.sendHeartbeatData();
         log.info("Mixpanel telemetry data was sent.");
-      } catch (OptimizeRuntimeException e) {
+      } catch (final OptimizeRuntimeException e) {
         log.error("Failed to send Mixpanel telemetry.", e);
       }
     } else {
@@ -57,14 +62,14 @@ public class MixpanelDataScheduler extends AbstractScheduledService
   }
 
   @Override
-  public void reloadConfiguration(final ApplicationContext context) {
-    init();
-  }
-
-  @Override
   protected Trigger createScheduleTrigger() {
     return new PeriodicTrigger(
         Duration.ofHours(getTelemetryConfiguration().getReportingIntervalInHours()));
+  }
+
+  @Override
+  public void reloadConfiguration(final ApplicationContext context) {
+    init();
   }
 
   public synchronized boolean startMixpanelTelemetryScheduling() {
@@ -79,6 +84,6 @@ public class MixpanelDataScheduler extends AbstractScheduledService
   }
 
   protected TelemetryConfiguration getTelemetryConfiguration() {
-    return this.configurationService.getTelemetryConfiguration();
+    return configurationService.getTelemetryConfiguration();
   }
 }

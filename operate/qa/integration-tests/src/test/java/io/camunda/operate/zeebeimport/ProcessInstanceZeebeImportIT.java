@@ -13,7 +13,6 @@ import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.SequenceFlowStore;
 import io.camunda.operate.util.ConversionUtils;
@@ -29,6 +28,7 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto;
 import io.camunda.operate.webapp.rest.dto.listview.VariablesQueryDto;
+import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.FlowNodeState;
 import io.camunda.webapps.schema.entities.operate.FlowNodeType;

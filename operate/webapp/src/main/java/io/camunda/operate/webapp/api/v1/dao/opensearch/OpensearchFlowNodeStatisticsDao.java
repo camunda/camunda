@@ -7,22 +7,22 @@
  */
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
-import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.FLOW_NODE_ID;
-import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.INCIDENT;
-import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.STATE;
-import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TYPE;
+import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.FLOW_NODE_ID;
+import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.INCIDENT;
+import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.STATE;
+import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.TYPE;
 import static io.camunda.webapps.schema.entities.operate.FlowNodeState.ACTIVE;
 import static io.camunda.webapps.schema.entities.operate.FlowNodeState.COMPLETED;
 import static io.camunda.webapps.schema.entities.operate.FlowNodeState.TERMINATED;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.FlowNodeStatisticsDao;
 import io.camunda.operate.webapp.api.v1.entities.FlowNodeStatistics;
 import io.camunda.operate.webapp.opensearch.OpensearchAggregationDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
+import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.operate.FlowNodeType;
 import java.util.List;
 import java.util.Map;
@@ -40,11 +40,11 @@ public class OpensearchFlowNodeStatisticsDao implements FlowNodeStatisticsDao {
   private final OpensearchAggregationDSLWrapper aggregationDSLWrapper;
 
   public OpensearchFlowNodeStatisticsDao(
-      OpensearchQueryDSLWrapper queryDSLWrapper,
-      OpensearchRequestDSLWrapper requestDSLWrapper,
-      OpensearchAggregationDSLWrapper aggregationDSLWrapper,
-      RichOpenSearchClient richOpenSearchClient,
-      FlowNodeInstanceTemplate flowNodeInstanceTemplate) {
+      final OpensearchQueryDSLWrapper queryDSLWrapper,
+      final OpensearchRequestDSLWrapper requestDSLWrapper,
+      final OpensearchAggregationDSLWrapper aggregationDSLWrapper,
+      final RichOpenSearchClient richOpenSearchClient,
+      final FlowNodeInstanceTemplate flowNodeInstanceTemplate) {
     this.flowNodeInstanceTemplate = flowNodeInstanceTemplate;
     this.richOpenSearchClient = richOpenSearchClient;
     this.queryDSLWrapper = queryDSLWrapper;
@@ -53,7 +53,8 @@ public class OpensearchFlowNodeStatisticsDao implements FlowNodeStatisticsDao {
   }
 
   @Override
-  public List<FlowNodeStatistics> getFlowNodeStatisticsForProcessInstance(Long processInstanceKey) {
+  public List<FlowNodeStatistics> getFlowNodeStatisticsForProcessInstance(
+      final Long processInstanceKey) {
     final var requestBuilder =
         requestDSLWrapper
             .searchRequestBuilder(flowNodeInstanceTemplate)

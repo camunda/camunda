@@ -21,23 +21,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.FailsafeExecutor;
 import net.jodah.failsafe.RetryPolicy;
 import org.apache.tika.utils.StringUtils;
+import org.slf4j.Logger;
 
-@Slf4j
 public abstract class DatabaseClient implements ConfigurationReloadable {
 
   protected static final String NESTED_DOC_LIMIT_MESSAGE =
       "The number of nested documents has exceeded the allowed limit of";
   private static final int DEFAULT_SNAPSHOT_IN_PROGRESS_RETRY_DELAY = 30;
-  @Getter protected OptimizeIndexNameService indexNameService;
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DatabaseClient.class);
+  protected OptimizeIndexNameService indexNameService;
 
-  @Setter
   private int snapshotInProgressRetryDelaySeconds = DEFAULT_SNAPSHOT_IN_PROGRESS_RETRY_DELAY;
 
   /**
@@ -47,12 +44,13 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
    * @return A Map where the keys are the name of the matching indexes and the value is a set
    *     containing the aliases for the respective index. This map can have multiple keys because
    *     indexNamePattern may contain wildcards
-   * @throws IOException
    */
   public abstract Map<String, Set<String>> getAliasesForIndexPattern(final String indexNamePattern)
       throws IOException;
 
   public abstract Set<String> getAllIndicesForAlias(final String aliasName) throws IOException;
+
+  public abstract boolean exists(final String indexName) throws IOException;
 
   public abstract boolean triggerRollover(final String indexAliasName, final int maxIndexSizeGB);
 
@@ -88,6 +86,14 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
       final String engineAlias);
 
   public abstract DatabaseType getDatabaseVendor();
+
+  public long countWithoutPrefixWithExistsCheck(final String unprefixedIndex) throws IOException {
+    if (exists(unprefixedIndex)) {
+      return countWithoutPrefix(unprefixedIndex);
+    }
+    log.debug("Index {} does not exist, returning a document count of 0.", unprefixedIndex);
+    return 0;
+  }
 
   public String[] convertToPrefixedAliasNames(final String[] indices) {
     return Arrays.stream(indices).map(this::convertToPrefixedAliasName).toArray(String[]::new);
@@ -194,5 +200,13 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
       final RequestType type, final String fieldName) {
     return String.format(
         "The %s param of ImportRequestDto is not valid for request type %s", fieldName, type);
+  }
+
+  public OptimizeIndexNameService getIndexNameService() {
+    return this.indexNameService;
+  }
+
+  public void setSnapshotInProgressRetryDelaySeconds(int snapshotInProgressRetryDelaySeconds) {
+    this.snapshotInProgressRetryDelaySeconds = snapshotInProgressRetryDelaySeconds;
   }
 }

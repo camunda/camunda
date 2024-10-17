@@ -1,0 +1,13 @@
+-------------------------------------------
+Access each component at the following urls:
+
+Operate:                     http://localhost:8080/operate
+Tasklist:                    http://localhost:8080/tasklist
+Zeebe Cluster Endpoint:      http://localhost:26500
+Inbound Connectors Endpoint: http://localhost:8085
+
+When using the Desktop Modeler, Authentication may be set to None.
+
+Refer to https://docs.camunda.io/docs/guides/getting-started-java-spring/ for help getting started with Camunda
+
+-------------------------------------------

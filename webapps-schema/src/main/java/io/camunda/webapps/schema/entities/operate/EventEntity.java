@@ -32,7 +32,7 @@ public class EventEntity extends OperateZeebeEntity<EventEntity> {
   /** Metadata */
   private EventMetadataEntity metadata;
 
-  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  private String tenantId = DEFAULT_TENANT_ID;
 
   private Long position;
   private Long positionIncident;

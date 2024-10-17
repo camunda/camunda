@@ -57,28 +57,28 @@ public class DecisionInstanceSortImpl extends SearchQuerySortBase<DecisionInstan
   }
 
   @Override
-  public DecisionInstanceSort decisionKey() {
-    return field("decisionKey");
+  public DecisionInstanceSort decisionDefinitionKey() {
+    return field("decisionDefinitionKey");
   }
 
   @Override
-  public DecisionInstanceSort dmnDecisionId() {
-    return field("dmnDecisionId");
+  public DecisionInstanceSort decisionDefinitionId() {
+    return field("decisionDefinitionId");
   }
 
   @Override
-  public DecisionInstanceSort dmnDecisionName() {
-    return field("dmnDecisionName");
+  public DecisionInstanceSort decisionDefinitionName() {
+    return field("decisionDefinitionName");
   }
 
   @Override
-  public DecisionInstanceSort decisionVersion() {
-    return field("decisionVersion");
+  public DecisionInstanceSort decisionDefinitionVersion() {
+    return field("decisionDefinitionVersion");
   }
 
   @Override
-  public DecisionInstanceSort decisionType() {
-    return field("decisionType");
+  public DecisionInstanceSort decisionDefinitionType() {
+    return field("decisionDefinitionType");
   }
 
   @Override

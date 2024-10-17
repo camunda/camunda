@@ -145,7 +145,8 @@ public final class DiscoveryMembershipProtocol
     }
 
     @Override
-    public GroupMembershipProtocol newProtocol(final Config config) {
+    public GroupMembershipProtocol newProtocol(
+        final Config config, final String actorSchedulerName) {
       return new DiscoveryMembershipProtocol(config);
     }
   }

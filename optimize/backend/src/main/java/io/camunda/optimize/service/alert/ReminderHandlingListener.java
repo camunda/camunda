@@ -7,7 +7,6 @@
  */
 package io.camunda.optimize.service.alert;
 
-import lombok.extern.slf4j.Slf4j;
 import org.quartz.JobDetail;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
@@ -15,16 +14,18 @@ import org.quartz.JobKey;
 import org.quartz.JobListener;
 import org.quartz.SchedulerException;
 import org.quartz.TriggerKey;
+import org.slf4j.Logger;
 
-@Slf4j
 public class ReminderHandlingListener implements JobListener {
 
   private static final String LISTENER_NAME = "alert-reminder-handler";
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ReminderHandlingListener.class);
 
   private final AlertReminderJobFactory alertReminderJobFactory;
 
-  public ReminderHandlingListener(AlertReminderJobFactory reminderJobFactory) {
-    this.alertReminderJobFactory = reminderJobFactory;
+  public ReminderHandlingListener(final AlertReminderJobFactory reminderJobFactory) {
+    alertReminderJobFactory = reminderJobFactory;
   }
 
   @Override
@@ -33,23 +34,24 @@ public class ReminderHandlingListener implements JobListener {
   }
 
   @Override
-  public void jobToBeExecuted(JobExecutionContext context) {
+  public void jobToBeExecuted(final JobExecutionContext context) {
     // do nothing
   }
 
   @Override
-  public void jobExecutionVetoed(JobExecutionContext context) {
+  public void jobExecutionVetoed(final JobExecutionContext context) {
     // do nothing
   }
 
   @Override
-  public void jobWasExecuted(JobExecutionContext context, JobExecutionException jobException) {
-    AlertJobResult result = (AlertJobResult) context.getResult();
+  public void jobWasExecuted(
+      final JobExecutionContext context, final JobExecutionException jobException) {
+    final AlertJobResult result = (AlertJobResult) context.getResult();
     if (result != null && result.isStatusChanged()) {
       // create reminders if needed
       if (result.getAlert().isTriggered() && result.getAlert().getReminder() != null) {
         log.debug("Creating reminder job for [{}]", result.getAlert().getId());
-        JobDetail jobDetails = alertReminderJobFactory.createJobDetails(result.getAlert());
+        final JobDetail jobDetails = alertReminderJobFactory.createJobDetails(result.getAlert());
         try {
           if (context.getScheduler().checkExists(jobDetails.getKey())) {
             log.debug(
@@ -61,18 +63,18 @@ public class ReminderHandlingListener implements JobListener {
               .getScheduler()
               .scheduleJob(
                   jobDetails, alertReminderJobFactory.createTrigger(result.getAlert(), jobDetails));
-        } catch (Exception e) {
+        } catch (final Exception e) {
           log.error("can't schedule reminder for [{}]", result.getAlert().getId(), e);
         }
       } else {
         // remove reminders
-        JobKey jobKey = alertReminderJobFactory.getJobKey(result.getAlert());
-        TriggerKey triggerKey = alertReminderJobFactory.getTriggerKey(result.getAlert());
+        final JobKey jobKey = alertReminderJobFactory.getJobKey(result.getAlert());
+        final TriggerKey triggerKey = alertReminderJobFactory.getTriggerKey(result.getAlert());
 
         try {
           context.getScheduler().unscheduleJob(triggerKey);
           context.getScheduler().deleteJob(jobKey);
-        } catch (SchedulerException e) {
+        } catch (final SchedulerException e) {
           log.error("can't remove reminders for alert [{}]", result.getAlert().getId());
         }
       }

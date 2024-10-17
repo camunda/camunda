@@ -85,11 +85,12 @@ final class NettyMessagingServiceTest {
           final var pool = new ChannelPool(factory, 8);
           poolRef.set(pool);
           return pool;
-        });
+        },
+        "testingPrefix");
   }
 
   private NettyMessagingService newMessagingService() {
-    return new NettyMessagingService(CLUSTER_NAME, newAddress(), defaultConfig());
+    return new NettyMessagingService(CLUSTER_NAME, newAddress(), defaultConfig(), "testingPrefix");
   }
 
   private Address newAddress() {
@@ -219,7 +220,8 @@ final class NettyMessagingServiceTest {
 
       // when
       final var nonBindableAddress = new Address("invalid.host", 1);
-      try (final var service = new NettyMessagingService("test", nonBindableAddress, config)) {
+      try (final var service =
+          new NettyMessagingService("test", nonBindableAddress, config, "testingPrefix")) {
         // then - should not fail by using advertisedAddress for binding
         assertThat(service.start()).succeedsWithin(Duration.ofSeconds(5));
         assertThat(service.bindingAddresses()).contains(bindingAddress);

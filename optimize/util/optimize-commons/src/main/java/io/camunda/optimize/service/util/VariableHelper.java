@@ -10,11 +10,10 @@ package io.camunda.optimize.service.util;
 import io.camunda.optimize.dto.optimize.ReportConstants;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 import java.util.Optional;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class VariableHelper {
+
+  private VariableHelper() {}
 
   public static boolean isProcessVariableTypeSupported(final String variableTypeString) {
     return Optional.ofNullable(variableTypeString)

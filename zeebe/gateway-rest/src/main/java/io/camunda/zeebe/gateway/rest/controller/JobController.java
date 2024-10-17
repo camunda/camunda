@@ -22,7 +22,6 @@ import io.camunda.zeebe.gateway.rest.RequestMapper.FailJobRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper.UpdateJobRequest;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import java.util.concurrent.CompletableFuture;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -38,7 +37,6 @@ public class JobController {
   private final ResponseObserverProvider responseObserverProvider;
   private final JobServices<JobActivationResponse> jobServices;
 
-  @Autowired
   public JobController(
       final JobServices<JobActivationResponse> jobServices,
       final ResponseObserverProvider responseObserverProvider) {

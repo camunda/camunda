@@ -22,32 +22,30 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.view.TypedVi
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.VariableViewPropertyDto;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 import java.util.Optional;
-import lombok.EqualsAndHashCode;
 
-@EqualsAndHashCode
 public class ViewProperty implements Combinable {
+
   public static final ViewProperty FREQUENCY = new ViewProperty(VIEW_FREQUENCY_PROPERTY);
   public static final ViewProperty DURATION = new ViewProperty(VIEW_DURATION_PROPERTY);
   public static final ViewProperty PERCENTAGE = new ViewProperty(VIEW_PERCENTAGE_PROPERTY);
   public static final ViewProperty RAW_DATA = new ViewProperty(VIEW_RAW_DATA_PROPERTY);
-
-  // uppercase is intended here to align it with other static fields
-  @SuppressWarnings("java:S100")
-  public static ViewProperty VARIABLE(final String variableName, final VariableType variableType) {
-    return new ViewProperty(variableName, variableType);
-  }
-
   private final TypedViewPropertyDto viewPropertyDto;
 
   @JsonCreator
   public ViewProperty(final String singleStringProperty) {
-    this.viewPropertyDto = new StringViewPropertyDto(singleStringProperty);
+    viewPropertyDto = new StringViewPropertyDto(singleStringProperty);
   }
 
   @JsonCreator
   private ViewProperty(
       @JsonProperty("name") final String name, @JsonProperty("type") final VariableType type) {
-    this.viewPropertyDto = new VariableViewPropertyDto(name, type);
+    viewPropertyDto = new VariableViewPropertyDto(name, type);
+  }
+
+  // uppercase is intended here to align it with other static fields
+  @SuppressWarnings("java:S100")
+  public static ViewProperty VARIABLE(final String variableName, final VariableType variableType) {
+    return new ViewProperty(variableName, variableType);
   }
 
   @Override
@@ -58,7 +56,7 @@ public class ViewProperty implements Combinable {
     if (!(o instanceof ViewProperty)) {
       return false;
     }
-    ViewProperty other = (ViewProperty) o;
+    final ViewProperty other = (ViewProperty) o;
     return Combinable.isCombinable(viewPropertyDto, other.viewPropertyDto);
   }
 
@@ -70,7 +68,42 @@ public class ViewProperty implements Combinable {
   @JsonIgnore
   public <T extends TypedViewPropertyDto> Optional<T> getViewPropertyDtoIfOfType(
       final Class<T> clazz) {
-    return Optional.of(this.viewPropertyDto).filter(clazz::isInstance).map(clazz::cast);
+    return Optional.of(viewPropertyDto).filter(clazz::isInstance).map(clazz::cast);
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof ViewProperty;
+  }
+
+  @Override
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = 1;
+    final Object $viewPropertyDto = getViewPropertyDto();
+    result = result * PRIME + ($viewPropertyDto == null ? 43 : $viewPropertyDto.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof ViewProperty)) {
+      return false;
+    }
+    final ViewProperty other = (ViewProperty) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    final Object this$viewPropertyDto = getViewPropertyDto();
+    final Object other$viewPropertyDto = other.getViewPropertyDto();
+    if (this$viewPropertyDto == null
+        ? other$viewPropertyDto != null
+        : !this$viewPropertyDto.equals(other$viewPropertyDto)) {
+      return false;
+    }
+    return true;
   }
 
   @Override

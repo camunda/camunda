@@ -55,8 +55,6 @@ public final class CommandDistributionBehavior {
       new CommandDistributionRecord();
   private final CommandDistributionRecord commandDistributionEnqueued =
       new CommandDistributionRecord();
-  private final CommandDistributionRecord commandDistributionAcknowledge =
-      new CommandDistributionRecord();
   private final CommandDistributionRecord commandDistributionContinuation =
       new CommandDistributionRecord();
 
@@ -247,10 +245,9 @@ public final class CommandDistributionBehavior {
   public <T extends UnifiedRecordValue> void acknowledgeCommand(final TypedRecord<T> command) {
     final long distributionKey = command.getKey();
 
-    commandDistributionAcknowledge.reset();
-
-    final var distributionRecord =
-        commandDistributionAcknowledge
+    // ACKNOWLEDGE must be a new record as it is transmitted as a side effect
+    final var acknowledgeRecord =
+        new CommandDistributionRecord()
             .setPartitionId(currentPartitionId)
             .setValueType(command.getValueType())
             .setIntent(command.getIntent());
@@ -263,7 +260,7 @@ public final class CommandDistributionBehavior {
               ValueType.COMMAND_DISTRIBUTION,
               CommandDistributionIntent.ACKNOWLEDGE,
               distributionKey,
-              distributionRecord);
+              acknowledgeRecord);
           return true;
         });
   }

@@ -7,12 +7,12 @@
  */
 package io.camunda.operate.webapp.api.v1.dao.elasticsearch;
 
-import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.FLOW_NODE_ID;
-import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.INCIDENT;
-import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.STATE;
-import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TYPE;
 import static io.camunda.operate.util.ElasticsearchUtil.TERMS_AGG_SIZE;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.FLOW_NODE_ID;
+import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.INCIDENT;
+import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.STATE;
+import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.TYPE;
 import static io.camunda.webapps.schema.entities.operate.FlowNodeState.ACTIVE;
 import static io.camunda.webapps.schema.entities.operate.FlowNodeState.COMPLETED;
 import static io.camunda.webapps.schema.entities.operate.FlowNodeState.TERMINATED;
@@ -24,11 +24,11 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.api.v1.dao.FlowNodeStatisticsDao;
 import io.camunda.operate.webapp.api.v1.entities.FlowNodeStatistics;
 import io.camunda.operate.webapp.api.v1.entities.Query;
+import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.operate.FlowNodeType;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -53,7 +53,7 @@ public class ElasticsearchFlowNodeStatisticsDao extends ElasticsearchDao<FlowNod
 
   @Override
   protected void buildFiltering(
-      Query<FlowNodeStatistics> query, SearchSourceBuilder searchSourceBuilder) {
+      final Query<FlowNodeStatistics> query, final SearchSourceBuilder searchSourceBuilder) {
 
     final FlowNodeStatistics filter = query.getFilter();
     final List<QueryBuilder> queryBuilders = new ArrayList<>();
@@ -64,7 +64,8 @@ public class ElasticsearchFlowNodeStatisticsDao extends ElasticsearchDao<FlowNod
   }
 
   @Override
-  public List<FlowNodeStatistics> getFlowNodeStatisticsForProcessInstance(Long processInstanceKey) {
+  public List<FlowNodeStatistics> getFlowNodeStatisticsForProcessInstance(
+      final Long processInstanceKey) {
     try {
       final SearchRequest request =
           ElasticsearchUtil.createSearchRequest(flowNodeInstanceTemplate)
@@ -128,7 +129,7 @@ public class ElasticsearchFlowNodeStatisticsDao extends ElasticsearchDao<FlowNod
                       .setActive(
                           ((Filter) bucket.getAggregations().get(COUNT_ACTIVE)).getDocCount()))
           .collect(Collectors.toList());
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format(
               "Exception occurred, while obtaining statistics for process instance flow nodes: %s",

@@ -25,13 +25,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
 public class ZeebeProcessDefinitionImportService
     implements ImportService<ZeebeProcessDefinitionRecordDto> {
 
   private static final Set<ProcessIntent> INTENTS_TO_IMPORT = Set.of(ProcessIntent.CREATED);
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ZeebeProcessDefinitionImportService.class);
 
   private final DatabaseImportJobExecutor databaseImportJobExecutor;
   private final ProcessDefinitionWriter processDefinitionWriter;

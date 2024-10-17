@@ -28,26 +28,38 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
-@AllArgsConstructor
 public class CustomerOnboardingDataImportService {
 
   private static final String CUSTOMER_ONBOARDING_DEFINITION =
       "customer_onboarding_definition.json";
   private static final String PROCESSED_INSTANCES = "customer_onboarding_process_instances.json";
   private static final int BATCH_SIZE = 2000;
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(CustomerOnboardingDataImportService.class);
   private final ProcessDefinitionWriter processDefinitionWriter;
   private final ObjectMapper objectMapper;
   private final ConfigurationService configurationService;
   private final ProcessInstanceWriter processInstanceWriter;
   private final ProcessInstanceRepository processInstanceRepository;
+
+  public CustomerOnboardingDataImportService(
+      ProcessDefinitionWriter processDefinitionWriter,
+      ObjectMapper objectMapper,
+      ConfigurationService configurationService,
+      ProcessInstanceWriter processInstanceWriter,
+      ProcessInstanceRepository processInstanceRepository) {
+    this.processDefinitionWriter = processDefinitionWriter;
+    this.objectMapper = objectMapper;
+    this.configurationService = configurationService;
+    this.processInstanceWriter = processInstanceWriter;
+    this.processInstanceRepository = processInstanceRepository;
+  }
 
   @EventListener(ApplicationReadyEvent.class)
   public void importData() {

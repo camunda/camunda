@@ -14,12 +14,12 @@ import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBu
 
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.store.IncidentStore;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.store.opensearch.dsl.RequestDSL;
 import io.camunda.operate.util.CollectionUtil;
+import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.entities.operate.ErrorType;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentState;

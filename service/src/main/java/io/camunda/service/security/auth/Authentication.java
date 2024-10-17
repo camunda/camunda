@@ -9,7 +9,7 @@ package io.camunda.service.security.auth;
 
 import static io.camunda.util.CollectionUtil.addValuesToList;
 
-import io.camunda.service.search.filter.FilterBase;
+import io.camunda.search.filter.FilterBase;
 import io.camunda.util.ObjectBuilder;
 import java.util.List;
 
@@ -20,7 +20,8 @@ public record Authentication(
     String token)
     implements FilterBase {
 
-  public static final class Builder implements ObjectBuilder<Authentication> {
+  public static final class Builder
+      implements ObjectBuilder<io.camunda.search.security.auth.Authentication> {
 
     private String user;
     private List<String> groups;
@@ -56,8 +57,8 @@ public record Authentication(
     }
 
     @Override
-    public Authentication build() {
-      return new Authentication(user, groups, tenants, token);
+    public io.camunda.search.security.auth.Authentication build() {
+      return new io.camunda.search.security.auth.Authentication(user, groups, tenants, token);
     }
   }
 }

@@ -18,17 +18,18 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import io.camunda.search.connect.plugin.PluginRepository;
 import java.io.IOException;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Conditional(OpenSearchCondition.class)
-@Slf4j
 public class OptimizeOpenSearchClientFactory {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(OptimizeOpenSearchClientFactory.class);
+
+  private OptimizeOpenSearchClientFactory() {}
 
   public static OptimizeOpenSearchClient create(
       final ConfigurationService configurationService,
@@ -59,14 +60,19 @@ public class OptimizeOpenSearchClientFactory {
       final OpenSearchClient osClient, final BackoffCalculator backoffCalculator)
       throws IOException {
     boolean isConnected = false;
+    int connectionAttempts = 0;
     while (!isConnected) {
+      connectionAttempts++;
       try {
         isConnected = getNumberOfClusterNodes(osClient) > 0;
       } catch (final Exception e) {
-        log.error(
-            "Can't connect to any OpenSearch node {}. Please check the connection!",
-            osClient.nodes(),
-            e);
+        final String errorMessage =
+            "Can't connect to any OpenSearch node {}. Please check the connection!";
+        if (connectionAttempts < 10) {
+          log.warn(errorMessage, osClient.nodes());
+        } else {
+          log.error(errorMessage, osClient.nodes(), e);
+        }
       } finally {
         if (!isConnected) {
           final long sleepTime = backoffCalculator.calculateSleepTime();

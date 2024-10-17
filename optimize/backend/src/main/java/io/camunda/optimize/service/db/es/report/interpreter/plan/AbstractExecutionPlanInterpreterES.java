@@ -35,12 +35,14 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
 public abstract class AbstractExecutionPlanInterpreterES<
         DATA extends SingleReportDataDto, PLAN extends ExecutionPlan>
     implements ExecutionPlanInterpreter<DATA, PLAN> {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(AbstractExecutionPlanInterpreterES.class);
 
   @Override
   public CommandEvaluationResult<Object> interpret(ExecutionContext<DATA, PLAN> executionContext) {

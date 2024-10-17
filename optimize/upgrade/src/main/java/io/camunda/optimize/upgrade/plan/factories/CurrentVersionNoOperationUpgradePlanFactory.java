@@ -12,8 +12,12 @@ import io.camunda.optimize.service.metadata.Version;
 import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import io.camunda.optimize.upgrade.plan.UpgradePlan;
 import io.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
+import org.slf4j.Logger;
 
 public class CurrentVersionNoOperationUpgradePlanFactory implements UpgradePlanFactory {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(CurrentVersionNoOperationUpgradePlanFactory.class);
 
   public UpgradePlan createUpgradePlan() {
     return UpgradePlanBuilder.createUpgradePlan()
@@ -25,5 +29,10 @@ public class CurrentVersionNoOperationUpgradePlanFactory implements UpgradePlanF
   @Override
   public UpgradePlan createUpgradePlan(final UpgradeExecutionDependencies dependencies) {
     return createUpgradePlan();
+  }
+
+  @Override
+  public void logErrorMessage(final String message) {
+    log.error(message);
   }
 }

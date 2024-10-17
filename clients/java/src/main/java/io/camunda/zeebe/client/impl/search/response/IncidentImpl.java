@@ -22,9 +22,9 @@ import io.camunda.zeebe.client.protocol.rest.IncidentItem.StateEnum;
 
 public class IncidentImpl implements Incident {
 
-  private final Long key;
+  private final Long incidentKey;
   private final Long processDefinitionKey;
-  private final String bpmnProcessId;
+  private final String processDefinitionId;
   private final Long processInstanceKey;
   private final ErrorTypeEnum errorType;
   private final String errorMessage;
@@ -37,9 +37,9 @@ public class IncidentImpl implements Incident {
   private final String tenantId;
 
   public IncidentImpl(final IncidentItem item) {
-    key = item.getKey();
+    incidentKey = item.getIncidentKey();
     processDefinitionKey = item.getProcessDefinitionKey();
-    bpmnProcessId = item.getProcessDefinitionId();
+    processDefinitionId = item.getProcessDefinitionId();
     processInstanceKey = item.getProcessInstanceKey();
     errorType = item.getErrorType();
     errorMessage = item.getErrorMessage();
@@ -53,8 +53,8 @@ public class IncidentImpl implements Incident {
   }
 
   @Override
-  public Long getKey() {
-    return key;
+  public Long getIncidentKey() {
+    return incidentKey;
   }
 
   @Override
@@ -63,8 +63,8 @@ public class IncidentImpl implements Incident {
   }
 
   @Override
-  public String getBpmnProcessId() {
-    return bpmnProcessId;
+  public String getProcessDefinitionId() {
+    return processDefinitionId;
   }
 
   @Override

@@ -40,20 +40,20 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 @Component
-@Slf4j
 @Conditional(CCSMCondition.class)
 public class CCSMTokenService {
 
   // In Identity, Optimize requires users to have write access to everything
   private static final String OPTIMIZE_PERMISSION = "write:*";
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(CCSMTokenService.class);
 
   private final AuthCookieService authCookieService;
   private final ConfigurationService configurationService;
@@ -175,7 +175,7 @@ public class CCSMTokenService {
         throw new NotAuthorizedException("User is not authorized to access Optimize");
       }
       return verifiedToken;
-    } catch (TokenVerificationException ex) {
+    } catch (final TokenVerificationException ex) {
       throw new NotAuthorizedException("Token could not be verified", ex);
     }
   }
@@ -183,7 +183,7 @@ public class CCSMTokenService {
   public Tokens renewToken(final String refreshToken) {
     try {
       return authentication().renewToken(extractTokenFromAuthorizationValue(refreshToken));
-    } catch (IdentityException ex) {
+    } catch (final IdentityException ex) {
       throw new NotAuthorizedException("Token could not be renewed", ex);
     }
   }
@@ -191,7 +191,7 @@ public class CCSMTokenService {
   public void revokeToken(final String refreshToken) {
     try {
       authentication().revokeToken(extractTokenFromAuthorizationValue(refreshToken));
-    } catch (IdentityException ex) {
+    } catch (final IdentityException ex) {
       throw new NotAuthorizedException("Token could not be revoked", ex);
     }
   }
@@ -201,7 +201,7 @@ public class CCSMTokenService {
       return authentication()
           .decodeJWT(extractTokenFromAuthorizationValue(accessToken))
           .getSubject();
-    } catch (TokenDecodeException ex) {
+    } catch (final TokenDecodeException ex) {
       throw new NotAuthorizedException("Token could not be decoded", ex);
     }
   }
@@ -220,7 +220,7 @@ public class CCSMTokenService {
     try {
       // The userID is the subject of the current JWT token
       return getCurrentUserAuthToken().map(token -> authentication().decodeJWT(token).getSubject());
-    } catch (TokenDecodeException ex) {
+    } catch (final TokenDecodeException ex) {
       throw new NotAuthorizedException("Token could not be decoded", ex);
     }
   }
@@ -238,7 +238,7 @@ public class CCSMTokenService {
       return identity.tenants().forToken(accessToken).stream()
           .map(tenant -> new TenantDto(tenant.getTenantId(), tenant.getName(), ZEEBE_DATA_SOURCE))
           .toList();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       log.error("Could not retrieve authorized tenants from identity.", e);
       return Collections.emptyList();
     }

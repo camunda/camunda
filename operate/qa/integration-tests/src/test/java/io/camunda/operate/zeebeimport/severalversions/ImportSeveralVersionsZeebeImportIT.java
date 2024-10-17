@@ -7,11 +7,11 @@
  */
 package io.camunda.operate.zeebeimport.severalversions;
 
-import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static io.camunda.operate.zeebeimport.severalversions.ImportSeveralVersionsInitializer.OPERATE_PREFIX;
 import static io.camunda.operate.zeebeimport.severalversions.ImportSeveralVersionsInitializer.ZEEBE_PREFIX;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -22,9 +22,6 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.qa.util.ElasticsearchUtil;
-import io.camunda.operate.schema.indices.ProcessIndex;
-import io.camunda.operate.schema.templates.IncidentTemplate;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.TestImportListener;
@@ -34,6 +31,9 @@ import io.camunda.operate.zeebeimport.ImportBatch;
 import io.camunda.operate.zeebeimport.RecordsReaderHolder;
 import io.camunda.operate.zeebeimport.ZeebeImporter;
 import io.camunda.operate.zeebeimport.processors.ImportBulkProcessor;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -81,7 +81,7 @@ public class ImportSeveralVersionsZeebeImportIT extends OperateAbstractIT {
 
   @SpyBean private ImportBulkProcessor importerv2;
 
-  @SpyBean private io.camunda.operate.zeebeimport.v8_5.processors.ImportBulkProcessor importerv1;
+  @SpyBean private io.camunda.operate.zeebeimport.v8_6.processors.ImportBulkProcessor importerv1;
 
   @MockBean private PartitionHolder partitionHolder;
 

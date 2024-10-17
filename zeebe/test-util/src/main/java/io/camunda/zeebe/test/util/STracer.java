@@ -128,7 +128,7 @@ public final class STracer implements AutoCloseable {
   public Stream<FSyncTrace> fSyncTraces() {
     try {
       return Files.readAllLines(outputFile).stream()
-          .filter(s -> s.contains("fsync"))
+          .filter(s -> s.contains("fsync") && !s.contains("resumed"))
           .map(FSyncTrace::of);
     } catch (final IOException e) {
       throw new UncheckedIOException(e);

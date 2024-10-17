@@ -54,15 +54,17 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 public class ReportClient {
 
   private static final String RANDOM_STRING = "something";
   private static final String TEST_REPORT_NAME = "My test report";
 
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
+
+  public ReportClient(final Supplier<OptimizeRequestExecutor> requestExecutorSupplier) {
+    this.requestExecutorSupplier = requestExecutorSupplier;
+  }
 
   public String createCombinedReport(
       final String collectionId, final List<String> singleReportIds) {

@@ -31,7 +31,7 @@ public class DecisionRequirementsImpl implements DecisionRequirements {
     resourceName = item.getResourceName();
     tenantId = item.getTenantId();
     dmnDecisionRequirementsId = item.getDecisionRequirementsId();
-    dmnDecisionRequirementsName = item.getDecisionRequirementsName();
+    dmnDecisionRequirementsName = item.getName();
     version = item.getVersion();
   }
 

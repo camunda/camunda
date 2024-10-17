@@ -10,7 +10,6 @@ package io.camunda.operate.webapp.api.v1.dao.elasticsearch;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 
 import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.schema.templates.SequenceFlowTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.api.v1.dao.SequenceFlowDao;
 import io.camunda.operate.webapp.api.v1.entities.Incident;
@@ -19,6 +18,7 @@ import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.entities.SequenceFlow;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
+import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -76,12 +76,12 @@ public class ElasticsearchSequenceFlowDao extends ElasticsearchDao<SequenceFlow>
       } else {
         return new Results<SequenceFlow>().setTotal(searchHits.getTotalHits().value);
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new ServerException("Error in reading sequence flows", e);
     }
   }
 
-  protected SequenceFlow searchHitToSequenceFlow(SearchHit searchHit) {
+  protected SequenceFlow searchHitToSequenceFlow(final SearchHit searchHit) {
     final Map<String, Object> searchHitAsMap = searchHit.getSourceAsMap();
     return new SequenceFlow()
         .setId((String) searchHitAsMap.get(SequenceFlowTemplate.ID))

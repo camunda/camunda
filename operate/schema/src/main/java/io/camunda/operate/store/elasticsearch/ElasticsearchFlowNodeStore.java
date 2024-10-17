@@ -7,23 +7,23 @@
  */
 package io.camunda.operate.store.elasticsearch;
 
-import static io.camunda.operate.schema.templates.ListViewTemplate.*;
-import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_ID;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.util.ElasticsearchUtil.scrollWith;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.*;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.ACTIVITY_ID;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.FlowNodeStore;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.ThreadUtil;
+import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;

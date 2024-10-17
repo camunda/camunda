@@ -7,13 +7,9 @@
  */
 package io.camunda.optimize.service.metadata;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 import org.springframework.stereotype.Component;
 
 @Component
-@Getter
-@AllArgsConstructor
 public class OptimizeVersionService {
 
   private final String rawVersion;
@@ -24,5 +20,24 @@ public class OptimizeVersionService {
     rawVersion = Version.RAW_VERSION;
     version = Version.VERSION;
     docsVersion = Version.VERSION;
+  }
+
+  public OptimizeVersionService(
+      final String rawVersion, final String version, final String docsVersion) {
+    this.rawVersion = rawVersion;
+    this.version = version;
+    this.docsVersion = docsVersion;
+  }
+
+  public String getRawVersion() {
+    return rawVersion;
+  }
+
+  public String getVersion() {
+    return version;
+  }
+
+  public String getDocsVersion() {
+    return docsVersion;
   }
 }

@@ -1,0 +1,23 @@
+{
+  "components": [
+    {
+      "label": "Text area 1",
+      "type": "textarea",
+      "layout": {
+        "row": "Row_014zx4y",
+        "columns": null
+      },
+      "id": "Field_0h83f3x",
+      "key": "textarea_mebq13"
+    }
+  ],
+  "type": "default",
+  "id": "doTaskA",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.6.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.29.0-nightly.20241014"
+  },
+  "schemaVersion": 16
+}

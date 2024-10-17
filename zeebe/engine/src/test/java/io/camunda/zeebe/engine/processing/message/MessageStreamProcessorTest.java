@@ -18,10 +18,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
@@ -84,6 +86,8 @@ public final class MessageStreamProcessorTest {
         (typedRecordProcessors, processingContext) -> {
           final var processingState = processingContext.getProcessingState();
           final var scheduledTaskState = processingContext.getScheduledTaskStateFactory();
+          final var mockAuthCheckBehavior = mock(AuthorizationCheckBehavior.class);
+          when(mockAuthCheckBehavior.isAuthorized(any())).thenReturn(true);
           MessageEventProcessors.addMessageProcessors(
               mock(BpmnBehaviors.class),
               typedRecordProcessors,
@@ -94,7 +98,8 @@ public final class MessageStreamProcessorTest {
               DEFAULT_ENGINE_CONFIGURATION,
               FeatureFlags.createDefault(),
               spyCommandDistributionBehavior,
-              InstantSource.system());
+              InstantSource.system(),
+              mockAuthCheckBehavior);
           return typedRecordProcessors;
         });
   }

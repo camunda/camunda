@@ -16,11 +16,11 @@ import io.camunda.operate.property.MigrationProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.IndexSchemaValidator;
 import io.camunda.operate.schema.SchemaManager;
-import io.camunda.operate.schema.indices.IndexDescriptor;
-import io.camunda.operate.schema.templates.IncidentTemplate;
-import io.camunda.operate.schema.templates.ListViewTemplate;
-import io.camunda.operate.schema.templates.PostImporterQueueTemplate;
-import io.camunda.operate.schema.templates.TemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -79,18 +79,18 @@ public class Migrator {
   public void migrateData() throws MigrationException {
     try {
       stepsRepository.updateSteps();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new MigrationException(String.format("Migration failed due to %s", e.getMessage()));
     }
     boolean failed = false;
     final List<Future<Boolean>> results =
         indexDescriptors.stream().map(this::migrateIndexInThread).collect(Collectors.toList());
-    for (Future<Boolean> result : results) {
+    for (final Future<Boolean> result : results) {
       try {
         if (!result.get()) {
           failed = true;
         }
-      } catch (Exception e) {
+      } catch (final Exception e) {
         LOGGER.error("Migration failed: ", e);
         failed = true;
       }
@@ -101,13 +101,13 @@ public class Migrator {
     }
   }
 
-  private Future<Boolean> migrateIndexInThread(IndexDescriptor indexDescriptor) {
+  private Future<Boolean> migrateIndexInThread(final IndexDescriptor indexDescriptor) {
     return getTaskExecutor()
         .submit(
             () -> {
               try {
                 migrateIndexIfNecessary(indexDescriptor);
-              } catch (Exception e) {
+              } catch (final Exception e) {
                 LOGGER.error("Migration for {} failed:", indexDescriptor.getIndexName(), e);
                 return false;
               }
@@ -115,7 +115,7 @@ public class Migrator {
             });
   }
 
-  private void migrateIndexIfNecessary(IndexDescriptor indexDescriptor)
+  private void migrateIndexIfNecessary(final IndexDescriptor indexDescriptor)
       throws MigrationException, IOException {
     LOGGER.info("Check if index {} needs to migrate.", indexDescriptor.getIndexName());
     final Set<String> olderVersions = indexSchemaValidator.olderVersionsForIndex(indexDescriptor);
@@ -159,7 +159,7 @@ public class Migrator {
         final String deleteIndexPattern = String.format("%s*", olderBaseIndexName);
         LOGGER.info("Deleted previous indices for pattern {}", deleteIndexPattern);
         schemaManager.deleteIndicesFor(deleteIndexPattern);
-        if (indexDescriptor instanceof TemplateDescriptor) {
+        if (indexDescriptor instanceof IndexTemplateDescriptor) {
           final String deleteTemplatePattern = String.format("%stemplate", olderBaseIndexName);
           LOGGER.info("Deleted previous templates for {}", deleteTemplatePattern);
           schemaManager.deleteTemplatesFor(deleteTemplatePattern);
@@ -216,7 +216,9 @@ public class Migrator {
   }
 
   private Map<String, String> getIndexSettingsOrDefaultsFor(
-      final IndexDescriptor indexDescriptor, String refreshInterval, Integer numberOfReplicas) {
+      final IndexDescriptor indexDescriptor,
+      final String refreshInterval,
+      final Integer numberOfReplicas) {
     final Map<String, String> settings = new HashMap<>();
     settings.put(
         REFRESH_INTERVAL,

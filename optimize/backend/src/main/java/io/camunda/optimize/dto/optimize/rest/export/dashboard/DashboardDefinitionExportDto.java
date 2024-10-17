@@ -21,13 +21,7 @@ import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
-@Data
-@EqualsAndHashCode(callSuper = true)
 public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
 
   @NotNull private List<DashboardReportTileDto> tiles = new ArrayList<>();
@@ -47,6 +41,8 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
     collectionId = dashboardDefinition.getCollectionId();
   }
 
+  public DashboardDefinitionExportDto() {}
+
   @JsonIgnore
   public Set<String> getTileIds() {
     return tiles.stream()
@@ -61,6 +57,110 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
         .map(DashboardReportTileDto::getId)
         .filter(id -> !IdGenerator.isValidId(id))
         .collect(toSet());
+  }
+
+  public @NotNull List<DashboardReportTileDto> getTiles() {
+    return tiles;
+  }
+
+  public void setTiles(@NotNull final List<DashboardReportTileDto> tiles) {
+    this.tiles = tiles;
+  }
+
+  public @NotNull List<DashboardFilterDto<?>> getAvailableFilters() {
+    return availableFilters;
+  }
+
+  public void setAvailableFilters(@NotNull final List<DashboardFilterDto<?>> availableFilters) {
+    this.availableFilters = availableFilters;
+  }
+
+  public String getCollectionId() {
+    return collectionId;
+  }
+
+  public void setCollectionId(final String collectionId) {
+    this.collectionId = collectionId;
+  }
+
+  public boolean isInstantPreviewDashboard() {
+    return isInstantPreviewDashboard;
+  }
+
+  public void setInstantPreviewDashboard(final boolean isInstantPreviewDashboard) {
+    this.isInstantPreviewDashboard = isInstantPreviewDashboard;
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof DashboardDefinitionExportDto;
+  }
+
+  @Override
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = super.hashCode();
+    final Object $tiles = getTiles();
+    result = result * PRIME + ($tiles == null ? 43 : $tiles.hashCode());
+    final Object $availableFilters = getAvailableFilters();
+    result = result * PRIME + ($availableFilters == null ? 43 : $availableFilters.hashCode());
+    final Object $collectionId = getCollectionId();
+    result = result * PRIME + ($collectionId == null ? 43 : $collectionId.hashCode());
+    result = result * PRIME + (isInstantPreviewDashboard() ? 79 : 97);
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof DashboardDefinitionExportDto)) {
+      return false;
+    }
+    final DashboardDefinitionExportDto other = (DashboardDefinitionExportDto) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final Object this$tiles = getTiles();
+    final Object other$tiles = other.getTiles();
+    if (this$tiles == null ? other$tiles != null : !this$tiles.equals(other$tiles)) {
+      return false;
+    }
+    final Object this$availableFilters = getAvailableFilters();
+    final Object other$availableFilters = other.getAvailableFilters();
+    if (this$availableFilters == null
+        ? other$availableFilters != null
+        : !this$availableFilters.equals(other$availableFilters)) {
+      return false;
+    }
+    final Object this$collectionId = getCollectionId();
+    final Object other$collectionId = other.getCollectionId();
+    if (this$collectionId == null
+        ? other$collectionId != null
+        : !this$collectionId.equals(other$collectionId)) {
+      return false;
+    }
+    if (isInstantPreviewDashboard() != other.isInstantPreviewDashboard()) {
+      return false;
+    }
+    return true;
+  }
+
+  @Override
+  public String toString() {
+    return "DashboardDefinitionExportDto(tiles="
+        + getTiles()
+        + ", availableFilters="
+        + getAvailableFilters()
+        + ", collectionId="
+        + getCollectionId()
+        + ", isInstantPreviewDashboard="
+        + isInstantPreviewDashboard()
+        + ")";
   }
 
   public static final class Fields {

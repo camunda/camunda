@@ -24,17 +24,19 @@ import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCon
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class ProcessDistributedByNoneInterpreterES
     extends AbstractProcessDistributedByInterpreterES {
-  @Getter private final ProcessViewInterpreterFacadeES viewInterpreter;
+
+  private final ProcessViewInterpreterFacadeES viewInterpreter;
+
+  public ProcessDistributedByNoneInterpreterES(ProcessViewInterpreterFacadeES viewInterpreter) {
+    this.viewInterpreter = viewInterpreter;
+  }
 
   @Override
   public Set<ProcessDistributedBy> getSupportedDistributedBys() {
@@ -63,5 +65,9 @@ public class ProcessDistributedByNoneInterpreterES
     return List.of(
         DistributedByResult.createDistributedByNoneResult(
             viewInterpreter.createEmptyResult(context)));
+  }
+
+  public ProcessViewInterpreterFacadeES getViewInterpreter() {
+    return this.viewInterpreter;
   }
 }

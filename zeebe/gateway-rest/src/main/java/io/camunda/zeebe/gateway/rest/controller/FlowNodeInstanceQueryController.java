@@ -9,8 +9,8 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.Loggers.REST_LOGGER;
 
+import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.service.FlowNodeInstanceServices;
-import io.camunda.service.search.query.FlowNodeInstanceQuery;
 import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceItem;
 import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceSearchQueryResponse;

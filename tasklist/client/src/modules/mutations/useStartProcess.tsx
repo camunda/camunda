@@ -6,10 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMutation, UseMutationOptions} from '@tanstack/react-query';
+import {useMutation, type UseMutationOptions} from '@tanstack/react-query';
 import {api} from 'modules/api';
-import {request, RequestError} from 'modules/request';
-import {Process, ProcessInstance, Task, Variable} from 'modules/types';
+import {request, type RequestError} from 'modules/request';
+import type {Process, ProcessInstance, Task, Variable} from 'modules/types';
 
 function useStartProcess(
   options: Pick<

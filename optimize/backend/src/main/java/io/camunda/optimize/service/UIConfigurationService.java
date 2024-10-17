@@ -28,16 +28,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
-@RequiredArgsConstructor
 public class UIConfigurationService {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(UIConfigurationService.class);
   private final ConfigurationService configurationService;
   private final OptimizeVersionService versionService;
   private final TenantService tenantService;
@@ -47,6 +45,25 @@ public class UIConfigurationService {
   // optional as it is only available conditionally, see implementations of the interface
   private final Optional<CloudSaasMetaInfoService> cloudSaasMetaInfoService;
   private final Identity identity;
+
+  public UIConfigurationService(
+      ConfigurationService configurationService,
+      OptimizeVersionService versionService,
+      TenantService tenantService,
+      SettingsService settingService,
+      CamundaLicenseService camundaLicenseService,
+      Environment environment,
+      Optional<CloudSaasMetaInfoService> cloudSaasMetaInfoService,
+      Identity identity) {
+    this.configurationService = configurationService;
+    this.versionService = versionService;
+    this.tenantService = tenantService;
+    this.settingService = settingService;
+    this.camundaLicenseService = camundaLicenseService;
+    this.environment = environment;
+    this.cloudSaasMetaInfoService = cloudSaasMetaInfoService;
+    this.identity = identity;
+  }
 
   public UIConfigurationResponseDto getUIConfiguration() {
     final UIConfigurationResponseDto uiConfigurationDto = new UIConfigurationResponseDto();

@@ -62,13 +62,12 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Getter
-@Slf4j
 public class SchemaUpgradeClientES
     extends SchemaUpgradeClient<OptimizeElasticsearchClient, IndexSettings.Builder> {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(SchemaUpgradeClientES.class);
   private final ObjectMapper objectMapper;
 
   public SchemaUpgradeClientES(
@@ -626,5 +625,9 @@ public class SchemaUpgradeClientES
       final String errorMessage = String.format("Could not add alias to index [%s]!", indexName);
       throw new UpgradeRuntimeException(errorMessage, e);
     }
+  }
+
+  public ObjectMapper getObjectMapper() {
+    return this.objectMapper;
   }
 }

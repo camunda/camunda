@@ -14,8 +14,8 @@ import io.camunda.operate.management.IndicesCheck;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.TestElasticsearchSchemaManager;
 import io.camunda.operate.qa.util.TestSchemaManager;
+import io.camunda.operate.util.IndexPrefixHolder;
 import io.camunda.operate.util.TestApplication;
-import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.UserService;
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
@@ -48,12 +48,14 @@ public class ProbesTestIT {
 
   @Autowired private IndicesCheck probes;
 
+  @Autowired private IndexPrefixHolder indexPrefixHolder;
+
   @MockBean private UserService userService;
 
   @Before
   public void before() {
     when(userService.getCurrentUser()).thenReturn(new UserDto().setUserId("testuser"));
-    schemaManager.setIndexPrefix("test-probes-" + TestUtil.createRandomString(5));
+    schemaManager.setIndexPrefix(indexPrefixHolder.createNewIndexPrefix());
   }
 
   @After

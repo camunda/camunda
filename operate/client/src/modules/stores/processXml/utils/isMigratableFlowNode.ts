@@ -58,6 +58,15 @@ const isMigratableFlowNode = (businessObject: BusinessObject) => {
     });
   }
 
+  if (
+    hasType({businessObject, types: ['bpmn:StartEvent']}) &&
+    hasEventType({businessObject, types: ['bpmn:TimerEventDefinition']}) &&
+    businessObject.$parent !== undefined &&
+    isEventSubProcess({businessObject: businessObject.$parent})
+  ) {
+    return true;
+  }
+
   return hasType({
     businessObject,
     types: [
@@ -66,6 +75,9 @@ const isMigratableFlowNode = (businessObject: BusinessObject) => {
       'bpmn:SubProcess',
       'bpmn:CallActivity',
       'bpmn:ReceiveTask',
+      'bpmn:BusinessRuleTask',
+      'bpmn:ScriptTask',
+      'bpmn:SendTask',
     ],
   });
 };

@@ -12,7 +12,6 @@ import io.camunda.zeebe.logstreams.impl.flowcontrol.RateLimit;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
-import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import java.time.InstantSource;
 import java.util.Objects;
 
@@ -20,19 +19,11 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
   private static final int MINIMUM_FRAGMENT_SIZE = 4 * 1024;
   private int maxFragmentSize = 1024 * 1024 * 4;
   private int partitionId = -1;
-  private ActorSchedulingService actorSchedulingService;
   private LogStorage logStorage;
   private String logName;
   private InstantSource clock;
   private Limit requestLimit;
   private RateLimit writeRateLimit;
-
-  @Override
-  public LogStreamBuilder withActorSchedulingService(
-      final ActorSchedulingService actorSchedulingService) {
-    this.actorSchedulingService = actorSchedulingService;
-    return this;
-  }
 
   @Override
   public LogStreamBuilder withMaxFragmentSize(final int maxFragmentSize) {
@@ -85,7 +76,6 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
   }
 
   private void validate() {
-    Objects.requireNonNull(actorSchedulingService, "Must specify a actor scheduler");
     Objects.requireNonNull(logStorage, "Must specify a log storage");
     Objects.requireNonNull(clock, "Must specify a clock source");
 

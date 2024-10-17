@@ -7,20 +7,15 @@
  */
 
 const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
-const LicensePlugin = require('webpack-license-plugin');
+const {CycloneDxWebpackPlugin} = require('@cyclonedx/webpack-plugin');
 
-module.exports = function override(config, env) {
+module.exports = function override(config) {
   config.plugins.push(
     new MonacoWebpackPlugin({
       languages: ['json'],
     }),
-    new LicensePlugin({
-      outputFilename: 'dependencies.json',
-      excludedPackageTest: (packageName) => {
-        return (
-          packageName.startsWith('bpmn-js') || packageName.startsWith('dmn-js')
-        );
-      },
+    new CycloneDxWebpackPlugin({
+      specVersion: '1.5',
     }),
   );
   return config;

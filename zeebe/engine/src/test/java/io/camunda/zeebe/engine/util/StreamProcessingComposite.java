@@ -15,7 +15,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.client.CommandWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;
-import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
+import io.camunda.zeebe.logstreams.util.TestLogStream;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -53,7 +53,7 @@ public class StreamProcessingComposite implements CommandWriter {
     actorScheduler.submitActor(writeActor).join();
   }
 
-  public SynchronousLogStream getLogStream(final int partitionId) {
+  public TestLogStream getLogStream(final int partitionId) {
     return streams.getLogStream(getLogName(partitionId));
   }
 

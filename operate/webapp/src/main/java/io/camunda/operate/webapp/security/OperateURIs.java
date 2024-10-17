@@ -26,6 +26,7 @@ public final class OperateURIs {
     "/swagger-resources",
     "/swagger-resources/**",
     "/swagger-ui.html",
+    "/v3/api-docs/**",
     "/documentation",
     "/actuator/**",
     LOGIN_RESOURCE,

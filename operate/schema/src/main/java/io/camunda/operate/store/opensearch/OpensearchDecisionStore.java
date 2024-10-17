@@ -13,10 +13,10 @@ import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBu
 import static io.camunda.operate.util.ExceptionHelper.withIOException;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.DecisionStore;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
+import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import java.io.IOException;
 import java.util.Optional;
 import org.slf4j.Logger;

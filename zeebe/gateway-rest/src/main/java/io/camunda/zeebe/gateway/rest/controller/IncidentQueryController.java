@@ -9,9 +9,9 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.Loggers.REST_LOGGER;
 
+import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.query.IncidentQuery;
 import io.camunda.service.IncidentServices;
-import io.camunda.service.exception.NotFoundException;
-import io.camunda.service.search.query.IncidentQuery;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentItem;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResponse;

@@ -11,8 +11,6 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.schema.indices.DecisionIndex;
-import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.api.v1.dao.DecisionDefinitionDao;
 import io.camunda.operate.webapp.api.v1.dao.DecisionRequirementsDao;
@@ -23,6 +21,8 @@ import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
+import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
+import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -48,12 +48,12 @@ public class ElasticsearchDecisionDefinitionDao extends ElasticsearchDao<Decisio
   @Autowired private DecisionRequirementsDao decisionRequirementsDao;
 
   @Override
-  public DecisionDefinition byKey(Long key) throws APIException {
+  public DecisionDefinition byKey(final Long key) throws APIException {
     final List<DecisionDefinition> decisionDefinitions;
     try {
       decisionDefinitions =
           searchFor(new SearchSourceBuilder().query(termQuery(DecisionIndex.KEY, key)));
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new ServerException(
           String.format("Error in reading decision definition for key %s", key), e);
     }
@@ -76,7 +76,8 @@ public class ElasticsearchDecisionDefinitionDao extends ElasticsearchDao<Decisio
   }
 
   @Override
-  public Results<DecisionDefinition> search(Query<DecisionDefinition> query) throws APIException {
+  public Results<DecisionDefinition> search(final Query<DecisionDefinition> query)
+      throws APIException {
 
     final SearchSourceBuilder searchSourceBuilder =
         buildQueryOn(query, DecisionDefinition.KEY, new SearchSourceBuilder());
@@ -98,7 +99,7 @@ public class ElasticsearchDecisionDefinitionDao extends ElasticsearchDao<Decisio
       } else {
         return new Results<DecisionDefinition>().setTotal(searchHits.getTotalHits().value);
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new ServerException("Error in reading decision definitions", e);
     }
   }
@@ -115,6 +116,7 @@ public class ElasticsearchDecisionDefinitionDao extends ElasticsearchDao<Decisio
         });
   }
 
+  @Override
   protected void buildFiltering(
       final Query<DecisionDefinition> query, final SearchSourceBuilder searchSourceBuilder) {
     final DecisionDefinition filter = query.getFilter();
@@ -148,7 +150,7 @@ public class ElasticsearchDecisionDefinitionDao extends ElasticsearchDao<Decisio
    *     decisionRequirementsVersion, or null if no filter is needed
    */
   private QueryBuilder buildFilteringBy(
-      String decisionRequirementsName, Integer decisionRequirementsVersion) {
+      final String decisionRequirementsName, final Integer decisionRequirementsVersion) {
 
     final List<QueryBuilder> queryBuilders = new ArrayList<>();
     queryBuilders.add(buildTermQuery(DecisionRequirementsIndex.NAME, decisionRequirementsName));
@@ -182,7 +184,7 @@ public class ElasticsearchDecisionDefinitionDao extends ElasticsearchDao<Decisio
         return ElasticsearchUtil.createMatchNoneQuery();
       }
       return termsQuery(DecisionDefinition.DECISION_REQUIREMENTS_KEY, nonNullKeys);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new ServerException("Error in reading decision requirements by name and version", e);
     }
   }
@@ -192,7 +194,7 @@ public class ElasticsearchDecisionDefinitionDao extends ElasticsearchDao<Decisio
    * decisionRequirementsVersion fields to the decision definitions
    */
   private void populateDecisionRequirementsNameAndVersion(
-      List<DecisionDefinition> decisionDefinitions) {
+      final List<DecisionDefinition> decisionDefinitions) {
     final Set<Long> decisionRequirementsKeys =
         decisionDefinitions.stream()
             .map(DecisionDefinition::getDecisionRequirementsKey)

@@ -8,11 +8,11 @@
 package io.camunda.optimize.service.db.os.report.filter;
 
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.nested;
-import static io.camunda.optimize.service.db.os.report.filter.util.IncidentFilterQueryUtilOS.createResolvedIncidentTermQuery;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENTS;
 
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ResolvedIncidentFilterDataDto;
 import io.camunda.optimize.service.db.filter.FilterContext;
+import io.camunda.optimize.service.db.os.report.filter.util.IncidentFilterQueryUtilOS;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.List;
 import org.apache.commons.collections4.CollectionUtils;
@@ -30,7 +30,11 @@ public class ResolvedIncidentQueryFilterOS implements QueryFilterOS<ResolvedInci
       final List<ResolvedIncidentFilterDataDto> resolvedIncident,
       final FilterContext filterContext) {
     return !CollectionUtils.isEmpty(resolvedIncident)
-        ? List.of(nested(INCIDENTS, createResolvedIncidentTermQuery(), ChildScoreMode.None))
+        ? List.of(
+            nested(
+                INCIDENTS,
+                IncidentFilterQueryUtilOS.createResolvedIncidentTermQuery(),
+                ChildScoreMode.None))
         : List.of();
   }
 }

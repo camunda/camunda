@@ -7,23 +7,23 @@
  */
 package io.camunda.optimize.rest;
 
+import io.camunda.optimize.exception.OptimizeIntegrationTestException;
 import jakarta.ws.rs.core.Response;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.OffsetDateTime;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class RestTestUtil {
 
-  @SneakyThrows
   public static String getResponseContentAsString(final Response response) {
-    final byte[] result = getResponseContentAsByteArray(response);
-    return new String(result);
+    try {
+      final byte[] result = getResponseContentAsByteArray(response);
+      return new String(result);
+    } catch (final IOException e) {
+      throw new OptimizeIntegrationTestException(e);
+    }
   }
 
   public static byte[] getResponseContentAsByteArray(final Response response) throws IOException {

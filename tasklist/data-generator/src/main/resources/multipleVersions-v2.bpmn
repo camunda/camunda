@@ -1,11 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_0xsqfkd" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.8.0-nightly.20230115" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.3.0">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_0xsqfkd" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.29.0-nightly.20241014" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.6.0">
   <bpmn:process id="multipleVersions" name="multipleVersions" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1" name="MultipleVersions">
       <bpmn:outgoing>Flow_0t0ylm8</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:sequenceFlow id="Flow_0t0ylm8" sourceRef="StartEvent_1" targetRef="MultipleVersions" />
     <bpmn:userTask id="MultipleVersions" name="MultipleVersions">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
       <bpmn:incoming>Flow_0t0ylm8</bpmn:incoming>
       <bpmn:outgoing>Flow_1eidu0j</bpmn:outgoing>
     </bpmn:userTask>
@@ -15,6 +18,9 @@
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_030scy2" sourceRef="Activity_0x4p7uc" targetRef="Event_0z42s1z" />
     <bpmn:userTask id="Activity_0x4p7uc" name="New UserTask">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
       <bpmn:incoming>Flow_1eidu0j</bpmn:incoming>
       <bpmn:outgoing>Flow_030scy2</bpmn:outgoing>
     </bpmn:userTask>

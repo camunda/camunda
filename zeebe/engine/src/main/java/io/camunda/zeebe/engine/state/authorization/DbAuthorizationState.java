@@ -20,8 +20,10 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public class DbAuthorizationState implements AuthorizationState, MutableAuthorizationState {
   private final PersistedAuthorization persistedAuthorization = new PersistedAuthorization();
@@ -120,7 +122,23 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
   }
 
   @Override
-  public ResourceIdentifiers getResourceIdentifiers(
+  public void deleteAuthorizationsByOwnerKeyPrefix(final long ownerKey) {
+    this.ownerKey.wrapLong(ownerKey);
+    resourceIdsByOwnerKeyResourceTypeAndPermissionColumnFamily.whileEqualPrefix(
+        this.ownerKey,
+        (compositeKey, resourceIdentifiers) -> {
+          resourceIdsByOwnerKeyResourceTypeAndPermissionColumnFamily.deleteExisting(compositeKey);
+        });
+  }
+
+  @Override
+  public void deleteOwnerTypeByKey(final long ownerKey) {
+    this.ownerKey.wrapLong(ownerKey);
+    ownerTypeByOwnerKeyColumnFamily.deleteExisting(this.ownerKey);
+  }
+
+  @Override
+  public Set<String> getResourceIdentifiers(
       final Long ownerKey,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
@@ -132,7 +150,9 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
         resourceIdsByOwnerKeyResourceTypeAndPermissionColumnFamily.get(
             ownerKeyAndResourceTypeAndPermissionCompositeKey);
 
-    return persistedPermissions == null ? null : persistedPermissions.copy();
+    return persistedPermissions == null
+        ? Collections.emptySet()
+        : persistedPermissions.getResourceIdentifiers();
   }
 
   @Override

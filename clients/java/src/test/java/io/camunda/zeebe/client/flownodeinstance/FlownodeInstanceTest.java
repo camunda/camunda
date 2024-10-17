@@ -52,7 +52,7 @@ public class FlownodeInstanceTest extends ClientRestTest {
                     .bpmnProcessId("complexProcess")
                     .processInstanceKey(3L)
                     .flowNodeId("flowNodeId")
-                    .incident(true)
+                    .hasIncident(true)
                     .incidentKey(4L)
                     .treePath("processInstanceKey/flowNodeId")
                     .tenantId("<default>"))
@@ -69,7 +69,7 @@ public class FlownodeInstanceTest extends ClientRestTest {
     assertThat(filter.getProcessDefinitionId()).isEqualTo("complexProcess");
     assertThat(filter.getProcessInstanceKey()).isEqualTo(3L);
     assertThat(filter.getFlowNodeId()).isEqualTo("flowNodeId");
-    assertThat(filter.getIncident()).isTrue();
+    assertThat(filter.getHasIncident()).isTrue();
     assertThat(filter.getIncidentKey()).isEqualTo(4L);
     assertThat(filter.getTreePath()).isEqualTo("processInstanceKey/flowNodeId");
     assertThat(filter.getTenantId()).isEqualTo("<default>");

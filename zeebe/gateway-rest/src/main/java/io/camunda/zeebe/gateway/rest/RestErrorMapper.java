@@ -7,16 +7,15 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
-import static io.camunda.zeebe.transport.stream.impl.messages.ErrorCode.NOT_FOUND;
-
 import com.fasterxml.jackson.core.JsonParseException;
 import io.atomix.cluster.messaging.MessagingException;
 import io.camunda.document.api.DocumentError.DocumentNotFound;
 import io.camunda.document.api.DocumentError.InvalidInput;
 import io.camunda.document.api.DocumentError.OperationNotSupported;
-import io.camunda.service.CamundaServiceException;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.NotFoundException;
 import io.camunda.service.DocumentServices.DocumentException;
-import io.camunda.service.exception.NotFoundException;
+import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.PartitionNotFoundException;
@@ -59,6 +58,8 @@ public class RestErrorMapper {
             yield RestErrorMapper.createProblemDetail(HttpStatus.CONFLICT, message, title);
           case INVALID_ARGUMENT:
             yield RestErrorMapper.createProblemDetail(HttpStatus.BAD_REQUEST, message, title);
+          case UNAUTHORIZED:
+            yield RestErrorMapper.createProblemDetail(HttpStatus.UNAUTHORIZED, message, title);
           default:
             {
               yield RestErrorMapper.createProblemDetail(
@@ -87,7 +88,9 @@ public class RestErrorMapper {
       case final NotFoundException nfe:
         yield createProblemDetail(
             HttpStatus.NOT_FOUND, nfe.getMessage(), RejectionType.NOT_FOUND.name());
-      case final CamundaServiceException cse:
+      case final CamundaSearchException cse:
+        yield cse.getCause() != null ? mapErrorToProblem(cse.getCause(), rejectionMapper) : null;
+      case final CamundaBrokerException cse:
         yield cse.getCause() != null ? mapErrorToProblem(cse.getCause(), rejectionMapper) : null;
       case final BrokerErrorException bee:
         yield mapBrokerErrorToProblem(bee.getError(), error);
@@ -161,10 +164,10 @@ public class RestErrorMapper {
   }
 
   private static Optional<ProblemDetail> mapBrokerErrorToProblem(final Throwable exception) {
-    if (!(exception instanceof CamundaServiceException)) {
+    if (!(exception instanceof CamundaBrokerException)) {
       return Optional.empty();
     }
-    return ((CamundaServiceException) exception)
+    return ((CamundaBrokerException) exception)
         .getBrokerError()
         .map(error -> mapBrokerErrorToProblem(error, null));
   }
@@ -209,10 +212,10 @@ public class RestErrorMapper {
 
   private static Optional<ProblemDetail> mapRejectionToProblem(
       final Throwable exception, final Function<BrokerRejection, ProblemDetail> rejectionMapper) {
-    if (!(exception instanceof CamundaServiceException)) {
+    if (!(exception instanceof CamundaBrokerException)) {
       return Optional.empty();
     }
-    return ((CamundaServiceException) exception).getBrokerRejection().map(rejectionMapper);
+    return ((CamundaBrokerException) exception).getBrokerRejection().map(rejectionMapper);
   }
 
   public static ProblemDetail createProblemDetail(

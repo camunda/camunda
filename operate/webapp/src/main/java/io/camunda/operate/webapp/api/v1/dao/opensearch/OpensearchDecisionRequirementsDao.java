@@ -8,7 +8,6 @@
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.DecisionRequirementsDao;
 import io.camunda.operate.webapp.api.v1.entities.DecisionRequirements;
@@ -18,6 +17,7 @@ import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
+import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -37,10 +37,10 @@ public class OpensearchDecisionRequirementsDao
   private final DecisionRequirementsIndex decisionRequirementsIndex;
 
   public OpensearchDecisionRequirementsDao(
-      OpensearchQueryDSLWrapper queryDSLWrapper,
-      OpensearchRequestDSLWrapper requestDSLWrapper,
-      RichOpenSearchClient richOpenSearchClient,
-      DecisionRequirementsIndex decisionRequirementsIndex) {
+      final OpensearchQueryDSLWrapper queryDSLWrapper,
+      final OpensearchRequestDSLWrapper requestDSLWrapper,
+      final RichOpenSearchClient richOpenSearchClient,
+      final DecisionRequirementsIndex decisionRequirementsIndex) {
     super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
     this.decisionRequirementsIndex = decisionRequirementsIndex;
   }
@@ -51,22 +51,22 @@ public class OpensearchDecisionRequirementsDao
   }
 
   @Override
-  protected String getByKeyServerReadErrorMessage(Long key) {
+  protected String getByKeyServerReadErrorMessage(final Long key) {
     return String.format("Error in reading decision requirements for key %s", key);
   }
 
   @Override
-  protected String getByKeyNoResultsErrorMessage(Long key) {
+  protected String getByKeyNoResultsErrorMessage(final Long key) {
     return String.format("No decision requirements found for key %s", key);
   }
 
   @Override
-  protected String getByKeyTooManyResultsErrorMessage(Long key) {
+  protected String getByKeyTooManyResultsErrorMessage(final Long key) {
     return String.format("Found more than one decision requirements for key %s", key);
   }
 
   @Override
-  public List<DecisionRequirements> byKeys(Set<Long> keys) throws APIException {
+  public List<DecisionRequirements> byKeys(final Set<Long> keys) throws APIException {
     final List<Long> nonNullKeys =
         (keys == null) ? List.of() : keys.stream().filter(Objects::nonNull).toList();
     if (nonNullKeys.isEmpty()) {
@@ -78,13 +78,13 @@ public class OpensearchDecisionRequirementsDao
               .searchRequestBuilder(getIndexName())
               .query(queryDSLWrapper.longTerms(getKeyFieldName(), nonNullKeys));
       return richOpenSearchClient.doc().scrollValues(request, DecisionRequirements.class);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new ServerException("Error in reading decision requirements by keys", e);
     }
   }
 
   @Override
-  public String xmlByKey(Long key) throws APIException {
+  public String xmlByKey(final Long key) throws APIException {
     validateKey(key);
     final var request =
         requestDSLWrapper
@@ -98,7 +98,7 @@ public class OpensearchDecisionRequirementsDao
       if (response.hits().total().value() == 1) {
         return response.hits().hits().get(0).source().get(DecisionRequirementsIndex.XML).toString();
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new ServerException(
           String.format("Error in reading decision requirements as xml for key %s", key), e);
     }
@@ -122,7 +122,8 @@ public class OpensearchDecisionRequirementsDao
   }
 
   @Override
-  protected void buildFiltering(Query<DecisionRequirements> query, SearchRequest.Builder request) {
+  protected void buildFiltering(
+      final Query<DecisionRequirements> query, final SearchRequest.Builder request) {
     final DecisionRequirements filter = query.getFilter();
     if (filter != null) {
       final var queryTerms =
@@ -147,7 +148,8 @@ public class OpensearchDecisionRequirementsDao
   }
 
   @Override
-  protected DecisionRequirements convertInternalToApiResult(DecisionRequirements internalResult) {
+  protected DecisionRequirements convertInternalToApiResult(
+      final DecisionRequirements internalResult) {
     return internalResult;
   }
 }

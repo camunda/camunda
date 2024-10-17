@@ -18,18 +18,19 @@ import jakarta.ws.rs.container.ContainerResponseFilter;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.ext.Provider;
 import java.time.ZoneId;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.glassfish.jersey.jackson.internal.jackson.jaxrs.cfg.EndpointConfigBase;
 import org.glassfish.jersey.jackson.internal.jackson.jaxrs.cfg.ObjectWriterInjector;
 import org.glassfish.jersey.jackson.internal.jackson.jaxrs.cfg.ObjectWriterModifier;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@Slf4j
-@AllArgsConstructor
 @Provider
 @Component
 public class ResponseTimezoneFilter implements ContainerResponseFilter {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ResponseTimezoneFilter.class);
+
+  public ResponseTimezoneFilter() {}
 
   @Override
   public void filter(
@@ -42,7 +43,7 @@ public class ResponseTimezoneFilter implements ContainerResponseFilter {
 
     private final ZoneId timezone;
 
-    public DateMod(ZoneId timezone) {
+    public DateMod(final ZoneId timezone) {
       this.timezone = timezone;
     }
 

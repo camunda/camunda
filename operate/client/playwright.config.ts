@@ -26,7 +26,7 @@ const getPort = () => {
 };
 
 const getBasePath = () => {
-  return IS_E2E ? '/operate/' : '';
+  return IS_CI && !IS_E2E ? '' : '/operate/';
 };
 
 /**

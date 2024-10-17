@@ -22,11 +22,7 @@ import static io.camunda.optimize.service.db.report.plan.decision.DecisionView.D
 import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import io.camunda.optimize.service.db.report.plan.ExecutionPlan;
 import io.camunda.optimize.service.db.report.plan.ReportResultType;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
-@Getter
-@RequiredArgsConstructor
 public enum DecisionExecutionPlan implements ExecutionPlan {
   DECISION_INSTANCE_FREQUENCY_GROUP_BY_EVALUATION_DATE_TIME(
       DECISION_VIEW_INSTANCE_FREQUENCY,
@@ -75,6 +71,19 @@ public enum DecisionExecutionPlan implements ExecutionPlan {
     commandKey = buildCommandKey();
   }
 
+  private DecisionExecutionPlan(
+      DecisionView view,
+      DecisionGroupBy groupBy,
+      DecisionDistributedBy distributedBy,
+      ReportResultType resultType,
+      String commandKey) {
+    this.view = view;
+    this.groupBy = groupBy;
+    this.distributedBy = distributedBy;
+    this.resultType = resultType;
+    this.commandKey = commandKey;
+  }
+
   @Override
   public boolean isRawDataReport() {
     return resultType == RAW_DATA;
@@ -89,5 +98,25 @@ public enum DecisionExecutionPlan implements ExecutionPlan {
             .build();
 
     return decisionReportDataDto.createCommandKeys().get(0);
+  }
+
+  public DecisionView getView() {
+    return this.view;
+  }
+
+  public DecisionGroupBy getGroupBy() {
+    return this.groupBy;
+  }
+
+  public DecisionDistributedBy getDistributedBy() {
+    return this.distributedBy;
+  }
+
+  public ReportResultType getResultType() {
+    return this.resultType;
+  }
+
+  public String getCommandKey() {
+    return this.commandKey;
   }
 }

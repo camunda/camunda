@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
+import static io.camunda.zeebe.auth.api.JwtAuthorizationBuilder.USER_TOKEN_CLAIM_PREFIX;
 import static io.camunda.zeebe.gateway.rest.validator.AuthorizationRequestValidator.validateAuthorizationAssignRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ClockValidator.validateClockPinRequest;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentLinkParams;
@@ -32,6 +33,8 @@ import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUser
 
 import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.document.api.DocumentMetadataModel;
+import io.camunda.search.security.auth.Authentication;
+import io.camunda.search.security.auth.Authentication.Builder;
 import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentLinkParams;
@@ -46,9 +49,7 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
-import io.camunda.service.UserServices.CreateUserRequest;
-import io.camunda.service.security.auth.Authentication;
-import io.camunda.service.security.auth.Authentication.Builder;
+import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest;
@@ -102,6 +103,7 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.multipart.MultipartFile;
 
 public class RequestMapper {
@@ -287,12 +289,13 @@ public class RequestMapper {
         () -> new DocumentLinkParams(ZonedDateTime.parse(documentLinkRequest.getExpiresAt())));
   }
 
-  public static Either<ProblemDetail, CreateUserRequest> toCreateUserRequest(
-      final UserRequest request, final PasswordEncoder passwordEncoder) {
+  public static Either<ProblemDetail, UserDTO> toUserDTO(
+      final Long userKey, final UserRequest request, final PasswordEncoder passwordEncoder) {
     return getResult(
         validateUserCreateRequest(request),
         () ->
-            new CreateUserRequest(
+            new UserDTO(
+                userKey,
                 request.getUsername(),
                 request.getName(),
                 request.getEmail(),
@@ -419,10 +422,18 @@ public class RequestMapper {
 
     final var requestAuthentication = SecurityContextHolder.getContext().getAuthentication();
 
-    if (requestAuthentication != null
-        && requestAuthentication.getPrincipal()
-            instanceof final CamundaUser authenticatedPrincipal) {
-      token.withClaim(Authorization.AUTHORIZED_USER_KEY, authenticatedPrincipal.getUserKey());
+    if (requestAuthentication != null) {
+
+      if (requestAuthentication.getPrincipal()
+          instanceof final CamundaUser authenticatedPrincipal) {
+        token.withClaim(Authorization.AUTHORIZED_USER_KEY, authenticatedPrincipal.getUserKey());
+      }
+
+      if (requestAuthentication instanceof final JwtAuthenticationToken jwtAuthenticationToken) {
+        jwtAuthenticationToken
+            .getTokenAttributes()
+            .forEach((key, value) -> token.withClaim(USER_TOKEN_CLAIM_PREFIX + key, value));
+      }
     }
 
     return new Builder().token(token.build()).tenants(authorizedTenants).build();

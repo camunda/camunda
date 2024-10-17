@@ -42,7 +42,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
-import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
@@ -106,7 +105,6 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
             .build());
   }
 
-  @SneakyThrows
   @Bean
   @Order(1)
   protected SecurityFilterChain configurePublicApi(final HttpSecurity http) {
@@ -119,72 +117,76 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
     return applyPublicApiOptions(httpSecurityBuilder);
   }
 
-  @SneakyThrows
   @Bean
   @Order(2)
   protected SecurityFilterChain configureWebSecurity(final HttpSecurity http) {
-    return super.configureGenericSecurityOptions(http)
-        // Then we configure the specific web security for CCSaaS
-        .authorizeHttpRequests(
-            httpRequests ->
-                // ready endpoint is public for infra
-                httpRequests
-                    .requestMatchers(new AntPathRequestMatcher(createApiPath(READYZ_PATH)))
-                    .permitAll()
-                    // public share resources
-                    .requestMatchers(
-                        new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/"),
-                        new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/index*"),
-                        new AntPathRequestMatcher(EXTERNAL_SUB_PATH + STATIC_RESOURCE_PATH + "/**"),
-                        new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/*.js"),
-                        new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/*.ico"))
-                    .permitAll()
-                    // public share related resources (API)
-                    .requestMatchers(
-                        new AntPathRequestMatcher(
-                            createApiPath(EXTERNAL_SUB_PATH + DEEP_SUB_PATH_ANY)))
-                    .permitAll()
-                    // common public api resources
-                    .requestMatchers(
-                        new AntPathRequestMatcher(createApiPath(UI_CONFIGURATION_PATH)),
-                        new AntPathRequestMatcher(createApiPath(LOCALIZATION_PATH)))
-                    .permitAll()
-                    .requestMatchers(new AntPathRequestMatcher(ACTUATOR_ENDPOINT + "/**"))
-                    .permitAll()
-                    // everything else requires authentication
-                    .anyRequest()
-                    .authenticated())
-        .oauth2Login(
-            oauth2 ->
-                oauth2
-                    .clientRegistrationRepository(clientRegistrationRepository)
-                    .authorizedClientService(oAuth2AuthorizedClientService)
-                    .authorizationEndpoint(
-                        authorizationEndpointConfig ->
-                            authorizationEndpointConfig
-                                .baseUri(OAUTH_AUTH_ENDPOINT)
-                                .authorizationRequestRepository(
-                                    cookieOAuth2AuthorizationRequestRepository()))
-                    .redirectionEndpoint(
-                        redirectionEndpointConfig ->
-                            redirectionEndpointConfig.baseUri(OAUTH_REDIRECT_ENDPOINT))
-                    .successHandler(getAuthenticationSuccessHandler()))
-        .addFilterBefore(
-            authenticationCookieFilter(http), OAuth2AuthorizationRequestRedirectFilter.class)
-        .exceptionHandling(
-            exceptionHandling ->
-                exceptionHandling
-                    .defaultAuthenticationEntryPointFor(
-                        new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
-                        new AntPathRequestMatcher(REST_API_PATH + "/**"))
-                    .defaultAuthenticationEntryPointFor(
-                        new AddClusterIdSubPathToRedirectAuthenticationEntryPoint(
-                            OAUTH_AUTH_ENDPOINT + "/auth0"),
-                        new AntPathRequestMatcher("/**")))
-        .oauth2ResourceServer(
-            oauth2resourceServer ->
-                oauth2resourceServer.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder())))
-        .build();
+    try {
+      return super.configureGenericSecurityOptions(http)
+          // Then we configure the specific web security for CCSaaS
+          .authorizeHttpRequests(
+              httpRequests ->
+                  // ready endpoint is public for infra
+                  httpRequests
+                      .requestMatchers(new AntPathRequestMatcher(createApiPath(READYZ_PATH)))
+                      .permitAll()
+                      // public share resources
+                      .requestMatchers(
+                          new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/"),
+                          new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/index*"),
+                          new AntPathRequestMatcher(
+                              EXTERNAL_SUB_PATH + STATIC_RESOURCE_PATH + "/**"),
+                          new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/*.js"),
+                          new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/*.ico"))
+                      .permitAll()
+                      // public share related resources (API)
+                      .requestMatchers(
+                          new AntPathRequestMatcher(
+                              createApiPath(EXTERNAL_SUB_PATH + DEEP_SUB_PATH_ANY)))
+                      .permitAll()
+                      // common public api resources
+                      .requestMatchers(
+                          new AntPathRequestMatcher(createApiPath(UI_CONFIGURATION_PATH)),
+                          new AntPathRequestMatcher(createApiPath(LOCALIZATION_PATH)))
+                      .permitAll()
+                      .requestMatchers(new AntPathRequestMatcher(ACTUATOR_ENDPOINT + "/**"))
+                      .permitAll()
+                      // everything else requires authentication
+                      .anyRequest()
+                      .authenticated())
+          .oauth2Login(
+              oauth2 ->
+                  oauth2
+                      .clientRegistrationRepository(clientRegistrationRepository)
+                      .authorizedClientService(oAuth2AuthorizedClientService)
+                      .authorizationEndpoint(
+                          authorizationEndpointConfig ->
+                              authorizationEndpointConfig
+                                  .baseUri(OAUTH_AUTH_ENDPOINT)
+                                  .authorizationRequestRepository(
+                                      cookieOAuth2AuthorizationRequestRepository()))
+                      .redirectionEndpoint(
+                          redirectionEndpointConfig ->
+                              redirectionEndpointConfig.baseUri(OAUTH_REDIRECT_ENDPOINT))
+                      .successHandler(getAuthenticationSuccessHandler()))
+          .addFilterBefore(
+              authenticationCookieFilter(http), OAuth2AuthorizationRequestRedirectFilter.class)
+          .exceptionHandling(
+              exceptionHandling ->
+                  exceptionHandling
+                      .defaultAuthenticationEntryPointFor(
+                          new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
+                          new AntPathRequestMatcher(REST_API_PATH + "/**"))
+                      .defaultAuthenticationEntryPointFor(
+                          new AddClusterIdSubPathToRedirectAuthenticationEntryPoint(
+                              OAUTH_AUTH_ENDPOINT + "/auth0"),
+                          new AntPathRequestMatcher("/**")))
+          .oauth2ResourceServer(
+              oauth2resourceServer ->
+                  oauth2resourceServer.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder())))
+          .build();
+    } catch (Exception e) {
+      throw new OptimizeRuntimeException(e);
+    }
   }
 
   @Bean

@@ -16,10 +16,12 @@
 package io.camunda.zeebe.client.impl.search.filter;
 
 import io.camunda.zeebe.client.api.search.filter.DecisionInstanceFilter;
+import io.camunda.zeebe.client.api.search.response.DecisionDefinitionType;
+import io.camunda.zeebe.client.api.search.response.DecisionInstanceState;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
+import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionTypeEnum;
 import io.camunda.zeebe.client.protocol.rest.DecisionInstanceFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.DecisionInstanceStateEnum;
-import io.camunda.zeebe.client.protocol.rest.DecisionInstanceTypeEnum;
 
 public class DecisionInstanceFilterImpl
     extends TypedSearchRequestPropertyProvider<DecisionInstanceFilterRequest>
@@ -38,8 +40,25 @@ public class DecisionInstanceFilterImpl
   }
 
   @Override
-  public DecisionInstanceFilter state(final DecisionInstanceStateEnum state) {
-    filter.setState(state);
+  public DecisionInstanceFilter state(final DecisionInstanceState state) {
+    final DecisionInstanceStateEnum stateEnum;
+    switch (state) {
+      case EVALUATED:
+        stateEnum = DecisionInstanceStateEnum.EVALUATED;
+        break;
+      case FAILED:
+        stateEnum = DecisionInstanceStateEnum.FAILED;
+        break;
+      case UNSPECIFIED:
+        stateEnum = DecisionInstanceStateEnum.UNSPECIFIED;
+        break;
+      case UNKNOWN:
+        stateEnum = DecisionInstanceStateEnum.UNKNOWN;
+        break;
+      default:
+        throw new IllegalArgumentException("Unexpected DecisionInstanceState value: " + state);
+    }
+    filter.setState(stateEnum);
     return this;
   }
 
@@ -62,32 +81,51 @@ public class DecisionInstanceFilterImpl
   }
 
   @Override
-  public DecisionInstanceFilter decisionKey(final long decisionKey) {
-    filter.setDecisionDefinitionKey(decisionKey);
+  public DecisionInstanceFilter decisionDefinitionKey(final long decisionDefinitionKey) {
+    filter.setDecisionDefinitionKey(decisionDefinitionKey);
     return this;
   }
 
   @Override
-  public DecisionInstanceFilter dmnDecisionId(final String dmnDecisionId) {
-    filter.setDecisionDefinitionId(dmnDecisionId);
+  public DecisionInstanceFilter decisionDefinitionId(final String decisionDefinitionId) {
+    filter.setDecisionDefinitionId(decisionDefinitionId);
     return this;
   }
 
   @Override
-  public DecisionInstanceFilter dmnDecisionName(final String dmnDecisionName) {
-    filter.setDecisionDefinitionName(dmnDecisionName);
+  public DecisionInstanceFilter decisionDefinitionName(final String decisionDefinitionName) {
+    filter.setDecisionDefinitionName(decisionDefinitionName);
     return this;
   }
 
   @Override
-  public DecisionInstanceFilter decisionVersion(final int decisionVersion) {
-    filter.setDecisionDefinitionVersion(decisionVersion);
+  public DecisionInstanceFilter decisionDefinitionVersion(final int decisionDefinitionVersion) {
+    filter.setDecisionDefinitionVersion(decisionDefinitionVersion);
     return this;
   }
 
   @Override
-  public DecisionInstanceFilter decisionType(final DecisionInstanceTypeEnum decisionType) {
-    filter.setDecisionDefinitionType(decisionType);
+  public DecisionInstanceFilter decisionDefinitionType(
+      final DecisionDefinitionType decisionDefinitionType) {
+    final DecisionDefinitionTypeEnum decisionDefinitionTypeEnum;
+    switch (decisionDefinitionType) {
+      case DECISION_TABLE:
+        decisionDefinitionTypeEnum = DecisionDefinitionTypeEnum.DECISION_TABLE;
+        break;
+      case LITERAL_EXPRESSION:
+        decisionDefinitionTypeEnum = DecisionDefinitionTypeEnum.LITERAL_EXPRESSION;
+        break;
+      case UNSPECIFIED:
+        decisionDefinitionTypeEnum = DecisionDefinitionTypeEnum.UNSPECIFIED;
+        break;
+      case UNKNOWN:
+        decisionDefinitionTypeEnum = DecisionDefinitionTypeEnum.UNKNOWN;
+        break;
+      default:
+        throw new IllegalArgumentException(
+            "Unexpected DecisionDefinitionType value: " + decisionDefinitionType);
+    }
+    filter.setDecisionDefinitionType(decisionDefinitionTypeEnum);
     return this;
   }
 

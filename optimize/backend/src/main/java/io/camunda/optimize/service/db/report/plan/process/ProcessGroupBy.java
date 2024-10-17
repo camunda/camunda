@@ -18,11 +18,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.group.Runnin
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.UserTasksGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
-@Getter
-@RequiredArgsConstructor
 public enum ProcessGroupBy {
   PROCESS_GROUP_BY_ASSIGNEE(new AssigneeGroupByDto()),
   PROCESS_GROUP_BY_CANDIDATE_GROUP(new CandidateGroupGroupByDto()),
@@ -44,4 +40,12 @@ public enum ProcessGroupBy {
   PROCESS_GROUP_BY_VARIABLE(new VariableGroupByDto());
 
   private final ProcessGroupByDto<?> dto;
+
+  private ProcessGroupBy(ProcessGroupByDto<?> dto) {
+    this.dto = dto;
+  }
+
+  public ProcessGroupByDto<?> getDto() {
+    return this.dto;
+  }
 }

@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.security.tenant;
 
-import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
+import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_TENANT_ID;
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
@@ -53,7 +53,7 @@ public class TenantService {
     final var authentication = SecurityContextHolder.getContext().getAuthentication();
     final TenantAwareAuthentication currentAuthentication;
 
-    if (authentication instanceof TenantAwareAuthentication tenantAwareAuthentication) {
+    if (authentication instanceof final TenantAwareAuthentication tenantAwareAuthentication) {
       currentAuthentication = tenantAwareAuthentication;
     } else {
       currentAuthentication = null;
@@ -111,7 +111,7 @@ public class TenantService {
       return new AuthenticatedTenants(TenantAccessType.TENANT_ACCESS_NONE, null);
     }
 
-    public static AuthenticatedTenants assignedTenants(List<String> tenants) {
+    public static AuthenticatedTenants assignedTenants(final List<String> tenants) {
       return new AuthenticatedTenants(TenantAccessType.TENANT_ACCESS_ASSIGNED, tenants);
     }
 

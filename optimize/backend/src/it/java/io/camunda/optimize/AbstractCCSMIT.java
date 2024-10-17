@@ -48,7 +48,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import lombok.SneakyThrows;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -60,6 +59,7 @@ import org.springframework.test.context.ActiveProfiles;
 @Tag("ccsm-test")
 @ActiveProfiles(CCSM_PROFILE)
 public abstract class AbstractCCSMIT extends AbstractIT {
+
   @RegisterExtension
   @Order(4)
   protected static ZeebeExtension zeebeExtension = new ZeebeExtension();
@@ -263,7 +263,6 @@ public abstract class AbstractCCSMIT extends AbstractIT {
         String.format("ctx._source.value.tenantId = \"%s\";", tenantId));
   }
 
-  @SneakyThrows
   protected void waitUntilMinimumDataExportedCount(
       final long minimumCount,
       final String indexName,
@@ -299,7 +298,6 @@ public abstract class AbstractCCSMIT extends AbstractIT {
         .collect(Collectors.groupingBy(event -> event.getValue().getElementId()));
   }
 
-  @SneakyThrows
   protected Map<String, List<ZeebeProcessInstanceRecordDto>>
       getZeebeExportedProcessInstanceEventsByElementId() {
     return getZeebeExportedProcessableEvents(
@@ -345,7 +343,6 @@ public abstract class AbstractCCSMIT extends AbstractIT {
     return getTimestampForZeebeAssignEvents(eventsForElement, "");
   }
 
-  @SneakyThrows
   private <T> List<T> getZeebeExportedProcessableEvents(
       final String exportIndex,
       final TermsQueryContainer queryForProcessableEvents,

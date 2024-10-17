@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.schema;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.exceptions.IndexSchemaValidationException;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
@@ -47,12 +48,7 @@ import org.slf4j.LoggerFactory;
  */
 public class IndexSchemaValidator {
   private static final Logger LOGGER = LoggerFactory.getLogger(IndexSchemaValidator.class);
-
-  private final SchemaManager schemaManager;
-
-  public IndexSchemaValidator(final SchemaManager schemaManager) {
-    this.schemaManager = schemaManager;
-  }
+  private static final ObjectMapper MAPPER = new ObjectMapper();
 
   /**
    * Validates existing indices mappings against index/index template mappings defined.
@@ -63,10 +59,10 @@ public class IndexSchemaValidator {
    * @throws IndexSchemaValidationException if the existing indices cannot be updated with the given
    *     mappings.
    */
-  public Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexMappings(
-      final Map<String, IndexMapping> mappings, final Set<IndexDescriptor> indexDescriptors)
+  public Map<IndexDescriptor, Collection<IndexMappingProperty>> validateIndexMappings(
+      final Map<String, IndexMapping> mappings, final Collection<IndexDescriptor> indexDescriptors)
       throws IndexSchemaValidationException {
-    final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields = new HashMap<>();
+    final Map<IndexDescriptor, Collection<IndexMappingProperty>> newFields = new HashMap<>();
     for (final IndexDescriptor indexDescriptor : indexDescriptors) {
       final Map<String, IndexMapping> indexMappingsGroup =
           filterIndexMappings(mappings, indexDescriptor);
@@ -83,7 +79,7 @@ public class IndexSchemaValidator {
   private void validateDifferenceAndCollectNewFields(
       final IndexDescriptor indexDescriptor,
       final IndexMappingDifference difference,
-      final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields) {
+      final Map<IndexDescriptor, Collection<IndexMappingProperty>> newFields) {
     if (difference != null && !difference.equal()) {
       LOGGER.debug(
           "Index fields differ from expected. Index name: {}. Difference: {}.",
@@ -115,7 +111,7 @@ public class IndexSchemaValidator {
 
   private IndexMappingDifference getIndexMappingDifference(
       final IndexDescriptor indexDescriptor, final Map<String, IndexMapping> indexMappingsGroup) {
-    final IndexMapping indexMappingMustBe = schemaManager.readIndex(indexDescriptor);
+    final IndexMapping indexMappingMustBe = IndexMapping.from(indexDescriptor, MAPPER);
 
     final var differences =
         indexMappingsGroup.values().stream()

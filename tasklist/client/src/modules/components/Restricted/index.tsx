@@ -7,8 +7,7 @@
  */
 
 import {usePermissions} from 'modules/hooks/usePermissions';
-
-import {Permissions} from 'modules/types';
+import type {Permissions} from 'modules/types';
 
 type Props = {
   children: React.ReactNode;

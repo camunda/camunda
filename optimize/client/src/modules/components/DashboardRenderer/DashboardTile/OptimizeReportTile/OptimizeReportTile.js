@@ -92,7 +92,7 @@ export default function OptimizeReportTile({
   }
 
   const refreshTile = () => loadTileData(lastParams);
-  const tileLink = customizeTileLink(data?.id);
+  const tileLink = customizeTileLink(data?.id || tile?.id);
   let tileProps = {
     className: 'OptimizeReportTile DashboardTile',
   };

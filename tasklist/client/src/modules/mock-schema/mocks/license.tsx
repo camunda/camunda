@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {License} from 'modules/types';
+import type {License} from 'modules/types';
 
 const validLicense: License = {
   validLicense: true,

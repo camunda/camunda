@@ -8,7 +8,7 @@
 
 import {Dropdown} from '@carbon/react';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
-import {CurrentUser} from 'modules/types';
+import type {CurrentUser} from 'modules/types';
 import {useTranslation} from 'react-i18next';
 
 type Tenants = CurrentUser['tenants'][0];

@@ -29,18 +29,22 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-@AllArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class ProcessRepositoryES implements ProcessRepository {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ProcessRepositoryES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
+
+  public ProcessRepositoryES(OptimizeElasticsearchClient esClient, ObjectMapper objectMapper) {
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+  }
 
   @Override
   public Map<String, ProcessOverviewDto> getProcessOverviewsByKey(

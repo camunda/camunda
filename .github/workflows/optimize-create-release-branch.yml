@@ -17,15 +17,15 @@ jobs:
       fail-fast: true
     steps:
       - name: Checkout release branch
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4
         with:
           ref: ${{ github.event.inputs.release_base_branch }}
           fetch-depth: 0
 
       - name: Configure GitHub user
         run: |
-          git config --global user.name "optimize-release"
-          git config --global user.email "ci@optimize.camunda.cloud"
+          git config --global user.email "github-actions[release]"
+          git config --global user.name "github-actions[release]@users.noreply.github.com"
 
       - name: Create release branch
         run: |

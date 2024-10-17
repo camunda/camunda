@@ -11,7 +11,7 @@ import static io.camunda.zeebe.stream.impl.TypedEventRegistry.EVENT_REGISTRY;
 
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
-import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
+import io.camunda.zeebe.logstreams.util.TestLogStream;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -28,7 +28,7 @@ public final class LogStreamPrinter {
 
   private static final Logger LOGGER = LoggerFactory.getLogger("io.camunda.zeebe.broker.test");
 
-  public static void printRecords(final SynchronousLogStream logStream) {
+  public static void printRecords(final TestLogStream logStream) {
     final StringBuilder sb = new StringBuilder();
     sb.append("Records on partition ");
     sb.append(logStream.getPartitionId());

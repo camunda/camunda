@@ -8,14 +8,14 @@
 package io.camunda.operate.schema.util;
 
 import io.camunda.operate.schema.IndexMapping;
-import io.camunda.operate.schema.indices.IndexDescriptor;
-import io.camunda.operate.schema.templates.TemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 
 public interface SchemaTestHelper {
 
   void dropSchema();
 
-  IndexMapping getTemplateMappings(TemplateDescriptor template);
+  IndexMapping getTemplateMappings(IndexTemplateDescriptor template);
 
   void createIndex(IndexDescriptor indexDescriptor, String indexName, String indexSchemaFilename);
 

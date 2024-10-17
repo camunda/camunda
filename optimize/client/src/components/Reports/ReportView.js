@@ -7,7 +7,7 @@
  */
 
 import React, {useRef, useState} from 'react';
-import {Link, Redirect, useLocation} from 'react-router-dom';
+import {Link, useHistory, useLocation} from 'react-router-dom';
 import classnames from 'classnames';
 import {Button} from '@carbon/react';
 import {Edit, Share, TrashCan} from '@carbon/icons-react';
@@ -46,6 +46,7 @@ export default function ReportView({report, error, loadReport}) {
   const reportContainerRef = useRef();
   const [showReportRenderer, setShowReportRenderer] = useState(true);
   const {user} = useUser();
+  const history = useHistory();
 
   function showTable(sectionState) {
     if (sectionState !== 'maximized') {
@@ -71,7 +72,7 @@ export default function ReportView({report, error, loadReport}) {
   }
 
   const shouldShowCSVDownload = () => {
-    return report?.data?.visualization !== 'number' && report.result?.measures.length === 1;
+    return report?.data?.view?.properties?.includes('rawData');
   };
 
   const constructCSVDownloadLink = () => {
@@ -80,10 +81,14 @@ export default function ReportView({report, error, loadReport}) {
     )}.csv`;
   };
 
+  const getTotalEntries = ({result}) => {
+    return result.instanceCount;
+  };
+
   const {id, name, description, currentUserRole, data} = report;
 
   if (redirect) {
-    return <Redirect to={redirect} />;
+    history.push(redirect);
   }
 
   const isInstantPreview = data?.instantPreviewReport;
@@ -143,7 +148,7 @@ export default function ReportView({report, error, loadReport}) {
                 kind="ghost"
                 hasIconOnly
                 href={constructCSVDownloadLink()}
-                totalCount={calculateTotalEntries(report)}
+                totalCount={getTotalEntries(report)}
                 user={user}
               />
             )}
@@ -193,17 +198,4 @@ export default function ReportView({report, error, loadReport}) {
       </div>
     </div>
   );
-}
-
-function calculateTotalEntries({result}) {
-  switch (result.type) {
-    case 'raw':
-      return result.instanceCount;
-    case 'map':
-    case 'hyperMap':
-      return result?.measures?.[0]?.data?.length;
-    case 'number':
-    default:
-      return 1;
-  }
 }

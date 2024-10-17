@@ -2,38 +2,28 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import license from "rollup-plugin-license";
 import path from "node:path";
+import sbom from "@vzeta/rollup-plugin-sbom";
+
+const outDir = "dist";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   base: "",
-  plugins: [react()],
+  plugins: mode === "sbom" ? [react(), sbom()] : [react()],
   resolve: {
     alias: {
       src: "/src",
     },
   },
   build: {
+    outDir,
     rollupOptions: {
       plugins: license({
         thirdParty: {
-          output:
-            mode === "sbom"
-              ? {
-                  file: path.join(__dirname, "dist", "dependencies.json"),
-                  encoding: "utf-8",
-                  template(dependencies) {
-                    return JSON.stringify(
-                      dependencies.map(({ name, version, license }) => ({
-                        name,
-                        version,
-                        license,
-                      })),
-                      null,
-                      2,
-                    );
-                  },
-                }
-              : path.resolve(__dirname, "./dist/assets/vendor.LICENSE.txt"),
+          output: path.resolve(
+            __dirname,
+            `./${outDir}/assets/vendor.LICENSE.txt`,
+          ),
         },
       }),
     },

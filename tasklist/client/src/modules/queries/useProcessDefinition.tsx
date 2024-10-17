@@ -8,8 +8,8 @@
 
 import {useQuery} from '@tanstack/react-query';
 import {api} from 'modules/api';
-import {RequestError, request} from 'modules/request';
-import {Process} from 'modules/types';
+import {type RequestError, request} from 'modules/request';
+import type {Process} from 'modules/types';
 
 const HTTP_STATUS_FORBIDDEN = 403;
 const HTTP_STATUS_NOT_FOUND = 404;

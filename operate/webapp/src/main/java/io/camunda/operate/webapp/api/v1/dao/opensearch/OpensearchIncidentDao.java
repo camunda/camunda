@@ -11,7 +11,6 @@ import static java.lang.String.format;
 
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
-import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.IncidentDao;
 import io.camunda.operate.webapp.api.v1.entities.Incident;
@@ -21,6 +20,7 @@ import io.camunda.operate.webapp.api.v1.entities.opensearch.OpensearchIncident;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
+import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;

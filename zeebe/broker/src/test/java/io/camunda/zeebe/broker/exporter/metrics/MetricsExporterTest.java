@@ -45,7 +45,6 @@ class MetricsExporterTest {
     final var exporter =
         new MetricsExporter(metrics, DEFAULT_KEY_CACHE, DEFAULT_KEY_CACHE, meterRegistry);
     exporter.open(new ExporterTestController());
-
     assertThat(meterRegistry.getMeters().size())
         .isEqualTo(0)
         .describedAs("Expected no metrics to be measured at start");
@@ -82,8 +81,7 @@ class MetricsExporterTest {
             .build());
 
     // then
-    final var jobLifeTime =
-        meterRegistry.timer("zeebe.job.life.time", "partition", String.valueOf(partitionId));
+    final var jobLifeTime = meterRegistry.timer("zeebe.job.life.time");
 
     assertThat(jobLifeTime.count())
         .isEqualTo(1)

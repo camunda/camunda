@@ -117,15 +117,15 @@ public final class SegmentFile {
    *
    * @return The segment file.
    */
-  public File file() {
+  File file() {
     return file;
   }
 
-  public String name() {
+  String name() {
     return file.getName();
   }
 
-  public Path getFileMarkedForDeletion() {
+  Path getFileMarkedForDeletion() {
     if (fileMarkedForDeletion == null) {
       final String renamedFileName =
           String.format(
@@ -136,7 +136,7 @@ public final class SegmentFile {
     return fileMarkedForDeletion;
   }
 
-  public static boolean isDeletedSegmentFile(final String journalName, final String fileName) {
+  static boolean isDeletedSegmentFile(final String journalName, final String fileName) {
     checkNotNull(journalName, "journalName cannot be null");
     checkNotNull(fileName, "fileName cannot be null");
 

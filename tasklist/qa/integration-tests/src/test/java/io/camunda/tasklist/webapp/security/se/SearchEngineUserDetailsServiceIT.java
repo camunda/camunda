@@ -9,6 +9,7 @@ package io.camunda.tasklist.webapp.security.se;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.tasklist.es.RetryElasticsearchClient;
 import io.camunda.tasklist.management.SearchEngineHealthIndicator;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -22,6 +23,7 @@ import io.camunda.tasklist.webapp.security.WebSecurityConfig;
 import io.camunda.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -92,12 +94,13 @@ public class SearchEngineUserDetailsServiceIT extends TasklistIntegrationTest {
 
     // then
     final UserDetails userDetails = userDetailsService.loadUserByUsername(TEST_USERNAME);
-    assertThat(userDetails).isInstanceOf(User.class);
-    final User testUser = (User) userDetails;
+    assertThat(userDetails).isInstanceOf(CamundaUser.class);
+    final CamundaUser testUser = (CamundaUser) userDetails;
     assertThat(testUser.getUsername()).isEqualTo(TEST_USERNAME);
     assertThat(passwordEncoder.matches(TEST_PASSWORD, testUser.getPassword())).isTrue();
     assertThat(testUser.getUserId()).isEqualTo("user1");
     assertThat(testUser.getDisplayName()).isEqualTo(TEST_FIRSTNAME + " " + TEST_LASTNAME);
+    assertThat(testUser.getRoles()).isEqualTo(List.of(Role.OWNER.name()));
   }
 
   private void updateUserRealName() {

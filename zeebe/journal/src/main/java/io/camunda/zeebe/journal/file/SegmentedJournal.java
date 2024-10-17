@@ -244,7 +244,7 @@ public final class SegmentedJournal implements Journal {
     return segments.getSegment(index);
   }
 
-  public void closeReader(final SegmentedJournalReader segmentedJournalReader) {
+  void closeReader(final SegmentedJournalReader segmentedJournalReader) {
     readers.remove(segmentedJournalReader);
   }
 
@@ -253,7 +253,7 @@ public final class SegmentedJournal implements Journal {
    *
    * @param index The index at which to reset readers.
    */
-  void resetAdvancedReaders(final long index) {
+  private void resetAdvancedReaders(final long index) {
     for (final SegmentedJournalReader reader : readers) {
       if (reader.getNextIndex() > index) {
         reader.unsafeSeek(index);
@@ -261,7 +261,7 @@ public final class SegmentedJournal implements Journal {
     }
   }
 
-  public JournalIndex getJournalIndex() {
+  JournalIndex getJournalIndex() {
     return journalIndex;
   }
 

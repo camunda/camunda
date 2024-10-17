@@ -12,6 +12,9 @@ import io.camunda.tasklist.entities.VariableEntity;
 
 public class VariableListViewEntity {
   @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Long key;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private String id;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -36,11 +39,15 @@ public class VariableListViewEntity {
   private String tenantId;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
+  private String processInstanceId;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private ListViewJoinRelation join;
 
   public VariableListViewEntity() {}
 
   public VariableListViewEntity(final VariableEntity entity) {
+    setKey(entity.getKey());
     setValue(entity.getValue());
     setFullValue(entity.getFullValue());
     setName(entity.getName());
@@ -49,6 +56,7 @@ public class VariableListViewEntity {
     setId(entity.getId());
     setPartitionId(entity.getPartitionId());
     setTenantId(entity.getTenantId());
+    setProcessInstanceKey(entity.getProcessInstanceId());
 
     // Set the join relation
     final ListViewJoinRelation joinRelation = new ListViewJoinRelation();
@@ -56,6 +64,15 @@ public class VariableListViewEntity {
   }
 
   // Add getter and setters
+  public Long getKey() {
+    return key;
+  }
+
+  public VariableListViewEntity setKey(final Long key) {
+    this.key = key;
+    return this;
+  }
+
   public String getId() {
     return id;
   }
@@ -125,6 +142,15 @@ public class VariableListViewEntity {
 
   public VariableListViewEntity setTenantId(final String tenantId) {
     this.tenantId = tenantId;
+    return this;
+  }
+
+  public String getProcessInstanceId() {
+    return processInstanceId;
+  }
+
+  public VariableListViewEntity setProcessInstanceKey(final String processInstanceId) {
+    this.processInstanceId = processInstanceId;
     return this;
   }
 

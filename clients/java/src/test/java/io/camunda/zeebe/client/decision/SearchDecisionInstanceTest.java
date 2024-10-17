@@ -17,9 +17,11 @@ package io.camunda.zeebe.client.decision;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.client.api.search.response.DecisionDefinitionType;
+import io.camunda.zeebe.client.api.search.response.DecisionInstanceState;
+import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionTypeEnum;
 import io.camunda.zeebe.client.protocol.rest.DecisionInstanceSearchQueryRequest;
 import io.camunda.zeebe.client.protocol.rest.DecisionInstanceStateEnum;
-import io.camunda.zeebe.client.protocol.rest.DecisionInstanceTypeEnum;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import org.junit.jupiter.api.Test;
 
@@ -44,15 +46,15 @@ class SearchDecisionInstanceTest extends ClientRestTest {
         .filter(
             f ->
                 f.decisionInstanceKey(1L)
-                    .state(DecisionInstanceStateEnum.FAILED)
+                    .state(DecisionInstanceState.FAILED)
                     .evaluationFailure("ef")
-                    .decisionType(DecisionInstanceTypeEnum.DECISION_TABLE)
+                    .decisionDefinitionType(DecisionDefinitionType.DECISION_TABLE)
                     .processDefinitionKey(2L)
                     .processInstanceKey(3L)
-                    .decisionKey(4L)
-                    .dmnDecisionId("ddi")
-                    .dmnDecisionName("ddm")
-                    .decisionVersion(5)
+                    .decisionDefinitionKey(4L)
+                    .decisionDefinitionId("ddi")
+                    .decisionDefinitionName("ddm")
+                    .decisionDefinitionVersion(5)
                     .tenantId("t"))
         .send()
         .join();
@@ -64,7 +66,7 @@ class SearchDecisionInstanceTest extends ClientRestTest {
     assertThat(request.getFilter().getState()).isEqualTo(DecisionInstanceStateEnum.FAILED);
     assertThat(request.getFilter().getEvaluationFailure()).isEqualTo("ef");
     assertThat(request.getFilter().getDecisionDefinitionType())
-        .isEqualTo(DecisionInstanceTypeEnum.DECISION_TABLE);
+        .isEqualTo(DecisionDefinitionTypeEnum.DECISION_TABLE);
     assertThat(request.getFilter().getProcessDefinitionKey()).isEqualTo(2L);
     assertThat(request.getFilter().getProcessInstanceKey()).isEqualTo(3L);
     assertThat(request.getFilter().getDecisionDefinitionKey()).isEqualTo(4L);
@@ -81,11 +83,11 @@ class SearchDecisionInstanceTest extends ClientRestTest {
         .newDecisionInstanceQuery()
         .sort(
             s ->
-                s.decisionKey()
+                s.decisionDefinitionKey()
                     .asc()
-                    .dmnDecisionId()
+                    .decisionDefinitionId()
                     .asc()
-                    .dmnDecisionName()
+                    .decisionDefinitionName()
                     .desc()
                     .processInstanceId()
                     .asc()
@@ -93,7 +95,7 @@ class SearchDecisionInstanceTest extends ClientRestTest {
                     .asc()
                     .evaluationFailure()
                     .asc()
-                    .decisionVersion()
+                    .decisionDefinitionVersion()
                     .asc()
                     .state()
                     .asc()
@@ -101,7 +103,7 @@ class SearchDecisionInstanceTest extends ClientRestTest {
                     .asc()
                     .processInstanceId()
                     .asc()
-                    .decisionType()
+                    .decisionDefinitionType()
                     .asc()
                     .tenantId()
                     .asc())
@@ -112,11 +114,11 @@ class SearchDecisionInstanceTest extends ClientRestTest {
     final DecisionInstanceSearchQueryRequest request =
         gatewayService.getLastRequest(DecisionInstanceSearchQueryRequest.class);
     assertThat(request.getSort().size()).isEqualTo(12);
-    assertThat(request.getSort().get(0).getField()).isEqualTo("decisionKey");
+    assertThat(request.getSort().get(0).getField()).isEqualTo("decisionDefinitionKey");
     assertThat(request.getSort().get(0).getOrder()).isEqualTo("asc");
-    assertThat(request.getSort().get(1).getField()).isEqualTo("dmnDecisionId");
+    assertThat(request.getSort().get(1).getField()).isEqualTo("decisionDefinitionId");
     assertThat(request.getSort().get(1).getOrder()).isEqualTo("asc");
-    assertThat(request.getSort().get(2).getField()).isEqualTo("dmnDecisionName");
+    assertThat(request.getSort().get(2).getField()).isEqualTo("decisionDefinitionName");
     assertThat(request.getSort().get(2).getOrder()).isEqualTo("desc");
     assertThat(request.getSort().get(3).getField()).isEqualTo("processInstanceId");
     assertThat(request.getSort().get(3).getOrder()).isEqualTo("asc");
@@ -124,7 +126,7 @@ class SearchDecisionInstanceTest extends ClientRestTest {
     assertThat(request.getSort().get(4).getOrder()).isEqualTo("asc");
     assertThat(request.getSort().get(5).getField()).isEqualTo("evaluationFailure");
     assertThat(request.getSort().get(5).getOrder()).isEqualTo("asc");
-    assertThat(request.getSort().get(6).getField()).isEqualTo("decisionVersion");
+    assertThat(request.getSort().get(6).getField()).isEqualTo("decisionDefinitionVersion");
     assertThat(request.getSort().get(6).getOrder()).isEqualTo("asc");
     assertThat(request.getSort().get(7).getField()).isEqualTo("state");
     assertThat(request.getSort().get(7).getOrder()).isEqualTo("asc");
@@ -132,7 +134,7 @@ class SearchDecisionInstanceTest extends ClientRestTest {
     assertThat(request.getSort().get(8).getOrder()).isEqualTo("asc");
     assertThat(request.getSort().get(9).getField()).isEqualTo("processInstanceId");
     assertThat(request.getSort().get(9).getOrder()).isEqualTo("asc");
-    assertThat(request.getSort().get(10).getField()).isEqualTo("decisionType");
+    assertThat(request.getSort().get(10).getField()).isEqualTo("decisionDefinitionType");
     assertThat(request.getSort().get(10).getOrder()).isEqualTo("asc");
     assertThat(request.getSort().get(11).getField()).isEqualTo("tenantId");
     assertThat(request.getSort().get(11).getOrder()).isEqualTo("asc");

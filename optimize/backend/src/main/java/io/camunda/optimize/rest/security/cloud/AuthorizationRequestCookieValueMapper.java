@@ -11,49 +11,60 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import java.io.IOException;
 import java.util.Base64;
-import lombok.SneakyThrows;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationResponseType;
 
 public class AuthorizationRequestCookieValueMapper {
+
   private final ObjectMapper objectMapper;
 
   public AuthorizationRequestCookieValueMapper() {
-    this.objectMapper = new ObjectMapper();
-    this.objectMapper.addMixIn(
-        OAuth2AuthorizationRequest.class, OAuth2AuthorizationRequestMixin.class);
-    this.objectMapper.addMixIn(
+    objectMapper = new ObjectMapper();
+    objectMapper.addMixIn(OAuth2AuthorizationRequest.class, OAuth2AuthorizationRequestMixin.class);
+    objectMapper.addMixIn(
         OAuth2AuthorizationResponseType.class, OAuth2AuthorizationResponseTypeMixin.class);
-    this.objectMapper.addMixIn(AuthorizationGrantType.class, AuthorizationGrantTypeMixin.class);
+    objectMapper.addMixIn(AuthorizationGrantType.class, AuthorizationGrantTypeMixin.class);
   }
 
-  @SneakyThrows
   public String serialize(final OAuth2AuthorizationRequest authorizationRequest) {
-    return Base64.getUrlEncoder()
-        .encodeToString(objectMapper.writeValueAsString(authorizationRequest).getBytes(UTF_8));
+    try {
+      return Base64.getUrlEncoder()
+          .encodeToString(objectMapper.writeValueAsString(authorizationRequest).getBytes(UTF_8));
+    } catch (final JsonProcessingException e) {
+      throw new OptimizeRuntimeException(e);
+    }
   }
 
-  @SneakyThrows
   public OAuth2AuthorizationRequest deserialize(final String value) {
-    return objectMapper.readValue(
-        Base64.getUrlDecoder().decode(value), OAuth2AuthorizationRequest.class);
+    try {
+      return objectMapper.readValue(
+          Base64.getUrlDecoder().decode(value), OAuth2AuthorizationRequest.class);
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException(e);
+    }
   }
 
   private abstract static class AuthorizationGrantTypeMixin {
+
     @JsonCreator
-    public AuthorizationGrantTypeMixin(@JsonProperty("value") String value) {}
+    public AuthorizationGrantTypeMixin(@JsonProperty("value") final String value) {}
   }
 
   private abstract static class OAuth2AuthorizationRequestMixin {
+
     @JsonProperty("grantType")
     AuthorizationGrantType authorizationGrantType;
   }
 
   private abstract static class OAuth2AuthorizationResponseTypeMixin {
+
     @JsonCreator
-    public OAuth2AuthorizationResponseTypeMixin(@JsonProperty("value") String value) {}
+    public OAuth2AuthorizationResponseTypeMixin(@JsonProperty("value") final String value) {}
   }
 }

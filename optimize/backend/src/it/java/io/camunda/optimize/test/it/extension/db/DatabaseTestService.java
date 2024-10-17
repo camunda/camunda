@@ -54,19 +54,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
 import org.mockserver.integration.ClientAndServer;
+import org.slf4j.Logger;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
-@Slf4j
 public abstract class DatabaseTestService {
 
   protected static final ObjectMapper OBJECT_MAPPER = createObjectMapper();
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DatabaseTestService.class);
   protected final String customIndexPrefix;
   protected boolean haveToClean;
-  @Getter private TestIndexRepository testIndexRepository;
+  private TestIndexRepository testIndexRepository;
 
   protected DatabaseTestService(final String customIndexPrefix, final boolean haveToClean) {
     this.customIndexPrefix = customIndexPrefix;
@@ -192,6 +191,8 @@ public abstract class DatabaseTestService {
   public abstract void createRepoSnapshot(final String snapshotRepositoryName);
 
   public abstract void cleanSnapshots(final String snapshotRepositoryName);
+
+  public abstract List<String> getImportIndices();
 
   protected abstract <T extends OptimizeDto> List<T> getInstancesById(
       final String indexName,
@@ -322,4 +323,10 @@ public abstract class DatabaseTestService {
       throws IOException;
 
   public abstract boolean isAliasReadOnly(String readOnlyAliasForIndex) throws IOException;
+
+  public abstract List<String> getAllIndicesWithReadOnlyAlias(String aliasNameWithPrefix);
+
+  public TestIndexRepository getTestIndexRepository() {
+    return this.testIndexRepository;
+  }
 }

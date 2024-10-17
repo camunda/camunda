@@ -14,6 +14,7 @@ import io.camunda.zeebe.test.util.STracer;
 import io.camunda.zeebe.test.util.STracer.Syscall;
 import io.camunda.zeebe.test.util.asserts.strace.FSyncTraceAssert;
 import io.camunda.zeebe.test.util.asserts.strace.STracerAssert;
+import io.camunda.zeebe.test.util.junit.StraceTest;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -26,7 +27,6 @@ import org.agrona.IoUtil;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.io.TempDir;
 
 public final class SnapshotChecksumTest {
@@ -129,8 +129,7 @@ public final class SnapshotChecksumTest {
    * This test is only enabled on CI as it relies on strace. You can run it manually directly if
    * your system supports strace. See {@link io.camunda.zeebe.test.util.STracer} for more.
    */
-  @EnabledIfEnvironmentVariable(named = "CI", matches = "true")
-  @Test
+  @StraceTest
   void shouldFlushOnPersist() throws Exception {
     // given
     final var traceFile = temporaryFolder.resolve("traceFile");

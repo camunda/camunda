@@ -84,8 +84,18 @@ public class NettyUnicastService implements ManagedUnicastService {
 
   private DnsAddressResolverGroup dnsAddressResolverGroup;
 
+  private final String actorSchedulerName;
+
   public NettyUnicastService(
       final String clusterId, final Address advertisedAddress, final MessagingConfig config) {
+    this(clusterId, advertisedAddress, config, "");
+  }
+
+  public NettyUnicastService(
+      final String clusterId,
+      final Address advertisedAddress,
+      final MessagingConfig config,
+      final String actorSchedulerName) {
     this.advertisedAddress = advertisedAddress;
     this.config = config;
     preamble = clusterId.hashCode();
@@ -94,6 +104,7 @@ public class NettyUnicastService implements ManagedUnicastService {
     // don't support binding to multiple interfaces here; wouldn't make sense anyway
     final var port = config.getPort() != null ? config.getPort() : advertisedAddress.port();
     bindAddress = new Address(new InetSocketAddress(port));
+    this.actorSchedulerName = actorSchedulerName != null ? actorSchedulerName : "";
   }
 
   @Override
@@ -208,7 +219,9 @@ public class NettyUnicastService implements ManagedUnicastService {
 
   @Override
   public CompletableFuture<UnicastService> start() {
-    group = new NioEventLoopGroup(0, namedThreads("netty-unicast-event-nio-client-%d", log));
+    group =
+        new NioEventLoopGroup(
+            0, namedThreads("netty-unicast-event-nio-client-%d", log, actorSchedulerName));
     return bootstrap()
         .thenRun(
             () -> {
@@ -217,6 +230,7 @@ public class NettyUnicastService implements ManagedUnicastService {
               dnsAddressResolverGroup =
                   new DnsAddressResolverGroup(
                       new DnsNameResolverBuilder(group.next())
+                          .consolidateCacheSize(128)
                           .dnsQueryLifecycleObserverFactory(
                               new BiDnsQueryLifecycleObserverFactory(
                                   ignored -> metrics,

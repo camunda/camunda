@@ -55,17 +55,25 @@ import io.camunda.zeebe.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.fetch.DecisionDefinitionGetRequest;
 import io.camunda.zeebe.client.api.fetch.DecisionDefinitionGetXmlRequest;
+import io.camunda.zeebe.client.api.fetch.DecisionInstanceGetRequest;
 import io.camunda.zeebe.client.api.fetch.DecisionRequirementsGetRequest;
 import io.camunda.zeebe.client.api.fetch.DecisionRequirementsGetXmlRequest;
+import io.camunda.zeebe.client.api.fetch.ProcessDefinitionGetRequest;
+import io.camunda.zeebe.client.api.fetch.ProcessDefinitionGetXmlRequest;
 import io.camunda.zeebe.client.api.fetch.ProcessInstanceGetRequest;
+import io.camunda.zeebe.client.api.fetch.UserTaskGetFormRequest;
+import io.camunda.zeebe.client.api.fetch.UserTaskGetRequest;
+import io.camunda.zeebe.client.api.fetch.VariableGetRequest;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.search.query.DecisionDefinitionQuery;
 import io.camunda.zeebe.client.api.search.query.DecisionInstanceQuery;
 import io.camunda.zeebe.client.api.search.query.DecisionRequirementsQuery;
 import io.camunda.zeebe.client.api.search.query.FlownodeInstanceQuery;
 import io.camunda.zeebe.client.api.search.query.IncidentQuery;
+import io.camunda.zeebe.client.api.search.query.ProcessDefinitionQuery;
 import io.camunda.zeebe.client.api.search.query.ProcessInstanceQuery;
 import io.camunda.zeebe.client.api.search.query.UserTaskQuery;
+import io.camunda.zeebe.client.api.search.query.VariableQuery;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.client.impl.command.AddPermissionsCommandImpl;
@@ -96,9 +104,15 @@ import io.camunda.zeebe.client.impl.command.UnassignUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.command.UpdateUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.fetch.DecisionDefinitionGetRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.DecisionDefinitionGetXmlRequestImpl;
+import io.camunda.zeebe.client.impl.fetch.DecisionInstanceGetRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.DecisionRequirementsGetRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.DecisionRequirementsGetXmlRequestImpl;
+import io.camunda.zeebe.client.impl.fetch.ProcessDefinitionGetRequestImpl;
+import io.camunda.zeebe.client.impl.fetch.ProcessDefinitionGetXmlRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.ProcessInstanceGetRequestImpl;
+import io.camunda.zeebe.client.impl.fetch.UserTaskGetFormRequestImpl;
+import io.camunda.zeebe.client.impl.fetch.UserTaskGetRequestImpl;
+import io.camunda.zeebe.client.impl.fetch.VariableGetRequestImpl;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpClientFactory;
 import io.camunda.zeebe.client.impl.search.query.DecisionDefinitionQueryImpl;
@@ -106,8 +120,10 @@ import io.camunda.zeebe.client.impl.search.query.DecisionInstanceQueryImpl;
 import io.camunda.zeebe.client.impl.search.query.DecisionRequirementsQueryImpl;
 import io.camunda.zeebe.client.impl.search.query.FlowNodeInstanceQueryImpl;
 import io.camunda.zeebe.client.impl.search.query.IncidentQueryImpl;
+import io.camunda.zeebe.client.impl.search.query.ProcessDefinitionQueryImpl;
 import io.camunda.zeebe.client.impl.search.query.ProcessInstanceQueryImpl;
 import io.camunda.zeebe.client.impl.search.query.UserTaskQueryImpl;
+import io.camunda.zeebe.client.impl.search.query.VariableQueryImpl;
 import io.camunda.zeebe.client.impl.util.ExecutorResource;
 import io.camunda.zeebe.client.impl.util.VersionUtil;
 import io.camunda.zeebe.client.impl.worker.JobClientImpl;
@@ -563,7 +579,24 @@ public final class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
-  public ProcessInstanceGetRequest newProcessInstanceGetRequest(long processInstanceKey) {
+  public ProcessDefinitionGetRequest newProcessDefinitionGetRequest(
+      final long processDefinitionKey) {
+    return new ProcessDefinitionGetRequestImpl(httpClient, processDefinitionKey);
+  }
+
+  @Override
+  public ProcessDefinitionGetXmlRequest newProcessDefinitionGetXmlRequest(
+      final long processDefinitionKey) {
+    return new ProcessDefinitionGetXmlRequestImpl(httpClient, processDefinitionKey);
+  }
+
+  @Override
+  public ProcessDefinitionQuery newProcessDefinitionQuery() {
+    return new ProcessDefinitionQueryImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public ProcessInstanceGetRequest newProcessInstanceGetRequest(final long processInstanceKey) {
     return new ProcessInstanceGetRequestImpl(httpClient, processInstanceKey);
   }
 
@@ -610,6 +643,11 @@ public final class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
+  public DecisionInstanceGetRequest newDecisionInstanceGetRequest(final long decisionInstanceKey) {
+    return new DecisionInstanceGetRequestImpl(httpClient, jsonMapper, decisionInstanceKey);
+  }
+
+  @Override
   public IncidentQuery newIncidentQuery() {
     return new IncidentQueryImpl(httpClient, jsonMapper);
   }
@@ -634,6 +672,26 @@ public final class ZeebeClientImpl implements ZeebeClient {
   public DecisionRequirementsGetRequest newDecisionRequirementsGetRequest(
       final long decisionRequirementsKey) {
     return new DecisionRequirementsGetRequestImpl(httpClient, decisionRequirementsKey);
+  }
+
+  @Override
+  public UserTaskGetFormRequest newUserTaskGetFormRequest(final long userTaskKey) {
+    return new UserTaskGetFormRequestImpl(httpClient, userTaskKey);
+  }
+
+  @Override
+  public UserTaskGetRequest newUserTaskGetRequest(final long userTaskKey) {
+    return new UserTaskGetRequestImpl(httpClient, userTaskKey);
+  }
+
+  @Override
+  public VariableQuery newVariableQuery() {
+    return new VariableQueryImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public VariableGetRequest newVariableGetRequest(final long variableKey) {
+    return new VariableGetRequestImpl(httpClient, variableKey);
   }
 
   private JobClient newJobClient() {

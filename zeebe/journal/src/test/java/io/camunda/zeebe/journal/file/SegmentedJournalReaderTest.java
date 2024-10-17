@@ -54,7 +54,8 @@ class SegmentedJournalReaderTest {
         SegmentedJournal.builder()
             .withDirectory(directory.resolve("data").toFile())
             .withMaxSegmentSize(
-                entrySize * ENTRIES_PER_SEGMENT + SegmentDescriptor.getEncodingLength())
+                entrySize * ENTRIES_PER_SEGMENT
+                    + SegmentDescriptorSerializer.currentEncodingLength())
             .withJournalIndexDensity(ENTRIES_PER_SEGMENT / 2)
             .withMetaStore(new MockJournalMetastore())
             .build();

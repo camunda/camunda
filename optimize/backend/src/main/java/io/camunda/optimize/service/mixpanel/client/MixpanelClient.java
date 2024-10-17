@@ -20,7 +20,6 @@ import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -29,14 +28,16 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
 @Conditional(CCSaaSCondition.class)
-@Slf4j
 public class MixpanelClient {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(MixpanelClient.class);
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
   private final CloseableHttpClient httpClient;
@@ -119,6 +120,6 @@ public class MixpanelClient {
   }
 
   private MixpanelConfiguration getMixpanelConfiguration() {
-    return this.configurationService.getAnalytics().getMixpanel();
+    return configurationService.getAnalytics().getMixpanel();
   }
 }

@@ -64,8 +64,6 @@ import hide from './hide.svg';
 import warningOutline from './warning-outline.svg';
 import infoOutline from './info-outline.svg';
 import questionMark from './question-mark.svg';
-import dashboardOptimize from './dashboard-optimize.svg';
-import optimize from './optimize.svg';
 
 export type IconSvg = React.FC<React.SVGProps<SVGElement>>;
 
@@ -131,8 +129,6 @@ const icons: Icons = {
   'warning-outline': warningOutline,
   'info-outline': infoOutline,
   'question-mark': questionMark,
-  'dashboard-optimize': dashboardOptimize,
-  optimize,
 };
 
 export default icons;

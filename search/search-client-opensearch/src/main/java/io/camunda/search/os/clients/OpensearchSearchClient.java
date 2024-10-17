@@ -7,20 +7,20 @@
  */
 package io.camunda.search.os.clients;
 
-import io.camunda.search.clients.CamundaSearchClient;
+import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
+import io.camunda.search.clients.transformers.SearchTransfomer;
+import io.camunda.search.exception.SearchQueryExecutionException;
 import io.camunda.search.os.transformers.OpensearchTransformers;
 import io.camunda.search.os.transformers.search.SearchResponseTransformer;
-import io.camunda.search.transformers.SearchTransfomer;
-import io.camunda.zeebe.util.Either;
 import java.io.IOException;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 
-public final class OpensearchSearchClient implements CamundaSearchClient {
+public class OpensearchSearchClient implements DocumentBasedSearchClient, AutoCloseable {
 
   private final OpenSearchClient client;
   private final OpensearchTransformers transformers;
@@ -36,19 +36,16 @@ public final class OpensearchSearchClient implements CamundaSearchClient {
   }
 
   @Override
-  public <T> Either<Exception, SearchQueryResponse<T>> search(
+  public <T> SearchQueryResponse<T> search(
       final SearchQueryRequest searchRequest, final Class<T> documentClass) {
     try {
       final var requestTransformer = getSearchRequestTransformer();
       final var request = requestTransformer.apply(searchRequest);
       final SearchResponse<T> rawSearchResponse = client.search(request, documentClass);
       final SearchResponseTransformer<T> searchResponseTransformer = getSearchResponseTransformer();
-      final SearchQueryResponse<T> response = searchResponseTransformer.apply(rawSearchResponse);
-      return Either.right(response);
-    } catch (final IOException ioe) {
-      return Either.left(ioe);
-    } catch (final OpenSearchException e) {
-      return Either.left(e);
+      return searchResponseTransformer.apply(rawSearchResponse);
+    } catch (final IOException | OpenSearchException e) {
+      throw new SearchQueryExecutionException("Failed to execute search query", e);
     }
   }
 
@@ -65,7 +62,7 @@ public final class OpensearchSearchClient implements CamundaSearchClient {
     if (client != null) {
       try {
         client._transport().close();
-      } catch (IOException e) {
+      } catch (final IOException e) {
         throw new RuntimeException(e);
       }
     }

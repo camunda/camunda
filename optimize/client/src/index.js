@@ -6,11 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import ReactDOM from 'react-dom';
+import {createRoot} from 'react-dom/client';
 
 import './style.scss';
 import 'polyfills';
 
 import App from './App';
 
-ReactDOM.render(<App />, document.getElementById('root'));
+const root = createRoot(document.getElementById('root'));
+root.render(<App />);

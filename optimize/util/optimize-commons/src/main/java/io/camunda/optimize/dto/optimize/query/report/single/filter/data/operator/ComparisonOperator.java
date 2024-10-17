@@ -9,9 +9,7 @@ package io.camunda.optimize.dto.optimize.query.report.single.filter.data.operato
 
 import com.fasterxml.jackson.annotation.JsonValue;
 import io.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 public enum ComparisonOperator {
   LESS_THAN(FilterOperatorConstants.LESS_THAN),
   LESS_THAN_EQUALS(FilterOperatorConstants.LESS_THAN_EQUALS),
@@ -20,6 +18,10 @@ public enum ComparisonOperator {
   ;
 
   private final String id;
+
+  private ComparisonOperator(final String id) {
+    this.id = id;
+  }
 
   @JsonValue
   public String getId() {

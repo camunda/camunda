@@ -7,11 +7,16 @@
  */
 package io.camunda.operate.schema.templates;
 
+import io.camunda.operate.conditions.DatabaseInfo;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.backup.Prio3Backup;
+import io.camunda.webapps.schema.descriptors.operate.OperateTemplateDescriptor;
+import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class BatchOperationTemplate extends AbstractTemplateDescriptor implements Prio3Backup {
+public class BatchOperationTemplate extends OperateTemplateDescriptor implements Prio3Backup {
 
   public static final String INDEX_NAME = "batch-operation";
 
@@ -26,6 +31,23 @@ public class BatchOperationTemplate extends AbstractTemplateDescriptor implement
   public static final String OPERATIONS_FINISHED_COUNT = "operationsFinishedCount";
   public static final String FAILED_OPERATIONS_COUNT = "failedOperationsCount";
   public static final String COMPLETED_OPERATIONS_COUNT = "completedOperationsCount";
+
+  @Autowired private OperateProperties properties;
+
+  public BatchOperationTemplate() {
+    super(null, false);
+  }
+
+  @PostConstruct
+  public void init() {
+    indexPrefix = properties.getIndexPrefix(DatabaseInfo.getCurrent());
+    isElasticsearch = DatabaseInfo.isElasticsearch();
+  }
+
+  @Override
+  public String getIndexPrefix() {
+    return properties.getIndexPrefix();
+  }
 
   @Override
   public String getIndexName() {

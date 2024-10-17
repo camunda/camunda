@@ -30,9 +30,14 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 final class OpensearchClientIT {
+  private static final String PASSWORD = "P@a$5w0rd";
+  private static final String ADMIN_PASSWORD_ENV_VAR = "OPENSEARCH_INITIAL_ADMIN_PASSWORD";
+
   @Container
-  private static final OpensearchContainer CONTAINER =
-      TestSupport.createDefaultContainer().withSecurityEnabled();
+  private static final OpensearchContainer<?> CONTAINER =
+      TestSupport.createDefaultContainer()
+          .withSecurityEnabled()
+          .withEnv(ADMIN_PASSWORD_ENV_VAR, PASSWORD);
 
   private static final int PARTITION_ID = 1;
 
@@ -51,7 +56,7 @@ final class OpensearchClientIT {
     config.index.prefix = UUID.randomUUID() + "-test-record";
     config.url = CONTAINER.getHttpHostAddress();
     config.getAuthentication().setUsername(CONTAINER.getUsername());
-    config.getAuthentication().setPassword(CONTAINER.getPassword());
+    config.getAuthentication().setPassword(PASSWORD);
     testClient = new TestClient(config, indexRouter);
     client =
         new OpensearchClient(

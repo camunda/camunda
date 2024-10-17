@@ -15,23 +15,23 @@ import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.qa.util.DependencyInjectionTestExecutionListener;
 import io.camunda.operate.qa.util.TestContext;
 import io.camunda.operate.schema.elasticsearch.ElasticsearchSchemaManager;
-import io.camunda.operate.schema.indices.DecisionIndex;
-import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
 import io.camunda.operate.schema.indices.ImportPositionIndex;
-import io.camunda.operate.schema.indices.MetricIndex;
-import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.schema.indices.UserIndex;
-import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
-import io.camunda.operate.schema.templates.EventTemplate;
-import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
-import io.camunda.operate.schema.templates.IncidentTemplate;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.OperationTemplate;
-import io.camunda.operate.schema.templates.PostImporterQueueTemplate;
-import io.camunda.operate.schema.templates.SequenceFlowTemplate;
-import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
+import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
+import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
+import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -100,7 +100,7 @@ public abstract class AbstractMigrationTest {
 
   @Autowired protected TestContext testContext;
 
-  protected void assumeThatProcessIsUnderTest(String bpmnProcessId) {
+  protected void assumeThatProcessIsUnderTest(final String bpmnProcessId) {
     assumeTrue(testContext.getProcessesToAssert().contains(bpmnProcessId));
   }
 

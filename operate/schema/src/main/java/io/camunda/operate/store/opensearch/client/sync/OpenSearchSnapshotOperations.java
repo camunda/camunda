@@ -81,6 +81,7 @@ public class OpenSearchSnapshotOperations extends OpenSearchSyncOperation {
         .setUuid((String) map.get("uuid"))
         .setState(SnapshotState.valueOf((String) map.get("state")))
         .setStartTimeInMillis((Long) map.get("start_time_in_millis"))
+        .setEndTimeInMillis((Long) map.get("end_time_in_millis"))
         .setMetadata(metadata)
         .setFailures(failures);
   }

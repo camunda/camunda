@@ -19,19 +19,19 @@ public abstract class PipelineReindexPlan implements ReindexPlan {
   protected String dstIndex;
 
   @Override
-  public ReindexPlan setSrcIndex(String srcIndex) {
+  public ReindexPlan setSrcIndex(final String srcIndex) {
     this.srcIndex = srcIndex;
     return this;
   }
 
   @Override
-  public ReindexPlan setDstIndex(String dstIndex) {
+  public ReindexPlan setDstIndex(final String dstIndex) {
     this.dstIndex = dstIndex;
     return this;
   }
 
   @Override
-  public ReindexPlan setSteps(List<Step> steps) {
+  public ReindexPlan setSteps(final List<Step> steps) {
     this.steps = steps;
     return this;
   }

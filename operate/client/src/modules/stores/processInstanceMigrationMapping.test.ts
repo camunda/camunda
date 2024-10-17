@@ -33,6 +33,9 @@ import {waitFor} from '@testing-library/react';
  * - TimerStartEvent
  * - ErrorStartEvent
  * - MessageReceiveTask
+ * - BusinessRuleTask
+ * - SendTask
+ * - ScriptTask
  *
  * orderProcess_v2.bpmn contains:
  * - checkPayment (service task)
@@ -48,6 +51,9 @@ import {waitFor} from '@testing-library/react';
  * - TimerStartEvent
  * - ErrorStartEvent
  * - MessageReceiveTask
+ * - BusinessRuleTask
+ * - SendTask
+ * - ScriptTask
  */
 describe('processInstanceMigrationMappingStore', () => {
   afterEach(() => {
@@ -107,8 +113,24 @@ describe('processInstanceMigrationMappingStore', () => {
         type: 'bpmn:SubProcess',
       },
       {
+        id: 'TimerStartEvent',
+        type: 'bpmn:StartEvent',
+      },
+      {
         id: 'MessageReceiveTask',
         type: 'bpmn:ReceiveTask',
+      },
+      {
+        id: 'BusinessRuleTask',
+        type: 'bpmn:BusinessRuleTask',
+      },
+      {
+        id: 'ScriptTask',
+        type: 'bpmn:ScriptTask',
+      },
+      {
+        id: 'SendTask',
+        type: 'bpmn:SendTask',
       },
     ]);
 
@@ -120,6 +142,9 @@ describe('processInstanceMigrationMappingStore', () => {
     expect(isAutoMappable('MessageEventSubProcess')).toBe(true);
     expect(isAutoMappable('TimerEventSubProcess')).toBe(true);
     expect(isAutoMappable('TaskX')).toBe(true);
+    expect(isAutoMappable('BusinessRuleTask')).toBe(true);
+    expect(isAutoMappable('ScriptTask')).toBe(true);
+    expect(isAutoMappable('SendTask')).toBe(true);
 
     expect(isAutoMappable('requestForPayment')).toBe(false);
     expect(isAutoMappable('TimerInterrupting')).toBe(false);
@@ -352,6 +377,18 @@ describe('processInstanceMigrationMappingStore', () => {
       },
       {
         sourceFlowNode: {
+          id: 'TimerStartEvent',
+          name: 'Timer start event',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'TimerStartEvent',
+            name: 'Timer start event',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
           id: 'MessageReceiveTask',
           name: 'Message receive task',
         },
@@ -359,6 +396,42 @@ describe('processInstanceMigrationMappingStore', () => {
           {
             id: 'MessageReceiveTask',
             name: 'Message receive task',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'BusinessRuleTask',
+          name: 'Business rule task',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'BusinessRuleTask',
+            name: 'Business rule task',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'ScriptTask',
+          name: 'Script task',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'ScriptTask',
+            name: 'Script task',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'SendTask',
+          name: 'Send task',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'SendTask',
+            name: 'Send task',
           },
         ],
       },

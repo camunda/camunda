@@ -10,7 +10,7 @@ package io.camunda.zeebe.gateway.rest.configuration;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.service.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.zeebe.gateway.rest.controller.ProcessInstanceQueryController;
 import io.camunda.zeebe.gateway.rest.controller.TopologyController;
 import org.junit.jupiter.api.Test;

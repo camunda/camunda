@@ -16,13 +16,7 @@ import io.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import io.camunda.optimize.dto.optimize.query.entity.EntityType;
 import jakarta.validation.Valid;
 import java.time.OffsetDateTime;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.experimental.SuperBuilder;
 
-@Data
-@AllArgsConstructor
-@SuperBuilder(toBuilder = true)
 public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionEntity {
 
   protected String id;
@@ -46,6 +40,75 @@ public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionE
     this.reportType = reportType;
   }
 
+  public ReportDefinitionDto(
+      final String id,
+      final String name,
+      final String description,
+      final OffsetDateTime lastModified,
+      final OffsetDateTime created,
+      final String owner,
+      final String lastModifier,
+      final String collectionId,
+      @Valid final D data,
+      final boolean combined,
+      final ReportType reportType) {
+    this.id = id;
+    this.name = name;
+    this.description = description;
+    this.lastModified = lastModified;
+    this.created = created;
+    this.owner = owner;
+    this.lastModifier = lastModifier;
+    this.collectionId = collectionId;
+    this.data = data;
+    this.combined = combined;
+    this.reportType = reportType;
+  }
+
+  protected ReportDefinitionDto(final ReportDefinitionDtoBuilder<D, ?, ?> b) {
+    id = b.id;
+    name = b.name;
+    description = b.description;
+    lastModified = b.lastModified;
+    created = b.created;
+    owner = b.owner;
+    lastModifier = b.lastModifier;
+    collectionId = b.collectionId;
+    data = b.data;
+    combined = b.combined;
+    reportType = b.reportType;
+  }
+
+  @JsonIgnore
+  public DefinitionType getDefinitionType() {
+    return reportType.toDefinitionType();
+  }
+
+  @Override
+  public String getId() {
+    return id;
+  }
+
+  @Override
+  public String getCollectionId() {
+    return collectionId;
+  }
+
+  @Override
+  public String getName() {
+    return name;
+  }
+
+  @Override
+  public String getOwner() {
+    return owner;
+  }
+
+  @Override
+  public OffsetDateTime getLastModified() {
+    return lastModified;
+  }
+
   @Override
   public EntityResponseDto toEntityDto(final RoleType roleType) {
     return new EntityResponseDto(
@@ -62,9 +125,209 @@ public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionE
         roleType);
   }
 
-  @JsonIgnore
-  public DefinitionType getDefinitionType() {
-    return reportType.toDefinitionType();
+  public void setLastModified(final OffsetDateTime lastModified) {
+    this.lastModified = lastModified;
+  }
+
+  public void setOwner(final String owner) {
+    this.owner = owner;
+  }
+
+  public void setName(final String name) {
+    this.name = name;
+  }
+
+  public void setCollectionId(final String collectionId) {
+    this.collectionId = collectionId;
+  }
+
+  public void setId(final String id) {
+    this.id = id;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public void setDescription(final String description) {
+    this.description = description;
+  }
+
+  public OffsetDateTime getCreated() {
+    return created;
+  }
+
+  public void setCreated(final OffsetDateTime created) {
+    this.created = created;
+  }
+
+  public String getLastModifier() {
+    return lastModifier;
+  }
+
+  public void setLastModifier(final String lastModifier) {
+    this.lastModifier = lastModifier;
+  }
+
+  public @Valid D getData() {
+    return data;
+  }
+
+  public void setData(@Valid final D data) {
+    this.data = data;
+  }
+
+  public boolean isCombined() {
+    return combined;
+  }
+
+  public ReportType getReportType() {
+    return reportType;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof ReportDefinitionDto;
+  }
+
+  @Override
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = 1;
+    final Object $id = getId();
+    result = result * PRIME + ($id == null ? 43 : $id.hashCode());
+    final Object $name = getName();
+    result = result * PRIME + ($name == null ? 43 : $name.hashCode());
+    final Object $description = getDescription();
+    result = result * PRIME + ($description == null ? 43 : $description.hashCode());
+    final Object $lastModified = getLastModified();
+    result = result * PRIME + ($lastModified == null ? 43 : $lastModified.hashCode());
+    final Object $created = getCreated();
+    result = result * PRIME + ($created == null ? 43 : $created.hashCode());
+    final Object $owner = getOwner();
+    result = result * PRIME + ($owner == null ? 43 : $owner.hashCode());
+    final Object $lastModifier = getLastModifier();
+    result = result * PRIME + ($lastModifier == null ? 43 : $lastModifier.hashCode());
+    final Object $collectionId = getCollectionId();
+    result = result * PRIME + ($collectionId == null ? 43 : $collectionId.hashCode());
+    final Object $data = getData();
+    result = result * PRIME + ($data == null ? 43 : $data.hashCode());
+    result = result * PRIME + (isCombined() ? 79 : 97);
+    final Object $reportType = getReportType();
+    result = result * PRIME + ($reportType == null ? 43 : $reportType.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof ReportDefinitionDto)) {
+      return false;
+    }
+    final ReportDefinitionDto<?> other = (ReportDefinitionDto<?>) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    final Object this$id = getId();
+    final Object other$id = other.getId();
+    if (this$id == null ? other$id != null : !this$id.equals(other$id)) {
+      return false;
+    }
+    final Object this$name = getName();
+    final Object other$name = other.getName();
+    if (this$name == null ? other$name != null : !this$name.equals(other$name)) {
+      return false;
+    }
+    final Object this$description = getDescription();
+    final Object other$description = other.getDescription();
+    if (this$description == null
+        ? other$description != null
+        : !this$description.equals(other$description)) {
+      return false;
+    }
+    final Object this$lastModified = getLastModified();
+    final Object other$lastModified = other.getLastModified();
+    if (this$lastModified == null
+        ? other$lastModified != null
+        : !this$lastModified.equals(other$lastModified)) {
+      return false;
+    }
+    final Object this$created = getCreated();
+    final Object other$created = other.getCreated();
+    if (this$created == null ? other$created != null : !this$created.equals(other$created)) {
+      return false;
+    }
+    final Object this$owner = getOwner();
+    final Object other$owner = other.getOwner();
+    if (this$owner == null ? other$owner != null : !this$owner.equals(other$owner)) {
+      return false;
+    }
+    final Object this$lastModifier = getLastModifier();
+    final Object other$lastModifier = other.getLastModifier();
+    if (this$lastModifier == null
+        ? other$lastModifier != null
+        : !this$lastModifier.equals(other$lastModifier)) {
+      return false;
+    }
+    final Object this$collectionId = getCollectionId();
+    final Object other$collectionId = other.getCollectionId();
+    if (this$collectionId == null
+        ? other$collectionId != null
+        : !this$collectionId.equals(other$collectionId)) {
+      return false;
+    }
+    final Object this$data = getData();
+    final Object other$data = other.getData();
+    if (this$data == null ? other$data != null : !this$data.equals(other$data)) {
+      return false;
+    }
+    if (isCombined() != other.isCombined()) {
+      return false;
+    }
+    final Object this$reportType = getReportType();
+    final Object other$reportType = other.getReportType();
+    if (this$reportType == null
+        ? other$reportType != null
+        : !this$reportType.equals(other$reportType)) {
+      return false;
+    }
+    return true;
+  }
+
+  @Override
+  public String toString() {
+    return "ReportDefinitionDto(id="
+        + getId()
+        + ", name="
+        + getName()
+        + ", description="
+        + getDescription()
+        + ", lastModified="
+        + getLastModified()
+        + ", created="
+        + getCreated()
+        + ", owner="
+        + getOwner()
+        + ", lastModifier="
+        + getLastModifier()
+        + ", collectionId="
+        + getCollectionId()
+        + ", data="
+        + getData()
+        + ", combined="
+        + isCombined()
+        + ", reportType="
+        + getReportType()
+        + ")";
+  }
+
+  public static <D extends ReportDataDto> ReportDefinitionDtoBuilder<D, ?, ?> builder() {
+    return new ReportDefinitionDtoBuilderImpl<D>();
+  }
+
+  public ReportDefinitionDtoBuilder<D, ?, ?> toBuilder() {
+    return new ReportDefinitionDtoBuilderImpl<D>().$fillValuesFrom(this);
   }
 
   public static final class Fields {
@@ -80,5 +343,150 @@ public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionE
     public static final String data = "data";
     public static final String combined = "combined";
     public static final String reportType = "reportType";
+  }
+
+  public abstract static class ReportDefinitionDtoBuilder<
+      D extends ReportDataDto,
+      C extends ReportDefinitionDto<D>,
+      B extends ReportDefinitionDtoBuilder<D, C, B>> {
+
+    private String id;
+    private String name;
+    private String description;
+    private OffsetDateTime lastModified;
+    private OffsetDateTime created;
+    private String owner;
+    private String lastModifier;
+    private String collectionId;
+    private @Valid D data;
+    private boolean combined;
+    private ReportType reportType;
+
+    public @Valid D getData() {
+      return data;
+    }
+
+    public B id(final String id) {
+      this.id = id;
+      return self();
+    }
+
+    public B name(final String name) {
+      this.name = name;
+      return self();
+    }
+
+    public B description(final String description) {
+      this.description = description;
+      return self();
+    }
+
+    public B lastModified(final OffsetDateTime lastModified) {
+      this.lastModified = lastModified;
+      return self();
+    }
+
+    public B created(final OffsetDateTime created) {
+      this.created = created;
+      return self();
+    }
+
+    public B owner(final String owner) {
+      this.owner = owner;
+      return self();
+    }
+
+    public B lastModifier(final String lastModifier) {
+      this.lastModifier = lastModifier;
+      return self();
+    }
+
+    public B collectionId(final String collectionId) {
+      this.collectionId = collectionId;
+      return self();
+    }
+
+    public B data(@Valid final D data) {
+      this.data = data;
+      return self();
+    }
+
+    public B combined(final boolean combined) {
+      this.combined = combined;
+      return self();
+    }
+
+    public B reportType(final ReportType reportType) {
+      this.reportType = reportType;
+      return self();
+    }
+
+    private static <D extends ReportDataDto> void $fillValuesFromInstanceIntoBuilder(
+        final ReportDefinitionDto<D> instance, final ReportDefinitionDtoBuilder<D, ?, ?> b) {
+      b.id(instance.id);
+      b.name(instance.name);
+      b.description(instance.description);
+      b.lastModified(instance.lastModified);
+      b.created(instance.created);
+      b.owner(instance.owner);
+      b.lastModifier(instance.lastModifier);
+      b.collectionId(instance.collectionId);
+      b.data(instance.data);
+      b.combined(instance.combined);
+      b.reportType(instance.reportType);
+    }
+
+    protected B $fillValuesFrom(final C instance) {
+      ReportDefinitionDtoBuilder.$fillValuesFromInstanceIntoBuilder(instance, this);
+      return self();
+    }
+
+    protected abstract B self();
+
+    public abstract C build();
+
+    @Override
+    public String toString() {
+      return "ReportDefinitionDto.ReportDefinitionDtoBuilder(id="
+          + id
+          + ", name="
+          + name
+          + ", description="
+          + description
+          + ", lastModified="
+          + lastModified
+          + ", created="
+          + created
+          + ", owner="
+          + owner
+          + ", lastModifier="
+          + lastModifier
+          + ", collectionId="
+          + collectionId
+          + ", data="
+          + data
+          + ", combined="
+          + combined
+          + ", reportType="
+          + reportType
+          + ")";
+    }
+  }
+
+  private static final class ReportDefinitionDtoBuilderImpl<D extends ReportDataDto>
+      extends ReportDefinitionDtoBuilder<
+          D, ReportDefinitionDto<D>, ReportDefinitionDtoBuilderImpl<D>> {
+
+    private ReportDefinitionDtoBuilderImpl() {}
+
+    @Override
+    protected ReportDefinitionDtoBuilderImpl<D> self() {
+      return this;
+    }
+
+    @Override
+    public ReportDefinitionDto<D> build() {
+      return new ReportDefinitionDto<D>(this);
+    }
   }
 }

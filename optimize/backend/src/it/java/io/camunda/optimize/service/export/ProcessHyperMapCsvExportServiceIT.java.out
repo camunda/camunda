@@ -192,7 +192,7 @@
 //                     historicUserTaskInstanceDto.getId(),
 //                     historicUserTaskInstanceDto.getStartTime().plus(millis, ChronoUnit.MILLIS));
 //               } catch (SQLException ex) {
-//                 throw new RuntimeException(ex);
+//                 throw new OptimizeRuntimeException(ex);
 //               }
 //             });
 //   }

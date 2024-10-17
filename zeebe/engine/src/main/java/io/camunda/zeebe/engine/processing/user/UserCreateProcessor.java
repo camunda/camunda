@@ -49,17 +49,12 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
     final var username = command.getValue().getUsernameBuffer();
     final var user = userState.getUser(username);
 
-    if (user != null) {
-      rejectionWriter.appendRejection(
-          command,
-          RejectionType.ALREADY_EXISTS,
-          "Expected to create user with username %s, but a user with this username already exists"
-              .formatted(user.getUsername()));
-      responseWriter.writeRejectionOnCommand(
-          command,
-          RejectionType.ALREADY_EXISTS,
-          "Expected to create user with username %s, but a user with this username already exists"
-              .formatted(user.getUsername()));
+    if (user.isPresent()) {
+      final var message =
+          "Expected to create user with username '%s', but a user with this username already exists"
+              .formatted(user.get().getUsername());
+      rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, message);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, message);
       return;
     }
 

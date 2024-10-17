@@ -694,7 +694,6 @@
 //   }
 //
 //   @Data
-//   @AllArgsConstructor
 //   @NoArgsConstructor
 //   protected static class ScopeScenario {
 //

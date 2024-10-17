@@ -30,18 +30,19 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ZeebeIntegration
 final class DefaultUserCreatorIT {
 
-  private static BCryptPasswordEncoder passwordEncoder;
+  private static PasswordEncoder passwordEncoder;
   @AutoCloseResource private ZeebeClient client;
   @AutoCloseResource private TestStandaloneBroker broker;
 
   @BeforeAll
   static void beforeAll() {
-    passwordEncoder = new BCryptPasswordEncoder();
+    passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
   }
 
   @Test

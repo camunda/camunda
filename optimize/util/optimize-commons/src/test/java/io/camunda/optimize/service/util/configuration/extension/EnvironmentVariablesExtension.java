@@ -10,13 +10,14 @@ package io.camunda.optimize.service.util.configuration.extension;
 import static java.lang.Class.forName;
 import static java.lang.System.getenv;
 
+import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
-import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.slf4j.Logger;
 
 /**
  * Extension to allow manipulation of Environment Variables and restore their state after test
@@ -24,14 +25,15 @@ import org.junit.jupiter.api.extension.ExtensionContext;
  * library:
  * https://github.com/stefanbirkner/system-lambda/blob/master/src/main/java/com/github/stefanbirkner/systemlambda/SystemLambda.java
  */
-@Slf4j
 public class EnvironmentVariablesExtension implements BeforeEachCallback, AfterEachCallback {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(EnvironmentVariablesExtension.class);
   private Map<String, String> originalVariables;
-  private Map<String, String> setVariables;
+  private final Map<String, String> setVariables;
 
   public EnvironmentVariablesExtension() {
-    this.setVariables = new HashMap<>();
+    setVariables = new HashMap<>();
   }
 
   @Override
@@ -44,15 +46,15 @@ public class EnvironmentVariablesExtension implements BeforeEachCallback, AfterE
     restoreOriginalVariables(originalVariables);
   }
 
-  public void set(String name, String value) {
+  public void set(final String name, final String value) {
     validateNotSet(name, value);
     setVariables.put(name, value);
     setEnvironmentVariables();
   }
 
-  private void validateNotSet(String name, String value) {
+  private void validateNotSet(final String name, final String value) {
     if (setVariables.containsKey(name)) {
-      String currentValue = setVariables.get(name);
+      final String currentValue = setVariables.get(name);
       throw new IllegalArgumentException(
           String.format(
               "The environment variable '%s' cannot be set to %s because it was already set to %s.",
@@ -60,7 +62,7 @@ public class EnvironmentVariablesExtension implements BeforeEachCallback, AfterE
     }
   }
 
-  private String format(String text) {
+  private String format(final String text) {
     return text == null ? "null" : "'" + text + "'";
   }
 
@@ -69,14 +71,14 @@ public class EnvironmentVariablesExtension implements BeforeEachCallback, AfterE
     overrideVariables(getTheCaseInsensitiveEnvironment());
   }
 
-  private void overrideVariables(Map<String, String> existingVariables) {
+  private void overrideVariables(final Map<String, String> existingVariables) {
     if (existingVariables != null) { // will be null when running on non-Windows machine and
       // theCaseInsensitiveEnvironment variables are passed
       setVariables.forEach((name, value) -> set(existingVariables, name, value));
     }
   }
 
-  private void set(Map<String, String> variables, String name, String value) {
+  private void set(final Map<String, String> variables, final String name, final String value) {
     if (value == null) {
       variables.remove(name);
     } else {
@@ -84,13 +86,13 @@ public class EnvironmentVariablesExtension implements BeforeEachCallback, AfterE
     }
   }
 
-  private void restoreOriginalVariables(Map<String, String> originalVariables) {
+  private void restoreOriginalVariables(final Map<String, String> originalVariables) {
     restoreVariables(getEditableMapOfVariables(), originalVariables);
     restoreVariables(getTheCaseInsensitiveEnvironment(), originalVariables);
   }
 
   private void restoreVariables(
-      Map<String, String> variables, Map<String, String> originalVariables) {
+      final Map<String, String> variables, final Map<String, String> originalVariables) {
     if (variables != null) { // theCaseInsensitiveEnvironment may be null
       variables.clear();
       variables.putAll(originalVariables);
@@ -98,13 +100,14 @@ public class EnvironmentVariablesExtension implements BeforeEachCallback, AfterE
   }
 
   private static Map<String, String> getEditableMapOfVariables() {
-    Class<?> classOfMap = getenv().getClass();
+    final Class<?> classOfMap = getenv().getClass();
     try {
       return getFieldValue(classOfMap, getenv(), "m");
-    } catch (IllegalAccessException e) {
-      throw new RuntimeException("Cannot access the field 'm' of the map System.getenv().", e);
-    } catch (NoSuchFieldException e) {
-      throw new RuntimeException(
+    } catch (final IllegalAccessException e) {
+      throw new OptimizeRuntimeException(
+          "Cannot access the field 'm' of the map System.getenv().", e);
+    } catch (final NoSuchFieldException e) {
+      throw new OptimizeRuntimeException(
           "Expecting System.getenv() to have a field 'm' but it has not.", e);
     }
   }
@@ -118,27 +121,28 @@ public class EnvironmentVariablesExtension implements BeforeEachCallback, AfterE
     final String caseInsensitiveEnv = "theCaseInsensitiveEnvironment";
     final String processEnv = "java.lang.ProcessEnvironment";
     try {
-      Class<?> processEnvironment = forName(processEnv);
+      final Class<?> processEnvironment = forName(processEnv);
       return getFieldValue(processEnvironment, null, caseInsensitiveEnv);
-    } catch (ClassNotFoundException e) {
-      throw new RuntimeException(
+    } catch (final ClassNotFoundException e) {
+      throw new OptimizeRuntimeException(
           String.format(
               "Expecting the existence of the class %s but it does not exist.", processEnv),
           e);
-    } catch (IllegalAccessException e) {
-      throw new RuntimeException(
+    } catch (final IllegalAccessException e) {
+      throw new OptimizeRuntimeException(
           String.format(
               "Cannot access the static field %s of the class %s.", caseInsensitiveEnv, processEnv),
           e);
-    } catch (NoSuchFieldException e) {
+    } catch (final NoSuchFieldException e) {
       // this field is only available for Windows
       return null;
     }
   }
 
-  private static Map<String, String> getFieldValue(Class<?> klass, Object object, String name)
+  private static Map<String, String> getFieldValue(
+      final Class<?> klass, final Object object, final String name)
       throws NoSuchFieldException, IllegalAccessException {
-    Field field = klass.getDeclaredField(name);
+    final Field field = klass.getDeclaredField(name);
     field.setAccessible(true);
     return (Map<String, String>) field.get(object);
   }

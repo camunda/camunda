@@ -10,19 +10,10 @@ package io.camunda.zeebe.logstreams.log;
 import com.netflix.concurrency.limits.Limit;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.RateLimit;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
-import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import java.time.InstantSource;
 
 /** Builder pattern for the {@link LogStream} */
 public interface LogStreamBuilder {
-
-  /**
-   * The actor scheduler to use for the {@link LogStream} and its child actors
-   *
-   * @param actorSchedulingService the scheduler to use
-   * @return this builder
-   */
-  LogStreamBuilder withActorSchedulingService(ActorSchedulingService actorSchedulingService);
 
   /**
    * The maximum fragment size read from the shared write buffer; this should be aligned with the

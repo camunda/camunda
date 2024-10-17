@@ -18,6 +18,6 @@ public final class TestClusterFactory {
 
   public static AtomixCluster createAtomixCluster(final BrokerCfg config) {
     final var clusterConfig = new ClusterConfigFactory().mapConfiguration(config);
-    return new AtomixCluster(clusterConfig, Version.from(VersionUtil.getVersion()));
+    return new AtomixCluster(clusterConfig, Version.from(VersionUtil.getVersion()), "");
   }
 }

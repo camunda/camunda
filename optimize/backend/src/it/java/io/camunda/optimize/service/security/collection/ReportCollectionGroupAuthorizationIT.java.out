@@ -210,7 +210,6 @@
 //   }
 //
 //   @Data
-//   @AllArgsConstructor
 //   protected static class IdentityRoleAndReportScenario {
 //
 //     IdentityAndRole identityAndRole;

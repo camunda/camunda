@@ -18,18 +18,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
-@RequiredArgsConstructor
 public class UpgradePlanRegistry {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(UpgradePlanRegistry.class);
   private final Map<Semver, UpgradePlan> upgradePlans;
 
   public UpgradePlanRegistry(final UpgradeExecutionDependencies upgradeExecutionDependencies) {
-    this.upgradePlans = new HashMap<>();
-    try (ScanResult scanResult =
+    upgradePlans = new HashMap<>();
+    try (final ScanResult scanResult =
         new ClassGraph()
             .enableClassInfo()
             .acceptPackages(UpgradePlanFactory.class.getPackage().getName())
@@ -53,7 +51,7 @@ public class UpgradePlanRegistry {
                     // (e.g. if no operation default upgrade plan was added first)
                     upgradePlans.put(upgradePlan.getToVersion(), upgradePlan);
                   }
-                } catch (InstantiationException
+                } catch (final InstantiationException
                     | IllegalAccessException
                     | InvocationTargetException
                     | NoSuchMethodException e) {
@@ -65,6 +63,10 @@ public class UpgradePlanRegistry {
                 }
               });
     }
+  }
+
+  public UpgradePlanRegistry(final Map<Semver, UpgradePlan> upgradePlans) {
+    this.upgradePlans = upgradePlans;
   }
 
   public List<UpgradePlan> getSequentialUpgradePlansToTargetVersion(final String targetVersion) {

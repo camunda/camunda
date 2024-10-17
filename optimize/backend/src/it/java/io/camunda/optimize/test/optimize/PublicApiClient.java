@@ -20,11 +20,14 @@ import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 public class PublicApiClient {
+
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
+
+  public PublicApiClient(final Supplier<OptimizeRequestExecutor> requestExecutorSupplier) {
+    this.requestExecutorSupplier = requestExecutorSupplier;
+  }
 
   public List<ReportDefinitionExportDto> exportReportDefinitionsAndReturnResponse(
       final List<String> reportIds, final String accessToken) {
@@ -109,7 +112,7 @@ public class PublicApiClient {
         .executeAndReturnList(IdResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public Response toggleSharing(boolean enableSharing, final String accessToken) {
+  public Response toggleSharing(final boolean enableSharing, final String accessToken) {
     return getRequestExecutor().buildToggleShareRequest(enableSharing, accessToken).execute();
   }
 

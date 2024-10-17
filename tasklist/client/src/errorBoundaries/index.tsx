@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {FallbackProps} from 'react-error-boundary';
+import type {FallbackProps} from 'react-error-boundary';
 import {useRouteError} from 'react-router-dom';
 import {SomethingWentWrong} from 'modules/components/Errors/SomethingWentWrong';
 import styles from './styles.module.scss';

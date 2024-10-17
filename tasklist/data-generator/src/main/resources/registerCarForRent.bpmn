@@ -1,142 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="e5c44b9" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.3.0" camunda:diagramRelationId="3b14230a-735b-43ea-943d-da76203946e5">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.29.0-nightly.20241014" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.6.0" camunda:diagramRelationId="3b14230a-735b-43ea-943d-da76203946e5">
   <bpmn:process id="registerCarForRent" isExecutable="true">
-    <bpmn:extensionElements>
-      <zeebe:userTaskForm id="userTaskForm_0g93mn1">{
-  "components": [
-    {
-      "type": "image",
-      "alt": "The Camunda logo",
-      "id": "Field_19vtr2a",
-      "source": "https://camunda.com/wp-content/uploads/2020/05/logo-camunda-black.svg"
-    },
-    {
-      "values": [
-        {
-          "label": "Toyota",
-          "value": "Toyota"
-        },
-        {
-          "label": "Honda",
-          "value": "Honda"
-        },
-        {
-          "label": "Nissan",
-          "value": "Nissan"
-        }
-      ],
-      "label": "Car Brand",
-      "type": "select",
-      "id": "Field_00trkfo",
-      "key": "field_0jl5t5q"
-    },
-    {
-      "label": "Car Name",
-      "type": "textfield",
-      "id": "Field_047l87q",
-      "key": "field_1rkz2ta"
-    },
-    {
-      "label": "Car description",
-      "type": "textarea",
-      "id": "Field_11sds9w",
-      "key": "field_0onvu4s"
-    },
-    {
-      "label": "Doors",
-      "type": "number",
-      "id": "Field_07gt7bs",
-      "key": "field_0j9aisq"
-    },
-    {
-      "subtype": "date",
-      "dateLabel": "Available From",
-      "type": "datetime",
-      "id": "Field_1d61wnn",
-      "key": "field_02e3dhj"
-    },
-    {
-      "values": [
-        {
-          "label": "Air Conditioning",
-          "value": "2"
-        },
-        {
-          "label": "Heated Seats",
-          "value": "1"
-        },
-        {
-          "label": "Reversing Camera",
-          "value": "value3"
-        }
-      ],
-      "label": "Optionals",
-      "type": "checklist",
-      "id": "Field_18o0458",
-      "key": "field_18pq77y"
-    },
-    {
-      "values": [
-        {
-          "label": "Mileage: unlimited",
-          "value": "Mileage: unlimited"
-        },
-        {
-          "label": "Third Party Liability",
-          "value": "Third Party Liability"
-        },
-        {
-          "label": "Cancel Protection",
-          "value": "Cancel Protection"
-        }
-      ],
-      "label": "Includes",
-      "type": "taglist",
-      "id": "Field_0aodmri",
-      "key": "field_0tdv0tj"
-    },
-    {
-      "values": [
-        {
-          "label": "Automatic",
-          "value": "A"
-        },
-        {
-          "label": "Manual",
-          "value": "M"
-        }
-      ],
-      "label": "Gear",
-      "type": "radio",
-      "id": "Field_0n2lhe6",
-      "key": "field_0owaj9b"
-    },
-    {
-      "label": "Offers Roadside Assistance",
-      "type": "checkbox",
-      "id": "Field_0f2aenc",
-      "key": "field_1rm4yc8"
-    },
-    {
-      "action": "reset",
-      "label": "Reset",
-      "type": "button",
-      "id": "Field_19zscy1",
-      "key": "field_1qcelqr",
-      "properties": {}
-    }
-  ],
-  "type": "default",
-  "id": "Form_09uipd5",
-  "executionPlatform": "Camunda Cloud",
-  "executionPlatformVersion": "8.3.0",
-  "exporter": {
-    "name": "Camunda Modeler",
-    "version": "5.8.0-nightly.20230115"
-  },
-  "schemaVersion": 6
-}</zeebe:userTaskForm>
-    </bpmn:extensionElements>
     <bpmn:startEvent id="StartEvent_1">
       <bpmn:outgoing>Flow_0a8qz4l</bpmn:outgoing>
     </bpmn:startEvent>
@@ -150,14 +14,15 @@
         <zeebe:properties>
           <zeebe:property />
         </zeebe:properties>
-        <zeebe:formDefinition formKey="camunda-forms:bpmn:userTaskForm_0g93mn1" />
+        <zeebe:formDefinition formId="registerCarForRent" />
+        <zeebe:userTask />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0a8qz4l</bpmn:incoming>
       <bpmn:outgoing>Flow_0uqs6bd</bpmn:outgoing>
     </bpmn:userTask>
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
-    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_da7dba16-22e0-4339-bd99-9a010ae68f20">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="registerCarForRent">
       <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
         <dc:Bounds x="150" y="100" width="36" height="36" />
       </bpmndi:BPMNShape>

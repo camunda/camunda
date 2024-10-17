@@ -17,18 +17,8 @@ import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
-import lombok.ToString;
 import org.apache.commons.lang3.StringUtils;
 
-@Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@ToString(callSuper = true)
-@EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = true)
 public class UserDto extends IdentityWithMetadataResponseDto {
 
   private String firstName;
@@ -58,17 +48,23 @@ public class UserDto extends IdentityWithMetadataResponseDto {
 
   @JsonCreator
   public UserDto(
-      @JsonProperty(required = true, value = "id") @NonNull final String id,
+      @JsonProperty(required = true, value = "id") final String id,
       @JsonProperty(required = false, value = "firstName") final String firstName,
       @JsonProperty(required = false, value = "lastName") final String lastName,
       @JsonProperty(required = false, value = "email") final String email,
       @JsonProperty(required = false, value = "roles") final List<String> roles) {
     super(id, IdentityType.USER, resolveName(id, firstName, lastName));
+    if (id == null) {
+      throw new IllegalArgumentException("id cannot be null");
+    }
+
     this.firstName = firstName;
     this.lastName = lastName;
     this.email = email;
     this.roles = roles;
   }
+
+  protected UserDto() {}
 
   private static String resolveName(
       final String id, final String firstName, final String lastName) {
@@ -79,11 +75,87 @@ public class UserDto extends IdentityWithMetadataResponseDto {
                 Collectors.joining(" "), s -> StringUtils.isNotBlank(s) ? s.trim() : id));
   }
 
+  public String getFirstName() {
+    return firstName;
+  }
+
+  public void setFirstName(final String firstName) {
+    this.firstName = firstName;
+  }
+
+  public String getLastName() {
+    return lastName;
+  }
+
+  public void setLastName(final String lastName) {
+    this.lastName = lastName;
+  }
+
+  public String getEmail() {
+    return email;
+  }
+
+  public void setEmail(final String email) {
+    this.email = email;
+  }
+
+  public List<String> getRoles() {
+    return roles;
+  }
+
+  public void setRoles(final List<String> roles) {
+    this.roles = roles;
+  }
+
   @Override
   @JsonIgnore
   public List<Supplier<String>> getSearchableDtoFields() {
     return List.of(
         this::getId, this::getEmail, this::getName, this::getFirstName, this::getLastName);
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof UserDto;
+  }
+
+  @Override
+  public int hashCode() {
+    final int result = super.hashCode();
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof UserDto)) {
+      return false;
+    }
+    final UserDto other = (UserDto) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    return true;
+  }
+
+  @Override
+  public String toString() {
+    return "UserDto(super="
+        + super.toString()
+        + ", firstName="
+        + getFirstName()
+        + ", lastName="
+        + getLastName()
+        + ", email="
+        + getEmail()
+        + ", roles="
+        + getRoles()
+        + ")";
   }
 
   public static final class Fields {

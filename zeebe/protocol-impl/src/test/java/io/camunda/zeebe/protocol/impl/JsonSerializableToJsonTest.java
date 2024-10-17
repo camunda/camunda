@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.VersionInfo;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
@@ -53,8 +54,10 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
@@ -69,6 +72,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -2510,7 +2514,8 @@ final class JsonSerializableToJsonTest {
                     .setName("Foo Bar")
                     .setEmail("foo@bar")
                     .setPassword("f00b4r")
-                    .setUserType(UserType.DEFAULT),
+                    .setUserType(UserType.DEFAULT)
+                    .addRoleKey(2L),
         """
         {
           "userKey": 1,
@@ -2518,7 +2523,8 @@ final class JsonSerializableToJsonTest {
           "name": "Foo Bar",
           "email": "foo@bar",
           "password": "f00b4r",
-          "userType": "DEFAULT"
+          "userType": "DEFAULT",
+          "roleKeysList": [2]
         }
         """
       },
@@ -2541,7 +2547,8 @@ final class JsonSerializableToJsonTest {
           "name": "Foo Bar",
           "email": "foo@bar",
           "password": "f00b4r",
-          "userType": "REGULAR"
+          "userType": "REGULAR",
+          "roleKeysList": []
         }
         """
       },
@@ -2664,6 +2671,105 @@ final class JsonSerializableToJsonTest {
           "messageKey": -1,
           "requestId": -1,
           "requestStreamId": -1
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////// RoleRecord /////////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Role record",
+        (Supplier<RoleRecord>)
+            () ->
+                new RoleRecord()
+                    .setRoleKey(1L)
+                    .setName("role")
+                    .setEntityKey(2L)
+                    .setEntityType(EntityType.USER),
+        """
+        {
+          "roleKey": 1,
+          "name": "role",
+          "entityKey": 2,
+          "entityType": "USER"
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// Empty RoleRecord /////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty RoleRecord",
+        (Supplier<RoleRecord>) RoleRecord::new,
+        """
+        {
+          "roleKey": -1,
+          "name": "",
+          "entityKey": -1,
+          "entityType": "UNSPECIFIED"
+        }
+        """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////// TenantRecord ///////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "TenantRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              return new TenantRecord()
+                  .setTenantKey(123L)
+                  .setTenantId("tenant-abc")
+                  .setName("Test Tenant")
+                  .setEntityKey(456L);
+            },
+        """
+        {
+          "tenantKey": 123,
+          "tenantId": "tenant-abc",
+          "name": "Test Tenant",
+          "entityKey": 456
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      /////////////////////////////////////// Empty TenantRecord //////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty TenantRecord",
+        (Supplier<UnifiedRecordValue>) TenantRecord::new,
+        """
+          {
+            "tenantKey": -1,
+            "tenantId": "",
+            "name": "",
+            "entityKey": -1
+          }
+          """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////// ScaleRecord ////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ScaleRecord (empty)",
+        (Supplier<ScaleRecord>) ScaleRecord::new,
+        """
+        {
+          "currentPartitionCount": -1,
+          "desiredPartitionCount": -1
+        }
+        """
+      },
+      {
+        "ScaleRecord",
+        (Supplier<ScaleRecord>)
+            () -> new ScaleRecord().setCurrentPartitionCount(3).setDesiredPartitionCount(5),
+        """
+        {
+         "currentPartitionCount": 3,
+         "desiredPartitionCount": 5
         }
         """
       },

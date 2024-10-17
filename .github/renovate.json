@@ -129,11 +129,8 @@
       "matchManagers": ["maven"],
       "matchFileNames": ["optimize/**"],
       "matchPackagePatterns": [
-        "io.camunda.optimize:optimize-data-generator",
         "io.camunda.optimize:camunda-optimize",
         "io.camunda.optimize:util",
-        "io.camunda:identity-sdk",
-        "io.camunda:identity-spring-boot-starter",
         "io.camunda:zeebe-client-java",
         "io.camunda:zeebe-protocol",
         "ant-contrib:ant-contrib"

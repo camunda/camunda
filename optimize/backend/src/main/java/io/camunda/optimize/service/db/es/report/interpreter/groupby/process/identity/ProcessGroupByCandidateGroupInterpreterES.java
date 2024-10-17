@@ -20,22 +20,35 @@ import io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.Set;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class ProcessGroupByCandidateGroupInterpreterES
     extends AbstractProcessGroupByIdentityInterpreterES {
-  @Getter final AssigneeCandidateGroupService assigneeCandidateGroupService;
-  @Getter final ConfigurationService configurationService;
-  @Getter final DefinitionService definitionService;
-  @Getter final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
-  @Getter final ProcessViewInterpreterFacadeES viewInterpreter;
-  @Getter final LocalizationService localizationService;
+
+  final AssigneeCandidateGroupService assigneeCandidateGroupService;
+  final ConfigurationService configurationService;
+  final DefinitionService definitionService;
+  final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
+  final ProcessViewInterpreterFacadeES viewInterpreter;
+  final LocalizationService localizationService;
+
+  public ProcessGroupByCandidateGroupInterpreterES(
+      AssigneeCandidateGroupService assigneeCandidateGroupService,
+      ConfigurationService configurationService,
+      DefinitionService definitionService,
+      ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
+      ProcessViewInterpreterFacadeES viewInterpreter,
+      LocalizationService localizationService) {
+    this.assigneeCandidateGroupService = assigneeCandidateGroupService;
+    this.configurationService = configurationService;
+    this.definitionService = definitionService;
+    this.distributedByInterpreter = distributedByInterpreter;
+    this.viewInterpreter = viewInterpreter;
+    this.localizationService = localizationService;
+  }
 
   @Override
   protected String getIdentityField() {
@@ -50,5 +63,29 @@ public class ProcessGroupByCandidateGroupInterpreterES
   @Override
   public Set<ProcessGroupBy> getSupportedGroupBys() {
     return Set.of(PROCESS_GROUP_BY_CANDIDATE_GROUP);
+  }
+
+  public AssigneeCandidateGroupService getAssigneeCandidateGroupService() {
+    return this.assigneeCandidateGroupService;
+  }
+
+  public ConfigurationService getConfigurationService() {
+    return this.configurationService;
+  }
+
+  public DefinitionService getDefinitionService() {
+    return this.definitionService;
+  }
+
+  public ProcessDistributedByInterpreterFacadeES getDistributedByInterpreter() {
+    return this.distributedByInterpreter;
+  }
+
+  public ProcessViewInterpreterFacadeES getViewInterpreter() {
+    return this.viewInterpreter;
+  }
+
+  public LocalizationService getLocalizationService() {
+    return this.localizationService;
   }
 }

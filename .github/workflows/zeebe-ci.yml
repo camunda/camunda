@@ -29,7 +29,7 @@ jobs:
           - os: windows
             runner: windows-latest
           - os: linux
-            runner: [ self-hosted, linux, amd64 ]
+            runner: gcp-perf-core-8-default
           - os: linux
             runner: "aws-arm-core-4-default"
             arch: arm64
@@ -186,6 +186,57 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+  strace-tests:
+    # Zeebe tests requiring strace
+    name: Strace Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install and allow strace tests
+        run: |
+          sudo apt-get -qq update && sudo apt-get install -y strace
+          sudo sysctl -w kernel.yama.ptrace_scope=0
+      - uses: ./.github/actions/setup-zeebe
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+      - uses: ./.github/actions/build-zeebe
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
+      - name: Maven Test Build
+        run: >
+          ./mvnw -T1C -B --no-snapshot-updates
+          -P include-strace-tests
+          -D junitThreadCount=2
+          -D skipChecks
+          -f zeebe
+          test
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Analyze Test Runs
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+          # workaround to avoid https://github.com/camunda/camunda/issues/16604
+          skipSummary: true
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: ${{ failure() || cancelled() }}
+        with:
+          name: Strace Tests
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
   docker-checks:
     name: Docker checks
     runs-on: ubuntu-latest
@@ -260,6 +311,7 @@ jobs:
       - property-tests
       - performance-tests
       - docker-checks
+      - strace-tests
     steps:
       - uses: actions/checkout@v4
       - run: exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}

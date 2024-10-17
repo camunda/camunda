@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Page, expect} from '@playwright/test';
+import {type Page, expect} from '@playwright/test';
 import {test} from '@/test-fixtures';
 import {sub as subTime} from 'date-fns/sub';
 import {add as addTime} from 'date-fns/add';

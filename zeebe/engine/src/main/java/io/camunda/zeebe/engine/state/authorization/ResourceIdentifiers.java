@@ -13,6 +13,7 @@ import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -31,14 +32,14 @@ public class ResourceIdentifiers extends UnpackedObject implements DbValue {
     return copy;
   }
 
-  public List<String> getResourceIdentifiers() {
+  public Set<String> getResourceIdentifiers() {
     return StreamSupport.stream(resourceIds.spliterator(), false)
         .map(StringValue::getValue)
         .map(BufferUtil::bufferAsString)
-        .collect(Collectors.toList());
+        .collect(Collectors.toSet());
   }
 
-  public void setResourceIdentifiers(final List<String> permissions) {
+  public void setResourceIdentifiers(final Set<String> permissions) {
     resourceIds.reset();
     permissions.forEach(permission -> resourceIds.add().wrap(BufferUtil.wrapString(permission)));
   }

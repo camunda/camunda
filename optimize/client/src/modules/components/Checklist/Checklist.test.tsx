@@ -143,12 +143,10 @@ it('should hide toolbar if specified', () => {
 });
 
 it('should prepend items to the checklist', () => {
-  const node = mount(
-    <Checklist {...props} preItems={[<input className="test" type="checkbox" />, 'label']} />
-  );
+  const node = mount(<Checklist {...props} preItems={['label']} />);
   const dataTable = node.find('Table').find('DataTable');
 
-  expect(dataTable.find('TableRow').find('.test')).toExist();
+  expect(dataTable.find('TableRow').find({cell: {value: 'label'}})).toExist();
 });
 
 it('should allow overwriting the selectAll button with a custom header', () => {

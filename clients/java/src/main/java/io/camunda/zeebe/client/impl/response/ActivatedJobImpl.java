@@ -74,7 +74,7 @@ public final class ActivatedJobImpl implements ActivatedJob {
       final JsonMapper jsonMapper, final io.camunda.zeebe.client.protocol.rest.ActivatedJob job) {
     this.jsonMapper = jsonMapper;
 
-    key = getOrEmpty(job.getKey());
+    key = getOrEmpty(job.getJobKey());
     type = getOrEmpty(job.getType());
     customHeaders =
         job.getCustomHeaders() == null

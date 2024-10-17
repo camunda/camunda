@@ -3,10 +3,10 @@
 # on `jq` as an external dependency.
 #
 # Example usage:
-#   $ ./verify.sh camunda/optimize:3.9.0 registry.camunda.cloud/team-optimize/optimize:latest
+#   $ ./verify.sh camunda/optimize:8.6.0 registry.camunda.cloud/team-optimize/optimize:8-latest
 #
 # Globals:
-#   VERSION - required; the semantic version, e.g. 3.9.0 or 3.9.0-alpha1
+#   VERSION - required; the semantic version, e.g. 8.6.0 or 8.6.0-alpha1
 #   REVISION - required; the sha1 of the commit used to build the artifact
 #   DATE - required; the ISO 8601 date at which the image was built
 #   BASE_IMAGE - required; Docker base image name (e.g. docker.io/library/alpine:3.20.0)

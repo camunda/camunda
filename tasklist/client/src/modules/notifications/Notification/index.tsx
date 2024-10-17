@@ -8,7 +8,7 @@
 
 import {ActionableNotification, ToastNotification} from '@carbon/react';
 import {CSSTransition} from 'react-transition-group';
-import {Notification as NotificationType} from 'modules/stores/notifications';
+import type {Notification as NotificationType} from 'modules/stores/notifications';
 import {observer} from 'mobx-react-lite';
 import {useRef} from 'react';
 import {useRelativeDate} from './useRelativeDate';

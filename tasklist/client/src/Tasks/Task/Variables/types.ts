@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Variable} from 'modules/types';
+import type {Variable} from 'modules/types';
 
 type FormValues = {
   [key: string]: string;

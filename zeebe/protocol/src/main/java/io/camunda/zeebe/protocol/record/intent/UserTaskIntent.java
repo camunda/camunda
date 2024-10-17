@@ -15,6 +15,10 @@
  */
 package io.camunda.zeebe.protocol.record.intent;
 
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
   CREATING(0),
   CREATED(1),
@@ -36,7 +40,18 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
   UPDATING(12),
   UPDATED(13),
 
-  MIGRATED(14);
+  MIGRATED(14),
+
+  /**
+   * Represents the intent that signals about the completion of task listener job, allowing either
+   * the creation of the next task listener or the finalization of the original user task command
+   * (e.g., COMPLETE, UPDATE, ASSIGN) once all task listeners have been processed.
+   *
+   * <p>Until this intent is written, the processing of the user task is paused, ensuring that the
+   * operations defined by the listener are fully executed before proceeding with the original task
+   * command.
+   */
+  COMPLETE_TASK_LISTENER(15);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -86,6 +101,8 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
         return UPDATED;
       case 14:
         return MIGRATED;
+      case 15:
+        return COMPLETE_TASK_LISTENER;
       default:
         return UNKNOWN;
     }
@@ -119,5 +136,11 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
   @Override
   public boolean shouldBanInstanceOnError() {
     return shouldBanInstance;
+  }
+
+  public static Set<UserTaskIntent> commands() {
+    return Stream.of(UserTaskIntent.values())
+        .filter(intent -> !intent.isEvent())
+        .collect(Collectors.toSet());
   }
 }

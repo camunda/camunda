@@ -15,26 +15,36 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NonNull;
 
-@Data
-@EqualsAndHashCode(callSuper = true)
 public class SingleReportEvaluationResult<T> extends ReportEvaluationResult {
-  @NonNull private List<CommandEvaluationResult<T>> commandEvaluationResults;
+
+  private List<CommandEvaluationResult<T>> commandEvaluationResults;
 
   public SingleReportEvaluationResult(
-      @NonNull final SingleReportDefinitionDto<?> reportDefinition,
-      @NonNull final CommandEvaluationResult<T> commandEvaluationResult) {
+      final SingleReportDefinitionDto<?> reportDefinition,
+      final CommandEvaluationResult<T> commandEvaluationResult) {
     super(reportDefinition);
-    this.commandEvaluationResults = Collections.singletonList(commandEvaluationResult);
+    if (reportDefinition == null) {
+      throw new IllegalArgumentException("reportDefinition cannot be null");
+    }
+    if (commandEvaluationResult == null) {
+      throw new IllegalArgumentException("commandEvaluationResult cannot be null");
+    }
+
+    commandEvaluationResults = Collections.singletonList(commandEvaluationResult);
   }
 
   public SingleReportEvaluationResult(
-      @NonNull final ReportDefinitionDto<?> reportDefinition,
-      @NonNull final List<CommandEvaluationResult<T>> commandEvaluationResults) {
+      final ReportDefinitionDto<?> reportDefinition,
+      final List<CommandEvaluationResult<T>> commandEvaluationResults) {
     super(reportDefinition);
+    if (reportDefinition == null) {
+      throw new IllegalArgumentException("reportDefinition cannot be null");
+    }
+    if (commandEvaluationResults == null) {
+      throw new IllegalArgumentException("commandEvaluationResult cannot be null");
+    }
+
     this.commandEvaluationResults = commandEvaluationResults;
   }
 
@@ -51,7 +61,7 @@ public class SingleReportEvaluationResult<T> extends ReportEvaluationResult {
   @Override
   public PaginatedDataExportDto getResult() {
     final CommandEvaluationResult<?> commandResult = getFirstCommandResult();
-    PaginatedDataExportDto result = new PaginatedDataExportDto();
+    final PaginatedDataExportDto result = new PaginatedDataExportDto();
     result.setData(commandResult.getResult());
     if (commandResult instanceof RawDataCommandResult) {
       result.setTotalNumberOfRecords(commandResult.getInstanceCount());
@@ -62,10 +72,71 @@ public class SingleReportEvaluationResult<T> extends ReportEvaluationResult {
         result.setSearchRequestId(null);
       }
     } else {
-      Object data = Optional.ofNullable(result.getData()).orElse(new ArrayList<>());
-      int payloadSize = (data instanceof List ? ((List<?>) data).size() : 1);
+      final Object data = Optional.ofNullable(result.getData()).orElse(new ArrayList<>());
+      final int payloadSize = (data instanceof List ? ((List<?>) data).size() : 1);
       result.setTotalNumberOfRecords(payloadSize);
     }
     return result;
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof SingleReportEvaluationResult;
+  }
+
+  @Override
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = super.hashCode();
+    final Object $commandEvaluationResults = getCommandEvaluationResults();
+    result =
+        result * PRIME
+            + ($commandEvaluationResults == null ? 43 : $commandEvaluationResults.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof SingleReportEvaluationResult)) {
+      return false;
+    }
+    final SingleReportEvaluationResult<?> other = (SingleReportEvaluationResult<?>) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final Object this$commandEvaluationResults = getCommandEvaluationResults();
+    final Object other$commandEvaluationResults = other.getCommandEvaluationResults();
+    if (this$commandEvaluationResults == null
+        ? other$commandEvaluationResults != null
+        : !this$commandEvaluationResults.equals(other$commandEvaluationResults)) {
+      return false;
+    }
+    return true;
+  }
+
+  @Override
+  public String toString() {
+    return "SingleReportEvaluationResult(commandEvaluationResults="
+        + getCommandEvaluationResults()
+        + ")";
+  }
+
+  public List<CommandEvaluationResult<T>> getCommandEvaluationResults() {
+    return commandEvaluationResults;
+  }
+
+  public void setCommandEvaluationResults(
+      final List<CommandEvaluationResult<T>> commandEvaluationResults) {
+    if (commandEvaluationResults == null) {
+      throw new IllegalArgumentException("commandEvaluationResults cannot be null");
+    }
+
+    this.commandEvaluationResults = commandEvaluationResults;
   }
 }

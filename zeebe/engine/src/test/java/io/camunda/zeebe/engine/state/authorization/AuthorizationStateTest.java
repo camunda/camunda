@@ -33,15 +33,15 @@ public class AuthorizationStateTest {
     authorizationState = processingState.getAuthorizationState();
   }
 
-  @DisplayName("should return null if no authorization for owner and resource is not exist")
+  @DisplayName("should return empty list if no authorization for owner and resource is not exist")
   @Test
-  void shouldReturnNullIfNoAuthorizationForOwnerAndResourceExists() {
+  void shouldReturnEmptyListIfNoAuthorizationForOwnerAndResourceExists() {
     // when
     final var persistedAuth =
         authorizationState.getResourceIdentifiers(
             1L, AuthorizationResourceType.DEPLOYMENT, PermissionType.CREATE);
     // then
-    assertThat(persistedAuth).isNull();
+    assertThat(persistedAuth).isEmpty();
   }
 
   @Test
@@ -57,10 +57,8 @@ public class AuthorizationStateTest {
 
     // then
     final var resourceIdentifiers =
-        authorizationState
-            .getResourceIdentifiers(ownerKey, resourceType, permissionType)
-            .getResourceIdentifiers();
-    assertThat(resourceIdentifiers).containsExactly("foo", "bar");
+        authorizationState.getResourceIdentifiers(ownerKey, resourceType, permissionType);
+    assertThat(resourceIdentifiers).containsExactlyInAnyOrder("foo", "bar");
   }
 
   @Test
@@ -78,10 +76,8 @@ public class AuthorizationStateTest {
 
     // then
     final var resourceIdentifiers =
-        authorizationState
-            .getResourceIdentifiers(ownerKey, resourceType, permissionType)
-            .getResourceIdentifiers();
-    assertThat(resourceIdentifiers).containsExactly("foo", "bar", "baz");
+        authorizationState.getResourceIdentifiers(ownerKey, resourceType, permissionType);
+    assertThat(resourceIdentifiers).containsExactlyInAnyOrder("foo", "bar", "baz");
   }
 
   @Test
@@ -111,7 +107,7 @@ public class AuthorizationStateTest {
     // given
     final var ownerKey = 1L;
     final var resourceType1 = AuthorizationResourceType.DEPLOYMENT;
-    final var resourceType2 = AuthorizationResourceType.JOB;
+    final var resourceType2 = AuthorizationResourceType.PROCESS_DEFINITION;
     final var permissionType = PermissionType.CREATE;
     authorizationState.createOrAddPermission(
         ownerKey, resourceType1, permissionType, List.of("foo"));
@@ -178,5 +174,45 @@ public class AuthorizationStateTest {
         .isInstanceOf(ZeebeDbInconsistentException.class)
         .hasMessageContaining(
             "Key DbLong{1} in ColumnFamily OWNER_TYPE_BY_OWNER_KEY already exists");
+  }
+
+  @Test
+  void shouldRemoveOwnerTypeByKey() {
+    // given
+    final var ownerKey = 1L;
+    final var ownerType = AuthorizationOwnerType.USER;
+    authorizationState.insertOwnerTypeByKey(ownerKey, ownerType);
+
+    // when
+    authorizationState.deleteOwnerTypeByKey(ownerKey);
+
+    // then
+    final var persistedOwnerType = authorizationState.getOwnerType(ownerKey);
+    assertThat(persistedOwnerType).isEmpty();
+  }
+
+  @Test
+  void shouldDeleteAuthorizationsByOwnerKeyPrefix() {
+    // given
+    final var ownerKey1 = 1L;
+    final var ownerKey2 = 2L;
+    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var permissionType = PermissionType.CREATE;
+    authorizationState.createOrAddPermission(
+        ownerKey1, resourceType, permissionType, List.of("foo"));
+    authorizationState.createOrAddPermission(
+        ownerKey2, resourceType, permissionType, List.of("bar"));
+
+    // when
+    authorizationState.deleteAuthorizationsByOwnerKeyPrefix(ownerKey1);
+
+    // then
+    final var resourceIds1 =
+        authorizationState.getResourceIdentifiers(ownerKey1, resourceType, permissionType);
+    final var resourceIds2 =
+        authorizationState.getResourceIdentifiers(ownerKey2, resourceType, permissionType);
+
+    assertThat(resourceIds1).isEmpty();
+    assertThat(resourceIds2).isNotEmpty();
   }
 }

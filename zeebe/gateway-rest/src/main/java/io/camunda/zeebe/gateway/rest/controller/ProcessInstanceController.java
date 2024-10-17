@@ -21,7 +21,6 @@ import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import java.util.concurrent.CompletableFuture;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,7 +35,6 @@ public class ProcessInstanceController {
   private final ProcessInstanceServices processInstanceServices;
   private final MultiTenancyCfg multiTenancyCfg;
 
-  @Autowired
   public ProcessInstanceController(
       final ProcessInstanceServices processInstanceServices,
       final MultiTenancyCfg multiTenancyCfg) {

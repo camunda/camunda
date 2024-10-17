@@ -10,10 +10,10 @@ package io.camunda.operate.elasticsearch;
 import static io.camunda.operate.util.TestUtil.createDecisionInstanceEntity;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.searchrepository.TestSearchRepository;
+import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
 import java.util.List;
 import org.junit.Rule;

@@ -10,22 +10,20 @@ package io.camunda.optimize.service.db.writer;
 import io.camunda.optimize.dto.optimize.query.IdResponseDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionUpdateDto;
-import lombok.NonNull;
 
 public interface DashboardWriter {
 
   String DEFAULT_DASHBOARD_NAME = "New Dashboard";
 
   IdResponseDto createNewDashboard(
-      @NonNull final String userId,
-      @NonNull final DashboardDefinitionRestDto dashboardDefinitionDto);
+      final String userId, final DashboardDefinitionRestDto dashboardDefinitionDto);
 
   IdResponseDto createNewDashboard(
-      @NonNull final String userId,
-      @NonNull final DashboardDefinitionRestDto dashboardDefinitionDto,
-      @NonNull final String id);
+      final String userId,
+      final DashboardDefinitionRestDto dashboardDefinitionDto,
+      final String id);
 
-  IdResponseDto saveDashboard(@NonNull final DashboardDefinitionRestDto dashboardDefinitionDto);
+  IdResponseDto saveDashboard(final DashboardDefinitionRestDto dashboardDefinitionDto);
 
   void updateDashboard(DashboardDefinitionUpdateDto dashboard, String id);
 

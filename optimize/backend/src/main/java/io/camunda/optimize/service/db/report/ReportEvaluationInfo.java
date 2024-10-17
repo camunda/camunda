@@ -15,15 +15,7 @@ import io.camunda.optimize.service.report.ReportService;
 import java.time.ZoneId;
 import java.util.Optional;
 import java.util.Set;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 
-@Getter
-@Setter(AccessLevel.PROTECTED)
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ReportEvaluationInfo {
 
   private ReportDefinitionDto<?> report;
@@ -38,6 +30,8 @@ public class ReportEvaluationInfo {
   private boolean isJsonExport;
   private boolean isSharedReport;
   private Set<String> hiddenFlowNodeIds;
+
+  private ReportEvaluationInfo() {}
 
   public void postFetchSavedReport(final ReportService reportService) {
     if (reportId != null) {
@@ -67,10 +61,90 @@ public class ReportEvaluationInfo {
     return new ReportEvaluationInfoBuilder(reportEvaluationInfo);
   }
 
-  @RequiredArgsConstructor
+  public ReportDefinitionDto<?> getReport() {
+    return this.report;
+  }
+
+  public String getReportId() {
+    return this.reportId;
+  }
+
+  public String getUserId() {
+    return this.userId;
+  }
+
+  public AdditionalProcessReportEvaluationFilterDto getAdditionalFilters() {
+    return this.additionalFilters;
+  }
+
+  public ZoneId getTimezone() {
+    return this.timezone;
+  }
+
+  public boolean isCsvExport() {
+    return this.isCsvExport;
+  }
+
+  public boolean isJsonExport() {
+    return this.isJsonExport;
+  }
+
+  public boolean isSharedReport() {
+    return this.isSharedReport;
+  }
+
+  public Set<String> getHiddenFlowNodeIds() {
+    return this.hiddenFlowNodeIds;
+  }
+
+  protected void setReport(ReportDefinitionDto<?> report) {
+    this.report = report;
+  }
+
+  protected void setReportId(String reportId) {
+    this.reportId = reportId;
+  }
+
+  protected void setUserId(String userId) {
+    this.userId = userId;
+  }
+
+  protected void setAdditionalFilters(
+      AdditionalProcessReportEvaluationFilterDto additionalFilters) {
+    this.additionalFilters = additionalFilters;
+  }
+
+  protected void setTimezone(ZoneId timezone) {
+    this.timezone = timezone;
+  }
+
+  protected void setPagination(PaginationDto pagination) {
+    this.pagination = pagination;
+  }
+
+  protected void setCsvExport(boolean isCsvExport) {
+    this.isCsvExport = isCsvExport;
+  }
+
+  protected void setJsonExport(boolean isJsonExport) {
+    this.isJsonExport = isJsonExport;
+  }
+
+  protected void setSharedReport(boolean isSharedReport) {
+    this.isSharedReport = isSharedReport;
+  }
+
+  protected void setHiddenFlowNodeIds(Set<String> hiddenFlowNodeIds) {
+    this.hiddenFlowNodeIds = hiddenFlowNodeIds;
+  }
+
   public static class ReportEvaluationInfoBuilder {
 
     private final ReportEvaluationInfo reportEvaluationInfo;
+
+    public ReportEvaluationInfoBuilder(ReportEvaluationInfo reportEvaluationInfo) {
+      this.reportEvaluationInfo = reportEvaluationInfo;
+    }
 
     public ReportEvaluationInfoBuilder userId(final String userId) {
       reportEvaluationInfo.setUserId(userId);

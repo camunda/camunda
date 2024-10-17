@@ -11,7 +11,6 @@ import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.api.v1.dao.IncidentDao;
 import io.camunda.operate.webapp.api.v1.entities.Incident;
@@ -20,6 +19,7 @@ import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
+import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -67,7 +67,7 @@ public class ElasticsearchIncidentDao extends ElasticsearchDao<Incident> impleme
     final List<Incident> incidents;
     try {
       incidents = searchFor(new SearchSourceBuilder().query(termQuery(IncidentTemplate.KEY, key)));
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new ServerException(String.format("Error in reading incident for key %s", key), e);
     }
     if (incidents.isEmpty()) {
@@ -102,7 +102,7 @@ public class ElasticsearchIncidentDao extends ElasticsearchDao<Incident> impleme
       } else {
         return new Results<Incident>().setTotal(searchHits.getTotalHits().value);
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new ServerException("Error in reading incidents", e);
     }
   }
@@ -120,7 +120,7 @@ public class ElasticsearchIncidentDao extends ElasticsearchDao<Incident> impleme
             .collect(Collectors.toList()));
   }
 
-  protected Incident searchHitToIncident(SearchHit searchHit) {
+  protected Incident searchHitToIncident(final SearchHit searchHit) {
     final Map<String, Object> searchHitAsMap = searchHit.getSourceAsMap();
     return new Incident()
         .setKey((Long) searchHitAsMap.get(IncidentTemplate.KEY))
@@ -148,7 +148,7 @@ public class ElasticsearchIncidentDao extends ElasticsearchDao<Incident> impleme
       } else {
         return List.of();
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new ServerException("Error in reading incidents", e);
     }
   }

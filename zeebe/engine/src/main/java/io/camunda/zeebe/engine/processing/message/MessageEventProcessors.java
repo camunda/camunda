@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.message;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -42,7 +43,8 @@ public final class MessageEventProcessors {
       final EngineConfiguration config,
       final FeatureFlags featureFlags,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final AuthorizationCheckBehavior authCheckBehavior) {
 
     final MutableMessageState messageState = processingState.getMessageState();
     final MutableMessageCorrelationState messageCorrelationState =
@@ -70,7 +72,8 @@ public final class MessageEventProcessors {
                 writers,
                 processState,
                 bpmnBehaviors.eventTriggerBehavior(),
-                bpmnBehaviors.stateBehavior()))
+                bpmnBehaviors.stateBehavior(),
+                authCheckBehavior))
         .onCommand(
             ValueType.MESSAGE_BATCH,
             MessageBatchIntent.EXPIRE,
@@ -130,7 +133,8 @@ public final class MessageEventProcessors {
                 startEventSubscriptionState,
                 messageState,
                 subscriptionState,
-                subscriptionCommandSender))
+                subscriptionCommandSender,
+                authCheckBehavior))
         .withListener(
             new MessageObserver(
                 scheduledTaskStateFactory,

@@ -5,7 +5,7 @@ services:
 
   postgres:
     container_name: postgres
-    image: postgres:16.4-alpine
+    image: postgres:17.0-alpine
     ports:
       - "5432:5432"
     environment:
@@ -39,7 +39,7 @@ services:
       - ./els-snapshots:/usr/local/els-snapshots
 
   opensearch:
-    image: opensearchproject/opensearch:2.17.0
+    image: opensearchproject/opensearch:2.17.1
     container_name: opensearch
     environment:
       - cluster.name=opensearch-cluster
@@ -289,9 +289,8 @@ services:
     container_name: operate-${DATABASE}
     image: camunda/operate:SNAPSHOT
     ports:
-      - 8088:8080
+      - 8081:8080
     environment:
-      - SERVER_PORT=8081
       - SPRING_PROFILES_ACTIVE=dev,dev-data,auth
     depends_on:
       - ${DATABASE}

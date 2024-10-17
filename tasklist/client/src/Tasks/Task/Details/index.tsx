@@ -8,7 +8,7 @@
 
 import {Section} from '@carbon/react';
 import {Outlet, useMatch, useNavigate} from 'react-router-dom';
-import {CurrentUser, Process, Task} from 'modules/types';
+import type {CurrentUser, Process, Task} from 'modules/types';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {useTask} from 'modules/queries/useTask';
 import {useProcessDefinition} from 'modules/queries/useProcessDefinition';

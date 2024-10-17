@@ -13,9 +13,9 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.JobServices;
 import io.camunda.service.JobServices.UpdateJobChangeset;
-import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -49,14 +49,14 @@ public class JobControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-          "retries": 1,
-          "errorMessage": "error",
-          "retryBackOff": 1,
-          "variables": {
-            "foo": "bar"
-          }
-        }""";
+            {
+              "retries": 1,
+              "errorMessage": "error",
+              "retryBackOff": 1,
+              "variables": {
+                "foo": "bar"
+              }
+            }""";
     // when/then
     webClient
         .post()
@@ -98,8 +98,8 @@ public class JobControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {}
-        """;
+            {}
+            """;
 
     // when/then
     webClient
@@ -123,13 +123,13 @@ public class JobControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-          "errorCode": "400",
-          "errorMessage": "error",
-          "variables": {
-            "foo": "bar"
-          }
-        }""";
+            {
+              "errorCode": "400",
+              "errorMessage": "error",
+              "variables": {
+                "foo": "bar"
+              }
+            }""";
     // when/then
     webClient
         .post()
@@ -149,13 +149,13 @@ public class JobControllerTest extends RestControllerTest {
     // given
     final var expectedBody =
         """
-        {
-          "type": "about:blank",
-          "status": 400,
-          "title": "Bad Request",
-          "detail": "Required request body is missing",
-          "instance": "%s"
-        }"""
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "Bad Request",
+              "detail": "Required request body is missing",
+              "instance": "%s"
+            }"""
             .formatted(JOBS_BASE_URL + "/1/error");
 
     // when/then
@@ -178,22 +178,22 @@ public class JobControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-        {
-          "errorMessage": "error",
-          "variables": {
-            "foo": "bar"
-          }
-        }""";
+            {
+              "errorMessage": "error",
+              "variables": {
+                "foo": "bar"
+              }
+            }""";
 
     final var expectedBody =
         """
-        {
-          "type": "about:blank",
-          "status": 400,
-          "title": "INVALID_ARGUMENT",
-          "detail": "No errorCode provided.",
-          "instance": "%s"
-        }"""
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No errorCode provided.",
+              "instance": "%s"
+            }"""
             .formatted(JOBS_BASE_URL + "/1/error");
 
     // when/then
@@ -217,23 +217,23 @@ public class JobControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-        {
-          "errorCode": "",
-          "errorMessage": "error",
-          "variables": {
-            "foo": "bar"
-          }
-        }""";
+            {
+              "errorCode": "",
+              "errorMessage": "error",
+              "variables": {
+                "foo": "bar"
+              }
+            }""";
 
     final var expectedBody =
         """
-        {
-          "type": "about:blank",
-          "status": 400,
-          "title": "INVALID_ARGUMENT",
-          "detail": "No errorCode provided.",
-          "instance": "%s"
-        }"""
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No errorCode provided.",
+              "instance": "%s"
+            }"""
             .formatted(JOBS_BASE_URL + "/1/error");
 
     // when/then
@@ -257,23 +257,23 @@ public class JobControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-        {
-          "errorCode": "    ",
-          "errorMessage": "error",
-          "variables": {
-            "foo": "bar"
-          }
-        }""";
+            {
+              "errorCode": "    ",
+              "errorMessage": "error",
+              "variables": {
+                "foo": "bar"
+              }
+            }""";
 
     final var expectedBody =
         """
-        {
-          "type": "about:blank",
-          "status": 400,
-          "title": "INVALID_ARGUMENT",
-          "detail": "No errorCode provided.",
-          "instance": "%s"
-        }"""
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No errorCode provided.",
+              "instance": "%s"
+            }"""
             .formatted(JOBS_BASE_URL + "/1/error");
 
     // when/then
@@ -319,11 +319,11 @@ public class JobControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-          "variables": {
-            "foo": "bar"
-          }
-        }""";
+            {
+              "variables": {
+                "foo": "bar"
+              }
+            }""";
 
     // when/then
     webClient
@@ -347,12 +347,12 @@ public class JobControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-          "changeset": {
-            "retries": 5,
-            "timeout": 1000
-          }
-        }""";
+            {
+              "changeset": {
+                "retries": 5,
+                "timeout": 1000
+              }
+            }""";
     // when/then
     webClient
         .patch()
@@ -375,11 +375,11 @@ public class JobControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-          "changeset": {
-            "retries": 5
-          }
-        }""";
+            {
+              "changeset": {
+                "retries": 5
+              }
+            }""";
     // when/then
     webClient
         .patch()
@@ -402,11 +402,11 @@ public class JobControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-          "changeset": {
-            "timeout": 1000
-          }
-        }""";
+            {
+              "changeset": {
+                "timeout": 1000
+              }
+            }""";
     // when/then
     webClient
         .patch()
@@ -426,19 +426,19 @@ public class JobControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-        {
-          "changeset": {}
-        }""";
+            {
+              "changeset": {}
+            }""";
 
     final var expectedBody =
         """
-        {
-          "type": "about:blank",
-          "status": 400,
-          "title": "INVALID_ARGUMENT",
-          "detail": "At least one of [retries, timeout] is required.",
-          "instance": "%s"
-        }"""
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "At least one of [retries, timeout] is required.",
+              "instance": "%s"
+            }"""
             .formatted(JOBS_BASE_URL + "/1");
 
     // when/then
@@ -462,13 +462,13 @@ public class JobControllerTest extends RestControllerTest {
     // given
     final var expectedBody =
         """
-        {
-          "type": "about:blank",
-          "status": 400,
-          "title": "Bad Request",
-          "detail": "Required request body is missing",
-          "instance": "%s"
-        }"""
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "Bad Request",
+              "detail": "Required request body is missing",
+              "instance": "%s"
+            }"""
             .formatted(JOBS_BASE_URL + "/1");
 
     // when/then

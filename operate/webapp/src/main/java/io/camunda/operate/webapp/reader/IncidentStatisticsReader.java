@@ -7,8 +7,8 @@
  */
 package io.camunda.operate.webapp.reader;
 
-import static io.camunda.operate.schema.templates.ListViewTemplate.*;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.*;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 

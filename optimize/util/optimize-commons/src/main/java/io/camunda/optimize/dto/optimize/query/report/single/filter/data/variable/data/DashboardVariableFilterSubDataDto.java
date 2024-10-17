@@ -10,16 +10,7 @@ package io.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.OperatorMultipleValuesFilterDataDto;
 import java.util.List;
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
 
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Data
-@EqualsAndHashCode(callSuper = true)
-@ToString(callSuper = true)
 public class DashboardVariableFilterSubDataDto extends OperatorMultipleValuesFilterDataDto {
 
   protected boolean allowCustomValues;
@@ -28,6 +19,59 @@ public class DashboardVariableFilterSubDataDto extends OperatorMultipleValuesFil
       final FilterOperator operator, final List<String> values, final boolean allowCustomValues) {
     super(operator, values);
     this.allowCustomValues = allowCustomValues;
+  }
+
+  protected DashboardVariableFilterSubDataDto() {}
+
+  public boolean isAllowCustomValues() {
+    return allowCustomValues;
+  }
+
+  public void setAllowCustomValues(final boolean allowCustomValues) {
+    this.allowCustomValues = allowCustomValues;
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof DashboardVariableFilterSubDataDto;
+  }
+
+  @Override
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = super.hashCode();
+    result = result * PRIME + (isAllowCustomValues() ? 79 : 97);
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof DashboardVariableFilterSubDataDto)) {
+      return false;
+    }
+    final DashboardVariableFilterSubDataDto other = (DashboardVariableFilterSubDataDto) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    if (isAllowCustomValues() != other.isAllowCustomValues()) {
+      return false;
+    }
+    return true;
+  }
+
+  @Override
+  public String toString() {
+    return "DashboardVariableFilterSubDataDto(super="
+        + super.toString()
+        + ", allowCustomValues="
+        + isAllowCustomValues()
+        + ")";
   }
 
   public static final class Fields {

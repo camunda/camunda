@@ -17,7 +17,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Conditional;
@@ -25,10 +24,13 @@ import org.springframework.stereotype.Component;
 
 @Conditional(CCSaaSCondition.class)
 @Component
-@RequiredArgsConstructor
 public class CCSaaSAlertRecipientValidator implements AlertRecipientValidator {
 
   private final CCSaaSIdentityService identityService;
+
+  public CCSaaSAlertRecipientValidator(final CCSaaSIdentityService identityService) {
+    this.identityService = identityService;
+  }
 
   @Override
   public void validateAlertRecipientEmailAddresses(final List<String> emails) {

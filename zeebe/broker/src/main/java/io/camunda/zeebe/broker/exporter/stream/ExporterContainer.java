@@ -253,5 +253,10 @@ final class ExporterContainer implements Controller {
     } catch (final Exception e) {
       context.getLogger().error("Error on close", e);
     }
+    try {
+      context.close();
+    } catch (final Exception e) {
+      context.getLogger().error("Error on context.close", e);
+    }
   }
 }

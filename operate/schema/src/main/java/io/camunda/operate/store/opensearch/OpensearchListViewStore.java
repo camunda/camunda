@@ -15,11 +15,11 @@ import static io.camunda.operate.util.ExceptionHelper.withIOException;
 
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.ListViewStore;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.store.opensearch.dsl.RequestDSL;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;

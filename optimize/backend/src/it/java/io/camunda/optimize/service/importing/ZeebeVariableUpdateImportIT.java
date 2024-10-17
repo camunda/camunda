@@ -33,7 +33,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Test;
 
@@ -56,7 +55,7 @@ public class ZeebeVariableUpdateImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    ProcessInstanceDto savedProcessInstance =
+    final ProcessInstanceDto savedProcessInstance =
         getProcessInstanceForId(String.valueOf(processInstanceKey));
     assertThatVariablesHaveBeenImportedForProcessInstance(savedProcessInstance);
   }
@@ -75,7 +74,7 @@ public class ZeebeVariableUpdateImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromLastIndex();
 
     // then
-    ProcessInstanceDto savedProcessInstance =
+    final ProcessInstanceDto savedProcessInstance =
         getProcessInstanceForId(String.valueOf(processInstanceKey));
     assertThatVariablesHaveBeenImportedForProcessInstance(savedProcessInstance);
   }
@@ -100,10 +99,10 @@ public class ZeebeVariableUpdateImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromLastIndex();
 
     // then
-    ProcessInstanceDto savedProcessInstance1 =
+    final ProcessInstanceDto savedProcessInstance1 =
         getProcessInstanceForId(String.valueOf(processInstanceKey1));
     assertThatVariablesHaveBeenImportedForProcessInstance(savedProcessInstance1);
-    ProcessInstanceDto savedProcessInstance2 =
+    final ProcessInstanceDto savedProcessInstance2 =
         getProcessInstanceForId(String.valueOf(processInstanceKey2));
     assertThatVariablesHaveBeenImportedForProcessInstance(savedProcessInstance2);
   }
@@ -118,13 +117,13 @@ public class ZeebeVariableUpdateImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
     ProcessInstanceDto savedProcessInstance =
         getProcessInstanceForId(String.valueOf(processInstanceKey));
-    String flowNodeId =
+    final String flowNodeId =
         getFlowNodeInstanceIdFromProcessInstanceForActivity(savedProcessInstance, SERVICE_TASK);
     zeebeExtension.addVariablesToScope(
         Long.parseLong(flowNodeId), Map.of("var1", "flowNodeInstanceScopeValue"), true);
     waitUntilMinimumVariableDocumentsWithCreatedIntentExportedCount(2);
     importAllZeebeEntitiesFromLastIndex();
-    Map<String, Object> newVariables = new HashMap<>();
+    final Map<String, Object> newVariables = new HashMap<>();
     newVariables.put("var1", null);
     zeebeExtension.addVariablesToScope(processInstanceKey, newVariables, true);
     zeebeExtension.addVariablesToScope(Long.parseLong(flowNodeId), newVariables, true);
@@ -156,7 +155,7 @@ public class ZeebeVariableUpdateImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
     ProcessInstanceDto savedProcessInstance =
         getProcessInstanceForId(String.valueOf(processInstanceKey));
-    String flowNodeId =
+    final String flowNodeId =
         getFlowNodeInstanceIdFromProcessInstanceForActivity(savedProcessInstance, SERVICE_TASK);
     zeebeExtension.addVariablesToScope(
         Long.parseLong(flowNodeId), Map.of("var1", "flowNodeInstanceScopeValue"), true);
@@ -194,7 +193,7 @@ public class ZeebeVariableUpdateImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
     ProcessInstanceDto savedProcessInstance =
         getProcessInstanceForId(String.valueOf(processInstanceKey));
-    String flowNodeId =
+    final String flowNodeId =
         getFlowNodeInstanceIdFromProcessInstanceForActivity(savedProcessInstance, SERVICE_TASK);
     zeebeExtension.addVariablesToScope(
         Long.parseLong(flowNodeId), Map.of("var1", "flowNodeInstanceScopeValue"), true);
@@ -239,7 +238,7 @@ public class ZeebeVariableUpdateImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromLastIndex();
 
     // then
-    ProcessInstanceDto savedProcessInstance =
+    final ProcessInstanceDto savedProcessInstance =
         getProcessInstanceForId(String.valueOf(processInstanceKey));
     assertThat(savedProcessInstance.getVariables())
         .extracting(
@@ -263,7 +262,7 @@ public class ZeebeVariableUpdateImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
     ProcessInstanceDto savedProcessInstance =
         getProcessInstanceForId(String.valueOf(processInstanceEvent.getProcessInstanceKey()));
-    String flowNodeId =
+    final String flowNodeId =
         getFlowNodeInstanceIdFromProcessInstanceForActivity(savedProcessInstance, SERVICE_TASK);
     zeebeExtension.addVariablesToScope(
         processInstanceEvent.getProcessInstanceKey(),
@@ -310,7 +309,7 @@ public class ZeebeVariableUpdateImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromLastIndex();
 
     // then
-    ProcessInstanceDto savedProcessInstance =
+    final ProcessInstanceDto savedProcessInstance =
         getProcessInstanceForId(String.valueOf(processInstanceKey));
     assertThat(savedProcessInstance.getVariables())
         .extracting(
@@ -344,7 +343,7 @@ public class ZeebeVariableUpdateImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromLastIndex();
 
     // then
-    ProcessInstanceDto savedProcessInstance =
+    final ProcessInstanceDto savedProcessInstance =
         getProcessInstanceForId(String.valueOf(processInstanceKey));
     assertThat(savedProcessInstance.getVariables())
         .extracting(
@@ -355,7 +354,6 @@ public class ZeebeVariableUpdateImportIT extends AbstractCCSMIT {
             Tuple.tuple("var1", Collections.singletonList("secondUpdate"), STRING_TYPE));
   }
 
-  @SneakyThrows
   @Test
   public void zeebeVariableImport_updateObjectVariable() {
     // given
@@ -440,7 +438,7 @@ public class ZeebeVariableUpdateImportIT extends AbstractCCSMIT {
 
   private void waitUntilMinimumVariableDocumentsWithIntentExportedCount(
       final int minExportedEventCount, final VariableIntent intent) {
-    TermsQueryContainer variableBoolQuery = new TermsQueryContainer();
+    final TermsQueryContainer variableBoolQuery = new TermsQueryContainer();
     variableBoolQuery.addTermQuery(ZeebeVariableRecordDto.Fields.intent, intent.name());
     waitUntilMinimumDataExportedCount(
         minExportedEventCount, DatabaseConstants.ZEEBE_VARIABLE_INDEX_NAME, variableBoolQuery);
@@ -462,7 +460,7 @@ public class ZeebeVariableUpdateImportIT extends AbstractCCSMIT {
   }
 
   private long deployProcessAndStartProcessInstanceWithVariables(
-      Map<String, Object> variablesToAdd) {
+      final Map<String, Object> variablesToAdd) {
     final Process deployedProcess =
         zeebeExtension.deployProcess(createSimpleServiceTaskProcess(PROCESS_ID));
     return zeebeExtension.startProcessInstanceWithVariables(

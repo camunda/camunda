@@ -12,9 +12,9 @@ import static org.elasticsearch.index.query.QueryBuilders.*;
 
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.schema.templates.UserTaskTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.reader.UserTaskReader;
+import io.camunda.webapps.schema.descriptors.operate.template.UserTaskTemplate;
 import io.camunda.webapps.schema.entities.operate.UserTaskEntity;
 import java.io.IOException;
 import java.util.List;

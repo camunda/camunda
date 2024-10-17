@@ -89,10 +89,30 @@ const elements = {
     name: 'Timer event sub process',
     type: 'eventSubProcess',
   },
+  TimerStartEvent: {
+    id: 'TimerStartEvent',
+    name: 'Timer start event',
+    type: 'startEvent',
+  },
   MessageReceiveTask: {
     id: 'MessageReceiveTask',
     name: 'Message receive task',
     type: 'receiveTask',
+  },
+  BusinessRuleTask: {
+    id: 'BusinessRuleTask',
+    name: 'Business rule task',
+    type: 'businessRuleTask',
+  },
+  ScriptTask: {
+    id: 'ScriptTask',
+    name: 'Script task',
+    type: 'scriptTask',
+  },
+  SendTask: {
+    id: 'SendTask',
+    name: 'Send task',
+    type: 'sendTask',
   },
 };
 

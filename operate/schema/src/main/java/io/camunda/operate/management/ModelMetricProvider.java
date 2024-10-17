@@ -9,10 +9,10 @@ package io.camunda.operate.management;
 
 import io.camunda.operate.Metrics;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.indices.DecisionIndex;
-import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.store.DecisionStore;
 import io.camunda.operate.store.ProcessStore;
+import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import jakarta.annotation.PostConstruct;
 import java.util.Optional;
 import org.slf4j.Logger;

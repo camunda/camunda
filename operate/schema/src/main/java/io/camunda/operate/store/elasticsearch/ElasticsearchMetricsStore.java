@@ -7,21 +7,21 @@
  */
 package io.camunda.operate.store.elasticsearch;
 
-import static io.camunda.operate.schema.indices.MetricIndex.*;
-import static io.camunda.operate.schema.indices.MetricIndex.VALUE;
 import static io.camunda.operate.store.elasticsearch.dao.Query.range;
 import static io.camunda.operate.store.elasticsearch.dao.Query.whereEquals;
+import static io.camunda.webapps.schema.descriptors.operate.index.MetricIndex.*;
+import static io.camunda.webapps.schema.descriptors.operate.index.MetricIndex.VALUE;
 
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.MetricEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.schema.indices.MetricIndex;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.MetricsStore;
 import io.camunda.operate.store.elasticsearch.dao.Query;
 import io.camunda.operate.store.elasticsearch.dao.UsageMetricDAO;
 import io.camunda.operate.store.elasticsearch.dao.response.AggregationResponse;
+import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
 import java.time.OffsetDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +39,8 @@ public class ElasticsearchMetricsStore implements MetricsStore {
   @Autowired private UsageMetricDAO dao;
 
   @Override
-  public Long retrieveProcessInstanceCount(OffsetDateTime startTime, OffsetDateTime endTime) {
+  public Long retrieveProcessInstanceCount(
+      final OffsetDateTime startTime, final OffsetDateTime endTime) {
     final int limit = 1; // limiting to one, as we just care about the total documents number
     final Query query =
         Query.whereEquals(EVENT, MetricsStore.EVENT_PROCESS_INSTANCE_FINISHED)
@@ -78,10 +79,10 @@ public class ElasticsearchMetricsStore implements MetricsStore {
 
   @Override
   public void registerProcessInstanceStartEvent(
-      String processInstanceKey,
-      String tenantId,
-      OffsetDateTime timestamp,
-      BatchRequest batchRequest)
+      final String processInstanceKey,
+      final String tenantId,
+      final OffsetDateTime timestamp,
+      final BatchRequest batchRequest)
       throws PersistenceException {
     final MetricEntity metric =
         createProcessInstanceStartedKey(processInstanceKey, tenantId, timestamp);
@@ -91,9 +92,9 @@ public class ElasticsearchMetricsStore implements MetricsStore {
   @Override
   public void registerDecisionInstanceCompleteEvent(
       final String decisionInstanceKey,
-      String tenantId,
+      final String tenantId,
       final OffsetDateTime timestamp,
-      BatchRequest batchRequest)
+      final BatchRequest batchRequest)
       throws PersistenceException {
     final MetricEntity metric =
         createDecisionsInstanceEvaluatedKey(decisionInstanceKey, tenantId, timestamp);
@@ -101,7 +102,7 @@ public class ElasticsearchMetricsStore implements MetricsStore {
   }
 
   private MetricEntity createProcessInstanceStartedKey(
-      String processInstanceKey, String tenantId, OffsetDateTime timestamp) {
+      final String processInstanceKey, final String tenantId, final OffsetDateTime timestamp) {
     return new MetricEntity()
         .setEvent(EVENT_PROCESS_INSTANCE_STARTED)
         .setValue(processInstanceKey)
@@ -110,7 +111,7 @@ public class ElasticsearchMetricsStore implements MetricsStore {
   }
 
   private MetricEntity createDecisionsInstanceEvaluatedKey(
-      String decisionInstanceKey, String tenantId, OffsetDateTime timestamp) {
+      final String decisionInstanceKey, final String tenantId, final OffsetDateTime timestamp) {
     return new MetricEntity()
         .setEvent(EVENT_DECISION_INSTANCE_EVALUATED)
         .setValue(decisionInstanceKey)

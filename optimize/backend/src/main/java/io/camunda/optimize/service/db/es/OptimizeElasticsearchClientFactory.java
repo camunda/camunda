@@ -21,15 +21,16 @@ import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCon
 import io.camunda.optimize.upgrade.es.ElasticsearchClientBuilder;
 import io.camunda.search.connect.plugin.PluginRepository;
 import java.io.IOException;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 
-@Slf4j
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Conditional(ElasticSearchCondition.class)
 public class OptimizeElasticsearchClientFactory {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(OptimizeElasticsearchClientFactory.class);
+
+  private OptimizeElasticsearchClientFactory() {}
 
   public static OptimizeElasticsearchClient create(
       final ConfigurationService configurationService,
@@ -66,11 +67,19 @@ public class OptimizeElasticsearchClientFactory {
       final TransportOptions requestOptions)
       throws IOException {
     boolean isConnected = false;
+    int connectionAttempts = 0;
     while (!isConnected) {
+      connectionAttempts++;
       try {
         isConnected = getNumberOfClusterNodes(esClient, requestOptions) > 0;
       } catch (final Exception e) {
-        log.error("Can't connect to any Elasticsearch node. Please check the connection!", e);
+        final String errorMessage =
+            "Can't connect to any Elasticsearch node. Please check the connection!";
+        if (connectionAttempts < 10) {
+          log.warn(errorMessage);
+        } else {
+          log.error(errorMessage, e);
+        }
       } finally {
         if (!isConnected) {
           final long sleepTime = backoffCalculator.calculateSleepTime();

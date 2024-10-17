@@ -37,7 +37,7 @@ public interface Step {
   public static final Comparator<Step> SEMANTICVERSION_COMPARATOR =
       new Comparator<Step>() {
         @Override
-        public int compare(Step s1, Step s2) {
+        public int compare(final Step s1, final Step s2) {
           return SemanticVersion.fromVersion(s1.getVersion())
               .compareTo(SemanticVersion.fromVersion(s2.getVersion()));
         }
@@ -45,14 +45,14 @@ public interface Step {
   public static final Comparator<Step> ORDER_COMPARATOR =
       new Comparator<Step>() {
         @Override
-        public int compare(Step s1, Step s2) {
+        public int compare(final Step s1, final Step s2) {
           return s1.getOrder().compareTo(s2.getOrder());
         }
       };
   public static final Comparator<Step> SEMANTICVERSION_ORDER_COMPARATOR =
       new Comparator<Step>() {
         @Override
-        public int compare(Step s1, Step s2) {
+        public int compare(final Step s1, final Step s2) {
           int result = SEMANTICVERSION_COMPARATOR.compare(s1, s2);
           if (result == 0) {
             result = ORDER_COMPARATOR.compare(s1, s2);

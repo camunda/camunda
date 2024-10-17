@@ -8,8 +8,8 @@
 package io.camunda.zeebe.gateway.rest.validator;
 
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
-import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
+import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateOperationReference;
 
 import io.camunda.zeebe.gateway.protocol.rest.SetVariableRequest;
 import java.util.Optional;
@@ -24,12 +24,7 @@ public class ElementRequestValidator {
           if (variableRequest.getVariables() == null || variableRequest.getVariables().isEmpty()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("variables"));
           }
-          if (variableRequest.getOperationReference() != null
-              && variableRequest.getOperationReference() < 1) {
-            violations.add(
-                ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
-                    "operationReference", variableRequest.getOperationReference(), "> 0"));
-          }
+          validateOperationReference(variableRequest.getOperationReference(), violations);
         });
   }
 }

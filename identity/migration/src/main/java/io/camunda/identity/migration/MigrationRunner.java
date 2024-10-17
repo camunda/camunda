@@ -16,7 +16,6 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
 
 @Component
 @Profile("identity-migration")
@@ -26,14 +25,15 @@ public class MigrationRunner implements ApplicationRunner {
 
   final AuthorizationServices<AuthorizationRecord> authorizationServices;
 
-  final RestTemplate restTemplate;
+  final AuthorizationMigrationHandler authorizationMigrationHandler;
 
   public MigrationRunner(
       final UserServices userService,
-      final AuthorizationServices<AuthorizationRecord> authorizationServices) {
+      final AuthorizationServices<AuthorizationRecord> authorizationServices,
+      final AuthorizationMigrationHandler authorizationMigrationHandler) {
     this.userService = userService;
     this.authorizationServices = authorizationServices;
-    restTemplate = new RestTemplate();
+    this.authorizationMigrationHandler = authorizationMigrationHandler;
   }
 
   @Override
@@ -42,6 +42,9 @@ public class MigrationRunner implements ApplicationRunner {
     final String command =
         args.containsOption("command") ? args.getOptionValues("command").getFirst() : "migrate";
     if (!asList("migrate", "status").contains(command)) {
+      if ("migrate".equals(command)) {
+        authorizationMigrationHandler.migrate();
+      }
       throw new IllegalArgumentException("Unknown command: " + command);
     }
 

@@ -30,7 +30,9 @@ import io.camunda.zeebe.engine.util.client.MessageCorrelationClient;
 import io.camunda.zeebe.engine.util.client.ProcessInstanceClient;
 import io.camunda.zeebe.engine.util.client.PublishMessageClient;
 import io.camunda.zeebe.engine.util.client.ResourceDeletionClient;
+import io.camunda.zeebe.engine.util.client.RoleClient;
 import io.camunda.zeebe.engine.util.client.SignalClient;
+import io.camunda.zeebe.engine.util.client.TenantClient;
 import io.camunda.zeebe.engine.util.client.UserClient;
 import io.camunda.zeebe.engine.util.client.UserTaskClient;
 import io.camunda.zeebe.engine.util.client.VariableClient;
@@ -344,6 +346,14 @@ public final class EngineRule extends ExternalResource {
 
   public AuthorizationClient authorization() {
     return new AuthorizationClient(environmentRule);
+  }
+
+  public RoleClient role() {
+    return new RoleClient(environmentRule);
+  }
+
+  public TenantClient tenant() {
+    return new TenantClient(environmentRule);
   }
 
   public Record<JobRecordValue> createJob(final String type, final String processId) {

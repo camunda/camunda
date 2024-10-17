@@ -40,4 +40,18 @@ public interface MutableAuthorizationState extends AuthorizationState {
    * @param ownerType the type of the owner
    */
   void insertOwnerTypeByKey(final long ownerKey, final AuthorizationOwnerType ownerType);
+
+  /**
+   * Removes all permissions for the provided ownerKey.
+   *
+   * @param ownerKey the key of the owner of the authorizations
+   */
+  void deleteAuthorizationsByOwnerKeyPrefix(final long ownerKey);
+
+  /**
+   * Removes the owner type for the provided ownerKey.
+   *
+   * @param ownerKey the key of the owner
+   */
+  void deleteOwnerTypeByKey(final long ownerKey);
 }

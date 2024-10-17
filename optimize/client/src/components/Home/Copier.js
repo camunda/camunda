@@ -6,70 +6,48 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React from 'react';
-import {Redirect} from 'react-router-dom';
+import {useHistory} from 'react-router-dom';
 
-import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {copyEntity} from 'services';
+import {useErrorHandling} from 'hooks';
 
 import CopyModal from './modals/CopyModal';
 
-export default withErrorHandling(
-  class Copier extends React.Component {
-    state = {
-      redirect: null,
-    };
+export default function Copier({entity, collection, onCopy, onCancel}) {
+  const {mightFail} = useErrorHandling();
+  const history = useHistory();
 
-    copy = (name, redirect, destination) => {
-      const {
-        entity: {entityType, id},
-        onCopy,
-      } = this.props;
+  function copy(name, redirect, destination) {
+    const {entityType, id} = entity;
 
-      this.props.mightFail(
-        copyEntity(entityType, id, name, destination),
-        (newId) => {
-          if (redirect) {
-            if (entityType === 'collection') {
-              this.setState({redirect: `/collection/${newId}/`});
-            } else {
-              this.setState({redirect: destination ? `/collection/${destination}/` : '/'});
-            }
+    mightFail(
+      copyEntity(entityType, id, name, destination),
+      (newId) => {
+        if (redirect) {
+          if (entityType === 'collection') {
+            history.push(`/collection/${newId}/`);
+          } else {
+            history.push(destination ? `/collection/${destination}/` : '/');
           }
-          onCopy(name, redirect, destination);
-        },
-        showError
-      );
-    };
-
-    componentDidUpdate() {
-      if (this.state.redirect) {
-        this.setState({redirect: null});
-      }
-    }
-
-    render() {
-      const {entity, collection, onCancel} = this.props;
-      const {redirect} = this.state;
-
-      if (!entity) {
-        return null;
-      }
-
-      if (redirect) {
-        return <Redirect to={redirect} />;
-      }
-
-      return (
-        <CopyModal
-          onClose={onCancel}
-          onConfirm={this.copy}
-          entity={entity}
-          collection={collection || null}
-          jumpToEntity={collection || entity.entityType !== 'collection'}
-        />
-      );
-    }
+        }
+        onCopy(name, redirect, destination);
+      },
+      showError
+    );
   }
-);
+
+  if (!entity) {
+    return null;
+  }
+
+  return (
+    <CopyModal
+      onClose={onCancel}
+      onConfirm={copy}
+      entity={entity}
+      collection={collection || null}
+      jumpToEntity={collection || entity.entityType !== 'collection'}
+    />
+  );
+}

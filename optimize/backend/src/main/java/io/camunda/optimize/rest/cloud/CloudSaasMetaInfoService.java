@@ -13,26 +13,35 @@ import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
 @Conditional(CCSaaSCondition.class)
-@RequiredArgsConstructor
 public class CloudSaasMetaInfoService {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(CloudSaasMetaInfoService.class);
   private final CCSaaSOrganizationsClient organizationsClient;
   private final AccountsUserAccessTokenProvider accessTokenProvider;
   private final CCSaasClusterClient clusterClient;
+
+  public CloudSaasMetaInfoService(
+      final CCSaaSOrganizationsClient organizationsClient,
+      final AccountsUserAccessTokenProvider accessTokenProvider,
+      final CCSaasClusterClient clusterClient) {
+    this.organizationsClient = organizationsClient;
+    this.accessTokenProvider = accessTokenProvider;
+    this.clusterClient = clusterClient;
+  }
 
   public Optional<String> getSalesPlanType() {
     final Optional<String> accessToken = getCurrentUserServiceToken();
     if (accessToken.isPresent()) {
       try {
         return organizationsClient.getSalesPlanType(accessToken.get());
-      } catch (OptimizeRuntimeException e) {
+      } catch (final OptimizeRuntimeException e) {
         log.warn("Failed retrieving salesPlanType.", e);
         return Optional.empty();
       }
@@ -47,7 +56,7 @@ public class CloudSaasMetaInfoService {
     if (accessToken.isPresent()) {
       try {
         return clusterClient.getWebappLinks(accessToken.get());
-      } catch (OptimizeRuntimeException e) {
+      } catch (final OptimizeRuntimeException e) {
         log.warn("Failed retrieving webapp links  .", e);
         return Collections.emptyMap();
       }

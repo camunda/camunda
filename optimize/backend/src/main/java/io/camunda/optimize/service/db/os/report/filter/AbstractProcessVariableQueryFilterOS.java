@@ -48,18 +48,20 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.ChildScoreMode;
 import org.opensearch.client.opensearch._types.query_dsl.NestedQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
-@Slf4j
 @Component
 public abstract class AbstractProcessVariableQueryFilterOS extends AbstractVariableQueryFilterOS {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(AbstractProcessVariableQueryFilterOS.class);
+
+  public AbstractProcessVariableQueryFilterOS() {}
 
   protected Query createFilterQuery(final VariableFilterDataDto<?> dto, final ZoneId timezone) {
     ValidationHelper.ensureNotNull("Variable filter data", dto.getData());

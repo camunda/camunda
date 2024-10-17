@@ -226,33 +226,38 @@ export default function Table<T extends object>({
             {!loading && (
               <CarbonTable {...getReactTableProps()} {...getTableProps()}>
                 <TableHead>
-                  {headerGroups.map((headerGroup, i) => (
-                    <TableRow
-                      {...headerGroup.getHeaderGroupProps()}
-                      className={classnames({groupRow: i === 0 && headerGroups.length > 1})}
-                    >
-                      {headerGroup.headers.map((header: Header) => (
-                        <TableHeader
-                          key={header.id}
-                          header={header}
-                          isSortable={isSortable}
-                          allowLocalSorting={allowLocalSorting}
-                          resultType={resultType}
-                          sortByLabel={sortByLabel}
-                          sorting={sorting}
-                          updateSorting={updateSorting}
-                          firstColumnId={columns[0]?.id}
-                        />
-                      ))}
-                    </TableRow>
-                  ))}
+                  {headerGroups.map((headerGroup, i) => {
+                    const {key, ...headerGroupProps} = headerGroup.getHeaderGroupProps();
+                    return (
+                      <TableRow
+                        key={key}
+                        {...headerGroupProps}
+                        className={classnames({groupRow: i === 0 && headerGroups.length > 1})}
+                      >
+                        {headerGroup.headers.map((header: Header) => (
+                          <TableHeader
+                            key={header.id}
+                            header={header}
+                            isSortable={isSortable}
+                            allowLocalSorting={allowLocalSorting}
+                            resultType={resultType}
+                            sortByLabel={sortByLabel}
+                            sorting={sorting}
+                            updateSorting={updateSorting}
+                            firstColumnId={columns[0]?.id}
+                          />
+                        ))}
+                      </TableRow>
+                    );
+                  })}
                 </TableHead>
                 {!errorInPage && (
                   <TableBody {...getTableBodyProps()} onScroll={onScroll} tabIndex={0}>
                     {page.map((row) => {
                       prepareRow(row);
+                      const {key, ...rowProps} = row.getRowProps((row.original as any).__props);
                       return (
-                        <TableRow {...row.getRowProps((row.original as any).__props)} tabIndex={0}>
+                        <TableRow key={key} {...rowProps} tabIndex={0}>
                           {row.cells.map((cell) => (
                             <TableCell key={cell.column.id} cell={cell} />
                           ))}

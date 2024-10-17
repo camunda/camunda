@@ -21,11 +21,8 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.identity.AbstractIdentityService;
 import io.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
-import lombok.NonNull;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 public class ReportAuthorizationService {
 
@@ -33,6 +30,17 @@ public class ReportAuthorizationService {
   private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
   private final AuthorizedCollectionService collectionAuthorizationService;
   private final ReportReader reportReader;
+
+  public ReportAuthorizationService(
+      final AbstractIdentityService identityService,
+      final DataSourceDefinitionAuthorizationService definitionAuthorizationService,
+      final AuthorizedCollectionService collectionAuthorizationService,
+      final ReportReader reportReader) {
+    this.identityService = identityService;
+    this.definitionAuthorizationService = definitionAuthorizationService;
+    this.collectionAuthorizationService = collectionAuthorizationService;
+    this.reportReader = reportReader;
+  }
 
   public boolean isAuthorizedToReport(final String userId, final ReportDefinitionDto<?> report) {
     return getAuthorizedRole(userId, report).isPresent();
@@ -94,7 +102,14 @@ public class ReportAuthorizationService {
   }
 
   private boolean isAuthorizedToAccessDecisionReportDefinition(
-      @NonNull final String userId, @NonNull final DecisionReportDataDto reportData) {
+      final String userId, final DecisionReportDataDto reportData) {
+    if (userId == null) {
+      throw new IllegalArgumentException("userId cannot be null");
+    }
+    if (reportData == null) {
+      throw new IllegalArgumentException("reportData cannot be null");
+    }
+
     return definitionAuthorizationService.isAuthorizedToAccessDefinition(
         userId,
         DefinitionType.DECISION,
@@ -103,7 +118,14 @@ public class ReportAuthorizationService {
   }
 
   private boolean isAuthorizedToAccessProcessReportDefinition(
-      @NonNull final String userId, @NonNull final ProcessReportDataDto reportData) {
+      final String userId, final ProcessReportDataDto reportData) {
+    if (userId == null) {
+      throw new IllegalArgumentException("userId cannot be null");
+    }
+    if (reportData == null) {
+      throw new IllegalArgumentException("reportData cannot be null");
+    }
+
     return reportData.getDefinitions().stream()
         .allMatch(
             definition ->

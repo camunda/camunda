@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {fetchUrl, matchRegex} from './services';
+import {fetchUrl} from './services';
 import {Branch} from './types';
 
 export class GitHubService {
@@ -16,13 +16,12 @@ export class GitHubService {
   ) {}
 
   public getBranchesWithPrefix = async (refPrefix: string): Promise<string[]> => {
-    const releaseBranchesREfs = await this.fetchRefs(refPrefix);
-    const releaseBranches = releaseBranchesREfs
-      .map((branch) =>
-        matchRegex(branch.ref, new RegExp(`refs\/heads\/(${refPrefix}\/\\d+.\\d+.*)`)),
-      )
-      .filter((name): name is string => name !== undefined);
-    return releaseBranches;
+    const refs = await this.fetchRefs(refPrefix.split('/')[0]);
+    const regex = new RegExp(`refs/heads/${refPrefix}\\d+\\.\\d+(\\.\\d+)?`);
+
+      return refs
+      .filter(refObj => regex.test(refObj.ref))
+      .map(refObj => refObj.ref.replace('refs/heads/', ''));
   };
 
   private fetchRefs = async (refPrefix: string) => {

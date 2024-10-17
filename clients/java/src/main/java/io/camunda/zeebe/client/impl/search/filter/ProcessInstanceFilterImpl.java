@@ -31,44 +31,39 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter key(final Long key) {
-    filter.setKey(key);
+  public ProcessInstanceFilter processInstanceKey(final Long processInstanceKey) {
+    filter.setProcessInstanceKey(processInstanceKey);
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter bpmnProcessId(final String bpmnProcessId) {
-    filter.processDefinitionId(bpmnProcessId);
+  public ProcessInstanceFilter processDefinitionId(final String processDefinitionId) {
+    filter.processDefinitionId(processDefinitionId);
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter processName(final String processName) {
-    filter.setProcessDefinitionName(processName);
+  public ProcessInstanceFilter processDefinitionName(final String processDefinitionName) {
+    filter.setProcessDefinitionName(processDefinitionName);
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter processVersion(final Integer processVersion) {
-    filter.setProcessDefinitionVersion(processVersion);
+  public ProcessInstanceFilter processDefinitionVersion(final Integer processDefinitionVersion) {
+    filter.setProcessDefinitionVersion(processDefinitionVersion);
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter processVersionTag(final String processVersionTag) {
-    filter.setProcessDefinitionVersionTag(processVersionTag);
+  public ProcessInstanceFilter processDefinitionVersionTag(
+      final String processDefinitionVersionTag) {
+    filter.setProcessDefinitionVersionTag(processDefinitionVersionTag);
     return this;
   }
 
   @Override
   public ProcessInstanceFilter processDefinitionKey(final Long processDefinitionKey) {
     filter.setProcessDefinitionKey(processDefinitionKey);
-    return this;
-  }
-
-  @Override
-  public ProcessInstanceFilter rootProcessInstanceKey(final Long rootProcessInstanceKey) {
-    filter.setRootProcessInstanceKey(rootProcessInstanceKey);
     return this;
   }
 
@@ -109,8 +104,8 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter incident(final Boolean incident) {
-    filter.setIncident(incident);
+  public ProcessInstanceFilter hasIncident(final Boolean hasIncident) {
+    filter.hasIncident(hasIncident);
     return this;
   }
 

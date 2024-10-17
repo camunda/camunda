@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
+import io.camunda.search.query.UserQuery;
 import io.camunda.service.UserServices;
-import io.camunda.service.search.query.UserQuery;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;

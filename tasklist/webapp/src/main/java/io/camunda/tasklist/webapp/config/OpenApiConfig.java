@@ -115,7 +115,7 @@ public class OpenApiConfig {
 
   private GroupedOpenApi versionedPublicApi(final String version) {
     return GroupedOpenApi.builder()
-        .group(version)
+        .group(String.format("Tasklist-%s", version))
         .addOpenApiCustomizer(
             openApi -> {
               openApi
@@ -153,7 +153,7 @@ public class OpenApiConfig {
    */
   @Bean("springdocObjectMapperProvider")
   public ObjectMapperProvider objectMapperProvider(
-      SpringDocConfigProperties springDocConfigProperties) {
+      final SpringDocConfigProperties springDocConfigProperties) {
     return new ObjectMapperProvider(springDocConfigProperties);
   }
 }

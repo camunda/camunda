@@ -13,9 +13,9 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 
-import io.camunda.service.CamundaServiceException;
+import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.UserTaskServices;
-import io.camunda.service.security.auth.Authentication;
+import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
@@ -113,9 +113,9 @@ public class UserTaskControllerTest extends RestControllerTest {
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
-        {
-          "action": "customAction"
-        }""";
+            {
+              "action": "customAction"
+            }""";
 
     // when / then
     webClient
@@ -141,12 +141,12 @@ public class UserTaskControllerTest extends RestControllerTest {
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
-        {
-          "variables" : {
-            "foo": "bar",
-            "baz": 1234
-          }
-        }""";
+            {
+              "variables" : {
+                "foo": "bar",
+                "baz": 1234
+              }
+            }""";
 
     // when / then
     webClient
@@ -172,13 +172,13 @@ public class UserTaskControllerTest extends RestControllerTest {
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
-        {
-          "action": "customAction",
-          "variables": {
-            "foo": "bar",
-            "baz": 1234
-          }
-        }""";
+            {
+              "action": "customAction",
+              "variables": {
+                "foo": "bar",
+                "baz": 1234
+              }
+            }""";
 
     // when / then
     webClient
@@ -205,9 +205,9 @@ public class UserTaskControllerTest extends RestControllerTest {
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
-        {
-          "action": "customAction"
-        }""";
+            {
+              "action": "customAction"
+            }""";
 
     // when / then
     webClient
@@ -241,15 +241,15 @@ public class UserTaskControllerTest extends RestControllerTest {
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
-        {
-          "changeset": {
-            "candidateGroups": ["foo"],
-            "candidateUsers": ["bar"],
-            "dueDate": "%s",
-            "followUpDate": "%s",
-            "priority": 33
-          }
-        }"""
+            {
+              "changeset": {
+                "candidateGroups": ["foo"],
+                "candidateUsers": ["bar"],
+                "dueDate": "%s",
+                "followUpDate": "%s",
+                "priority": 33
+              }
+            }"""
             .formatted(TEST_TIME, TEST_TIME);
 
     // when / then
@@ -289,12 +289,12 @@ public class UserTaskControllerTest extends RestControllerTest {
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
-        {
-          "changeset": {
-            "candidateGroups": ["foo"],
-            "followUpDate": "%s"
-          }
-        }"""
+            {
+              "changeset": {
+                "candidateGroups": ["foo"],
+                "followUpDate": "%s"
+              }
+            }"""
             .formatted(TEST_TIME);
 
     // when / then
@@ -366,16 +366,16 @@ public class UserTaskControllerTest extends RestControllerTest {
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
-        {
-          "action": "customAction",
-          "changeset": {
-            "candidateGroups": ["foo"],
-            "candidateUsers": ["bar"],
-            "dueDate": "%s",
-            "followUpDate": "%s",
-            "priority": 33
-          }
-        }"""
+            {
+              "action": "customAction",
+              "changeset": {
+                "candidateGroups": ["foo"],
+                "candidateUsers": ["bar"],
+                "dueDate": "%s",
+                "followUpDate": "%s",
+                "priority": 33
+              }
+            }"""
             .formatted(TEST_TIME, TEST_TIME);
 
     // when / then
@@ -414,14 +414,14 @@ public class UserTaskControllerTest extends RestControllerTest {
     // given
     final var expectedBody =
         """
-        {
-          "type": "about:blank",
-          "status": 400,
-          "title": "INVALID_ARGUMENT",
-          "detail": "No update data provided. Provide at least an \\"action\\" or a non-null value \
-for a supported attribute in the \\"changeset\\".",
-          "instance": "%s"
-        }"""
+                    {
+                      "type": "about:blank",
+                      "status": 400,
+                      "title": "INVALID_ARGUMENT",
+                      "detail": "No update data provided. Provide at least an \\"action\\" or a non-null value \
+            for a supported attribute in the \\"changeset\\".",
+                      "instance": "%s"
+                    }"""
             .formatted(baseUrl + "/1");
 
     // when / then
@@ -488,21 +488,21 @@ for a supported attribute in the \\"changeset\\".",
     // given
     final var request =
         """
-         {
-           "changeset": {
-             "followUpDate": "foo"
-           }
-         }""";
+            {
+              "changeset": {
+                "followUpDate": "foo"
+              }
+            }""";
 
     final var expectedBody =
         """
-         {
-           "type": "about:blank",
-           "status": 400,
-           "title": "INVALID_ARGUMENT",
-           "detail": "The provided follow-up date 'foo' cannot be parsed as a date according to RFC 3339, section 5.6.",
-           "instance": "%s"
-         }"""
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "The provided follow-up date 'foo' cannot be parsed as a date according to RFC 3339, section 5.6.",
+              "instance": "%s"
+            }"""
             .formatted(baseUrl + "/1");
 
     // when / then
@@ -538,15 +538,15 @@ for a supported attribute in the \\"changeset\\".",
 
     final var expectedBody =
         """
-            {
-              "type": "about:blank",
-              "status": 400,
-              "title": "INVALID_ARGUMENT",
-              "detail": "The provided due date 'bar' cannot be parsed as a date according to \
-RFC 3339, section 5.6. The provided follow-up date 'foo' cannot be parsed as a date according to \
-RFC 3339, section 5.6.",
-              "instance": "%s"
-            }"""
+                        {
+                          "type": "about:blank",
+                          "status": 400,
+                          "title": "INVALID_ARGUMENT",
+                          "detail": "The provided due date 'bar' cannot be parsed as a date according to \
+            RFC 3339, section 5.6. The provided follow-up date 'foo' cannot be parsed as a date according to \
+            RFC 3339, section 5.6.",
+                          "instance": "%s"
+                        }"""
             .formatted(baseUrl + "/1");
 
     // when / then
@@ -612,21 +612,21 @@ RFC 3339, section 5.6.",
     // given
     final var request =
         """
-        {
-          "changeset": {
-            "elementInstanceKey": 12345
-          }
-        }""";
+            {
+              "changeset": {
+                "elementInstanceKey": 12345
+              }
+            }""";
 
     final var expectedBody =
         """
-        {
-          "type": "about:blank",
-          "status": 400,
-          "title": "INVALID_ARGUMENT",
-          "detail": "No update data provided. Provide at least an \\"action\\" or a non-null value for a supported attribute in the \\"changeset\\".",
-          "instance": "%s"
-        }"""
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No update data provided. Provide at least an \\"action\\" or a non-null value for a supported attribute in the \\"changeset\\".",
+              "instance": "%s"
+            }"""
             .formatted(baseUrl + "/1");
 
     // when / then
@@ -658,22 +658,22 @@ RFC 3339, section 5.6.",
     // given
     final var request =
         """
-         {
-           "changeset": {
-             "priority": %d
-           }
-         }"""
+            {
+              "changeset": {
+                "priority": %d
+              }
+            }"""
             .formatted(priority);
 
     final var expectedBody =
         """
-         {
-           "type": "about:blank",
-           "status": 400,
-           "title": "INVALID_ARGUMENT",
-           "detail": "The value for priority is '%s' but must be within the [0,100] range.",
-           "instance": "%s"
-         }"""
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "The value for priority is '%s' but must be within the [0,100] range.",
+              "instance": "%s"
+            }"""
             .formatted(priority, baseUrl + "/1");
 
     // when / then
@@ -703,19 +703,19 @@ RFC 3339, section 5.6.",
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaServiceException(
+                new CamundaBrokerException(
                     new BrokerRejection(
                         UserTaskIntent.COMPLETE, 1L, RejectionType.NOT_FOUND, "Task not found"))));
 
     final var expectedBody =
         """
-        {
-          "type": "about:blank",
-          "status": 404,
-          "title": "NOT_FOUND",
-          "detail": "Command 'COMPLETE' rejected with code 'NOT_FOUND': Task not found",
-          "instance": "%s"
-        }"""
+            {
+              "type": "about:blank",
+              "status": 404,
+              "title": "NOT_FOUND",
+              "detail": "Command 'COMPLETE' rejected with code 'NOT_FOUND': Task not found",
+              "instance": "%s"
+            }"""
             .formatted(baseUrl + "/1/completion");
 
     // when / then
@@ -742,7 +742,7 @@ RFC 3339, section 5.6.",
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaServiceException(
+                new CamundaBrokerException(
                     new BrokerRejection(
                         UserTaskIntent.COMPLETE,
                         1L,
@@ -751,13 +751,13 @@ RFC 3339, section 5.6.",
 
     final var expectedBody =
         """
-        {
-          "type": "about:blank",
-          "status": 409,
-          "title": "INVALID_STATE",
-          "detail": "Command 'COMPLETE' rejected with code 'INVALID_STATE': Task is not in state CREATED",
-          "instance": "%s"
-        }"""
+            {
+              "type": "about:blank",
+              "status": 409,
+              "title": "INVALID_STATE",
+              "detail": "Command 'COMPLETE' rejected with code 'INVALID_STATE': Task is not in state CREATED",
+              "instance": "%s"
+            }"""
             .formatted(baseUrl + "/1/completion");
 
     // when / then
@@ -785,19 +785,19 @@ RFC 3339, section 5.6.",
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaServiceException(
+                new CamundaBrokerException(
                     new BrokerRejection(
                         UserTaskIntent.COMPLETE, 1L, parameters.getLeft(), "Just an error"))));
 
     final var expectedBody =
         """
-        {
-          "type": "about:blank",
-          "status": 400,
-          "title": "%s",
-          "detail": "Command 'COMPLETE' rejected with code '%s': Just an error",
-          "instance": "%s"
-        }"""
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "%s",
+              "detail": "Command 'COMPLETE' rejected with code '%s': Just an error",
+              "instance": "%s"
+            }"""
             .formatted(
                 parameters.getLeft().name(),
                 parameters.getLeft(),
@@ -828,19 +828,19 @@ RFC 3339, section 5.6.",
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaServiceException(
+                new CamundaBrokerException(
                     new BrokerRejection(
                         UserTaskIntent.COMPLETE, 1L, parameters.getLeft(), "Just an error"))));
 
     final var expectedBody =
         """
-        {
-          "type": "about:blank",
-          "status": 409,
-          "title": "%s",
-          "detail": "Command 'COMPLETE' rejected with code '%s': Just an error",
-          "instance": "%s"
-        }"""
+            {
+              "type": "about:blank",
+              "status": 409,
+              "title": "%s",
+              "detail": "Command 'COMPLETE' rejected with code '%s': Just an error",
+              "instance": "%s"
+            }"""
             .formatted(
                 parameters.getLeft().name(),
                 parameters.getLeft(),
@@ -871,19 +871,19 @@ RFC 3339, section 5.6.",
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaServiceException(
+                new CamundaBrokerException(
                     new BrokerRejection(
                         UserTaskIntent.COMPLETE, 1L, parameters.getLeft(), "Just an error"))));
 
     final var expectedBody =
         """
-         {
-           "type": "about:blank",
-           "status": 500,
-           "title": "%s",
-           "detail": "Command 'COMPLETE' rejected with code '%s': Just an error",
-           "instance": "%s"
-         }"""
+            {
+              "type": "about:blank",
+              "status": 500,
+              "title": "%s",
+              "detail": "Command 'COMPLETE' rejected with code '%s': Just an error",
+              "instance": "%s"
+            }"""
             .formatted(
                 parameters.getLeft().name(),
                 parameters.getLeft(),
@@ -914,9 +914,9 @@ RFC 3339, section 5.6.",
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
-        {
-          "assignee": "Test Assignee"
-        }""";
+            {
+              "assignee": "Test Assignee"
+            }""";
 
     // when / then
     webClient
@@ -943,10 +943,10 @@ RFC 3339, section 5.6.",
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
-        {
-          "assignee": "Test Assignee",
-          "action": "custom action"
-        }""";
+            {
+              "assignee": "Test Assignee",
+              "action": "custom action"
+            }""";
 
     // when / then
     webClient
@@ -973,11 +973,11 @@ RFC 3339, section 5.6.",
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
-        {
-          "assignee": "Test Assignee",
-          "action": "custom action",
-          "allowOverride": true
-        }""";
+            {
+              "assignee": "Test Assignee",
+              "action": "custom action",
+              "allowOverride": true
+            }""";
 
     // when/then
     webClient
@@ -1004,11 +1004,11 @@ RFC 3339, section 5.6.",
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
-        {
-          "assignee": "Test Assignee",
-          "action": "custom action",
-          "allowOverride": false
-        }""";
+            {
+              "assignee": "Test Assignee",
+              "action": "custom action",
+              "allowOverride": false
+            }""";
 
     // when / then
     webClient
@@ -1035,10 +1035,10 @@ RFC 3339, section 5.6.",
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
-        {
-          "assignee": "Test Assignee",
-          "allowOverride": true
-        }""";
+            {
+              "assignee": "Test Assignee",
+              "allowOverride": true
+            }""";
 
     // when / then
     webClient
@@ -1065,10 +1065,10 @@ RFC 3339, section 5.6.",
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
-        {
-          "assignee": "Test Assignee",
-          "allowOverride": false
-        }""";
+            {
+              "assignee": "Test Assignee",
+              "allowOverride": false
+            }""";
 
     // when / then
     webClient
@@ -1095,13 +1095,13 @@ RFC 3339, section 5.6.",
 
     final var expectedBody =
         """
-        {
-          "type": "about:blank",
-          "status": 400,
-          "title": "INVALID_ARGUMENT",
-          "detail": "No assignee provided",
-          "instance": "%s"
-        }"""
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No assignee provided",
+              "instance": "%s"
+            }"""
             .formatted(baseUrl + "/1/assignment");
 
     // when / then

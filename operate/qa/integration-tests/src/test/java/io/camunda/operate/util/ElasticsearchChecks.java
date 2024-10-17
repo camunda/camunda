@@ -8,9 +8,9 @@
 package io.camunda.operate.util;
 
 import static io.camunda.operate.qa.util.RestAPITestUtil.*;
-import static io.camunda.operate.schema.templates.IncidentTemplate.*;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.util.ElasticsearchUtil.scroll;
+import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 
@@ -19,8 +19,6 @@ import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.*;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.indices.DecisionIndex;
-import io.camunda.operate.schema.templates.*;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.elasticsearch.ElasticsearchIncidentStore;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
@@ -30,6 +28,13 @@ import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
+import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
+import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.operate.EventEntity;
 import io.camunda.webapps.schema.entities.operate.EventType;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.validator;
 
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_DATE_PARSING;
+import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
@@ -52,11 +53,20 @@ public final class RequestValidator {
             && changeset.getPriority() == null);
   }
 
-  public static Optional<ProblemDetail> validate(Consumer<List<String>> customValidation) {
+  public static Optional<ProblemDetail> validate(final Consumer<List<String>> customValidation) {
     final List<String> violations = new ArrayList<>();
 
     customValidation.accept(violations);
 
     return createProblemDetail(violations);
+  }
+
+  public static void validateOperationReference(
+      final Long operationReference, final List<String> violations) {
+    if (operationReference != null && operationReference < 1) {
+      violations.add(
+          ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
+              "operationReference", operationReference, "> 0"));
+    }
   }
 }

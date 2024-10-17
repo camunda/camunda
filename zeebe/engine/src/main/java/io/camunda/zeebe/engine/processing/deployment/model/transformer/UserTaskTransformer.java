@@ -67,12 +67,12 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
     transformModelTaskHeaders(element, userTaskProperties);
     transformBindingType(element, userTaskProperties);
     transformVersionTag(element, userTaskProperties);
-    transformTaskListeners(element, userTask);
 
     if (isZeebeUserTask) {
       transformExternalReference(element, userTaskProperties);
       transformTaskPriority(element, userTaskProperties);
       userTask.setUserTaskProperties(userTaskProperties);
+      transformTaskListeners(element, userTask, userTaskProperties);
     } else {
       final var jobWorkerProperties = new JobWorkerProperties();
       jobWorkerProperties.wrap(userTaskProperties);
@@ -293,20 +293,26 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
     }
   }
 
-  private void transformTaskListeners(final FlowNode element, final ExecutableUserTask userTask) {
-
+  private void transformTaskListeners(
+      final FlowNode element,
+      final ExecutableUserTask userTask,
+      final UserTaskProperties userTaskProperties) {
     Optional.ofNullable(element.getSingleExtensionElement(ZeebeTaskListeners.class))
         .map(
             listeners ->
-                listeners.getTaskListeners().stream().map(this::toTaskListenerModel).toList())
+                listeners.getTaskListeners().stream()
+                    .map(listener -> toTaskListenerModel(listener, userTaskProperties))
+                    .toList())
         .ifPresent(userTask::setTaskListeners);
   }
 
-  private TaskListener toTaskListenerModel(ZeebeTaskListener zeebeTaskListener) {
+  private TaskListener toTaskListenerModel(
+      ZeebeTaskListener zeebeTaskListener, final UserTaskProperties userTaskProperties) {
     final TaskListener listener = new TaskListener();
     listener.setEventType(zeebeTaskListener.getEventType());
 
     final JobWorkerProperties jobProperties = new JobWorkerProperties();
+    jobProperties.wrap(userTaskProperties);
     jobProperties.setType(expressionLanguage.parseExpression(zeebeTaskListener.getType()));
     jobProperties.setRetries(expressionLanguage.parseExpression(zeebeTaskListener.getRetries()));
     listener.setJobWorkerProperties(jobProperties);

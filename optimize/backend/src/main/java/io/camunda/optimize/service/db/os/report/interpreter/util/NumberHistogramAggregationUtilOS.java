@@ -8,14 +8,13 @@
 package io.camunda.optimize.service.db.os.report.interpreter.util;
 
 import java.util.Map;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class NumberHistogramAggregationUtilOS {
+
+  private NumberHistogramAggregationUtilOS() {}
 
   public static Pair<String, Aggregation> generateHistogramWithField(
       final String histogramName,

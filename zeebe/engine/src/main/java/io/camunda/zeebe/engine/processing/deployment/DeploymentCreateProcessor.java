@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.deployment;
 
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
 import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_INSTANCE;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
 import static java.util.function.Predicate.not;
@@ -21,6 +22,8 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.transform.DeploymentTransformer;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -47,6 +50,8 @@ import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -76,6 +81,7 @@ public final class DeploymentCreateProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior distributionBehavior;
+  private final AuthorizationCheckBehavior authCheckBehavior;
 
   public DeploymentCreateProcessor(
       final ProcessingState processingState,
@@ -85,7 +91,8 @@ public final class DeploymentCreateProcessor
       final FeatureFlags featureFlags,
       final CommandDistributionBehavior distributionBehavior,
       final EngineConfiguration config,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     processState = processingState.getProcessState();
     decisionState = processingState.getDecisionState();
     formState = processingState.getFormState();
@@ -97,6 +104,7 @@ public final class DeploymentCreateProcessor
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
     expressionProcessor = bpmnBehaviors.expressionBehavior();
     this.distributionBehavior = distributionBehavior;
+    this.authCheckBehavior = authCheckBehavior;
     deploymentTransformer =
         new DeploymentTransformer(
             stateWriter,
@@ -112,6 +120,18 @@ public final class DeploymentCreateProcessor
 
   @Override
   public void processNewCommand(final TypedRecord<DeploymentRecord> command) {
+    final var authorizationRequest =
+        new AuthorizationRequest(
+            command, AuthorizationResourceType.DEPLOYMENT, PermissionType.CREATE);
+    if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
+      final var errorMessage =
+          UNAUTHORIZED_ERROR_MESSAGE.formatted(
+              authorizationRequest.getPermissionType(), authorizationRequest.getResourceType());
+      rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, errorMessage);
+      return;
+    }
+
     transformAndDistributeDeployment(command);
     // manage the top-level start event subscriptions except for timers
     startEventSubscriptionManager.tryReOpenStartEventSubscription(command.getValue());

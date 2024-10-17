@@ -50,7 +50,7 @@ public class AddPermissionAuthorizationTest {
             .permission()
             .withAction(PermissionAction.ADD)
             .withOwnerKey(ownerKey)
-            .withResourceType(AuthorizationResourceType.JOB)
+            .withResourceType(AuthorizationResourceType.DEPLOYMENT)
             .withPermission(PermissionType.CREATE, "foo")
             .withPermission(PermissionType.DELETE, "bar")
             .add()
@@ -67,7 +67,7 @@ public class AddPermissionAuthorizationTest {
             PermissionAction.ADD,
             ownerKey,
             AuthorizationOwnerType.USER,
-            AuthorizationResourceType.JOB);
+            AuthorizationResourceType.DEPLOYMENT);
     assertThat(response.getPermissions())
         .extracting(PermissionValue::getPermissionType, PermissionValue::getResourceIds)
         .containsExactly(
@@ -87,7 +87,7 @@ public class AddPermissionAuthorizationTest {
             .permission()
             .withAction(PermissionAction.ADD)
             .withOwnerKey(ownerKey)
-            .withResourceType(AuthorizationResourceType.JOB)
+            .withResourceType(AuthorizationResourceType.DEPLOYMENT)
             .withPermission(PermissionType.CREATE, "foo")
             .expectRejection()
             .add();

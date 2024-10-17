@@ -7,24 +7,24 @@
  */
 package io.camunda.operate.store.opensearch;
 
-import static io.camunda.operate.schema.indices.MetricIndex.EVENT;
-import static io.camunda.operate.schema.indices.MetricIndex.EVENT_TIME;
-import static io.camunda.operate.schema.indices.MetricIndex.VALUE;
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.termAggregation;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.and;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.gteLte;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.or;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
+import static io.camunda.webapps.schema.descriptors.operate.index.MetricIndex.EVENT;
+import static io.camunda.webapps.schema.descriptors.operate.index.MetricIndex.EVENT_TIME;
+import static io.camunda.webapps.schema.descriptors.operate.index.MetricIndex.VALUE;
 
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.entities.MetricEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.schema.indices.MetricIndex;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.MetricsStore;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
+import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;

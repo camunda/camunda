@@ -23,4 +23,10 @@ public interface UserTaskSort extends SearchRequestSort<UserTaskSort> {
   UserTaskSort creationDate();
 
   UserTaskSort completionDate();
+
+  UserTaskSort dueDate();
+
+  UserTaskSort followUpDate();
+
+  UserTaskSort priority();
 }

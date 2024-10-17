@@ -12,8 +12,8 @@ import io.camunda.plugin.search.header.DatabaseCustomHeaderSupplier;
 
 public class TestDatabaseCustomHeaderSupplierImpl implements DatabaseCustomHeaderSupplier {
 
-  public static final String KEY_CUSTOM_HEADER = "KEY";
-  public static final String VALUE_CUSTOM_HEADER = "VALUE";
+  public static final String KEY_CUSTOM_HEADER = "foo";
+  public static final String VALUE_CUSTOM_HEADER = "bar";
 
   @Override
   public CustomHeader getSearchDatabaseCustomHeader() {

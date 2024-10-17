@@ -7,7 +7,7 @@
  */
 
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
-import {Permissions} from 'modules/types';
+import type {Permissions} from 'modules/types';
 
 const usePermissions = (scopes: Permissions) => {
   const {data: currentUser} = useCurrentUser();

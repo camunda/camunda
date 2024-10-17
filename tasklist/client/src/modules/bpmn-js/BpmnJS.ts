@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import NavigatedViewer, {BpmnElement} from 'bpmn-js/lib/NavigatedViewer';
+import NavigatedViewer, {type BpmnElement} from 'bpmn-js/lib/NavigatedViewer';
 // @ts-expect-error Could not find a declaration file for module '@bpmn-io/element-templates-icons-renderer'
 import ElementTemplatesIconsRenderer from '@bpmn-io/element-template-icon-renderer';
 import {bpmnRendererColors} from './styles';

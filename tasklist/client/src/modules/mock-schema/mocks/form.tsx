@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Form} from 'modules/types';
+import type {Form} from 'modules/types';
 
 const form: Form = {
   id: 'camunda-forms:bpmn:form-0',

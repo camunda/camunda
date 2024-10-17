@@ -10,10 +10,10 @@ package io.camunda.search.es.transformers.sort;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch._types.SortOptions;
-import io.camunda.search.clients.sort.SearchSortOptions;
+import io.camunda.search.clients.transformers.SearchTransfomer;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import io.camunda.search.es.util.ESQuerySerializer;
-import io.camunda.search.transformers.SearchTransfomer;
+import io.camunda.search.sort.SearchSortOptions;
 import java.io.IOException;
 import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;

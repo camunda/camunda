@@ -222,9 +222,9 @@ class ExporterDirectorPartitionTransitionStepTest {
     final Map<String, ExporterDescriptor> exporters =
         Map.of(
             enabledExporterId,
-            new ExporterDescriptor(enabledExporterId, null, null),
+            new ExporterDescriptor(enabledExporterId),
             disabledExporterId,
-            new ExporterDescriptor(disabledExporterId, null, null));
+            new ExporterDescriptor(disabledExporterId));
     when(exporterRepository.getExporters()).thenReturn(exporters);
     transitionContext.setDynamicPartitionConfig(exporterConfig);
   }

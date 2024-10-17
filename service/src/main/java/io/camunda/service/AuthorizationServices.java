@@ -7,13 +7,13 @@
  */
 package io.camunda.service;
 
-import io.camunda.search.clients.CamundaSearchClient;
-import io.camunda.service.entities.AuthorizationEntity;
+import io.camunda.search.clients.AuthorizationSearchClient;
+import io.camunda.search.entities.AuthorizationEntity;
+import io.camunda.search.query.AuthorizationQuery;
+import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.search.core.SearchQueryService;
-import io.camunda.service.search.query.AuthorizationQuery;
-import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.service.security.auth.Authentication;
-import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerAuthorizationPatchRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
@@ -22,32 +22,52 @@ import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 public class AuthorizationServices<T>
     extends SearchQueryService<AuthorizationServices<T>, AuthorizationQuery, AuthorizationEntity> {
 
-  public AuthorizationServices(
-      final BrokerClient brokerClient, final CamundaSearchClient dataStoreClient) {
-    this(brokerClient, dataStoreClient, null, null);
-  }
+  private final AuthorizationSearchClient authorizationSearchClient;
 
   public AuthorizationServices(
       final BrokerClient brokerClient,
-      final CamundaSearchClient searchClient,
-      final ServiceTransformers transformers,
+      final AuthorizationSearchClient authorizationSearchClient,
       final Authentication authentication) {
-    super(brokerClient, searchClient, transformers, authentication);
+    super(brokerClient, authentication);
+    this.authorizationSearchClient = authorizationSearchClient;
   }
 
   @Override
   public AuthorizationServices<T> withAuthentication(final Authentication authentication) {
-    return new AuthorizationServices<>(brokerClient, searchClient, transformers, authentication);
+    return new AuthorizationServices<>(brokerClient, authorizationSearchClient, authentication);
   }
 
   @Override
   public SearchQueryResult<AuthorizationEntity> search(final AuthorizationQuery query) {
-    return executor.search(query, AuthorizationEntity.class);
+    return authorizationSearchClient.searchAuthorizations(query, authentication);
+  }
+
+  public Set<String> fetchAssignedPermissions(
+      final String ownerId, final AuthorizationResourceType resourceType, final String resourceId) {
+    final SearchQueryResult<AuthorizationEntity> result =
+        search(
+            SearchQueryBuilders.authorizationSearchQuery(
+                fn ->
+                    fn.filter(
+                            f ->
+                                f.resourceType(resourceType.name())
+                                    .resourceKey(
+                                        resourceId != null && !resourceId.isEmpty()
+                                            ? resourceId
+                                            : null)
+                                    .ownerKey(ownerId))
+                        .page(p -> p.size(1))));
+    // TODO logic to fetch indirect authorizations via roles/groups should be added later
+    return result.items().stream()
+        .flatMap(a -> a.value().permissions().stream())
+        .collect(Collectors.toSet());
   }
 
   public CompletableFuture<AuthorizationRecord> patchAuthorization(

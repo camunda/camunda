@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 public final class GetDecisionDefinitionTest extends ClientRestTest {
 
   @Test
-  void shouldGetDecisionDefinitionXml() {
+  void shouldGetDecisionDefinition() {
     // when
     final long decisionDefinitionKey = 1L;
     client.newDecisionDefinitionGetRequest(decisionDefinitionKey).send().join();

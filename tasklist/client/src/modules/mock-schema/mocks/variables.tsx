@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {FullVariable, Variable} from 'modules/types';
+import type {FullVariable, Variable} from 'modules/types';
 
 const variables: Variable[] = [
   {

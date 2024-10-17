@@ -11,10 +11,10 @@ import static io.camunda.optimize.service.util.ExceptionUtil.isInstanceIndexNotF
 
 import io.camunda.optimize.service.db.report.MinMaxStatDto;
 import java.util.Arrays;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
 public abstract class AbstractMinMaxStatsService {
+
   protected static final String NESTED_AGGREGATION_FIRST_FIELD = "nestedAggField1";
   protected static final String NESTED_AGGREGATION_SECOND_FIELD = "nestedAggField2";
 
@@ -23,6 +23,8 @@ public abstract class AbstractMinMaxStatsService {
 
   protected static final String STATS_AGGREGATION_FIRST_FIELD = "statsAggField1";
   protected static final String STATS_AGGREGATION_SECOND_FIELD = "statsAggField2";
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(AbstractMinMaxStatsService.class);
 
   protected MinMaxStatDto returnEmptyResultIfInstanceIndexNotFound(
       final RuntimeException e, final String[] indexNames) {

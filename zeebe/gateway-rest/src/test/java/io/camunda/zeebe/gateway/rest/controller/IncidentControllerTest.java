@@ -11,9 +11,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
-import io.camunda.service.CamundaServiceException;
+import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.IncidentServices;
-import io.camunda.service.security.auth.Authentication;
+import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
@@ -65,7 +65,7 @@ public class IncidentControllerTest extends RestControllerTest {
     Mockito.when(incidentServices.resolveIncident(anyLong()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaServiceException(
+                new CamundaBrokerException(
                     new BrokerRejection(
                         IncidentIntent.RESOLVE,
                         1L,
@@ -74,13 +74,13 @@ public class IncidentControllerTest extends RestControllerTest {
 
     final var expectedBody =
         """
-        {
-          "type": "about:blank",
-          "status": 404,
-          "title": "NOT_FOUND",
-          "detail": "Command 'RESOLVE' rejected with code 'NOT_FOUND': Incident not found",
-          "instance": "%s"
-        }"""
+            {
+              "type": "about:blank",
+              "status": 404,
+              "title": "NOT_FOUND",
+              "detail": "Command 'RESOLVE' rejected with code 'NOT_FOUND': Incident not found",
+              "instance": "%s"
+            }"""
             .formatted(INCIDENT_BASE_URL + "/1/resolution");
 
     // when / then

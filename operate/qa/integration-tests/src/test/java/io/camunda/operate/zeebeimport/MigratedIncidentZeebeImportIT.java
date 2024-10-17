@@ -9,8 +9,8 @@ package io.camunda.operate.zeebeimport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.util.j5templates.OperateZeebeSearchAbstractIT;
+import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentState;
 import io.camunda.zeebe.client.ZeebeClient;

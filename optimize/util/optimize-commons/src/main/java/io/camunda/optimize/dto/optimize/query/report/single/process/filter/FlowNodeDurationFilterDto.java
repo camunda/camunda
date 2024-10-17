@@ -10,10 +10,11 @@ package io.camunda.optimize.dto.optimize.query.report.single.process.filter;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.FlowNodeDurationFiltersDataDto;
 import java.util.Arrays;
 import java.util.List;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
 public class FlowNodeDurationFilterDto extends ProcessFilterDto<FlowNodeDurationFiltersDataDto> {
+
+  public FlowNodeDurationFilterDto() {}
+
   @Override
   public List<FilterApplicationLevel> validApplicationLevels() {
     return Arrays.asList(FilterApplicationLevel.INSTANCE, FilterApplicationLevel.VIEW);

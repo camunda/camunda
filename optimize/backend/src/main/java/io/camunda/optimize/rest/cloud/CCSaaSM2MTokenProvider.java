@@ -18,20 +18,21 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.util.EntityUtils;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
 @Conditional(CCSaaSCondition.class)
 public class CCSaaSM2MTokenProvider extends AbstractCCSaaSClient {
+
   private static final String TOKEN_REQUEST_GRANT_TYPE = "client_credentials";
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(CCSaaSM2MTokenProvider.class);
 
   protected CCSaaSM2MTokenProvider(
       final ObjectMapper objectMapper, final ConfigurationService configurationService) {

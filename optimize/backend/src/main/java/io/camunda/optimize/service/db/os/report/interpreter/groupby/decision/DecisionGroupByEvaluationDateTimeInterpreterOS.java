@@ -38,8 +38,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -48,15 +46,28 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class DecisionGroupByEvaluationDateTimeInterpreterOS
     extends AbstractDecisionGroupByInterpreterOS {
+
   private final DateAggregationServiceOS dateAggregationService;
   private final MinMaxStatsServiceOS minMaxStatsService;
   private final DecisionQueryFilterEnhancerOS queryFilterEnhancer;
-  @Getter private final DecisionDistributedByNoneInterpreterOS distributedByInterpreter;
-  @Getter private final DecisionViewInterpreterFacadeOS viewInterpreter;
+  private final DecisionDistributedByNoneInterpreterOS distributedByInterpreter;
+  private final DecisionViewInterpreterFacadeOS viewInterpreter;
+
+  public DecisionGroupByEvaluationDateTimeInterpreterOS(
+      DateAggregationServiceOS dateAggregationService,
+      MinMaxStatsServiceOS minMaxStatsService,
+      DecisionQueryFilterEnhancerOS queryFilterEnhancer,
+      DecisionDistributedByNoneInterpreterOS distributedByInterpreter,
+      DecisionViewInterpreterFacadeOS viewInterpreter) {
+    this.dateAggregationService = dateAggregationService;
+    this.minMaxStatsService = minMaxStatsService;
+    this.queryFilterEnhancer = queryFilterEnhancer;
+    this.distributedByInterpreter = distributedByInterpreter;
+    this.viewInterpreter = viewInterpreter;
+  }
 
   @Override
   public Set<DecisionGroupBy> getSupportedGroupBys() {
@@ -150,5 +161,13 @@ public class DecisionGroupByEvaluationDateTimeInterpreterOS
                     distributedByInterpreter.retrieveResult(
                         response, stringBucketEntry.getValue(), context)))
         .collect(Collectors.toList());
+  }
+
+  public DecisionDistributedByNoneInterpreterOS getDistributedByInterpreter() {
+    return this.distributedByInterpreter;
+  }
+
+  public DecisionViewInterpreterFacadeOS getViewInterpreter() {
+    return this.viewInterpreter;
   }
 }

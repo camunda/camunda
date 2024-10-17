@@ -9,6 +9,7 @@ package io.camunda.operate.webapp.security.es;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.UserIndex;
 import io.camunda.operate.util.OperateAbstractIT;
@@ -16,8 +17,9 @@ import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import io.camunda.operate.webapp.security.auth.OperateUserDetailsService;
-import io.camunda.operate.webapp.security.auth.User;
+import io.camunda.operate.webapp.security.auth.Role;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import org.junit.After;
 import org.junit.Before;
@@ -73,10 +75,11 @@ public class ElasticSearchUserDetailsServiceIT extends OperateAbstractIT {
     updateUserRealName();
 
     // then
-    final User user = userDetailsService.loadUserByUsername(TEST_USER_ID);
+    final CamundaUser user = userDetailsService.loadUserByUsername(TEST_USER_ID);
     assertThat(user.getUsername()).isEqualTo(TEST_USER_ID);
     assertThat(passwordEncoder.matches(TEST_PASSWORD, user.getPassword())).isTrue();
     assertThat(user.getDisplayName()).isEqualTo(TEST_USER_DISPLAYNAME);
+    assertThat(user.getRoles()).isEqualTo(List.of(Role.OWNER.toString()));
   }
 
   private void updateUserRealName() {
@@ -84,15 +87,15 @@ public class ElasticSearchUserDetailsServiceIT extends OperateAbstractIT {
       final Map<String, Object> jsonMap = Map.of(UserIndex.DISPLAY_NAME, TEST_USER_DISPLAYNAME);
       testSearchRepository.update(userIndex.getFullQualifiedName(), TEST_USER_ID, jsonMap);
       searchTestRule.refreshOperateSearchIndices();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
 
-  public void deleteById(String id) {
+  public void deleteById(final String id) {
     try {
       testSearchRepository.deleteById(userIndex.getFullQualifiedName(), id);
-    } catch (IOException ex) {
+    } catch (final IOException ex) {
       // noop
     }
   }

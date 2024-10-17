@@ -1,0 +1,29 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "ownerKey": {
+        "type": "long"
+      },
+      "ownerType": {
+        "type": "keyword"
+      },
+      "resourceType": {
+        "type": "keyword"
+      },
+      "permissions": {
+        "properties": {
+          "type": {
+            "type": "keyword"
+          },
+          "resourceIds": {
+            "type": "keyword"
+          }
+        }
+      }
+    }
+  }
+}

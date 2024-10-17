@@ -319,6 +319,28 @@ class ElasticsearchBatchRequestTest {
   }
 
   @Test
+  void shouldDeleteEntity() throws IOException, PersistenceException {
+    // When
+    batchRequest.delete(INDEX, ID);
+    batchRequest.execute();
+
+    // Then
+    final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
+    verify(elasticsearchClient).bulk(captor.capture());
+
+    // verify that an index operation is added
+    final List<BulkOperation> operations = captor.getValue().operations();
+    assertThat(operations).hasSize(1);
+
+    final var bulkOperation = operations.getFirst();
+    assertThat(bulkOperation.isDelete()).isTrue();
+
+    final var delete = bulkOperation.delete();
+    assertThat(delete.index()).isEqualTo(INDEX);
+    assertThat(delete.id()).isEqualTo(ID);
+  }
+
+  @Test
   void shouldExecuteWithMultipleOperationsInBatch() throws PersistenceException, IOException {
     // Given
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);

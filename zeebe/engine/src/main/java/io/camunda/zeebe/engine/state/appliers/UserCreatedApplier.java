@@ -27,7 +27,7 @@ public class UserCreatedApplier implements TypedEventApplier<UserIntent, UserRec
 
   @Override
   public void applyState(final long key, final UserRecord value) {
-    userState.create(key, value);
-    authorizationState.insertOwnerTypeByKey(key, AuthorizationOwnerType.USER);
+    userState.create(value);
+    authorizationState.insertOwnerTypeByKey(value.getUserKey(), AuthorizationOwnerType.USER);
   }
 }

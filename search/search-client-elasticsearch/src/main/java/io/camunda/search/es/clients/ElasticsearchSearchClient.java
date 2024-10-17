@@ -11,16 +11,16 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
-import io.camunda.search.clients.CamundaSearchClient;
+import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
+import io.camunda.search.clients.transformers.SearchTransfomer;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import io.camunda.search.es.transformers.search.SearchResponseTransformer;
-import io.camunda.search.transformers.SearchTransfomer;
-import io.camunda.zeebe.util.Either;
+import io.camunda.search.exception.SearchQueryExecutionException;
 import java.io.IOException;
 
-public final class ElasticsearchSearchClient implements CamundaSearchClient {
+public class ElasticsearchSearchClient implements DocumentBasedSearchClient, AutoCloseable {
 
   private final ElasticsearchClient client;
   private final ElasticsearchTransformers transformers;
@@ -36,23 +36,20 @@ public final class ElasticsearchSearchClient implements CamundaSearchClient {
   }
 
   @Override
-  public <T> Either<Exception, SearchQueryResponse<T>> search(
+  public <T> SearchQueryResponse<T> search(
       final SearchQueryRequest searchRequest, final Class<T> documentClass) {
     try {
       final var requestTransformer = getSearchRequestTransformer();
       final var request = requestTransformer.apply(searchRequest);
       final SearchResponse<T> rawSearchResponse = client.search(request, documentClass);
       final SearchResponseTransformer<T> searchResponseTransformer = getSearchResponseTransformer();
-      final SearchQueryResponse<T> response = searchResponseTransformer.apply(rawSearchResponse);
-      return Either.right(response);
-    } catch (final IOException ioe) {
-      return Either.left(ioe);
-    } catch (final ElasticsearchException e) {
-      return Either.left(e);
+      return searchResponseTransformer.apply(rawSearchResponse);
+    } catch (final IOException | ElasticsearchException ioe) {
+      throw new SearchQueryExecutionException("Failed to execute search query", ioe);
     }
   }
 
-  private SearchTransfomer<SearchQueryRequest, SearchRequest> getSearchRequestTransformer() {
+  protected SearchTransfomer<SearchQueryRequest, SearchRequest> getSearchRequestTransformer() {
     return transformers.getTransformer(SearchQueryRequest.class);
   }
 
@@ -65,7 +62,7 @@ public final class ElasticsearchSearchClient implements CamundaSearchClient {
     if (client != null) {
       try {
         client._transport().close();
-      } catch (IOException e) {
+      } catch (final IOException e) {
         throw new RuntimeException(e);
       }
     }

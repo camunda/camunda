@@ -7,8 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
+
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -19,6 +23,8 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
@@ -31,22 +37,37 @@ public final class AuthorizationAddPermissionProcessor
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final AuthorizationCheckBehavior authCheckBehavior;
 
   public AuthorizationAddPermissionProcessor(
       final Writers writers,
       final KeyGenerator keyGenerator,
       final ProcessingState processingState,
-      final CommandDistributionBehavior distributionBehavior) {
+      final CommandDistributionBehavior distributionBehavior,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     this.keyGenerator = keyGenerator;
     authorizationState = processingState.getAuthorizationState();
     this.distributionBehavior = distributionBehavior;
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
+    this.authCheckBehavior = authCheckBehavior;
   }
 
   @Override
   public void processNewCommand(final TypedRecord<AuthorizationRecord> command) {
+    final var authorizationRequest =
+        new AuthorizationRequest(
+            command, AuthorizationResourceType.AUTHORIZATION, PermissionType.UPDATE);
+    if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
+      final var errorMessage =
+          UNAUTHORIZED_ERROR_MESSAGE.formatted(
+              authorizationRequest.getPermissionType(), authorizationRequest.getResourceType());
+      rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, errorMessage);
+      return;
+    }
+
     final var authorizationRecord = command.getValue();
 
     final var ownerType =

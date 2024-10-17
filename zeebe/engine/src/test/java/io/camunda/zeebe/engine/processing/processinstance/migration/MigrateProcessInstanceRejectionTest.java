@@ -1157,11 +1157,12 @@ public class MigrateProcessInstanceRejectionTest {
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
             """
-            Expected to migrate process instance '%s' but active element with id 'A' attempts to \
-            subscribe to a message it is already subscribed to with name 'message'. Migrating \
-            active elements that subscribe to a message they are already subscribed to is not \
-            possible yet. Please provide a mapping instruction to message catch event with id \
-            'boundary' to migrate the respective message subscription."""
+          Expected to migrate process instance '%s' but active element with id 'A' \
+          is already subscribed to the same message name 'message'. Currently, migrating message \
+          subscriptions to the same message name isn't supported without a mapping. \
+          Please provide a mapping instruction between message catch event with id 'boundary' \
+          and the target message catch event. \
+          """
                 .formatted(processInstanceKey))
         .hasKey(processInstanceKey);
   }

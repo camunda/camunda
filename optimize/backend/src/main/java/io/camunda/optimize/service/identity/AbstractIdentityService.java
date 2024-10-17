@@ -26,15 +26,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
 public abstract class AbstractIdentityService implements ConfigurationReloadable {
 
   private static List<AuthorizationType> defaultUserAuthorizations;
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(AbstractIdentityService.class);
 
   protected final ConfigurationService configurationService;
 

@@ -25,7 +25,6 @@ import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.exception.UncheckedExecutionException;
 import io.camunda.zeebe.util.jar.ExternalJarLoadException;
 import io.netty.util.NetUtil;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
@@ -35,6 +34,7 @@ public final class Broker implements AutoCloseable {
   public static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
   private final SystemContext systemContext;
+  private final ExporterRepository exporterRepository;
   private boolean isClosed = false;
 
   private CompletableFuture<Broker> startFuture;
@@ -44,16 +44,21 @@ public final class Broker implements AutoCloseable {
   private final BrokerStartupActor brokerStartupActor;
   private BrokerContext brokerContext;
 
-  // TODO make Broker class itself the actor
-  public Broker(final SystemContext systemContext, final SpringBrokerBridge springBrokerBridge) {
-    this(systemContext, springBrokerBridge, Collections.emptyList());
+  // TODO just used by tests ...
+  public Broker(
+      final SystemContext systemContext,
+      final SpringBrokerBridge springBrokerBridge,
+      final List<PartitionListener> additionalPartitionListeners) {
+    this(systemContext, springBrokerBridge, additionalPartitionListeners, new ExporterRepository());
   }
 
   public Broker(
       final SystemContext systemContext,
       final SpringBrokerBridge springBrokerBridge,
-      final List<PartitionListener> additionalPartitionListeners) {
+      final List<PartitionListener> additionalPartitionListeners,
+      final ExporterRepository exporterRepository) {
     this.systemContext = systemContext;
+    this.exporterRepository = exporterRepository;
 
     final ActorScheduler scheduler = this.systemContext.getScheduler();
     final BrokerInfo localBroker = createBrokerInfo(getConfig());
@@ -139,7 +144,6 @@ public final class Broker implements AutoCloseable {
   }
 
   private ExporterRepository buildExporterRepository(final BrokerCfg cfg) {
-    final ExporterRepository exporterRepository = new ExporterRepository();
     final var exporterEntries = cfg.getExporters().entrySet();
 
     // load and validate exporters

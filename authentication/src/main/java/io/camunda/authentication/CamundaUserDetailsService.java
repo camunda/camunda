@@ -9,14 +9,15 @@ package io.camunda.authentication;
 
 import static io.camunda.authentication.entity.CamundaUser.CamundaUserBuilder.aCamundaUser;
 
+import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.service.UserServices;
-import io.camunda.service.search.query.SearchQueryBuilders;
 import java.util.Objects;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 public class CamundaUserDetailsService implements UserDetailsService {
+
   private final UserServices userServices;
 
   public CamundaUserDetailsService(final UserServices userServices) {

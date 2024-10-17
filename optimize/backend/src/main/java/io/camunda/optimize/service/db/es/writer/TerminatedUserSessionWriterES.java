@@ -22,17 +22,21 @@ import io.camunda.optimize.service.db.writer.TerminatedUserSessionWriter;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.io.IOException;
 import java.time.OffsetDateTime;
-import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Conditional(ElasticSearchCondition.class)
 public class TerminatedUserSessionWriterES extends TerminatedUserSessionWriter {
 
   private final OptimizeElasticsearchClient esClient;
   private final TaskRepositoryES taskRepositoryES;
+
+  public TerminatedUserSessionWriterES(
+      OptimizeElasticsearchClient esClient, TaskRepositoryES taskRepositoryES) {
+    this.esClient = esClient;
+    this.taskRepositoryES = taskRepositoryES;
+  }
 
   @Override
   protected void performWritingTerminatedUserSession(final TerminatedUserSessionDto sessionDto)

@@ -58,20 +58,19 @@ public class QueryProcessInstanceTest extends ClientRestTest {
         .newProcessInstanceQuery()
         .filter(
             f ->
-                f.key(123L)
-                    .bpmnProcessId("bpmnProcessId")
-                    .processName("Demo process")
-                    .processVersion(7)
-                    .processVersionTag("v7")
+                f.processInstanceKey(123L)
+                    .processDefinitionId("bpmnProcessId")
+                    .processDefinitionName("Demo process")
+                    .processDefinitionVersion(7)
+                    .processDefinitionVersionTag("v7")
                     .processDefinitionKey(15L)
-                    .rootProcessInstanceKey(20L)
                     .parentProcessInstanceKey(25L)
                     .parentFlowNodeInstanceKey(30L)
                     .treePath("PI_1")
                     .startDate("startDate")
                     .endDate("endDate")
                     .state("ACTIVE")
-                    .incident(true)
+                    .hasIncident(true)
                     .tenantId("tenant"))
         .send()
         .join();
@@ -80,20 +79,19 @@ public class QueryProcessInstanceTest extends ClientRestTest {
         gatewayService.getLastRequest(ProcessInstanceSearchQueryRequest.class);
     final ProcessInstanceFilterRequest filter = request.getFilter();
     assertThat(filter).isNotNull();
-    assertThat(filter.getKey()).isEqualTo(123L);
+    assertThat(filter.getProcessInstanceKey()).isEqualTo(123L);
     assertThat(filter.getProcessDefinitionId()).isEqualTo("bpmnProcessId");
     assertThat(filter.getProcessDefinitionName()).isEqualTo("Demo process");
     assertThat(filter.getProcessDefinitionVersion()).isEqualTo(7);
     assertThat(filter.getProcessDefinitionVersionTag()).isEqualTo("v7");
     assertThat(filter.getProcessDefinitionKey()).isEqualTo(15L);
-    assertThat(filter.getRootProcessInstanceKey()).isEqualTo(20L);
     assertThat(filter.getParentProcessInstanceKey()).isEqualTo(25L);
     assertThat(filter.getParentFlowNodeInstanceKey()).isEqualTo(30L);
     assertThat(filter.getTreePath()).isEqualTo("PI_1");
     assertThat(filter.getStartDate()).isEqualTo("startDate");
     assertThat(filter.getEndDate()).isEqualTo("endDate");
     assertThat(filter.getState()).isEqualTo(ProcessInstanceStateEnum.ACTIVE);
-    assertThat(filter.getIncident()).isEqualTo(true);
+    assertThat(filter.getHasIncident()).isEqualTo(true);
     assertThat(filter.getTenantId()).isEqualTo("tenant");
   }
 
@@ -104,20 +102,18 @@ public class QueryProcessInstanceTest extends ClientRestTest {
         .newProcessInstanceQuery()
         .sort(
             s ->
-                s.key()
+                s.processInstanceKey()
                     .asc()
-                    .bpmnProcessId()
+                    .processDefinitionId()
                     .desc()
-                    .processName()
+                    .processDefinitionName()
                     .asc()
-                    .processVersion()
+                    .processDefinitionVersion()
                     .asc()
-                    .processVersionTag()
+                    .processDefinitionVersionTag()
                     .desc()
                     .processDefinitionKey()
                     .desc()
-                    .rootProcessInstanceKey()
-                    .asc()
                     .parentProcessInstanceKey()
                     .asc()
                     .parentFlowNodeInstanceKey()
@@ -141,22 +137,21 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     final ProcessInstanceSearchQueryRequest request =
         gatewayService.getLastRequest(ProcessInstanceSearchQueryRequest.class);
     final List<SearchQuerySortRequest> sorts = request.getSort();
-    assertThat(sorts).hasSize(15);
+    assertThat(sorts).hasSize(14);
     assertSort(sorts.get(0), "key", "asc");
     assertSort(sorts.get(1), "bpmnProcessId", "desc");
     assertSort(sorts.get(2), "processName", "asc");
     assertSort(sorts.get(3), "processVersion", "asc");
     assertSort(sorts.get(4), "processVersionTag", "desc");
     assertSort(sorts.get(5), "processDefinitionKey", "desc");
-    assertSort(sorts.get(6), "rootProcessInstanceKey", "asc");
-    assertSort(sorts.get(7), "parentProcessInstanceKey", "asc");
-    assertSort(sorts.get(8), "parentFlowNodeInstanceKey", "asc");
-    assertSort(sorts.get(9), "treePath", "desc");
-    assertSort(sorts.get(10), "startDate", "asc");
-    assertSort(sorts.get(11), "endDate", "asc");
-    assertSort(sorts.get(12), "state", "asc");
-    assertSort(sorts.get(13), "incident", "desc");
-    assertSort(sorts.get(14), "tenantId", "asc");
+    assertSort(sorts.get(6), "parentProcessInstanceKey", "asc");
+    assertSort(sorts.get(7), "parentFlowNodeInstanceKey", "asc");
+    assertSort(sorts.get(8), "treePath", "desc");
+    assertSort(sorts.get(9), "startDate", "asc");
+    assertSort(sorts.get(10), "endDate", "asc");
+    assertSort(sorts.get(11), "state", "asc");
+    assertSort(sorts.get(12), "incident", "desc");
+    assertSort(sorts.get(13), "tenantId", "asc");
   }
 
   @Test

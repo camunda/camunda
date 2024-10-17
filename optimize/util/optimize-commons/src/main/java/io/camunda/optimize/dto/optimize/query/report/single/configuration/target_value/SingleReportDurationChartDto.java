@@ -8,18 +8,17 @@
 package io.camunda.optimize.dto.optimize.query.report.single.configuration.target_value;
 
 import java.util.Objects;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
 
-@Getter
-@Setter
-@ToString
 public class SingleReportDurationChartDto {
 
   private TargetValueUnit unit = TargetValueUnit.HOURS;
   private Boolean isBelow = false;
   private String value = "2";
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(unit, isBelow, value);
+  }
 
   @Override
   public boolean equals(final Object o) {
@@ -35,7 +34,37 @@ public class SingleReportDurationChartDto {
   }
 
   @Override
-  public int hashCode() {
-    return Objects.hash(unit, isBelow, value);
+  public String toString() {
+    return "SingleReportDurationChartDto(unit="
+        + getUnit()
+        + ", isBelow="
+        + getIsBelow()
+        + ", value="
+        + getValue()
+        + ")";
+  }
+
+  public TargetValueUnit getUnit() {
+    return unit;
+  }
+
+  public void setUnit(final TargetValueUnit unit) {
+    this.unit = unit;
+  }
+
+  public Boolean getIsBelow() {
+    return isBelow;
+  }
+
+  public void setIsBelow(final Boolean isBelow) {
+    this.isBelow = isBelow;
+  }
+
+  public String getValue() {
+    return value;
+  }
+
+  public void setValue(final String value) {
+    this.value = value;
   }
 }

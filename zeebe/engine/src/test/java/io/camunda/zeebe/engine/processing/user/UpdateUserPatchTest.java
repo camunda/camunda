@@ -41,16 +41,23 @@ public class UpdateUserPatchTest {
 
   @Test
   public void shouldUpdateAUserWithTheSpecifiedField() {
-    ENGINE
-        .user()
-        .newUser(baseUser.getUsername())
-        .withName(baseUser.getName())
-        .withEmail(baseUser.getEmail())
-        .withPassword(baseUser.getPassword())
-        .create();
+    final var userRecord =
+        ENGINE
+            .user()
+            .newUser(baseUser.getUsername())
+            .withUsername(baseUser.getUsername())
+            .withName(baseUser.getName())
+            .withEmail(baseUser.getEmail())
+            .withPassword(baseUser.getPassword())
+            .create();
 
     final var updatedUserRecord =
-        ENGINE.user().updateUser(baseUser.getUsername(), updatedUser).update().getValue();
+        ENGINE
+            .user()
+            .updateUser(userRecord.getKey(), updatedUser)
+            .withUsername(baseUser.getUsername())
+            .update()
+            .getValue();
 
     assertThat(updatedUserRecord)
         .isNotNull()

@@ -41,8 +41,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.Time;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
@@ -59,17 +57,23 @@ import org.opensearch.client.opensearch.core.mget.MultiGetResponseItem;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.SourceConfig;
 import org.opensearch.client.opensearch.core.search.SourceFilter;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 @Conditional(OpenSearchCondition.class)
 public class ReportReaderOS implements ReportReader {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ReportReaderOS.class);
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
+
+  public ReportReaderOS(
+      final OptimizeOpenSearchClient osClient, final ConfigurationService configurationService) {
+    this.osClient = osClient;
+    this.configurationService = configurationService;
+  }
 
   @Override
   public Optional<ReportDefinitionDto> getReport(final String reportId) {
@@ -213,6 +217,11 @@ public class ReportReaderOS implements ReportReader {
   }
 
   @Override
+  public List<ReportDefinitionDto> getReportsForCollectionIncludingXml(final String collectionId) {
+    return getReportsForCollection(collectionId, true);
+  }
+
+  @Override
   public List<SingleProcessReportDefinitionRequestDto> getAllSingleProcessReportsForIdsOmitXml(
       final List<String> reportIds) {
     log.debug("Fetching all available single process reports for IDs [{}]", reportIds);
@@ -223,11 +232,6 @@ public class ReportReaderOS implements ReportReader {
   @Override
   public List<ReportDefinitionDto> getReportsForCollectionOmitXml(final String collectionId) {
     return getReportsForCollection(collectionId, false);
-  }
-
-  @Override
-  public List<ReportDefinitionDto> getReportsForCollectionIncludingXml(final String collectionId) {
-    return getReportsForCollection(collectionId, true);
   }
 
   @Override

@@ -23,7 +23,8 @@ import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import org.slf4j.Logger;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 public final class DefaultUserCreator implements StreamProcessorLifecycleAware, Task {
   public static final String DEFAULT_USER_USERNAME = "demo";
@@ -32,13 +33,13 @@ public final class DefaultUserCreator implements StreamProcessorLifecycleAware, 
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
   private final UserState userState;
   private final EngineConfiguration config;
-  private final BCryptPasswordEncoder passwordEncoder;
+  private final PasswordEncoder passwordEncoder;
 
   public DefaultUserCreator(
       final MutableProcessingState processingState, final EngineConfiguration config) {
     userState = processingState.getUserState();
     this.config = config;
-    passwordEncoder = new BCryptPasswordEncoder();
+    passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
   }
 
   @Override
@@ -65,7 +66,8 @@ public final class DefaultUserCreator implements StreamProcessorLifecycleAware, 
 
   @Override
   public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
-    ofNullable(userState.getUser(DEFAULT_USER_USERNAME))
+    userState
+        .getUser(DEFAULT_USER_USERNAME)
         .ifPresentOrElse(
             user -> {
               LOG.debug("Default user already exists, skipping creation");

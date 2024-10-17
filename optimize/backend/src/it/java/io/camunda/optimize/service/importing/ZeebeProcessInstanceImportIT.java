@@ -64,6 +64,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import java.io.IOException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -72,7 +73,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
@@ -344,7 +344,6 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
   }
 
   @Test
-  @SneakyThrows
   public void
       importZeebeProcessInstanceDataFromMultipleDays_allDataSavedToOptimizeProcessInstance() {
     // given
@@ -354,7 +353,11 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
 
     // when
     waitUntilMinimumProcessInstanceEventsExportedCount(4);
-    zeebeExtension.setClock(Instant.now().plus(1, ChronoUnit.DAYS));
+    try {
+      zeebeExtension.setClock(Instant.now().plus(1, ChronoUnit.DAYS));
+    } catch (final IOException | InterruptedException e) {
+      throw new OptimizeRuntimeException(e);
+    }
     zeebeExtension.completeTaskForInstanceWithJobType(SERVICE_TASK);
     waitUntilMinimumProcessInstanceEventsExportedCount(8);
     importAllZeebeEntitiesFromScratch();
@@ -955,7 +958,6 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
         + instance.getIncidents().size();
   }
 
-  @SneakyThrows
   private void updateProcessInstanceNestedDocLimit(
       final String processDefinitionKey, final int nestedDocLimit) {
     databaseIntegrationTestExtension.updateProcessInstanceNestedDocLimit(

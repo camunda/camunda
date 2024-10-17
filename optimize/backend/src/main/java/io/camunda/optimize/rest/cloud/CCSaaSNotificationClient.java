@@ -21,19 +21,20 @@ import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
 @Conditional(CCSaaSCondition.class)
 public class CCSaaSNotificationClient extends AbstractCCSaaSClient {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(CCSaaSNotificationClient.class);
   private TokenResponseDto accessToken;
   private Instant tokenExpires = Instant.now();
   private final CCSaaSM2MTokenProvider m2mTokenProvider;
@@ -67,7 +68,7 @@ public class CCSaaSNotificationClient extends AbstractCCSaaSClient {
               "Unexpected response when sending notification: " + statusCode);
         }
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException("There was a problem sending the notification.", e);
     }
   }

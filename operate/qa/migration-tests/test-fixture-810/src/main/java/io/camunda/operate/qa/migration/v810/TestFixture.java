@@ -8,18 +8,18 @@
 package io.camunda.operate.qa.migration.v810;
 
 import static io.camunda.operate.property.ElasticsearchProperties.BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT;
-import static io.camunda.operate.schema.templates.IncidentTemplate.FLOW_NODE_INSTANCE_KEY;
-import static io.camunda.operate.schema.templates.IncidentTemplate.PROCESS_INSTANCE_KEY;
 import static io.camunda.operate.util.LambdaExceptionUtil.rethrowConsumer;
+import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.FLOW_NODE_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.PROCESS_INSTANCE_KEY;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.qa.util.TestContext;
 import io.camunda.operate.qa.util.migration.AbstractTestFixture;
-import io.camunda.operate.schema.templates.IncidentTemplate;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -47,7 +47,7 @@ public class TestFixture extends AbstractTestFixture {
   @Autowired private RestHighLevelClient esClient;
 
   @Override
-  public void setup(TestContext testContext) {
+  public void setup(final TestContext testContext) {
     super.setup(testContext);
     startZeebeAndOperate();
     // no additional data is needed
@@ -69,7 +69,7 @@ public class TestFixture extends AbstractTestFixture {
           incidentRequest,
           rethrowConsumer(
               sh -> {
-                for (SearchHit searchHit : sh.getHits()) {
+                for (final SearchHit searchHit : sh.getHits()) {
                   final Long key = (Long) searchHit.getSourceAsMap().get(FLOW_NODE_INSTANCE_KEY);
                   final Map<String, Object> updateFields = new HashMap<>();
                   updateFields.put("pendingIncident", true);
@@ -91,12 +91,12 @@ public class TestFixture extends AbstractTestFixture {
       ElasticsearchUtil.processBulkRequest(
           esClient, bulkRequest, BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT);
       esClient.indices().refresh(new RefreshRequest("operate-*"), RequestOptions.DEFAULT);
-    } catch (IOException | PersistenceException e) {
+    } catch (final IOException | PersistenceException e) {
       throw new OperateRuntimeException(e.getMessage(), e);
     }
   }
 
-  private String getIndexNameFor(String index) {
+  private String getIndexNameFor(final String index) {
     return String.format("operate-%s-*", index);
   }
 

@@ -13,15 +13,15 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.entities.DecisionRequirementsEntity;
+import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.filter.DecisionRequirementsFilter;
+import io.camunda.search.query.DecisionRequirementsQuery;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.SearchQueryResult.Builder;
+import io.camunda.search.security.auth.Authentication;
+import io.camunda.search.sort.DecisionRequirementsSort;
 import io.camunda.service.DecisionRequirementsServices;
-import io.camunda.service.entities.DecisionRequirementsEntity;
-import io.camunda.service.exception.NotFoundException;
-import io.camunda.service.search.filter.DecisionRequirementsFilter;
-import io.camunda.service.search.query.DecisionRequirementsQuery;
-import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.service.search.query.SearchQueryResult.Builder;
-import io.camunda.service.search.sort.DecisionRequirementsSort;
-import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -38,25 +38,25 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
 
   static final String EXPECTED_SEARCH_RESPONSE =
       """
-      {
-          "items": [
-              {
-                  "tenantId": "t",
-                  "decisionRequirementsKey": 0,
-                  "decisionRequirementsName": "name",
-                  "version": 1,
-                  "decisionRequirementsId": "id",
-                  "resourceName": "rN"
+          {
+              "items": [
+                  {
+                      "tenantId": "t",
+                      "decisionRequirementsKey": 0,
+                      "name": "name",
+                      "version": 1,
+                      "decisionRequirementsId": "id",
+                      "resourceName": "rN"
+                  }
+              ],
+              "page": {
+                  "totalItems": 1,
+                  "firstSortValues": [],
+                  "lastSortValues": [
+                      "v"
+                  ]
               }
-          ],
-          "page": {
-              "totalItems": 1,
-              "firstSortValues": [],
-              "lastSortValues": [
-                  "v"
-              ]
-          }
-      }""";
+          }""";
   static final SearchQueryResult<DecisionRequirementsEntity> SEARCH_QUERY_RESULT =
       new Builder<DecisionRequirementsEntity>()
           .total(1L)
@@ -72,15 +72,15 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
 
   private static final String DECISION_REQUIREMENTS_ITEM_JSON =
       """
-      {
-        "tenantId": "t",
-        "decisionRequirementsKey": 1,
-        "decisionRequirementsName": "name",
-        "version": 1,
-        "decisionRequirementsId": "id",
-        "resourceName": "rN"
-      }
-      """;
+          {
+            "tenantId": "t",
+            "decisionRequirementsKey": 1,
+            "name": "name",
+            "version": 1,
+            "decisionRequirementsId": "id",
+            "resourceName": "rN"
+          }
+          """;
   @MockBean DecisionRequirementsServices decisionRequirementsServices;
 
   @BeforeEach
@@ -154,15 +154,15 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .thenReturn(SEARCH_QUERY_RESULT);
     final var request =
         """
-        {
-          "filter":{
-            "tenantId": "t",
-            "decisionRequirementsKey": 0,
-            "decisionRequirementsName": "name",
-            "version": 1,
-            "decisionRequirementsId": "drId"
-          }
-        }""";
+            {
+              "filter":{
+                "tenantId": "t",
+                "decisionRequirementsKey": 0,
+                "name": "name",
+                "version": 1,
+                "decisionRequirementsId": "drId"
+              }
+            }""";
 
     // when / then
     webClient
@@ -186,9 +186,9 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
                     new DecisionRequirementsFilter.Builder()
                         .tenantIds("t")
                         .decisionRequirementsKeys(0L)
-                        .dmnDecisionRequirementsNames("name")
+                        .names("name")
                         .versions(1)
-                        .dmnDecisionRequirementsIds("drId")
+                        .decisionRequirementsIds("drId")
                         .build())
                 .resultConfig(b -> b.xml().exclude())
                 .build());
@@ -201,30 +201,30 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .thenReturn(SEARCH_QUERY_RESULT);
     final var request =
         """
-        {
-            "sort": [
-                {
-                    "field": "version",
-                    "order": "asc"
-                },
-                {
-                    "field": "dmnDecisionRequirementsName",
-                    "order": "asc"
-                },
-                {
-                    "field": "tenantId",
-                    "order": "desc"
-                },
-                {
-                    "field": "decisionRequirementsKey",
-                    "order": "asc"
-                },
-                {
-                    "field": "dmnDecisionRequirementsId",
-                    "order": "asc"
-                }
-            ]
-        }""";
+            {
+                "sort": [
+                    {
+                        "field": "version",
+                        "order": "asc"
+                    },
+                    {
+                        "field": "name",
+                        "order": "asc"
+                    },
+                    {
+                        "field": "tenantId",
+                        "order": "desc"
+                    },
+                    {
+                        "field": "decisionRequirementsKey",
+                        "order": "asc"
+                    },
+                    {
+                        "field": "decisionRequirementsId",
+                        "order": "asc"
+                    }
+                ]
+            }""";
     // when / then
     webClient
         .post()
@@ -247,13 +247,13 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
                     new DecisionRequirementsSort.Builder()
                         .version()
                         .asc()
-                        .dmnDecisionRequirementsName()
+                        .name()
                         .asc()
                         .tenantId()
                         .desc()
                         .decisionRequirementsKey()
                         .asc()
-                        .dmnDecisionRequirementsId()
+                        .decisionRequirementsId()
                         .asc()
                         .build())
                 .resultConfig(b -> b.xml().exclude())
@@ -265,24 +265,24 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
     // given
     final var request =
         """
-        {
-            "sort": [
-                {
-                    "field": "unknownField",
-                    "order": "asc"
-                }
-            ]
-        }""";
+            {
+                "sort": [
+                    {
+                        "field": "unknownField",
+                        "order": "asc"
+                    }
+                ]
+            }""";
     final var expectedResponse =
         String.format(
             """
-        {
-          "type": "about:blank",
-          "title": "INVALID_ARGUMENT",
-          "status": 400,
-          "detail": "Unknown sortBy: unknownField.",
-          "instance": "%s"
-        }""",
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "Unknown sortBy: unknownField.",
+                  "instance": "%s"
+                }""",
             DECISION_REQUIREMENTS_SEARCH_URL);
     // when / then
     webClient
@@ -331,13 +331,13 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .expectBody()
         .json(
             """
-            {
-              "type": "about:blank",
-              "title": "NOT_FOUND",
-              "status": 404,
-              "detail": "Decision requirements with key 999 not found"
-            }
-            """);
+                {
+                  "type": "about:blank",
+                  "title": "NOT_FOUND",
+                  "status": 404,
+                  "detail": "Decision requirements with key 999 not found"
+                }
+                """);
 
     verify(decisionRequirementsServices, times(1)).getByKey(INVALID_DECISION_REQUIREMENTS_KEY);
   }
@@ -357,14 +357,14 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .expectBody()
         .json(
             """
-            {
-              "type": "about:blank",
-              "title": "java.lang.RuntimeException",
-              "status": 500,
-              "detail": "Unexpected error occurred during the request processing: Unexpected error",
-              "instance": "/v2/decision-requirements/1"
-            }
-            """);
+                {
+                  "type": "about:blank",
+                  "title": "java.lang.RuntimeException",
+                  "status": 500,
+                  "detail": "Unexpected error occurred during the request processing: Unexpected error",
+                  "instance": "/v2/decision-requirements/1"
+                }
+                """);
 
     verify(decisionRequirementsServices, times(1)).getByKey(VALID_DECISION_REQUIREMENTS_KEY);
   }
@@ -400,13 +400,13 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
     // when/then
     final var expectedResponse =
         """
-        {
-          "type": "about:blank",
-          "title": "NOT_FOUND",
-          "status": 404,
-          "detail": "Decision with key 1 was not found.",
-          "instance": "%s"
-        }"""
+            {
+              "type": "about:blank",
+              "title": "NOT_FOUND",
+              "status": 404,
+              "detail": "Decision with key 1 was not found.",
+              "instance": "%s"
+            }"""
             .formatted(DECISION_REQUIREMENTS_GET_XML_URL.formatted(decisionRequirementsKey));
     webClient
         .get()
@@ -430,13 +430,13 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
     // when/then
     final var expectedResponse =
         """
-        {
-          "type": "about:blank",
-          "title": "java.lang.RuntimeException",
-          "status": 500,
-          "detail": "Unexpected error occurred during the request processing: Failed to get decision requirements xml.",
-          "instance": "%s"
-        }"""
+            {
+              "type": "about:blank",
+              "title": "java.lang.RuntimeException",
+              "status": 500,
+              "detail": "Unexpected error occurred during the request processing: Failed to get decision requirements xml.",
+              "instance": "%s"
+            }"""
             .formatted(DECISION_REQUIREMENTS_GET_XML_URL.formatted(decisionRequirementsKey));
     webClient
         .get()
@@ -458,13 +458,13 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
     // when/then
     final var expectedResponse =
         """
-        {
-          "type": "about:blank",
-          "title": "Bad Request",
-          "status": 400,
-          "detail": "Failed to convert 'decisionRequirementsKey' with value: 'invalidKey'",
-          "instance": "/v2/decision-requirements/invalidKey/xml"
-        }""";
+            {
+              "type": "about:blank",
+              "title": "Bad Request",
+              "status": 400,
+              "detail": "Failed to convert 'decisionRequirementsKey' with value: 'invalidKey'",
+              "instance": "/v2/decision-requirements/invalidKey/xml"
+            }""";
     webClient
         .get()
         .uri("/v2/decision-requirements/%s/xml".formatted(decisionRequirementsKey))

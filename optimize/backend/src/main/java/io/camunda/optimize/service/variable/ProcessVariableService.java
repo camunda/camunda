@@ -32,18 +32,25 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 public class ProcessVariableService {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ProcessVariableService.class);
   private final ProcessVariableReader processVariableReader;
   private final DataSourceTenantAuthorizationService tenantAuthorizationService;
   private final ReportService reportService;
+
+  public ProcessVariableService(
+      final ProcessVariableReader processVariableReader,
+      final DataSourceTenantAuthorizationService tenantAuthorizationService,
+      final ReportService reportService) {
+    this.processVariableReader = processVariableReader;
+    this.tenantAuthorizationService = tenantAuthorizationService;
+    this.reportService = reportService;
+  }
 
   public List<ProcessVariableNameResponseDto> getVariableNames(
       final ProcessVariableNameRequestDto variableRequestDto) {
@@ -56,7 +63,7 @@ public class ProcessVariableService {
         convertReportsToVariableQuery(
             reportService.getAllReportsForIds(reportIds), this::convertToProcessToQueryDto);
 
-    ProcessVariableNameRequestDto processVariableNameRequestDto =
+    final ProcessVariableNameRequestDto processVariableNameRequestDto =
         new ProcessVariableNameRequestDto(processesToQuery);
     return processVariableReader.getVariableNames(processVariableNameRequestDto);
   }
@@ -67,7 +74,7 @@ public class ProcessVariableService {
         convertAuthorizedReportsToVariableQuery(
             userId, reportIds, this::convertToProcessToQueryDto);
 
-    ProcessVariableNameRequestDto processVariableNameRequestDto =
+    final ProcessVariableNameRequestDto processVariableNameRequestDto =
         new ProcessVariableNameRequestDto(processesToQuery);
     return processVariableReader.getVariableNames(processVariableNameRequestDto);
   }
@@ -81,7 +88,7 @@ public class ProcessVariableService {
             .flatMap(Collection::stream)
             .toList();
 
-    ProcessVariableNameRequestDto processVariableNameRequestDto =
+    final ProcessVariableNameRequestDto processVariableNameRequestDto =
         new ProcessVariableNameRequestDto(processesToQuery);
     return processVariableReader.getVariableNames(processVariableNameRequestDto);
   }

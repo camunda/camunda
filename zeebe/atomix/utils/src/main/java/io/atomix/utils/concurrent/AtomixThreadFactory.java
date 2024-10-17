@@ -17,6 +17,7 @@
 package io.atomix.utils.concurrent;
 
 import java.util.concurrent.ThreadFactory;
+import org.slf4j.MDC;
 
 /**
  * Named thread factory.
@@ -24,8 +25,25 @@ import java.util.concurrent.ThreadFactory;
  * @author <a href="http://github.com/kuujo">Jordan Halterman</a>
  */
 public class AtomixThreadFactory implements ThreadFactory {
+
+  final String actorSchedulerName;
+
+  public AtomixThreadFactory() {
+    actorSchedulerName = "";
+  }
+
+  public AtomixThreadFactory(final String actorSchedulerName) {
+    this.actorSchedulerName = actorSchedulerName;
+  }
+
   @Override
   public Thread newThread(final Runnable r) {
-    return new AtomixThread(r);
+    return new AtomixThread(
+        () -> {
+          if (actorSchedulerName != null && !actorSchedulerName.isEmpty()) {
+            MDC.put("actor-scheduler", actorSchedulerName);
+          }
+          r.run();
+        });
   }
 }

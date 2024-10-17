@@ -12,9 +12,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchQueryBuilders;
+import io.camunda.search.clients.transformers.SearchTransfomer;
 import io.camunda.search.os.transformers.OpensearchTransformers;
 import io.camunda.search.os.util.OSQuerySerializer;
-import io.camunda.search.transformers.SearchTransfomer;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;

@@ -7,15 +7,14 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.service.ProcessInstanceServices;
-import io.camunda.service.search.query.ProcessInstanceQuery;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResponse;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +24,11 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/v2/process-instances")
 public class ProcessInstanceQueryController {
 
-  @Autowired private ProcessInstanceServices processInstanceServices;
+  private final ProcessInstanceServices processInstanceServices;
+
+  public ProcessInstanceQueryController(final ProcessInstanceServices processInstanceServices) {
+    this.processInstanceServices = processInstanceServices;
+  }
 
   @PostMapping(
       path = "/search",

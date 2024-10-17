@@ -24,14 +24,16 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Conditional(CCSMCondition.class)
 @Component
-@Slf4j
 public class CamundaCCSMTenantAuthorizationService implements DataSourceTenantAuthorizationService {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(CamundaCCSMTenantAuthorizationService.class);
   private final CCSMTokenService ccsmTokenService;
   private final ConfigurationService configurationService;
   private final Cache<String, List<TenantDto>> userTenantAuthorizations;

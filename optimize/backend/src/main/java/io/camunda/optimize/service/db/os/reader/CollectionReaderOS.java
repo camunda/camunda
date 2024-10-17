@@ -23,8 +23,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.FieldSort;
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
@@ -32,31 +30,37 @@ import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.search.Hit;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 @Conditional(OpenSearchCondition.class)
 public class CollectionReaderOS implements CollectionReader {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(CollectionReaderOS.class);
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
 
+  public CollectionReaderOS(
+      final OptimizeOpenSearchClient osClient, final ConfigurationService configurationService) {
+    this.osClient = osClient;
+    this.configurationService = configurationService;
+  }
+
   @Override
-  public Optional<CollectionDefinitionDto> getCollection(String collectionId) {
+  public Optional<CollectionDefinitionDto> getCollection(final String collectionId) {
     log.debug("Fetching collection with id [{}]", collectionId);
-    GetRequest.Builder getRequest =
+    final GetRequest.Builder getRequest =
         new GetRequest.Builder().index(COLLECTION_INDEX_NAME).id(collectionId);
     final String errorMessage =
         String.format("Could not fetch collection with id [%s]", collectionId);
-    GetResponse<CollectionDefinitionDto> getResponse =
+    final GetResponse<CollectionDefinitionDto> getResponse =
         osClient.get(getRequest, CollectionDefinitionDto.class, errorMessage);
 
     if (getResponse.found()) {
       if (Objects.isNull(getResponse.source())) {
-        String reason =
+        final String reason =
             "Could not deserialize collection information for collection " + collectionId;
         log.error(
             "Was not able to retrieve collection with id [{}] from OpenSearch. Reason: {}",
@@ -74,7 +78,7 @@ public class CollectionReaderOS implements CollectionReader {
   public List<CollectionDefinitionDto> getAllCollections() {
     log.debug("Fetching all available collections");
 
-    SearchRequest.Builder searchRequest =
+    final SearchRequest.Builder searchRequest =
         new SearchRequest.Builder()
             .index(COLLECTION_INDEX_NAME)
             .query(QueryDSL.matchAll())
@@ -94,10 +98,10 @@ public class CollectionReaderOS implements CollectionReader {
                             .getOpenSearchConfiguration()
                             .getScrollTimeoutInSeconds())));
 
-    OpenSearchDocumentOperations.AggregatedResult<Hit<CollectionDefinitionDto>> scrollResp;
+    final OpenSearchDocumentOperations.AggregatedResult<Hit<CollectionDefinitionDto>> scrollResp;
     try {
       scrollResp = osClient.retrieveAllScrollResults(searchRequest, CollectionDefinitionDto.class);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String errorMessage = "Was not able to retrieve collections!";
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);

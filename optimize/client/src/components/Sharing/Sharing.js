@@ -15,7 +15,6 @@ import {Link} from '@carbon/react';
 import {
   ReportRenderer,
   DashboardRenderer,
-  Icon,
   Loading,
   ErrorPage,
   EntityName,
@@ -25,6 +24,7 @@ import {
   DiagramScrollLock,
   PageTitle,
 } from 'components';
+import {CamundaLogo} from 'icons';
 import {useErrorHandling} from 'hooks';
 import {t} from 'translation';
 import {track} from 'tracking';
@@ -153,7 +153,7 @@ export function Sharing() {
         {SharingView}
         {isEmbedded && (
           <a className="iconLink" href={getEntityUrl()} target="_blank" rel="noopener noreferrer">
-            <Icon type="optimize" size="20" />
+            <CamundaLogo width="20" height="20" />
           </a>
         )}
         {isEmbedded && isReport && <DiagramScrollLock />}

@@ -9,7 +9,6 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.service.ManagementServices;
 import io.camunda.zeebe.gateway.protocol.rest.LicenseResponse;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,7 +17,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping(path = {"/v2"})
 public class LicenseController {
 
-  @Autowired private ManagementServices managementServices;
+  private final ManagementServices managementServices;
+
+  public LicenseController(final ManagementServices managementServices) {
+    this.managementServices = managementServices;
+  }
 
   @GetMapping(path = "/license", produces = MediaType.APPLICATION_JSON_VALUE)
   public LicenseResponse get() {

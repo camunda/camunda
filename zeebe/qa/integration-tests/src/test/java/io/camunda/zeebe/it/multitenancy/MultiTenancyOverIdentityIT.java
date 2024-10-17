@@ -966,7 +966,7 @@ public class MultiTenancyOverIdentityIT {
           .withThrowableThat()
           .withMessageContaining("NOT_FOUND")
           .withMessageContaining(
-              "Command 'COMPLETE' rejected with code 'NOT_FOUND': Expected to update retries for job with key '%d', but no such job was found"
+              "Command 'COMPLETE' rejected with code 'NOT_FOUND': Expected to complete job with key '%d', but no such job was found"
                   .formatted(activatedJob.getKey()));
     }
   }

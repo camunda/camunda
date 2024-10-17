@@ -42,35 +42,58 @@ import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCon
 import jakarta.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
-import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class DashboardWriterES implements DashboardWriter {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DashboardWriterES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
   private final TaskRepositoryES taskRepositoryES;
 
+  public DashboardWriterES(
+      OptimizeElasticsearchClient esClient,
+      ObjectMapper objectMapper,
+      TaskRepositoryES taskRepositoryES) {
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+    this.taskRepositoryES = taskRepositoryES;
+  }
+
   @Override
   public IdResponseDto createNewDashboard(
-      @NonNull final String userId,
-      @NonNull final DashboardDefinitionRestDto dashboardDefinitionDto) {
+      final String userId, final DashboardDefinitionRestDto dashboardDefinitionDto) {
+    if (userId == null) {
+      throw new OptimizeRuntimeException("userId is null");
+    }
+    if (dashboardDefinitionDto == null) {
+      throw new OptimizeRuntimeException("dashboardDefinitionDto is null");
+    }
+
     return createNewDashboard(userId, dashboardDefinitionDto, IdGenerator.getNextId());
   }
 
   @Override
   public IdResponseDto createNewDashboard(
-      @NonNull final String userId,
-      @NonNull final DashboardDefinitionRestDto dashboardDefinitionDto,
-      @NonNull final String id) {
+      final String userId,
+      final DashboardDefinitionRestDto dashboardDefinitionDto,
+      final String id) {
     log.debug("Writing new dashboard to Elasticsearch");
+
+    if (userId == null) {
+      throw new OptimizeRuntimeException("userId is null");
+    }
+    if (dashboardDefinitionDto == null) {
+      throw new OptimizeRuntimeException("dashboardDefinitionDto is null");
+    }
+    if (id == null) {
+      throw new OptimizeRuntimeException("id is null");
+    }
+
     dashboardDefinitionDto.setOwner(userId);
     dashboardDefinitionDto.setName(
         Optional.ofNullable(dashboardDefinitionDto.getName()).orElse(DEFAULT_DASHBOARD_NAME));
@@ -80,8 +103,11 @@ public class DashboardWriterES implements DashboardWriter {
   }
 
   @Override
-  public IdResponseDto saveDashboard(
-      @NonNull final DashboardDefinitionRestDto dashboardDefinitionDto) {
+  public IdResponseDto saveDashboard(final DashboardDefinitionRestDto dashboardDefinitionDto) {
+    if (dashboardDefinitionDto == null) {
+      throw new OptimizeRuntimeException("dashboardDefinitionDto is null");
+    }
+
     dashboardDefinitionDto.setCreated(LocalDateUtil.getCurrentDateTime());
     dashboardDefinitionDto.setLastModified(LocalDateUtil.getCurrentDateTime());
     final String dashboardId = dashboardDefinitionDto.getId();

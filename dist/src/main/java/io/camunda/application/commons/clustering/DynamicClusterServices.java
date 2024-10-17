@@ -15,10 +15,9 @@ import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.dynamic.config.GatewayClusterConfigurationService;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier.ClusterClusterConfigurationAwareCoordinatorSupplier;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
-import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
+import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.scheduler.ActorScheduler;
-import java.time.Duration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
@@ -41,13 +40,12 @@ public class DynamicClusterServices {
   @Bean
   @Profile("!broker")
   public GatewayClusterConfigurationService gatewayClusterTopologyService(
-      final BrokerTopologyManager brokerTopologyManager) {
+      final BrokerTopologyManager brokerTopologyManager, final GatewayCfg gatewayCfg) {
     final var service =
         new GatewayClusterConfigurationService(
             clusterCommunicationService,
             clusterMembershipService,
-            new ClusterConfigurationGossiperConfig(
-                false, Duration.ofSeconds(10), Duration.ofSeconds(1), 2));
+            gatewayCfg.getCluster().getConfigManager().gossip());
     scheduler.submitActor(service).join();
     service.addUpdateListener(brokerTopologyManager);
     return service;

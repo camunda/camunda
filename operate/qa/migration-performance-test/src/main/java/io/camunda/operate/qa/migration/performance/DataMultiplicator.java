@@ -15,8 +15,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.templates.*;
 import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.operate.EventEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
@@ -63,8 +67,8 @@ public class DataMultiplicator implements CommandLineRunner {
   private static final Logger LOGGER = LoggerFactory.getLogger(DataMultiplicator.class);
   @Autowired private RestHighLevelClient esClient;
   @Autowired private OperateProperties operateProperties;
-  @Autowired private List<TemplateDescriptor> indexDescriptors;
-  private final Map<Class<? extends TemplateDescriptor>, Class<? extends ExporterEntity>>
+  @Autowired private List<IndexTemplateDescriptor> indexDescriptors;
+  private final Map<Class<? extends IndexTemplateDescriptor>, Class<? extends ExporterEntity>>
       descriptorToEntity =
           Map.of(
               EventTemplate.class, EventEntity.class,
@@ -91,7 +95,7 @@ public class DataMultiplicator implements CommandLineRunner {
     } catch (final Exception e) {
       LOGGER.warn("Couldn't parse times of duplication. Use default {}", times[0]);
     }
-    final List<TemplateDescriptor> duplicatable =
+    final List<IndexTemplateDescriptor> duplicatable =
         filter(
             indexDescriptors, descriptor -> descriptorToEntity.containsKey(descriptor.getClass()));
     final List<Thread> duplicators =
@@ -102,7 +106,7 @@ public class DataMultiplicator implements CommandLineRunner {
     }
   }
 
-  private void duplicateIndexBy(final int times, final TemplateDescriptor templateDescriptor) {
+  private void duplicateIndexBy(final int times, final IndexTemplateDescriptor templateDescriptor) {
     final Class<? extends ExporterEntity> resultClass =
         descriptorToEntity.get(templateDescriptor.getClass());
     try {
@@ -128,7 +132,7 @@ public class DataMultiplicator implements CommandLineRunner {
   }
 
   private List<? extends ExporterEntity> findDocumentsFor(
-      final TemplateDescriptor templateDescriptor,
+      final IndexTemplateDescriptor templateDescriptor,
       final Class<? extends ExporterEntity> resultClass)
       throws IOException {
     final SearchResponse searchResponse =
@@ -142,7 +146,7 @@ public class DataMultiplicator implements CommandLineRunner {
 
   private void duplicate(
       final int times,
-      final TemplateDescriptor templateDescriptor,
+      final IndexTemplateDescriptor templateDescriptor,
       final List<? extends ExporterEntity> results)
       throws PersistenceException {
     final int max = times * results.size();

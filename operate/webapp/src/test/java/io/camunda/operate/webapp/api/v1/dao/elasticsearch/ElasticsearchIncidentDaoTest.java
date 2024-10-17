@@ -15,9 +15,9 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.operate.connect.OperateDateTimeFormatter;
-import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.webapp.api.v1.entities.Incident;
 import io.camunda.operate.webapp.api.v1.entities.Query;
+import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;

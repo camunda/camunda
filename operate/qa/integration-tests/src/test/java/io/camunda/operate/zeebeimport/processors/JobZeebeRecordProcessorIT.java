@@ -7,11 +7,10 @@
  */
 package io.camunda.operate.zeebeimport.processors;
 
+import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_TENANT_ID;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.schema.indices.IndexDescriptor;
-import io.camunda.operate.schema.templates.JobTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.webapp.reader.ListenerReader;
@@ -19,6 +18,7 @@ import io.camunda.operate.webapp.rest.dto.ListenerDto;
 import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
 import io.camunda.operate.webapp.rest.dto.ListenerResponseDto;
 import io.camunda.operate.webapp.rest.dto.SortingDto;
+import io.camunda.webapps.schema.descriptors.operate.template.JobTemplate;
 import io.camunda.webapps.schema.entities.operate.ListenerState;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
@@ -175,7 +175,7 @@ public class JobZeebeRecordProcessorIT extends OperateSearchAbstractIT {
       final long processInstanceKey,
       final String type) {
     final Map<String, Object> authorization =
-        Map.of("authorized_tenants", List.of(IndexDescriptor.DEFAULT_TENANT_ID));
+        Map.of("authorized_tenants", List.of(DEFAULT_TENANT_ID));
     final JobRecordValue value =
         ImmutableJobRecordValue.builder()
             .withBpmnProcessId(bpmnProcessId)
@@ -187,7 +187,7 @@ public class JobZeebeRecordProcessorIT extends OperateSearchAbstractIT {
             .withProcessDefinitionVersion(1)
             .withProcessInstanceKey(processInstanceKey)
             .withRetries(2)
-            .withTenantId(IndexDescriptor.DEFAULT_TENANT_ID)
+            .withTenantId(DEFAULT_TENANT_ID)
             .withType(type)
             .withDeadline(-1)
             .build();

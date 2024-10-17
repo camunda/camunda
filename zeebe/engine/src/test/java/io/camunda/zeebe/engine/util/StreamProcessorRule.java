@@ -17,7 +17,7 @@ import io.camunda.zeebe.engine.util.StreamProcessingComposite.StreamProcessorTes
 import io.camunda.zeebe.engine.util.client.CommandWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
-import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
+import io.camunda.zeebe.logstreams.util.TestLogStream;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
@@ -171,7 +171,7 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
     return streamProcessingComposite.getStreamClock(partitionId);
   }
 
-  public SynchronousLogStream getLogStream(final int partitionId) {
+  public TestLogStream getLogStream(final int partitionId) {
     return streamProcessingComposite.getLogStream(partitionId);
   }
 
@@ -198,7 +198,7 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
   public void printAllRecords() {
     int partitionId = startPartitionId;
     for (int i = 0; i < partitionCount; i++) {
-      final SynchronousLogStream logStream = streams.getLogStream(getLogName(partitionId++));
+      final TestLogStream logStream = streams.getLogStream(getLogName(partitionId++));
       LogStreamPrinter.printRecords(logStream);
     }
   }

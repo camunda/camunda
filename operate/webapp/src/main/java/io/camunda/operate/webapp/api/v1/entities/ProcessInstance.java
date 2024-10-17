@@ -10,7 +10,7 @@ package io.camunda.operate.webapp.api.v1.entities;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Objects;

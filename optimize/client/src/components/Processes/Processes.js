@@ -141,7 +141,10 @@ export function Processes({mightFail, user}) {
                 });
               }
 
-              if (user?.authorizations.includes('entity_editor')) {
+              if (
+                user?.authorizations.includes('entity_editor') &&
+                optimizeDatabase !== 'opensearch'
+              ) {
                 listItem.link = `dashboard/instant/${processDefinitionKey}/`;
               }
 

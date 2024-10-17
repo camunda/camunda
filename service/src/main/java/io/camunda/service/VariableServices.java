@@ -7,15 +7,16 @@
  */
 package io.camunda.service;
 
-import io.camunda.search.clients.CamundaSearchClient;
-import io.camunda.service.entities.VariableEntity;
+import io.camunda.search.clients.VariableSearchClient;
+import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.VariableQuery;
+import io.camunda.search.query.VariableQuery.Builder;
+import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.search.core.SearchQueryService;
-import io.camunda.service.search.query.SearchQueryBuilders;
-import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.service.search.query.VariableQuery;
-import io.camunda.service.search.query.VariableQuery.Builder;
-import io.camunda.service.security.auth.Authentication;
-import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.function.Function;
@@ -23,31 +24,41 @@ import java.util.function.Function;
 public final class VariableServices
     extends SearchQueryService<VariableServices, VariableQuery, VariableEntity> {
 
-  public VariableServices(
-      final BrokerClient brokerClient, final CamundaSearchClient dataStoreClient) {
-    this(brokerClient, dataStoreClient, null, null);
-  }
+  private final VariableSearchClient variableSearchClient;
 
   public VariableServices(
       final BrokerClient brokerClient,
-      final CamundaSearchClient searchClient,
-      final ServiceTransformers transformers,
+      final VariableSearchClient variableSearchClient,
       final Authentication authentication) {
-    super(brokerClient, searchClient, transformers, authentication);
+    super(brokerClient, authentication);
+    this.variableSearchClient = variableSearchClient;
   }
 
   @Override
   public VariableServices withAuthentication(final Authentication authentication) {
-    return new VariableServices(brokerClient, searchClient, transformers, authentication);
+    return new VariableServices(brokerClient, variableSearchClient, authentication);
   }
 
   @Override
   public SearchQueryResult<VariableEntity> search(final VariableQuery query) {
-    return executor.search(query, VariableEntity.class);
+    return variableSearchClient.searchVariables(query, authentication);
   }
 
   public SearchQueryResult<VariableEntity> search(
       final Function<Builder, ObjectBuilder<VariableQuery>> fn) {
     return search(SearchQueryBuilders.variableSearchQuery(fn));
+  }
+
+  public VariableEntity getByKey(final Long key) {
+    final SearchQueryResult<VariableEntity> result =
+        search(SearchQueryBuilders.variableSearchQuery().filter(f -> f.variableKeys(key)).build());
+    if (result.total() < 1) {
+      throw new NotFoundException(String.format("Variable with key %d not found", key));
+    } else if (result.total() > 1) {
+      throw new CamundaSearchException(
+          String.format("Found Variable with key %d more than once", key));
+    } else {
+      return result.items().stream().findFirst().orElseThrow();
+    }
   }
 }

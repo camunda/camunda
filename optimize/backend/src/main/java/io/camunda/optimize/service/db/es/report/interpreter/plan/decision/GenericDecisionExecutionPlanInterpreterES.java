@@ -21,21 +21,32 @@ import io.camunda.optimize.service.db.reader.DecisionDefinitionReader;
 import io.camunda.optimize.service.db.report.plan.decision.DecisionExecutionPlan;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.Set;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class GenericDecisionExecutionPlanInterpreterES
     extends AbstractDecisionExecutionPlanInterpreterES {
-  @Getter private final DecisionDefinitionReader decisionDefinitionReader;
-  @Getter private final DecisionQueryFilterEnhancerES queryFilterEnhancer;
-  @Getter private final DecisionGroupByInterpreterFacadeES groupByInterpreter;
-  @Getter private final DecisionViewInterpreterFacadeES viewInterpreter;
-  @Getter private final OptimizeElasticsearchClient esClient;
+
+  private final DecisionDefinitionReader decisionDefinitionReader;
+  private final DecisionQueryFilterEnhancerES queryFilterEnhancer;
+  private final DecisionGroupByInterpreterFacadeES groupByInterpreter;
+  private final DecisionViewInterpreterFacadeES viewInterpreter;
+  private final OptimizeElasticsearchClient esClient;
+
+  public GenericDecisionExecutionPlanInterpreterES(
+      DecisionDefinitionReader decisionDefinitionReader,
+      DecisionQueryFilterEnhancerES queryFilterEnhancer,
+      DecisionGroupByInterpreterFacadeES groupByInterpreter,
+      DecisionViewInterpreterFacadeES viewInterpreter,
+      OptimizeElasticsearchClient esClient) {
+    this.decisionDefinitionReader = decisionDefinitionReader;
+    this.queryFilterEnhancer = queryFilterEnhancer;
+    this.groupByInterpreter = groupByInterpreter;
+    this.viewInterpreter = viewInterpreter;
+    this.esClient = esClient;
+  }
 
   @Override
   public Set<DecisionExecutionPlan> getSupportedExecutionPlans() {
@@ -45,5 +56,25 @@ public class GenericDecisionExecutionPlanInterpreterES
         DECISION_INSTANCE_FREQUENCY_GROUP_BY_MATCHED_RULE,
         DECISION_INSTANCE_FREQUENCY_GROUP_BY_NONE,
         DECISION_INSTANCE_FREQUENCY_GROUP_BY_OUTPUT_VARIABLE);
+  }
+
+  public DecisionDefinitionReader getDecisionDefinitionReader() {
+    return this.decisionDefinitionReader;
+  }
+
+  public DecisionQueryFilterEnhancerES getQueryFilterEnhancer() {
+    return this.queryFilterEnhancer;
+  }
+
+  public DecisionGroupByInterpreterFacadeES getGroupByInterpreter() {
+    return this.groupByInterpreter;
+  }
+
+  public DecisionViewInterpreterFacadeES getViewInterpreter() {
+    return this.viewInterpreter;
+  }
+
+  public OptimizeElasticsearchClient getEsClient() {
+    return this.esClient;
   }
 }

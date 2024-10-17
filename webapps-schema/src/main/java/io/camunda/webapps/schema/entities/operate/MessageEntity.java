@@ -20,7 +20,7 @@ public class MessageEntity extends OperateZeebeEntity<MessageEntity> {
   private Long timeToLive;
   private String messageId;
   private String variables;
-  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  private String tenantId = DEFAULT_TENANT_ID;
 
   public String getMessageName() {
     return messageName;

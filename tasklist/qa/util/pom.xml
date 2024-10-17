@@ -4,7 +4,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>tasklist-qa</artifactId>
-    <version>8.6.0-SNAPSHOT</version>
+    <version>8.7.0-SNAPSHOT</version>
   </parent>
   <artifactId>tasklist-qa-util</artifactId>
 
@@ -53,6 +53,12 @@
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-test-container</artifactId>
+    </dependency>
+
+    <!-- Necessary for zeebe-test-container -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol-jackson</artifactId>
     </dependency>
 
     <dependency>
@@ -186,6 +192,7 @@
         <configuration>
           <ignoredUnusedDeclaredDependencies>
             <dep>org.springframework:spring-aspects</dep>
+            <dep>io.camunda:zeebe-protocol-jackson</dep>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>

@@ -13,8 +13,8 @@ import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.security.auth.Authentication;
 import io.camunda.service.DecisionDefinitionServices;
-import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -37,20 +37,20 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
   private static final String EVALUATION_URL = DECISION_BASE_URL + "/evaluation";
   private static final String EXPECTED_EVALUATION_RESPONSE =
       """
-      {
-         "decisionDefinitionKey":123456,
-         "decisionDefinitionId":"decisionId",
-         "decisionDefinitionName":"decisionName",
-         "decisionDefinitionVersion":1,
-         "decisionRequirementsId":"decisionRequirementsId",
-         "decisionRequirementsKey":123456,
-         "output":"null",
-         "failedDecisionDefinitionId":"",
-         "failureMessage":"",
-         "tenantId":"tenantId",
-         "decisionInstanceKey":123,
-         "evaluatedDecisions":[]
-      }""";
+          {
+             "decisionDefinitionKey":123456,
+             "decisionDefinitionId":"decisionId",
+             "decisionDefinitionName":"decisionName",
+             "decisionDefinitionVersion":1,
+             "decisionRequirementsId":"decisionRequirementsId",
+             "decisionRequirementsKey":123456,
+             "output":"null",
+             "failedDecisionDefinitionId":"",
+             "failureMessage":"",
+             "tenantId":"tenantId",
+             "decisionInstanceKey":123,
+             "evaluatedDecisions":[]
+          }""";
 
   @MockBean MultiTenancyCfg multiTenancyCfg;
   @MockBean private DecisionDefinitionServices decisionServices;
@@ -70,13 +70,13 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-          "decisionDefinitionKey": 123456,
-          "variables": {
-            "key": "value"
-          },
-          "tenantId": "tenantId"
-        }""";
+            {
+              "decisionDefinitionKey": 123456,
+              "variables": {
+                "key": "value"
+              },
+              "tenantId": "tenantId"
+            }""";
 
     // when/then
     final ResponseSpec response =
@@ -107,13 +107,13 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-          "decisionDefinitionKey": 123456,
-          "variables": {
-            "key": "value"
-          },
-          "tenantId": "<default>"
-        }""";
+            {
+              "decisionDefinitionKey": 123456,
+              "variables": {
+                "key": "value"
+              },
+              "tenantId": "<default>"
+            }""";
 
     // when/then
     webClient
@@ -139,13 +139,13 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
 
     final var request =
         """
-        {
-          "decisionDefinitionId": "decisionId",
-          "variables": {
-            "key": "value"
-          },
-          "tenantId": "tenantId"
-        }""";
+            {
+              "decisionDefinitionId": "decisionId",
+              "variables": {
+                "key": "value"
+              },
+              "tenantId": "tenantId"
+            }""";
 
     // when/then
     final ResponseSpec response =
@@ -172,23 +172,23 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-        {
-          "decisionDefinitionId": "decisionId",
-          "decisionDefinitionKey": 123456,
-          "variables": {
-            "key": "value"
-          }
-        }""";
+            {
+              "decisionDefinitionId": "decisionId",
+              "decisionDefinitionKey": 123456,
+              "variables": {
+                "key": "value"
+              }
+            }""";
 
     final var expectedBody =
         """
-        {
-            "type":"about:blank",
-            "title":"INVALID_ARGUMENT",
-            "status":400,
-            "detail":"Only one of [decisionDefinitionId, decisionDefinitionKey] is allowed.",
-            "instance":"/v2/decision-definitions/evaluation"
-         }""";
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"Only one of [decisionDefinitionId, decisionDefinitionKey] is allowed.",
+                "instance":"/v2/decision-definitions/evaluation"
+             }""";
 
     // when then
     webClient
@@ -209,21 +209,21 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-        {
-          "variables": {
-            "key": "value"
-          }
-        }""";
+            {
+              "variables": {
+                "key": "value"
+              }
+            }""";
 
     final var expectedBody =
         """
-        {
-            "type":"about:blank",
-            "title":"INVALID_ARGUMENT",
-            "status":400,
-            "detail":"At least one of [decisionDefinitionId, decisionDefinitionKey] is required.",
-            "instance":"/v2/decision-definitions/evaluation"
-         }""";
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"At least one of [decisionDefinitionId, decisionDefinitionKey] is required.",
+                "instance":"/v2/decision-definitions/evaluation"
+             }""";
 
     // when then
     webClient

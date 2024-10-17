@@ -14,13 +14,17 @@ import io.camunda.optimize.service.security.SessionService;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Response;
-import lombok.RequiredArgsConstructor;
 
-@RequiredArgsConstructor
 public abstract class AbstractAuthenticationService {
 
   protected final SessionService sessionService;
   protected final AuthCookieService authCookieService;
+
+  public AbstractAuthenticationService(
+      final SessionService sessionService, final AuthCookieService authCookieService) {
+    this.sessionService = sessionService;
+    this.authCookieService = authCookieService;
+  }
 
   public abstract Response authenticateUser(
       @Context ContainerRequestContext requestContext, CredentialsRequestDto credentials);

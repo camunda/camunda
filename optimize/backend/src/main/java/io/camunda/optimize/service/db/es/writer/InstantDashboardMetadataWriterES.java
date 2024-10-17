@@ -28,19 +28,24 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class InstantDashboardMetadataWriterES implements InstantDashboardMetadataWriter {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(InstantDashboardMetadataWriterES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
+
+  public InstantDashboardMetadataWriterES(
+      OptimizeElasticsearchClient esClient, ObjectMapper objectMapper) {
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+  }
 
   @Override
   public void saveInstantDashboard(InstantDashboardDataDto dashboardDataDto) {

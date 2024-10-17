@@ -24,18 +24,25 @@ import jakarta.ws.rs.NotFoundException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 public class DashboardExportService {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DashboardExportService.class);
   private final DashboardService dashboardService;
   private final ReportExportService reportExportService;
   private final AuthorizedCollectionService collectionService;
+
+  public DashboardExportService(
+      final DashboardService dashboardService,
+      final ReportExportService reportExportService,
+      final AuthorizedCollectionService collectionService) {
+    this.dashboardService = dashboardService;
+    this.reportExportService = reportExportService;
+    this.collectionService = collectionService;
+  }
 
   public List<OptimizeEntityExportDto> getCompleteDashboardExport(final Set<String> dashboardIds) {
     log.debug("Exporting dashboards with IDs {} via API.", dashboardIds);
@@ -95,7 +102,7 @@ public class DashboardExportService {
         dashboards.stream().flatMap(d -> d.getTileIds().stream()).collect(toSet());
     try {
       return reportExportService.retrieveReportDefinitionsOrFailIfMissing(reportIds);
-    } catch (NotFoundException e) {
+    } catch (final NotFoundException e) {
       throw new OptimizeRuntimeException(
           "Could not retrieve some reports required by this dashboard.");
     }
@@ -112,7 +119,7 @@ public class DashboardExportService {
               try {
                 collectionService.verifyUserAuthorizedToEditCollectionResources(
                     userId, collectionId);
-              } catch (ForbiddenException e) {
+              } catch (final ForbiddenException e) {
                 unauthorizedCollectionIds.add(collectionId);
               }
             });

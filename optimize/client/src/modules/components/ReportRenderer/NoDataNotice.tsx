@@ -8,35 +8,42 @@
 
 import {ReactNode} from 'react';
 import classnames from 'classnames';
+import {Information, Misuse, Warning} from '@carbon/icons-react';
 
-import {Icon} from 'components';
 import {t} from 'translation';
 
 import './NoDataNotice.scss';
 
 interface NoDataNoticeProps {
-  type?: string;
+  type?: 'error' | 'warning' | 'info'
   title?: ReactNode;
   children?: ReactNode;
 }
 
 export default function NoDataNotice({type, title, children}: NoDataNoticeProps) {
+  const Icon = getIcon(type);
   return (
     <div className={classnames('NoDataNotice', type)}>
       <div className="container">
-        <h1>
-          {type && <Icon size="20" type={getIconName(type) + '-outline'} />}
-          {title || t('report.noDataNotice')}
-        </h1>
+        <div className="title">
+          {Icon && <Icon size="20" className={type} />}
+          <h1>{title || t('report.noDataNotice')}</h1>
+        </div>
         <p>{children}</p>
       </div>
     </div>
   );
 }
 
-function getIconName(type: string) {
-  if (type === 'error') {
-    return 'warning';
+function getIcon(type: string | undefined) {
+  switch (type) {
+    case 'error':
+      return Misuse;
+    case 'warning':
+      return Warning;
+    case 'info':
+      return Information;
+    default:
+      return null;
   }
-  return type;
 }

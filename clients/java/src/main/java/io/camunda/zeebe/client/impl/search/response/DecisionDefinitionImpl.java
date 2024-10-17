@@ -32,7 +32,7 @@ public final class DecisionDefinitionImpl implements DecisionDefinition {
   public DecisionDefinitionImpl(final DecisionDefinitionItem item) {
     this(
         item.getDecisionDefinitionId(),
-        item.getDecisionDefinitionName(),
+        item.getName(),
         item.getVersion(),
         item.getDecisionDefinitionKey(),
         item.getDecisionRequirementsId(),

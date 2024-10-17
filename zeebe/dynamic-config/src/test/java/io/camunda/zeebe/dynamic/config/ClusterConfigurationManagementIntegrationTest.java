@@ -249,7 +249,7 @@ class ClusterConfigurationManagementIntegrationTest {
             cluster.getCommunicationService(),
             cluster.getMembershipService(),
             new ClusterConfigurationGossiperConfig(
-                true, Duration.ofSeconds(1), Duration.ofMillis(100), 2),
+                Duration.ofSeconds(1), Duration.ofMillis(100), 2),
             true);
     return new TestNode(cluster, service);
   }

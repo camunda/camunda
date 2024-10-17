@@ -7,7 +7,7 @@
  */
 
 import {Popover, PopoverContent} from '@carbon/react';
-import {ReactNode, useCallback, useState} from 'react';
+import {type ReactNode, useCallback, useState} from 'react';
 import styles from './styles.module.scss';
 import cn from 'classnames';
 

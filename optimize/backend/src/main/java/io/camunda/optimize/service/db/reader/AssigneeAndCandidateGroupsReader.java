@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
-import lombok.NonNull;
 
 public interface AssigneeAndCandidateGroupsReader {
 
@@ -28,9 +27,16 @@ public interface AssigneeAndCandidateGroupsReader {
   String TERMS_AGG = "userTaskFieldTerms";
 
   default void consumeAssigneesInBatches(
-      @NonNull final String engineAlias,
-      @NonNull final Consumer<List<String>> assigneeBatchConsumer,
+      final String engineAlias,
+      final Consumer<List<String>> assigneeBatchConsumer,
       final int batchSize) {
+    if (engineAlias == null) {
+      throw new IllegalArgumentException("engineAlias cannot be null");
+    }
+    if (assigneeBatchConsumer == null) {
+      throw new IllegalArgumentException("assigneeBatchConsumer cannot be null");
+    }
+
     consumeUserTaskFieldTermsInBatches(
         ProcessInstanceDto.Fields.dataSource + "." + DataSourceDto.Fields.name,
         engineAlias,
@@ -40,9 +46,15 @@ public interface AssigneeAndCandidateGroupsReader {
   }
 
   default void consumeCandidateGroupsInBatches(
-      @NonNull final String engineAlias,
-      @NonNull final Consumer<List<String>> candidateGroupBatchConsumer,
+      final String engineAlias,
+      final Consumer<List<String>> candidateGroupBatchConsumer,
       final int batchSize) {
+    if (engineAlias == null) {
+      throw new IllegalArgumentException("engineAlias cannot be null");
+    }
+    if (candidateGroupBatchConsumer == null) {
+      throw new IllegalArgumentException("candidateGroupBatchConsumer cannot be null");
+    }
 
     consumeUserTaskFieldTermsInBatches(
         ProcessInstanceDto.Fields.dataSource + "." + DataSourceDto.Fields.name,

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ProcessInstance} from 'modules/types';
+import type {ProcessInstance} from 'modules/types';
 
 const processInstances: ProcessInstance[] = [
   {

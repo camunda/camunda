@@ -32,7 +32,7 @@ public class FlowNodeInstanceEntity extends OperateZeebeEntity<FlowNodeInstanceE
   private int level;
   private Long position;
   private boolean incident;
-  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+  private String tenantId = DEFAULT_TENANT_ID;
 
   @JsonIgnore private Object[] sortValues;
 
