@@ -26,7 +26,14 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
   @Override
   public String getFullQualifiedName() {
-    if (getIndexPrefix().isEmpty()) {
+
+    //    legacy support for descriptors in operate where the index prefix contains the component
+    // nam e.g. indexPrefix = "operate"
+    if (getIndexPrefix() != null && getIndexPrefix().contains(getComponentName())) {
+      return String.format("%s-%s-%s_", getIndexPrefix(), getIndexName(), getVersion());
+    }
+
+    if (getIndexPrefix() == null || getIndexPrefix().isEmpty()) {
       return String.format("%s-%s-%s_", getComponentName(), getIndexName(), getVersion());
     } else {
       return String.format(
@@ -48,7 +55,11 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
   @Override
   public String getAllVersionsIndexNameRegexPattern() {
-    if (getIndexPrefix().isEmpty()) {
+    if (getIndexPrefix() != null && getIndexPrefix().contains(getComponentName())) {
+      return String.format("%s-%s-\\d.*", getIndexPrefix(), getIndexName());
+    }
+
+    if (getIndexPrefix() == null || getIndexPrefix().isEmpty()) {
       return String.format("%s-%s-\\d.*", getComponentName(), getIndexName());
     } else {
       return String.format("%s-%s-%s-\\d.*", getIndexPrefix(), getComponentName(), getIndexName());

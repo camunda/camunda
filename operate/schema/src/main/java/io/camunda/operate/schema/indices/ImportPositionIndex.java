@@ -8,9 +8,11 @@
 package io.camunda.operate.schema.indices;
 
 import io.camunda.operate.conditions.DatabaseInfo;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.backup.Prio1Backup;
 import io.camunda.webapps.schema.descriptors.operate.OperateIndexDescriptor;
 import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -27,12 +29,15 @@ public class ImportPositionIndex extends OperateIndexDescriptor implements Prio1
   public static final String POST_IMPORTER_POSITION = "postImporterPosition";
   public static final String FIELD_INDEX_NAME = "indexName";
 
+  @Autowired private OperateProperties properties;
+
   public ImportPositionIndex() {
-    super("", false);
+    super(null, false);
   }
 
   @PostConstruct
   public void init() {
+    indexPrefix = properties.getIndexPrefix(DatabaseInfo.getCurrent());
     isElasticsearch = DatabaseInfo.isElasticsearch();
   }
 
@@ -44,5 +49,10 @@ public class ImportPositionIndex extends OperateIndexDescriptor implements Prio1
   @Override
   public String getVersion() {
     return "8.3.0";
+  }
+
+  @Override
+  public String getIndexPrefix() {
+    return properties.getIndexPrefix();
   }
 }
