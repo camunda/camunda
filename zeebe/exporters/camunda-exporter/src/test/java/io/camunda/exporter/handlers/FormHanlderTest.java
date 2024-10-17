@@ -16,10 +16,11 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
+import io.camunda.zeebe.protocol.record.value.deployment.ImmutableForm;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
 public class FormHanlderTest {
@@ -94,21 +95,17 @@ public class FormHanlderTest {
   @Test
   void shouldUpdateEntityFromRecord() {
     // given
-    /*final DecisionRecordValue decisionRecordValue =
-    ImmutableDecisionRecordValue.builder()
-        .from(factory.generateObject(DecisionRecordValue.class))
-        .withDecisionKey(123)
-        .withDecisionName("decisionName")
-        .withVersion(2)
-        .withDecisionId("decisionId")
-        .withDecisionRequirementsId("decisionRequirementsId")
-        .withDecisionRequirementsKey(222)
-        .withTenantId("tenantId")
-        .build();*/
+    final long formKey = 123L;
+    final ImmutableForm formValue =
+        ImmutableForm.builder()
+            .from(factory.generateObject(ImmutableForm.class))
+            .withResource(formJsonResource().getBytes(StandardCharsets.UTF_8))
+            .withFormKey(formKey)
+            .build();
 
     final Record<Form> decisionRecord =
         factory.generateRecord(
-            ValueType.DECISION, r -> r.withIntent(DecisionIntent.CREATED) /*.withValue()*/);
+            ValueType.FORM, r -> r.withIntent(FormIntent.CREATED).withValue(formValue));
 
     // when
     final FormEntity formEntity = new FormEntity();
@@ -119,5 +116,45 @@ public class FormHanlderTest {
     assertThat(formEntity.getKey()).isEqualTo(123L);
     assertThat(formEntity.getVersion()).isEqualTo(2);
     assertThat(formEntity.getTenantId()).isEqualTo("tenantId");
+  }
+
+  private String formJsonResource() {
+    return """
+{
+  "components": [
+    {
+      "label": "Payload",
+      "type": "textfield",
+      "layout": {
+        "row": "Row_0bhzxr0",
+        "columns": null
+      },
+      "id": "Field_1lu1cdw",
+      "key": "textfield_payload"
+    },
+    {
+      "subtype": "date",
+      "dateLabel": "Date",
+      "label": "Date time",
+      "type": "datetime",
+      "layout": {
+        "row": "Row_1gqtlv4",
+        "columns": null
+      },
+      "id": "Field_1gb54gn",
+      "key": "datetime_ypscpg"
+    }
+  ],
+  "type": "default",
+  "id": "startDataForm",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.5.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.27.0"
+  },
+  "schemaVersion": 16
+}
+""";
   }
 }
