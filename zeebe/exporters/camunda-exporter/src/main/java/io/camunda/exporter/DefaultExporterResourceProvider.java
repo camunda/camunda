@@ -13,6 +13,7 @@ import io.camunda.exporter.handlers.AuthorizationRecordValueExportHandler;
 import io.camunda.exporter.handlers.DecisionHandler;
 import io.camunda.exporter.handlers.DecisionRequirementsHandler;
 import io.camunda.exporter.handlers.EventFromIncidentHandler;
+import io.camunda.exporter.handlers.EventFromJobHandler;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.IncidentHandler;
 import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHandler;
@@ -101,6 +102,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new IncidentHandler(
                 templateDescriptorsMap.get(IncidentTemplate.class).getFullQualifiedName(), false),
             new EventFromIncidentHandler(
+                templateDescriptorsMap.get(EventTemplate.class).getFullQualifiedName(), false),
+            new EventFromJobHandler(
                 templateDescriptorsMap.get(EventTemplate.class).getFullQualifiedName(), false));
   }
 
