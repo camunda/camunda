@@ -24,6 +24,7 @@ import io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceSearchQueryRequest;
 import io.camunda.zeebe.client.protocol.rest.SearchQuerySortRequest;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import java.util.List;
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 
 public class FlownodeInstanceTest extends ClientRestTest {
@@ -49,7 +50,7 @@ public class FlownodeInstanceTest extends ClientRestTest {
                     .type("SERVICE_TASK")
                     .state("ACTIVE")
                     .processDefinitionKey(2L)
-                    .bpmnProcessId("complexProcess")
+                    .processDefinitionId("complexProcess")
                     .processInstanceKey(3L)
                     .flowNodeId("flowNodeId")
                     .hasIncident(true)
@@ -61,7 +62,7 @@ public class FlownodeInstanceTest extends ClientRestTest {
     // then
     final FlowNodeInstanceSearchQueryRequest request =
         gatewayService.getLastRequest(FlowNodeInstanceSearchQueryRequest.class);
-    final FlowNodeInstanceFilterRequest filter = request.getFilter();
+    final FlowNodeInstanceFilterRequest filter = Objects.requireNonNull(request.getFilter());
     assertThat(filter.getFlowNodeInstanceKey()).isEqualTo(1L);
     assertThat(filter.getType()).isEqualTo(SERVICE_TASK);
     assertThat(filter.getState()).isEqualTo(ACTIVE);
@@ -82,12 +83,12 @@ public class FlownodeInstanceTest extends ClientRestTest {
         .newFlownodeInstanceQuery()
         .sort(
             s ->
-                s.key()
+                s.flowNodeInstanceKey()
                     .processDefinitionKey()
                     .asc()
                     .processInstanceKey()
                     .asc()
-                    .bpmnProcessId()
+                    .processDefinitionId()
                     .asc()
                     .type()
                     .asc()
@@ -107,11 +108,11 @@ public class FlownodeInstanceTest extends ClientRestTest {
     // then
     final FlowNodeInstanceSearchQueryRequest request =
         gatewayService.getLastRequest(FlowNodeInstanceSearchQueryRequest.class);
-    final List<SearchQuerySortRequest> sorts = request.getSort();
+    final List<SearchQuerySortRequest> sorts = Objects.requireNonNull(request.getSort());
     assertThat(sorts.size()).isEqualTo(9);
     assertSort(sorts.get(0), "processDefinitionKey", "asc");
     assertSort(sorts.get(1), "processInstanceKey", "asc");
-    assertSort(sorts.get(2), "bpmnProcessId", "asc");
+    assertSort(sorts.get(2), "processDefinitionId", "asc");
     assertSort(sorts.get(3), "type", "asc");
     assertSort(sorts.get(4), "state", "asc");
     assertSort(sorts.get(5), "startDate", "desc");
