@@ -87,8 +87,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 templateDescriptorsMap.get(VariableTemplate.class).getFullQualifiedName(),
                 configuration.getIndex().getVariableSizeThreshold()),
             new DecisionRequirementsHandler(
-                indexDescriptorsMap.get(DecisionRequirementsIndex.class).getFullQualifiedName(),
-                configuration.getIndex().getVariableSizeThreshold()),
+                indexDescriptorsMap.get(DecisionRequirementsIndex.class).getFullQualifiedName()),
             new PostImporterQueueFromIncidentHandler(
                 templateDescriptorsMap
                     .get(PostImporterQueueTemplate.class)
