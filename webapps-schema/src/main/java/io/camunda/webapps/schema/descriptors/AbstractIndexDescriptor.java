@@ -28,7 +28,7 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
   public String getFullQualifiedName() {
 
     //    legacy support for descriptors in operate where the index prefix contains the component
-    // nam e.g. indexPrefix = "operate"
+    // name e.g. indexPrefix = "operate"
     if (getIndexPrefix() != null && getIndexPrefix().contains(getComponentName())) {
       return String.format("%s-%s-%s_", getIndexPrefix(), getIndexName(), getVersion());
     }
