@@ -8,10 +8,12 @@
 package io.camunda.operate.schema.templates;
 
 import io.camunda.operate.conditions.DatabaseInfo;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.backup.Prio3Backup;
 import io.camunda.webapps.schema.descriptors.operate.OperateTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
 import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -43,8 +45,10 @@ public class OperationTemplate extends OperateTemplateDescriptor
   public static final String BATCH_OPERATION_ID_AGGREGATION = "batchOperationIdAggregation";
   public static final String COMPLETED_DATE = "completedDate";
 
+  @Autowired private OperateProperties properties;
+
   public OperationTemplate() {
-    super("", false);
+    super(null, false);
   }
 
   @PostConstruct
@@ -60,5 +64,11 @@ public class OperationTemplate extends OperateTemplateDescriptor
   @Override
   public String getVersion() {
     return "8.4.1";
+  }
+
+  @Override
+  public String getIndexPrefix() {
+    indexPrefix = properties.getIndexPrefix(DatabaseInfo.getCurrent());
+    return properties.getIndexPrefix();
   }
 }
