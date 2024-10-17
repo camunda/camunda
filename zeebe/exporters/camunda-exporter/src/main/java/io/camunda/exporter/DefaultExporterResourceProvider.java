@@ -13,6 +13,7 @@ import io.camunda.exporter.handlers.AuthorizationRecordValueExportHandler;
 import io.camunda.exporter.handlers.DecisionEvaluationHandler;
 import io.camunda.exporter.handlers.DecisionHandler;
 import io.camunda.exporter.handlers.DecisionRequirementsHandler;
+import io.camunda.exporter.handlers.EventFromIncidentHandler;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.FlowNodeInstanceIncidentHandler;
 import io.camunda.exporter.handlers.FlowNodeInstanceProcessInstanceHandler;
@@ -34,6 +35,7 @@ import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsI
 import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
@@ -81,7 +83,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             SequenceFlowTemplate.class,
             new SequenceFlowTemplate(globalPrefix, isElasticsearch),
             DecisionInstanceTemplate.class,
-            new DecisionInstanceTemplate(globalPrefix, isElasticsearch));
+            new DecisionInstanceTemplate(globalPrefix, isElasticsearch),
+            EventTemplate.class,
+            new EventTemplate(globalPrefix, isElasticsearch));
 
     indexDescriptorsMap =
         Map.of(
@@ -127,7 +131,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptorsMap.get(ProcessIndex.class).getFullQualifiedName(), new XMLUtil()),
             new MetricFromProcessInstanceHandler(
                 indexDescriptorsMap.get(MetricIndex.class).getFullQualifiedName()),
-            new FormHandler(indexDescriptorsMap.get(FormIndex.class).getFullQualifiedName()));
+            new FormHandler(indexDescriptorsMap.get(FormIndex.class).getFullQualifiedName()),
+            new EventFromIncidentHandler(
+                templateDescriptorsMap.get(EventTemplate.class).getFullQualifiedName(), false));
   }
 
   @Override
