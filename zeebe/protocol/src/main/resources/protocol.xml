@@ -60,6 +60,7 @@
       <validValue name="AUTHORIZATION">43</validValue>
       <validValue name="ROLE">44</validValue>
       <validValue name="TENANT">45</validValue>
+      <validValue name="GROUP">46</validValue>
 
       <!-- Management records / record not related to process automation -->
       <validValue name="SCALE">253</validValue>
