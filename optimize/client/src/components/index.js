@@ -7,7 +7,6 @@
  */
 
 export {Analysis} from './Analysis';
-export {Footer} from './Footer';
 export {Header} from './Header';
 export {PrivateRoute} from './PrivateRoute';
 export {Dashboard} from './Dashboards';
