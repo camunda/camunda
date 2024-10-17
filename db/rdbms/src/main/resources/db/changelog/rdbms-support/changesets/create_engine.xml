@@ -60,13 +60,18 @@
       <column name="PROCESS_INSTANCE_KEY" type="BIGINT" />
       <column name="SCOPE_KEY" type="BIGINT" />
       <column name="VAR_NAME" type="VARCHAR(255)" />
-      <column name="VAR_VALUE" type="VARCHAR(4000)" />
-      <column name="TRUNCATED" type="BOOLEAN" />
+      <column name="VAR_VALUE" type="CLOB" />
       <column name="TENANT_ID" type="VARCHAR(255)" />
     </createTable>
 
     <createIndex tableName="VARIABLE" indexName="IDX_VARIABLE_PROCESS_INSTANCE_KEY">
       <column name="PROCESS_INSTANCE_KEY" />
+    </createIndex>
+    <createIndex tableName="VARIABLE" indexName="IDX_VARIABLE_SCOPE_KEY">
+      <column name="SCOPE_KEY" />
+    </createIndex>
+    <createIndex tableName="VARIABLE" indexName="IDX_VARIABLE_TENANT_ID">
+      <column name="TENANT_ID" />
     </createIndex>
   </changeSet>
 
