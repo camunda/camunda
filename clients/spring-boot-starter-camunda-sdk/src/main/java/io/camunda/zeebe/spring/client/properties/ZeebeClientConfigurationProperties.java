@@ -250,7 +250,7 @@ public class ZeebeClientConfigurationProperties {
    * @see ZeebeClientConfiguration#getGatewayAddress()
    */
   @Deprecated
-  @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.base-url")
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.grpc-address")
   public String getGatewayAddress() {
     if (connectionMode != null && !connectionMode.isEmpty()) {
       LOGGER.info("Using connection mode '{}' to connect to Zeebe", connectionMode);
@@ -406,7 +406,7 @@ public class ZeebeClientConfigurationProperties {
 
   @Deprecated
   @DeprecatedConfigurationProperty(
-      replacement = "camunda.client.zeebe.base-url",
+      replacement = "camunda.client.zeebe.grpc-address",
       reason = "plaintext is determined by the url protocol (http/https) now")
   public Boolean isPlaintextConnectionEnabled() {
     return security.isPlaintext();
@@ -522,7 +522,7 @@ public class ZeebeClientConfigurationProperties {
      * @see ZeebeClientConfiguration#getGatewayAddress()
      */
     @Deprecated
-    @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.gateway-url")
+    @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.grpc-address")
     public String getGatewayAddress() {
       return gatewayAddress;
     }
@@ -668,7 +668,7 @@ public class ZeebeClientConfigurationProperties {
 
     @Deprecated
     @DeprecatedConfigurationProperty(
-        replacement = "camunda.client.zeebe.base-url",
+        replacement = "camunda.client.zeebe.grpc-address",
         reason = "The zeebe client url is now configured as http/https url")
     public String getBaseUrl() {
       return baseUrl;
@@ -690,7 +690,7 @@ public class ZeebeClientConfigurationProperties {
 
     @Deprecated
     @DeprecatedConfigurationProperty(
-        replacement = "camunda.client.zeebe.base-url",
+        replacement = "camunda.client.zeebe.grpc-address",
         reason = "The zeebe client url is now configured as http/https url")
     public int getPort() {
       return port;
@@ -732,7 +732,7 @@ public class ZeebeClientConfigurationProperties {
      */
     @Deprecated
     @DeprecatedConfigurationProperty(
-        replacement = "camunda.client.zeebe.base-url",
+        replacement = "camunda.client.zeebe.grpc-address",
         reason = "The zeebe client url is now configured as http/https url")
     public String getGatewayAddress() {
       return String.format("%s.%s.%s:%d", clusterId, region, baseUrl, port);
@@ -1019,7 +1019,7 @@ public class ZeebeClientConfigurationProperties {
 
     @Deprecated
     @DeprecatedConfigurationProperty(
-        replacement = "camunda.client.zeebe.base-url",
+        replacement = "camunda.client.zeebe.grpc-address",
         reason = "plaintext is determined by the url protocol (http/https) now")
     public Boolean isPlaintext() {
       return plaintext;
