@@ -35,6 +35,7 @@ describe('stores/processXml/processXml.migration.source', () => {
       processXmlStore.selectableFlowNodes.map((flowNode) => flowNode.id),
     ).toEqual([
       'checkPayment',
+      'ExclusiveGateway',
       'requestForPayment',
       'shippingSubProcess',
       'shipArticles',
@@ -54,6 +55,8 @@ describe('stores/processXml/processXml.migration.source', () => {
       'BusinessRuleTask',
       'ScriptTask',
       'SendTask',
+      'EventBasedGateway',
+      'IntermediateTimerEvent',
     ]);
   });
 

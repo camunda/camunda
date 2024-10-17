@@ -19,6 +19,11 @@ const elements = {
     name: 'Check payment',
     type: 'serviceTask',
   },
+  ExclusiveGateway: {
+    id: 'ExclusiveGateway',
+    name: 'Payment OK?',
+    type: 'exclusiveGateway',
+  },
   requestForPayment: {
     id: 'requestForPayment',
     name: 'Request for payment',
@@ -113,6 +118,16 @@ const elements = {
     id: 'SendTask',
     name: 'Send task',
     type: 'sendTask',
+  },
+  IntermediateTimerEvent: {
+    id: 'IntermediateTimerEvent',
+    name: 'IntermediateTimerEvent',
+    type: 'timerIntermediateCatch',
+  },
+  EventBasedGateway: {
+    id: 'EventBasedGatewayTask',
+    name: 'EventBasedGateway',
+    type: 'eventBasedGateway',
   },
 };
 
