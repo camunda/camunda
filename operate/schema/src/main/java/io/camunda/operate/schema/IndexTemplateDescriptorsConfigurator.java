@@ -35,55 +35,73 @@ public class IndexTemplateDescriptorsConfigurator {
   @Bean
   public DecisionIndex getDecisionIndex(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    return new DecisionIndex("", databaseInfo.isElasticsearchDb());
+    return new DecisionIndex(
+        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
+        databaseInfo.isElasticsearchDb());
   }
 
   @Bean
   public DecisionRequirementsIndex getDecisionRequirementsIndex(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    return new DecisionRequirementsIndex("", databaseInfo.isElasticsearchDb());
+    return new DecisionRequirementsIndex(
+        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
+        databaseInfo.isElasticsearchDb());
   }
 
   @Bean
   public MetricIndex getMetricIndex(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    return new MetricIndex("", databaseInfo.isElasticsearchDb());
+    return new MetricIndex(
+        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
+        databaseInfo.isElasticsearchDb());
   }
 
   @Bean
   public ProcessIndex getProcessIndex(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    return new ProcessIndex("", databaseInfo.isElasticsearchDb());
+    return new ProcessIndex(
+        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
+        databaseInfo.isElasticsearchDb());
   }
 
   @Bean
   public DecisionInstanceTemplate getDecisionInstanceTemplate(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    return new DecisionInstanceTemplate("", databaseInfo.isElasticsearchDb());
+    return new DecisionInstanceTemplate(
+        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
+        databaseInfo.isElasticsearchDb());
   }
 
   @Bean
   public EventTemplate getEventTemplate(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    return new EventTemplate("", databaseInfo.isElasticsearchDb());
+    return new EventTemplate(
+        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
+        databaseInfo.isElasticsearchDb());
   }
 
   @Bean
   public FlowNodeInstanceTemplate getFlowNodeInstanceTemplate(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    return new FlowNodeInstanceTemplate("", databaseInfo.isElasticsearchDb());
+    return new FlowNodeInstanceTemplate(
+        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
+        databaseInfo.isElasticsearchDb());
   }
 
   @Bean
   public IncidentTemplate getIncidentTemplate(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    return new IncidentTemplate("", databaseInfo.isElasticsearchDb());
+    return new IncidentTemplate(
+        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
+        databaseInfo.isElasticsearchDb());
   }
 
   @Bean
   public ListViewTemplate getListViewTemplate(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    return new ListViewTemplate("", databaseInfo.isElasticsearchDb());
+    return new ListViewTemplate(
+        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
+        databaseInfo.isElasticsearchDb());
   }
 
   @Bean
@@ -97,30 +115,40 @@ public class IndexTemplateDescriptorsConfigurator {
   @Bean
   public PostImporterQueueTemplate getPostImporterQueueTemplate(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    return new PostImporterQueueTemplate("", databaseInfo.isElasticsearchDb());
+    return new PostImporterQueueTemplate(
+        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
+        databaseInfo.isElasticsearchDb());
   }
 
   @Bean
   public SequenceFlowTemplate getSequenceFlowTemplate(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    return new SequenceFlowTemplate("", databaseInfo.isElasticsearchDb());
+    return new SequenceFlowTemplate(
+        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
+        databaseInfo.isElasticsearchDb());
   }
 
   @Bean
   public UserTaskTemplate getUserTaskTemplate(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    return new UserTaskTemplate("", databaseInfo.isElasticsearchDb());
+    return new UserTaskTemplate(
+        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
+        databaseInfo.isElasticsearchDb());
   }
 
   @Bean
   public JobTemplate getJobTemplate(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    return new JobTemplate("", databaseInfo.isElasticsearchDb());
+    return new JobTemplate(
+        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
+        databaseInfo.isElasticsearchDb());
   }
 
   @Bean
   public VariableTemplate getVariableTemplate(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    return new VariableTemplate("", databaseInfo.isElasticsearchDb());
+    return new VariableTemplate(
+        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
+        databaseInfo.isElasticsearchDb());
   }
 }
