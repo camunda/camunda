@@ -14,7 +14,7 @@ import {EntityList, EmptyState, PageTitle} from 'components';
 import {t} from 'translation';
 import {withErrorHandling, withUser} from 'HOC';
 import {addNotification, showError} from 'notifications';
-import {isUserSearchAvailable, getOptimizeDatabase} from 'config';
+import {isUserSearchAvailable} from 'config';
 import {track} from 'tracking';
 
 import {DashboardView} from '../Dashboards/DashboardView';
@@ -32,7 +32,6 @@ export function Processes({mightFail, user}) {
   const [editProcessConfig, setEditProcessConfig] = useState();
   const [userSearchAvailable, setUserSearchAvailable] = useState();
   const [dashboard, setDashboard] = useState();
-  const [optimizeDatabase, setOptimizeDatabase] = useState();
 
   useEffect(() => {
     mightFail(loadManagementDashboard(), setDashboard, showError);
@@ -53,7 +52,6 @@ export function Processes({mightFail, user}) {
   useEffect(() => {
     (async () => {
       setUserSearchAvailable(await isUserSearchAvailable());
-      setOptimizeDatabase(await getOptimizeDatabase());
     })();
   }, []);
 
@@ -79,25 +77,21 @@ export function Processes({mightFail, user}) {
     <Grid condensed className="Processes" fullWidth>
       <Column sm={4} md={8} lg={16}>
         <PageTitle pageName={t('processes.defaultDashboardAndKPI')} />
-        {optimizeDatabase === 'elasticsearch' && (
-          <>
-            <h1 className="processOverview">
-              {t('processes.adoptionDashboard')}
-              {processes && (
-                <div className="info">
-                  <span>
-                    {t('processes.analysing', {count: processes.length, label: processesLabel})}
-                  </span>
-                </div>
-              )}
-            </h1>
-            {dashboard && (
-              <DashboardView
-                tiles={dashboard.tiles}
-                customizeReportLink={(id) => `/processes/report/${id}/`}
-              />
-            )}
-          </>
+        <h1 className="processOverview">
+          {t('processes.adoptionDashboard')}
+          {processes && (
+            <div className="info">
+              <span>
+                {t('processes.analysing', {count: processes.length, label: processesLabel})}
+              </span>
+            </div>
+          )}
+        </h1>
+        {dashboard && (
+          <DashboardView
+            tiles={dashboard.tiles}
+            customizeReportLink={(id) => `/processes/report/${id}/`}
+          />
         )}
         <EntityList
           title={t('processes.defaultDashboardAndKPI')}
@@ -141,10 +135,7 @@ export function Processes({mightFail, user}) {
                 });
               }
 
-              if (
-                user?.authorizations.includes('entity_editor') &&
-                optimizeDatabase !== 'opensearch'
-              ) {
+              if (user?.authorizations.includes('entity_editor')) {
                 listItem.link = `dashboard/instant/${processDefinitionKey}/`;
               }
 
