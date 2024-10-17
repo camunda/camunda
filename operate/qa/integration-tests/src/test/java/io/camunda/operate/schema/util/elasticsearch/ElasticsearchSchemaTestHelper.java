@@ -107,7 +107,7 @@ public class ElasticsearchSchemaTestHelper implements SchemaTestHelper {
       final String indexName,
       final String indexSchemaFilename) {
     schemaManager.createIndex(
-        new OperateIndexDescriptor("", true) {
+        new OperateIndexDescriptor(properties.getElasticsearch().getIndexPrefix(), true) {
           @Override
           public String getIndexName() {
             return indexDescriptor.getIndexName();
