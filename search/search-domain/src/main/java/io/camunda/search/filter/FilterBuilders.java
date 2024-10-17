@@ -60,6 +60,10 @@ public final class FilterBuilders {
     return new UserFilter.Builder();
   }
 
+  public static RoleFilter.Builder role() {
+    return new RoleFilter.Builder();
+  }
+
   public static AuthorizationFilter.Builder authorization() {
     return new AuthorizationFilter.Builder();
   }
@@ -100,6 +104,10 @@ public final class FilterBuilders {
 
   public static UserFilter user(final Function<UserFilter.Builder, ObjectBuilder<UserFilter>> fn) {
     return fn.apply(new UserFilter.Builder()).build();
+  }
+
+  public static RoleFilter role(final Function<RoleFilter.Builder, ObjectBuilder<RoleFilter>> fn) {
+    return fn.apply(new RoleFilter.Builder()).build();
   }
 
   public static AuthorizationFilter authorization(
