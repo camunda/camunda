@@ -475,6 +475,7 @@ public final class EventAppliers implements EventApplier {
 
   private void registerTenantAppliers(final MutableProcessingState state) {
     register(TenantIntent.CREATED, new TenantCreatedApplier(state.getTenantState()));
+    register(TenantIntent.UPDATED, new TenantUpdatedApplier(state.getTenantState()));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {
