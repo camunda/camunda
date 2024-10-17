@@ -26,19 +26,7 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
   @Override
   public String getFullQualifiedName() {
-
-    //    legacy support for descriptors in operate where the index prefix contains the component
-    // name e.g. indexPrefix = "operate"
-    if (getIndexPrefix() != null && getIndexPrefix().contains(getComponentName())) {
-      return String.format("%s-%s-%s_", getIndexPrefix(), getIndexName(), getVersion());
-    }
-
-    if (getIndexPrefix() == null || getIndexPrefix().isEmpty()) {
-      return String.format("%s-%s-%s_", getComponentName(), getIndexName(), getVersion());
-    } else {
-      return String.format(
-          "%s-%s-%s-%s_", getIndexPrefix(), getComponentName(), getIndexName(), getVersion());
-    }
+    return String.format("%s-%s-%s_", getPrefixAndComponentName(), getIndexName(), getVersion());
   }
 
   @Override
@@ -55,15 +43,7 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
   @Override
   public String getAllVersionsIndexNameRegexPattern() {
-    if (getIndexPrefix() != null && getIndexPrefix().contains(getComponentName())) {
-      return String.format("%s-%s-\\d.*", getIndexPrefix(), getIndexName());
-    }
-
-    if (getIndexPrefix() == null || getIndexPrefix().isEmpty()) {
-      return String.format("%s-%s-\\d.*", getComponentName(), getIndexName());
-    } else {
-      return String.format("%s-%s-%s-\\d.*", getIndexPrefix(), getComponentName(), getIndexName());
-    }
+    return String.format("%s-%s-\\d.*", getPrefixAndComponentName(), getIndexName());
   }
 
   @Override
@@ -73,6 +53,16 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
   public String getIndexPrefix() {
     return indexPrefix;
+  }
+
+  private String getPrefixAndComponentName() {
+    // Cannot start index with "-" so must not append "-" for empty prefix
+    final var prefix = getIndexPrefix().isBlank() ? getIndexPrefix() : getIndexPrefix() + "-";
+
+    // Legacy descriptors have the same index prefix as component name this avoids duplication.
+    return getIndexPrefix().contains(getComponentName())
+        ? getIndexPrefix()
+        : prefix + getComponentName();
   }
 
   public abstract String getComponentName();
