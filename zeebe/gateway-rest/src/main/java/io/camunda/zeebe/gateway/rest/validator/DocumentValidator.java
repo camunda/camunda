@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.gateway.rest.validator;
 
+import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateDate;
 
 import io.camunda.zeebe.gateway.protocol.rest.DocumentLinkRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
-import java.time.ZonedDateTime;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
@@ -45,14 +45,11 @@ public class DocumentValidator {
     }
     return validate(
         violations -> {
-          if (request.getExpiresAt() != null) {
-            validateDate(request.getExpiresAt(), "expiresAt", violations);
-            final var now = System.currentTimeMillis();
-            final var expiresAtDate =
-                ZonedDateTime.parse(request.getExpiresAt()).toInstant().toEpochMilli();
-            if (expiresAtDate < now) {
-              violations.add("The expiration date must be in the future");
-            }
+          final Long timeToLive = request.getTimeToLive();
+          if (timeToLive <= 0) {
+            violations.add(
+                ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
+                    "timeToLive", timeToLive, "greater than 0"));
           }
         });
   }

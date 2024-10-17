@@ -24,6 +24,7 @@ import io.camunda.document.api.DocumentStore;
 import io.camunda.zeebe.util.Either;
 import java.io.InputStream;
 import java.nio.channels.Channels;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
@@ -86,9 +87,9 @@ public class GcpDocumentStore implements DocumentStore {
 
   @Override
   public CompletableFuture<Either<DocumentError, DocumentLink>> createLink(
-      final String documentId, final long durationInSeconds) {
+      final String documentId, final long durationInMillis) {
     return CompletableFuture.supplyAsync(
-        () -> createLinkInternal(documentId, durationInSeconds), executor);
+        () -> createLinkInternal(documentId, durationInMillis), executor);
   }
 
   private Either<DocumentError, DocumentReference> createDocumentInternal(
@@ -149,15 +150,16 @@ public class GcpDocumentStore implements DocumentStore {
   }
 
   private Either<DocumentError, DocumentLink> createLinkInternal(
-      final String documentId, final long durationInSeconds) {
+      final String documentId, final long durationInMillis) {
     try {
       final Blob blob = storage.get(bucketName, documentId);
       if (blob == null) {
         return Either.left(new DocumentError.DocumentNotFound(documentId));
       }
-      final var link = blob.signUrl(durationInSeconds, TimeUnit.SECONDS);
+      final var link = blob.signUrl(durationInMillis, TimeUnit.MILLISECONDS);
       return Either.right(
-          new DocumentLink(link.toString(), ZonedDateTime.now().plusSeconds(durationInSeconds)));
+          new DocumentLink(
+              link.toString(), ZonedDateTime.now().plus(Duration.ofMillis(durationInMillis))));
     } catch (final Exception e) {
       return Either.left(new UnknownDocumentError(e));
     }
@@ -180,10 +182,10 @@ public class GcpDocumentStore implements DocumentStore {
     } else {
       blobInfoBuilder.setContentDisposition("attachment");
     }
-    if (metadata.additionalProperties() != null && !metadata.additionalProperties().isEmpty()) {
+    if (metadata.customProperties() != null && !metadata.customProperties().isEmpty()) {
       final Map<String, String> blobMetadata = new HashMap<>();
-      final var valueAsString = objectMapper.writeValueAsString(metadata.additionalProperties());
-      metadata.additionalProperties().forEach((key, value) -> blobMetadata.put(key, valueAsString));
+      final var valueAsString = objectMapper.writeValueAsString(metadata.customProperties());
+      metadata.customProperties().forEach((key, value) -> blobMetadata.put(key, valueAsString));
       blobInfoBuilder.setMetadata(blobMetadata);
     }
   }
