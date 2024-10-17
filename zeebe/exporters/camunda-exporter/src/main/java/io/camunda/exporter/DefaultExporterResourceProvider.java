@@ -110,7 +110,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 templateDescriptorsMap.get(SequenceFlowTemplate.class).getFullQualifiedName()),
             new DecisionEvaluationHandler(
                 templateDescriptorsMap.get(DecisionInstanceTemplate.class).getFullQualifiedName()),
-            new ProcessHandler(indexDescriptorsMap.get(ProcessIndex.class).getFullQualifiedName(), new XMLUtil()));
+            new ProcessHandler(
+                indexDescriptorsMap.get(ProcessIndex.class).getFullQualifiedName(), new XMLUtil()));
   }
 
   @Override
