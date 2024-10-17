@@ -99,11 +99,15 @@ public class OpensearchConnector {
   @Primary
   public OpenSearchClient openSearchClient() {
     final OpenSearchClient openSearchClient = createOsClient(operateProperties.getOpensearch());
-    try {
-      final HealthResponse response = openSearchClient.cluster().health();
-      LOGGER.info("OpenSearch cluster health: {}", response.status());
-    } catch (final IOException e) {
-      LOGGER.error("Error in getting health status from {}", "localhost:9205", e);
+    if (operateProperties.getOpensearch().isHealthCheckEnabled()) {
+      try {
+        final HealthResponse response = openSearchClient.cluster().health();
+        LOGGER.info("OpenSearch cluster health: {}", response.status());
+      } catch (final IOException e) {
+        LOGGER.error("Error in getting health status from {}", "localhost:9205", e);
+      }
+    } else {
+      LOGGER.warn("OpenSearch cluster health check is disabled.");
     }
     return openSearchClient;
   }
@@ -112,19 +116,23 @@ public class OpensearchConnector {
   public OpenSearchAsyncClient openSearchAsyncClient() {
     final OpenSearchAsyncClient openSearchClient =
         createAsyncOsClient(operateProperties.getOpensearch());
-    final CompletableFuture<HealthResponse> healthResponse;
-    try {
-      healthResponse = openSearchClient.cluster().health();
-      healthResponse.whenComplete(
-          (response, e) -> {
-            if (e != null) {
-              LOGGER.error("Error in getting health status from {}", "localhost:9205", e);
-            } else {
-              LOGGER.info("OpenSearch cluster health: {}", response.status());
-            }
-          });
-    } catch (final IOException e) {
-      throw new RuntimeException(e);
+    if (operateProperties.getOpensearch().isHealthCheckEnabled()) {
+      final CompletableFuture<HealthResponse> healthResponse;
+      try {
+        healthResponse = openSearchClient.cluster().health();
+        healthResponse.whenComplete(
+            (response, e) -> {
+              if (e != null) {
+                LOGGER.error("Error in getting health status from {}", "localhost:9205", e);
+              } else {
+                LOGGER.info("OpenSearch cluster health: {}", response.status());
+              }
+            });
+      } catch (final IOException e) {
+        throw new RuntimeException(e);
+      }
+    } else {
+      LOGGER.warn("OpenSearch cluster health check is disabled.");
     }
     return openSearchClient;
   }
@@ -164,25 +172,28 @@ public class OpensearchConnector {
     final OpenSearchTransport transport = builder.build();
     final OpenSearchAsyncClient openSearchAsyncClient = new OpenSearchAsyncClient(transport);
 
-    final CompletableFuture<HealthResponse> healthResponse;
-    try {
-      healthResponse = openSearchAsyncClient.cluster().health();
-      healthResponse.whenComplete(
-          (response, e) -> {
-            if (e != null) {
-              LOGGER.error("Error in getting health status from {}", "localhost:9205", e);
-            } else {
-              LOGGER.info("OpenSearch cluster health: {}", response.status());
-            }
-          });
-    } catch (final IOException e) {
-      throw new OperateRuntimeException(e);
-    }
-
-    if (!checkHealth(openSearchAsyncClient)) {
-      LOGGER.warn("OpenSearch cluster is not accessible");
+    if (operateProperties.getOpensearch().isHealthCheckEnabled()) {
+      final CompletableFuture<HealthResponse> healthResponse;
+      try {
+        healthResponse = openSearchAsyncClient.cluster().health();
+        healthResponse.whenComplete(
+            (response, e) -> {
+              if (e != null) {
+                LOGGER.error("Error in getting health status from {}", "localhost:9205", e);
+              } else {
+                LOGGER.info("OpenSearch cluster health: {}", response.status());
+              }
+            });
+      } catch (final IOException e) {
+        throw new OperateRuntimeException(e);
+      }
+      if (!checkHealth(openSearchAsyncClient)) {
+        LOGGER.warn("OpenSearch cluster is not accessible");
+      } else {
+        LOGGER.debug("OpenSearch connection was successfully created.");
+      }
     } else {
-      LOGGER.debug("OpenSearch connection was successfully created.");
+      LOGGER.warn("OpenSearch cluster health check is disabled.");
     }
     return openSearchAsyncClient;
   }
@@ -229,17 +240,21 @@ public class OpensearchConnector {
 
     final OpenSearchTransport transport = builder.build();
     final OpenSearchClient openSearchClient = new ExtendedOpenSearchClient(transport);
-    try {
-      final HealthResponse response = openSearchClient.cluster().health();
-      LOGGER.info("OpenSearch cluster health: {}", response.status());
-    } catch (final IOException e) {
-      LOGGER.error("Error in getting health status from {}", "localhost:9205", e);
-    }
+    if (operateProperties.getOpensearch().isHealthCheckEnabled()) {
+      try {
+        final HealthResponse response = openSearchClient.cluster().health();
+        LOGGER.info("OpenSearch cluster health: {}", response.status());
+      } catch (final IOException e) {
+        LOGGER.error("Error in getting health status from {}", "localhost:9205", e);
+      }
 
-    if (!checkHealth(openSearchClient)) {
-      LOGGER.warn("OpenSearch cluster is not accessible");
+      if (!checkHealth(openSearchClient)) {
+        LOGGER.warn("OpenSearch cluster is not accessible");
+      } else {
+        LOGGER.debug("OpenSearch connection was successfully created.");
+      }
     } else {
-      LOGGER.debug("OpenSearch connection was successfully created.");
+      LOGGER.warn("OpenSearch cluster health check is disabled.");
     }
     return openSearchClient;
   }

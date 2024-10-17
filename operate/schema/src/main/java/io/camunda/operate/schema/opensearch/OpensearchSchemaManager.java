@@ -199,7 +199,12 @@ public class OpensearchSchemaManager implements SchemaManager {
 
   @Override
   public boolean isHealthy() {
-    return richOpenSearchClient.cluster().isHealthy();
+    if (operateProperties.getOpensearch().isHealthCheckEnabled()) {
+      return richOpenSearchClient.cluster().isHealthy();
+    } else {
+      LOGGER.warn("OpenSearch cluster health check is disabled.");
+      return true;
+    }
   }
 
   @Override

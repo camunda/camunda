@@ -14,79 +14,45 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.operate.schema.util.elasticsearch;
+package io.camunda.operate.connect;
 
-import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.connect.ElasticsearchConnector;
-import io.camunda.operate.property.ElasticsearchProperties;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
+import io.camunda.operate.property.OperateElasticsearchProperties;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.util.ObservableConnector;
-import io.camunda.operate.schema.util.ObservableConnector.OperateTestHttpRequest;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Consumer;
-import org.apache.http.HttpException;
-import org.apache.http.HttpRequest;
-import org.apache.http.HttpRequestInterceptor;
-import org.apache.http.RequestLine;
-import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
-import org.apache.http.protocol.HttpContext;
-import org.springframework.context.annotation.Conditional;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.junit.jupiter.api.Test;
 
-@Conditional(ElasticsearchCondition.class)
-public class TestElasticsearchConnector extends ElasticsearchConnector
-    implements ObservableConnector {
+class ElasticsearchConnectorTest {
 
-  private final List<Consumer<OperateTestHttpRequest>> requestListeners = new ArrayList<>();
+  @Test
+  public void shouldNotDoClusterHealthCheckWhenDisabled() {
+    final OperateProperties operateProperties = new OperateProperties();
+    final OperateElasticsearchProperties esProperties = new OperateElasticsearchProperties();
+    esProperties.setHealthCheckEnabled(false);
+    operateProperties.setElasticsearch(esProperties);
+    final ElasticsearchConnector connector = spy(new ElasticsearchConnector(operateProperties));
 
-  public TestElasticsearchConnector(final OperateProperties operateProperties) {
-    super(operateProperties);
+    connector.createEsClient(esProperties);
+
+    verify(connector, never()).checkHealth(any(RestHighLevelClient.class));
   }
 
-  /**
-   * Adds a request interceptor that a test case can plug in, so that we can assert requests made to
-   * Elasticsearch
-   */
-  @Override
-  protected HttpAsyncClientBuilder configureHttpClient(
-      final HttpAsyncClientBuilder httpAsyncClientBuilder,
-      final ElasticsearchProperties elsConfig) {
-    httpAsyncClientBuilder.addInterceptorFirst(
-        new HttpRequestInterceptor() {
+  @Test
+  public void shouldDoClusterHealthCheckWhenDefaultPropertyValuesUsed() {
+    final OperateProperties operateProperties = new OperateProperties();
+    final OperateElasticsearchProperties esProperties = new OperateElasticsearchProperties();
+    operateProperties.setElasticsearch(esProperties);
+    final ElasticsearchConnector connector = spy(new ElasticsearchConnector(operateProperties));
+    doReturn(true).when(connector).checkHealth(any(RestHighLevelClient.class));
 
-          @Override
-          public void process(final HttpRequest request, final HttpContext context)
-              throws HttpException, IOException {
-            final RequestLine requestLine = request.getRequestLine();
+    connector.createEsClient(esProperties);
 
-            requestListeners.forEach(
-                listener ->
-                    listener.accept(
-                        new OperateTestHttpRequest() {
-
-                          @Override
-                          public String getUri() {
-                            return requestLine.getUri();
-                          }
-
-                          @Override
-                          public String getMethod() {
-                            return requestLine.getMethod();
-                          }
-                        }));
-          }
-        });
-    return super.configureHttpClient(httpAsyncClientBuilder, elsConfig);
-  }
-
-  @Override
-  public void addRequestListener(final Consumer<OperateTestHttpRequest> listener) {
-    requestListeners.add(listener);
-  }
-
-  @Override
-  public void clearRequestListeners() {
-    requestListeners.clear();
+    verify(connector, times(1)).checkHealth(any(RestHighLevelClient.class));
   }
 }

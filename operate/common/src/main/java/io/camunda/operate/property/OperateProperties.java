@@ -156,6 +156,10 @@ public class OperateProperties {
     return elasticsearch;
   }
 
+  public void setElasticsearch(final OperateElasticsearchProperties elasticsearch) {
+    this.elasticsearch = elasticsearch;
+  }
+
   public OperateOpensearchProperties getOpensearch() {
     return opensearch;
   }
