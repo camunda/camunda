@@ -19,6 +19,7 @@ import io.camunda.zeebe.spring.client.annotation.value.ZeebeWorkerValue;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Map;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class ZeebeClientProperties extends ApiProperties {
   private Integer executionThreads;
@@ -34,6 +35,7 @@ public class ZeebeClientProperties extends ApiProperties {
   private boolean preferRestOverGrpc;
   private URI grpcAddress;
   private URI restAddress;
+  @NestedConfigurationProperty private ZeebeClientDeploymentProperties deployment;
 
   public ZeebeWorkerValue getDefaults() {
     return defaults;
@@ -137,5 +139,13 @@ public class ZeebeClientProperties extends ApiProperties {
 
   public void setRestAddress(final URI restAddress) {
     this.restAddress = restAddress;
+  }
+
+  public ZeebeClientDeploymentProperties getDeployment() {
+    return deployment;
+  }
+
+  public void setDeployment(final ZeebeClientDeploymentProperties deployment) {
+    this.deployment = deployment;
   }
 }

@@ -23,6 +23,7 @@ import io.camunda.zeebe.spring.client.annotation.processor.ZeebeWorkerAnnotation
 import io.camunda.zeebe.spring.client.event.ZeebeClientEventListener;
 import io.camunda.zeebe.spring.client.jobhandling.JobWorkerManager;
 import java.util.List;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 
 public class AnnotationProcessorConfiguration {
@@ -40,6 +41,7 @@ public class AnnotationProcessorConfiguration {
   }
 
   @Bean
+  @ConditionalOnProperty(value = "camunda.client.zeebe.deployment.enabled", matchIfMissing = true)
   public ZeebeDeploymentAnnotationProcessor deploymentPostProcessor() {
     return new ZeebeDeploymentAnnotationProcessor();
   }
