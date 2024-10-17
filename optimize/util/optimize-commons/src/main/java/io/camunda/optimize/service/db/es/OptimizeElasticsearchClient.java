@@ -917,6 +917,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
                   itemName,
                   getHintForErrorMsg(bulkResponse),
                   bulkResponse.items().stream()
+                      .filter(i -> Objects.nonNull(i.error()))
                       .map(
                           i ->
                               i.operationType() + " " + i.error().type() + " " + i.error().reason())
