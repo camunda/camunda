@@ -10,30 +10,28 @@ package io.camunda.webapps.schema.descriptors.tasklist.index;
 import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
 import io.camunda.webapps.schema.descriptors.tasklist.TasklistIndexDescriptor;
 
-public class FormIndex extends TasklistIndexDescriptor implements Prio4Backup {
+public class TasklistMetricIndex extends TasklistIndexDescriptor implements Prio4Backup {
 
-  public static final String INDEX_NAME = "form";
-  public static final String INDEX_VERSION = "8.4.0";
+  public static final String INDEX_NAME = "metric";
+  public static final String INDEX_VERSION = "8.3.0";
 
   public static final String ID = "id";
-  public static final String KEY = "key";
-  public static final String BPMN_ID = "bpmnId";
-  public static final String SCHEMA = "schema";
+  public static final String EVENT = "event";
+  public static final String VALUE = "value";
+  public static final String EVENT_TIME = "eventTime";
   public static final String TENANT_ID = "tenantId";
-  public static final String VERSION = "version";
-  public static final String IS_DELETED = "isDeleted";
 
-  public FormIndex(final String indexPrefix, final boolean isElasticsearch) {
+  public TasklistMetricIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
-  }
-
-  @Override
-  public String getVersion() {
-    return INDEX_VERSION;
   }
 
   @Override
   public String getIndexName() {
     return INDEX_NAME;
+  }
+
+  @Override
+  public String getVersion() {
+    return INDEX_VERSION;
   }
 }

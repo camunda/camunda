@@ -25,6 +25,7 @@ import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
+import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -68,7 +69,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             ProcessIndex.class,
             new ProcessIndex(operateIndexPrefix, isElasticsearch),
             FormIndex.class,
-            new FormIndex(tasklistIndexPrefix, isElasticsearch));
+            new FormIndex(tasklistIndexPrefix, isElasticsearch),
+            TasklistMetricIndex.class,
+            new TasklistMetricIndex(tasklistIndexPrefix, isElasticsearch));
 
     exportHandlers =
         Set.of(
