@@ -33,7 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Disabled("Disabled until https://github.com/camunda/camunda/issues/23706 has been fixed!")
-//@ZeebeIntegration
+// @ZeebeIntegration
 class IncidentQueryTest {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(IncidentQueryTest.class);
