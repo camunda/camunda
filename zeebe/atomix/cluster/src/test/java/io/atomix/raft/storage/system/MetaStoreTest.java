@@ -121,12 +121,15 @@ class MetaStoreTest {
     }
 
     @Test
-    void shouldLoadLatestTermAndVoteAfterRestart() throws IOException {
+    void shouldLoadLatestValuesAfterRestart() throws IOException {
       //  given
       metaStore.storeTerm(2L);
-      metaStore.storeVote(MemberId.from("0"));
-      metaStore.storeTerm(3L);
+      metaStore.storeCommitIndex(1L);
       metaStore.storeVote(MemberId.from("1"));
+      metaStore.storeTerm(3L);
+      metaStore.storeCommitIndex(2L);
+      // different length than previous value
+      metaStore.storeVote(MemberId.from("11029830219830192831"));
 
       // when
       metaStore.close();
@@ -134,7 +137,8 @@ class MetaStoreTest {
 
       // then
       assertThat(metaStore.loadTerm()).isEqualTo(3L);
-      assertThat(metaStore.loadVote().id()).isEqualTo("1");
+      assertThat(metaStore.commitIndex()).isEqualTo(2L);
+      assertThat(metaStore.loadVote().id()).isEqualTo("11029830219830192831");
     }
 
     @Test
@@ -185,12 +189,14 @@ class MetaStoreTest {
       // when
       metaStore.storeTerm(1L);
       metaStore.storeLastFlushedIndex(2L);
-      metaStore.storeVote(MemberId.from("a"));
+      metaStore.storeCommitIndex(12);
+      metaStore.storeVote(MemberId.from("a1029381092831"));
 
       // then
       assertThat(metaStore.loadTerm()).isEqualTo(1L);
       assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(2L);
-      assertThat(metaStore.loadVote()).isEqualTo(MemberId.from("a"));
+      assertThat(metaStore.commitIndex()).isEqualTo(12);
+      assertThat(metaStore.loadVote()).isEqualTo(MemberId.from("a1029381092831"));
     }
   }
 
