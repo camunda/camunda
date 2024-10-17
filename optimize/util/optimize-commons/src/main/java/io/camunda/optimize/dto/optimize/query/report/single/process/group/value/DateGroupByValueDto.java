@@ -46,31 +46,12 @@ public class DateGroupByValueDto implements ProcessGroupByValueDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $unit = getUnit();
-    result = result * PRIME + ($unit == null ? 43 : $unit.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof DateGroupByValueDto)) {
-      return false;
-    }
-    final DateGroupByValueDto other = (DateGroupByValueDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$unit = getUnit();
-    final Object other$unit = other.getUnit();
-    if (this$unit == null ? other$unit != null : !this$unit.equals(other$unit)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

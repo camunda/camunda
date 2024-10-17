@@ -138,84 +138,12 @@ public class MixpanelEventProperties {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final long $time = getTime();
-    result = result * PRIME + (int) ($time >>> 32 ^ $time);
-    final Object $distinctId = getDistinctId();
-    result = result * PRIME + ($distinctId == null ? 43 : $distinctId.hashCode());
-    final Object $insertId = getInsertId();
-    result = result * PRIME + ($insertId == null ? 43 : $insertId.hashCode());
-    final Object $product = getProduct();
-    result = result * PRIME + ($product == null ? 43 : $product.hashCode());
-    final Object $organizationId = getOrganizationId();
-    result = result * PRIME + ($organizationId == null ? 43 : $organizationId.hashCode());
-    final Object $stage = getStage();
-    result = result * PRIME + ($stage == null ? 43 : $stage.hashCode());
-    final Object $userId = getUserId();
-    result = result * PRIME + ($userId == null ? 43 : $userId.hashCode());
-    final Object $clusterId = getClusterId();
-    result = result * PRIME + ($clusterId == null ? 43 : $clusterId.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof MixpanelEventProperties)) {
-      return false;
-    }
-    final MixpanelEventProperties other = (MixpanelEventProperties) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (getTime() != other.getTime()) {
-      return false;
-    }
-    final Object this$distinctId = getDistinctId();
-    final Object other$distinctId = other.getDistinctId();
-    if (this$distinctId == null
-        ? other$distinctId != null
-        : !this$distinctId.equals(other$distinctId)) {
-      return false;
-    }
-    final Object this$insertId = getInsertId();
-    final Object other$insertId = other.getInsertId();
-    if (this$insertId == null ? other$insertId != null : !this$insertId.equals(other$insertId)) {
-      return false;
-    }
-    final Object this$product = getProduct();
-    final Object other$product = other.getProduct();
-    if (this$product == null ? other$product != null : !this$product.equals(other$product)) {
-      return false;
-    }
-    final Object this$organizationId = getOrganizationId();
-    final Object other$organizationId = other.getOrganizationId();
-    if (this$organizationId == null
-        ? other$organizationId != null
-        : !this$organizationId.equals(other$organizationId)) {
-      return false;
-    }
-    final Object this$stage = getStage();
-    final Object other$stage = other.getStage();
-    if (this$stage == null ? other$stage != null : !this$stage.equals(other$stage)) {
-      return false;
-    }
-    final Object this$userId = getUserId();
-    final Object other$userId = other.getUserId();
-    if (this$userId == null ? other$userId != null : !this$userId.equals(other$userId)) {
-      return false;
-    }
-    final Object this$clusterId = getClusterId();
-    final Object other$clusterId = other.getClusterId();
-    if (this$clusterId == null
-        ? other$clusterId != null
-        : !this$clusterId.equals(other$clusterId)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

@@ -72,25 +72,7 @@ public class DashboardDefinitionRestDto extends BaseDashboardDefinitionDto
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof DashboardDefinitionRestDto)) {
-      return false;
-    }
-    final DashboardDefinitionRestDto other = (DashboardDefinitionRestDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    final Object this$tiles = getTiles();
-    final Object other$tiles = other.getTiles();
-    if (this$tiles == null ? other$tiles != null : !this$tiles.equals(other$tiles)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override
@@ -100,11 +82,7 @@ public class DashboardDefinitionRestDto extends BaseDashboardDefinitionDto
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = super.hashCode();
-    final Object $tiles = getTiles();
-    result = result * PRIME + ($tiles == null ? 43 : $tiles.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   public static final class Fields {

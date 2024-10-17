@@ -31,27 +31,7 @@ public class UserTestDto {
   }
 
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof UserTestDto)) {
-      return false;
-    }
-    final UserTestDto other = (UserTestDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$username = this.getUsername();
-    final Object other$username = other.getUsername();
-    if (this$username == null ? other$username != null : !this$username.equals(other$username)) {
-      return false;
-    }
-    final Object this$password = this.getPassword();
-    final Object other$password = other.getPassword();
-    if (this$password == null ? other$password != null : !this$password.equals(other$password)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   protected boolean canEqual(final Object other) {
@@ -59,13 +39,7 @@ public class UserTestDto {
   }
 
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $username = this.getUsername();
-    result = result * PRIME + ($username == null ? 43 : $username.hashCode());
-    final Object $password = this.getPassword();
-    result = result * PRIME + ($password == null ? 43 : $password.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   public String toString() {

@@ -47,38 +47,12 @@ public class ReportSortingDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $by = getBy();
-    result = result * PRIME + ($by == null ? 43 : $by.hashCode());
-    final Object $order = getOrder();
-    result = result * PRIME + ($order == null ? 43 : $order.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof ReportSortingDto)) {
-      return false;
-    }
-    final ReportSortingDto other = (ReportSortingDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$by = getBy();
-    final Object other$by = other.getBy();
-    if (this$by == null ? other$by != null : !this$by.equals(other$by)) {
-      return false;
-    }
-    final Object this$order = getOrder();
-    final Object other$order = other.getOrder();
-    if (this$order == null ? other$order != null : !this$order.equals(other$order)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

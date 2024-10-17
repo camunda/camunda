@@ -8,7 +8,6 @@
 package io.camunda.optimize.dto.optimize.query.report.single.decision.result.raw;
 
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
-import java.util.Objects;
 
 public class InputVariableEntry extends VariableEntry {
 
@@ -24,22 +23,12 @@ public class InputVariableEntry extends VariableEntry {
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), value);
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (!(o instanceof InputVariableEntry)) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    final InputVariableEntry that = (InputVariableEntry) o;
-    return Objects.equals(value, that.value);
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   public Object getValue() {

@@ -52,41 +52,7 @@ public class FlowNodeOutlierParametersDto extends ProcessDefinitionParametersDto
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof FlowNodeOutlierParametersDto)) {
-      return false;
-    }
-    final FlowNodeOutlierParametersDto other = (FlowNodeOutlierParametersDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    final Object this$flowNodeId = getFlowNodeId();
-    final Object other$flowNodeId = other.getFlowNodeId();
-    if (this$flowNodeId == null
-        ? other$flowNodeId != null
-        : !this$flowNodeId.equals(other$flowNodeId)) {
-      return false;
-    }
-    final Object this$lowerOutlierBound = getLowerOutlierBound();
-    final Object other$lowerOutlierBound = other.getLowerOutlierBound();
-    if (this$lowerOutlierBound == null
-        ? other$lowerOutlierBound != null
-        : !this$lowerOutlierBound.equals(other$lowerOutlierBound)) {
-      return false;
-    }
-    final Object this$higherOutlierBound = getHigherOutlierBound();
-    final Object other$higherOutlierBound = other.getHigherOutlierBound();
-    if (this$higherOutlierBound == null
-        ? other$higherOutlierBound != null
-        : !this$higherOutlierBound.equals(other$higherOutlierBound)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override
@@ -96,14 +62,6 @@ public class FlowNodeOutlierParametersDto extends ProcessDefinitionParametersDto
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = super.hashCode();
-    final Object $flowNodeId = getFlowNodeId();
-    result = result * PRIME + ($flowNodeId == null ? 43 : $flowNodeId.hashCode());
-    final Object $lowerOutlierBound = getLowerOutlierBound();
-    result = result * PRIME + ($lowerOutlierBound == null ? 43 : $lowerOutlierBound.hashCode());
-    final Object $higherOutlierBound = getHigherOutlierBound();
-    result = result * PRIME + ($higherOutlierBound == null ? 43 : $higherOutlierBound.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 }

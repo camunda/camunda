@@ -55,45 +55,12 @@ public class DefinitionWithTenantsResponseDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $key = getKey();
-    result = result * PRIME + ($key == null ? 43 : $key.hashCode());
-    final Object $versions = getVersions();
-    result = result * PRIME + ($versions == null ? 43 : $versions.hashCode());
-    final Object $tenants = getTenants();
-    result = result * PRIME + ($tenants == null ? 43 : $tenants.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof DefinitionWithTenantsResponseDto)) {
-      return false;
-    }
-    final DefinitionWithTenantsResponseDto other = (DefinitionWithTenantsResponseDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$key = getKey();
-    final Object other$key = other.getKey();
-    if (this$key == null ? other$key != null : !this$key.equals(other$key)) {
-      return false;
-    }
-    final Object this$versions = getVersions();
-    final Object other$versions = other.getVersions();
-    if (this$versions == null ? other$versions != null : !this$versions.equals(other$versions)) {
-      return false;
-    }
-    final Object this$tenants = getTenants();
-    final Object other$tenants = other.getTenants();
-    if (this$tenants == null ? other$tenants != null : !this$tenants.equals(other$tenants)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

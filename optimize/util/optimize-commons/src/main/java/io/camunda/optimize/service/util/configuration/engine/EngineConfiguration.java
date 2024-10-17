@@ -116,76 +116,12 @@ public class EngineConfiguration {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $name = getName();
-    result = result * PRIME + ($name == null ? 43 : $name.hashCode());
-    final Object $defaultTenant = getDefaultTenant();
-    result = result * PRIME + ($defaultTenant == null ? 43 : $defaultTenant.hashCode());
-    final Object $rest = getRest();
-    result = result * PRIME + ($rest == null ? 43 : $rest.hashCode());
-    final Object $webapps = getWebapps();
-    result = result * PRIME + ($webapps == null ? 43 : $webapps.hashCode());
-    result = result * PRIME + (isImportEnabled() ? 79 : 97);
-    final Object $excludedTenants = getExcludedTenants();
-    result = result * PRIME + ($excludedTenants == null ? 43 : $excludedTenants.hashCode());
-    final Object $authentication = getAuthentication();
-    result = result * PRIME + ($authentication == null ? 43 : $authentication.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof EngineConfiguration)) {
-      return false;
-    }
-    final EngineConfiguration other = (EngineConfiguration) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$name = getName();
-    final Object other$name = other.getName();
-    if (this$name == null ? other$name != null : !this$name.equals(other$name)) {
-      return false;
-    }
-    final Object this$defaultTenant = getDefaultTenant();
-    final Object other$defaultTenant = other.getDefaultTenant();
-    if (this$defaultTenant == null
-        ? other$defaultTenant != null
-        : !this$defaultTenant.equals(other$defaultTenant)) {
-      return false;
-    }
-    final Object this$rest = getRest();
-    final Object other$rest = other.getRest();
-    if (this$rest == null ? other$rest != null : !this$rest.equals(other$rest)) {
-      return false;
-    }
-    final Object this$webapps = getWebapps();
-    final Object other$webapps = other.getWebapps();
-    if (this$webapps == null ? other$webapps != null : !this$webapps.equals(other$webapps)) {
-      return false;
-    }
-    if (isImportEnabled() != other.isImportEnabled()) {
-      return false;
-    }
-    final Object this$excludedTenants = getExcludedTenants();
-    final Object other$excludedTenants = other.getExcludedTenants();
-    if (this$excludedTenants == null
-        ? other$excludedTenants != null
-        : !this$excludedTenants.equals(other$excludedTenants)) {
-      return false;
-    }
-    final Object this$authentication = getAuthentication();
-    final Object other$authentication = other.getAuthentication();
-    if (this$authentication == null
-        ? other$authentication != null
-        : !this$authentication.equals(other$authentication)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

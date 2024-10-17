@@ -54,45 +54,12 @@ public class HyperMapResultEntryDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $key = key;
-    result = result * PRIME + ($key == null ? 43 : $key.hashCode());
-    final Object $value = value;
-    result = result * PRIME + ($value == null ? 43 : $value.hashCode());
-    final Object $label = getLabel();
-    result = result * PRIME + ($label == null ? 43 : $label.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof HyperMapResultEntryDto)) {
-      return false;
-    }
-    final HyperMapResultEntryDto other = (HyperMapResultEntryDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$key = key;
-    final Object other$key = other.key;
-    if (this$key == null ? other$key != null : !this$key.equals(other$key)) {
-      return false;
-    }
-    final Object this$value = value;
-    final Object other$value = other.value;
-    if (this$value == null ? other$value != null : !this$value.equals(other$value)) {
-      return false;
-    }
-    final Object this$label = getLabel();
-    final Object other$label = other.getLabel();
-    if (this$label == null ? other$label != null : !this$label.equals(other$label)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

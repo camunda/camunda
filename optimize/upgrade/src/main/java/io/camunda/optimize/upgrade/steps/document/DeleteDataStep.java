@@ -33,27 +33,7 @@ public class DeleteDataStep extends UpgradeStep {
   }
 
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof DeleteDataStep)) {
-      return false;
-    }
-    final DeleteDataStep other = (DeleteDataStep) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    final Object this$queryWrapper = this.queryWrapper;
-    final Object other$queryWrapper = other.queryWrapper;
-    if (this$queryWrapper == null
-        ? other$queryWrapper != null
-        : !this$queryWrapper.equals(other$queryWrapper)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   protected boolean canEqual(final Object other) {
@@ -61,10 +41,6 @@ public class DeleteDataStep extends UpgradeStep {
   }
 
   public int hashCode() {
-    final int PRIME = 59;
-    int result = super.hashCode();
-    final Object $queryWrapper = this.queryWrapper;
-    result = result * PRIME + ($queryWrapper == null ? 43 : $queryWrapper.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 }

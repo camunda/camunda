@@ -36,33 +36,12 @@ public class CloudUserCacheConfiguration {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    result = result * PRIME + getMaxSize();
-    final long $minFetchIntervalSeconds = getMinFetchIntervalSeconds();
-    result = result * PRIME + (int) ($minFetchIntervalSeconds >>> 32 ^ $minFetchIntervalSeconds);
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof CloudUserCacheConfiguration)) {
-      return false;
-    }
-    final CloudUserCacheConfiguration other = (CloudUserCacheConfiguration) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (getMaxSize() != other.getMaxSize()) {
-      return false;
-    }
-    if (getMinFetchIntervalSeconds() != other.getMinFetchIntervalSeconds()) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

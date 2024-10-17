@@ -56,38 +56,12 @@ public class PaginationDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $limit = getLimit();
-    result = result * PRIME + ($limit == null ? 43 : $limit.hashCode());
-    final Object $offset = getOffset();
-    result = result * PRIME + ($offset == null ? 43 : $offset.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof PaginationDto)) {
-      return false;
-    }
-    final PaginationDto other = (PaginationDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$limit = getLimit();
-    final Object other$limit = other.getLimit();
-    if (this$limit == null ? other$limit != null : !this$limit.equals(other$limit)) {
-      return false;
-    }
-    final Object this$offset = getOffset();
-    final Object other$offset = other.getOffset();
-    if (this$offset == null ? other$offset != null : !this$offset.equals(other$offset)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

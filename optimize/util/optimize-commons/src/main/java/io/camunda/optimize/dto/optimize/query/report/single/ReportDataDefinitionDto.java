@@ -159,72 +159,12 @@ public class ReportDataDefinitionDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $identifier = getIdentifier();
-    result = result * PRIME + ($identifier == null ? 43 : $identifier.hashCode());
-    final Object $key = getKey();
-    result = result * PRIME + ($key == null ? 43 : $key.hashCode());
-    final Object $name = getName();
-    result = result * PRIME + ($name == null ? 43 : $name.hashCode());
-    final Object $displayName = getDisplayName();
-    result = result * PRIME + ($displayName == null ? 43 : $displayName.hashCode());
-    final Object $versions = getVersions();
-    result = result * PRIME + ($versions == null ? 43 : $versions.hashCode());
-    final Object $tenantIds = getTenantIds();
-    result = result * PRIME + ($tenantIds == null ? 43 : $tenantIds.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof ReportDataDefinitionDto)) {
-      return false;
-    }
-    final ReportDataDefinitionDto other = (ReportDataDefinitionDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$identifier = getIdentifier();
-    final Object other$identifier = other.getIdentifier();
-    if (this$identifier == null
-        ? other$identifier != null
-        : !this$identifier.equals(other$identifier)) {
-      return false;
-    }
-    final Object this$key = getKey();
-    final Object other$key = other.getKey();
-    if (this$key == null ? other$key != null : !this$key.equals(other$key)) {
-      return false;
-    }
-    final Object this$name = getName();
-    final Object other$name = other.getName();
-    if (this$name == null ? other$name != null : !this$name.equals(other$name)) {
-      return false;
-    }
-    final Object this$displayName = getDisplayName();
-    final Object other$displayName = other.getDisplayName();
-    if (this$displayName == null
-        ? other$displayName != null
-        : !this$displayName.equals(other$displayName)) {
-      return false;
-    }
-    final Object this$versions = getVersions();
-    final Object other$versions = other.getVersions();
-    if (this$versions == null ? other$versions != null : !this$versions.equals(other$versions)) {
-      return false;
-    }
-    final Object this$tenantIds = getTenantIds();
-    final Object other$tenantIds = other.getTenantIds();
-    if (this$tenantIds == null
-        ? other$tenantIds != null
-        : !this$tenantIds.equals(other$tenantIds)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

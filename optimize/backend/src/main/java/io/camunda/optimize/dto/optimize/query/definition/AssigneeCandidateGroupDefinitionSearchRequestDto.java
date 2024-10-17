@@ -72,55 +72,12 @@ public class AssigneeCandidateGroupDefinitionSearchRequestDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $terms = getTerms();
-    result = result * PRIME + ($terms == null ? 43 : $terms.hashCode());
-    result = result * PRIME + getLimit();
-    final Object $processDefinitionKey = getProcessDefinitionKey();
-    result =
-        result * PRIME + ($processDefinitionKey == null ? 43 : $processDefinitionKey.hashCode());
-    final Object $tenantIds = getTenantIds();
-    result = result * PRIME + ($tenantIds == null ? 43 : $tenantIds.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof AssigneeCandidateGroupDefinitionSearchRequestDto)) {
-      return false;
-    }
-    final AssigneeCandidateGroupDefinitionSearchRequestDto other =
-        (AssigneeCandidateGroupDefinitionSearchRequestDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$terms = getTerms();
-    final Object other$terms = other.getTerms();
-    if (this$terms == null ? other$terms != null : !this$terms.equals(other$terms)) {
-      return false;
-    }
-    if (getLimit() != other.getLimit()) {
-      return false;
-    }
-    final Object this$processDefinitionKey = getProcessDefinitionKey();
-    final Object other$processDefinitionKey = other.getProcessDefinitionKey();
-    if (this$processDefinitionKey == null
-        ? other$processDefinitionKey != null
-        : !this$processDefinitionKey.equals(other$processDefinitionKey)) {
-      return false;
-    }
-    final Object this$tenantIds = getTenantIds();
-    final Object other$tenantIds = other.getTenantIds();
-    if (this$tenantIds == null
-        ? other$tenantIds != null
-        : !this$tenantIds.equals(other$tenantIds)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

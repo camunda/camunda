@@ -45,42 +45,12 @@ public class PositionBasedImportPage implements ImportPage {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $position = getPosition();
-    result = result * PRIME + ($position == null ? 43 : $position.hashCode());
-    final Object $sequence = getSequence();
-    result = result * PRIME + ($sequence == null ? 43 : $sequence.hashCode());
-    result = result * PRIME + (isHasSeenSequenceField() ? 79 : 97);
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof PositionBasedImportPage)) {
-      return false;
-    }
-    final PositionBasedImportPage other = (PositionBasedImportPage) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$position = getPosition();
-    final Object other$position = other.getPosition();
-    if (this$position == null ? other$position != null : !this$position.equals(other$position)) {
-      return false;
-    }
-    final Object this$sequence = getSequence();
-    final Object other$sequence = other.getSequence();
-    if (this$sequence == null ? other$sequence != null : !this$sequence.equals(other$sequence)) {
-      return false;
-    }
-    if (isHasSeenSequenceField() != other.isHasSeenSequenceField()) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

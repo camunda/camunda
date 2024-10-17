@@ -52,51 +52,12 @@ public class EntityConfiguration {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $authorizedUserType = getAuthorizedUserType();
-    result = result * PRIME + ($authorizedUserType == null ? 43 : $authorizedUserType.hashCode());
-    final Object $kpiRefreshInterval = getKpiRefreshInterval();
-    result = result * PRIME + ($kpiRefreshInterval == null ? 43 : $kpiRefreshInterval.hashCode());
-    final Object $createOnStartup = getCreateOnStartup();
-    result = result * PRIME + ($createOnStartup == null ? 43 : $createOnStartup.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof EntityConfiguration)) {
-      return false;
-    }
-    final EntityConfiguration other = (EntityConfiguration) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$authorizedUserType = getAuthorizedUserType();
-    final Object other$authorizedUserType = other.getAuthorizedUserType();
-    if (this$authorizedUserType == null
-        ? other$authorizedUserType != null
-        : !this$authorizedUserType.equals(other$authorizedUserType)) {
-      return false;
-    }
-    final Object this$kpiRefreshInterval = getKpiRefreshInterval();
-    final Object other$kpiRefreshInterval = other.getKpiRefreshInterval();
-    if (this$kpiRefreshInterval == null
-        ? other$kpiRefreshInterval != null
-        : !this$kpiRefreshInterval.equals(other$kpiRefreshInterval)) {
-      return false;
-    }
-    final Object this$createOnStartup = getCreateOnStartup();
-    final Object other$createOnStartup = other.getCreateOnStartup();
-    if (this$createOnStartup == null
-        ? other$createOnStartup != null
-        : !this$createOnStartup.equals(other$createOnStartup)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

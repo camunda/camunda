@@ -40,36 +40,12 @@ public class AuthorizedReportDefinitionResponseDto extends AuthorizedEntityDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = super.hashCode();
-    final Object $definitionDto = getDefinitionDto();
-    result = result * PRIME + ($definitionDto == null ? 43 : $definitionDto.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof AuthorizedReportDefinitionResponseDto)) {
-      return false;
-    }
-    final AuthorizedReportDefinitionResponseDto other = (AuthorizedReportDefinitionResponseDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    final Object this$definitionDto = getDefinitionDto();
-    final Object other$definitionDto = other.getDefinitionDto();
-    if (this$definitionDto == null
-        ? other$definitionDto != null
-        : !this$definitionDto.equals(other$definitionDto)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

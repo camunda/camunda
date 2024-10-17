@@ -95,72 +95,12 @@ public class AuthConfiguration {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $cloudAuthConfiguration = getCloudAuthConfiguration();
-    result =
-        result * PRIME
-            + ($cloudAuthConfiguration == null ? 43 : $cloudAuthConfiguration.hashCode());
-    final Object $ccsmAuthConfiguration = getCcsmAuthConfiguration();
-    result =
-        result * PRIME + ($ccsmAuthConfiguration == null ? 43 : $ccsmAuthConfiguration.hashCode());
-    final Object $tokenLifeTime = getTokenLifeTime();
-    result = result * PRIME + ($tokenLifeTime == null ? 43 : $tokenLifeTime.hashCode());
-    final Object $tokenSecret = getTokenSecret();
-    result = result * PRIME + ($tokenSecret == null ? 43 : $tokenSecret.hashCode());
-    final Object $cookieConfiguration = getCookieConfiguration();
-    result = result * PRIME + ($cookieConfiguration == null ? 43 : $cookieConfiguration.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof AuthConfiguration)) {
-      return false;
-    }
-    final AuthConfiguration other = (AuthConfiguration) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$cloudAuthConfiguration = getCloudAuthConfiguration();
-    final Object other$cloudAuthConfiguration = other.getCloudAuthConfiguration();
-    if (this$cloudAuthConfiguration == null
-        ? other$cloudAuthConfiguration != null
-        : !this$cloudAuthConfiguration.equals(other$cloudAuthConfiguration)) {
-      return false;
-    }
-    final Object this$ccsmAuthConfiguration = getCcsmAuthConfiguration();
-    final Object other$ccsmAuthConfiguration = other.getCcsmAuthConfiguration();
-    if (this$ccsmAuthConfiguration == null
-        ? other$ccsmAuthConfiguration != null
-        : !this$ccsmAuthConfiguration.equals(other$ccsmAuthConfiguration)) {
-      return false;
-    }
-    final Object this$tokenLifeTime = getTokenLifeTime();
-    final Object other$tokenLifeTime = other.getTokenLifeTime();
-    if (this$tokenLifeTime == null
-        ? other$tokenLifeTime != null
-        : !this$tokenLifeTime.equals(other$tokenLifeTime)) {
-      return false;
-    }
-    final Object this$tokenSecret = getTokenSecret();
-    final Object other$tokenSecret = other.getTokenSecret();
-    if (this$tokenSecret == null
-        ? other$tokenSecret != null
-        : !this$tokenSecret.equals(other$tokenSecret)) {
-      return false;
-    }
-    final Object this$cookieConfiguration = getCookieConfiguration();
-    final Object other$cookieConfiguration = other.getCookieConfiguration();
-    if (this$cookieConfiguration == null
-        ? other$cookieConfiguration != null
-        : !this$cookieConfiguration.equals(other$cookieConfiguration)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

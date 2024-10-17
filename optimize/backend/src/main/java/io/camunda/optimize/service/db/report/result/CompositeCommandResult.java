@@ -449,63 +449,7 @@ public class CompositeCommandResult {
   }
 
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof CompositeCommandResult)) {
-      return false;
-    }
-    final CompositeCommandResult other = (CompositeCommandResult) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$reportDataDto = this.getReportDataDto();
-    final Object other$reportDataDto = other.getReportDataDto();
-    if (this$reportDataDto == null
-        ? other$reportDataDto != null
-        : !this$reportDataDto.equals(other$reportDataDto)) {
-      return false;
-    }
-    final Object this$viewProperty = this.getViewProperty();
-    final Object other$viewProperty = other.getViewProperty();
-    if (this$viewProperty == null
-        ? other$viewProperty != null
-        : !this$viewProperty.equals(other$viewProperty)) {
-      return false;
-    }
-    final Object this$groupBySorting = this.getGroupBySorting();
-    final Object other$groupBySorting = other.getGroupBySorting();
-    if (this$groupBySorting == null
-        ? other$groupBySorting != null
-        : !this$groupBySorting.equals(other$groupBySorting)) {
-      return false;
-    }
-    final Object this$distributedBySorting = this.getDistributedBySorting();
-    final Object other$distributedBySorting = other.getDistributedBySorting();
-    if (this$distributedBySorting == null
-        ? other$distributedBySorting != null
-        : !this$distributedBySorting.equals(other$distributedBySorting)) {
-      return false;
-    }
-    if (this.isGroupByKeyOfNumericType() != other.isGroupByKeyOfNumericType()) {
-      return false;
-    }
-    if (this.isDistributedByKeyOfNumericType() != other.isDistributedByKeyOfNumericType()) {
-      return false;
-    }
-    final Object this$defaultNumberValueSupplier = this.getDefaultNumberValueSupplier();
-    final Object other$defaultNumberValueSupplier = other.getDefaultNumberValueSupplier();
-    if (this$defaultNumberValueSupplier == null
-        ? other$defaultNumberValueSupplier != null
-        : !this$defaultNumberValueSupplier.equals(other$defaultNumberValueSupplier)) {
-      return false;
-    }
-    final Object this$groups = this.getGroups();
-    final Object other$groups = other.getGroups();
-    if (this$groups == null ? other$groups != null : !this$groups.equals(other$groups)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   protected boolean canEqual(final Object other) {
@@ -513,26 +457,7 @@ public class CompositeCommandResult {
   }
 
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $reportDataDto = this.getReportDataDto();
-    result = result * PRIME + ($reportDataDto == null ? 43 : $reportDataDto.hashCode());
-    final Object $viewProperty = this.getViewProperty();
-    result = result * PRIME + ($viewProperty == null ? 43 : $viewProperty.hashCode());
-    final Object $groupBySorting = this.getGroupBySorting();
-    result = result * PRIME + ($groupBySorting == null ? 43 : $groupBySorting.hashCode());
-    final Object $distributedBySorting = this.getDistributedBySorting();
-    result =
-        result * PRIME + ($distributedBySorting == null ? 43 : $distributedBySorting.hashCode());
-    result = result * PRIME + (this.isGroupByKeyOfNumericType() ? 79 : 97);
-    result = result * PRIME + (this.isDistributedByKeyOfNumericType() ? 79 : 97);
-    final Object $defaultNumberValueSupplier = this.getDefaultNumberValueSupplier();
-    result =
-        result * PRIME
-            + ($defaultNumberValueSupplier == null ? 43 : $defaultNumberValueSupplier.hashCode());
-    final Object $groups = this.getGroups();
-    result = result * PRIME + ($groups == null ? 43 : $groups.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   public String toString() {
@@ -611,34 +536,7 @@ public class CompositeCommandResult {
     }
 
     public boolean equals(final Object o) {
-      if (o == this) {
-        return true;
-      }
-      if (!(o instanceof GroupByResult)) {
-        return false;
-      }
-      final GroupByResult other = (GroupByResult) o;
-      if (!other.canEqual((Object) this)) {
-        return false;
-      }
-      final Object this$key = this.getKey();
-      final Object other$key = other.getKey();
-      if (this$key == null ? other$key != null : !this$key.equals(other$key)) {
-        return false;
-      }
-      final Object this$label = this.getLabel();
-      final Object other$label = other.getLabel();
-      if (this$label == null ? other$label != null : !this$label.equals(other$label)) {
-        return false;
-      }
-      final Object this$distributions = this.getDistributions();
-      final Object other$distributions = other.getDistributions();
-      if (this$distributions == null
-          ? other$distributions != null
-          : !this$distributions.equals(other$distributions)) {
-        return false;
-      }
-      return true;
+      return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
     }
 
     protected boolean canEqual(final Object other) {
@@ -646,15 +544,7 @@ public class CompositeCommandResult {
     }
 
     public int hashCode() {
-      final int PRIME = 59;
-      int result = 1;
-      final Object $key = this.getKey();
-      result = result * PRIME + ($key == null ? 43 : $key.hashCode());
-      final Object $label = this.getLabel();
-      result = result * PRIME + ($label == null ? 43 : $label.hashCode());
-      final Object $distributions = this.getDistributions();
-      result = result * PRIME + ($distributions == null ? 43 : $distributions.hashCode());
-      return result;
+      return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
     }
 
     public String toString() {
@@ -736,34 +626,7 @@ public class CompositeCommandResult {
     }
 
     public boolean equals(final Object o) {
-      if (o == this) {
-        return true;
-      }
-      if (!(o instanceof DistributedByResult)) {
-        return false;
-      }
-      final DistributedByResult other = (DistributedByResult) o;
-      if (!other.canEqual((Object) this)) {
-        return false;
-      }
-      final Object this$key = this.getKey();
-      final Object other$key = other.getKey();
-      if (this$key == null ? other$key != null : !this$key.equals(other$key)) {
-        return false;
-      }
-      final Object this$label = this.getLabel();
-      final Object other$label = other.getLabel();
-      if (this$label == null ? other$label != null : !this$label.equals(other$label)) {
-        return false;
-      }
-      final Object this$viewResult = this.getViewResult();
-      final Object other$viewResult = other.getViewResult();
-      if (this$viewResult == null
-          ? other$viewResult != null
-          : !this$viewResult.equals(other$viewResult)) {
-        return false;
-      }
-      return true;
+      return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
     }
 
     protected boolean canEqual(final Object other) {
@@ -771,15 +634,7 @@ public class CompositeCommandResult {
     }
 
     public int hashCode() {
-      final int PRIME = 59;
-      int result = 1;
-      final Object $key = this.getKey();
-      result = result * PRIME + ($key == null ? 43 : $key.hashCode());
-      final Object $label = this.getLabel();
-      result = result * PRIME + ($label == null ? 43 : $label.hashCode());
-      final Object $viewResult = this.getViewResult();
-      result = result * PRIME + ($viewResult == null ? 43 : $viewResult.hashCode());
-      return result;
+      return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
     }
   }
 
@@ -815,29 +670,7 @@ public class CompositeCommandResult {
     }
 
     public boolean equals(final Object o) {
-      if (o == this) {
-        return true;
-      }
-      if (!(o instanceof ViewResult)) {
-        return false;
-      }
-      final ViewResult other = (ViewResult) o;
-      if (!other.canEqual((Object) this)) {
-        return false;
-      }
-      final Object this$viewMeasures = this.getViewMeasures();
-      final Object other$viewMeasures = other.getViewMeasures();
-      if (this$viewMeasures == null
-          ? other$viewMeasures != null
-          : !this$viewMeasures.equals(other$viewMeasures)) {
-        return false;
-      }
-      final Object this$rawData = this.getRawData();
-      final Object other$rawData = other.getRawData();
-      if (this$rawData == null ? other$rawData != null : !this$rawData.equals(other$rawData)) {
-        return false;
-      }
-      return true;
+      return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
     }
 
     protected boolean canEqual(final Object other) {
@@ -845,13 +678,7 @@ public class CompositeCommandResult {
     }
 
     public int hashCode() {
-      final int PRIME = 59;
-      int result = 1;
-      final Object $viewMeasures = this.getViewMeasures();
-      result = result * PRIME + ($viewMeasures == null ? 43 : $viewMeasures.hashCode());
-      final Object $rawData = this.getRawData();
-      result = result * PRIME + ($rawData == null ? 43 : $rawData.hashCode());
-      return result;
+      return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
     }
 
     public String toString() {
@@ -976,36 +803,7 @@ public class CompositeCommandResult {
     }
 
     public boolean equals(final Object o) {
-      if (o == this) {
-        return true;
-      }
-      if (!(o instanceof ViewMeasure)) {
-        return false;
-      }
-      final ViewMeasure other = (ViewMeasure) o;
-      if (!other.canEqual((Object) this)) {
-        return false;
-      }
-      final Object this$aggregationType = this.getAggregationType();
-      final Object other$aggregationType = other.getAggregationType();
-      if (this$aggregationType == null
-          ? other$aggregationType != null
-          : !this$aggregationType.equals(other$aggregationType)) {
-        return false;
-      }
-      final Object this$userTaskDurationTime = this.getUserTaskDurationTime();
-      final Object other$userTaskDurationTime = other.getUserTaskDurationTime();
-      if (this$userTaskDurationTime == null
-          ? other$userTaskDurationTime != null
-          : !this$userTaskDurationTime.equals(other$userTaskDurationTime)) {
-        return false;
-      }
-      final Object this$value = this.getValue();
-      final Object other$value = other.getValue();
-      if (this$value == null ? other$value != null : !this$value.equals(other$value)) {
-        return false;
-      }
-      return true;
+      return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
     }
 
     protected boolean canEqual(final Object other) {
@@ -1013,16 +811,7 @@ public class CompositeCommandResult {
     }
 
     public int hashCode() {
-      final int PRIME = 59;
-      int result = 1;
-      final Object $aggregationType = this.getAggregationType();
-      result = result * PRIME + ($aggregationType == null ? 43 : $aggregationType.hashCode());
-      final Object $userTaskDurationTime = this.getUserTaskDurationTime();
-      result =
-          result * PRIME + ($userTaskDurationTime == null ? 43 : $userTaskDurationTime.hashCode());
-      final Object $value = this.getValue();
-      result = result * PRIME + ($value == null ? 43 : $value.hashCode());
-      return result;
+      return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
     }
 
     public String toString() {
@@ -1110,31 +899,7 @@ public class CompositeCommandResult {
     }
 
     public boolean equals(final Object o) {
-      if (o == this) {
-        return true;
-      }
-      if (!(o instanceof ViewMeasureIdentifier)) {
-        return false;
-      }
-      final ViewMeasureIdentifier other = (ViewMeasureIdentifier) o;
-      if (!other.canEqual((Object) this)) {
-        return false;
-      }
-      final Object this$aggregationType = this.getAggregationType();
-      final Object other$aggregationType = other.getAggregationType();
-      if (this$aggregationType == null
-          ? other$aggregationType != null
-          : !this$aggregationType.equals(other$aggregationType)) {
-        return false;
-      }
-      final Object this$userTaskDurationTime = this.getUserTaskDurationTime();
-      final Object other$userTaskDurationTime = other.getUserTaskDurationTime();
-      if (this$userTaskDurationTime == null
-          ? other$userTaskDurationTime != null
-          : !this$userTaskDurationTime.equals(other$userTaskDurationTime)) {
-        return false;
-      }
-      return true;
+      return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
     }
 
     protected boolean canEqual(final Object other) {
@@ -1142,14 +907,7 @@ public class CompositeCommandResult {
     }
 
     public int hashCode() {
-      final int PRIME = 59;
-      int result = 1;
-      final Object $aggregationType = this.getAggregationType();
-      result = result * PRIME + ($aggregationType == null ? 43 : $aggregationType.hashCode());
-      final Object $userTaskDurationTime = this.getUserTaskDurationTime();
-      result =
-          result * PRIME + ($userTaskDurationTime == null ? 43 : $userTaskDurationTime.hashCode());
-      return result;
+      return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
     }
 
     public String toString() {
