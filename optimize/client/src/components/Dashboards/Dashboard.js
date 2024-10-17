@@ -248,11 +248,11 @@ export class Dashboard extends Component {
     refreshRateSeconds,
     stayInEditMode
   ) => {
-    return new Promise(async (resolve, reject) => {
+    return new Promise((resolve, reject) => {
       if (this.isNew()) {
         const collectionId = getCollection(this.props.location.pathname);
 
-        const tilesIds = await Promise.all(
+        Promise.all(
           tiles.map((tile) => {
             return (
               tile.id ||
@@ -269,41 +269,41 @@ export class Dashboard extends Component {
               ''
             );
           })
-        );
+        ).then((tilesIds) => {
+          const savedTiles = tiles.map(({configuration, dimensions, position, type}, idx) => {
+            return {
+              type,
+              configuration,
+              dimensions,
+              position,
+              id: tilesIds[idx],
+            };
+          });
 
-        const savedTiles = tiles.map(({configuration, dimensions, position, type}, idx) => {
-          return {
-            type,
-            configuration,
-            dimensions,
-            position,
-            id: tilesIds[idx],
-          };
+          this.props.mightFail(
+            createEntity('dashboard', {
+              collectionId,
+              name,
+              description,
+              tiles: savedTiles,
+              availableFilters,
+              refreshRateSeconds,
+            }),
+            (id) =>
+              resolve(
+                this.updateDashboardState(
+                  id,
+                  name,
+                  description,
+                  savedTiles,
+                  availableFilters,
+                  refreshRateSeconds,
+                  stayInEditMode
+                )
+              ),
+            (error) => reject(showError(error))
+          );
         });
-
-        this.props.mightFail(
-          createEntity('dashboard', {
-            collectionId,
-            name,
-            description,
-            tiles: savedTiles,
-            availableFilters,
-            refreshRateSeconds,
-          }),
-          (id) =>
-            resolve(
-              this.updateDashboardState(
-                id,
-                name,
-                description,
-                savedTiles,
-                availableFilters,
-                refreshRateSeconds,
-                stayInEditMode
-              )
-            ),
-          (error) => reject(showError(error))
-        );
       } else {
         resolve(
           this.updateDashboard(

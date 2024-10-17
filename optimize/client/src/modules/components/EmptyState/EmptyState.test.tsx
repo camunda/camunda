@@ -9,11 +9,15 @@
 import {shallow} from 'enzyme';
 
 import EmptyState from './EmptyState';
-import { OptimizeDashboard } from 'modules/icons';
+import {OptimizeDashboard} from 'icons';
 
 it('should render properly', () => {
   const node = shallow(
-    <EmptyState title="some title" description="here is a description" icon={<OptimizeDashboard />} />
+    <EmptyState
+      title="some title"
+      description="here is a description"
+      icon={<OptimizeDashboard />}
+    />
   );
 
   expect(node.find('.title')).toHaveText('some title');

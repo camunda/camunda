@@ -82,7 +82,7 @@ export default function AddUserModal(props: AddUserModalProps) {
               <RadioButton
                 value="editor"
                 checked={activeRole === 'editor'}
-                onClick={(a) => setActiveRole('editor')}
+                onClick={() => setActiveRole('editor')}
                 labelText={
                   <>
                     <span>{t('home.roles.editor')}</span>

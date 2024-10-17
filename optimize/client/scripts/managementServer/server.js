@@ -33,7 +33,7 @@ export default function createServer({showLogsInTerminal}, {restartBackend}) {
 
     try {
       filePath = realpathSync(join(__dirname, filename));
-    } catch (error) {
+    } catch (_error) {
       response.writeHead(500);
       response.end('Internal server error', 'utf-8');
       return;
@@ -137,7 +137,7 @@ function createWebSocketServer(server) {
 
 function addLogInTerminal(data, type, error) {
   let outLog = type + ':' + data.toString();
-  if (!!error) {
+  if (error) {
     console.error('  -' + outLog);
   } else {
     console.log('  -' + outLog);

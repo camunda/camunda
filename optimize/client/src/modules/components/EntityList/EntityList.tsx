@@ -268,7 +268,7 @@ export default function EntityList({
               <Table {...getTableProps()}>
                 <TableHead>
                   <TableRow>
-                    {/* @ts-ignore */}
+                    {/* @ts-expect-error there is a mismatch between the types of the table selection props */}
                     {bulkActions && <TableSelectAll {...getSelectionProps()} />}
                     {formattedHeaders.map((formattedHeader, idx) => {
                       const header = headers[idx];
@@ -292,7 +292,7 @@ export default function EntityList({
                       });
 
                       return (
-                        // @ts-ignore
+                        // @ts-expect-error there is a mismatch between the types of the header props
                         <TableHeader
                           key={key}
                           {...headerProps}
@@ -314,7 +314,7 @@ export default function EntityList({
                     return (
                       <TableRow key={key} {...rowProps}>
                         {bulkActions && (
-                          // @ts-ignore
+                          // @ts-expect-error there is a mismatch between the types of the row props
                           <TableSelectRow {...getSelectionProps({row})} />
                         )}
                         {row.cells.map((cell) => (

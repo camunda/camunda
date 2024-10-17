@@ -18,11 +18,11 @@ function Mock({
   onFinally,
   resultHandler,
 }: {
-  promise: Promise<any>;
-  onSuccess: (...args: any) => void;
-  onError?: (...args: any) => void;
-  onFinally?: (...args: any) => void;
-  resultHandler?: (result: any) => void;
+  promise: Promise<unknown>;
+  onSuccess: (...args: unknown[]) => void;
+  onError?: (...args: unknown[]) => void;
+  onFinally?: (...args: unknown[]) => void;
+  resultHandler?: (result: unknown) => void;
 }) {
   const {mightFail, error, resetError} = useErrorHandling();
   return (

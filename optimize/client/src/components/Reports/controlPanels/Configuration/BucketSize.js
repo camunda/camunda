@@ -120,7 +120,7 @@ export default function BucketSize({
               invalid={!sizeValid}
               invalidText={t('common.errors.positiveNum')}
               onBlur={flush}
-              onChange={(evt, {value}) => {
+              onChange={(_evt, {value}) => {
                 const valid = numberParser.isPositiveNumber(value);
                 setSizeValid(valid);
                 applyChanges('bucketSize', value, valid);
@@ -152,7 +152,7 @@ export default function BucketSize({
               invalid={!baseValid}
               invalidText={t('report.config.bucket.invalidNumber')}
               onBlur={flush}
-              onChange={(evt, {value}) => {
+              onChange={(_evt, {value}) => {
                 const valid = isGroupedByDuration
                   ? numberParser.isNonNegativeNumber(value)
                   : numberParser.isFloatNumber(value);

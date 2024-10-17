@@ -26,7 +26,7 @@ const failedResponse = {
   message: 'FAILED',
 };
 global.fetch = jest.fn();
-const fetch = global.fetch as any;
+const fetch = global.fetch as jest.Mock;
 fetch.mockReturnValue(Promise.resolve(successResponse));
 
 console.error = jest.fn();
@@ -249,8 +249,11 @@ describe('handlers', () => {
   });
 
   it('should call handlers in order of their priority', async () => {
-    const out: any = [];
-    const handler = (i: any) => (r: any) => out.push(i) && r;
+    const out: unknown[] = [];
+    const handler = (i: unknown) => async (r: Response) => {
+      out.push(i);
+      return r;
+    };
 
     addHandler(handler(0), 0);
     addHandler(handler(-4), -4);

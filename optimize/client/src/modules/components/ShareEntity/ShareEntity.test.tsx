@@ -20,7 +20,7 @@ const props = {
   getSharedEntity: jest.fn().mockReturnValue(10),
 };
 
-let originalWindowLocation = window.location;
+const originalWindowLocation = window.location;
 
 beforeEach(() => {
   jest.clearAllMocks();

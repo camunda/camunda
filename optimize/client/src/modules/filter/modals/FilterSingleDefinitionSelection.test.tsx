@@ -35,7 +35,7 @@ it('should show only definitions that have version and tenant', () => {
   const node = shallow(<FilterSingleDefinitionSelection {...props} />);
 
   const options = node.find('ComboBox').prop('items') as unknown[];
-  const itemToString = node.find('ComboBox').prop('itemToString') as Function;
+  const itemToString = node.find('ComboBox').prop('itemToString') as (item: unknown) => string;
   expect(options.length).toBe(1);
   expect(itemToString(options[0])).toContain('valid definition');
   expect(itemToString(options[0])).not.toContain('missing Tenant');

@@ -12,7 +12,6 @@ import {ComboBox} from '@carbon/react';
 
 import {TenantInfo} from 'components';
 import {getCollection, loadDefinitions} from 'services';
-import {getOptimizeProfile} from 'config';
 
 import {DefinitionSelection} from './DefinitionSelection';
 import VersionPopover from './VersionPopover';

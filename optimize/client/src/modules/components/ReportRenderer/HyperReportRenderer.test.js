@@ -17,7 +17,7 @@ import ProcessReportRenderer from './ProcessReportRenderer';
 
 jest.mock('./service', () => {
   return {
-    getFormatter: (view) => (v) => v,
+    getFormatter: () => (v) => v,
   };
 });
 
@@ -25,7 +25,7 @@ jest.mock('services', () => {
   const rest = jest.requireActual('services');
   return {
     ...rest,
-    formatters: {formatReportResult: (data, result) => result},
+    formatters: {formatReportResult: (_data, result) => result},
     processResult: jest.fn().mockImplementation(({result}) => result),
   };
 });

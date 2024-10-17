@@ -14,7 +14,7 @@ interface ConfigParams {
   processDefinitionKey: string;
   processDefinitionVersions: string[];
   tenantIds: string[];
-  filter: any[];
+  filter: unknown[];
   includedColumns: string[];
 }
 
@@ -58,7 +58,7 @@ export async function evaluateReport<T extends ReportType>(
   } else {
     // evaluate unsaved report
     // we dont want to send report result in payload to prevent exceedeing request size limit
-    const {result, ...evaluationPayload} = payload;
+    const {result: _result, ...evaluationPayload} = payload;
     response = await post(`api/report/evaluate/`, evaluationPayload, {query});
   }
 

@@ -8,7 +8,6 @@
 
 import {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
-import {Tag} from '@carbon/react';
 
 import {Deleter} from 'components';
 import {refreshBreadcrumbs} from 'components/navigation';
@@ -96,7 +95,7 @@ jest.mock('./service', () => ({
 }));
 
 const props = {
-  mightFail: jest.fn().mockImplementation((data, cb, err, final) => {
+  mightFail: jest.fn().mockImplementation((data, cb, _err, final) => {
     cb(data);
     final?.();
   }),
@@ -187,7 +186,7 @@ it('should set the loading state of the entity list', async () => {
   const node = shallow(
     <Collection
       {...props}
-      mightFail={async (data, cb, err, final) => {
+      mightFail={async (data, cb, _err, final) => {
         cb(await data);
         final?.();
       }}

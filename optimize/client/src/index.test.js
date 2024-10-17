@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const fs = require('fs');
+import fs from 'fs';
 
 const blacklistedFiles = ['setupTests.ts'];
 const blacklistedDependencies = ['@lexical/'];

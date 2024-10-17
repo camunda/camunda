@@ -35,7 +35,7 @@ jest.mock('./service', () => {
 
 jest.mock('services', () => {
   return {
-    getFlowNodeNames: jest.fn().mockReturnValue({
+    getFlowNodeNames: jest.fn().mockResolvedValue({
       a: 'foo',
       b: 'bar',
     }),

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ComponentProps, ReactNode} from 'react';
+import {ComponentProps, InputHTMLAttributes, ReactNode} from 'react';
 import classnames from 'classnames';
 import {
   Checkbox,
@@ -149,7 +149,7 @@ function usesSpecificVersions(selectedVersions: Version['version'][]) {
   );
 }
 
-function ReplaceContentOnLoading({
+function ReplaceContentOnLoading<P extends InputHTMLAttributes<HTMLInputElement>>({
   loading,
   children,
   count = 3,
@@ -158,11 +158,13 @@ function ReplaceContentOnLoading({
   loading?: boolean;
   children: ReactNode;
   count?: number;
-  loadingComponent: (props: any) => JSX.Element;
+  loadingComponent: (props: P) => JSX.Element;
 }) {
   if (!loading) {
     return children;
   }
 
-  return Array.from({length: count}, (_, i) => <LoadingComponent key={i} className="skeleton" />);
+  return Array.from({length: count}, (_, i) => (
+    <LoadingComponent key={i} className="skeleton" {...({} as P)} />
+  ));
 }

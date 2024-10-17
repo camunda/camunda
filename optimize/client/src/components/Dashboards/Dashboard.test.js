@@ -113,7 +113,7 @@ it('should show a notification error if dashboard fails to load on refresh', () 
     loaded: true,
   });
 
-  node.setProps({mightFail: (promise, cb, error) => error('Loading failed')});
+  node.setProps({mightFail: (_promise, _cb, error) => error('Loading failed')});
 
   node.instance().loadDashboard();
 
