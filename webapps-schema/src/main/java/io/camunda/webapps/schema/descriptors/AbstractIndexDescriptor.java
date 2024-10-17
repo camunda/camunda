@@ -48,7 +48,11 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
   @Override
   public String getAllVersionsIndexNameRegexPattern() {
-    return String.format("%s-%s-\\d.*", getIndexPrefix(), getIndexName());
+    if (getIndexPrefix().isEmpty()) {
+      return String.format("%s-%s-\\d.*", getComponentName(), getIndexName());
+    } else {
+      return String.format("%s-%s-%s-\\d.*", getIndexPrefix(), getComponentName(), getIndexName());
+    }
   }
 
   @Override
