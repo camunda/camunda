@@ -10,13 +10,30 @@ import {waitFor} from '@testing-library/react';
 import {processXmlStore} from './processXml.migration.target';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {open} from 'modules/mocks/diagrams';
+import {processesStore} from '../processes/processes.migration';
 
-describe('stores/processXml/processXml.list', () => {
+jest.mock('modules/stores/processes/processes.migration', () => ({
+  processesStore: {
+    migrationState: {
+      selectedTargetProcess: {
+        bpmnProcessId: undefined,
+      },
+    },
+  },
+}));
+
+describe('stores/processXml/processXml.migration.target', () => {
   afterEach(() => {
     processXmlStore.reset();
+    // clear mocked data
+    processesStore.migrationState.selectedTargetProcess!.bpmnProcessId = '';
   });
 
   it('should filter selectable flow nodes', async () => {
+    // mock bpmnProcessId
+    processesStore.migrationState.selectedTargetProcess!.bpmnProcessId =
+      'orderProcess';
+
     mockFetchProcessXML().withSuccess(open('instanceMigration.bpmn'));
 
     processXmlStore.fetchProcessXml('1');
@@ -45,7 +62,43 @@ describe('stores/processXml/processXml.list', () => {
     ]);
   });
 
+  it('should filter selectable flow nodes (ParticipantMigrationA)', async () => {
+    // mock bpmnProcessId
+    processesStore.migrationState.selectedTargetProcess!.bpmnProcessId =
+      'ParticipantMigrationA';
+
+    mockFetchProcessXML().withSuccess(open('ParticipantMigration_v1.bpmn'));
+
+    processXmlStore.fetchProcessXml('1');
+    expect(processXmlStore.state.status).toBe('fetching');
+    await waitFor(() => expect(processXmlStore.state.status).toBe('fetched'));
+
+    expect(
+      processXmlStore.selectableFlowNodes.map((flowNode) => flowNode.id),
+    ).toEqual(['TaskA']);
+  });
+
+  it('should filter selectable flow nodes (ParticipantMigrationB)', async () => {
+    // mock bpmnProcessId
+    processesStore.migrationState.selectedTargetProcess!.bpmnProcessId =
+      'ParticipantMigrationB';
+
+    mockFetchProcessXML().withSuccess(open('ParticipantMigration_v1.bpmn'));
+
+    processXmlStore.fetchProcessXml('1');
+    expect(processXmlStore.state.status).toBe('fetching');
+    await waitFor(() => expect(processXmlStore.state.status).toBe('fetched'));
+
+    expect(
+      processXmlStore.selectableFlowNodes.map((flowNode) => flowNode.id),
+    ).toEqual(['TaskB']);
+  });
+
   it('should return true for isTargetSelected', async () => {
+    // mock bpmnProcessId
+    processesStore.migrationState.selectedTargetProcess!.bpmnProcessId =
+      'orderProcess';
+
     expect(processXmlStore.isTargetSelected).toBe(false);
 
     mockFetchProcessXML().withSuccess(open('instanceMigration.bpmn'));

@@ -10,13 +10,21 @@ import {waitFor} from '@testing-library/react';
 import {processXmlStore} from './processXml.migration.source';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {open} from 'modules/mocks/diagrams';
+import {processesStore} from '../processes/processes.migration';
 
-describe('stores/processXml/processXml.list', () => {
+jest.mock('modules/stores/processes/processes.migration');
+
+describe('stores/processXml/processXml.migration.source', () => {
   afterEach(() => {
     processXmlStore.reset();
   });
 
   it('should filter selectable flow nodes', async () => {
+    // @ts-expect-error
+    processesStore.getSelectedProcessDetails.mockReturnValue({
+      bpmnProcessId: 'orderProcess',
+    });
+
     mockFetchProcessXML().withSuccess(open('instanceMigration.bpmn'));
 
     processXmlStore.fetchProcessXml('1');
@@ -43,5 +51,39 @@ describe('stores/processXml/processXml.list', () => {
       'TaskY',
       'MessageReceiveTask',
     ]);
+  });
+
+  it('should filter selectable flow nodes (ParticipantMigrationA)', async () => {
+    // @ts-expect-error
+    processesStore.getSelectedProcessDetails.mockReturnValue({
+      bpmnProcessId: 'ParticipantMigrationA',
+    });
+
+    mockFetchProcessXML().withSuccess(open('ParticipantMigration_v1.bpmn'));
+
+    processXmlStore.fetchProcessXml('1');
+    expect(processXmlStore.state.status).toBe('fetching');
+    await waitFor(() => expect(processXmlStore.state.status).toBe('fetched'));
+
+    expect(
+      processXmlStore.selectableFlowNodes.map((flowNode) => flowNode.id),
+    ).toEqual(['TaskA']);
+  });
+
+  it('should filter selectable flow nodes (ParticipantMigrationB)', async () => {
+    // @ts-expect-error
+    processesStore.getSelectedProcessDetails.mockReturnValue({
+      bpmnProcessId: 'ParticipantMigrationB',
+    });
+
+    mockFetchProcessXML().withSuccess(open('ParticipantMigration_v1.bpmn'));
+
+    processXmlStore.fetchProcessXml('1');
+    expect(processXmlStore.state.status).toBe('fetching');
+    await waitFor(() => expect(processXmlStore.state.status).toBe('fetched'));
+
+    expect(
+      processXmlStore.selectableFlowNodes.map((flowNode) => flowNode.id),
+    ).toEqual(['TaskB']);
   });
 });
