@@ -35,32 +35,36 @@ public class FormEntity extends TasklistEntity<FormEntity> {
     return bpmnId;
   }
 
-  public void setBpmnId(final String bpmnId) {
+  public FormEntity setBpmnId(final String bpmnId) {
     this.bpmnId = bpmnId;
+    return this;
   }
 
   public String getSchema() {
     return schema;
   }
 
-  public void setSchema(final String schema) {
+  public FormEntity setSchema(final String schema) {
     this.schema = schema;
+    return this;
   }
 
   public Long getVersion() {
     return version;
   }
 
-  public void setVersion(final Long version) {
+  public FormEntity setVersion(final Long version) {
     this.version = version;
+    return this;
   }
 
   public Boolean getIsDeleted() {
     return isDeleted;
   }
 
-  public void setIsDeleted(final Boolean deleted) {
+  public FormEntity setIsDeleted(final Boolean deleted) {
     isDeleted = deleted;
+    return this;
   }
 
   @Override

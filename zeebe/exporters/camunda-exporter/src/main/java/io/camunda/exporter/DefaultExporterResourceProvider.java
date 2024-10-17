@@ -13,6 +13,7 @@ import io.camunda.exporter.handlers.AuthorizationRecordValueExportHandler;
 import io.camunda.exporter.handlers.DecisionHandler;
 import io.camunda.exporter.handlers.DecisionRequirementsHandler;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.FormHandler;
 import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
 import io.camunda.exporter.handlers.UserRecordValueExportHandler;
@@ -91,7 +92,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new PostImporterQueueFromIncidentHandler(
                 templateDescriptorsMap
                     .get(PostImporterQueueTemplate.class)
-                    .getFullQualifiedName()));
+                    .getFullQualifiedName()),
+            new FormHandler(indexDescriptorsMap.get(FormIndex.class).getFullQualifiedName()));
   }
 
   @Override
