@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.AUTHORIZATION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION_EVALUATION;
 import static io.camunda.zeebe.protocol.record.ValueType.INCIDENT;
+import static io.camunda.zeebe.protocol.record.ValueType.PROCESS;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.ValueType.USER;
 import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
@@ -183,7 +184,8 @@ public class CamundaExporter implements Exporter {
             PROCESS_INSTANCE,
             VARIABLE,
             INCIDENT,
-            DECISION_EVALUATION);
+            DECISION_EVALUATION,
+            PROCESS);
 
     @Override
     public boolean acceptType(final RecordType recordType) {
