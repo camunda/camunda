@@ -176,7 +176,14 @@ public class CamundaExporter implements Exporter {
   private record CamundaExporterRecordFilter() implements RecordFilter {
     // TODO include other value types to export
     private static final Set<ValueType> VALUE_TYPES_2_EXPORT =
-        Set.of(USER, AUTHORIZATION, DECISION, PROCESS_INSTANCE, VARIABLE, INCIDENT, DECISION_EVALUATION);
+        Set.of(
+            USER,
+            AUTHORIZATION,
+            DECISION,
+            PROCESS_INSTANCE,
+            VARIABLE,
+            INCIDENT,
+            DECISION_EVALUATION);
 
     @Override
     public boolean acceptType(final RecordType recordType) {

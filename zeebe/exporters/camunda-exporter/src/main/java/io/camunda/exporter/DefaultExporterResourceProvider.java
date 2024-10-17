@@ -107,7 +107,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new SequenceFlowHandler(
                 templateDescriptorsMap.get(SequenceFlowTemplate.class).getFullQualifiedName()),
             new DecisionEvaluationHandler(
-                templateDescriptorsMap.get(DecisionInstanceTemplate.class).getFullQualifiedName());
+                templateDescriptorsMap.get(DecisionInstanceTemplate.class).getFullQualifiedName()));
   }
 
   @Override
