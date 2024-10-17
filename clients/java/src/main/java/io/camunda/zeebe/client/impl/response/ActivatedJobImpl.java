@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.api.response.UserTaskJobData;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import java.util.HashMap;
 import java.util.Map;
@@ -44,6 +45,8 @@ public final class ActivatedJobImpl implements ActivatedJob {
   private final long deadline;
   private final String variables;
 
+  private final UserTaskJobData userTaskJobData;
+
   private Map<String, Object> variablesAsMap;
 
   public ActivatedJobImpl(final JsonMapper jsonMapper, final GatewayOuterClass.ActivatedJob job) {
@@ -68,6 +71,8 @@ public final class ActivatedJobImpl implements ActivatedJob {
     elementId = job.getElementId();
     elementInstanceKey = job.getElementInstanceKey();
     tenantId = job.getTenantId();
+    // TODO check for null etc
+    userTaskJobData = new UserTaskJobDataImpl(job.getUserTaskJobData());
   }
 
   public ActivatedJobImpl(
@@ -99,6 +104,8 @@ public final class ActivatedJobImpl implements ActivatedJob {
     elementId = getOrEmpty(job.getElementId());
     elementInstanceKey = getOrEmpty(job.getElementInstanceKey());
     tenantId = getOrEmpty(job.getTenantId());
+    // TODO check for null etc
+    userTaskJobData = new UserTaskJobDataImpl(job.getUserTaskJobData());
   }
 
   @Override
@@ -196,6 +203,11 @@ public final class ActivatedJobImpl implements ActivatedJob {
   @Override
   public String getTenantId() {
     return tenantId;
+  }
+
+  @Override
+  public UserTaskJobData getUserTaskJobData() {
+    return userTaskJobData;
   }
 
   @Override

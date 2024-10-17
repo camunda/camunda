@@ -114,4 +114,9 @@ public interface ActivatedJob {
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/13560")
   String getTenantId();
+
+  /**
+   * @return user task data
+   */
+  UserTaskJobData getUserTaskJobData();
 }
