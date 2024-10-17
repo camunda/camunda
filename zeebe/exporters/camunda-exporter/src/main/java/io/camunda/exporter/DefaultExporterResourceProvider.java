@@ -16,6 +16,7 @@ import io.camunda.exporter.handlers.DecisionRequirementsHandler;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.IncidentHandler;
 import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHandler;
+import io.camunda.exporter.handlers.MetricFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
 import io.camunda.exporter.handlers.SequenceFlowHandler;
 import io.camunda.exporter.handlers.UserRecordValueExportHandler;
@@ -107,7 +108,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new SequenceFlowHandler(
                 templateDescriptorsMap.get(SequenceFlowTemplate.class).getFullQualifiedName()),
             new DecisionEvaluationHandler(
-                templateDescriptorsMap.get(DecisionInstanceTemplate.class).getFullQualifiedName()));
+                templateDescriptorsMap.get(DecisionInstanceTemplate.class).getFullQualifiedName()),
+            new MetricFromProcessInstanceHandler(
+                indexDescriptorsMap.get(MetricIndex.class).getFullQualifiedName()));
   }
 
   @Override

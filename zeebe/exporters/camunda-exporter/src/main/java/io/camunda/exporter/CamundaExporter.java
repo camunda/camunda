@@ -10,6 +10,7 @@ package io.camunda.exporter;
 import static io.camunda.zeebe.protocol.record.ValueType.AUTHORIZATION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION_EVALUATION;
+import static io.camunda.zeebe.protocol.record.ValueType.DECISION_REQUIREMENTS;
 import static io.camunda.zeebe.protocol.record.ValueType.INCIDENT;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.ValueType.USER;
@@ -180,6 +181,7 @@ public class CamundaExporter implements Exporter {
             USER,
             AUTHORIZATION,
             DECISION,
+            DECISION_REQUIREMENTS,
             PROCESS_INSTANCE,
             VARIABLE,
             INCIDENT,
