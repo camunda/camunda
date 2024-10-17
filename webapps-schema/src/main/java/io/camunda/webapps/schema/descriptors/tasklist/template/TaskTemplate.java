@@ -18,27 +18,28 @@ public class TaskTemplate extends TasklistTemplateDescriptor implements Prio3Bac
   /* User Task Fields*/
   public static final String ID = "id";
   public static final String KEY = "key";
-  public static final String POSITION = "position";
+
   public static final String CREATION_TIME = "creationTime";
   public static final String COMPLETION_TIME = "completionTime";
-  public static final String FLOW_NODE_BPMN_ID = "flowNodeBpmnId";
+  public static final String DUE_DATE = "dueDate";
+  public static final String FOLLOW_UP_DATE = "followUpDate";
+
   public static final String STATE = "state";
+  public static final String IMPLEMENTATION = "implementation";
   public static final String ASSIGNEE = "assignee";
   public static final String CANDIDATE_GROUPS = "candidateGroups";
   public static final String CANDIDATE_USERS = "candidateUsers";
-  public static final String BPMN_PROCESS_ID = "bpmnProcessId";
-  public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
-  public static final String DUE_DATE = "dueDate";
-  public static final String FORM_ID = "formId";
-  public static final String FORM_KEY = "formKey";
-  public static final String FOLLOW_UP_DATE = "followUpDate";
-  public static final String IMPLEMENTATION = "implementation";
-  public static final String PRIORITY = "priority";
-  public static final String EXTERNAL_FORM_REFERENCE = "externalFormReference";
   public static final String CUSTOM_HEADERS = "customHeaders";
+  public static final String PRIORITY = "priority";
+  public static final String ACTION = "action";
+  public static final String CHANGED_ATTRIBUTES = "changedAttributes";
+
+  public static final String FORM_KEY = "formKey";
+  public static final String EXTERNAL_FORM_REFERENCE = "externalFormReference";
 
   public static final String TENANT_ID = "tenantId";
   public static final String PARTITION_ID = "partitionId";
+  public static final String POSITION = "position";
 
   /* Variable Fields */
   public static final String VARIABLE_NAME = "name";
@@ -48,12 +49,13 @@ public class TaskTemplate extends TasklistTemplateDescriptor implements Prio3Bac
   public static final String VARIABLE_SCOPE_KEY = "scopeKey";
 
   /* Process Information Fields */
+  public static final String BPMN_PROCESS_ID = "bpmnProcessId";
+  public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
+  public static final String FLOW_NODE_BPMN_ID = "flowNodeBpmnId";
   public static final String FLOW_NODE_INSTANCE_ID = "flowNodeInstanceId";
   public static final String PROCESS_INSTANCE_ID = "processInstanceId";
   public static final String PROCESS_DEFINITION_VERSION = "processDefinitionVersion";
 
-  public static final String ACTION = "action";
-  public static final String CHANGED_ATTRIBUTES = "changedAttributes";
   public static final String JOIN_FIELD_NAME = "join";
 
   public TaskTemplate(final String indexPrefix, final boolean isElasticsearch) {
