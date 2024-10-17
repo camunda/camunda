@@ -537,6 +537,19 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   }
 
   @Test
+  void shouldGetFlowNodeInstanceByKey() {
+    // given
+    final var flowNodeInstanceKey = flowNodeInstance.getFlowNodeInstanceKey();
+
+    // when
+    final var result = zeebeClient.newFlowNodeInstanceGetRequest(flowNodeInstanceKey).send().join();
+
+    // then
+    assertThat(result).isNotNull();
+    assertThat(result).isEqualTo(flowNodeInstance);
+  }
+
+  @Test
   void shouldQueryFlowNodeInstanceByFlowNodeId() {
     // given
     final var flowNodeId = flowNodeInstance.getFlowNodeId();
