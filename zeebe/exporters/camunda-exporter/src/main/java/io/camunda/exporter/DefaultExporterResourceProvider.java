@@ -29,9 +29,9 @@ import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHa
 import io.camunda.exporter.handlers.ListViewVariableFromVariableHandler;
 import io.camunda.exporter.handlers.MetricFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
-import io.camunda.exporter.handlers.UserHandler;
 import io.camunda.exporter.handlers.ProcessHandler;
 import io.camunda.exporter.handlers.SequenceFlowHandler;
+import io.camunda.exporter.handlers.UserHandler;
 import io.camunda.exporter.handlers.VariableHandler;
 import io.camunda.exporter.utils.XMLUtil;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
@@ -50,6 +50,7 @@ import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueT
 import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
+import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
@@ -112,12 +113,11 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             FormIndex.class,
             new FormIndex(globalPrefix, isElasticsearch),
             TasklistMetricIndex.class,
-            new TasklistMetricIndex(globalPrefix, isElasticsearch));
-            new FormIndex(tasklistIndexPrefix, isElasticsearch),
+            new TasklistMetricIndex(globalPrefix, isElasticsearch),
             UserIndex.class,
-            new UserIndex("identity", isElasticsearch),
+            new UserIndex(globalPrefix, isElasticsearch),
             AuthorizationIndex.class,
-            new AuthorizationIndex("identity", isElasticsearch));
+            new AuthorizationIndex(globalPrefix, isElasticsearch));
 
     exportHandlers =
         Set.of(

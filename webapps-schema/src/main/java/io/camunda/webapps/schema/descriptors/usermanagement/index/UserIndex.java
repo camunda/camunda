@@ -26,7 +26,19 @@ public class UserIndex extends UserManagementIndexDescriptor {
 
   @Override
   public String getFullQualifiedName() {
-    return String.format("%s-%s-%s_", getIndexPrefix(), getIndexName(), getVersion());
+    final var stringBuilder = new StringBuilder();
+
+    if (getIndexPrefix() != null && !getIndexPrefix().isEmpty()) {
+      stringBuilder.append(getIndexPrefix());
+      stringBuilder.append("-");
+    }
+
+    stringBuilder.append(getIndexName());
+    stringBuilder.append("-");
+    stringBuilder.append(getVersion());
+    stringBuilder.append("_");
+
+    return stringBuilder.toString();
   }
 
   @Override
