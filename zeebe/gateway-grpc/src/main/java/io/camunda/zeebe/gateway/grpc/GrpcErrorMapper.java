@@ -176,6 +176,10 @@ public final class GrpcErrorMapper {
         builder.setCode(Code.UNAVAILABLE_VALUE);
       }
       case MALFORMED_REQUEST -> builder.setCode(Code.INVALID_ARGUMENT_VALUE);
+      case PARTITION_UNAVAILABLE -> {
+        logger.debug("Partition is currently unavailable: {}", error, rootError);
+        builder.setCode(Code.UNAVAILABLE_VALUE);
+      }
       default -> {
         // all the following are for cases where retrying (with the same gateway) is not expected
         // to solve anything
