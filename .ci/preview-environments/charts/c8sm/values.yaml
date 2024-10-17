@@ -333,6 +333,9 @@ camunda-platform:
       fullURL: "https://test.camunda.camunda.cloud/identity"
 
     operate:
+      env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: dev-data
       image:
         registry: registry.camunda.cloud
         repository: team-camunda/operate
