@@ -112,10 +112,41 @@ public class FormHanlderTest {
     underTest.updateEntity(decisionRecord, formEntity);
 
     // then
-    assertThat(formEntity.getId()).isEqualTo("123");
-    assertThat(formEntity.getKey()).isEqualTo(123L);
-    assertThat(formEntity.getVersion()).isEqualTo(2);
-    assertThat(formEntity.getTenantId()).isEqualTo("tenantId");
+    assertThat(formEntity.getKey()).isEqualTo(formKey);
+    assertThat(formEntity.getVersion()).isEqualTo(formValue.getVersion());
+    assertThat(formEntity.getBpmnId()).isEqualTo(formValue.getResourceName());
+    assertThat(formEntity.getSchema())
+        .isEqualTo(new String(formValue.getResource(), StandardCharsets.UTF_8));
+    assertThat(formEntity.getTenantId()).isEqualTo(formValue.getTenantId());
+  }
+
+  @Test
+  void shouldUpdateEntityAsDeleted() {
+    // given
+    final long formKey = 123L;
+    final ImmutableForm formValue =
+        ImmutableForm.builder()
+            .from(factory.generateObject(ImmutableForm.class))
+            .withResource(formJsonResource().getBytes(StandardCharsets.UTF_8))
+            .withFormKey(formKey)
+            .build();
+
+    final Record<Form> decisionRecord =
+        factory.generateRecord(
+            ValueType.FORM, r -> r.withIntent(FormIntent.DELETED).withValue(formValue));
+
+    // when
+    final FormEntity formEntity = new FormEntity();
+    underTest.updateEntity(decisionRecord, formEntity);
+
+    // then
+    assertThat(formEntity.getKey()).isEqualTo(formKey);
+    assertThat(formEntity.getIsDeleted()).isTrue();
+    assertThat(formEntity.getVersion()).isEqualTo(formValue.getVersion());
+    assertThat(formEntity.getBpmnId()).isEqualTo(formValue.getResourceName());
+    assertThat(formEntity.getSchema())
+        .isEqualTo(new String(formValue.getResource(), StandardCharsets.UTF_8));
+    assertThat(formEntity.getTenantId()).isEqualTo(formValue.getTenantId());
   }
 
   private String formJsonResource() {
