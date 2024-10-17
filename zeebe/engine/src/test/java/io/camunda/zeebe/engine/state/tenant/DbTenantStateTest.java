@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -134,5 +135,73 @@ public class DbTenantStateTest {
     // to ensure the tenant ID was updated in the persistedTenant
     final Optional<TenantRecord> tenantByKey = tenantState.getTenantByKey(tenantKey);
     assertThat(tenantByKey.get().getTenantId()).isEqualTo(newTenantId);
+  }
+
+  @Test
+  void shouldAddEntityToTenant() {
+    // given
+    final long tenantKey = 1L;
+    final long entityKey = 100L;
+    final String tenantId = "tenant-1";
+    final var tenantRecord =
+        new TenantRecord()
+            .setTenantKey(tenantKey)
+            .setTenantId(tenantId)
+            .setEntityKey(entityKey)
+            .setName("Tenant One");
+
+    // when
+    tenantState.createTenant(tenantRecord);
+    tenantState.addEntity(tenantRecord);
+
+    // then
+    final var entityType = tenantState.getEntityType(tenantKey, entityKey);
+    assertThat(entityType).isPresent();
+    assertThat(entityType.get()).isEqualTo(tenantRecord.getEntityType());
+  }
+
+  @Test
+  void shouldReturnEmptyEntityTypeIfEntityNotFound() {
+    // given
+    final long tenantKey = 1L;
+    final long entityKey = 999L;
+    final String tenantId = "tenant-1";
+    final var tenantRecord =
+        new TenantRecord()
+            .setTenantKey(tenantKey)
+            .setTenantId(tenantId)
+            .setEntityKey(entityKey)
+            .setName("Tenant One");
+
+    // when
+    tenantState.createTenant(tenantRecord);
+
+    // then
+    final var entityType = tenantState.getEntityType(tenantKey, entityKey);
+    assertThat(entityType).isEmpty();
+  }
+
+  @Test
+  void shouldReturnEntityTypeForExistingTenantAndEntity() {
+    // given
+    final long tenantKey = 1L;
+    final long entityKey = 100L;
+    final String tenantId = "tenant-1";
+    final var tenantRecord =
+        new TenantRecord()
+            .setTenantKey(tenantKey)
+            .setTenantId(tenantId)
+            .setEntityKey(entityKey)
+            .setName("Tenant One")
+            .setEntityType(EntityType.USER);
+
+    // when
+    tenantState.createTenant(tenantRecord);
+    tenantState.addEntity(tenantRecord);
+
+    // then
+    final var entityType = tenantState.getEntityType(tenantKey, entityKey);
+    assertThat(entityType).isPresent();
+    assertThat(entityType.get()).isEqualTo(EntityType.USER);
   }
 }

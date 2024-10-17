@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Optional;
 
 public interface TenantState {
@@ -28,4 +29,14 @@ public interface TenantState {
    *     Optional} if not
    */
   Optional<Long> getTenantKeyById(final String tenantId);
+
+  /**
+   * Retrieves the entity type associated with the given tenant key and entity key.
+   *
+   * @param tenantKey the key of the tenant
+   * @param entityKey the key of the entity
+   * @return an {@link Optional} containing the {@link EntityType} if it exists, or an empty {@link
+   *     Optional} if not
+   */
+  Optional<EntityType> getEntityType(final long tenantKey, final long entityKey);
 }
