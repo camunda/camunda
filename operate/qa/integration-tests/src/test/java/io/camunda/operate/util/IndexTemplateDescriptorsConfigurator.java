@@ -37,9 +37,7 @@ public class IndexTemplateDescriptorsConfigurator {
       final OperateProperties operateProperties,
       final DatabaseInfo databaseInfo,
       final IndexPrefixHolder indexPrefixHolder) {
-    return new DecisionIndex(
-        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
-        databaseInfo.isElasticsearchDb()) {
+    return new DecisionIndex("", databaseInfo.isElasticsearchDb()) {
       @Override
       public String getIndexPrefix() {
         return indexPrefixHolder.getIndexPrefix();
@@ -52,9 +50,7 @@ public class IndexTemplateDescriptorsConfigurator {
       final OperateProperties operateProperties,
       final DatabaseInfo databaseInfo,
       final IndexPrefixHolder indexPrefixHolder) {
-    return new DecisionRequirementsIndex(
-        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
-        databaseInfo.isElasticsearchDb()) {
+    return new DecisionRequirementsIndex("", databaseInfo.isElasticsearchDb()) {
       @Override
       public String getIndexPrefix() {
         return indexPrefixHolder.getIndexPrefix();
@@ -67,9 +63,7 @@ public class IndexTemplateDescriptorsConfigurator {
       final OperateProperties operateProperties,
       final DatabaseInfo databaseInfo,
       final IndexPrefixHolder indexPrefixHolder) {
-    return new MetricIndex(
-        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
-        databaseInfo.isElasticsearchDb()) {
+    return new MetricIndex("", databaseInfo.isElasticsearchDb()) {
       @Override
       public String getIndexPrefix() {
         return indexPrefixHolder.getIndexPrefix();
@@ -82,9 +76,7 @@ public class IndexTemplateDescriptorsConfigurator {
       final OperateProperties operateProperties,
       final DatabaseInfo databaseInfo,
       final IndexPrefixHolder indexPrefixHolder) {
-    return new ProcessIndex(
-        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
-        databaseInfo.isElasticsearchDb()) {
+    return new ProcessIndex("", databaseInfo.isElasticsearchDb()) {
       @Override
       public String getIndexPrefix() {
         return indexPrefixHolder.getIndexPrefix();

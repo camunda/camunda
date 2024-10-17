@@ -35,33 +35,25 @@ public class IndexTemplateDescriptorsConfigurator {
   @Bean
   public DecisionIndex getDecisionIndex(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    return new DecisionIndex(
-        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
-        databaseInfo.isElasticsearchDb());
+    return new DecisionIndex("", databaseInfo.isElasticsearchDb());
   }
 
   @Bean
   public DecisionRequirementsIndex getDecisionRequirementsIndex(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    return new DecisionRequirementsIndex(
-        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
-        databaseInfo.isElasticsearchDb());
+    return new DecisionRequirementsIndex("", databaseInfo.isElasticsearchDb());
   }
 
   @Bean
   public MetricIndex getMetricIndex(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    return new MetricIndex(
-        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
-        databaseInfo.isElasticsearchDb());
+    return new MetricIndex("", databaseInfo.isElasticsearchDb());
   }
 
   @Bean
   public ProcessIndex getProcessIndex(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    return new ProcessIndex(
-        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
-        databaseInfo.isElasticsearchDb());
+    return new ProcessIndex("", databaseInfo.isElasticsearchDb());
   }
 
   @Bean
