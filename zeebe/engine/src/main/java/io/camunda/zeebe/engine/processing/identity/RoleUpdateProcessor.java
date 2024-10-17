@@ -57,7 +57,7 @@ public class RoleUpdateProcessor implements DistributedTypedRecordProcessor<Role
     final var persistedRecord = roleState.getRole(record.getRoleKey());
     if (persistedRecord.isEmpty()) {
       final var errorMessage =
-          "Expected to update role with key '%s', but a role with this key does not exists"
+          "Expected to update role with key '%s', but a role with this key does not exist."
               .formatted(record.getRoleKey());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);

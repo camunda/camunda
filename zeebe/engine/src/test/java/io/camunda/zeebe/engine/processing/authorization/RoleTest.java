@@ -87,7 +87,7 @@ public class RoleTest {
         .hasRejectionReason(
             "Expected to update role with key '"
                 + notPresentRoleKey
-                + "', but a role with this key does not exists");
+                + "', but a role with this key does not exist.");
   }
 
   @Test
