@@ -33,6 +33,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskJobData;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
@@ -231,12 +232,30 @@ public final class BpmnJobBehavior {
         Collections.singletonMap(
             Protocol.RESERVED_HEADER_NAME_PREFIX + "userTaskKey",
             Objects.toString(taskRecordValue.getUserTaskKey()));
+
+    final UserTaskJobData userTaskJobData = createNewUserTaskJobData(taskRecordValue);
+
     writeJobCreatedEvent(
         elementProps,
         jobProperties,
         JobKind.TASK_LISTENER,
         fromTaskListenerEventType(taskListener.getEventType()),
-        taskHeaders);
+        taskHeaders,
+        userTaskJobData);
+  }
+
+  private static UserTaskJobData createNewUserTaskJobData(final UserTaskRecord taskRecordValue) {
+    final UserTaskJobData userTaskJobData =
+        new UserTaskJobData()
+            .setUserTaskKey(taskRecordValue.getUserTaskKey())
+            .setAssignee(taskRecordValue.getAssignee())
+            .setCandidateGroupsList(taskRecordValue.getCandidateGroupsList())
+            .setCandidateUsersList(taskRecordValue.getCandidateUsersList())
+            .setDueDate(taskRecordValue.getDueDate())
+            .setFollowUpDate(taskRecordValue.getFollowUpDate())
+            .setFormKey(taskRecordValue.getFormKey())
+            .setPriority(taskRecordValue.getPriority());
+    return userTaskJobData;
   }
 
   private static JobListenerEventType fromExecutionListenerEventType(
@@ -276,6 +295,37 @@ public final class BpmnJobBehavior {
 
   private Either<Failure, Long> evalRetriesExp(final Expression retries, final long scopeKey) {
     return expressionBehavior.evaluateLongExpression(retries, scopeKey);
+  }
+
+  private void writeJobCreatedEvent(
+      final ProcessElementProperties elementProps,
+      final JobProperties props,
+      final JobKind jobKind,
+      final JobListenerEventType jobListenerEventType,
+      final Map<String, String> taskHeaders,
+      final UserTaskJobData userTaskJobData) {
+
+    final var encodedHeaders = encodeHeaders(taskHeaders, props);
+
+    jobRecord
+        .setType(props.getType())
+        .setJobKind(jobKind)
+        .setListenerEventType(jobListenerEventType)
+        .setRetries(props.getRetries().intValue())
+        .setCustomHeaders(encodedHeaders)
+        .setBpmnProcessId(elementProps.getBpmnProcessId())
+        .setProcessDefinitionVersion(elementProps.getProcessVersion())
+        .setProcessDefinitionKey(elementProps.getProcessDefinitionKey())
+        .setProcessInstanceKey(elementProps.getProcessInstanceKey())
+        .setElementId(elementProps.getElementId())
+        .setElementInstanceKey(elementProps.getElementInstanceKey())
+        .setTenantId(elementProps.getTenantId())
+        .setUserTaskJobData(userTaskJobData);
+
+    final var jobKey = keyGenerator.nextKey();
+    stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);
+    jobActivationBehavior.publishWork(jobKey, jobRecord);
+    jobMetrics.jobCreated(props.getType(), jobKind);
   }
 
   private void writeJobCreatedEvent(
