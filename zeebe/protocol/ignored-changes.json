@@ -66,6 +66,24 @@
           "justification": "Block length was updated as part of generated code due to the addition of operation reference field",
           "newValue": "40",
           "oldValue": "32"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "enum io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType",
+          "justification": "AuthorizationOwnerType is moved to security-core module"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "enum io.camunda.zeebe.protocol.record.value.AuthorizationResourceType",
+          "justification": "AuthorizationResourceType is moved to security-core module"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "enum io.camunda.zeebe.protocol.record.value.PermissionType",
+          "justification": "PermissionType is moved to security-core module"
         }
       ]
     }
