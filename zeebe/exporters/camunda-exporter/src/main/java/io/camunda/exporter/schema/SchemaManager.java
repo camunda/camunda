@@ -69,7 +69,7 @@ public class SchemaManager {
     }
 
     final var existingIndexNames =
-        searchEngineClient.getMappings(alLIndexNames(), MappingSource.INDEX).keySet();
+        searchEngineClient.getMappings(allIndexNames(), MappingSource.INDEX).keySet();
 
     indexDescriptors.stream()
         .filter(descriptor -> !existingIndexNames.contains(descriptor.getFullQualifiedName()))
@@ -144,7 +144,7 @@ public class SchemaManager {
       return Map.of();
     }
 
-    final var currentIndices = searchEngineClient.getMappings(alLIndexNames(), MappingSource.INDEX);
+    final var currentIndices = searchEngineClient.getMappings(allIndexNames(), MappingSource.INDEX);
 
     return schemaValidator.validateIndexMappings(currentIndices, indexDescriptors);
   }
@@ -166,7 +166,7 @@ public class SchemaManager {
             .collect(Collectors.toSet()));
   }
 
-  private String alLIndexNames() {
+  private String allIndexNames() {
     return indexDescriptors.stream()
         .map(descriptor -> descriptor.getFullQualifiedName() + "*")
         .collect(Collectors.joining(","));
