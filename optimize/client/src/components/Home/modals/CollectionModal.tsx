@@ -44,7 +44,7 @@ export function CollectionModal({
   const [displaySourcesModal, setDisplaySourcesModal] = useState(false);
   const {mightFail} = useErrorHandling();
   const history = useHistory();
-  
+
   const confirm = () => {
     if (!name || loading) {
       return;
@@ -72,9 +72,7 @@ export function CollectionModal({
           );
         }
       },
-      (error) => {
-        showError(error);
-      },
+      showError,
       () => setLoading(false)
     );
   };

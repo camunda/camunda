@@ -21,7 +21,7 @@ import {loadTenants} from './service';
 interface MultiDefinitionSelectionProps {
   availableDefinitions: Definition[];
   changeDefinition: (key: string) => void;
-  resetSelection: (selection: {}) => void;
+  resetSelection: (selection: object) => void;
   selectedDefinitions: Definition[];
   onChange: (selectedDefinitions: Definition[]) => void;
   invalid?: boolean;

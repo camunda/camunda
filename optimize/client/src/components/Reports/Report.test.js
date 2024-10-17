@@ -78,7 +78,7 @@ it("should show an error page if report doesn't exist", () => {
 
 it('should pass the error to report view and edit mode if evaluation fails', async () => {
   const testError = {status: 400, message: 'testError', reportDefinition: report};
-  const mightFail = (promise, cb, err) => err(testError);
+  const mightFail = (_promise, _cb, err) => err(testError);
 
   const node = shallow(<Report {...props} mightFail={mightFail} />);
   await node.instance().loadReport();

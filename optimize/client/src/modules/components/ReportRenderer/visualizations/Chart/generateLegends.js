@@ -82,7 +82,7 @@ const generateLegends = {
 
     originalGenerateLabels = chart.options.plugins.legend.labels.generateLabels;
 
-    chart.options.plugins.legend.onClick = (evt, legend) => {
+    chart.options.plugins.legend.onClick = (_evt, legend) => {
       if (legend.text === 'viewMoreLegend') {
         viewMoreClicked[chart.id] = true;
         chart.update();
@@ -94,7 +94,7 @@ const generateLegends = {
       }
     };
 
-    chart.options.plugins.legend.onHover = (evt, legend) => {
+    chart.options.plugins.legend.onHover = (_evt, legend) => {
       if (legend.text === 'viewMoreLegend' || legend.text === 'viewLessLegend') {
         chart.canvas.style.cursor = 'pointer';
       } else {
@@ -102,7 +102,7 @@ const generateLegends = {
       }
     };
 
-    chart.options.plugins.legend.onLeave = (evt, legend) => {
+    chart.options.plugins.legend.onLeave = () => {
       chart.canvas.style.cursor = 'auto';
     };
   },

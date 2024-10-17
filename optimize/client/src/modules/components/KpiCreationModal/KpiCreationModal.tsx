@@ -64,12 +64,16 @@ export default function KpiCreationModal({onClose}: KpiCreationModalProps): JSX.
     );
   };
 
-  const getFilterModal = (type?: DefaultProcessFilter['type']): React.FC<FilterProps<any>> => {
+  const getFilterModal = (
+    type?: DefaultProcessFilter['type']
+  ): React.FC<FilterProps<FilterType>> => {
     switch (type) {
       case 'instanceStartDate':
       case 'instanceEndDate':
+        // @ts-expect-error There is some misalignment between the types
         return DateFilter;
       case 'executedFlowNodes':
+        // @ts-expect-error There is some misalignment between the types
         return NodeSelection;
       default:
         return () => null;

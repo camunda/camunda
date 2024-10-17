@@ -74,7 +74,7 @@ export default withRouter(
               name: names[breadcrumb.type + 'Name'],
             }))
             .filter((breadcrumb) => breadcrumb.name);
-        } catch (error) {
+        } catch (_error) {
           breadcrumbs = [];
         }
       }

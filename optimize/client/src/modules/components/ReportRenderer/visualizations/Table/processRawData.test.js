@@ -6,11 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React from 'react';
 import {parseISO} from 'date-fns';
 
 import {format} from 'dates';
-import {NoDataNotice} from 'components';
 
 import processRawData, {OBJECT_VARIABLE_IDENTIFIER} from './processRawData';
 

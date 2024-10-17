@@ -16,7 +16,7 @@ import {Number, Table} from './visualizations';
 
 jest.mock('./service', () => {
   return {
-    getFormatter: (view) => (v) => v,
+    getFormatter: () => (v) => v,
   };
 });
 

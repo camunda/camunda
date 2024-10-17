@@ -11,8 +11,6 @@ import {Button} from '@carbon/react';
 import {shallow} from 'enzyme';
 import update from 'immutability-helper';
 
-import {getOptimizeProfile} from 'config';
-
 import RawDataModal from './RawDataModal';
 import DiagramModal from './DiagramModal';
 import {loadTenants} from './service';

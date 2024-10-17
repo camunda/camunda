@@ -46,7 +46,7 @@ jest.mock('tracking', () => ({track: jest.fn()}));
 
 jest.mock('hooks', () => ({
   useErrorHandling: jest.fn().mockImplementation(() => ({
-    mightFail: jest.fn().mockImplementation((data, cb, err, final) => {
+    mightFail: jest.fn().mockImplementation((data, cb, _err, final) => {
       cb(data);
       final?.();
     }),
