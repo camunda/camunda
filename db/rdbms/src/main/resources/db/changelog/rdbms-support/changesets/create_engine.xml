@@ -62,7 +62,6 @@
       <column name="VAR_NAME" type="VARCHAR(255)" />
       <!-- TODO think about a correct size and the usage of blobs -->
       <column name="VAR_VALUE" type="VARCHAR(4000)" />
-      <column name="TRUNCATED" type="BOOLEAN" />
       <column name="TENANT_ID" type="VARCHAR(255)" />
     </createTable>
 
