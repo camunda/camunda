@@ -44,8 +44,8 @@ public class PostImporterQueueFromIncidentHandler
   @Override
   public List<String> generateIds(final Record<IncidentRecordValue> record) {
     String intent = record.getIntent().name();
-    if (intent.equals(IncidentIntent.MIGRATED.toString())) {
-      intent = IncidentIntent.CREATED.toString();
+    if (intent.equals(IncidentIntent.MIGRATED.name())) {
+      intent = IncidentIntent.CREATED.name();
     }
     return List.of(String.format("%d-%s", record.getKey(), intent));
   }
@@ -60,8 +60,8 @@ public class PostImporterQueueFromIncidentHandler
       final Record<IncidentRecordValue> record, final PostImporterQueueEntity entity) {
     final IncidentRecordValue recordValue = record.getValue();
     String intent = record.getIntent().name();
-    if (intent.equals(IncidentIntent.MIGRATED.toString())) {
-      intent = IncidentIntent.CREATED.toString();
+    if (intent.equals(IncidentIntent.MIGRATED.name())) {
+      intent = IncidentIntent.CREATED.name();
     }
     entity
         .setId(String.format("%d-%s", record.getKey(), intent))

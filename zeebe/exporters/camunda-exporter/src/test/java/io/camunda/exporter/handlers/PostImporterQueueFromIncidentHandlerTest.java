@@ -132,7 +132,7 @@ public class PostImporterQueueFromIncidentHandlerTest {
 
     final Record<IncidentRecordValue> incidentRecord =
         factory.generateRecord(
-            ValueType.DECISION,
+            ValueType.INCIDENT,
             r ->
                 r.withIntent(IncidentIntent.CREATED)
                     .withValue(incidentRecordValue)
