@@ -17,12 +17,14 @@ import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.PackedProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskJobData;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
@@ -81,8 +83,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   private final ArrayProperty<StringValue> changedAttributesProp =
       new ArrayProperty<>("changedAttributes", StringValue::new);
 
+  private final ObjectProperty<UserTaskJobData> userTaskJobDataProp =
+      new ObjectProperty<>("userTaskData", new UserTaskJobData());
+
   public JobRecord() {
-    super(21);
+    super(22);
     declareProperty(deadlineProp)
         .declareProperty(timeoutProp)
         .declareProperty(workerProp)
@@ -103,7 +108,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
         .declareProperty(elementIdProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(tenantIdProp)
-        .declareProperty(changedAttributesProp);
+        .declareProperty(changedAttributesProp)
+        .declareProperty(userTaskJobDataProp);
   }
 
   public void wrapWithoutVariables(final JobRecord record) {
@@ -127,6 +133,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     elementIdProp.setValue(record.getElementIdBuffer());
     elementInstanceKeyProp.setValue(record.getElementInstanceKey());
     tenantIdProp.setValue(record.getTenantId());
+    userTaskJobDataProp.getValue().setProperties(record.getUserTaskJobData());
     setChangedAttributes(record.getChangedAttributes());
   }
 
@@ -354,6 +361,15 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
   public JobRecord setType(final DirectBuffer buf) {
     return setType(buf, 0, buf.capacity());
+  }
+
+  public UserTaskJobData getUserTaskJobData() {
+    return userTaskJobDataProp.getValue();
+  }
+
+  public JobRecord setUserTaskJobData(final UserTaskJobData userTaskJobData) {
+    userTaskJobDataProp.getValue().setProperties(userTaskJobData);
+    return this;
   }
 
   public JobRecord setListenerEventType(final JobListenerEventType jobListenerEventType) {
