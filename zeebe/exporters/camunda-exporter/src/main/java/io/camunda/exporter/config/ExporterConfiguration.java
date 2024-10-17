@@ -99,18 +99,18 @@ public class ExporterConfiguration {
 
   public static final class IndexSettings {
     public static final int DEFAULT_VARIABLE_SIZE_THRESHOLD = 8191;
-    private String globalPrefix = "";
+    private String prefix = "";
 
     private Integer numberOfShards = 1;
     private Integer numberOfReplicas = 0;
     private Integer variableSizeThreshold = DEFAULT_VARIABLE_SIZE_THRESHOLD;
 
-    public String getGlobalPrefix() {
-      return globalPrefix;
+    public String getPrefix() {
+      return prefix;
     }
 
-    public void setGlobalPrefix(final String globalPrefix) {
-      this.globalPrefix = globalPrefix;
+    public void setPrefix(final String prefix) {
+      this.prefix = prefix;
     }
 
     public Integer getNumberOfShards() {
@@ -140,8 +140,8 @@ public class ExporterConfiguration {
     @Override
     public String toString() {
       return "IndexSettings{"
-          + "globalPrefix='"
-          + globalPrefix
+          + "prefix='"
+          + prefix
           + '\''
           + ", numberOfShards="
           + numberOfShards
