@@ -26,7 +26,12 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
   @Override
   public String getFullQualifiedName() {
-    return String.format("%s-%s-%s_", getIndexPrefix(), getIndexName(), getVersion());
+    if (getIndexPrefix().isEmpty()) {
+      return String.format("%s-%s-%s_", getComponentName(), getIndexName(), getVersion());
+    } else {
+      return String.format(
+          "%s-%s-%s-%s_", getIndexPrefix(), getComponentName(), getIndexName(), getVersion());
+    }
   }
 
   @Override
