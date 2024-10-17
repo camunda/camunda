@@ -16,7 +16,7 @@ import java.util.Set;
 
 public interface ExporterResourceProvider {
 
-  void init(String exporterId, ExporterConfiguration configuration);
+  void init(ExporterConfiguration configuration);
 
   /**
    * This should return descriptors describing the desired state of all indices provided.
