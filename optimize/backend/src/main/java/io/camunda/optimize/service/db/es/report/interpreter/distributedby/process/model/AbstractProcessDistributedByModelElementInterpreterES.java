@@ -154,8 +154,14 @@ public abstract class AbstractProcessDistributedByModelElementInterpreterES
                         && FilterApplicationLevel.VIEW.equals(filter.getFilterLevel()))
             .map(ExecutedFlowNodeFilterDto.class::cast)
             .map(ExecutedFlowNodeFilterDto::getData)
-            .filter(data -> NOT_IN == data.getOperator())
-            .flatMap(data -> data.getValues().stream())
+            .flatMap(
+                data ->
+                    switch (data.getOperator()) {
+                      case IN ->
+                          modelElementNames.keySet().stream()
+                              .filter(name -> !data.getValues().contains(name));
+                      case NOT_IN -> data.getValues().stream();
+                    })
             .collect(toSet());
 
     if (containsIdentityFilters(reportData)) {
