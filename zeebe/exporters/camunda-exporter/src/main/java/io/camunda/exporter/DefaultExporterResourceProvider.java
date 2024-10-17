@@ -12,6 +12,7 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.handlers.AuthorizationRecordValueExportHandler;
 import io.camunda.exporter.handlers.DecisionHandler;
 import io.camunda.exporter.handlers.DecisionRequirementsHandler;
+import io.camunda.exporter.handlers.EventFromIncidentHandler;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.IncidentHandler;
 import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHandler;
@@ -25,6 +26,7 @@ import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
@@ -64,7 +66,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             PostImporterQueueTemplate.class,
             new PostImporterQueueTemplate(operateIndexPrefix, isElasticsearch),
             IncidentTemplate.class,
-            new IncidentTemplate(operateIndexPrefix, isElasticsearch));
+            new IncidentTemplate(operateIndexPrefix, isElasticsearch),
+            EventTemplate.class,
+            new EventTemplate(operateIndexPrefix, isElasticsearch));
 
     indexDescriptorsMap =
         Map.of(
@@ -95,7 +99,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new PostImporterQueueFromIncidentHandler(
                 templateDescriptorsMap.get(PostImporterQueueTemplate.class).getFullQualifiedName()),
             new IncidentHandler(
-                templateDescriptorsMap.get(IncidentTemplate.class).getFullQualifiedName(), false));
+                templateDescriptorsMap.get(IncidentTemplate.class).getFullQualifiedName(), false),
+            new EventFromIncidentHandler(
+                templateDescriptorsMap.get(EventTemplate.class).getFullQualifiedName(), false));
   }
 
   @Override
