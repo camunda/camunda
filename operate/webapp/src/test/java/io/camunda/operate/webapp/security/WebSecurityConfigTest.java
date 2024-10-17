@@ -7,9 +7,8 @@
  */
 package io.camunda.operate.webapp.security;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.operate.property.CloudProperties;
@@ -18,7 +17,6 @@ import io.camunda.operate.property.WebSecurityProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -26,34 +24,54 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 @ExtendWith(MockitoExtension.class)
 public class WebSecurityConfigTest {
 
+  private WebSecurityConfig underTest;
   @Mock private OperateProperties operateProperties;
-  @InjectMocks private WebSecurityConfig underTest;
-  private CloudProperties cloudProperties;
+  @Mock private CloudProperties cloudProperties;
   private WebSecurityProperties webSecurityProperties;
-  private HttpSecurity http;
+  @Mock private HttpSecurity http;
 
   @BeforeEach
   public void setUp() {
-    cloudProperties = mock(CloudProperties.class);
-    webSecurityProperties = mock(WebSecurityProperties.class);
-    http = mock(HttpSecurity.class);
+    webSecurityProperties = new WebSecurityProperties();
     when(operateProperties.getCloud()).thenReturn(cloudProperties);
     when(operateProperties.getWebSecurity()).thenReturn(webSecurityProperties);
+    underTest = new WebSecurityConfig(operateProperties, mock(), mock(), mock());
   }
 
   @Test
-  public void testSaasSCPHeaders() throws Exception {
+  public void testSaasSCPHeadersDefault() throws Exception {
     when(cloudProperties.getClusterId()).thenReturn("Id");
-    underTest.applySecurityHeadersSettings(http);
 
-    verify(webSecurityProperties, times(1)).getContentSecurityPolicy();
+    final String scpHeader = underTest.getContentSecurityPolicy();
+
+    assertEquals(WebSecurityProperties.DEFAULT_SAAS_SECURITY_POLICY, scpHeader);
   }
 
   @Test
-  public void testSMSCPHeaders() throws Exception {
-    when(cloudProperties.getClusterId()).thenReturn(null);
-    underTest.applySecurityHeadersSettings(http);
+  public void testSaasSCPHeadersCustom() throws Exception {
+    final String customPolicy = "custom";
+    when(cloudProperties.getClusterId()).thenReturn("Id");
+    webSecurityProperties.setContentSecurityPolicy(customPolicy);
 
-    verify(webSecurityProperties, times(0)).getContentSecurityPolicy();
+    final String scpHeader = underTest.getContentSecurityPolicy();
+
+    assertEquals(customPolicy, scpHeader);
+  }
+
+  @Test
+  public void testSmCSPHeadersDefault() throws Exception {
+    final String scpHeader = underTest.getContentSecurityPolicy();
+
+    assertEquals(WebSecurityProperties.DEFAULT_SM_SECURITY_POLICY, scpHeader);
+  }
+
+  @Test
+  public void testSmCSPHeadersCustom() throws Exception {
+    final String customPolicy = "custom";
+    webSecurityProperties.setContentSecurityPolicy(customPolicy);
+
+    final String scpHeader = underTest.getContentSecurityPolicy();
+
+    assertEquals(customPolicy, scpHeader);
   }
 }
