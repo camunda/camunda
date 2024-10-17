@@ -15,7 +15,6 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.api.response.*;
-import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.search.response.ProcessInstance;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -37,7 +36,7 @@ public class ProcessQueryTest {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ProcessQueryTest.class);
 
-  private static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
+  private static final List<ProcessDefinition> DEPLOYED_PROCESSES = new ArrayList<>();
   private static final List<ProcessInstanceEvent> PROCESS_INSTANCES = new ArrayList<>();
 
   private static ZeebeClient zeebeClient;

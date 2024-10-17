@@ -26,7 +26,7 @@ import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.api.response.EvaluateDecisionResponse;
 import io.camunda.zeebe.client.api.response.MigrateProcessInstanceResponse;
 import io.camunda.zeebe.client.api.response.ModifyProcessInstanceResponse;
-import io.camunda.zeebe.client.api.response.Process;
+import io.camunda.zeebe.client.api.response.ProcessDefinition;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.client.api.response.PublishMessageResponse;
 import io.camunda.zeebe.client.api.response.ResolveIncidentResponse;
@@ -419,7 +419,7 @@ public class MultiTenancyOverIdentityIT {
           .succeedsWithin(Duration.ofSeconds(10))
           .describedAs("Process version is incremented for tenant-b but not for tenant-a")
           .extracting(deploymentEvent -> deploymentEvent.getProcesses().get(0))
-          .extracting(Process::getVersion, Process::getTenantId)
+          .extracting(ProcessDefinition::getVersion, ProcessDefinition::getTenantId)
           .containsExactly(2, TENANT_B);
     }
   }
@@ -438,7 +438,7 @@ public class MultiTenancyOverIdentityIT {
               .join()
               .getProcesses()
               .stream()
-              .map(Process::getProcessDefinitionKey)
+              .map(ProcessDefinition::getProcessDefinitionKey)
               .findFirst()
               .orElseThrow();
 
@@ -505,7 +505,7 @@ public class MultiTenancyOverIdentityIT {
               .join()
               .getProcesses()
               .stream()
-              .map(Process::getProcessDefinitionKey)
+              .map(ProcessDefinition::getProcessDefinitionKey)
               .findFirst()
               .orElseThrow();
     }
@@ -592,7 +592,7 @@ public class MultiTenancyOverIdentityIT {
               .join()
               .getProcesses()
               .stream()
-              .map(Process::getProcessDefinitionKey)
+              .map(ProcessDefinition::getProcessDefinitionKey)
               .findFirst()
               .orElseThrow();
     }

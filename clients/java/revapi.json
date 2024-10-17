@@ -91,6 +91,19 @@
           "code": "java.class.removed",
           "old": "class io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequestChangeset",
           "justification": "The classes/methods are only internal and are not user-facing, and as such does not need to maintain any backwards compatibility guarantees."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeTypeParametersChanged",
+          "old": "method java.util.List<io.camunda.zeebe.client.api.response.Process> io.camunda.zeebe.client.api.response.DeploymentEvent::getProcesses()",
+          "new": "method java.util.List<io.camunda.zeebe.client.api.response.ProcessDefinition> io.camunda.zeebe.client.api.response.DeploymentEvent::getProcesses()",
+          "justification": "The classes/methods are only internal and are not user-facing, and as such does not need to maintain any backwards compatibility guarantees."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "interface io.camunda.zeebe.client.api.response.Process",
+          "justification": "The classes/methods are only internal and are not user-facing, and as such does not need to maintain any backwards compatibility guarantees."
         }
       ]
     }

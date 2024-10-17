@@ -23,7 +23,7 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
-import io.camunda.zeebe.client.api.response.Process;
+import io.camunda.zeebe.client.api.response.ProcessDefinition;
 import io.camunda.zeebe.spring.client.annotation.Deployment;
 import io.camunda.zeebe.spring.client.annotation.processor.ZeebeDeploymentAnnotationProcessor;
 import io.camunda.zeebe.spring.client.bean.ClassInfo;
@@ -143,10 +143,10 @@ public class DeploymentPostProcessorTest {
         });
   }
 
-  private Process getProcess() {
-    return new Process() {
+  private ProcessDefinition getProcess() {
+    return new ProcessDefinition() {
       @Override
-      public String getBpmnProcessId() {
+      public String getProcessDefinitionId() {
         return "12345-abcd";
       }
 
@@ -156,8 +156,18 @@ public class DeploymentPostProcessorTest {
       }
 
       @Override
+      public String getVersionTag() {
+        return null;
+      }
+
+      @Override
       public long getProcessDefinitionKey() {
         return 101010;
+      }
+
+      @Override
+      public String getName() {
+        return null;
       }
 
       @Override

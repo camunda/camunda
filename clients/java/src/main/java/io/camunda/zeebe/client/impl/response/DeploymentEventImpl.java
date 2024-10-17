@@ -16,11 +16,7 @@
 package io.camunda.zeebe.client.impl.response;
 
 import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
-import io.camunda.zeebe.client.api.response.Decision;
-import io.camunda.zeebe.client.api.response.DecisionRequirements;
-import io.camunda.zeebe.client.api.response.DeploymentEvent;
-import io.camunda.zeebe.client.api.response.Form;
-import io.camunda.zeebe.client.api.response.Process;
+import io.camunda.zeebe.client.api.response.*;
 import io.camunda.zeebe.client.impl.Loggers;
 import io.camunda.zeebe.client.protocol.rest.DeploymentDecision;
 import io.camunda.zeebe.client.protocol.rest.DeploymentDecisionRequirements;
@@ -46,7 +42,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
 
   private final long key;
   private final String tenantId;
-  private final List<Process> processes = new ArrayList<>();
+  private final List<ProcessDefinition> processes = new ArrayList<>();
   private final List<Decision> decisions = new ArrayList<>();
   private final List<DecisionRequirements> decisionRequirements = new ArrayList<>();
   private final List<Form> forms = new ArrayList<>();
@@ -157,7 +153,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
   }
 
   @Override
-  public List<Process> getProcesses() {
+  public List<ProcessDefinition> getProcesses() {
     return processes;
   }
 

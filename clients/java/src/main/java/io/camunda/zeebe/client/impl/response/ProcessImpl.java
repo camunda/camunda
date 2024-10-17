@@ -16,16 +16,18 @@
 package io.camunda.zeebe.client.impl.response;
 
 import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
-import io.camunda.zeebe.client.api.response.Process;
+import io.camunda.zeebe.client.api.response.ProcessDefinition;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessMetadata;
 import java.util.Objects;
 
-public final class ProcessImpl implements Process {
+public final class ProcessImpl implements ProcessDefinition {
 
   private final long processDefinitionKey;
-  private final String bpmnProcessId;
-  private final int version;
+  private final String name;
   private final String resourceName;
+  private final int version;
+  private final String versionTag;
+  private final String processDefinitionId;
   private final String tenantId;
 
   public ProcessImpl(final ProcessMetadata process) {
@@ -67,21 +69,24 @@ public final class ProcessImpl implements Process {
       final int version,
       final String resourceName,
       final String tenantId) {
+    this(processDefinitionKey, null, resourceName, version, null, bpmnProcessId, tenantId);
+  }
+
+  public ProcessImpl(
+      long processDefinitionKey,
+      String name,
+      String resourceName,
+      int version,
+      String versionTag,
+      String processDefinitionId,
+      String tenantId) {
     this.processDefinitionKey = processDefinitionKey;
-    this.bpmnProcessId = bpmnProcessId;
-    this.version = version;
+    this.name = name;
     this.resourceName = resourceName;
+    this.version = version;
+    this.versionTag = versionTag;
+    this.processDefinitionId = processDefinitionId;
     this.tenantId = tenantId;
-  }
-
-  @Override
-  public String getBpmnProcessId() {
-    return bpmnProcessId;
-  }
-
-  @Override
-  public int getVersion() {
-    return version;
   }
 
   @Override
@@ -90,8 +95,28 @@ public final class ProcessImpl implements Process {
   }
 
   @Override
+  public String getName() {
+    return name;
+  }
+
+  @Override
   public String getResourceName() {
     return resourceName;
+  }
+
+  @Override
+  public int getVersion() {
+    return version;
+  }
+
+  @Override
+  public String getVersionTag() {
+    return versionTag;
+  }
+
+  @Override
+  public String getProcessDefinitionId() {
+    return processDefinitionId;
   }
 
   @Override
@@ -100,12 +125,7 @@ public final class ProcessImpl implements Process {
   }
 
   @Override
-  public int hashCode() {
-    return Objects.hash(processDefinitionKey, bpmnProcessId, version, resourceName, tenantId);
-  }
-
-  @Override
-  public boolean equals(final Object o) {
+  public boolean equals(Object o) {
     if (this == o) {
       return true;
     }
@@ -115,9 +135,23 @@ public final class ProcessImpl implements Process {
     final ProcessImpl process = (ProcessImpl) o;
     return processDefinitionKey == process.processDefinitionKey
         && version == process.version
-        && Objects.equals(bpmnProcessId, process.bpmnProcessId)
+        && Objects.equals(name, process.name)
         && Objects.equals(resourceName, process.resourceName)
+        && Objects.equals(versionTag, process.versionTag)
+        && Objects.equals(processDefinitionId, process.processDefinitionId)
         && Objects.equals(tenantId, process.tenantId);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        processDefinitionKey,
+        name,
+        resourceName,
+        version,
+        versionTag,
+        processDefinitionId,
+        tenantId);
   }
 
   @Override
@@ -125,13 +159,19 @@ public final class ProcessImpl implements Process {
     return "ProcessImpl{"
         + "processDefinitionKey="
         + processDefinitionKey
-        + ", bpmnProcessId='"
-        + bpmnProcessId
+        + ", name='"
+        + name
+        + '\''
+        + ", resourceName='"
+        + resourceName
         + '\''
         + ", version="
         + version
-        + ", resourceName='"
-        + resourceName
+        + ", versionTag='"
+        + versionTag
+        + '\''
+        + ", processDefinitionId='"
+        + processDefinitionId
         + '\''
         + ", tenantId='"
         + tenantId
