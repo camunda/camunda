@@ -7,24 +7,24 @@
  */
 package io.camunda.zeebe.broker.transport.commandapi;
 
+import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.Loggers;
-import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.system.configuration.QueryApiCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
+import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.transport.queryapi.QueryApiRequestHandler;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.ServerTransport;
 import org.agrona.collections.IntHashSet;
 
 public final class CommandApiServiceImpl extends Actor
-    implements PartitionListener, DiskSpaceUsageListener, CommandApiService {
+    implements DiskSpaceUsageListener, CommandApiService {
 
   private final ServerTransport serverTransport;
   private final CommandApiRequestHandler commandHandler;
@@ -75,39 +75,19 @@ public final class CommandApiServiceImpl extends Actor
         });
   }
 
-  @Override
-  public ActorFuture<Void> onBecomingFollower(final int partitionId, final long term) {
-    return removeLeaderHandlersAsync(partitionId);
-  }
-
-  @Override
-  public ActorFuture<Void> onBecomingLeader(
-      final int partitionId,
-      final long term,
-      final LogStream logStream,
-      final QueryService queryService) {
-    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-    actor.call(
+  private ActorFuture<Void> onBecomingLeader(
+      final int partitionId, final LogStream logStream, final QueryService queryService) {
+    return actor.call(
         () -> {
+          // create the writer immediately so if the logStream is closed, this will throw an
+          // exception immediately
+          final var logStreamWriter = logStream.newLogStreamWriter();
           leadPartitions.add(partitionId);
           queryHandler.addPartition(partitionId, queryService);
           serverTransport.subscribe(partitionId, RequestType.QUERY, queryHandler);
-
-          final var logStreamWriter = logStream.newLogStreamWriter();
           commandHandler.addPartition(partitionId, logStreamWriter);
           serverTransport.subscribe(partitionId, RequestType.COMMAND, commandHandler);
-          future.complete(null);
         });
-    return future;
-  }
-
-  @Override
-  public ActorFuture<Void> onBecomingInactive(final int partitionId, final long term) {
-    return removeLeaderHandlersAsync(partitionId);
-  }
-
-  private ActorFuture<Void> removeLeaderHandlersAsync(final int partitionId) {
-    return actor.call(() -> removeLeaderHandlers(partitionId));
   }
 
   private void removeLeaderHandlers(final int partitionId) {
@@ -154,5 +134,25 @@ public final class CommandApiServiceImpl extends Actor
   @Override
   public void onDiskSpaceAvailable() {
     actor.run(commandHandler::onDiskSpaceAvailable);
+  }
+
+  @Override
+  public ActorFuture<Void> prepareTransition(
+      final PartitionTransitionContext context, final long term, final Role targetRole) {
+    return switch (targetRole) {
+      case LEADER -> createCompletedFuture();
+      default -> actor.call(() -> removeLeaderHandlers(context.getPartitionId()));
+    };
+  }
+
+  @Override
+  public ActorFuture<Void> transitionTo(
+      final PartitionTransitionContext context, final long term, final Role targetRole) {
+    return switch (targetRole) {
+      case LEADER ->
+          onBecomingLeader(
+              context.getPartitionId(), context.getLogStream(), context.getQueryService());
+      default -> createCompletedFuture();
+    };
   }
 }

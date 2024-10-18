@@ -91,6 +91,10 @@ public class ControlledActorSchedulerExtension implements BeforeEachCallback, Af
     return clock;
   }
 
+  public ActorScheduler getActorScheduler() {
+    return actorScheduler;
+  }
+
   static final class ControlledActorThreadFactory implements ActorThreadFactory {
     private ControlledActorThread controlledThread;
 

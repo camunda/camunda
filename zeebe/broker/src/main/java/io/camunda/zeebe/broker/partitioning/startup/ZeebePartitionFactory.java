@@ -84,6 +84,7 @@ public final class ZeebePartitionFactory {
           new BackupServiceTransitionStep(),
           new InterPartitionCommandServiceStep(),
           new StreamProcessorTransitionStep(),
+          new CommandApiService.TransitionStep(),
           new SnapshotDirectorPartitionTransitionStep(),
           new ExporterDirectorPartitionTransitionStep(),
           new BackupApiRequestHandlerStep(),
