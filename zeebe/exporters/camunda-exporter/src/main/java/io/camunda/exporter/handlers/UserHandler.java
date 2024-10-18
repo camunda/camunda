@@ -15,7 +15,13 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import java.util.List;
 
-public class UserRecordValueExportHandler implements ExportHandler<UserEntity, UserRecordValue> {
+public class UserHandler implements ExportHandler<UserEntity, UserRecordValue> {
+  private final String indexName;
+
+  public UserHandler(final String indexName) {
+    this.indexName = indexName;
+  }
+
   @Override
   public ValueType getHandledValueType() {
     return ValueType.USER;
@@ -59,6 +65,6 @@ public class UserRecordValueExportHandler implements ExportHandler<UserEntity, U
   }
 
   private String getIndexName() {
-    return "users";
+    return indexName;
   }
 }
