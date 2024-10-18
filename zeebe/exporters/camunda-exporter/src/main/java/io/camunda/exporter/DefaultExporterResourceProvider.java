@@ -16,6 +16,7 @@ import io.camunda.exporter.handlers.DecisionRequirementsHandler;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.FlowNodeInstanceIncidentHandler;
 import io.camunda.exporter.handlers.FlowNodeInstanceProcessInstanceHandler;
+import io.camunda.exporter.handlers.FormHandler;
 import io.camunda.exporter.handlers.IncidentHandler;
 import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.MetricFromProcessInstanceHandler;
@@ -122,7 +123,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new ProcessHandler(
                 indexDescriptorsMap.get(ProcessIndex.class).getFullQualifiedName(), new XMLUtil()),
             new MetricFromProcessInstanceHandler(
-                indexDescriptorsMap.get(MetricIndex.class).getFullQualifiedName()));
+                indexDescriptorsMap.get(MetricIndex.class).getFullQualifiedName()),
+            new FormHandler(indexDescriptorsMap.get(FormIndex.class).getFullQualifiedName()));
   }
 
   @Override
