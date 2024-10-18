@@ -60,6 +60,10 @@ public final class SortOptionBuilders {
     return new UserSort.Builder();
   }
 
+  public static RoleSort.Builder role() {
+    return new RoleSort.Builder();
+  }
+
   public static AuthorizationSort.Builder authorization() {
     return new AuthorizationSort.Builder();
   }
@@ -97,6 +101,10 @@ public final class SortOptionBuilders {
 
   public static UserSort user(final Function<UserSort.Builder, ObjectBuilder<UserSort>> fn) {
     return fn.apply(user()).build();
+  }
+
+  public static RoleSort role(final Function<RoleSort.Builder, ObjectBuilder<RoleSort>> fn) {
+    return fn.apply(role()).build();
   }
 
   public static FormSort.Builder form() {
