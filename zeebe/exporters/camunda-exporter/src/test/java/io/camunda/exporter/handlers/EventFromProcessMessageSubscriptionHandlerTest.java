@@ -8,6 +8,8 @@
 package io.camunda.exporter.handlers;
 
 import static io.camunda.exporter.handlers.EventFromIncidentHandler.ID_PATTERN;
+import static io.camunda.webapps.schema.descriptors.operate.template.EventTemplate.CORRELATION_KEY;
+import static io.camunda.webapps.schema.descriptors.operate.template.EventTemplate.MESSAGE_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -15,6 +17,7 @@ import static org.mockito.Mockito.verify;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;
 import io.camunda.webapps.schema.entities.operate.EventEntity;
+import io.camunda.webapps.schema.entities.operate.EventMetadataEntity;
 import io.camunda.webapps.schema.entities.operate.EventSourceType;
 import io.camunda.webapps.schema.entities.operate.EventType;
 import io.camunda.zeebe.protocol.record.Record;
@@ -161,8 +164,16 @@ final class EventFromProcessMessageSubscriptionHandlerTest {
     final String id = "555";
     final long position = 456L;
     final long key = 333L;
+
+    final EventMetadataEntity metadata = new EventMetadataEntity();
+    metadata.setMessageName("messageName");
+    metadata.setCorrelationKey("correlationKey");
     final EventEntity inputEntity =
-        new EventEntity().setId(id).setKey(key).setPositionProcessMessageSubscription(position);
+        new EventEntity()
+            .setId(id)
+            .setKey(key)
+            .setPositionProcessMessageSubscription(position)
+            .setMetadata(metadata);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
     expectedUpdateFields.put("key", key);
@@ -173,6 +184,11 @@ final class EventFromProcessMessageSubscriptionHandlerTest {
     expectedUpdateFields.put("eventType", null);
     expectedUpdateFields.put("bpmnProcessId", null);
     expectedUpdateFields.put("processDefinitionKey", null);
+
+    final Map<String, Object> metadataMap = new LinkedHashMap<>();
+    metadataMap.put(MESSAGE_NAME, metadata.getMessageName());
+    metadataMap.put(CORRELATION_KEY, metadata.getCorrelationKey());
+    expectedUpdateFields.put("metadata", metadataMap);
 
     final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
 

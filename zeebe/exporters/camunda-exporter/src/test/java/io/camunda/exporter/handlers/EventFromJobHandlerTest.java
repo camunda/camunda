@@ -9,6 +9,11 @@ package io.camunda.exporter.handlers;
 
 import static io.camunda.exporter.handlers.EventFromIncidentHandler.ID_PATTERN;
 import static io.camunda.exporter.handlers.EventFromJobHandler.JOB_EVENTS;
+import static io.camunda.webapps.schema.descriptors.operate.template.EventTemplate.JOB_CUSTOM_HEADERS;
+import static io.camunda.webapps.schema.descriptors.operate.template.EventTemplate.JOB_KEY;
+import static io.camunda.webapps.schema.descriptors.operate.template.EventTemplate.JOB_RETRIES;
+import static io.camunda.webapps.schema.descriptors.operate.template.EventTemplate.JOB_TYPE;
+import static io.camunda.webapps.schema.descriptors.operate.template.EventTemplate.JOB_WORKER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -16,6 +21,7 @@ import static org.mockito.Mockito.verify;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;
 import io.camunda.webapps.schema.entities.operate.EventEntity;
+import io.camunda.webapps.schema.entities.operate.EventMetadataEntity;
 import io.camunda.webapps.schema.entities.operate.EventSourceType;
 import io.camunda.webapps.schema.entities.operate.EventType;
 import io.camunda.zeebe.protocol.record.Record;
@@ -158,8 +164,16 @@ final class EventFromJobHandlerTest {
     final String id = "555";
     final long positionJob = 456L;
     final long key = 333L;
+
+    final EventMetadataEntity metadata = new EventMetadataEntity();
+    metadata.setJobKey(key);
+    metadata.setJobType("jobType");
+    metadata.setJobRetries(3);
+    metadata.setJobWorker("jobWorker");
+    metadata.setJobCustomHeaders(Map.of("key", "val"));
+
     final EventEntity inputEntity =
-        new EventEntity().setId(id).setKey(key).setPositionJob(positionJob);
+        new EventEntity().setId(id).setKey(key).setPositionJob(positionJob).setMetadata(metadata);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
     expectedUpdateFields.put("key", key);
@@ -170,6 +184,13 @@ final class EventFromJobHandlerTest {
     expectedUpdateFields.put("eventType", null);
     expectedUpdateFields.put("bpmnProcessId", null);
     expectedUpdateFields.put("processDefinitionKey", null);
+    final Map<String, Object> metadataMap = new LinkedHashMap<>();
+    metadataMap.put(JOB_KEY, metadata.getJobKey());
+    metadataMap.put(JOB_TYPE, metadata.getJobType());
+    metadataMap.put(JOB_RETRIES, metadata.getJobRetries());
+    metadataMap.put(JOB_WORKER, metadata.getJobWorker());
+    metadataMap.put(JOB_CUSTOM_HEADERS, metadata.getJobCustomHeaders());
+    expectedUpdateFields.put("metadata", metadataMap);
 
     final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
 
