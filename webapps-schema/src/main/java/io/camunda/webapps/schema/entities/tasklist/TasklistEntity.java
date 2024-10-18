@@ -19,7 +19,8 @@ public abstract class TasklistEntity<T extends TasklistEntity<T>> extends Abstra
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String id;
 
-  private long key;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Long key;
 
   private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
@@ -42,11 +43,11 @@ public abstract class TasklistEntity<T extends TasklistEntity<T>> extends Abstra
     this.tenantId = tenantId;
   }
 
-  public long getKey() {
+  public Long getKey() {
     return key;
   }
 
-  public void setKey(final long key) {
+  public void setKey(final Long key) {
     this.key = key;
   }
 
@@ -95,9 +96,9 @@ public abstract class TasklistEntity<T extends TasklistEntity<T>> extends Abstra
       return false;
     }
     final TasklistEntity<?> that = (TasklistEntity<?>) o;
-    return key == that.key
+    return Objects.equals(key, that.key)
         && Objects.equals(id, that.id)
-        && partitionId.equals(that.partitionId)
+        && Objects.equals(partitionId, that.partitionId)
         && Objects.equals(tenantId, that.tenantId);
   }
 }
