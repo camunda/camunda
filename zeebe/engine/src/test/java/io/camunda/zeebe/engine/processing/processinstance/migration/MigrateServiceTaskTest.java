@@ -32,6 +32,31 @@ public class MigrateServiceTaskTest {
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   @Test
+  public void shouldFailToDebugTest() {
+    final var processId = "testProcess";
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .serviceTask("A", a -> a.zeebeJobType("A"))
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
+
+    RecordingExporter.processInstanceRecords()
+        .withProcessInstanceKey(processInstanceKey)
+        .limitToProcessInstanceCompleted()
+        .await();
+
+    assert false;
+  }
+
+  @Test
   public void shouldWriteElementMigratedEventForServiceTask() {
     // given
     final String processId = helper.getBpmnProcessId();
