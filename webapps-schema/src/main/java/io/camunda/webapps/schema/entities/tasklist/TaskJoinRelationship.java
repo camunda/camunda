@@ -59,4 +59,21 @@ public class TaskJoinRelationship {
     final TaskJoinRelationship that = (TaskJoinRelationship) o;
     return Objects.equals(name, that.name) && Objects.equals(parent, that.parent);
   }
+
+  public enum TaskJoinRelationshipType {
+    PROCESS("process"),
+    TASK_VARIABLE("taskVariable"),
+    PROCESS_VARIABLE("processVariable"),
+    TASK("task");
+
+    private final String type;
+
+    TaskJoinRelationshipType(final String type) {
+      this.type = type;
+    }
+
+    public String getType() {
+      return type;
+    }
+  }
 }
