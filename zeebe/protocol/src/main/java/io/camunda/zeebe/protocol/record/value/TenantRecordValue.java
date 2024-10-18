@@ -36,6 +36,6 @@ public interface TenantRecordValue extends RecordValue {
   /** Key of the entity associated with this tenant. */
   long getEntityKey();
 
-  /** The type of the entity to assign/remove from a role. */
+  /** The type of the entity to assign/remove from a tenant. */
   EntityType getEntityType();
 }
