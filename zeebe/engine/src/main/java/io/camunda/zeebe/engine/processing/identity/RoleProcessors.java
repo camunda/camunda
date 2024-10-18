@@ -36,7 +36,11 @@ public class RoleProcessors {
         ValueType.ROLE,
         RoleIntent.UPDATE,
         new RoleUpdateProcessor(
-            roleState, keyGenerator, authCheckBehavior, writers, commandDistributionBehavior));
+            processingState.getRoleState(),
+            keyGenerator,
+            authCheckBehavior,
+            writers,
+            commandDistributionBehavior));
     typedRecordProcessors.onCommand(
         ValueType.ROLE,
         RoleIntent.ADD_ENTITY,

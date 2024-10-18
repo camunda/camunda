@@ -185,7 +185,7 @@ public class RoleTest {
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to add an entity with key '%s' and type '%s' to role with key '%s', the entity doesn't exist."
+            "Expected to add an entity with key '%s' and type '%s' to role with key '%s', but the entity doesn't exist."
                 .formatted(1L, EntityType.USER, roleKey));
   }
 }
