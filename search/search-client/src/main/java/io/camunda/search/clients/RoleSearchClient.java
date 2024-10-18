@@ -10,9 +10,9 @@ package io.camunda.search.clients;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.search.security.auth.Authentication;
 
 public interface RoleSearchClient {
 
-  SearchQueryResult<RoleEntity> searchRoles(RoleQuery filter, Authentication authentication);
+  SearchQueryResult<RoleEntity> searchRoles(
+      RoleQuery filter, io.camunda.search.security.auth.Authentication authentication);
 }
