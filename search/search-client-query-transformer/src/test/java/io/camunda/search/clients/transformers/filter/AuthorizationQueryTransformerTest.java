@@ -49,21 +49,20 @@ public class AuthorizationQueryTransformerTest extends AbstractTransformerTest {
     return Stream.of(
         Arguments.of(
             (Function<Builder, ObjectBuilder<AuthorizationFilter>>) f -> f.ownerKey("username1"),
-            "value.ownerKey",
+            "ownerKey",
             "username1"),
         Arguments.of(
             (Function<Builder, ObjectBuilder<AuthorizationFilter>>) f -> f.ownerType("user"),
-            "value.ownerType",
+            "ownerType",
             "user"),
         Arguments.of(
-            (Function<Builder, ObjectBuilder<AuthorizationFilter>>)
-                f -> f.resourceKey("bpmnProcessId:456"),
-            "value.resourceKey",
-            "bpmnProcessId:456"),
+            (Function<Builder, ObjectBuilder<AuthorizationFilter>>) f -> f.resourceKey("456"),
+            "resourceKey",
+            "456"),
         Arguments.of(
             (Function<Builder, ObjectBuilder<AuthorizationFilter>>)
                 f -> f.resourceType("process-definition"),
-            "value.resourceType",
+            "resourceType",
             "process-definition"));
   }
 }
