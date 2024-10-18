@@ -657,7 +657,7 @@ public class ZeebeClientConfigurationProperties {
     }
 
     @Deprecated
-    @DeprecatedConfigurationProperty(replacement = "not required", reason = "not required")
+    @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.scope")
     public String getScope() {
       return scope;
     }
