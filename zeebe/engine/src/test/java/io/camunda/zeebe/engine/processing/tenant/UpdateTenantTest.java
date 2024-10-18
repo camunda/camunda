@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.tenant;
 
-import static io.camunda.zeebe.engine.metrics.JobMetricsTest.ENGINE;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;

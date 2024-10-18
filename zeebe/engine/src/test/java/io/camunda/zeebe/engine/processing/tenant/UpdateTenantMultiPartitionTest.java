@@ -51,7 +51,16 @@ public class UpdateTenantMultiPartitionTest {
             .create()
             .getValue()
             .getTenantKey();
-    ENGINE.tenant().updateTenant(tenantKey).withName(tenantId + "-updated").update();
+    ENGINE
+        .tenant()
+        .updateTenant(tenantKey)
+        .withTenantId(tenantId + "-updated")
+        .withName("Tenant 2")
+        .update();
+
+    RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
+        .withDistributionIntent(TenantIntent.CREATE)
+        .await();
 
     assertThat(
             RecordingExporter.records()
@@ -61,6 +70,10 @@ public class UpdateTenantMultiPartitionTest {
             Record::getIntent,
             Record::getRecordType,
             r ->
+                // We want to verify the partition id where the creation was distributing to and
+                // where it was completed. Since only the CommandDistribution records have a
+                // value that contains the partition id, we use the partition id the record was
+                // written on for the other records.
                 r.getValue() instanceof CommandDistributionRecordValue
                     ? ((CommandDistributionRecordValue) r.getValue()).getPartitionId()
                     : r.getPartitionId())
@@ -77,7 +90,6 @@ public class UpdateTenantMultiPartitionTest {
             tuple(CommandDistributionIntent.ACKNOWLEDGE, RecordType.COMMAND, 3),
             tuple(CommandDistributionIntent.ACKNOWLEDGED, RecordType.EVENT, 3))
         .endsWith(tuple(CommandDistributionIntent.FINISHED, RecordType.EVENT, 1));
-
     for (int partitionId = 2; partitionId < PARTITION_COUNT; partitionId++) {
       assertThat(
               RecordingExporter.tenantRecords()
@@ -93,16 +105,14 @@ public class UpdateTenantMultiPartitionTest {
   public void shouldDistributeInIdentityQueue() {
     // when
     final var tenantId = UUID.randomUUID().toString();
-    final var tenantKey =
-        ENGINE
-            .tenant()
-            .newTenant()
-            .withTenantId(tenantId)
-            .withName("Tenant 1")
-            .create()
-            .getValue()
-            .getTenantKey();
-    ENGINE.tenant().updateTenant(tenantKey).withName(tenantId + "-updated").update();
+    final var tenantRecord =
+        ENGINE.tenant().newTenant().withTenantId(tenantId).withName("Tenant 1").create();
+    ENGINE
+        .tenant()
+        .updateTenant(tenantRecord.getKey())
+        .withTenantId(tenantId + "-updated")
+        .withName("Tenant 2")
+        .update();
 
     // then
     assertThat(
@@ -132,7 +142,7 @@ public class UpdateTenantMultiPartitionTest {
     final var tenantId = UUID.randomUUID().toString();
     final var tenantKey =
         ENGINE.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
-    ENGINE.tenant().updateTenant(tenantKey).withName(tenantId + "-updated").update();
+    ENGINE.tenant().updateTenant(tenantKey).withTenantId(tenantId + "-updated").update();
 
     // Increase time to trigger a redistribution
     ENGINE.increaseTime(Duration.ofMinutes(1));
