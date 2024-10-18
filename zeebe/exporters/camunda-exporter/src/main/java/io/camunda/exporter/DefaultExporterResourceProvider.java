@@ -14,6 +14,8 @@ import io.camunda.exporter.handlers.DecisionEvaluationHandler;
 import io.camunda.exporter.handlers.DecisionHandler;
 import io.camunda.exporter.handlers.DecisionRequirementsHandler;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.FlowNodeInstanceIncidentHandler;
+import io.camunda.exporter.handlers.FlowNodeInstanceProcessInstanceHandler;
 import io.camunda.exporter.handlers.IncidentHandler;
 import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
@@ -30,6 +32,7 @@ import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsI
 import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
@@ -69,6 +72,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new VariableTemplate(operateIndexPrefix, isElasticsearch),
             PostImporterQueueTemplate.class,
             new PostImporterQueueTemplate(operateIndexPrefix, isElasticsearch),
+            FlowNodeInstanceTemplate.class,
+            new FlowNodeInstanceTemplate(operateIndexPrefix, isElasticsearch),
             IncidentTemplate.class,
             new IncidentTemplate(operateIndexPrefix, isElasticsearch),
             SequenceFlowTemplate.class,
@@ -104,6 +109,10 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptorsMap.get(DecisionRequirementsIndex.class).getFullQualifiedName()),
             new PostImporterQueueFromIncidentHandler(
                 templateDescriptorsMap.get(PostImporterQueueTemplate.class).getFullQualifiedName()),
+            new FlowNodeInstanceIncidentHandler(
+                templateDescriptorsMap.get(FlowNodeInstanceTemplate.class).getFullQualifiedName()),
+            new FlowNodeInstanceProcessInstanceHandler(
+                templateDescriptorsMap.get(FlowNodeInstanceTemplate.class).getFullQualifiedName()),
             new IncidentHandler(
                 templateDescriptorsMap.get(IncidentTemplate.class).getFullQualifiedName(), false),
             new SequenceFlowHandler(
