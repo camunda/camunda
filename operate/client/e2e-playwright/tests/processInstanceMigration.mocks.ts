@@ -8,7 +8,11 @@
 
 import {zeebeGrpcApi} from '../api/zeebe-grpc';
 
+<<<<<<< HEAD
 const {deployProcesses, createSingleInstance} = zeebeGrpcApi;
+=======
+const {deployProcesses, createSingleInstance, createWorker} = zeebeGrpcApi;
+>>>>>>> 88fecd7b (refactor: rename completeTask -> createWorker)
 
 const setup = async () => {
   const {deployments: deploymentsV1} = await deployProcesses([
@@ -33,6 +37,13 @@ const setup = async () => {
     throw new Error('Error deploying process');
   }
 
+<<<<<<< HEAD
+=======
+  createWorker('failingTaskWorker', true, {}, (job) => {
+    return job.fail('expected worker failure');
+  });
+
+>>>>>>> 88fecd7b (refactor: rename completeTask -> createWorker)
   return {
     processV1Instances: await Promise.all(
       [...new Array(10)].map((_, index) =>
