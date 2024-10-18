@@ -27,6 +27,6 @@ public class AuthorizationFilterTransformer implements FilterTransformer<Authori
 
   @Override
   public List<String> toIndices(final AuthorizationFilter filter) {
-    return List.of("authorizations-8.7.0_alias");
+    return List.of("identity-authorizations-8.7.0_alias");
   }
 }

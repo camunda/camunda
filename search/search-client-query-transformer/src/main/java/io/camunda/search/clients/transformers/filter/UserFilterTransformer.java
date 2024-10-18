@@ -28,6 +28,6 @@ public class UserFilterTransformer implements FilterTransformer<UserFilter> {
 
   @Override
   public List<String> toIndices(final UserFilter filter) {
-    return List.of("users-8.7.0_alias");
+    return List.of("identity-users-8.7.0_alias");
   }
 }
