@@ -24,7 +24,8 @@ public final class ProcessInstanceFixtures {
   private static final Random RANDOM = new Random(System.nanoTime());
   private static final OffsetDateTime NOW = OffsetDateTime.now();
 
-  private ProcessInstanceFixtures() {}
+  private ProcessInstanceFixtures() {
+  }
 
   public static Long nextKey() {
     return ID_COUNTER.incrementAndGet();
@@ -53,15 +54,17 @@ public final class ProcessInstanceFixtures {
   }
 
   public static void createAndSaveRandomProcessInstances(final RdbmsWriter rdbmsWriter) {
-    createAndSaveRandomProcessInstances(rdbmsWriter, nextStringId());
+    createAndSaveRandomProcessInstances(rdbmsWriter, b -> b);
   }
 
   public static void createAndSaveRandomProcessInstances(
-      final RdbmsWriter rdbmsWriter, final String bpmnProcessId) {
+      final RdbmsWriter rdbmsWriter,
+      final Function<ProcessInstanceDbModelBuilder, ProcessInstanceDbModelBuilder>
+          builderFunction) {
     for (int i = 0; i < 20; i++) {
       rdbmsWriter
           .getProcessInstanceWriter()
-          .create(ProcessInstanceFixtures.createRandomized(b -> b.bpmnProcessId(bpmnProcessId)));
+          .create(ProcessInstanceFixtures.createRandomized(builderFunction));
     }
 
     rdbmsWriter.flush();

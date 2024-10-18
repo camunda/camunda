@@ -25,7 +25,8 @@ public class ProcessInstanceReader {
   }
 
   public ProcessInstanceEntity findOne(final long processInstanceKey) {
-    LOG.trace("[RDBMS DB] Search for process instance with key {}", processInstanceKey);
+    LOG.trace("[RDBMS DB] Search for process instance with flowNodeInstanceKey {}",
+        processInstanceKey);
     return processInstanceMapper.findOne(processInstanceKey);
   }
 
@@ -36,5 +37,7 @@ public class ProcessInstanceReader {
     return new SearchResult(hits, totalHits.intValue());
   }
 
-  public record SearchResult(List<ProcessInstanceEntity> hits, Integer total) {}
+  public record SearchResult(List<ProcessInstanceEntity> hits, Integer total) {
+
+  }
 }

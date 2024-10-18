@@ -23,7 +23,9 @@ import org.apache.commons.lang3.ThreadUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** https://docs.camunda.io/docs/next/components/zeebe/technical-concepts/process-lifecycles/ */
+/**
+ * https://docs.camunda.io/docs/next/components/zeebe/technical-concepts/process-lifecycles/
+ */
 public class RdbmsExporter implements Exporter {
 
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsExporter.class);
@@ -119,7 +121,8 @@ public class RdbmsExporter implements Exporter {
         ValueType.PROCESS, new ProcessExportHandler(rdbmsWriter.getProcessDefinitionWriter()));
     registeredHandlers.put(
         ValueType.PROCESS_INSTANCE,
-        new ProcessInstanceExportHandler(rdbmsWriter.getProcessInstanceWriter()));
+        new ProcessInstanceExportHandler(rdbmsWriter.getFlowNodeInstanceWriter(),
+            rdbmsWriter.getProcessInstanceWriter()));
     registeredHandlers.put(
         ValueType.VARIABLE, new VariableExportHandler(rdbmsWriter.getVariableWriter()));
   }

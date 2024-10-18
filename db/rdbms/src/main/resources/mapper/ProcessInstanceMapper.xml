@@ -132,7 +132,7 @@
 
   <sql id="processInstanceSortMapper">
     <choose>
-      <when test='item.field == "processDefinitionId"'>
+      <when test='item.field == "bpmnProcessId"'>
         pi.PROCESS_DEFINITION_ID
       </when>
       <when test='item.field == "processName"'>

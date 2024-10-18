@@ -8,6 +8,7 @@
 package io.camunda.search.rdbms;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.read.domain.FlowNodeInstanceDbQuery;
 import io.camunda.db.rdbms.read.domain.ProcessInstanceDbQuery;
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
@@ -52,17 +53,17 @@ import org.slf4j.LoggerFactory;
 
 public class RdbmsSearchClient
     implements AuthorizationSearchClient,
-        DecisionDefinitionSearchClient,
-        DecisionInstanceSearchClient,
-        DecisionRequirementSearchClient,
-        FlowNodeInstanceSearchClient,
-        FormSearchClient,
-        IncidentSearchClient,
-        ProcessInstanceSearchClient,
-        ProcessDefinitionSearchClient,
-        UserTaskSearchClient,
-        UserSearchClient,
-        VariableSearchClient {
+    DecisionDefinitionSearchClient,
+    DecisionInstanceSearchClient,
+    DecisionRequirementSearchClient,
+    FlowNodeInstanceSearchClient,
+    FormSearchClient,
+    IncidentSearchClient,
+    ProcessInstanceSearchClient,
+    ProcessDefinitionSearchClient,
+    UserTaskSearchClient,
+    UserSearchClient,
+    VariableSearchClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsSearchClient.class);
 
@@ -113,8 +114,15 @@ public class RdbmsSearchClient
 
   @Override
   public SearchQueryResult<FlowNodeInstanceEntity> searchFlowNodeInstances(
-      final FlowNodeInstanceQuery filter, final Authentication authentication) {
-    return null;
+      final FlowNodeInstanceQuery query, final Authentication authentication) {
+    final var searchResult =
+        rdbmsService
+            .getFlowNodeInstanceReader()
+            .search(
+                FlowNodeInstanceDbQuery.of(
+                    b -> b.filter(query.filter()).sort(query.sort()).page(query.page())));
+
+    return new SearchQueryResult<>(searchResult.total(), searchResult.hits(), null);
   }
 
   @Override
