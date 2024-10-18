@@ -270,7 +270,7 @@ public class RoleTest {
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to remove an entity with key '%s' and type '%s' from role with key '%s', the entity doesn't exist."
+            "Expected to remove an entity with key '%s' and type '%s' from role with key '%s', but the entity doesn't exist."
                 .formatted(1L, EntityType.USER, roleKey));
   }
 }
