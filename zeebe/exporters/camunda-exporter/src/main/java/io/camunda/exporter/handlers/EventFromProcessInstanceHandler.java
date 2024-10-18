@@ -164,33 +164,33 @@ public class EventFromProcessInstanceHandler
   private String getScript(final String fieldName) {
     return """
     if (ctx._source.%1$s == null || ctx._source.%1$s < params.%1$s) {
-        ctx._source.%1$s = params.%1$s; // position
-        ctx._source.%2$s = params.%2$s; // KEY
-        ctx._source.%3$s = params.%3$s; // EVENT_SOURCE_TYPE
-        ctx._source.%4$s = params.%4$s; // EVENT_TYPE
-        ctx._source.%5$s = params.%5$s; // DATE_TIME
-        ctx._source.%6$s = params.%6$s; // PROCESS_KEY
-        ctx._source.%7$s = params.%7$s; // BPMN_PROCESS_ID
-        ctx._source.%8$s = params.%8$s; // FLOW_NODE_ID
+        ctx._source.%1$s = params.%1$s;
+        ctx._source.%2$s = params.%2$s;
+        ctx._source.%3$s = params.%3$s;
+        ctx._source.%4$s = params.%4$s;
+        ctx._source.%5$s = params.%5$s;
+        ctx._source.%6$s = params.%6$s;
+        ctx._source.%7$s = params.%7$s;
+        ctx._source.%8$s = params.%8$s;
         if (params.%9$s != null) {
-            ctx._source.%9$s = params.%9$s; // INCIDENT_ERROR_MSG
-            ctx._source.%10$s = params.%10$s; // INCIDENT_ERROR_TYPE
+            ctx._source.%9$s = params.%9$s;
+            ctx._source.%10$s = params.%10$s;
         }
         if (params.%11$s != null) {
-            ctx._source.%11$s = params.%11$s; // JOB_KEY
+            ctx._source.%11$s = params.%11$s;
         }
         if (params.%12$s != null) {
-            ctx._source.%12$s = params.%12$s; // JOB_TYPE
-            ctx._source.%13$s = params.%13$s; // JOB_RETRIES
-            ctx._source.%14$s = params.%14$s; // JOB_WORKER
-            ctx._source.%15$s = params.%15$s; // JOB_CUSTOM_HEADERS
+            ctx._source.%12$s = params.%12$s;
+            ctx._source.%13$s = params.%13$s;
+            ctx._source.%14$s = params.%14$s;
+            ctx._source.%15$s = params.%15$s;
         }
         if (params.%16$s != null) {
-            ctx._source.%16$s = params.%16$s; // MESSAGE_NAME
-            ctx._source.%17$s = params.%17$s; // CORRELATION_KEY
+            ctx._source.%16$s = params.%16$s;
+            ctx._source.%17$s = params.%17$s;
         }
         if (params.%18$s != null) {
-            ctx._source.%18$s = params.%18$s; // METADATA
+            ctx._source.%18$s = params.%18$s;
         }
     }
     """
