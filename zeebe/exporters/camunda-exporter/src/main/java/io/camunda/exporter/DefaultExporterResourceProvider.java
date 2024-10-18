@@ -47,6 +47,7 @@ import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTempla
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
+import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -88,7 +89,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             DecisionInstanceTemplate.class,
             new DecisionInstanceTemplate(globalPrefix, isElasticsearch),
             EventTemplate.class,
-            new EventTemplate(globalPrefix, isElasticsearch));
+            new EventTemplate(globalPrefix, isElasticsearch),
+            TaskTemplate.class,
+            new TaskTemplate(globalPrefix, isElasticsearch));
 
     indexDescriptorsMap =
         Map.of(
