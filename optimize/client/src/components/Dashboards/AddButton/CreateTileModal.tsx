@@ -12,9 +12,9 @@ import {Button, ComboBox, Form, TextInput, TextInputSkeleton} from '@carbon/reac
 import {SerializedEditorState} from 'lexical';
 
 import {Modal, Tabs, TextEditor} from 'components';
-import {getCollection, isTextTileValid, loadReports} from 'services';
+import {getCollection, isTextTileValid, loadEntities} from 'services';
 import {t} from 'translation';
-import {DashboardTile, GenericReport} from 'types';
+import {DashboardTile, EntityListEntity} from 'types';
 
 interface CreateTileModalProps {
   close: () => void;
@@ -24,7 +24,7 @@ interface CreateTileModalProps {
 type TabOpen = 'optimize_report' | 'external_url' | 'text';
 
 export default function CreateTileModal({close, confirm}: CreateTileModalProps) {
-  const [availableReports, setAvailableReports] = useState<GenericReport[] | null>(null);
+  const [availableReports, setAvailableReports] = useState<EntityListEntity[] | null>(null);
   const [selectedReportId, setSelectedReportId] = useState<string>('');
   const [externalUrl, setExternalUrl] = useState<string>('');
   const [tabOpen, setTabOpen] = useState<TabOpen>('optimize_report');
@@ -34,7 +34,7 @@ export default function CreateTileModal({close, confirm}: CreateTileModalProps) 
   useEffect(() => {
     (async () => {
       const collection = getCollection(pathname);
-      const availableReports = await loadReports(collection);
+      const availableReports = await loadEntities(collection);
       setAvailableReports(availableReports);
     })();
   }, [pathname]);
@@ -74,7 +74,7 @@ export default function CreateTileModal({close, confirm}: CreateTileModalProps) 
     return isInvalidMap[tabOpen];
   };
 
-  type ReportListItem = {id: string; name: string};
+  type ReportListItem = Pick<EntityListEntity, 'id' | 'name'>;
   const reportsListItems: ReportListItem[] = [
     {id: 'newReport', name: `+ ${t('dashboard.addButton.newReport')}`},
     ...(availableReports || []),
