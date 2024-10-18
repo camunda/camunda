@@ -124,105 +124,12 @@ public class RawDataDecisionInstanceDto implements RawDataInstanceDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $decisionDefinitionKey = getDecisionDefinitionKey();
-    result =
-        result * PRIME + ($decisionDefinitionKey == null ? 43 : $decisionDefinitionKey.hashCode());
-    final Object $decisionDefinitionId = getDecisionDefinitionId();
-    result =
-        result * PRIME + ($decisionDefinitionId == null ? 43 : $decisionDefinitionId.hashCode());
-    final Object $decisionInstanceId = getDecisionInstanceId();
-    result = result * PRIME + ($decisionInstanceId == null ? 43 : $decisionInstanceId.hashCode());
-    final Object $processInstanceId = getProcessInstanceId();
-    result = result * PRIME + ($processInstanceId == null ? 43 : $processInstanceId.hashCode());
-    final Object $evaluationDateTime = getEvaluationDateTime();
-    result = result * PRIME + ($evaluationDateTime == null ? 43 : $evaluationDateTime.hashCode());
-    final Object $engineName = getEngineName();
-    result = result * PRIME + ($engineName == null ? 43 : $engineName.hashCode());
-    final Object $tenantId = getTenantId();
-    result = result * PRIME + ($tenantId == null ? 43 : $tenantId.hashCode());
-    final Object $inputVariables = getInputVariables();
-    result = result * PRIME + ($inputVariables == null ? 43 : $inputVariables.hashCode());
-    final Object $outputVariables = getOutputVariables();
-    result = result * PRIME + ($outputVariables == null ? 43 : $outputVariables.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof RawDataDecisionInstanceDto)) {
-      return false;
-    }
-    final RawDataDecisionInstanceDto other = (RawDataDecisionInstanceDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$decisionDefinitionKey = getDecisionDefinitionKey();
-    final Object other$decisionDefinitionKey = other.getDecisionDefinitionKey();
-    if (this$decisionDefinitionKey == null
-        ? other$decisionDefinitionKey != null
-        : !this$decisionDefinitionKey.equals(other$decisionDefinitionKey)) {
-      return false;
-    }
-    final Object this$decisionDefinitionId = getDecisionDefinitionId();
-    final Object other$decisionDefinitionId = other.getDecisionDefinitionId();
-    if (this$decisionDefinitionId == null
-        ? other$decisionDefinitionId != null
-        : !this$decisionDefinitionId.equals(other$decisionDefinitionId)) {
-      return false;
-    }
-    final Object this$decisionInstanceId = getDecisionInstanceId();
-    final Object other$decisionInstanceId = other.getDecisionInstanceId();
-    if (this$decisionInstanceId == null
-        ? other$decisionInstanceId != null
-        : !this$decisionInstanceId.equals(other$decisionInstanceId)) {
-      return false;
-    }
-    final Object this$processInstanceId = getProcessInstanceId();
-    final Object other$processInstanceId = other.getProcessInstanceId();
-    if (this$processInstanceId == null
-        ? other$processInstanceId != null
-        : !this$processInstanceId.equals(other$processInstanceId)) {
-      return false;
-    }
-    final Object this$evaluationDateTime = getEvaluationDateTime();
-    final Object other$evaluationDateTime = other.getEvaluationDateTime();
-    if (this$evaluationDateTime == null
-        ? other$evaluationDateTime != null
-        : !this$evaluationDateTime.equals(other$evaluationDateTime)) {
-      return false;
-    }
-    final Object this$engineName = getEngineName();
-    final Object other$engineName = other.getEngineName();
-    if (this$engineName == null
-        ? other$engineName != null
-        : !this$engineName.equals(other$engineName)) {
-      return false;
-    }
-    final Object this$tenantId = getTenantId();
-    final Object other$tenantId = other.getTenantId();
-    if (this$tenantId == null ? other$tenantId != null : !this$tenantId.equals(other$tenantId)) {
-      return false;
-    }
-    final Object this$inputVariables = getInputVariables();
-    final Object other$inputVariables = other.getInputVariables();
-    if (this$inputVariables == null
-        ? other$inputVariables != null
-        : !this$inputVariables.equals(other$inputVariables)) {
-      return false;
-    }
-    final Object this$outputVariables = getOutputVariables();
-    final Object other$outputVariables = other.getOutputVariables();
-    if (this$outputVariables == null
-        ? other$outputVariables != null
-        : !this$outputVariables.equals(other$outputVariables)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

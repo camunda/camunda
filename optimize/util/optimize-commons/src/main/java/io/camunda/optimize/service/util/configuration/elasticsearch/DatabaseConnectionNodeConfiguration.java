@@ -36,38 +36,12 @@ public class DatabaseConnectionNodeConfiguration {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $host = getHost();
-    result = result * PRIME + ($host == null ? 43 : $host.hashCode());
-    final Object $httpPort = getHttpPort();
-    result = result * PRIME + ($httpPort == null ? 43 : $httpPort.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof DatabaseConnectionNodeConfiguration)) {
-      return false;
-    }
-    final DatabaseConnectionNodeConfiguration other = (DatabaseConnectionNodeConfiguration) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$host = getHost();
-    final Object other$host = other.getHost();
-    if (this$host == null ? other$host != null : !this$host.equals(other$host)) {
-      return false;
-    }
-    final Object this$httpPort = getHttpPort();
-    final Object other$httpPort = other.getHttpPort();
-    if (this$httpPort == null ? other$httpPort != null : !this$httpPort.equals(other$httpPort)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

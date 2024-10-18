@@ -58,51 +58,12 @@ public class LabelDto implements OptimizeDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $variableLabel = getVariableLabel();
-    result = result * PRIME + ($variableLabel == null ? 43 : $variableLabel.hashCode());
-    final Object $variableName = getVariableName();
-    result = result * PRIME + ($variableName == null ? 43 : $variableName.hashCode());
-    final Object $variableType = getVariableType();
-    result = result * PRIME + ($variableType == null ? 43 : $variableType.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof LabelDto)) {
-      return false;
-    }
-    final LabelDto other = (LabelDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$variableLabel = getVariableLabel();
-    final Object other$variableLabel = other.getVariableLabel();
-    if (this$variableLabel == null
-        ? other$variableLabel != null
-        : !this$variableLabel.equals(other$variableLabel)) {
-      return false;
-    }
-    final Object this$variableName = getVariableName();
-    final Object other$variableName = other.getVariableName();
-    if (this$variableName == null
-        ? other$variableName != null
-        : !this$variableName.equals(other$variableName)) {
-      return false;
-    }
-    final Object this$variableType = getVariableType();
-    final Object other$variableType = other.getVariableType();
-    if (this$variableType == null
-        ? other$variableType != null
-        : !this$variableType.equals(other$variableType)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

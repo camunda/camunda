@@ -44,36 +44,12 @@ public class ImportedIndexMismatchResponseDto extends ErrorResponseDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = super.hashCode();
-    final Object $mismatchingIndices = getMismatchingIndices();
-    result = result * PRIME + ($mismatchingIndices == null ? 43 : $mismatchingIndices.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof ImportedIndexMismatchResponseDto)) {
-      return false;
-    }
-    final ImportedIndexMismatchResponseDto other = (ImportedIndexMismatchResponseDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    final Object this$mismatchingIndices = getMismatchingIndices();
-    final Object other$mismatchingIndices = other.getMismatchingIndices();
-    if (this$mismatchingIndices == null
-        ? other$mismatchingIndices != null
-        : !this$mismatchingIndices.equals(other$mismatchingIndices)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

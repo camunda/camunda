@@ -177,109 +177,7 @@ public class IncidentDto implements Serializable, OptimizeDto {
   }
 
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof IncidentDto)) {
-      return false;
-    }
-    final IncidentDto other = (IncidentDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$id = this.getId();
-    final Object other$id = other.getId();
-    if (this$id == null ? other$id != null : !this$id.equals(other$id)) {
-      return false;
-    }
-    final Object this$createTime = this.getCreateTime();
-    final Object other$createTime = other.getCreateTime();
-    if (this$createTime == null
-        ? other$createTime != null
-        : !this$createTime.equals(other$createTime)) {
-      return false;
-    }
-    final Object this$endTime = this.getEndTime();
-    final Object other$endTime = other.getEndTime();
-    if (this$endTime == null ? other$endTime != null : !this$endTime.equals(other$endTime)) {
-      return false;
-    }
-    final Object this$durationInMs = this.getDurationInMs();
-    final Object other$durationInMs = other.getDurationInMs();
-    if (this$durationInMs == null
-        ? other$durationInMs != null
-        : !this$durationInMs.equals(other$durationInMs)) {
-      return false;
-    }
-    final Object this$incidentType = this.getIncidentType();
-    final Object other$incidentType = other.getIncidentType();
-    if (this$incidentType == null
-        ? other$incidentType != null
-        : !this$incidentType.equals(other$incidentType)) {
-      return false;
-    }
-    final Object this$activityId = this.getActivityId();
-    final Object other$activityId = other.getActivityId();
-    if (this$activityId == null
-        ? other$activityId != null
-        : !this$activityId.equals(other$activityId)) {
-      return false;
-    }
-    final Object this$failedActivityId = this.getFailedActivityId();
-    final Object other$failedActivityId = other.getFailedActivityId();
-    if (this$failedActivityId == null
-        ? other$failedActivityId != null
-        : !this$failedActivityId.equals(other$failedActivityId)) {
-      return false;
-    }
-    final Object this$incidentMessage = this.getIncidentMessage();
-    final Object other$incidentMessage = other.getIncidentMessage();
-    if (this$incidentMessage == null
-        ? other$incidentMessage != null
-        : !this$incidentMessage.equals(other$incidentMessage)) {
-      return false;
-    }
-    final Object this$incidentStatus = this.getIncidentStatus();
-    final Object other$incidentStatus = other.getIncidentStatus();
-    if (this$incidentStatus == null
-        ? other$incidentStatus != null
-        : !this$incidentStatus.equals(other$incidentStatus)) {
-      return false;
-    }
-    final Object this$processInstanceId = this.getProcessInstanceId();
-    final Object other$processInstanceId = other.getProcessInstanceId();
-    if (this$processInstanceId == null
-        ? other$processInstanceId != null
-        : !this$processInstanceId.equals(other$processInstanceId)) {
-      return false;
-    }
-    final Object this$definitionKey = this.getDefinitionKey();
-    final Object other$definitionKey = other.getDefinitionKey();
-    if (this$definitionKey == null
-        ? other$definitionKey != null
-        : !this$definitionKey.equals(other$definitionKey)) {
-      return false;
-    }
-    final Object this$definitionVersion = this.getDefinitionVersion();
-    final Object other$definitionVersion = other.getDefinitionVersion();
-    if (this$definitionVersion == null
-        ? other$definitionVersion != null
-        : !this$definitionVersion.equals(other$definitionVersion)) {
-      return false;
-    }
-    final Object this$tenantId = this.getTenantId();
-    final Object other$tenantId = other.getTenantId();
-    if (this$tenantId == null ? other$tenantId != null : !this$tenantId.equals(other$tenantId)) {
-      return false;
-    }
-    final Object this$engineAlias = this.getEngineAlias();
-    final Object other$engineAlias = other.getEngineAlias();
-    if (this$engineAlias == null
-        ? other$engineAlias != null
-        : !this$engineAlias.equals(other$engineAlias)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   protected boolean canEqual(final Object other) {
@@ -287,37 +185,7 @@ public class IncidentDto implements Serializable, OptimizeDto {
   }
 
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $id = this.getId();
-    result = result * PRIME + ($id == null ? 43 : $id.hashCode());
-    final Object $createTime = this.getCreateTime();
-    result = result * PRIME + ($createTime == null ? 43 : $createTime.hashCode());
-    final Object $endTime = this.getEndTime();
-    result = result * PRIME + ($endTime == null ? 43 : $endTime.hashCode());
-    final Object $durationInMs = this.getDurationInMs();
-    result = result * PRIME + ($durationInMs == null ? 43 : $durationInMs.hashCode());
-    final Object $incidentType = this.getIncidentType();
-    result = result * PRIME + ($incidentType == null ? 43 : $incidentType.hashCode());
-    final Object $activityId = this.getActivityId();
-    result = result * PRIME + ($activityId == null ? 43 : $activityId.hashCode());
-    final Object $failedActivityId = this.getFailedActivityId();
-    result = result * PRIME + ($failedActivityId == null ? 43 : $failedActivityId.hashCode());
-    final Object $incidentMessage = this.getIncidentMessage();
-    result = result * PRIME + ($incidentMessage == null ? 43 : $incidentMessage.hashCode());
-    final Object $incidentStatus = this.getIncidentStatus();
-    result = result * PRIME + ($incidentStatus == null ? 43 : $incidentStatus.hashCode());
-    final Object $processInstanceId = this.getProcessInstanceId();
-    result = result * PRIME + ($processInstanceId == null ? 43 : $processInstanceId.hashCode());
-    final Object $definitionKey = this.getDefinitionKey();
-    result = result * PRIME + ($definitionKey == null ? 43 : $definitionKey.hashCode());
-    final Object $definitionVersion = this.getDefinitionVersion();
-    result = result * PRIME + ($definitionVersion == null ? 43 : $definitionVersion.hashCode());
-    final Object $tenantId = this.getTenantId();
-    result = result * PRIME + ($tenantId == null ? 43 : $tenantId.hashCode());
-    final Object $engineAlias = this.getEngineAlias();
-    result = result * PRIME + ($engineAlias == null ? 43 : $engineAlias.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   public String toString() {

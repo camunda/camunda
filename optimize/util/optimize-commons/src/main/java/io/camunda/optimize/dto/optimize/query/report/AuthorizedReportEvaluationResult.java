@@ -35,36 +35,12 @@ public class AuthorizedReportEvaluationResult extends AuthorizedEntityDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = super.hashCode();
-    final Object $evaluationResult = getEvaluationResult();
-    result = result * PRIME + ($evaluationResult == null ? 43 : $evaluationResult.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof AuthorizedReportEvaluationResult)) {
-      return false;
-    }
-    final AuthorizedReportEvaluationResult other = (AuthorizedReportEvaluationResult) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    final Object this$evaluationResult = getEvaluationResult();
-    final Object other$evaluationResult = other.getEvaluationResult();
-    if (this$evaluationResult == null
-        ? other$evaluationResult != null
-        : !this$evaluationResult.equals(other$evaluationResult)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

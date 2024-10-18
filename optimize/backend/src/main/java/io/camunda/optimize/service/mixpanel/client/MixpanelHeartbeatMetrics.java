@@ -96,59 +96,12 @@ public class MixpanelHeartbeatMetrics {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final long $processReportCount = getProcessReportCount();
-    result = result * PRIME + (int) ($processReportCount >>> 32 ^ $processReportCount);
-    final long $decisionReportCount = getDecisionReportCount();
-    result = result * PRIME + (int) ($decisionReportCount >>> 32 ^ $decisionReportCount);
-    final long $dashboardCount = getDashboardCount();
-    result = result * PRIME + (int) ($dashboardCount >>> 32 ^ $dashboardCount);
-    final long $reportShareCount = getReportShareCount();
-    result = result * PRIME + (int) ($reportShareCount >>> 32 ^ $reportShareCount);
-    final long $dashboardShareCount = getDashboardShareCount();
-    result = result * PRIME + (int) ($dashboardShareCount >>> 32 ^ $dashboardShareCount);
-    final long $alertCount = getAlertCount();
-    result = result * PRIME + (int) ($alertCount >>> 32 ^ $alertCount);
-    final long $taskReportCount = getTaskReportCount();
-    result = result * PRIME + (int) ($taskReportCount >>> 32 ^ $taskReportCount);
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof MixpanelHeartbeatMetrics)) {
-      return false;
-    }
-    final MixpanelHeartbeatMetrics other = (MixpanelHeartbeatMetrics) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (getProcessReportCount() != other.getProcessReportCount()) {
-      return false;
-    }
-    if (getDecisionReportCount() != other.getDecisionReportCount()) {
-      return false;
-    }
-    if (getDashboardCount() != other.getDashboardCount()) {
-      return false;
-    }
-    if (getReportShareCount() != other.getReportShareCount()) {
-      return false;
-    }
-    if (getDashboardShareCount() != other.getDashboardShareCount()) {
-      return false;
-    }
-    if (getAlertCount() != other.getAlertCount()) {
-      return false;
-    }
-    if (getTaskReportCount() != other.getTaskReportCount()) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

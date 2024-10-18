@@ -45,45 +45,12 @@ public class DatabaseSecurity {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $username = getUsername();
-    result = result * PRIME + ($username == null ? 43 : $username.hashCode());
-    final Object $password = getPassword();
-    result = result * PRIME + ($password == null ? 43 : $password.hashCode());
-    final Object $ssl = getSsl();
-    result = result * PRIME + ($ssl == null ? 43 : $ssl.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof DatabaseSecurity)) {
-      return false;
-    }
-    final DatabaseSecurity other = (DatabaseSecurity) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$username = getUsername();
-    final Object other$username = other.getUsername();
-    if (this$username == null ? other$username != null : !this$username.equals(other$username)) {
-      return false;
-    }
-    final Object this$password = getPassword();
-    final Object other$password = other.getPassword();
-    if (this$password == null ? other$password != null : !this$password.equals(other$password)) {
-      return false;
-    }
-    final Object this$ssl = getSsl();
-    final Object other$ssl = other.getSsl();
-    if (this$ssl == null ? other$ssl != null : !this$ssl.equals(other$ssl)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

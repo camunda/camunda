@@ -83,70 +83,12 @@ public class ProcessRawDataCsvExportRequestDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $processDefinitionKey = getProcessDefinitionKey();
-    result =
-        result * PRIME + ($processDefinitionKey == null ? 43 : $processDefinitionKey.hashCode());
-    final Object $processDefinitionVersions = getProcessDefinitionVersions();
-    result =
-        result * PRIME
-            + ($processDefinitionVersions == null ? 43 : $processDefinitionVersions.hashCode());
-    final Object $tenantIds = getTenantIds();
-    result = result * PRIME + ($tenantIds == null ? 43 : $tenantIds.hashCode());
-    final Object $filter = getFilter();
-    result = result * PRIME + ($filter == null ? 43 : $filter.hashCode());
-    final Object $includedColumns = getIncludedColumns();
-    result = result * PRIME + ($includedColumns == null ? 43 : $includedColumns.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof ProcessRawDataCsvExportRequestDto)) {
-      return false;
-    }
-    final ProcessRawDataCsvExportRequestDto other = (ProcessRawDataCsvExportRequestDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$processDefinitionKey = getProcessDefinitionKey();
-    final Object other$processDefinitionKey = other.getProcessDefinitionKey();
-    if (this$processDefinitionKey == null
-        ? other$processDefinitionKey != null
-        : !this$processDefinitionKey.equals(other$processDefinitionKey)) {
-      return false;
-    }
-    final Object this$processDefinitionVersions = getProcessDefinitionVersions();
-    final Object other$processDefinitionVersions = other.getProcessDefinitionVersions();
-    if (this$processDefinitionVersions == null
-        ? other$processDefinitionVersions != null
-        : !this$processDefinitionVersions.equals(other$processDefinitionVersions)) {
-      return false;
-    }
-    final Object this$tenantIds = getTenantIds();
-    final Object other$tenantIds = other.getTenantIds();
-    if (this$tenantIds == null
-        ? other$tenantIds != null
-        : !this$tenantIds.equals(other$tenantIds)) {
-      return false;
-    }
-    final Object this$filter = getFilter();
-    final Object other$filter = other.getFilter();
-    if (this$filter == null ? other$filter != null : !this$filter.equals(other$filter)) {
-      return false;
-    }
-    final Object this$includedColumns = getIncludedColumns();
-    final Object other$includedColumns = other.getIncludedColumns();
-    if (this$includedColumns == null
-        ? other$includedColumns != null
-        : !this$includedColumns.equals(other$includedColumns)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

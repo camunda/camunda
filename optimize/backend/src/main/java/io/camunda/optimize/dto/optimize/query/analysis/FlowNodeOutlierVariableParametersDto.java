@@ -41,34 +41,7 @@ public class FlowNodeOutlierVariableParametersDto extends FlowNodeOutlierParamet
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof FlowNodeOutlierVariableParametersDto)) {
-      return false;
-    }
-    final FlowNodeOutlierVariableParametersDto other = (FlowNodeOutlierVariableParametersDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    final Object this$variableName = getVariableName();
-    final Object other$variableName = other.getVariableName();
-    if (this$variableName == null
-        ? other$variableName != null
-        : !this$variableName.equals(other$variableName)) {
-      return false;
-    }
-    final Object this$variableTerm = getVariableTerm();
-    final Object other$variableTerm = other.getVariableTerm();
-    if (this$variableTerm == null
-        ? other$variableTerm != null
-        : !this$variableTerm.equals(other$variableTerm)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override
@@ -78,12 +51,6 @@ public class FlowNodeOutlierVariableParametersDto extends FlowNodeOutlierParamet
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = super.hashCode();
-    final Object $variableName = getVariableName();
-    result = result * PRIME + ($variableName == null ? 43 : $variableName.hashCode());
-    final Object $variableTerm = getVariableTerm();
-    result = result * PRIME + ($variableTerm == null ? 43 : $variableTerm.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 }

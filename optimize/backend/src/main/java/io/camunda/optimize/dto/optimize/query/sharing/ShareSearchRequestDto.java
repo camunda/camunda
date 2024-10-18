@@ -39,40 +39,12 @@ public class ShareSearchRequestDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $reports = getReports();
-    result = result * PRIME + ($reports == null ? 43 : $reports.hashCode());
-    final Object $dashboards = getDashboards();
-    result = result * PRIME + ($dashboards == null ? 43 : $dashboards.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof ShareSearchRequestDto)) {
-      return false;
-    }
-    final ShareSearchRequestDto other = (ShareSearchRequestDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$reports = getReports();
-    final Object other$reports = other.getReports();
-    if (this$reports == null ? other$reports != null : !this$reports.equals(other$reports)) {
-      return false;
-    }
-    final Object this$dashboards = getDashboards();
-    final Object other$dashboards = other.getDashboards();
-    if (this$dashboards == null
-        ? other$dashboards != null
-        : !this$dashboards.equals(other$dashboards)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

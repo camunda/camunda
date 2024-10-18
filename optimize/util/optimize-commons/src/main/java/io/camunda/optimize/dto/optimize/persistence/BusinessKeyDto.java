@@ -35,42 +35,12 @@ public class BusinessKeyDto implements OptimizeDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $processInstanceId = getProcessInstanceId();
-    result = result * PRIME + ($processInstanceId == null ? 43 : $processInstanceId.hashCode());
-    final Object $businessKey = getBusinessKey();
-    result = result * PRIME + ($businessKey == null ? 43 : $businessKey.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof BusinessKeyDto)) {
-      return false;
-    }
-    final BusinessKeyDto other = (BusinessKeyDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$processInstanceId = getProcessInstanceId();
-    final Object other$processInstanceId = other.getProcessInstanceId();
-    if (this$processInstanceId == null
-        ? other$processInstanceId != null
-        : !this$processInstanceId.equals(other$processInstanceId)) {
-      return false;
-    }
-    final Object this$businessKey = getBusinessKey();
-    final Object other$businessKey = other.getBusinessKey();
-    if (this$businessKey == null
-        ? other$businessKey != null
-        : !this$businessKey.equals(other$businessKey)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

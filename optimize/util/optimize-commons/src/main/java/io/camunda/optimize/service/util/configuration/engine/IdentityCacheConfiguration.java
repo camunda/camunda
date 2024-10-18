@@ -79,50 +79,12 @@ public abstract class IdentityCacheConfiguration {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    result = result * PRIME + (isIncludeUserMetaData() ? 79 : 97);
-    result = result * PRIME + (isCollectionRoleCleanupEnabled() ? 79 : 97);
-    final Object $cronTrigger = getCronTrigger();
-    result = result * PRIME + ($cronTrigger == null ? 43 : $cronTrigger.hashCode());
-    result = result * PRIME + getMaxPageSize();
-    final long $maxEntryLimit = getMaxEntryLimit();
-    result = result * PRIME + (int) ($maxEntryLimit >>> 32 ^ $maxEntryLimit);
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof IdentityCacheConfiguration)) {
-      return false;
-    }
-    final IdentityCacheConfiguration other = (IdentityCacheConfiguration) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (isIncludeUserMetaData() != other.isIncludeUserMetaData()) {
-      return false;
-    }
-    if (isCollectionRoleCleanupEnabled() != other.isCollectionRoleCleanupEnabled()) {
-      return false;
-    }
-    final Object this$cronTrigger = getCronTrigger();
-    final Object other$cronTrigger = other.getCronTrigger();
-    if (this$cronTrigger == null
-        ? other$cronTrigger != null
-        : !this$cronTrigger.equals(other$cronTrigger)) {
-      return false;
-    }
-    if (getMaxPageSize() != other.getMaxPageSize()) {
-      return false;
-    }
-    if (getMaxEntryLimit() != other.getMaxEntryLimit()) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

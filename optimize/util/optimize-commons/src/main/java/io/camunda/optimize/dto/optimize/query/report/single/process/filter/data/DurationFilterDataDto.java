@@ -69,49 +69,12 @@ public class DurationFilterDataDto implements FilterDataDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $value = getValue();
-    result = result * PRIME + ($value == null ? 43 : $value.hashCode());
-    final Object $unit = getUnit();
-    result = result * PRIME + ($unit == null ? 43 : $unit.hashCode());
-    final Object $operator = getOperator();
-    result = result * PRIME + ($operator == null ? 43 : $operator.hashCode());
-    result = result * PRIME + (isIncludeNull() ? 79 : 97);
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof DurationFilterDataDto)) {
-      return false;
-    }
-    final DurationFilterDataDto other = (DurationFilterDataDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$value = getValue();
-    final Object other$value = other.getValue();
-    if (this$value == null ? other$value != null : !this$value.equals(other$value)) {
-      return false;
-    }
-    final Object this$unit = getUnit();
-    final Object other$unit = other.getUnit();
-    if (this$unit == null ? other$unit != null : !this$unit.equals(other$unit)) {
-      return false;
-    }
-    final Object this$operator = getOperator();
-    final Object other$operator = other.getOperator();
-    if (this$operator == null ? other$operator != null : !this$operator.equals(other$operator)) {
-      return false;
-    }
-    if (isIncludeNull() != other.isIncludeNull()) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

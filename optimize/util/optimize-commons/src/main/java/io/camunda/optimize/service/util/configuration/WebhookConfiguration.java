@@ -67,63 +67,12 @@ public class WebhookConfiguration {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $url = getUrl();
-    result = result * PRIME + ($url == null ? 43 : $url.hashCode());
-    final Object $headers = getHeaders();
-    result = result * PRIME + ($headers == null ? 43 : $headers.hashCode());
-    final Object $httpMethod = getHttpMethod();
-    result = result * PRIME + ($httpMethod == null ? 43 : $httpMethod.hashCode());
-    final Object $defaultPayload = getDefaultPayload();
-    result = result * PRIME + ($defaultPayload == null ? 43 : $defaultPayload.hashCode());
-    final Object $proxy = getProxy();
-    result = result * PRIME + ($proxy == null ? 43 : $proxy.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof WebhookConfiguration)) {
-      return false;
-    }
-    final WebhookConfiguration other = (WebhookConfiguration) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$url = getUrl();
-    final Object other$url = other.getUrl();
-    if (this$url == null ? other$url != null : !this$url.equals(other$url)) {
-      return false;
-    }
-    final Object this$headers = getHeaders();
-    final Object other$headers = other.getHeaders();
-    if (this$headers == null ? other$headers != null : !this$headers.equals(other$headers)) {
-      return false;
-    }
-    final Object this$httpMethod = getHttpMethod();
-    final Object other$httpMethod = other.getHttpMethod();
-    if (this$httpMethod == null
-        ? other$httpMethod != null
-        : !this$httpMethod.equals(other$httpMethod)) {
-      return false;
-    }
-    final Object this$defaultPayload = getDefaultPayload();
-    final Object other$defaultPayload = other.getDefaultPayload();
-    if (this$defaultPayload == null
-        ? other$defaultPayload != null
-        : !this$defaultPayload.equals(other$defaultPayload)) {
-      return false;
-    }
-    final Object this$proxy = getProxy();
-    final Object other$proxy = other.getProxy();
-    if (this$proxy == null ? other$proxy != null : !this$proxy.equals(other$proxy)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

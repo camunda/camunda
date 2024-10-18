@@ -72,74 +72,12 @@ public class SingleReportTargetValueDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $countChart = getCountChart();
-    result = result * PRIME + ($countChart == null ? 43 : $countChart.hashCode());
-    final Object $durationProgress = getDurationProgress();
-    result = result * PRIME + ($durationProgress == null ? 43 : $durationProgress.hashCode());
-    final Object $active = getActive();
-    result = result * PRIME + ($active == null ? 43 : $active.hashCode());
-    final Object $countProgress = getCountProgress();
-    result = result * PRIME + ($countProgress == null ? 43 : $countProgress.hashCode());
-    final Object $durationChart = getDurationChart();
-    result = result * PRIME + ($durationChart == null ? 43 : $durationChart.hashCode());
-    final Object $isKpi = getIsKpi();
-    result = result * PRIME + ($isKpi == null ? 43 : $isKpi.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof SingleReportTargetValueDto)) {
-      return false;
-    }
-    final SingleReportTargetValueDto other = (SingleReportTargetValueDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$countChart = getCountChart();
-    final Object other$countChart = other.getCountChart();
-    if (this$countChart == null
-        ? other$countChart != null
-        : !this$countChart.equals(other$countChart)) {
-      return false;
-    }
-    final Object this$durationProgress = getDurationProgress();
-    final Object other$durationProgress = other.getDurationProgress();
-    if (this$durationProgress == null
-        ? other$durationProgress != null
-        : !this$durationProgress.equals(other$durationProgress)) {
-      return false;
-    }
-    final Object this$active = getActive();
-    final Object other$active = other.getActive();
-    if (this$active == null ? other$active != null : !this$active.equals(other$active)) {
-      return false;
-    }
-    final Object this$countProgress = getCountProgress();
-    final Object other$countProgress = other.getCountProgress();
-    if (this$countProgress == null
-        ? other$countProgress != null
-        : !this$countProgress.equals(other$countProgress)) {
-      return false;
-    }
-    final Object this$durationChart = getDurationChart();
-    final Object other$durationChart = other.getDurationChart();
-    if (this$durationChart == null
-        ? other$durationChart != null
-        : !this$durationChart.equals(other$durationChart)) {
-      return false;
-    }
-    final Object this$isKpi = getIsKpi();
-    final Object other$isKpi = other.getIsKpi();
-    if (this$isKpi == null ? other$isKpi != null : !this$isKpi.equals(other$isKpi)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

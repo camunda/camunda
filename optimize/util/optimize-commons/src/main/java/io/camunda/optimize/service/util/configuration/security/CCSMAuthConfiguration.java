@@ -87,81 +87,12 @@ public class CCSMAuthConfiguration {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $issuerUrl = getIssuerUrl();
-    result = result * PRIME + ($issuerUrl == null ? 43 : $issuerUrl.hashCode());
-    final Object $issuerBackendUrl = getIssuerBackendUrl();
-    result = result * PRIME + ($issuerBackendUrl == null ? 43 : $issuerBackendUrl.hashCode());
-    final Object $redirectRootUrl = getRedirectRootUrl();
-    result = result * PRIME + ($redirectRootUrl == null ? 43 : $redirectRootUrl.hashCode());
-    final Object $clientId = getClientId();
-    result = result * PRIME + ($clientId == null ? 43 : $clientId.hashCode());
-    final Object $clientSecret = getClientSecret();
-    result = result * PRIME + ($clientSecret == null ? 43 : $clientSecret.hashCode());
-    final Object $audience = getAudience();
-    result = result * PRIME + ($audience == null ? 43 : $audience.hashCode());
-    final Object $baseUrl = getBaseUrl();
-    result = result * PRIME + ($baseUrl == null ? 43 : $baseUrl.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof CCSMAuthConfiguration)) {
-      return false;
-    }
-    final CCSMAuthConfiguration other = (CCSMAuthConfiguration) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$issuerUrl = getIssuerUrl();
-    final Object other$issuerUrl = other.getIssuerUrl();
-    if (this$issuerUrl == null
-        ? other$issuerUrl != null
-        : !this$issuerUrl.equals(other$issuerUrl)) {
-      return false;
-    }
-    final Object this$issuerBackendUrl = getIssuerBackendUrl();
-    final Object other$issuerBackendUrl = other.getIssuerBackendUrl();
-    if (this$issuerBackendUrl == null
-        ? other$issuerBackendUrl != null
-        : !this$issuerBackendUrl.equals(other$issuerBackendUrl)) {
-      return false;
-    }
-    final Object this$redirectRootUrl = getRedirectRootUrl();
-    final Object other$redirectRootUrl = other.getRedirectRootUrl();
-    if (this$redirectRootUrl == null
-        ? other$redirectRootUrl != null
-        : !this$redirectRootUrl.equals(other$redirectRootUrl)) {
-      return false;
-    }
-    final Object this$clientId = getClientId();
-    final Object other$clientId = other.getClientId();
-    if (this$clientId == null ? other$clientId != null : !this$clientId.equals(other$clientId)) {
-      return false;
-    }
-    final Object this$clientSecret = getClientSecret();
-    final Object other$clientSecret = other.getClientSecret();
-    if (this$clientSecret == null
-        ? other$clientSecret != null
-        : !this$clientSecret.equals(other$clientSecret)) {
-      return false;
-    }
-    final Object this$audience = getAudience();
-    final Object other$audience = other.getAudience();
-    if (this$audience == null ? other$audience != null : !this$audience.equals(other$audience)) {
-      return false;
-    }
-    final Object this$baseUrl = getBaseUrl();
-    final Object other$baseUrl = other.getBaseUrl();
-    if (this$baseUrl == null ? other$baseUrl != null : !this$baseUrl.equals(other$baseUrl)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

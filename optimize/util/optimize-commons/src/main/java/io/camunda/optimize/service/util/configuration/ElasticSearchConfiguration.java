@@ -226,49 +226,7 @@ public class ElasticSearchConfiguration {
   }
 
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof ElasticSearchConfiguration)) {
-      return false;
-    }
-    final ElasticSearchConfiguration other = (ElasticSearchConfiguration) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$connection = this.getConnection();
-    final Object other$connection = other.getConnection();
-    if (this$connection == null
-        ? other$connection != null
-        : !this$connection.equals(other$connection)) {
-      return false;
-    }
-    final Object this$backup = this.getBackup();
-    final Object other$backup = other.getBackup();
-    if (this$backup == null ? other$backup != null : !this$backup.equals(other$backup)) {
-      return false;
-    }
-    final Object this$security = this.getSecurity();
-    final Object other$security = other.getSecurity();
-    if (this$security == null ? other$security != null : !this$security.equals(other$security)) {
-      return false;
-    }
-    if (this.getScrollTimeoutInSeconds() != other.getScrollTimeoutInSeconds()) {
-      return false;
-    }
-    final Object this$settings = this.getSettings();
-    final Object other$settings = other.getSettings();
-    if (this$settings == null ? other$settings != null : !this$settings.equals(other$settings)) {
-      return false;
-    }
-    final Object this$interceptorPlugins = this.getInterceptorPlugins();
-    final Object other$interceptorPlugins = other.getInterceptorPlugins();
-    if (this$interceptorPlugins == null
-        ? other$interceptorPlugins != null
-        : !this$interceptorPlugins.equals(other$interceptorPlugins)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   protected boolean canEqual(final Object other) {
@@ -276,20 +234,7 @@ public class ElasticSearchConfiguration {
   }
 
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $connection = this.getConnection();
-    result = result * PRIME + ($connection == null ? 43 : $connection.hashCode());
-    final Object $backup = this.getBackup();
-    result = result * PRIME + ($backup == null ? 43 : $backup.hashCode());
-    final Object $security = this.getSecurity();
-    result = result * PRIME + ($security == null ? 43 : $security.hashCode());
-    result = result * PRIME + this.getScrollTimeoutInSeconds();
-    final Object $settings = this.getSettings();
-    result = result * PRIME + ($settings == null ? 43 : $settings.hashCode());
-    final Object $interceptorPlugins = this.getInterceptorPlugins();
-    result = result * PRIME + ($interceptorPlugins == null ? 43 : $interceptorPlugins.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   public String toString() {

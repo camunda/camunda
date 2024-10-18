@@ -81,54 +81,12 @@ public class DecisionVariableNameRequestDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $decisionDefinitionKey = getDecisionDefinitionKey();
-    result =
-        result * PRIME + ($decisionDefinitionKey == null ? 43 : $decisionDefinitionKey.hashCode());
-    final Object $decisionDefinitionVersions = getDecisionDefinitionVersions();
-    result =
-        result * PRIME
-            + ($decisionDefinitionVersions == null ? 43 : $decisionDefinitionVersions.hashCode());
-    final Object $tenantIds = getTenantIds();
-    result = result * PRIME + ($tenantIds == null ? 43 : $tenantIds.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof DecisionVariableNameRequestDto)) {
-      return false;
-    }
-    final DecisionVariableNameRequestDto other = (DecisionVariableNameRequestDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$decisionDefinitionKey = getDecisionDefinitionKey();
-    final Object other$decisionDefinitionKey = other.getDecisionDefinitionKey();
-    if (this$decisionDefinitionKey == null
-        ? other$decisionDefinitionKey != null
-        : !this$decisionDefinitionKey.equals(other$decisionDefinitionKey)) {
-      return false;
-    }
-    final Object this$decisionDefinitionVersions = getDecisionDefinitionVersions();
-    final Object other$decisionDefinitionVersions = other.getDecisionDefinitionVersions();
-    if (this$decisionDefinitionVersions == null
-        ? other$decisionDefinitionVersions != null
-        : !this$decisionDefinitionVersions.equals(other$decisionDefinitionVersions)) {
-      return false;
-    }
-    final Object this$tenantIds = getTenantIds();
-    final Object other$tenantIds = other.getTenantIds();
-    if (this$tenantIds == null
-        ? other$tenantIds != null
-        : !this$tenantIds.equals(other$tenantIds)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

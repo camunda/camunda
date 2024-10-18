@@ -89,76 +89,12 @@ public class FindingsDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $lowerOutlier = getLowerOutlier();
-    result = result * PRIME + ($lowerOutlier == null ? 43 : $lowerOutlier.hashCode());
-    final Object $higherOutlier = getHigherOutlier();
-    result = result * PRIME + ($higherOutlier == null ? 43 : $higherOutlier.hashCode());
-    final Object $lowerOutlierHeat = getLowerOutlierHeat();
-    result = result * PRIME + ($lowerOutlierHeat == null ? 43 : $lowerOutlierHeat.hashCode());
-    final Object $higherOutlierHeat = getHigherOutlierHeat();
-    result = result * PRIME + ($higherOutlierHeat == null ? 43 : $higherOutlierHeat.hashCode());
-    final Object $heat = getHeat();
-    result = result * PRIME + ($heat == null ? 43 : $heat.hashCode());
-    final Object $totalCount = getTotalCount();
-    result = result * PRIME + ($totalCount == null ? 43 : $totalCount.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof FindingsDto)) {
-      return false;
-    }
-    final FindingsDto other = (FindingsDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$lowerOutlier = getLowerOutlier();
-    final Object other$lowerOutlier = other.getLowerOutlier();
-    if (this$lowerOutlier == null
-        ? other$lowerOutlier != null
-        : !this$lowerOutlier.equals(other$lowerOutlier)) {
-      return false;
-    }
-    final Object this$higherOutlier = getHigherOutlier();
-    final Object other$higherOutlier = other.getHigherOutlier();
-    if (this$higherOutlier == null
-        ? other$higherOutlier != null
-        : !this$higherOutlier.equals(other$higherOutlier)) {
-      return false;
-    }
-    final Object this$lowerOutlierHeat = getLowerOutlierHeat();
-    final Object other$lowerOutlierHeat = other.getLowerOutlierHeat();
-    if (this$lowerOutlierHeat == null
-        ? other$lowerOutlierHeat != null
-        : !this$lowerOutlierHeat.equals(other$lowerOutlierHeat)) {
-      return false;
-    }
-    final Object this$higherOutlierHeat = getHigherOutlierHeat();
-    final Object other$higherOutlierHeat = other.getHigherOutlierHeat();
-    if (this$higherOutlierHeat == null
-        ? other$higherOutlierHeat != null
-        : !this$higherOutlierHeat.equals(other$higherOutlierHeat)) {
-      return false;
-    }
-    final Object this$heat = getHeat();
-    final Object other$heat = other.getHeat();
-    if (this$heat == null ? other$heat != null : !this$heat.equals(other$heat)) {
-      return false;
-    }
-    final Object this$totalCount = getTotalCount();
-    final Object other$totalCount = other.getTotalCount();
-    if (this$totalCount == null
-        ? other$totalCount != null
-        : !this$totalCount.equals(other$totalCount)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override
@@ -233,56 +169,12 @@ public class FindingsDto {
 
     @Override
     public int hashCode() {
-      final int PRIME = 59;
-      int result = 1;
-      final Object $boundValue = getBoundValue();
-      result = result * PRIME + ($boundValue == null ? 43 : $boundValue.hashCode());
-      final Object $percentile = getPercentile();
-      result = result * PRIME + ($percentile == null ? 43 : $percentile.hashCode());
-      final Object $relation = getRelation();
-      result = result * PRIME + ($relation == null ? 43 : $relation.hashCode());
-      final Object $count = getCount();
-      result = result * PRIME + ($count == null ? 43 : $count.hashCode());
-      return result;
+      return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
     }
 
     @Override
     public boolean equals(final Object o) {
-      if (o == this) {
-        return true;
-      }
-      if (!(o instanceof Finding)) {
-        return false;
-      }
-      final Finding other = (Finding) o;
-      if (!other.canEqual((Object) this)) {
-        return false;
-      }
-      final Object this$boundValue = getBoundValue();
-      final Object other$boundValue = other.getBoundValue();
-      if (this$boundValue == null
-          ? other$boundValue != null
-          : !this$boundValue.equals(other$boundValue)) {
-        return false;
-      }
-      final Object this$percentile = getPercentile();
-      final Object other$percentile = other.getPercentile();
-      if (this$percentile == null
-          ? other$percentile != null
-          : !this$percentile.equals(other$percentile)) {
-        return false;
-      }
-      final Object this$relation = getRelation();
-      final Object other$relation = other.getRelation();
-      if (this$relation == null ? other$relation != null : !this$relation.equals(other$relation)) {
-        return false;
-      }
-      final Object this$count = getCount();
-      final Object other$count = other.getCount();
-      if (this$count == null ? other$count != null : !this$count.equals(other$count)) {
-        return false;
-      }
-      return true;
+      return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
     }
 
     @Override

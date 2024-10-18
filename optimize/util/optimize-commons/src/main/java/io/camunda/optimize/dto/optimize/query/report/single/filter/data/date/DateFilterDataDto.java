@@ -90,38 +90,7 @@ public abstract class DateFilterDataDto<START> implements FilterDataDto {
   }
 
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof DateFilterDataDto)) {
-      return false;
-    }
-    final DateFilterDataDto<?> other = (DateFilterDataDto<?>) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$type = this.getType();
-    final Object other$type = other.getType();
-    if (this$type == null ? other$type != null : !this$type.equals(other$type)) {
-      return false;
-    }
-    final Object this$start = this.getStart();
-    final Object other$start = other.getStart();
-    if (this$start == null ? other$start != null : !this$start.equals(other$start)) {
-      return false;
-    }
-    final Object this$end = this.getEnd();
-    final Object other$end = other.getEnd();
-    if (this$end == null ? other$end != null : !this$end.equals(other$end)) {
-      return false;
-    }
-    if (this.isIncludeUndefined() != other.isIncludeUndefined()) {
-      return false;
-    }
-    if (this.isExcludeUndefined() != other.isExcludeUndefined()) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   protected boolean canEqual(final Object other) {
@@ -129,17 +98,7 @@ public abstract class DateFilterDataDto<START> implements FilterDataDto {
   }
 
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $type = this.getType();
-    result = result * PRIME + ($type == null ? 43 : $type.hashCode());
-    final Object $start = this.getStart();
-    result = result * PRIME + ($start == null ? 43 : $start.hashCode());
-    final Object $end = this.getEnd();
-    result = result * PRIME + ($end == null ? 43 : $end.hashCode());
-    result = result * PRIME + (this.isIncludeUndefined() ? 79 : 97);
-    result = result * PRIME + (this.isExcludeUndefined() ? 79 : 97);
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   public static final class Fields {

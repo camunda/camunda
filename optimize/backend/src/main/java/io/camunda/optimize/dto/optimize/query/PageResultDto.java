@@ -74,44 +74,12 @@ public class PageResultDto<T> {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $pagingState = getPagingState();
-    result = result * PRIME + ($pagingState == null ? 43 : $pagingState.hashCode());
-    result = result * PRIME + getLimit();
-    final Object $entities = getEntities();
-    result = result * PRIME + ($entities == null ? 43 : $entities.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof PageResultDto)) {
-      return false;
-    }
-    final PageResultDto<?> other = (PageResultDto<?>) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$pagingState = getPagingState();
-    final Object other$pagingState = other.getPagingState();
-    if (this$pagingState == null
-        ? other$pagingState != null
-        : !this$pagingState.equals(other$pagingState)) {
-      return false;
-    }
-    if (getLimit() != other.getLimit()) {
-      return false;
-    }
-    final Object this$entities = getEntities();
-    final Object other$entities = other.getEntities();
-    if (this$entities == null ? other$entities != null : !this$entities.equals(other$entities)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

@@ -48,46 +48,12 @@ public class MessageCorrelationDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $messageName = getMessageName();
-    result = result * PRIME + ($messageName == null ? 43 : $messageName.hashCode());
-    result = result * PRIME + (isAll() ? 79 : 97);
-    final Object $processVariables = getProcessVariables();
-    result = result * PRIME + ($processVariables == null ? 43 : $processVariables.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof MessageCorrelationDto)) {
-      return false;
-    }
-    final MessageCorrelationDto other = (MessageCorrelationDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$messageName = getMessageName();
-    final Object other$messageName = other.getMessageName();
-    if (this$messageName == null
-        ? other$messageName != null
-        : !this$messageName.equals(other$messageName)) {
-      return false;
-    }
-    if (isAll() != other.isAll()) {
-      return false;
-    }
-    final Object this$processVariables = getProcessVariables();
-    final Object other$processVariables = other.getProcessVariables();
-    if (this$processVariables == null
-        ? other$processVariables != null
-        : !this$processVariables.equals(other$processVariables)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override
