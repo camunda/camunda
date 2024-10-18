@@ -164,7 +164,14 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new EventFromProcessInstanceHandler(
                 templateDescriptorsMap.get(EventTemplate.class).getFullQualifiedName(), false),
             new EventFromProcessMessageSubscriptionHandler(
-                templateDescriptorsMap.get(EventTemplate.class).getFullQualifiedName(), false));
+                templateDescriptorsMap.get(EventTemplate.class).getFullQualifiedName(), false),
+            new UserTaskHandler(
+                templateDescriptorsMap.get(TaskTemplate.class).getFullQualifiedName()),
+            new UserTaskProcessInstanceHandler(
+                templateDescriptorsMap.get(TaskTemplate.class).getFullQualifiedName()),
+            new UserTaskVariableHandler(
+                templateDescriptorsMap.get(TaskTemplate.class).getFullQualifiedName(),
+                configuration.getIndex().getVariableSizeThreshold()));
   }
 
   @Override
