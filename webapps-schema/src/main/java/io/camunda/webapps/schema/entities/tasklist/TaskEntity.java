@@ -71,6 +71,12 @@ public class TaskEntity extends TasklistEntity<TaskEntity> {
   private Integer priority;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
+  private String action;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private String changedAttributes;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private TaskJoinRelationship join;
 
   public TaskEntity() {}
@@ -295,6 +301,24 @@ public class TaskEntity extends TasklistEntity<TaskEntity> {
     return this;
   }
 
+  public String getAction() {
+    return action;
+  }
+
+  public TaskEntity setAction(final String action) {
+    this.action = action;
+    return this;
+  }
+
+  public String getChangedAttributes() {
+    return changedAttributes;
+  }
+
+  public TaskEntity setChangedAttributes(final String changedAttributes) {
+    this.changedAttributes = changedAttributes;
+    return this;
+  }
+
   public TaskJoinRelationship getJoin() {
     return join;
   }
@@ -302,5 +326,9 @@ public class TaskEntity extends TasklistEntity<TaskEntity> {
   public TaskEntity setJoin(final TaskJoinRelationship join) {
     this.join = join;
     return this;
+  }
+
+  public String getImplementation() {
+    return "ZEEBE_USER_TASK";
   }
 }
