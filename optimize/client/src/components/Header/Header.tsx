@@ -16,7 +16,7 @@ import {
   C3NavigationNavBarProps,
 } from '@camunda/camunda-composite-components';
 
-// @ts-ignore
+// @ts-expect-error no types yet
 import {NavItem} from 'components';
 import {showError} from 'notifications';
 import {t} from 'translation';

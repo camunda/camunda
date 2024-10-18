@@ -108,7 +108,7 @@ it('should display the name of a failing report', async () => {
   });
 
   useErrorHandling.mockReturnValueOnce({
-    mightFail: (data, success, fail) => fail(data),
+    mightFail: (data, _success, fail) => fail(data),
   });
 
   const node = shallow(<OptimizeReportTile {...props} disableNameLink />);
@@ -127,7 +127,7 @@ it('should pass an error message if there is an error and no report is returned'
   };
   loadTile.mockReturnValueOnce(error);
 
-  const mightFail = jest.fn((data, success, fail) => fail(data));
+  const mightFail = jest.fn((data, _success, fail) => fail(data));
   useErrorHandling.mockReturnValueOnce({
     mightFail,
   });

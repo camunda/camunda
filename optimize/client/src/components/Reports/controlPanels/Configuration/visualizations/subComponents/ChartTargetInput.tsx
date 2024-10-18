@@ -62,7 +62,7 @@ export default function ChartTargetInput({onChange, report}: ChartTargetInputPro
         min={0}
         label={t('report.config.goal.goalValue')}
         value={targetValue[type]?.value}
-        onChange={(evt, {value}) => setValues('value', value)}
+        onChange={(_evt, {value}) => setValues('value', value)}
         invalid={isInvalid}
         invalidText={t('report.config.goal.invalidInput')}
         disabled={!targetValue.active}

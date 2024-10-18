@@ -110,17 +110,19 @@ export default function VariableFilter({
     evt.preventDefault();
 
     const InputComponent = getInputComponentForVariable(selectedVariable);
-    InputComponent.addFilter
-      ? InputComponent.addFilter(addFilter, filterType, selectedVariable, filter, applyTo)
-      : addFilter({
-          type: filterType,
-          data: {
-            name: selectedVariable.id || selectedVariable.name,
-            type: selectedVariable.type,
-            data: filter,
-          },
-          appliedTo: [applyTo?.identifier],
-        });
+    if (InputComponent.addFilter) {
+      InputComponent.addFilter(addFilter, filterType, selectedVariable, filter, applyTo);
+    } else {
+      addFilter({
+        type: filterType,
+        data: {
+          name: selectedVariable.id || selectedVariable.name,
+          type: selectedVariable.type,
+          data: filter,
+        },
+        appliedTo: [applyTo?.identifier],
+      });
+    }
   };
 
   const ValueInput = getInputComponentForVariable(selectedVariable);

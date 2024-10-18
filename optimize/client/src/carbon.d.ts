@@ -20,23 +20,18 @@ import {
   ChangeEvent,
   MouseEvent,
   KeyboardEvent,
-  AnchorHTMLAttributes,
   InputHTMLAttributes,
 } from 'react';
 
 declare module '@carbon/react' {
-  export type ShapeOf<B extends object, E extends object = {[key: string]: any}> = (E extends never
-    ? {}
-    : E) &
-    B;
-  export interface ReactAttr<T = HTMLElement> extends HTMLAttributes<T> {}
-  export interface ReactButtonAttr<T = HTMLButtonElement> extends ButtonHTMLAttributes<T> {}
-  export interface ReactDivAttr extends ReactAttr<HTMLDivElement> {}
-  export interface ReactAnchorAttr<T = HTMLAnchorElement> extends AnchorHTMLAttributes<T> {}
-  export interface ReactInputAttr<T = HTMLInputElement> extends InputHTMLAttributes<T> {}
-  export type ForwardRefProps<T, P = {}> = PropsWithoutRef<PropsWithChildren<P>> & RefAttributes<T>;
-  export type ForwardRefReturn<T, P = {}> = ForwardRefExoticComponent<ForwardRefProps<T, P>>;
-  export interface RequiresIdProps<T = ReactAttr['id']> {
+  export type ShapeOf<
+    B extends object,
+    E extends object = {[key: string]: unknown},
+  > = (E extends never ? object : E) & B;
+  export type ForwardRefProps<T, P = object> = PropsWithoutRef<PropsWithChildren<P>> &
+    RefAttributes<T>;
+  export type ForwardRefReturn<T, P = object> = ForwardRefExoticComponent<ForwardRefProps<T, P>>;
+  export interface RequiresIdProps<T = HTMLAttributes['id']> {
     id: NonNullable<T>;
   }
 
@@ -47,7 +42,7 @@ declare module '@carbon/react' {
     top?: number | undefined;
   }
 
-  export interface PaginationProps extends Omit<ReactDivAttr, 'id' | 'onChange'> {
+  export interface PaginationProps extends Omit<HTMLAttributes<HTMLDivElement>, 'id' | 'onChange'> {
     backwardText?: string | undefined;
     forwardedRef?: ForwardedRef<HTMLDivElement>;
     forwardText?: string | undefined;
@@ -73,9 +68,12 @@ declare module '@carbon/react' {
   declare class Pagination extends Component<PaginationProps> {}
 
   export interface InlineCheckboxProps
-    extends Omit<ReactInputAttr, 'aria-label' | 'className' | 'id' | 'onChange' | 'ref' | 'type'>,
+    extends Omit<
+        InputHTMLAttributes<HTMLInputElement>,
+        'aria-label' | 'className' | 'id' | 'onChange' | 'ref' | 'type'
+      >,
       RequiresIdProps {
-    ariaLabel?: ReactInputAttr['aria-label'] | undefined;
+    ariaLabel?: InputHTMLAttributes<HTMLInputElement>['aria-label'] | undefined;
     indeterminate?: boolean | undefined;
     onChange?(checked: boolean, id: string, event: ChangeEvent<HTMLInputElement>): void;
   }
@@ -92,56 +90,28 @@ declare module '@carbon/react' {
 
   export interface OverflowMenuProps
     extends Omit<
-      ReactButtonAttr,
+      ButtonHTMLAttributes,
       'aria-expanded' | 'aria-haspopup' | 'aria-label' | 'onClick' | 'onKeyDown' | 'type'
     > {
     ariaLabel?: string | undefined;
     direction?: VerticalDirection | undefined;
-    iconClass?: ReactAttr['className'] | undefined;
+    iconClass?: HTMLAttributes['className'] | undefined;
     iconDescription?: string | undefined;
     flipped?: boolean | undefined;
     focusTrap?: boolean | undefined;
     menuOffset?: MenuOffsetValue | undefined;
     menuOffsetFlip?: MenuOffsetValue | undefined;
-    menuOptionsClass?: ReactAttr['className'] | undefined;
+    menuOptionsClass?: HTMLAttributes['className'] | undefined;
     onClick?(event: MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>): void;
     onClose?(): void;
     onOpen?(): void;
     open?: boolean | undefined;
-    renderIcon?: any;
+    renderIcon?: ReactNode;
     selectorPrimaryFocus?: string | undefined;
     size?: ComponentProps<typeof Menu>['size'];
   }
 
-  declare class OverflowMenuComponent extends Component<OverflowMenuProps> {}
-
   declare const OverflowMenu: ForwardRefReturn<HTMLButtonElement, OverflowMenuProps>;
-
-  interface OverFlowMenuItemSharedProps {
-    // closeMenu is supplied by Overflow parent component
-    disabled?: boolean | undefined;
-    hasDivider?: boolean | undefined;
-    isDelete?: boolean | undefined;
-    itemText: NonNullable<ReactNode>;
-    requireTitle?: boolean | undefined;
-    wrapperClassName?: string | undefined;
-  }
-
-  export interface OverflowMenuItemButtonProps
-    extends Omit<ReactButtonAttr, 'disabled' | 'href' | 'ref' | 'tabIndex'>,
-      OverFlowMenuItemSharedProps {
-    href?: null | undefined;
-  }
-
-  export interface OverflowMenuItemAnchorProps
-    extends Omit<ReactAnchorAttr, 'disabled' | 'href' | 'ref' | 'tabIndex'>,
-      OverFlowMenuItemSharedProps {
-    href: string;
-  }
-
-  export type AllOverflowMenuItemProps = OverflowMenuItemAnchorProps | OverflowMenuItemButtonProps;
-
-  declare class OverflowMenuItem extends Component<AllOverflowMenuItemProps> {}
 
   interface FilterableMultiSelectProps<T> {
     id: string;
@@ -168,7 +138,7 @@ declare module '@carbon/react' {
     props: ForwardRefProps<HTMLElement, FilterableMultiSelectProps<T>>
   ): JSX.Element;
 
-  interface PasswordInputProps extends ReactInputAttr {
+  interface PasswordInputProps extends InputHTMLAttributes<HTMLInputElement> {
     defaultValue?: string | number;
     helperText?: ReactNode;
     hideLabel?: boolean;
@@ -201,20 +171,6 @@ declare module '@carbon/react' {
     size?: 'sm' | 'md' | 'lg';
     menuAlignment?: 'bottom-start' | 'bottom-end' | 'top-start' | 'top-end' | 'bottom' | 'top';
   }
-
-  declare function MenuButton(props: ForwardRefProps<HTMLElement, MenuButtonProps>): JSX.Element;
-
-  function MenuItemSelectable(
-    props: ForwardRefProps<
-      HTMLElement,
-      {
-        label: string;
-        selected?: boolean;
-        className?: string;
-        onChange?: (evt: UIEvent<HTMLElement>) => void;
-      } & Omit<MenuItemProps, 'renderIcon'>
-    >
-  ): JSX.Element;
 
   declare function Layer(
     props: ForwardRefProps<

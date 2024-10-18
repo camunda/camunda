@@ -21,21 +21,25 @@ interface State {
   saveHandler: (() => Promise<void>) | null;
 }
 
-let instance: SaveGuard | null = null;
+export default class SaveGuard extends Component<object, State> {
+  state: State;
+  static instance: SaveGuard | null = null;
 
-export default class SaveGuard extends Component<{}, State> {
-  state: State = {
-    dirty: false,
-    confirm: null,
-    label: '',
-    saveHandler: null,
-  };
+  constructor(props: object) {
+    super(props);
+    this.state = {
+      dirty: false,
+      confirm: null,
+      label: '',
+      saveHandler: null,
+    };
+
+    SaveGuard.instance = this;
+  }
 
   componentDidMount() {
     window.addEventListener('beforeunload', this.unloadHandler);
     addHandler(this.handleUnauthorized);
-
-    instance = this;
   }
 
   componentWillUnmount() {
@@ -111,19 +115,19 @@ export default class SaveGuard extends Component<{}, State> {
     );
   }
 
-  static getUserConfirmation = (msg: string, cb: (allow: boolean) => void) => {
-    instance?.setState({confirm: cb});
+  static getUserConfirmation = (_msg: string, cb: (allow: boolean) => void) => {
+    SaveGuard.instance?.setState({confirm: cb});
   };
 }
 
 export function nowDirty(label?: string, saveHandler?: () => Promise<void>) {
-  instance?.setDirty(true, label, saveHandler);
+  SaveGuard.instance?.setDirty(true, label, saveHandler);
 }
 
 export function nowPristine() {
-  instance?.setDirty(false);
+  SaveGuard.instance?.setDirty(false);
 }
 
 export function isDirty() {
-  return instance?.state.dirty ?? false;
+  return SaveGuard.instance?.state.dirty ?? false;
 }

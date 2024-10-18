@@ -177,7 +177,7 @@ function getSelectedFlowNodes(
     return allFlowNodes;
   }
 
-  const {operator, values} = filterData?.data;
+  const {operator, values} = filterData?.data || {};
   return allFlowNodes.filter((nodeId) => {
     if (operator === 'in') {
       return values?.includes(nodeId);

@@ -102,7 +102,7 @@ export function NodeFilter({
     <Modal open onClose={close} className="NodeFilter" size="lg">
       <Modal.Header
         title={t('common.filter.modalHeader', {
-          type: t('common.filter.types.flowNode'),
+          type: t('common.filter.types.flowNode').toString(),
         })}
       />
       <Modal.Content className="modalContent">

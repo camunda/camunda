@@ -41,7 +41,9 @@ export default function InstanceViewTable({report}) {
       },
       (error) => {
         setRawDataError(error);
-        error.reportDefinition && setRawDataReport(error.reportDefinition);
+        if (error.reportDefinition) {
+          setRawDataReport(error.reportDefinition);
+        }
       },
       () => setLoading(false)
     );

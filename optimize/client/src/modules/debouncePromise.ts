@@ -15,11 +15,7 @@
 export default function debouncePromiseFactory() {
   let lastTimeoutId: NodeJS.Timeout;
 
-  return <T extends (...args: any[]) => any>(
-    fct: T,
-    delay = 0,
-    ...args: any[]
-  ): Promise<ReturnType<T>> =>
+  return <T, R>(fct: (...args: T[]) => R | Promise<R>, delay = 0, ...args: T[]): Promise<R> =>
     new Promise((resolve, reject) => {
       clearTimeout(lastTimeoutId);
       const timeoutId = setTimeout(async () => {

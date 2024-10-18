@@ -42,7 +42,7 @@ it('should redirect to the index page', async () => {
 it('should show an error if the logout fails', async () => {
   props.history.replace.mockClear();
   addNotification.mockClear();
-  shallow(<Logout {...props} mightFail={(_, cb, fail) => fail()} />);
+  shallow(<Logout {...props} mightFail={(_, _cb, fail) => fail()} />);
   runLastEffect();
 
   await flushPromises();

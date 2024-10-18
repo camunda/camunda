@@ -25,7 +25,7 @@ jest.mock('services', () => ({
 jest.mock('bpmn-js/lib/NavigatedViewer', () => {
   return class Viewer {
     elements: {id: string; name: string}[];
-    elementRegistry: {filter: () => {map: () => any}};
+    elementRegistry: {filter: () => {map: () => {id: string; name: string}[]}};
     constructor() {
       this.elements = [
         {id: 'a', name: 'Element A'},

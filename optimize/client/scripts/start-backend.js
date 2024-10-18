@@ -223,7 +223,7 @@ function startDocker() {
 
 function setVersionInfo() {
   return new Promise((resolve) => {
-    readFile(_resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) => {
+    readFile(_resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (_err, data) => {
       parseString(data, {explicitArray: false}, (err, data) => {
         if (err) {
           return console.error(err);
@@ -264,7 +264,7 @@ function serverCheck(url, onComplete) {
       if (!response.ok) {
         return serverCheck(url, onComplete);
       }
-    } catch (e) {
+    } catch (_e) {
       return serverCheck(url, onComplete);
     }
     onComplete();
