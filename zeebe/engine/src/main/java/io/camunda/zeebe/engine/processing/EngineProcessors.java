@@ -249,7 +249,7 @@ public final class EngineProcessors {
 
     TenantProcessors.addTenantProcessors(
         typedRecordProcessors,
-        processingState.getTenantState(),
+        processingState,
         authCheckBehavior,
         keyGenerator,
         writers,
