@@ -238,7 +238,7 @@ public final class EngineProcessors {
 
     RoleProcessors.addRoleProcessors(
         typedRecordProcessors,
-        processingState.getRoleState(),
+        processingState,
         authCheckBehavior,
         keyGenerator,
         writers,
