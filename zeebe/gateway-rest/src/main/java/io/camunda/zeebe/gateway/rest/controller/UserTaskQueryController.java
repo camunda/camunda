@@ -15,6 +15,7 @@ import io.camunda.service.UserTaskServices;
 import io.camunda.service.VariableServices;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskVariablesSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQueryResponse;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
@@ -127,7 +128,7 @@ public class UserTaskQueryController {
       path = "/{userTaskKey}/variables",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Object> searchVariables(
+  public ResponseEntity<VariableSearchQueryResponse> searchVariables(
       @PathVariable("userTaskKey") final Long userTaskKey,
       @RequestBody(required = false)
           final UserTaskVariablesSearchQueryRequest userTaskVariablesSearchQueryRequest) {
@@ -148,7 +149,7 @@ public class UserTaskQueryController {
         .fold(RestErrorMapper::mapProblemToResponse, this::searchUserTaskVariableQuery);
   }
 
-  private ResponseEntity<Object> searchUserTaskVariableQuery(final VariableQuery query) {
+  private ResponseEntity<VariableSearchQueryResponse> searchUserTaskVariableQuery(final VariableQuery query) {
     try {
       final var result =
           variableServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
