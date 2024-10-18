@@ -21,21 +21,27 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.io.IOException;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-@RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class CombinedReportInstanceCounterOS extends CombinedReportInstanceCounter<Query> {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(CombinedReportInstanceCounterOS.class);
   private final OptimizeOpenSearchClient osClient;
   private final ExecutionPlanExtractor executionPlanExtractor;
+
+  public CombinedReportInstanceCounterOS(
+      OptimizeOpenSearchClient osClient, ExecutionPlanExtractor executionPlanExtractor) {
+    this.osClient = osClient;
+    this.executionPlanExtractor = executionPlanExtractor;
+  }
 
   //  private final ProcessExecutionPlanInterpreterFacadeOS interpreter;
 

@@ -15,11 +15,13 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
 @Provider
-@Slf4j
 public class ReportEvaluationExceptionMapper implements ExceptionMapper<ReportEvaluationException> {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ReportEvaluationExceptionMapper.class);
   private final LocalizationService localizationService;
 
   public ReportEvaluationExceptionMapper(@Context final LocalizationService localizationService) {
@@ -27,7 +29,7 @@ public class ReportEvaluationExceptionMapper implements ExceptionMapper<ReportEv
   }
 
   @Override
-  public Response toResponse(ReportEvaluationException reportEvaluationException) {
+  public Response toResponse(final ReportEvaluationException reportEvaluationException) {
     log.debug("Mapping ReportEvaluationException: {}", reportEvaluationException.getMessage());
     return Response.status(Response.Status.BAD_REQUEST)
         .type(MediaType.APPLICATION_JSON_TYPE)
@@ -36,10 +38,11 @@ public class ReportEvaluationExceptionMapper implements ExceptionMapper<ReportEv
   }
 
   private ErrorResponseDto mapToEvaluationErrorResponseDto(
-      ReportEvaluationException evaluationException) {
-    String errorCode = evaluationException.getErrorCode();
-    String errorMessage = localizationService.getDefaultLocaleMessageForApiErrorCode(errorCode);
-    String detailedErrorMessage = evaluationException.getMessage();
+      final ReportEvaluationException evaluationException) {
+    final String errorCode = evaluationException.getErrorCode();
+    final String errorMessage =
+        localizationService.getDefaultLocaleMessageForApiErrorCode(errorCode);
+    final String detailedErrorMessage = evaluationException.getMessage();
 
     return new ErrorResponseDto(
         errorCode, errorMessage, detailedErrorMessage, evaluationException.getReportDefinition());

@@ -16,36 +16,14 @@ import io.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchPipe
 import io.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchTaskOperations;
 import io.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchTemplateOperations;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.slf4j.Logger;
 
-@Slf4j
 public class RichOpenSearchClient {
-  public static class AsyncOperations {
-    final OpenSearchAsyncDocumentOperations openSearchAsyncDocumentOperations;
-    final OpenSearchAsyncSnapshotOperations openSearchAsyncSnapshotOperations;
 
-    public AsyncOperations(
-        OpenSearchAsyncClient openSearchAsyncClient, OptimizeIndexNameService indexNameService) {
-      this.openSearchAsyncDocumentOperations =
-          new OpenSearchAsyncDocumentOperations(indexNameService, openSearchAsyncClient);
-      this.openSearchAsyncSnapshotOperations =
-          new OpenSearchAsyncSnapshotOperations(indexNameService, openSearchAsyncClient);
-    }
-
-    public OpenSearchAsyncDocumentOperations doc() {
-      return openSearchAsyncDocumentOperations;
-    }
-
-    public OpenSearchAsyncSnapshotOperations snapshot() {
-      return openSearchAsyncSnapshotOperations;
-    }
-  }
-
-  @Getter private final OptimizeIndexNameService indexNameService;
-
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(RichOpenSearchClient.class);
+  private final OptimizeIndexNameService indexNameService;
   // TODO slash unused operations with OPT-7352
   private final OpenSearchClusterOperations openSearchClusterOperations;
   private final OpenSearchDocumentOperations openSearchDocumentOperations;
@@ -53,13 +31,12 @@ public class RichOpenSearchClient {
   private final OpenSearchPipelineOperations openSearchPipelineOperations;
   private final OpenSearchTaskOperations openSearchTaskOperations;
   private final OpenSearchTemplateOperations openSearchTemplateOperations;
-
   private final AsyncOperations asyncOperations;
 
   public RichOpenSearchClient(
-      OpenSearchClient openSearchClient,
-      OpenSearchAsyncClient openSearchAsyncClient,
-      OptimizeIndexNameService indexNameService) {
+      final OpenSearchClient openSearchClient,
+      final OpenSearchAsyncClient openSearchAsyncClient,
+      final OptimizeIndexNameService indexNameService) {
     this.indexNameService = indexNameService;
     asyncOperations = new AsyncOperations(openSearchAsyncClient, indexNameService);
     openSearchClusterOperations =
@@ -72,6 +49,10 @@ public class RichOpenSearchClient {
     openSearchTaskOperations = new OpenSearchTaskOperations(openSearchClient, indexNameService);
     openSearchTemplateOperations =
         new OpenSearchTemplateOperations(openSearchClient, indexNameService);
+  }
+
+  public OptimizeIndexNameService getIndexNameService() {
+    return indexNameService;
   }
 
   public AsyncOperations async() {
@@ -102,7 +83,30 @@ public class RichOpenSearchClient {
     return openSearchTemplateOperations;
   }
 
-  public String getIndexAliasFor(String indexName) {
+  public String getIndexAliasFor(final String indexName) {
     return indexNameService.getOptimizeIndexAliasForIndex(indexName);
+  }
+
+  public static class AsyncOperations {
+
+    final OpenSearchAsyncDocumentOperations openSearchAsyncDocumentOperations;
+    final OpenSearchAsyncSnapshotOperations openSearchAsyncSnapshotOperations;
+
+    public AsyncOperations(
+        final OpenSearchAsyncClient openSearchAsyncClient,
+        final OptimizeIndexNameService indexNameService) {
+      openSearchAsyncDocumentOperations =
+          new OpenSearchAsyncDocumentOperations(indexNameService, openSearchAsyncClient);
+      openSearchAsyncSnapshotOperations =
+          new OpenSearchAsyncSnapshotOperations(indexNameService, openSearchAsyncClient);
+    }
+
+    public OpenSearchAsyncDocumentOperations doc() {
+      return openSearchAsyncDocumentOperations;
+    }
+
+    public OpenSearchAsyncSnapshotOperations snapshot() {
+      return openSearchAsyncSnapshotOperations;
+    }
   }
 }

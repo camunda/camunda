@@ -11,13 +11,18 @@ import static org.springframework.security.config.Customizer.withDefaults;
 
 import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.handler.AuthFailureHandler;
+import io.camunda.authentication.handler.CustomMethodSecurityExpressionHandler;
+import io.camunda.service.AuthorizationServices;
 import io.camunda.service.UserServices;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -34,6 +39,13 @@ public class WebSecurityConfig {
   public static final String[] UNAUTHENTICATED_PATHS =
       new String[] {"/login**", "/logout**", "/error**", "/actuator**"};
   private static final Logger LOG = LoggerFactory.getLogger(WebSecurityConfig.class);
+
+  @Bean
+  @ConditionalOnMissingBean(MethodSecurityExpressionHandler.class)
+  public MethodSecurityExpressionHandler methodSecurityExpressionHandler(
+      final AuthorizationServices<AuthorizationRecord> authorizationServices) {
+    return new CustomMethodSecurityExpressionHandler(authorizationServices);
+  }
 
   @Bean
   @Profile("auth-basic")

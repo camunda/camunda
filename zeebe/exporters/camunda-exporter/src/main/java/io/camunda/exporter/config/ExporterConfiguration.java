@@ -19,7 +19,7 @@ public class ExporterConfiguration {
   private RetentionConfiguration retention = new RetentionConfiguration();
   private Map<String, Integer> replicasByIndexName = new HashMap<>();
   private Map<String, Integer> shardsByIndexName = new HashMap<>();
-  private boolean createSchema;
+  private boolean createSchema = true;
 
   public ConnectConfiguration getConnect() {
     return connect;
@@ -98,9 +98,14 @@ public class ExporterConfiguration {
   }
 
   public static final class IndexSettings {
-    private String prefix = "camunda-record";
+    public static final int DEFAULT_VARIABLE_SIZE_THRESHOLD = 8191;
+    private String prefix = "operate";
+
+    // TODO consolidate tasklist and operate prefixes
+    private String tasklistPrefix = "tasklist";
     private Integer numberOfShards = 1;
     private Integer numberOfReplicas = 0;
+    private Integer variableSizeThreshold = DEFAULT_VARIABLE_SIZE_THRESHOLD;
 
     public String getPrefix() {
       return prefix;
@@ -108,6 +113,14 @@ public class ExporterConfiguration {
 
     public void setPrefix(final String prefix) {
       this.prefix = prefix;
+    }
+
+    public String getTasklistPrefix() {
+      return tasklistPrefix;
+    }
+
+    public void setTasklistPrefix(final String tasklistPrefix) {
+      this.tasklistPrefix = tasklistPrefix;
     }
 
     public Integer getNumberOfShards() {
@@ -124,6 +137,14 @@ public class ExporterConfiguration {
 
     public void setNumberOfReplicas(final Integer numberOfReplicas) {
       this.numberOfReplicas = numberOfReplicas;
+    }
+
+    public Integer getVariableSizeThreshold() {
+      return variableSizeThreshold;
+    }
+
+    public void setVariableSizeThreshold(final Integer variableSizeThreshold) {
+      this.variableSizeThreshold = variableSizeThreshold;
     }
 
     @Override
@@ -189,8 +210,6 @@ public class ExporterConfiguration {
     private int delay = 5;
     // bulk size before flush
     private int size = 1_000;
-    // memory limit of the bulk in bytes before flush
-    private int memoryLimit = 10 * 1024 * 1024;
 
     public int getDelay() {
       return delay;
@@ -208,24 +227,9 @@ public class ExporterConfiguration {
       this.size = size;
     }
 
-    public int getMemoryLimit() {
-      return memoryLimit;
-    }
-
-    public void setMemoryLimit(final int memoryLimit) {
-      this.memoryLimit = memoryLimit;
-    }
-
     @Override
     public String toString() {
-      return "BulkConfiguration{"
-          + "delay="
-          + delay
-          + ", size="
-          + size
-          + ", memoryLimit="
-          + memoryLimit
-          + '}';
+      return "BulkConfiguration{" + "delay=" + delay + ", size=" + size + '}';
     }
   }
 }

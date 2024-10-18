@@ -10,7 +10,11 @@ package io.camunda.operate.connect;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
@@ -25,6 +29,7 @@ import java.util.List;
 import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
 import org.apache.hc.client5.http.async.methods.SimpleHttpResponse;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
+import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
 import org.apache.hc.core5.concurrent.FutureCallback;
 import org.apache.hc.core5.http.message.BasicHttpRequest;
 import org.apache.hc.core5.http.protocol.BasicHttpContext;
@@ -99,6 +104,43 @@ public class OpensearchConnectorTest {
         spyConnector.createAsyncOsClient(opensearchProperties, new PluginRepository());
 
     assertEquals(ApacheHttpClient5Transport.class, client._transport().getClass());
+  }
+
+  @Test
+  public void shouldNotDoClusterHealthCheckWhenDisabled() {
+    final OperateProperties operateProperties = new OperateProperties();
+    final OperateOpensearchProperties osProperties = new OperateOpensearchProperties();
+    osProperties.setHealthCheckEnabled(false);
+    operateProperties.setOpensearch(osProperties);
+    final OpensearchConnector connector = spy(new OpensearchConnector(operateProperties, mock()));
+    doReturn(mock(HttpAsyncClientBuilder.class))
+        .when(connector)
+        .configureHttpClient(any(), any(), any());
+
+    connector.createAsyncOsClient(osProperties, mock());
+    verify(connector, never()).checkHealth(any(OpenSearchAsyncClient.class));
+
+    connector.createOsClient(osProperties, mock());
+    verify(connector, never()).checkHealth(any(OpenSearchClient.class));
+  }
+
+  @Test
+  public void shouldDoClusterHealthCheckWhenDefaultPropertyValuesUsed() {
+    final OperateProperties operateProperties = new OperateProperties();
+    final OperateOpensearchProperties osProperties = new OperateOpensearchProperties();
+    operateProperties.setOpensearch(osProperties);
+    final OpensearchConnector connector = spy(new OpensearchConnector(operateProperties, mock()));
+    doReturn(true).when(connector).checkHealth(any(OpenSearchClient.class));
+    doReturn(true).when(connector).checkHealth(any(OpenSearchAsyncClient.class));
+    doReturn(mock(HttpAsyncClientBuilder.class))
+        .when(connector)
+        .configureHttpClient(any(), any(), any());
+
+    connector.createAsyncOsClient(osProperties, mock());
+    verify(connector, times(1)).checkHealth(any(OpenSearchAsyncClient.class));
+
+    connector.createOsClient(osProperties, mock());
+    verify(connector, times(1)).checkHealth(any(OpenSearchClient.class));
   }
 
   @Test

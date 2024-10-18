@@ -17,7 +17,8 @@ import java.util.Objects;
 public abstract class AbstractExporterEntity<T extends AbstractExporterEntity<T>>
     implements ExporterEntity<T> {
 
-  public static final String DEFAULT_TENANT_ID = "<default>";
+  /** Deprecated: Use TenantOwned.DEFAULT_TENANT_IDENTIFIER instead. */
+  @Deprecated public static final String DEFAULT_TENANT_ID = "<default>";
 
   private String id;
 

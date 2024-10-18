@@ -10,11 +10,10 @@ package io.camunda.optimize.service.db.es.report.interpreter.util;
 import co.elastic.clients.elasticsearch._types.Script;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import java.util.Map;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class NumberHistogramAggregationUtilES {
+
+  private NumberHistogramAggregationUtilES() {}
 
   public static Aggregation.Builder.ContainerBuilder generateHistogramWithField(
       final String histogramName,

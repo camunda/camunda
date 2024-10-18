@@ -224,7 +224,7 @@ test('drag raw data table columns', async (t) => {
   await u.selectView(t, 'Raw data');
 
   const originalPositionText = await e.tableHeader(3).textContent;
-  await t.drag(e.tableHeader(3), 350, 0);
+  await t.drag(e.tableHeader(3), 350, 60);
   const newPositionText = await e.tableHeader(4).textContent;
   await t.expect(originalPositionText).eql(newPositionText);
 });

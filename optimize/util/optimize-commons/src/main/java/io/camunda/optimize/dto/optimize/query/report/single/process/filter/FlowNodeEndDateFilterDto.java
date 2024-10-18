@@ -9,10 +9,11 @@ package io.camunda.optimize.dto.optimize.query.report.single.process.filter;
 
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.flownode.FlowNodeDateFilterDataDto;
 import java.util.List;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
 public class FlowNodeEndDateFilterDto extends ProcessFilterDto<FlowNodeDateFilterDataDto<?>> {
+
+  public FlowNodeEndDateFilterDto() {}
+
   @Override
   public List<FilterApplicationLevel> validApplicationLevels() {
     return List.of(FilterApplicationLevel.VIEW, FilterApplicationLevel.INSTANCE);

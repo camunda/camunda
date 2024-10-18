@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Task} from 'modules/types';
+import type {Task} from 'modules/types';
 import {currentUser} from 'modules/mock-schema/mocks/current-user';
 import {DEFAULT_TENANT_ID} from 'modules/constants/multiTenancy';
 

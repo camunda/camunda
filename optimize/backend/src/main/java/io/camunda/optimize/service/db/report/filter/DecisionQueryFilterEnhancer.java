@@ -13,12 +13,13 @@ import io.camunda.optimize.dto.optimize.query.report.single.decision.filter.Deci
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 import java.util.List;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 public class DecisionQueryFilterEnhancer {
+
+  public DecisionQueryFilterEnhancer() {}
+
   @SuppressWarnings(UNCHECKED_CAST)
   public <T extends FilterDataDto> List<T> extractFilters(
       final List<DecisionFilterDto<?>> filter,

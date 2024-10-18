@@ -28,23 +28,29 @@ import jakarta.ws.rs.core.MediaType;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Path(CANDIDATE_GROUP_RESOURCE_PATH)
 @Component
-@Slf4j
 public class CandidateGroupRestService {
 
   public static final String CANDIDATE_GROUP_RESOURCE_PATH = "/candidateGroup";
   public static final String CANDIDATE_GROUP_DEFINITION_SEARCH_SUB_PATH = "/search";
   public static final String CANDIDATE_GROUP_REPORTS_SEARCH_SUB_PATH = "/search/reports";
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(CandidateGroupRestService.class);
 
   private final SessionService sessionService;
   private final AssigneeCandidateGroupService assigneeCandidateGroupService;
+
+  public CandidateGroupRestService(
+      final SessionService sessionService,
+      final AssigneeCandidateGroupService assigneeCandidateGroupService) {
+    this.sessionService = sessionService;
+    this.assigneeCandidateGroupService = assigneeCandidateGroupService;
+  }
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)

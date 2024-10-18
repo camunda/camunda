@@ -48,8 +48,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
@@ -116,16 +114,18 @@ import org.opensearch.client.opensearch.tasks.GetTasksResponse;
 import org.opensearch.client.opensearch.tasks.ListRequest;
 import org.opensearch.client.opensearch.tasks.ListResponse;
 import org.opensearch.client.opensearch.tasks.Status;
+import org.slf4j.Logger;
 import org.springframework.context.ApplicationContext;
 
-@Slf4j
 public class OptimizeOpenSearchClient extends DatabaseClient {
 
-  @Getter private ExtendedOpenSearchClient openSearchClient;
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(OptimizeOpenSearchClient.class);
+  private ExtendedOpenSearchClient openSearchClient;
 
-  @Getter private OpenSearchAsyncClient openSearchAsyncClient;
+  private OpenSearchAsyncClient openSearchAsyncClient;
 
-  @Getter private RichOpenSearchClient richOpenSearchClient;
+  private RichOpenSearchClient richOpenSearchClient;
 
   private RestClient restClient;
 
@@ -1049,5 +1049,17 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
         () -> openSearchAsyncClient.snapshot().create(createSnapshotRequest),
         e -> "Failed to triger snapshot creation!",
         log);
+  }
+
+  public ExtendedOpenSearchClient getOpenSearchClient() {
+    return this.openSearchClient;
+  }
+
+  public OpenSearchAsyncClient getOpenSearchAsyncClient() {
+    return this.openSearchAsyncClient;
+  }
+
+  public RichOpenSearchClient getRichOpenSearchClient() {
+    return this.richOpenSearchClient;
   }
 }

@@ -26,4 +26,8 @@ public class UserTaskRecordStream
   public UserTaskRecordStream withProcessInstanceKey(final long processInstanceKey) {
     return valueFilter(v -> v.getProcessInstanceKey() == processInstanceKey);
   }
+
+  public UserTaskRecordStream withElementId(final String elementId) {
+    return valueFilter(v -> v.getElementId().equals(elementId));
+  }
 }

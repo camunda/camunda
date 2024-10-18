@@ -31,8 +31,6 @@ public interface ProcessInstanceSort extends SearchRequestSort<ProcessInstanceSo
 
   ProcessInstanceSort processDefinitionKey();
 
-  ProcessInstanceSort rootProcessInstanceKey();
-
   ProcessInstanceSort parentProcessInstanceKey();
 
   ProcessInstanceSort parentFlowNodeInstanceKey();

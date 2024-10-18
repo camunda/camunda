@@ -113,17 +113,15 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-@AllArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class VariableRepositoryES implements VariableRepository {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(VariableRepositoryES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
   private final ConfigurationService configurationService;
@@ -132,6 +130,25 @@ public class VariableRepositoryES implements VariableRepository {
   private final ProcessQueryFilterEnhancerES processQueryFilterEnhancer;
   private final ProcessDefinitionReader processDefinitionReader;
   private final TaskRepositoryES taskRepositoryES;
+
+  public VariableRepositoryES(
+      OptimizeElasticsearchClient esClient,
+      ObjectMapper objectMapper,
+      ConfigurationService configurationService,
+      DateTimeFormatter dateTimeFormatter,
+      DecisionDefinitionReader decisionDefinitionReader,
+      ProcessQueryFilterEnhancerES processQueryFilterEnhancer,
+      ProcessDefinitionReader processDefinitionReader,
+      TaskRepositoryES taskRepositoryES) {
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+    this.configurationService = configurationService;
+    this.dateTimeFormatter = dateTimeFormatter;
+    this.decisionDefinitionReader = decisionDefinitionReader;
+    this.processQueryFilterEnhancer = processQueryFilterEnhancer;
+    this.processDefinitionReader = processDefinitionReader;
+    this.taskRepositoryES = taskRepositoryES;
+  }
 
   @Override
   public void deleteVariableDataByProcessInstanceIds(

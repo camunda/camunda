@@ -32,15 +32,17 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class ElasticSearchMetadataService
     extends DatabaseMetadataService<OptimizeElasticsearchClient> {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ElasticSearchMetadataService.class);
 
   public ElasticSearchMetadataService(final ObjectMapper objectMapper) {
     super(objectMapper);

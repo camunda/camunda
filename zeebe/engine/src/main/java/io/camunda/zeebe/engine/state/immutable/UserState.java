@@ -26,4 +26,6 @@ public interface UserState {
   Optional<UserRecord> getUser(final long userKey);
 
   void updateUser(final UserRecord user);
+
+  void deleteUser(final long userKey);
 }

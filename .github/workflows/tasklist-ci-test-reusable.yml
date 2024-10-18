@@ -55,7 +55,7 @@ jobs:
     steps:
       # Setup: checkout branch
       - name: Checkout '${{ inputs.branch }}' branch
-        uses: actions/checkout@de5a000abf73b6f4965bd1bcdf8f8d94a56ea815
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871
         with:
           ref: refs/heads/${{ inputs.branch }}
           fetch-depth: 0 # fetches all history for all branches and tags
@@ -78,16 +78,17 @@ jobs:
       - uses: ./.github/actions/build-tasklist-setup
         name: Build setup
         with:
+          maven-cache-key-modifier: tasklist-tests
           nexusUsername: ${{ steps.secrets.outputs.NEXUS_USR }}
           nexusPassword: ${{ steps.secrets.outputs.NEXUS_PSW }}
 
       - name: Build backend
-        run: mvn -B -T1C -DskipChecks -DskipTests -P skipFrontendBuild clean install
+        run: ./mvnw -B -T1C -DskipChecks -DskipTests -P skipFrontendBuild clean install
 
       # Run integration tests in parallel
       - name: Run Integration Tests
         run: |
-          mvn -f tasklist -T${{ env.LIMITS_CPU }} verify -P ${{ matrix.testProfile }},skipFrontendBuild -B --fail-at-end -Dfailsafe.rerunFailingTestsCount=2 -Dcamunda.tasklist.database=${{ matrix.database }}
+          ./mvnw -f tasklist -T${{ env.LIMITS_CPU }} verify -P ${{ matrix.testProfile }},skipFrontendBuild -B --fail-at-end -Dfailsafe.rerunFailingTestsCount=2 -Dcamunda.tasklist.database=${{ matrix.database }}
 
       # Sanitize the branch name to replace non alphanumeric characters with `-`
       - id: sanitize

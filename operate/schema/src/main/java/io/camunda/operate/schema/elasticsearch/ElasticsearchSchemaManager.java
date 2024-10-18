@@ -18,9 +18,9 @@ import io.camunda.operate.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchJSONUtil;
+import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-import io.camunda.webapps.schema.descriptors.operate.index.AbstractIndexDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -160,7 +160,12 @@ public class ElasticsearchSchemaManager implements SchemaManager {
 
   @Override
   public boolean isHealthy() {
-    return retryElasticsearchClient.isHealthy();
+    if (operateProperties.getElasticsearch().isHealthCheckEnabled()) {
+      return retryElasticsearchClient.isHealthy();
+    } else {
+      LOGGER.warn("OpenSearch cluster health check is disabled.");
+      return true;
+    }
   }
 
   @Override

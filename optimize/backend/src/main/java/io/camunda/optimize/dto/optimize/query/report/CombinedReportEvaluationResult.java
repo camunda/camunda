@@ -29,32 +29,36 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
+import org.slf4j.Logger;
 
-@Data
-@EqualsAndHashCode(callSuper = true)
-@Slf4j
 public class CombinedReportEvaluationResult extends ReportEvaluationResult {
-  @NonNull private List<SingleReportEvaluationResult<?>> reportEvaluationResults;
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(CombinedReportEvaluationResult.class);
+  private List<SingleReportEvaluationResult<?>> reportEvaluationResults;
   private long instanceCount;
 
   public CombinedReportEvaluationResult(
-      @NonNull final List<SingleReportEvaluationResult<?>> singleReportResults,
+      final List<SingleReportEvaluationResult<?>> singleReportResults,
       final long instanceCount,
-      @NonNull final CombinedReportDefinitionRequestDto reportDefinition) {
+      final CombinedReportDefinitionRequestDto reportDefinition) {
     super(reportDefinition);
-    this.reportEvaluationResults = new ArrayList<>(singleReportResults);
+    if (singleReportResults == null) {
+      throw new IllegalArgumentException("singleReportResults cannot be null");
+    }
+    if (reportDefinition == null) {
+      throw new IllegalArgumentException("reportDefinition cannot be null");
+    }
+
+    reportEvaluationResults = new ArrayList<>(singleReportResults);
     this.instanceCount = instanceCount;
   }
 
   @Override
   public List<String[]> getResultAsCsv(
       final Integer limit, final Integer offset, final ZoneId timezone) {
-    Optional<ResultType> resultType =
+    final Optional<ResultType> resultType =
         reportEvaluationResults.stream()
             .findFirst()
             .map(thing -> thing.getFirstCommandResult().getType());
@@ -73,6 +77,61 @@ public class CombinedReportEvaluationResult extends ReportEvaluationResult {
     throw new OptimizeValidationException("Combined reports cannot be exported");
   }
 
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof CombinedReportEvaluationResult;
+  }
+
+  @Override
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = super.hashCode();
+    final Object $reportEvaluationResults = getReportEvaluationResults();
+    result =
+        result * PRIME
+            + ($reportEvaluationResults == null ? 43 : $reportEvaluationResults.hashCode());
+    final long $instanceCount = getInstanceCount();
+    result = result * PRIME + (int) ($instanceCount >>> 32 ^ $instanceCount);
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof CombinedReportEvaluationResult)) {
+      return false;
+    }
+    final CombinedReportEvaluationResult other = (CombinedReportEvaluationResult) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final Object this$reportEvaluationResults = getReportEvaluationResults();
+    final Object other$reportEvaluationResults = other.getReportEvaluationResults();
+    if (this$reportEvaluationResults == null
+        ? other$reportEvaluationResults != null
+        : !this$reportEvaluationResults.equals(other$reportEvaluationResults)) {
+      return false;
+    }
+    if (getInstanceCount() != other.getInstanceCount()) {
+      return false;
+    }
+    return true;
+  }
+
+  @Override
+  public String toString() {
+    return "CombinedReportEvaluationResult(reportEvaluationResults="
+        + getReportEvaluationResults()
+        + ", instanceCount="
+        + getInstanceCount()
+        + ")";
+  }
+
   private List<String[]> mapCombinedReportResultsToCsvList(
       final Integer limit, final Integer offset, final ResultType resultType) {
     final List<String[]> csvStrings;
@@ -84,7 +143,7 @@ public class CombinedReportEvaluationResult extends ReportEvaluationResult {
         csvStrings = mapCombinedNumberReportResultsToCsvList();
         break;
       default:
-        String message =
+        final String message =
             String.format(
                 "Unsupported report type [%s] in combined report",
                 resultType.getClass().getSimpleName());
@@ -156,7 +215,26 @@ public class CombinedReportEvaluationResult extends ReportEvaluationResult {
         .collect(Collectors.toSet());
   }
 
-  interface ReportResultHeaderMapper extends Function<ReportEvaluationResult, String[]> {}
+  public List<SingleReportEvaluationResult<?>> getReportEvaluationResults() {
+    return reportEvaluationResults;
+  }
+
+  public void setReportEvaluationResults(
+      final List<SingleReportEvaluationResult<?>> reportEvaluationResults) {
+    if (reportEvaluationResults == null) {
+      throw new IllegalArgumentException("reportEvaluationResults cannot be null");
+    }
+
+    this.reportEvaluationResults = reportEvaluationResults;
+  }
+
+  public long getInstanceCount() {
+    return instanceCount;
+  }
+
+  public void setInstanceCount(final long instanceCount) {
+    this.instanceCount = instanceCount;
+  }
 
   private List<String[]> mapCombinedNumberReportResultsToCsvList() {
     final List<List<String[]>> reportResultTable =
@@ -180,14 +258,14 @@ public class CombinedReportEvaluationResult extends ReportEvaluationResult {
         .reduce(
             (l1, l2) -> {
               for (int i = 0; i < l1.size(); i++) {
-                String[] firstReportWithSeparatorColumn = ArrayUtils.addAll(l1.get(i), "");
+                final String[] firstReportWithSeparatorColumn = ArrayUtils.addAll(l1.get(i), "");
                 l1.set(i, ArrayUtils.addAll(firstReportWithSeparatorColumn, l2.get(i)));
               }
               return l1;
             })
         .orElseThrow(
             () -> {
-              String message = "Was not able to merge single reports to combined report csv";
+              final String message = "Was not able to merge single reports to combined report csv";
               log.error(message);
               return new OptimizeRuntimeException(message);
             });
@@ -203,4 +281,6 @@ public class CombinedReportEvaluationResult extends ReportEvaluationResult {
         .orElseThrow(
             () -> new OptimizeRuntimeException("Was not able to create combined report header"));
   }
+
+  interface ReportResultHeaderMapper extends Function<ReportEvaluationResult, String[]> {}
 }

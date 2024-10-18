@@ -7,6 +7,10 @@
  */
 package io.camunda.exporter.schema;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -25,6 +29,32 @@ public record IndexMapping(
 
   public boolean isDynamic() {
     return Boolean.parseBoolean(dynamic);
+  }
+
+  @SuppressWarnings("unchecked")
+  public static IndexMapping from(
+      final IndexDescriptor indexDescriptor, final ObjectMapper mapper) {
+    try (final var mappingsStream =
+        SchemaManager.class.getResourceAsStream(indexDescriptor.getMappingsClasspathFilename())) {
+      final var nestedType = new TypeReference<Map<String, Map<String, Object>>>() {};
+      final Map<String, Object> mappings =
+          mapper.readValue(mappingsStream, nestedType).get("mappings");
+      final Map<String, Object> properties = (Map<String, Object>) mappings.get("properties");
+      final var dynamic = mappings.get("dynamic");
+
+      return new IndexMapping.Builder()
+          .dynamic(dynamic == null ? "strict" : dynamic.toString())
+          .properties(
+              properties.entrySet().stream()
+                  .map(IndexMappingProperty::createIndexMappingProperty)
+                  .collect(Collectors.toSet()))
+          .build();
+    } catch (final IOException e) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Failed to parse index json [%s]", indexDescriptor.getMappingsClasspathFilename()),
+          e);
+    }
   }
 
   public static class Builder {

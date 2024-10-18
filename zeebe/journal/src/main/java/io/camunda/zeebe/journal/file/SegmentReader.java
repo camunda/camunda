@@ -37,7 +37,7 @@ final class SegmentReader implements Iterator<JournalRecord> {
   SegmentReader(final ByteBuffer buffer, final Segment segment, final JournalIndex index) {
     this.index = index;
     this.segment = segment;
-    descriptorLength = segment.descriptor().length();
+    descriptorLength = segment.descriptor().encodingLength();
     recordReader = new JournalRecordReaderUtil(new SBESerializer());
     this.buffer = buffer;
     reset();

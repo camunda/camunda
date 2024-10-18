@@ -29,18 +29,15 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.filter.OpenI
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ResolvedIncidentFilterDto;
 import io.camunda.optimize.service.DefinitionService;
+import io.camunda.optimize.service.db.report.filter.util.IncidentFilterQueryUtil;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class IncidentFilterQueryUtilES {
+public class IncidentFilterQueryUtilES extends IncidentFilterQueryUtil {
 
   private static final NestedDefinitionQueryBuilderES NESTED_DEFINITION_QUERY_BUILDER =
       new NestedDefinitionQueryBuilderES(
@@ -54,6 +51,8 @@ public class IncidentFilterQueryUtilES {
               IncidentFilterQueryUtilES::createOpenIncidentTermQuery,
               ResolvedIncidentFilterDto.class,
               IncidentFilterQueryUtilES::createResolvedIncidentTermQuery);
+
+  private IncidentFilterQueryUtilES() {}
 
   public static BoolQuery.Builder createIncidentAggregationFilter(
       final ProcessReportDataDto reportData, final DefinitionService definitionService) {
@@ -187,25 +186,5 @@ public class IncidentFilterQueryUtilES {
                                     nestedFieldReference(IncidentDto.Fields.activityId),
                                     new BoolQuery.Builder())
                                 .build())));
-  }
-
-  private static String nestedFieldReference(final String fieldName) {
-    return INCIDENTS + "." + fieldName;
-  }
-
-  private static boolean containsViewLevelFilterOfType(
-      final List<ProcessFilterDto<?>> filters,
-      final Class<? extends ProcessFilterDto<?>> filterClass) {
-    return filters.stream()
-        .filter(filter -> FilterApplicationLevel.VIEW.equals(filter.getFilterLevel()))
-        .anyMatch(filterClass::isInstance);
-  }
-
-  private static <T extends ProcessFilterDto<?>> Stream<T> findAllViewLevelFiltersOfType(
-      final List<ProcessFilterDto<?>> filters, final Class<T> filterClass) {
-    return filters.stream()
-        .filter(filter -> FilterApplicationLevel.VIEW.equals(filter.getFilterLevel()))
-        .filter(filterClass::isInstance)
-        .map(filterClass::cast);
   }
 }

@@ -25,8 +25,6 @@ import io.camunda.optimize.util.types.MapUtil;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.text.StringSubstitutor;
 import org.opensearch.client.json.JsonData;
@@ -39,8 +37,10 @@ import org.opensearch.client.opensearch._types.aggregations.ScriptedMetricAggreg
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.ChildScoreMode;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ProcessPartQueryUtilOS extends AbstractProcessPartQueryUtil {
+
+  private ProcessPartQueryUtilOS() {}
+
   public static Double getProcessPartAggregationResult(
       final Map<String, Aggregate> aggs, final AggregationDto aggregationType) {
     final NestedAggregate nested = aggs.get(NESTED_AGGREGATION).nested();

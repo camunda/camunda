@@ -29,18 +29,17 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
-import lombok.Getter;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
 public abstract class SchemaUpgradeClient<CLIENT extends DatabaseClient, BUILDER> {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(SchemaUpgradeClient.class);
   // expected suffix: hyphen and numbers at end of index name
   protected final Pattern indexSuffixPattern = Pattern.compile("-\\d+$");
   protected final DatabaseSchemaManager<CLIENT, BUILDER> schemaManager;
   protected final DatabaseMetadataService<CLIENT> metadataService;
   protected final CLIENT databaseClient;
-  @Getter public DatabaseType databaseType;
+  public DatabaseType databaseType;
   protected final TaskRepository taskRepository;
 
   public SchemaUpgradeClient(
@@ -120,9 +119,12 @@ public abstract class SchemaUpgradeClient<CLIENT extends DatabaseClient, BUILDER
   }
 
   // Returns index names that are associated with the given aliasName
-  @SneakyThrows
   public Set<String> getAliases(final String aliasName) {
-    return databaseClient.getAllIndicesForAlias(aliasName);
+    try {
+      return databaseClient.getAllIndicesForAlias(aliasName);
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException(e);
+    }
   }
 
   public void reindex(final String sourceIndex, final String targetIndex) {
@@ -241,5 +243,9 @@ public abstract class SchemaUpgradeClient<CLIENT extends DatabaseClient, BUILDER
               "Found pending task with id %s, but it is not in a completable state", reindexTaskId),
           ex);
     }
+  }
+
+  public DatabaseType getDatabaseType() {
+    return this.databaseType;
   }
 }

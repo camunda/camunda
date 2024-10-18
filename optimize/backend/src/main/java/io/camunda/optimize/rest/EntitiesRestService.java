@@ -29,11 +29,9 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
 
-@AllArgsConstructor
 @Path(EntitiesRestService.ENTITIES_PATH)
 @Component
 public class EntitiesRestService {
@@ -44,12 +42,22 @@ public class EntitiesRestService {
   private final SessionService sessionService;
   private final EntityRestMapper entityRestMapper;
 
+  public EntitiesRestService(
+      final EntitiesService entitiesService,
+      final SessionService sessionService,
+      final EntityRestMapper entityRestMapper) {
+    this.entitiesService = entitiesService;
+    this.sessionService = sessionService;
+    this.entityRestMapper = entityRestMapper;
+  }
+
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   public List<EntityResponseDto> getEntities(
-      @Context ContainerRequestContext requestContext, @BeanParam final EntitySorter entitySorter) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    List<EntityResponseDto> entities = entitiesService.getAllEntities(userId);
+      @Context final ContainerRequestContext requestContext,
+      @BeanParam final EntitySorter entitySorter) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    final List<EntityResponseDto> entities = entitiesService.getAllEntities(userId);
     entities.forEach(entityRestMapper::prepareRestResponse);
     return entitySorter.applySort(entities);
   }
@@ -58,7 +66,8 @@ public class EntitiesRestService {
   @Path("/names")
   @Produces(MediaType.APPLICATION_JSON)
   public EntityNameResponseDto getEntityNames(
-      @Context ContainerRequestContext requestContext, @BeanParam EntityNameRequestDto requestDto) {
+      @Context final ContainerRequestContext requestContext,
+      @BeanParam final EntityNameRequestDto requestDto) {
     return entitiesService.getEntityNames(
         requestDto, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
   }
@@ -67,9 +76,9 @@ public class EntitiesRestService {
   @Path("/delete-conflicts")
   @Consumes(MediaType.APPLICATION_JSON)
   public boolean entitiesHaveDeleteConflicts(
-      @Context ContainerRequestContext requestContext,
+      @Context final ContainerRequestContext requestContext,
       @Valid @NotNull @RequestBody final EntitiesDeleteRequestDto entities) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return entitiesService.entitiesHaveConflicts(entities, userId);
   }
 
@@ -77,9 +86,9 @@ public class EntitiesRestService {
   @Path("/delete")
   @Consumes(MediaType.APPLICATION_JSON)
   public void bulkDeleteEntities(
-      @Context ContainerRequestContext requestContext,
+      @Context final ContainerRequestContext requestContext,
       @Valid @NotNull @RequestBody final EntitiesDeleteRequestDto entities) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     entitiesService.bulkDeleteEntities(entities, userId);
   }
 }

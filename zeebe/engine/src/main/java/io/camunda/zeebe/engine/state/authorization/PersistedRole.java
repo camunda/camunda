@@ -9,25 +9,37 @@ package io.camunda.zeebe.engine.state.authorization;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.ObjectProperty;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public class PersistedRole extends UnpackedObject implements DbValue {
 
-  private final ObjectProperty<RoleRecord> roleRecord =
-      new ObjectProperty<>("roleRecord", new RoleRecord());
+  private final LongProperty roleKeyProp = new LongProperty("roleKey", -1L);
+  private final StringProperty nameProp = new StringProperty("name", "");
 
   public PersistedRole() {
-    super(1);
-    declareProperty(roleRecord);
+    super(2);
+    declareProperty(roleKeyProp);
+    declareProperty(nameProp);
   }
 
-  public RoleRecord getRole() {
-    return roleRecord.getValue();
+  public long getRoleKey() {
+    return roleKeyProp.getValue();
   }
 
-  public void setRole(final RoleRecord record) {
-    roleRecord.getValue().wrap(record);
+  public PersistedRole setRoleKey(final long roleKey) {
+    roleKeyProp.setValue(roleKey);
+    return this;
+  }
+
+  public String getName() {
+    return BufferUtil.bufferAsString(nameProp.getValue());
+  }
+
+  public PersistedRole setName(final String name) {
+    nameProp.setValue(name);
+    return this;
   }
 
   public PersistedRole copy() {

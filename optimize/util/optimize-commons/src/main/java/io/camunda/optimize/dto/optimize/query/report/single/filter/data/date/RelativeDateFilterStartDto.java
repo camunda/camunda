@@ -7,21 +7,73 @@
  */
 package io.camunda.optimize.dto.optimize.query.report.single.filter.data.date;
 
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@EqualsAndHashCode
 public class RelativeDateFilterStartDto {
 
   protected Long value;
   protected DateUnit unit;
+
+  public RelativeDateFilterStartDto(final Long value, final DateUnit unit) {
+    this.value = value;
+    this.unit = unit;
+  }
+
+  public RelativeDateFilterStartDto() {}
+
+  public Long getValue() {
+    return value;
+  }
+
+  public void setValue(final Long value) {
+    this.value = value;
+  }
+
+  public DateUnit getUnit() {
+    return unit;
+  }
+
+  public void setUnit(final DateUnit unit) {
+    this.unit = unit;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof RelativeDateFilterStartDto;
+  }
+
+  @Override
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = 1;
+    final Object $value = getValue();
+    result = result * PRIME + ($value == null ? 43 : $value.hashCode());
+    final Object $unit = getUnit();
+    result = result * PRIME + ($unit == null ? 43 : $unit.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof RelativeDateFilterStartDto)) {
+      return false;
+    }
+    final RelativeDateFilterStartDto other = (RelativeDateFilterStartDto) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    final Object this$value = getValue();
+    final Object other$value = other.getValue();
+    if (this$value == null ? other$value != null : !this$value.equals(other$value)) {
+      return false;
+    }
+    final Object this$unit = getUnit();
+    final Object other$unit = other.getUnit();
+    if (this$unit == null ? other$unit != null : !this$unit.equals(other$unit)) {
+      return false;
+    }
+    return true;
+  }
 
   public static final class Fields {
 

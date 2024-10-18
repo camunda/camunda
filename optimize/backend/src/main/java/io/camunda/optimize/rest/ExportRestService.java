@@ -46,10 +46,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Path("/export")
 @Component
 public class ExportRestService {
@@ -58,6 +56,17 @@ public class ExportRestService {
   private final EntityExportService entityExportService;
   private final SessionService sessionService;
   private final AbstractIdentityService identityService;
+
+  public ExportRestService(
+      final CsvExportService csvExportService,
+      final EntityExportService entityExportService,
+      final SessionService sessionService,
+      final AbstractIdentityService identityService) {
+    this.csvExportService = csvExportService;
+    this.entityExportService = entityExportService;
+    this.sessionService = sessionService;
+    this.identityService = identityService;
+  }
 
   @GET
   @Produces(value = {MediaType.APPLICATION_JSON})

@@ -17,8 +17,8 @@ import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
-import io.camunda.search.security.auth.Authentication;
 import io.camunda.search.sort.ProcessInstanceSort;
+import io.camunda.security.auth.Authentication;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
@@ -45,7 +45,6 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           5,
           "v5",
           789L,
-          345L,
           333L,
           777L,
           "PI_1/PI_2",
@@ -64,7 +63,6 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             "processDefinitionVersion": 5,
             "processDefinitionVersionTag": "v5",
             "processDefinitionKey": 789,
-            "rootProcessInstanceKey": 345,
             "parentProcessInstanceKey": 333,
             "parentFlowNodeInstanceKey": 777,
             "treePath": "PI_1/PI_2",
@@ -86,7 +84,6 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "processDefinitionVersion": 5,
                   "processDefinitionVersionTag": "v5",
                   "processDefinitionKey": 789,
-                  "rootProcessInstanceKey": 345,
                   "parentProcessInstanceKey": 333,
                   "parentFlowNodeInstanceKey": 777,
                   "treePath": "PI_1/PI_2",

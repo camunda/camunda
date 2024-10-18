@@ -13,6 +13,13 @@ import {processXmlStore as processXmlMigrationTargetStore} from 'modules/stores/
 import {processInstanceMigrationMappingStore} from './processInstanceMigrationMapping';
 import {waitFor} from '@testing-library/react';
 
+jest.mock('modules/stores/processes/processes.migration', () => ({
+  processesStore: {
+    migrationState: {selectedTargetProcess: {bpmnProcessId: 'orderProcess'}},
+    getSelectedProcessDetails: () => ({bpmnProcessId: 'orderProcess'}),
+  },
+}));
+
 /**
  * In these tests a migration mapping from orderProcess.bpmn to orderProcess_v2.bpmn is tested
  *
@@ -111,6 +118,10 @@ describe('processInstanceMigrationMappingStore', () => {
       {
         id: 'TimerEventSubProcess',
         type: 'bpmn:SubProcess',
+      },
+      {
+        id: 'TimerStartEvent',
+        type: 'bpmn:StartEvent',
       },
       {
         id: 'MessageReceiveTask',
@@ -368,6 +379,18 @@ describe('processInstanceMigrationMappingStore', () => {
           {
             id: 'TaskYY',
             name: 'Task YY',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'TimerStartEvent',
+          name: 'Timer start event',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'TimerStartEvent',
+            name: 'Timer start event',
           },
         ],
       },

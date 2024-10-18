@@ -19,6 +19,7 @@ import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
+import io.camunda.search.entities.UserTaskEntity.UserTaskState;
 import io.camunda.search.filter.DateValueFilter;
 import io.camunda.search.filter.DecisionDefinitionFilter;
 import io.camunda.search.filter.DecisionInstanceFilter;
@@ -336,7 +337,6 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getProcessDefinitionVersionTag())
           .ifPresent(builder::processDefinitionVersionTags);
       ofNullable(filter.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
-      ofNullable(filter.getRootProcessInstanceKey()).ifPresent(builder::rootProcessInstanceKeys);
       ofNullable(filter.getParentProcessInstanceKey())
           .ifPresent(builder::parentProcessInstanceKeys);
       ofNullable(filter.getParentFlowNodeInstanceKey())
@@ -423,7 +423,9 @@ public final class SearchQueryRequestMapper {
         .ifPresent(
             f -> {
               Optional.ofNullable(f.getUserTaskKey()).ifPresent(builder::userTaskKeys);
-              Optional.ofNullable(f.getState()).ifPresent(builder::states);
+              Optional.ofNullable(f.getState())
+                  .ifPresent(
+                      s -> builder.states(String.valueOf(UserTaskState.valueOf(s.getValue()))));
               Optional.ofNullable(f.getProcessDefinitionId()).ifPresent(builder::bpmnProcessIds);
               Optional.ofNullable(f.getElementId()).ifPresent(builder::elementIds);
               Optional.ofNullable(f.getAssignee()).ifPresent(builder::assignees);
@@ -433,7 +435,7 @@ public final class SearchQueryRequestMapper {
                   .ifPresent(builder::processDefinitionKeys);
               Optional.ofNullable(f.getProcessInstanceKey())
                   .ifPresent(builder::processInstanceKeys);
-              Optional.ofNullable(f.getTenantIds()).ifPresent(builder::tenantIds);
+              Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
 
               Optional.ofNullable(f.getVariables())
                   .filter(variables -> !variables.isEmpty())
@@ -492,7 +494,6 @@ public final class SearchQueryRequestMapper {
         case "processVersion" -> builder.processDefinitionVersion();
         case "processVersionTag" -> builder.processDefinitionVersionTag();
         case "processDefinitionKey" -> builder.processDefinitionKey();
-        case "rootProcessInstanceKey" -> builder.rootProcessInstanceKey();
         case "parentProcessInstanceKey" -> builder.parentProcessInstanceKey();
         case "parentFlowNodeInstanceKey" -> builder.parentFlowNodeInstanceKey();
         case "treePath" -> builder.treePath();
@@ -624,6 +625,8 @@ public final class SearchQueryRequestMapper {
       switch (field) {
         case "creationDate" -> builder.creationDate();
         case "completionDate" -> builder.completionDate();
+        case "followUpDate" -> builder.followUpDate();
+        case "dueDate" -> builder.dueDate();
         case "priority" -> builder.priority();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }

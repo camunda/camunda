@@ -34,20 +34,29 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
-@AllArgsConstructor
 public class ProcessVariableUpdateWriter {
+
   private static final String VARIABLE_UPDATES_FROM_ENGINE = "variableUpdatesFromEngine";
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ProcessVariableUpdateWriter.class);
 
   private final ObjectMapper objectMapper;
   private final IndexRepository indexRepository;
   private final VariableRepository variableRepository;
+
+  public ProcessVariableUpdateWriter(
+      final ObjectMapper objectMapper,
+      final IndexRepository indexRepository,
+      final VariableRepository variableRepository) {
+    this.objectMapper = objectMapper;
+    this.indexRepository = indexRepository;
+    this.variableRepository = variableRepository;
+  }
 
   public List<ImportRequestDto> generateVariableUpdateImports(
       final List<ProcessVariableDto> variables) {

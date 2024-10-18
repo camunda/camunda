@@ -8,8 +8,10 @@
 package io.camunda.exporter;
 
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import java.util.Collection;
 import java.util.Set;
 
 public interface ExporterResourceProvider {
@@ -19,14 +21,19 @@ public interface ExporterResourceProvider {
   /**
    * This should return descriptors describing the desired state of all indices provided.
    *
-   * @return A {@link Set} of {@link IndexDescriptor}
+   * @return A {@link Collection} of {@link IndexDescriptor}
    */
-  Set<IndexDescriptor> getIndexDescriptors();
+  Collection<IndexDescriptor> getIndexDescriptors();
 
   /**
    * This should return descriptors describing the desired state of all index templates provided.
    *
-   * @return A {@link Set} of {@link IndexTemplateDescriptor}
+   * @return A {@link Collection} of {@link IndexTemplateDescriptor}
    */
-  Set<IndexTemplateDescriptor> getIndexTemplateDescriptors();
+  Collection<IndexTemplateDescriptor> getIndexTemplateDescriptors();
+
+  /**
+   * @return A {@link Set} of {@link ExportHandler} to be registered with the exporter
+   */
+  Set<ExportHandler> getExportHandlers();
 }

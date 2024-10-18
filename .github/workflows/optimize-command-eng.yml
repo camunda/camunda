@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4
 
       - name: Create URL to the run output
         id: vars
@@ -45,10 +45,12 @@ jobs:
           ARG1=${{ github.event.client_payload.slash_command.args.unnamed.arg1 }}
           ARG2=${{ github.event.client_payload.slash_command.args.unnamed.arg2 }}
           REVIEWER="${ARG2//@/}"
+          COMMENTER="${{ github.event.client_payload.github.payload.comment.user.login }}"
           {
             echo "arg1=${ARG1}"
             echo "arg2=${ARG2}"
             echo "reviewer=${REVIEWER}"
+            echo "commenter=${COMMENTER}"
           } >> "$GITHUB_OUTPUT"
 
       - name: Get issue project

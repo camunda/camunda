@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Form, Task, TasksSearchBody, Variable} from './types';
+import type {Form, Task, TasksSearchBody, Variable} from './types';
 import {mergePathname} from './utils/mergePathname';
 
 const BASENAME = window.clientConfig?.contextPath ?? '/';

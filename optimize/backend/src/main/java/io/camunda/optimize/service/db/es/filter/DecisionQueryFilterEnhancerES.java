@@ -15,18 +15,24 @@ import io.camunda.optimize.dto.optimize.query.report.single.decision.filter.Outp
 import io.camunda.optimize.service.db.filter.FilterContext;
 import io.camunda.optimize.service.db.report.filter.DecisionQueryFilterEnhancer;
 import java.util.List;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 public class DecisionQueryFilterEnhancerES extends DecisionQueryFilterEnhancer
     implements QueryFilterEnhancerES<DecisionFilterDto<?>> {
 
-  @Getter private final EvaluationDateQueryFilterES evaluationDateQueryFilter;
+  private final EvaluationDateQueryFilterES evaluationDateQueryFilter;
   private final DecisionInputVariableQueryFilterES decisionInputVariableQueryFilter;
   private final DecisionOutputVariableQueryFilterES decisionOutputVariableQueryFilter;
+
+  public DecisionQueryFilterEnhancerES(
+      EvaluationDateQueryFilterES evaluationDateQueryFilter,
+      DecisionInputVariableQueryFilterES decisionInputVariableQueryFilter,
+      DecisionOutputVariableQueryFilterES decisionOutputVariableQueryFilter) {
+    this.evaluationDateQueryFilter = evaluationDateQueryFilter;
+    this.decisionInputVariableQueryFilter = decisionInputVariableQueryFilter;
+    this.decisionOutputVariableQueryFilter = decisionOutputVariableQueryFilter;
+  }
 
   @Override
   public void addFilterToQuery(
@@ -41,5 +47,9 @@ public class DecisionQueryFilterEnhancerES extends DecisionQueryFilterEnhancer
       decisionOutputVariableQueryFilter.addFilters(
           query, extractFilters(filter, OutputVariableFilterDto.class), filterContext);
     }
+  }
+
+  public EvaluationDateQueryFilterES getEvaluationDateQueryFilter() {
+    return this.evaluationDateQueryFilter;
   }
 }

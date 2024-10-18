@@ -14,14 +14,15 @@ import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 import io.camunda.optimize.service.db.os.report.context.VariableAggregationContextOS;
 import io.camunda.optimize.service.db.report.interpreter.service.AbstractNumberVariableAggregationService;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 public class NumberVariableAggregationServiceOS extends AbstractNumberVariableAggregationService {
+
+  public NumberVariableAggregationServiceOS() {}
+
   public Optional<Pair<String, Aggregation>> createNumberVariableAggregation(
       final VariableAggregationContextOS context) {
     if (context.getVariableRangeMinMaxStats().isEmpty()) {

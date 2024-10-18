@@ -92,7 +92,7 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @param tenantId the tenant ID of the user task
    * @return the updated filter
    */
-  UserTaskFilter tentantId(final String tenantId);
+  UserTaskFilter tenantId(final String tenantId);
 
   /**
    * Filters user tasks by the specified Process Definition Id.

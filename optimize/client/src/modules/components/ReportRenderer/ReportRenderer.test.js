@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
 
 import ReportRenderer from './ReportRenderer';
@@ -55,7 +54,7 @@ it('should include the instance count if indicated in the config', () => {
   const node = shallow(<ReportRenderer report={report} />);
 
   expect(node.find('.additionalInfo')).toExist();
-  expect(node.find('.additionalInfo').html()).toContain('723');
+  expect(node.find('.additionalInfo').text()).toContain('723');
 });
 
 describe('SetupNotice', () => {

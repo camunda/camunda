@@ -15,11 +15,14 @@ import io.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupR
 import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.function.Supplier;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 public class AssigneesClient {
+
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
+
+  public AssigneesClient(final Supplier<OptimizeRequestExecutor> requestExecutorSupplier) {
+    this.requestExecutorSupplier = requestExecutorSupplier;
+  }
 
   public List<UserDto> getAssigneesByIdsWithoutAuthentication(final List<String> ids) {
     return getRequestExecutor()

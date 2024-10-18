@@ -126,12 +126,12 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
         gatewayService.getLastRequest(ProcessDefinitionSearchQueryRequest.class);
     final List<SearchQuerySortRequest> sorts = request.getSort();
     assertThat(sorts).hasSize(7);
-    assertSort(sorts.get(0), "key", "asc");
+    assertSort(sorts.get(0), "processDefinitionKey", "asc");
     assertSort(sorts.get(1), "name", "desc");
     assertSort(sorts.get(2), "resourceName", "asc");
     assertSort(sorts.get(3), "version", "asc");
     assertSort(sorts.get(4), "versionTag", "desc");
-    assertSort(sorts.get(5), "bpmnProcessId", "desc");
+    assertSort(sorts.get(5), "processDefinitionId", "desc");
     assertSort(sorts.get(6), "tenantId", "asc");
   }
 

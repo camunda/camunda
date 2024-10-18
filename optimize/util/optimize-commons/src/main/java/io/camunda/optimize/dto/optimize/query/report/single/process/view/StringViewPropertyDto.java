@@ -9,14 +9,14 @@ package io.camunda.optimize.dto.optimize.query.report.single.process.view;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Objects;
-import lombok.AllArgsConstructor;
-import lombok.Data;
 
-@Data
-@AllArgsConstructor
 public class StringViewPropertyDto implements TypedViewPropertyDto {
 
   private final String id;
+
+  public StringViewPropertyDto(final String id) {
+    this.id = id;
+  }
 
   @JsonValue
   public String getId() {
@@ -31,8 +31,41 @@ public class StringViewPropertyDto implements TypedViewPropertyDto {
     if (!(o instanceof StringViewPropertyDto)) {
       return false;
     }
-    StringViewPropertyDto stringViewPropertyDto = (StringViewPropertyDto) o;
+    final StringViewPropertyDto stringViewPropertyDto = (StringViewPropertyDto) o;
     return Objects.equals(getId(), stringViewPropertyDto.getId());
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof StringViewPropertyDto;
+  }
+
+  @Override
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = 1;
+    final Object $id = getId();
+    result = result * PRIME + ($id == null ? 43 : $id.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof StringViewPropertyDto)) {
+      return false;
+    }
+    final StringViewPropertyDto other = (StringViewPropertyDto) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    final Object this$id = getId();
+    final Object other$id = other.getId();
+    if (this$id == null ? other$id != null : !this$id.equals(other$id)) {
+      return false;
+    }
+    return true;
   }
 
   @Override

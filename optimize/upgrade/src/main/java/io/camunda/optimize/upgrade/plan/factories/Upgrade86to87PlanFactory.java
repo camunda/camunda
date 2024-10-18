@@ -10,10 +10,12 @@ package io.camunda.optimize.upgrade.plan.factories;
 import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import io.camunda.optimize.upgrade.plan.UpgradePlan;
 import io.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
 public class Upgrade86to87PlanFactory implements UpgradePlanFactory {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(Upgrade86to87PlanFactory.class);
 
   @Override
   public UpgradePlan createUpgradePlan(final UpgradeExecutionDependencies dependencies) {

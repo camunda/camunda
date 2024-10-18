@@ -22,27 +22,39 @@ import io.camunda.optimize.service.export.CSVUtils;
 import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
 
-@NoArgsConstructor
 public class RawDataCommandResult<T extends RawDataInstanceDto>
     extends CommandEvaluationResult<List<T>> {
 
-  public RawDataCommandResult(final @NonNull ReportDataDto reportData) {
+  public RawDataCommandResult(final ReportDataDto reportData) {
     super(reportData);
+    if (reportData == null) {
+      throw new IllegalArgumentException("reportData cannot be null");
+    }
   }
 
-  public RawDataCommandResult(
-      @NonNull final List<T> data, @NonNull final SingleReportDataDto reportData) {
+  public RawDataCommandResult(final List<T> data, final SingleReportDataDto reportData) {
     super(Collections.singletonList(MeasureDto.of(data)), reportData);
+    if (data == null) {
+      throw new IllegalArgumentException("data cannot be null");
+    }
+    if (reportData == null) {
+      throw new IllegalArgumentException("reportData cannot be null");
+    }
   }
+
+  public RawDataCommandResult() {}
 
   @Override
   @SuppressWarnings(UNCHECKED_CAST)
   public List<String[]> getResultAsCsv(
       final Integer limit, final Integer offset, final ZoneId timezone) {
     return getResultAsCsv(limit, offset, timezone, true);
+  }
+
+  @Override
+  public ResultType getType() {
+    return ResultType.RAW;
   }
 
   @SuppressWarnings(UNCHECKED_CAST)
@@ -61,7 +73,8 @@ public class RawDataCommandResult<T extends RawDataInstanceDto>
           singleReportData.getConfiguration().getTableColumns(),
           true);
     } else if (rawData.get(0) instanceof RawDataProcessInstanceDto) {
-      List<RawDataProcessInstanceDto> rawProcessData = (List<RawDataProcessInstanceDto>) rawData;
+      final List<RawDataProcessInstanceDto> rawProcessData =
+          (List<RawDataProcessInstanceDto>) rawData;
       rawProcessData.forEach(
           raw -> {
             raw.setStartDate(atSameTimezoneOffsetDateTime(raw.getStartDate(), timezone));
@@ -74,7 +87,8 @@ public class RawDataCommandResult<T extends RawDataInstanceDto>
           singleReportData.getConfiguration().getTableColumns(),
           includeNewVariables);
     } else {
-      List<RawDataDecisionInstanceDto> rawDecisionData = (List<RawDataDecisionInstanceDto>) rawData;
+      final List<RawDataDecisionInstanceDto> rawDecisionData =
+          (List<RawDataDecisionInstanceDto>) rawData;
       rawDecisionData.forEach(
           raw ->
               raw.setEvaluationDateTime(
@@ -82,10 +96,5 @@ public class RawDataCommandResult<T extends RawDataInstanceDto>
       return CSVUtils.mapRawDecisionReportInstances(
           rawDecisionData, limit, offset, singleReportData.getConfiguration().getTableColumns());
     }
-  }
-
-  @Override
-  public ResultType getType() {
-    return ResultType.RAW;
   }
 }

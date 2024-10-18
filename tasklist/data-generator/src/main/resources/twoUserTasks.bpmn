@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_13wb7eg" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.8.0-nightly.20230115" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.3.0">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_13wb7eg" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.29.0-nightly.20241014" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.6.0">
   <bpmn:process id="twoUserTasks" name="TwoUserTasks" isExecutable="true">
     <bpmn:extensionElements />
     <bpmn:startEvent id="StartEvent_1">
@@ -13,12 +13,17 @@
     </bpmn:parallelGateway>
     <bpmn:sequenceFlow id="Flow_0qco249" sourceRef="Gateway_0slk4v4" targetRef="Activity_1w4s7i2" />
     <bpmn:userTask id="Activity_1w4s7i2">
-      <bpmn:extensionElements />
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
       <bpmn:incoming>Flow_0qco249</bpmn:incoming>
       <bpmn:outgoing>Flow_1et3uye</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:sequenceFlow id="Flow_1cfw5er" sourceRef="Gateway_0slk4v4" targetRef="Activity_1ygafd4" />
     <bpmn:userTask id="Activity_1ygafd4">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
       <bpmn:incoming>Flow_1cfw5er</bpmn:incoming>
       <bpmn:outgoing>Flow_0k4qhjd</bpmn:outgoing>
     </bpmn:userTask>

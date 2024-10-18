@@ -33,8 +33,8 @@ import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUser
 
 import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.document.api.DocumentMetadataModel;
-import io.camunda.search.security.auth.Authentication;
-import io.camunda.search.security.auth.Authentication.Builder;
+import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.Authentication.Builder;
 import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentLinkParams;

@@ -216,7 +216,6 @@ public final class SearchQueryResponseMapper {
         .processDefinitionVersion(p.processVersion())
         .processDefinitionVersionTag(p.processVersionTag())
         .processDefinitionKey(p.processDefinitionKey())
-        .rootProcessInstanceKey(p.rootProcessInstanceKey())
         .parentProcessInstanceKey(p.parentProcessInstanceKey())
         .parentFlowNodeInstanceKey(p.parentFlowNodeInstanceKey())
         .treePath(p.treePath())
@@ -340,16 +339,16 @@ public final class SearchQueryResponseMapper {
 
   public static UserTaskItem toUserTask(final UserTaskEntity t) {
     return new UserTaskItem()
-        .tenantIds(t.tenantId())
+        .tenantId(t.tenantId())
         .userTaskKey(t.key())
         .processInstanceKey(t.processInstanceId())
         .processDefinitionKey(t.processDefinitionId())
         .elementInstanceKey(t.flowNodeInstanceId())
         .processDefinitionId(t.bpmnProcessId())
-        .state(t.state())
+        .state(UserTaskItem.StateEnum.fromValue(t.state().name()))
         .assignee(t.assignee())
-        .candidateUser(t.candidateUsers())
-        .candidateGroup(t.candidateGroups())
+        .candidateUsers(t.candidateUsers())
+        .candidateGroups(t.candidateGroups())
         .formKey(t.formKey())
         .elementId(t.flowNodeBpmnId())
         .creationDate(t.creationTime())
@@ -520,7 +519,7 @@ public final class SearchQueryResponseMapper {
     return variableEntities.stream().map(SearchQueryResponseMapper::toVariable).toList();
   }
 
-  private static VariableItem toVariable(final VariableEntity variableEntity) {
+  public static VariableItem toVariable(final VariableEntity variableEntity) {
     return new VariableItem()
         .variableKey(variableEntity.key())
         .name(variableEntity.name())

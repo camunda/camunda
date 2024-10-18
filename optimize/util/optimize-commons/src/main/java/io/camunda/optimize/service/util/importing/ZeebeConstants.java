@@ -10,10 +10,7 @@ package io.camunda.optimize.service.util.importing;
 import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_DATA_SOURCE;
 
 import io.camunda.optimize.dto.optimize.TenantDto;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ZeebeConstants {
 
   // zeebe export
@@ -41,4 +38,6 @@ public class ZeebeConstants {
   // flownode types
   public static final String FLOW_NODE_TYPE_USER_TASK = "userTask";
   public static final String FLOW_NODE_TYPE_MI_BODY = "multiInstanceBody";
+
+  private ZeebeConstants() {}
 }

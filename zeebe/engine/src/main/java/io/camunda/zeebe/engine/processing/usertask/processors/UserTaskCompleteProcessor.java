@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.usertask.processors;
 
 import io.camunda.zeebe.engine.processing.common.EventHandle;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -37,7 +38,10 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
   private final UserTaskCommandPreconditionChecker preconditionChecker;
 
   public UserTaskCompleteProcessor(
-      final ProcessingState state, final EventHandle eventHandle, final Writers writers) {
+      final ProcessingState state,
+      final EventHandle eventHandle,
+      final Writers writers,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     elementInstanceState = state.getElementInstanceState();
     this.eventHandle = eventHandle;
     stateWriter = writers.state();
@@ -45,7 +49,10 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
     responseWriter = writers.response();
     preconditionChecker =
         new UserTaskCommandPreconditionChecker(
-            List.of(LifecycleState.CREATED), "complete", state.getUserTaskState());
+            List.of(LifecycleState.CREATED),
+            "complete",
+            state.getUserTaskState(),
+            authCheckBehavior);
   }
 
   @Override
@@ -63,6 +70,16 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
     userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));
 
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETING, userTaskRecord);
+  }
+
+  @Override
+  public void onFinalizeCommand(
+      final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
+    final long userTaskKey = command.getKey();
+
+    userTaskRecord.setVariables(command.getValue().getVariablesBuffer());
+    userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));
+
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord);
     completeElementInstance(userTaskRecord);
     responseWriter.writeEventOnCommand(

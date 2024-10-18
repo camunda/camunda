@@ -18,11 +18,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
-@Data
 public class ProcessViewDto implements Combinable {
 
   private static final Set<ProcessViewEntity> FLOW_NODE_ENTITIES =
@@ -45,6 +41,8 @@ public class ProcessViewDto implements Combinable {
     this.entity = entity;
     this.properties = properties;
   }
+
+  public ProcessViewDto() {}
 
   @Override
   public boolean isCombinable(final Object o) {
@@ -79,6 +77,28 @@ public class ProcessViewDto implements Combinable {
     return properties != null && !properties.isEmpty() ? properties.get(0) : null;
   }
 
+  private boolean isEntityCombinable(final ProcessViewDto viewDto) {
+    // note: user tasks are combinable with flow nodes as they are a subset of flow nodes
+    return Objects.equals(entity, viewDto.entity)
+        || (FLOW_NODE_ENTITIES.contains(entity) && FLOW_NODE_ENTITIES.contains(viewDto.entity));
+  }
+
+  private boolean isPropertyCombinable(final ProcessViewDto viewDto) {
+    return Combinable.isCombinable(getFirstProperty(), viewDto.getFirstProperty());
+  }
+
+  public ProcessViewEntity getEntity() {
+    return entity;
+  }
+
+  public void setEntity(final ProcessViewEntity entity) {
+    this.entity = entity;
+  }
+
+  public List<ViewProperty> getProperties() {
+    return properties;
+  }
+
   @JsonSetter
   public void setProperties(final List<ViewProperty> properties) {
     this.properties = new ArrayList<>(properties);
@@ -88,14 +108,51 @@ public class ProcessViewDto implements Combinable {
     this.properties = Arrays.asList(properties);
   }
 
-  private boolean isEntityCombinable(final ProcessViewDto viewDto) {
-    // note: user tasks are combinable with flow nodes as they are a subset of flow nodes
-    return Objects.equals(entity, viewDto.entity)
-        || (FLOW_NODE_ENTITIES.contains(entity) && FLOW_NODE_ENTITIES.contains(viewDto.entity));
+  protected boolean canEqual(final Object other) {
+    return other instanceof ProcessViewDto;
   }
 
-  private boolean isPropertyCombinable(final ProcessViewDto viewDto) {
-    return Combinable.isCombinable(getFirstProperty(), viewDto.getFirstProperty());
+  @Override
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = 1;
+    final Object $entity = getEntity();
+    result = result * PRIME + ($entity == null ? 43 : $entity.hashCode());
+    final Object $properties = getProperties();
+    result = result * PRIME + ($properties == null ? 43 : $properties.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof ProcessViewDto)) {
+      return false;
+    }
+    final ProcessViewDto other = (ProcessViewDto) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    final Object this$entity = getEntity();
+    final Object other$entity = other.getEntity();
+    if (this$entity == null ? other$entity != null : !this$entity.equals(other$entity)) {
+      return false;
+    }
+    final Object this$properties = getProperties();
+    final Object other$properties = other.getProperties();
+    if (this$properties == null
+        ? other$properties != null
+        : !this$properties.equals(other$properties)) {
+      return false;
+    }
+    return true;
+  }
+
+  @Override
+  public String toString() {
+    return "ProcessViewDto(entity=" + getEntity() + ", properties=" + getProperties() + ")";
   }
 
   public static final class Fields {

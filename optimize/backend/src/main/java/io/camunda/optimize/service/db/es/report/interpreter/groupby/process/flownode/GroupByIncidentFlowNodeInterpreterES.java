@@ -19,14 +19,12 @@ import co.elastic.clients.elasticsearch._types.aggregations.StringTermsAggregate
 import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch.core.search.ResponseBody;
-import io.camunda.optimize.dto.optimize.DefinitionType;
-import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.es.report.interpreter.distributedby.process.ProcessDistributedByInterpreterFacadeES;
 import io.camunda.optimize.service.db.es.report.interpreter.view.process.ProcessViewInterpreterFacadeES;
 import io.camunda.optimize.service.db.report.ExecutionContext;
+import io.camunda.optimize.service.db.report.groupby.flownode.GroupByIncidentFlowNodeInterpreterHelper;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
@@ -35,27 +33,36 @@ import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCon
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class GroupByIncidentFlowNodeInterpreterES extends AbstractGroupByFlowNodeInterpreterES {
+
   private static final String NESTED_INCIDENT_AGGREGATION = "nestedIncidentAggregation";
   private static final String GROUPED_BY_FLOW_NODE_ID_AGGREGATION =
       "groupedByFlowNodeIdAggregation";
   private static final String FILTERED_INCIDENT_AGGREGATION = "filteredIncidentAggregation";
-
+  final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
+  final ProcessViewInterpreterFacadeES viewInterpreter;
   private final ConfigurationService configurationService;
-  @Getter private final DefinitionService definitionService;
-  @Getter final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
-  @Getter final ProcessViewInterpreterFacadeES viewInterpreter;
+  private final GroupByIncidentFlowNodeInterpreterHelper helper;
+  private final DefinitionService definitionService;
+
+  public GroupByIncidentFlowNodeInterpreterES(
+      final ConfigurationService configurationService,
+      final GroupByIncidentFlowNodeInterpreterHelper helper,
+      final DefinitionService definitionService,
+      final ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
+      final ProcessViewInterpreterFacadeES viewInterpreter) {
+    this.configurationService = configurationService;
+    this.helper = helper;
+    this.definitionService = definitionService;
+    this.distributedByInterpreter = distributedByInterpreter;
+    this.viewInterpreter = viewInterpreter;
+  }
 
   @Override
   public Set<ProcessGroupBy> getSupportedGroupBys() {
@@ -66,7 +73,7 @@ public class GroupByIncidentFlowNodeInterpreterES extends AbstractGroupByFlowNod
   public Map<String, Aggregation.Builder.ContainerBuilder> createAggregation(
       final BoolQuery boolQuery,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    Aggregation.Builder.ContainerBuilder builder =
+    final Aggregation.Builder.ContainerBuilder builder =
         new Aggregation.Builder().nested(n -> n.path(INCIDENTS));
     builder.aggregations(
         FILTERED_INCIDENT_AGGREGATION,
@@ -82,7 +89,7 @@ public class GroupByIncidentFlowNodeInterpreterES extends AbstractGroupByFlowNod
                         GROUPED_BY_FLOW_NODE_ID_AGGREGATION,
                         Aggregation.of(
                             a1 -> {
-                              Aggregation.Builder.ContainerBuilder terms =
+                              final Aggregation.Builder.ContainerBuilder terms =
                                   a1.terms(
                                       t ->
                                           t.field(INCIDENTS + "." + INCIDENT_ACTIVITY_ID)
@@ -110,64 +117,38 @@ public class GroupByIncidentFlowNodeInterpreterES extends AbstractGroupByFlowNod
     final StringTermsAggregate groupedByFlowNodeId =
         filterAgg.aggregations().get(GROUPED_BY_FLOW_NODE_ID_AGGREGATION).sterms();
 
-    final Map<String, String> flowNodeNames = getFlowNodeNames(context.getReportData());
+    final Map<String, String> flowNodeNames = helper.getFlowNodeNames(context.getReportData());
     final List<CompositeCommandResult.GroupByResult> groupedData = new ArrayList<>();
-    for (StringTermsBucket flowNodeBucket : groupedByFlowNodeId.buckets().array()) {
+    for (final StringTermsBucket flowNodeBucket : groupedByFlowNodeId.buckets().array()) {
       final String flowNodeKey = flowNodeBucket.key().stringValue();
       if (flowNodeNames.containsKey(flowNodeKey)) {
         final List<CompositeCommandResult.DistributedByResult> singleResult =
             getDistributedByInterpreter()
                 .retrieveResult(response, flowNodeBucket.aggregations(), context);
-        String label = flowNodeNames.get(flowNodeKey);
+        final String label = flowNodeNames.get(flowNodeKey);
         groupedData.add(
             CompositeCommandResult.GroupByResult.createGroupByResult(
                 flowNodeKey, label, singleResult));
         flowNodeNames.remove(flowNodeKey);
       }
     }
-    addMissingGroupByIncidentKeys(flowNodeNames, groupedData, context);
+    GroupByIncidentFlowNodeInterpreterHelper.addMissingGroupByIncidentKeys(
+        flowNodeNames, groupedData, context, distributedByInterpreter.createEmptyResult(context));
     compositeCommandResult.setGroups(groupedData);
   }
 
-  private void addMissingGroupByIncidentKeys(
-      final Map<String, String> flowNodeNames,
-      final List<CompositeCommandResult.GroupByResult> groupedData,
-      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    final boolean viewLevelFilterExists =
-        context.getReportData().getFilter().stream()
-            .anyMatch(filter -> FilterApplicationLevel.VIEW.equals(filter.getFilterLevel()));
-    // If a view level filter exists, the data should not be enriched as the missing data has been
-    // omitted by the filters
-    if (!viewLevelFilterExists) {
-      // enrich data with flow nodes that haven't been executed, but should still show up in the
-      // result
-      flowNodeNames
-          .keySet()
-          .forEach(
-              flowNodeKey -> {
-                CompositeCommandResult.GroupByResult emptyResult =
-                    CompositeCommandResult.GroupByResult.createGroupByResult(
-                        flowNodeKey,
-                        flowNodeNames.get(flowNodeKey),
-                        getDistributedByInterpreter().createEmptyResult(context));
-                groupedData.add(emptyResult);
-              });
-    }
+  @Override
+  public ProcessDistributedByInterpreterFacadeES getDistributedByInterpreter() {
+    return distributedByInterpreter;
   }
 
-  private Map<String, String> getFlowNodeNames(final ProcessReportDataDto reportData) {
-    return definitionService.extractFlowNodeIdAndNames(
-        reportData.getDefinitions().stream()
-            .map(
-                definitionDto ->
-                    definitionService.getDefinition(
-                        DefinitionType.PROCESS,
-                        definitionDto.getKey(),
-                        definitionDto.getVersions(),
-                        definitionDto.getTenantIds()))
-            .filter(Optional::isPresent)
-            .map(Optional::get)
-            .map(ProcessDefinitionOptimizeDto.class::cast)
-            .collect(Collectors.toList()));
+  @Override
+  public ProcessViewInterpreterFacadeES getViewInterpreter() {
+    return viewInterpreter;
+  }
+
+  @Override
+  public DefinitionService getDefinitionService() {
+    return definitionService;
   }
 }

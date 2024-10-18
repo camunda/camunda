@@ -12,5 +12,13 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 
 public interface MutableRoleState extends RoleState {
 
-  void createRole(RoleRecord roleRecord);
+  void create(final RoleRecord roleRecord);
+
+  void update(final RoleRecord roleRecord);
+
+  void addEntity(final RoleRecord roleRecord);
+
+  void removeEntity(final long roleKey, final long entityKey);
+
+  void delete(final RoleRecord roleRecord);
 }

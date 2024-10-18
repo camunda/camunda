@@ -10,8 +10,7 @@ package io.camunda.optimize.rest.cloud;
 import io.camunda.optimize.service.security.AuthCookieService;
 import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -21,13 +20,16 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 @Component
-@Slf4j
 @Conditional(CCSaaSCondition.class)
-@RequiredArgsConstructor
 public class AccountsUserAccessTokenProvider {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(AccountsUserAccessTokenProvider.class);
+
+  public AccountsUserAccessTokenProvider() {}
+
   private Optional<String> retrieveServiceTokenFromFramework() {
-    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     if (authentication != null) {
       if (authentication instanceof JwtAuthenticationToken) {
         return Optional.ofNullable(

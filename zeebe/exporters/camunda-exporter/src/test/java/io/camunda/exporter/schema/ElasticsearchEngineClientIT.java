@@ -14,6 +14,7 @@ import static org.mockito.Mockito.*;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
+import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.exporter.utils.TestSupport;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
@@ -33,7 +34,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 public class ElasticsearchEngineClientIT {
   @Container
-  private static final ElasticsearchContainer CONTAINER = TestSupport.createDefaultContainer();
+  private static final ElasticsearchContainer CONTAINER =
+      TestSupport.createDefeaultElasticsearchContainer();
 
   private static ElasticsearchClient elsClient;
   private static ElasticsearchEngineClient elsEngineClient;
@@ -239,5 +241,24 @@ public class ElasticsearchEngineClientIT {
     assertThat(policy.result().get("policy_name").policy().phases().delete().minAge().time())
         .isEqualTo("20d");
     assertThat(policy.result().get("policy_name").policy().phases().delete().actions()).isNotNull();
+  }
+
+  @Test
+  void shouldAccountForAllPropertyFieldsWhenGetMappings() {
+    final var index =
+        SchemaTestUtil.mockIndex(
+            "index_qualified_name", "alias", "index_name", "/mappings-complex-property.json");
+
+    elsEngineClient.createIndex(index, new IndexSettings());
+
+    final var mappings = elsEngineClient.getMappings("*", MappingSource.INDEX);
+    assertThat(mappings.size()).isEqualTo(1);
+
+    final var createdIndexMappings = mappings.get(index.getFullQualifiedName());
+    final Map<String, Object> complexProperty =
+        (Map<String, Object>) createdIndexMappings.toMap().get("hello");
+    assertThat(complexProperty.get("type")).isEqualTo("text");
+    assertThat(complexProperty.get("index")).isEqualTo(false);
+    assertThat(complexProperty.get("eager_global_ordinals")).isEqualTo(true);
   }
 }

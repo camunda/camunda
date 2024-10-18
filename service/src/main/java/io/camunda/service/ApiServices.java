@@ -7,9 +7,8 @@
  */
 package io.camunda.service;
 
-import io.camunda.search.security.auth.Authentication;
+import io.camunda.security.auth.Authentication;
 import io.camunda.service.exception.CamundaBrokerException;
-import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
@@ -33,8 +32,7 @@ public abstract class ApiServices<T extends ApiServices<T>> {
 
   public abstract T withAuthentication(final Authentication authentication);
 
-  public T withAuthentication(
-      final Function<Authentication.Builder, ObjectBuilder<Authentication>> fn) {
+  public T withAuthentication(final Function<Authentication.Builder, Authentication.Builder> fn) {
     return withAuthentication(fn.apply(new Authentication.Builder()).build());
   }
 

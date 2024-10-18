@@ -25,28 +25,36 @@ import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondit
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 @Conditional(OpenSearchCondition.class)
 public class DecisionDefinitionWriterOS implements DecisionDefinitionWriter {
 
   private static final Script MARK_AS_DELETED_SCRIPT =
       OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams(
           "ctx._source.deleted = true", Collections.emptyMap());
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(DecisionDefinitionWriterOS.class);
   private final ObjectMapper objectMapper;
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
+
+  public DecisionDefinitionWriterOS(
+      final ObjectMapper objectMapper,
+      final OptimizeOpenSearchClient osClient,
+      final ConfigurationService configurationService) {
+    this.objectMapper = objectMapper;
+    this.osClient = osClient;
+    this.configurationService = configurationService;
+  }
 
   @Override
   public void importDecisionDefinitions(

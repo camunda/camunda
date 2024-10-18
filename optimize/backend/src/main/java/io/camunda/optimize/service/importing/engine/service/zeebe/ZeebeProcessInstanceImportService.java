@@ -33,9 +33,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
 public class ZeebeProcessInstanceImportService
     extends ZeebeProcessInstanceSubEntityImportService<ZeebeProcessInstanceRecordDto> {
 
@@ -46,6 +45,8 @@ public class ZeebeProcessInstanceImportService
           ProcessInstanceIntent.ELEMENT_ACTIVATING);
   private static final Set<BpmnElementType> TYPES_TO_IGNORE =
       Set.of(BpmnElementType.UNSPECIFIED, BpmnElementType.SEQUENCE_FLOW);
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ZeebeProcessInstanceImportService.class);
 
   public ZeebeProcessInstanceImportService(
       final ConfigurationService configurationService,

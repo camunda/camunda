@@ -9,11 +9,10 @@ package io.camunda.optimize.dto.optimize.query.report.single.decision.result.raw
 
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 import java.util.Objects;
-import lombok.Getter;
-import lombok.Setter;
 
 public class InputVariableEntry extends VariableEntry {
-  @Getter @Setter private Object value;
+
+  private Object value;
 
   protected InputVariableEntry() {}
 
@@ -21,6 +20,11 @@ public class InputVariableEntry extends VariableEntry {
       final String id, final String name, final VariableType type, final Object value) {
     super(id, name, type);
     this.value = value;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), value);
   }
 
   @Override
@@ -38,8 +42,11 @@ public class InputVariableEntry extends VariableEntry {
     return Objects.equals(value, that.value);
   }
 
-  @Override
-  public int hashCode() {
-    return Objects.hash(super.hashCode(), value);
+  public Object getValue() {
+    return value;
+  }
+
+  public void setValue(final Object value) {
+    this.value = value;
   }
 }

@@ -24,20 +24,29 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.io.IOException;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class CombinedReportInstanceCounterES
     extends CombinedReportInstanceCounter<BoolQuery.Builder> {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(CombinedReportInstanceCounterES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ExecutionPlanExtractor executionPlanExtractor;
   private final ProcessExecutionPlanInterpreterFacadeES interpreter;
+
+  public CombinedReportInstanceCounterES(
+      OptimizeElasticsearchClient esClient,
+      ExecutionPlanExtractor executionPlanExtractor,
+      ProcessExecutionPlanInterpreterFacadeES interpreter) {
+    this.esClient = esClient;
+    this.executionPlanExtractor = executionPlanExtractor;
+    this.interpreter = interpreter;
+  }
 
   @Override
   public long count(List<SingleProcessReportDefinitionRequestDto> singleReportDefinitions) {

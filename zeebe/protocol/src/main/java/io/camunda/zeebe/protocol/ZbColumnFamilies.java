@@ -200,7 +200,13 @@ public enum ZbColumnFamilies implements EnumValue {
 
   ROLES(100),
   ENTITY_BY_ROLE(101),
-  ROLE_BY_NAME(102);
+  ROLE_BY_NAME(102),
+
+  TENANTS(103),
+  ENTITY_BY_TENANT(104),
+  TENANT_BY_ID(105),
+
+  USER_TASK_INTERMEDIATE_STATES(106);
 
   private final int value;
 

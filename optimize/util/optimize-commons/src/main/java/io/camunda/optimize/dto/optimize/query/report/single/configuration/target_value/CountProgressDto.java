@@ -8,13 +8,7 @@
 package io.camunda.optimize.dto.optimize.query.report.single.configuration.target_value;
 
 import java.util.Objects;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
 
-@Getter
-@Setter
-@ToString
 public class CountProgressDto {
 
   private String baseline = "0";
@@ -37,6 +31,41 @@ public class CountProgressDto {
     return Objects.equals(baseline, that.baseline)
         && Objects.equals(isBelow, that.isBelow)
         && Objects.equals(target, that.target);
+  }
+
+  @Override
+  public String toString() {
+    return "CountProgressDto(baseline="
+        + getBaseline()
+        + ", target="
+        + getTarget()
+        + ", isBelow="
+        + getIsBelow()
+        + ")";
+  }
+
+  public String getBaseline() {
+    return baseline;
+  }
+
+  public void setBaseline(final String baseline) {
+    this.baseline = baseline;
+  }
+
+  public String getTarget() {
+    return target;
+  }
+
+  public void setTarget(final String target) {
+    this.target = target;
+  }
+
+  public Boolean getIsBelow() {
+    return isBelow;
+  }
+
+  public void setIsBelow(final Boolean isBelow) {
+    this.isBelow = isBelow;
   }
 
   public static final class Fields {

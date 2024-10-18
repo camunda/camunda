@@ -7,10 +7,6 @@
  */
 package io.camunda.optimize.service.db;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DatabaseConstants {
   public static final String AGGREGATION_CONTAINS_NULL = "isNull";
 
@@ -100,4 +96,6 @@ public class DatabaseConstants {
 
   // Units
   public static final String GB_UNIT = "gb";
+
+  private DatabaseConstants() {}
 }

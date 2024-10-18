@@ -11,7 +11,6 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import io.camunda.optimize.service.util.configuration.security.CloudAuthConfiguration;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -23,10 +22,10 @@ import org.springframework.security.oauth2.client.registration.InMemoryClientReg
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 
-@RequiredArgsConstructor
 @Configuration
 @Conditional(CCSaaSCondition.class)
 public class CCSaasAuth0WebSecurityConfig {
+
   public static final String OAUTH_AUTH_ENDPOINT = "/sso";
   public static final String OAUTH_REDIRECT_ENDPOINT = "/sso-callback";
   public static final String AUTH0_JWKS_ENDPOINT = "/.well-known/jwks.json";
@@ -36,6 +35,10 @@ public class CCSaasAuth0WebSecurityConfig {
   public static final String AUTH0_TOKEN_ENDPOINT = "/oauth/token";
   public static final String AUTH0_USERINFO_ENDPOINT = "/userinfo";
   private final ConfigurationService configurationService;
+
+  public CCSaasAuth0WebSecurityConfig(final ConfigurationService configurationService) {
+    this.configurationService = configurationService;
+  }
 
   @Bean
   public OAuth2AuthorizedClientService authorizedClientService() {

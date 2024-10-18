@@ -12,10 +12,10 @@ import static io.camunda.optimize.service.metadata.Version.VERSION;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
 public class SnapshotUtil {
+
   public static final String REPOSITORY_MISSING_EXCEPTION_TYPE = "repository_missing_exception";
   public static final String SNAPSHOT_MISSING_EXCEPTION_TYPE = "snapshot_missing_exception";
   private static final String COMPONENT_PREFIX = "camunda_optimize_";
@@ -30,6 +30,7 @@ public class SnapshotUtil {
   private static final String COMPONENT_PREFIX_PLACEHOLDER = "{componentPrefix}";
   private static final String ID_PLACEHOLDER = "{backupId}";
   private static final String VERSION_PLACEHOLDER = "{version}";
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(SnapshotUtil.class);
 
   public static String getSnapshotNameForImportIndices(final Long backupId) {
     return getSnapshotName(SNAPSHOT_1_NAME_TEMPLATE, backupId);

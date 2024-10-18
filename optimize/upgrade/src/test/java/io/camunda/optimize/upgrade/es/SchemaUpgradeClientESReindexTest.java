@@ -31,6 +31,7 @@ import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
+import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
@@ -39,7 +40,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import lombok.SneakyThrows;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.elasticsearch.client.Response;
@@ -229,20 +229,29 @@ public class SchemaUpgradeClientESReindexTest {
     verify(elasticsearchClient).submitReindexTask(any(ReindexRequest.class));
   }
 
-  @SneakyThrows
   private void mockReindexStatus(final String taskId, final TaskResponse.Status inProgressStatus) {
-    final Response completedResponse =
-        createEsResponse(
-            new TaskResponse(
-                true,
-                new TaskResponse.Task(taskId, new TaskResponse.Status(20L, 6L, 6L, 8L)),
-                null,
-                null));
+    final Response completedResponse;
+    try {
+      completedResponse =
+          createEsResponse(
+              new TaskResponse(
+                  true,
+                  new TaskResponse.Task(taskId, new TaskResponse.Status(20L, 6L, 6L, 8L)),
+                  null,
+                  null));
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException(e);
+    }
     Response progressResponse = null;
     if (inProgressStatus != null) {
-      progressResponse =
-          createEsResponse(
-              new TaskResponse(false, new TaskResponse.Task(taskId, inProgressStatus), null, null));
+      try {
+        progressResponse =
+            createEsResponse(
+                new TaskResponse(
+                    false, new TaskResponse.Task(taskId, inProgressStatus), null, null));
+      } catch (IOException e) {
+        throw new OptimizeRuntimeException(e);
+      }
     }
     OngoingStubbing<Response> responseOngoingStubbing = whenReindexStatusRequest(taskId);
     if (progressResponse != null) {
@@ -271,18 +280,20 @@ public class SchemaUpgradeClientESReindexTest {
         .toString();
   }
 
-  @SneakyThrows
   private OngoingStubbing<Response> whenReindexStatusRequest(final String taskId) {
-    return when(
-        elasticsearchClient.performRequest(
-            argThat(
-                argument ->
-                    argument != null
-                        && argument.getMethod().equals(HttpGet.METHOD_NAME)
-                        && argument.getEndpoint().equals("/_tasks/" + taskId))));
+    try {
+      return when(
+          elasticsearchClient.performRequest(
+              argThat(
+                  argument ->
+                      argument != null
+                          && argument.getMethod().equals(HttpGet.METHOD_NAME)
+                          && argument.getEndpoint().equals("/_tasks/" + taskId))));
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException(e);
+    }
   }
 
-  @SneakyThrows
   private void mockCountResponseFromIndex(final String indexName, final long count) {
     when(elasticsearchClient.countWithoutPrefix(matches(indexName))).thenAnswer(a -> count);
   }

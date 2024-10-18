@@ -7,9 +7,9 @@
  */
 package io.camunda.operate.schema.util;
 
-import io.camunda.webapps.schema.descriptors.operate.index.AbstractIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.OperateIndexDescriptor;
 
-public class TestDynamicIndex extends AbstractIndexDescriptor {
+public class TestDynamicIndex extends OperateIndexDescriptor {
 
   public TestDynamicIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);

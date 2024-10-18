@@ -92,7 +92,6 @@ Note: Everything in this directory can be imported directly by referencing the d
 
 The development scripts exist inside the `scripts` folder. Here is a brief explanation of the scripts we developed:
 
-- **dependencies**: Generates a list of dependencies used in the application. It is usually used during the release process to release a list of dependencies of the front-end and add them to the docs.
 - **e2e**: This script sets up and executes end-to-end (E2E) tests on the CI using TestCafe. It runs the tests on three browsers in parallel to execute the tests on BrowserStack.
 - **start-backend**: This script starts everything needed for development apart from the front-end application. It starts the `docker-compose.yml` to start necessary services, and starts the backend server. It can be triggered using the `yarn start-backend` command.
 - **writeModules**: This script runs on the `package.json` "postinstall" hook. It is used to create a symbolic link of the `modules` folder into the `node_modules` folder. This makes it easier to import stuff from the modules folder (reusable component & services module) without the need to specify the full path.

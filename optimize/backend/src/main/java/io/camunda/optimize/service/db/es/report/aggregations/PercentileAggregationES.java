@@ -17,16 +17,18 @@ import io.camunda.optimize.dto.optimize.query.report.single.configuration.Aggreg
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import io.camunda.optimize.service.db.es.report.interpreter.util.AggregationResultMappingUtilES;
 import java.util.Map;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
-@NoArgsConstructor
 public class PercentileAggregationES extends AggregationStrategyES<Builder> {
 
   private static final String PERCENTILE_AGGREGATION = "percentileAggregation";
 
   private Double percentileValue;
+
+  public PercentileAggregationES(Double percentileValue) {
+    this.percentileValue = percentileValue;
+  }
+
+  public PercentileAggregationES() {}
 
   @Override
   public Double getValueForAggregation(

@@ -45,7 +45,7 @@ jobs:
       backend-changes: ${{ steps.filter.outputs.optimize-backend-changes }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4
       - name: Get list of changed directories
         id: filter
         uses: ./.github/actions/paths-filter
@@ -63,10 +63,11 @@ jobs:
     runs-on: gcp-core-8-default
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+      - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
         with:
+          maven-cache-key-modifier: optimize-tests
           secrets: ${{ toJSON(secrets) }}
       - name: Login to Harbor registry
         uses: ./.github/actions/login-registry
@@ -98,7 +99,7 @@ jobs:
       - name: Install
         uses: ./.github/actions/run-maven
         with:
-          parameters: -f optimize/pom.xml install -Dskip.fe.build -Dskip.docker -DskipTests -PrunAssembly
+          parameters: -f optimize/pom.xml install -Dskip.fe.build -Dskip.docker -DskipTests -PrunAssembly -T 1
       - name: Verify optimize/qa/schema-integrity-tests
         uses: ./.github/actions/run-maven
         with:
@@ -107,7 +108,7 @@ jobs:
           CAMUNDA_OPTIMIZE_DATABASE: elasticsearch
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4
         with:
           name: es-schema-integrity-test-junit
           path: |
@@ -126,10 +127,11 @@ jobs:
     runs-on: gcp-core-8-default
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+      - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
         with:
+          maven-cache-key-modifier: optimize-tests
           secrets: ${{ toJSON(secrets) }}
       - name: Login to Harbor registry
         uses: ./.github/actions/login-registry
@@ -161,7 +163,7 @@ jobs:
       - name: Install
         uses: ./.github/actions/run-maven
         with:
-          parameters: -f optimize/pom.xml install -Dskip.fe.build -Dskip.docker -DskipTests -PrunAssembly
+          parameters: -f optimize/pom.xml install -Dskip.fe.build -Dskip.docker -DskipTests -PrunAssembly -T 1
       - name: Verify optimize/qa/schema-integrity-tests
         uses: ./.github/actions/run-maven
         with:
@@ -170,7 +172,7 @@ jobs:
           CAMUNDA_OPTIMIZE_DATABASE: opensearch
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4
         with:
           name: os-schema-integrity-test-junit
           path: |
@@ -201,7 +203,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4
 
       - name: Fetch main branch
         run: git fetch origin main:refs/remote/origin/main
@@ -209,6 +211,7 @@ jobs:
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
         with:
+          maven-cache-key-modifier: optimize-tests
           secrets: ${{ toJSON(secrets) }}
 
       - name: Login to Harbor registry
@@ -251,7 +254,7 @@ jobs:
 
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4
         with:
           name: integration-test-elasticsearch-${{ matrix.includedGroups }}-junit
           path: |
@@ -282,7 +285,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4
 
       - name: Fetch main branch
         run: git fetch origin main:refs/remote/origin/main
@@ -290,6 +293,7 @@ jobs:
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
         with:
+          maven-cache-key-modifier: optimize-tests
           secrets: ${{ toJSON(secrets) }}
 
       - name: Login to Harbor registry
@@ -331,7 +335,7 @@ jobs:
 
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4
         with:
           name: integration-test-opensearch-${{ matrix.includedGroups }}-junit
           path: |
@@ -365,7 +369,7 @@ jobs:
             profiles: 'it'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4
 
       - name: Fetch main branch
         run: git fetch origin main:refs/remote/origin/main
@@ -373,6 +377,7 @@ jobs:
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
         with:
+          maven-cache-key-modifier: optimize-tests
           secrets: ${{ toJSON(secrets) }}
 
       - name: Login to Harbor registry
@@ -414,7 +419,7 @@ jobs:
 
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4
         with:
           name: integration-test-opensearch-dev-${{ matrix.includedGroups }}-junit
           path: |
@@ -436,7 +441,7 @@ jobs:
     if: ${{ needs.detect-changes.outputs.backend-changes == 'true' }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
         with:
@@ -465,7 +470,7 @@ jobs:
           CAMUNDA_OPTIMIZE_DATABASE: elasticsearch
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4
         with:
           name: upgrade-junit
           path: |

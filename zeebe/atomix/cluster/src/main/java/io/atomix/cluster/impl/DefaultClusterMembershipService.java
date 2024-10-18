@@ -44,7 +44,6 @@ public class DefaultClusterMembershipService
 
   private static final Logger LOGGER = getLogger(DefaultClusterMembershipService.class);
 
-  private final String schedulerPrefix;
   private final ManagedNodeDiscoveryService discoveryService;
   private final BootstrapService bootstrapService;
   private final GroupMembershipProtocol protocol;
@@ -54,12 +53,10 @@ public class DefaultClusterMembershipService
 
   public DefaultClusterMembershipService(
       final Member localMember,
-      final String schedulerPrefix,
       final Version version,
       final ManagedNodeDiscoveryService discoveryService,
       final BootstrapService bootstrapService,
       final GroupMembershipProtocol protocol) {
-    this.schedulerPrefix = schedulerPrefix;
     this.discoveryService = checkNotNull(discoveryService, "discoveryService cannot be null");
     this.bootstrapService = checkNotNull(bootstrapService, "bootstrapService cannot be null");
     this.protocol = checkNotNull(protocol, "protocol cannot be null");
@@ -91,8 +88,7 @@ public class DefaultClusterMembershipService
               v -> {
                 localMember.setActive(true);
                 localMember.setReachable(true);
-                return protocol.join(
-                    bootstrapService, discoveryService, localMember, schedulerPrefix);
+                return protocol.join(bootstrapService, discoveryService, localMember);
               })
           .thenApply(
               v -> {

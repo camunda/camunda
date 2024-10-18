@@ -24,19 +24,21 @@ import java.io.IOException;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.core.UpdateResponse;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
 @Conditional(OpenSearchCondition.class)
 public class OpenSearchMetadataService extends DatabaseMetadataService<OptimizeOpenSearchClient> {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(OpenSearchMetadataService.class);
 
   public OpenSearchMetadataService(final ObjectMapper objectMapper) {
     super(objectMapper);

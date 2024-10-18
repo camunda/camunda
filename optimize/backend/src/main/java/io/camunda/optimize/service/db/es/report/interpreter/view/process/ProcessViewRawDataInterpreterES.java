@@ -66,22 +66,35 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class ProcessViewRawDataInterpreterES extends AbstractProcessViewRawDataInterpreter
     implements ProcessViewInterpreterES {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ProcessViewRawDataInterpreterES.class);
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
   private final OptimizeElasticsearchClient esClient;
   private final DefinitionService definitionService;
   private final ProcessVariableReader processVariableReader;
+
+  public ProcessViewRawDataInterpreterES(
+      ConfigurationService configurationService,
+      ObjectMapper objectMapper,
+      OptimizeElasticsearchClient esClient,
+      DefinitionService definitionService,
+      ProcessVariableReader processVariableReader) {
+    this.configurationService = configurationService;
+    this.objectMapper = objectMapper;
+    this.esClient = esClient;
+    this.definitionService = definitionService;
+    this.processVariableReader = processVariableReader;
+  }
 
   @Override
   public Set<ProcessView> getSupportedViews() {

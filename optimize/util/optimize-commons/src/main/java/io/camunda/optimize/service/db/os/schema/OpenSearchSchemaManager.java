@@ -67,7 +67,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.json.ObjectDeserializer;
@@ -88,17 +87,19 @@ import org.opensearch.client.opensearch.indices.PutMappingRequest;
 import org.opensearch.client.opensearch.indices.PutMappingResponse;
 import org.opensearch.client.opensearch.indices.PutTemplateRequest;
 import org.opensearch.client.opensearch.indices.put_index_template.IndexTemplateMapping;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
 @Conditional(OpenSearchCondition.class)
 public class OpenSearchSchemaManager
     extends DatabaseSchemaManager<OptimizeOpenSearchClient, IndexSettings.Builder> {
 
   public static final String ALL_INDEXES = "_all";
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(OpenSearchSchemaManager.class);
   private final OpenSearchMetadataService metadataService;
 
   @Autowired

@@ -14,7 +14,8 @@ import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.query.FormQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.search.security.auth.Authentication;
+import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.SecurityContext;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 
@@ -37,7 +38,8 @@ public final class FormServices extends SearchQueryService<FormServices, FormQue
 
   @Override
   public SearchQueryResult<FormEntity> search(final FormQuery query) {
-    return formSearchClient.searchForms(query, authentication);
+    return formSearchClient.searchForms(
+        query, SecurityContext.of(s -> s.withAuthentication(authentication)));
   }
 
   public FormEntity getByKey(final Long key) {

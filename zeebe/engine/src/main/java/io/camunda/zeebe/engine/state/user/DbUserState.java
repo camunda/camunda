@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import java.util.List;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 
@@ -57,6 +58,24 @@ public class DbUserState implements UserState, MutableUserState {
   }
 
   @Override
+  public void addRole(final long userKey, final long roleKey) {
+    this.userKey.wrapLong(userKey);
+    final var persistedUser = userByUserKeyColumnFamily.get(this.userKey);
+    persistedUser.getUser().addRoleKey(roleKey);
+    userByUserKeyColumnFamily.update(this.userKey, persistedUser);
+  }
+
+  @Override
+  public void removeRole(final long userKey, final long roleKey) {
+    this.userKey.wrapLong(userKey);
+    final var persistedUser = userByUserKeyColumnFamily.get(this.userKey);
+    final List<Long> roleKeys = persistedUser.getUser().getRoleKeysList();
+    roleKeys.remove(roleKey);
+    persistedUser.getUser().setRoleKeysList(roleKeys);
+    userByUserKeyColumnFamily.update(this.userKey, persistedUser);
+  }
+
+  @Override
   public Optional<UserRecord> getUser(final DirectBuffer username) {
     this.username.wrapBuffer(username);
     final var key = userKeyByUsernameColumnFamily.get(this.username);
@@ -91,5 +110,11 @@ public class DbUserState implements UserState, MutableUserState {
     persistedUser.setUser(user);
 
     userByUserKeyColumnFamily.update(key, persistedUser);
+  }
+
+  @Override
+  public void deleteUser(final long userKey) {
+    this.userKey.wrapLong(userKey);
+    userByUserKeyColumnFamily.deleteExisting(this.userKey);
   }
 }

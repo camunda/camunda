@@ -37,8 +37,6 @@ public class ProcessInstanceSortTest extends AbstractSortTransformerTest {
         new ProcessInstanceSortTest.TestArguments(
             "processDefinitionKey", SortOrder.ASC, s -> s.processDefinitionKey().asc()),
         new ProcessInstanceSortTest.TestArguments(
-            "rootProcessInstanceKey", SortOrder.ASC, s -> s.rootProcessInstanceKey().asc()),
-        new ProcessInstanceSortTest.TestArguments(
             "parentProcessInstanceKey", SortOrder.ASC, s -> s.parentProcessInstanceKey().asc()),
         new ProcessInstanceSortTest.TestArguments(
             "parentFlowNodeInstanceKey", SortOrder.DESC, s -> s.parentFlowNodeInstanceKey().desc()),

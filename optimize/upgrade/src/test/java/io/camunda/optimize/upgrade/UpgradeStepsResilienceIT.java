@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockserver.verify.VerificationTimes.exactly;
 
+import io.camunda.optimize.exception.OptimizeIntegrationTestException;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import io.camunda.optimize.upgrade.plan.UpgradePlan;
@@ -24,7 +25,6 @@ import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpError;
@@ -34,7 +34,6 @@ import org.mockserver.model.MediaType;
 
 public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
 
-  @SneakyThrows
   @Test
   public void deleteIndexEventuallySucceedsOnPendingSnapshot() {
     // given
@@ -55,7 +54,11 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
 
     // then it eventually completes
     upgradeExecution.shutdown();
-    assertThat(upgradeExecution.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
+    try {
+      assertThat(upgradeExecution.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
+    } catch (InterruptedException e) {
+      throw new OptimizeIntegrationTestException(e);
+    }
 
     // and the mocked delete endpoint was called three times in total
     dbMockServer.verify(indexDeleteRequest, exactly(3));
@@ -66,7 +69,6 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
         .isFalse();
   }
 
-  @SneakyThrows
   @Test
   public void deleteIndexIndexFailsOnOtherError() {
     // given
@@ -93,7 +95,6 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
         .isTrue();
   }
 
-  @SneakyThrows
   @Test
   public void updateIndexEventuallySucceedsOnPendingSnapshot() {
     // given
@@ -114,7 +115,11 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
 
     // then it eventually completes
     upgradeExecution.shutdown();
-    assertThat(upgradeExecution.awaitTermination(20, TimeUnit.SECONDS)).isTrue();
+    try {
+      assertThat(upgradeExecution.awaitTermination(20, TimeUnit.SECONDS)).isTrue();
+    } catch (InterruptedException e) {
+      throw new OptimizeIntegrationTestException(e);
+    }
 
     // and the mocked delete endpoint was called three times in total
     dbMockServer.verify(indexDeleteRequest, exactly(3));

@@ -17,22 +17,30 @@ import io.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch.indices.IndexSettings;
+import org.slf4j.Logger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-@RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class IndexRepositoryOS implements IndexRepository, ConfigurationReloadable {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(IndexRepositoryOS.class);
   private final OptimizeOpenSearchClient osClient;
   private final OpenSearchSchemaManager openSearchSchemaManager;
   private final OptimizeIndexNameService indexNameService;
   private final Set<String> indices = ConcurrentHashMap.newKeySet();
+
+  public IndexRepositoryOS(
+      final OptimizeOpenSearchClient osClient,
+      final OpenSearchSchemaManager openSearchSchemaManager,
+      final OptimizeIndexNameService indexNameService) {
+    this.osClient = osClient;
+    this.openSearchSchemaManager = openSearchSchemaManager;
+    this.indexNameService = indexNameService;
+  }
 
   @Override
   public void reloadConfiguration(final ApplicationContext context) {
@@ -57,7 +65,7 @@ public class IndexRepositoryOS implements IndexRepository, ConfigurationReloadab
   }
 
   private void createMissingIndex(
-      IndexMappingCreator<IndexSettings.Builder> indexMappingCreator,
+      final IndexMappingCreator<IndexSettings.Builder> indexMappingCreator,
       final Set<String> readOnlyAliases) {
     log.debug("Creating index {}.", getIndexName(indexMappingCreator));
     openSearchSchemaManager.createOrUpdateOptimizeIndex(
@@ -69,7 +77,8 @@ public class IndexRepositoryOS implements IndexRepository, ConfigurationReloadab
     return indices.contains(index) || openSearchSchemaManager.indexExists(osClient, index);
   }
 
-  private String getIndexName(IndexMappingCreator<IndexSettings.Builder> indexMappingCreator) {
+  private String getIndexName(
+      final IndexMappingCreator<IndexSettings.Builder> indexMappingCreator) {
     return indexNameService.getOptimizeIndexNameWithVersion(indexMappingCreator);
   }
 }

@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
+import io.camunda.zeebe.engine.scaling.ScaledUpApplier;
+import io.camunda.zeebe.engine.scaling.ScalingUpApplier;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.EventApplier.NoSuchEventApplier.NoApplierForIntent;
 import io.camunda.zeebe.engine.state.EventApplier.NoSuchEventApplier.NoApplierForVersion;
@@ -47,11 +49,13 @@ import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -113,6 +117,8 @@ public final class EventAppliers implements EventApplier {
     registerAuthorizationAppliers(state);
     registerClockAppliers(state);
     registerRoleAppliers(state);
+    registerScalingAppliers(state);
+    registerTenantAppliers(state);
     return this;
   }
 
@@ -245,6 +251,7 @@ public final class EventAppliers implements EventApplier {
   private void registerUserAppliers(final MutableProcessingState state) {
     register(UserIntent.CREATED, new UserCreatedApplier(state));
     register(UserIntent.UPDATED, new UserUpdatedApplier(state));
+    register(UserIntent.DELETED, new UserDeletedApplier(state));
   }
 
   private void registerMessageSubscriptionAppliers(final MutableProcessingState state) {
@@ -375,8 +382,10 @@ public final class EventAppliers implements EventApplier {
     register(UserTaskIntent.CREATED, new UserTaskCreatedApplier(state));
     register(UserTaskIntent.CANCELING, new UserTaskCancelingApplier(state));
     register(UserTaskIntent.CANCELED, new UserTaskCanceledApplier(state));
-    register(UserTaskIntent.COMPLETING, new UserTaskCompletingApplier(state));
-    register(UserTaskIntent.COMPLETED, new UserTaskCompletedApplier(state));
+    register(UserTaskIntent.COMPLETING, 1, new UserTaskCompletingV1Applier(state));
+    register(UserTaskIntent.COMPLETING, 2, new UserTaskCompletingV2Applier(state));
+    register(UserTaskIntent.COMPLETED, 1, new UserTaskCompletedV1Applier(state));
+    register(UserTaskIntent.COMPLETED, 2, new UserTaskCompletedV2Applier(state));
     register(UserTaskIntent.ASSIGNING, new UserTaskAssigningApplier(state));
     register(UserTaskIntent.ASSIGNED, new UserTaskAssignedApplier(state));
     register(UserTaskIntent.UPDATING, new UserTaskUpdatingApplier(state));
@@ -450,6 +459,27 @@ public final class EventAppliers implements EventApplier {
 
   private void registerRoleAppliers(final MutableProcessingState state) {
     register(RoleIntent.CREATED, new RoleCreatedApplier(state.getRoleState()));
+    register(RoleIntent.UPDATED, new RoleUpdatedApplier(state.getRoleState()));
+    register(
+        RoleIntent.ENTITY_ADDED,
+        new RoleEntityAddedApplier(state.getRoleState(), state.getUserState()));
+    register(
+        RoleIntent.ENTITY_REMOVED,
+        new RoleEntityRemovedApplier(state.getRoleState(), state.getUserState()));
+    register(
+        RoleIntent.DELETED,
+        new RoleDeletedApplier(
+            state.getRoleState(), state.getUserState(), state.getAuthorizationState()));
+  }
+
+  private void registerScalingAppliers(final MutableProcessingState state) {
+    register(ScaleIntent.SCALING_UP, new ScalingUpApplier(state.getRoutingState()));
+    register(ScaleIntent.SCALED_UP, new ScaledUpApplier(state.getRoutingState()));
+  }
+
+  private void registerTenantAppliers(final MutableProcessingState state) {
+    register(TenantIntent.CREATED, new TenantCreatedApplier(state.getTenantState()));
+    register(TenantIntent.UPDATED, new TenantUpdatedApplier(state.getTenantState()));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {

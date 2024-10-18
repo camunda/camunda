@@ -8,16 +8,16 @@
 
 import {zeebeGrpcApi} from '../api/zeebe-grpc';
 
-const {deployProcesses, completeTask, createSingleInstance} = zeebeGrpcApi;
+const {deployProcesses, createWorker, createSingleInstance} = zeebeGrpcApi;
 
 const setup = async () => {
   await deployProcesses(['multiInstanceProcess.bpmn']);
 
-  completeTask('multiInstanceProcessTaskA', false, {}, (job) => {
+  createWorker('multiInstanceProcessTaskA', false, {}, (job) => {
     return job.complete({i: Number(job.variables.i) + 1});
   });
 
-  completeTask('multiInstanceProcessTaskB', true);
+  createWorker('multiInstanceProcessTaskB', true);
 
   const multiInstanceProcessInstance = await createSingleInstance(
     'multiInstanceProcess',

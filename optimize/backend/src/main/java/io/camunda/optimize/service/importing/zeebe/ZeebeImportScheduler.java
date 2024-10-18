@@ -11,10 +11,11 @@ import io.camunda.optimize.dto.optimize.ZeebeConfigDto;
 import io.camunda.optimize.service.importing.AbstractImportScheduler;
 import io.camunda.optimize.service.importing.ImportMediator;
 import java.util.List;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
 public class ZeebeImportScheduler extends AbstractImportScheduler<ZeebeConfigDto> {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ZeebeImportScheduler.class);
 
   public ZeebeImportScheduler(
       final List<ImportMediator> importMediators, final ZeebeConfigDto dataImportSourceDto) {

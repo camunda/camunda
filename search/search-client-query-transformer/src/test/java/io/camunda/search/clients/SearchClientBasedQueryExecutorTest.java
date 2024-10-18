@@ -18,6 +18,7 @@ import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.security.auth.SecurityContext;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,7 +37,6 @@ class SearchClientBasedQueryExecutorTest {
           5,
           "42",
           789L,
-          777L,
           null,
           null,
           "default",
@@ -53,7 +53,9 @@ class SearchClientBasedQueryExecutorTest {
 
   @BeforeEach
   void setUp() {
-    queryExecutor = new SearchClientBasedQueryExecutor(searchClient, serviceTransformers, null);
+    queryExecutor =
+        new SearchClientBasedQueryExecutor(
+            searchClient, serviceTransformers, SecurityContext.withoutAuthentication());
   }
 
   @Test

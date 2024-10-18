@@ -7,16 +7,16 @@
  */
 
 import {
-  InfiniteData,
-  UseInfiniteQueryOptions,
+  type InfiniteData,
+  type UseInfiniteQueryOptions,
   useInfiniteQuery,
   useQueryClient,
 } from '@tanstack/react-query';
 import {api} from 'modules/api';
-import {RequestError, request} from 'modules/request';
-import {Task} from 'modules/types';
+import {type RequestError, request} from 'modules/request';
+import type {Task} from 'modules/types';
 import {getQueryVariables} from 'modules/utils/getQueryVariables';
-import {TaskFilters} from 'modules/hooks/useTaskFilters';
+import type {TaskFilters} from 'modules/hooks/useTaskFilters';
 import chunk from 'lodash/chunk';
 import {useCurrentUser} from './useCurrentUser';
 

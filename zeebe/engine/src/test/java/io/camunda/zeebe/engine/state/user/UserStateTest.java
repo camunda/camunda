@@ -153,6 +153,31 @@ public class UserStateTest {
     assertThat(persistedUserAfterUpdate.getEmail()).isEqualTo(updatedEmail);
   }
 
+  @DisplayName("should delete a user")
+  @Test
+  void shouldDeleteAUser() {
+    final var userKey = 1L;
+    final var username = "username" + UUID.randomUUID();
+    final var name = "name" + UUID.randomUUID();
+    final var password = "password" + UUID.randomUUID();
+    final var email = "email" + UUID.randomUUID();
+
+    final UserRecord user =
+        new UserRecord()
+            .setUserKey(userKey)
+            .setUsername(username)
+            .setName(name)
+            .setPassword(password)
+            .setEmail(email);
+    userState.create(user);
+
+    assertThat(userState.getUser(username)).isNotEmpty();
+
+    userState.deleteUser(userKey);
+
+    assertThat(userState.getUser(username)).isEmpty();
+  }
+
   @Test
   void shouldReturnUserByKey() {
     // given
@@ -195,5 +220,56 @@ public class UserStateTest {
 
     // then
     assertThat(persistedUser).isEmpty();
+  }
+
+  @Test
+  void shouldAddRole() {
+    // given
+    final long userKey = 1L;
+    final var username = "username";
+    final var name = "Foo";
+    final var email = "foo@bar.com";
+    final var password = "password";
+    userState.create(
+        new UserRecord()
+            .setUserKey(userKey)
+            .setUsername(username)
+            .setName(name)
+            .setEmail(email)
+            .setPassword(password));
+
+    // when
+    final long roleKey = 1L;
+    userState.addRole(userKey, roleKey);
+
+    // then
+    final var persistedUser = userState.getUser(userKey).get();
+    assertThat(persistedUser.getRoleKeysList()).contains(roleKey);
+  }
+
+  @Test
+  void shouldRemoveRole() {
+    // given
+    final long userKey = 1L;
+    final var username = "username";
+    final var name = "Foo";
+    final var email = "foo@bar.com";
+    final var password = "password";
+    userState.create(
+        new UserRecord()
+            .setUserKey(userKey)
+            .setUsername(username)
+            .setName(name)
+            .setEmail(email)
+            .setPassword(password));
+    final long roleKey = 1L;
+    userState.addRole(userKey, roleKey);
+
+    // when
+    userState.removeRole(userKey, roleKey);
+
+    // then
+    final var persistedUser = userState.getUser(userKey).get();
+    assertThat(persistedUser.getRoleKeysList()).isEmpty();
   }
 }

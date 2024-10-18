@@ -12,16 +12,16 @@ import static io.camunda.optimize.service.util.configuration.ConfigurationServic
 
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Locale;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 
-@Getter
-@AllArgsConstructor
 public enum OptimizeProfile {
   CCSM(CCSM_PROFILE),
   CLOUD(CLOUD_PROFILE);
 
   private final String id;
+
+  private OptimizeProfile(final String id) {
+    this.id = id;
+  }
 
   @JsonValue
   public String getId() {

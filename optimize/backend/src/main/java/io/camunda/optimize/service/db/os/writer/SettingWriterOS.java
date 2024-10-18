@@ -21,22 +21,25 @@ import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondit
 import jakarta.ws.rs.BadRequestException;
 import java.util.HashSet;
 import java.util.Set;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch.core.UpdateRequest;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
-@Slf4j
 @Component
 @Conditional(OpenSearchCondition.class)
 public class SettingWriterOS implements SettingsWriter {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(SettingWriterOS.class);
   private final OptimizeOpenSearchClient osClient;
   private final ObjectMapper objectMapper;
+
+  public SettingWriterOS(final OptimizeOpenSearchClient osClient, final ObjectMapper objectMapper) {
+    this.osClient = osClient;
+    this.objectMapper = objectMapper;
+  }
 
   @Override
   public void upsertSettings(final SettingsDto settingsDto) {
@@ -50,7 +53,7 @@ public class SettingWriterOS implements SettingsWriter {
 
   private UpdateRequest.Builder<SettingsDto, Void> createSettingsUpsert(
       final SettingsDto settingsDto) {
-    Set<String> fieldsToUpdate = new HashSet<>();
+    final Set<String> fieldsToUpdate = new HashSet<>();
     if (settingsDto.getSharingEnabled().isPresent()) {
       fieldsToUpdate.add(SHARING_ENABLED);
     }

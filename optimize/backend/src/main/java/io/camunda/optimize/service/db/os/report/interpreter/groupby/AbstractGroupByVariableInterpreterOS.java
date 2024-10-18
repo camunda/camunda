@@ -48,7 +48,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
@@ -59,12 +58,13 @@ import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchResponse;
 
-@RequiredArgsConstructor
 public abstract class AbstractGroupByVariableInterpreterOS<
         DATA extends SingleReportDataDto, PLAN extends ExecutionPlan>
     extends AbstractGroupByInterpreterOS<DATA, PLAN> {
 
   public static final String FILTERED_FLOW_NODE_AGGREGATION = "filteredFlowNodeAggregation";
+
+  public AbstractGroupByVariableInterpreterOS() {}
 
   protected abstract VariableAggregationServiceOS getVariableAggregationService();
 

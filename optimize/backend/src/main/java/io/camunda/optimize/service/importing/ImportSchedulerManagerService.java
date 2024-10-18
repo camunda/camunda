@@ -29,18 +29,18 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
 public class ImportSchedulerManagerService implements ConfigurationReloadable {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ImportSchedulerManagerService.class);
   private final ImportIndexHandlerRegistry importIndexHandlerRegistry;
   private final BeanFactory beanFactory;
   private final ConfigurationService configurationService;
@@ -49,7 +49,6 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
 
   @Autowired private Environment environment;
 
-  @Getter
   private List<AbstractImportScheduler<? extends SchedulerConfig>> importSchedulers =
       new ArrayList<>();
 
@@ -175,5 +174,9 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
         .flatMap(Collection::stream)
         .sorted(Comparator.comparing(ImportMediator::getRank))
         .collect(Collectors.toList());
+  }
+
+  public List<AbstractImportScheduler<? extends SchedulerConfig>> getImportSchedulers() {
+    return importSchedulers;
   }
 }

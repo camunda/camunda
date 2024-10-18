@@ -18,28 +18,39 @@ import io.camunda.optimize.service.db.writer.DecisionDefinitionXmlWriter;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 @Conditional(OpenSearchCondition.class)
 public class DecisionDefinitionXmlWriterOS implements DecisionDefinitionXmlWriter {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(DecisionDefinitionXmlWriterOS.class);
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
   private final OptimizeIndexNameService indexNameService;
   private final ObjectMapper objectMapper;
 
+  public DecisionDefinitionXmlWriterOS(
+      final OptimizeOpenSearchClient osClient,
+      final ConfigurationService configurationService,
+      final OptimizeIndexNameService indexNameService,
+      final ObjectMapper objectMapper) {
+    this.osClient = osClient;
+    this.configurationService = configurationService;
+    this.indexNameService = indexNameService;
+    this.objectMapper = objectMapper;
+  }
+
   @Override
   public void importDecisionDefinitionXmls(
       final List<DecisionDefinitionOptimizeDto> decisionDefinitions) {
-    String importItemName = "decision definition XML information";
+    final String importItemName = "decision definition XML information";
     log.debug("Writing [{}] {} to OS.", decisionDefinitions.size(), importItemName);
     osClient.doImportBulkRequestWithList(
         importItemName,

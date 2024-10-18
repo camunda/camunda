@@ -11,7 +11,7 @@ jobs:
         shell: bash
     steps:
       - name: Checkout code
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4
 
       - name: Create URL to the run output
         id: vars
@@ -168,7 +168,7 @@ jobs:
           remove_assignee=true
 
           if [ "${{ steps.parse-args.outputs.arg1}}" == "approve" ]; then
-            if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'kind/epic') }}" == "true" ]
+            if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'kind/epic') }}" == "true" ]; then
               new_assignee="${{ steps.vars.outputs.pm }}"
             else
               new_assignee="${{ steps.get-engineering-dri.outputs.engineering_dri }}"

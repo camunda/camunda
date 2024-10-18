@@ -29,16 +29,16 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
 public class SessionService implements ConfigurationReloadable {
 
   private static final String ISSUER = "Optimize-" + Version.RAW_VERSION;
   private static final byte[] DEFAULT_SECRET_BYTES = new byte[64];
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(SessionService.class);
 
   static {
     new SecureRandom().nextBytes(DEFAULT_SECRET_BYTES);

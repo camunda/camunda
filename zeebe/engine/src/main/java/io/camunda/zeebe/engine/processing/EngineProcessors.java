@@ -31,6 +31,7 @@ import io.camunda.zeebe.engine.processing.distribution.CommandRedistributor;
 import io.camunda.zeebe.engine.processing.dmn.DecisionEvaluationEvaluteProcessor;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationProcessors;
+import io.camunda.zeebe.engine.processing.identity.RoleProcessors;
 import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
 import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
@@ -42,9 +43,11 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.tenant.TenantProcessors;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.processing.user.UserProcessors;
 import io.camunda.zeebe.engine.processing.usertask.UserTaskProcessor;
+import io.camunda.zeebe.engine.scaling.ScalingProcessors;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -154,7 +157,8 @@ public final class EngineProcessors {
         config,
         featureFlags,
         commandDistributionBehavior,
-        clock);
+        clock,
+        authCheckBehavior);
 
     final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor =
         addProcessProcessors(
@@ -210,7 +214,8 @@ public final class EngineProcessors {
         processingState,
         scheduledTaskStateFactory,
         interPartitionCommandSender);
-    addUserTaskProcessors(typedRecordProcessors, processingState, bpmnBehaviors, writers);
+    addUserTaskProcessors(
+        typedRecordProcessors, processingState, bpmnBehaviors, writers, authCheckBehavior);
 
     UserProcessors.addUserProcessors(
         keyGenerator,
@@ -230,6 +235,25 @@ public final class EngineProcessors {
         writers,
         commandDistributionBehavior,
         authCheckBehavior);
+
+    RoleProcessors.addRoleProcessors(
+        typedRecordProcessors,
+        processingState.getRoleState(),
+        authCheckBehavior,
+        keyGenerator,
+        writers,
+        commandDistributionBehavior);
+
+    ScalingProcessors.addScalingProcessors(
+        typedRecordProcessors, writers, keyGenerator, processingState);
+
+    TenantProcessors.addTenantProcessors(
+        typedRecordProcessors,
+        processingState.getTenantState(),
+        authCheckBehavior,
+        keyGenerator,
+        writers,
+        commandDistributionBehavior);
 
     return typedRecordProcessors;
   }
@@ -363,7 +387,8 @@ public final class EngineProcessors {
       final EngineConfiguration config,
       final FeatureFlags featureFlags,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     MessageEventProcessors.addMessageProcessors(
         bpmnBehaviors,
         typedRecordProcessors,
@@ -374,7 +399,8 @@ public final class EngineProcessors {
         config,
         featureFlags,
         commandDistributionBehavior,
-        clock);
+        clock,
+        authCheckBehavior);
   }
 
   private static void addDecisionProcessors(
@@ -431,10 +457,15 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final MutableProcessingState processingState,
       final BpmnBehaviors bpmnBehaviors,
-      final Writers writers) {
+      final Writers writers,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     final var userTaskProcessor =
         new UserTaskProcessor(
-            processingState, processingState.getKeyGenerator(), bpmnBehaviors, writers);
+            processingState,
+            processingState.getKeyGenerator(),
+            bpmnBehaviors,
+            writers,
+            authCheckBehavior);
 
     UserTaskIntent.commands()
         .forEach(

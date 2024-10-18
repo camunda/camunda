@@ -71,18 +71,20 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class ElasticSearchSchemaManager
     extends DatabaseSchemaManager<OptimizeElasticsearchClient, IndexSettings.Builder> {
+
   public static final int INDEX_EXIST_BATCH_SIZE = 10;
   private static final String INDEX_READ_ONLY_SETTING = "index.blocks.read_only_allow_delete";
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ElasticSearchSchemaManager.class);
   protected final ElasticSearchMetadataService metadataService;
 
   @Autowired

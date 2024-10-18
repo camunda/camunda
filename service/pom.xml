@@ -54,10 +54,13 @@
       <groupId>io.camunda</groupId>
       <artifactId>document-store</artifactId>
     </dependency>
-
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-domain</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-core</artifactId>
     </dependency>
 
     <dependency>
@@ -100,5 +103,4 @@
     </dependency>
 
   </dependencies>
-
 </project>

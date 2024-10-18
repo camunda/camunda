@@ -18,11 +18,10 @@ import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.V
 
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 import java.util.Optional;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ProcessVariableHelper {
+
+  private ProcessVariableHelper() {}
 
   public static String getNestedVariableNameField() {
     return VARIABLES + "." + VARIABLE_NAME;

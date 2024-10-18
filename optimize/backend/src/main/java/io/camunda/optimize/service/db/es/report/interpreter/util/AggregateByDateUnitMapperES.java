@@ -10,12 +10,12 @@ package io.camunda.optimize.service.db.es.report.interpreter.util;
 import co.elastic.clients.elasticsearch._types.aggregations.CalendarInterval;
 import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import java.time.temporal.ChronoUnit;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class AggregateByDateUnitMapperES {
+
   private static final String UNSUPPORTED_UNIT_STRING = "Unsupported unit: ";
+
+  private AggregateByDateUnitMapperES() {}
 
   public static ChronoUnit mapToChronoUnit(final AggregateByDateUnit unit) {
     switch (unit) {

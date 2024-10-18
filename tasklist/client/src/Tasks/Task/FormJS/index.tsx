@@ -7,7 +7,7 @@
  */
 
 import {useMemo, useRef, useState} from 'react';
-import {Form, Variable, CurrentUser, Task} from 'modules/types';
+import type {Form, Variable, CurrentUser, Task} from 'modules/types';
 import {useRemoveFormReference} from 'modules/queries/useTask';
 import {getSchemaVariables} from '@bpmn-io/form-js-viewer';
 import {DetailsFooter} from 'modules/components/DetailsFooter';

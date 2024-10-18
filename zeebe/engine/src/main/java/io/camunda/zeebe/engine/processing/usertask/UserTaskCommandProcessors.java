@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.usertask;
 
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAssignProcessor;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskClaimProcessor;
@@ -31,7 +32,8 @@ public final class UserTaskCommandProcessors {
       final ProcessingState processingState,
       final KeyGenerator keyGenerator,
       final BpmnBehaviors bpmnBehaviors,
-      final Writers writers) {
+      final Writers writers,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     final EventHandle eventHandle =
         new EventHandle(
             keyGenerator,
@@ -45,17 +47,18 @@ public final class UserTaskCommandProcessors {
         new EnumMap<>(
             Map.of(
                 UserTaskIntent.ASSIGN,
-                new UserTaskAssignProcessor(processingState, writers),
+                new UserTaskAssignProcessor(processingState, writers, authCheckBehavior),
                 UserTaskIntent.CLAIM,
-                new UserTaskClaimProcessor(processingState, writers),
+                new UserTaskClaimProcessor(processingState, writers, authCheckBehavior),
                 UserTaskIntent.UPDATE,
-                new UserTaskUpdateProcessor(processingState, writers),
+                new UserTaskUpdateProcessor(processingState, writers, authCheckBehavior),
                 UserTaskIntent.COMPLETE,
-                new UserTaskCompleteProcessor(processingState, eventHandle, writers)));
+                new UserTaskCompleteProcessor(
+                    processingState, eventHandle, writers, authCheckBehavior)));
     validateProcessorsSetup(commandToProcessor);
   }
 
-  public UserTaskCommandProcessor getCommandProcessor(UserTaskIntent userTaskIntent) {
+  public UserTaskCommandProcessor getCommandProcessor(final UserTaskIntent userTaskIntent) {
     if (userTaskIntent.isEvent()) {
       throw new IllegalArgumentException(
           "Expected a command, but received an event: '%s'. Valid UserTask commands are: %s"
@@ -70,9 +73,12 @@ public final class UserTaskCommandProcessors {
   }
 
   private static void validateProcessorsSetup(
-      Map<UserTaskIntent, UserTaskCommandProcessor> commandToProcessor) {
+      final Map<UserTaskIntent, UserTaskCommandProcessor> commandToProcessor) {
     final var missingProcessors =
         UserTaskIntent.commands().stream()
+            // Exclude COMPLETE_TASK_LISTENER as it doesn't require a dedicated processor.
+            // This intent is handled internally within UserTaskProcessor
+            .filter(intent -> intent != UserTaskIntent.COMPLETE_TASK_LISTENER)
             .filter(intent -> !commandToProcessor.containsKey(intent))
             .collect(Collectors.toSet());
 

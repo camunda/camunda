@@ -37,7 +37,7 @@ public class UserTaskImpl implements UserTask {
   private final String completionDate;
   private final String followUpDate;
   private final String dueDate;
-  private final String tenantIds;
+  private final String tenantId;
   private final String externalFormReference;
   private final Integer processDefinitionVersion;
   private final Map<String, String> customHeaders;
@@ -45,12 +45,12 @@ public class UserTaskImpl implements UserTask {
 
   public UserTaskImpl(final UserTaskItem item) {
     userTaskKey = item.getUserTaskKey();
-    state = item.getState();
+    state = item.getState().getValue();
     assignee = item.getAssignee();
     elementId = item.getElementId();
     elementInstanceKey = item.getElementInstanceKey();
-    candidateGroup = item.getCandidateGroup();
-    candidateUser = item.getCandidateUser();
+    candidateGroup = item.getCandidateGroups();
+    candidateUser = item.getCandidateUsers();
     bpmnProcessId = item.getProcessDefinitionId();
     processDefinitionKey = item.getProcessDefinitionKey();
     processInstanceKey = item.getProcessInstanceKey();
@@ -59,7 +59,7 @@ public class UserTaskImpl implements UserTask {
     completionDate = item.getCompletionDate();
     followUpDate = item.getFollowUpDate();
     dueDate = item.getDueDate();
-    tenantIds = item.getTenantIds();
+    tenantId = item.getTenantId();
     externalFormReference = item.getExternalFormReference();
     processDefinitionVersion = item.getProcessDefinitionVersion();
     customHeaders = item.getCustomHeaders();
@@ -92,12 +92,12 @@ public class UserTaskImpl implements UserTask {
   }
 
   @Override
-  public List<String> getCandidateGroup() {
+  public List<String> getCandidateGroups() {
     return candidateGroup;
   }
 
   @Override
-  public List<String> getCandidateUser() {
+  public List<String> getCandidateUsers() {
     return candidateUser;
   }
 
@@ -142,8 +142,8 @@ public class UserTaskImpl implements UserTask {
   }
 
   @Override
-  public String getTenantIds() {
-    return tenantIds;
+  public String getTenantId() {
+    return tenantId;
   }
 
   @Override

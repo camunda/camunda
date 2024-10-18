@@ -15,9 +15,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
 public class ProcessOverviewSorter extends Sorter<ProcessOverviewResponseDto> {
 
   private static final Map<String, Comparator<ProcessOverviewResponseDto>> sortComparators =
@@ -35,8 +33,10 @@ public class ProcessOverviewSorter extends Sorter<ProcessOverviewResponseDto> {
           .thenComparing(ProcessOverviewResponseDto::getProcessDefinitionKey);
 
   public ProcessOverviewSorter(final String sortBy, final SortOrder sortOrder) {
-    this.sortRequestDto = new SortRequestDto(sortBy, sortOrder);
+    sortRequestDto = new SortRequestDto(sortBy, sortOrder);
   }
+
+  public ProcessOverviewSorter() {}
 
   @Override
   public List<ProcessOverviewResponseDto> applySort(

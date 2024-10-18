@@ -13,18 +13,19 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
 public class PeriodicAction {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(PeriodicAction.class);
   private final ScheduledExecutorService executorService;
   private final String actionName;
   private final Runnable onSchedule;
 
-  public PeriodicAction(String actionName, final Runnable onSchedule) {
+  public PeriodicAction(final String actionName, final Runnable onSchedule) {
     this.actionName = actionName;
     this.onSchedule = onSchedule;
-    this.executorService =
+    executorService =
         Executors.newSingleThreadScheduledExecutor(
             new ThreadFactoryBuilder().setNameFormat(actionName + "-progress-%d").build());
   }
@@ -38,7 +39,7 @@ public class PeriodicAction {
     try {
       log.debug(format("Stopping periodic action %s", actionName));
       executorService.shutdownNow();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       log.error(format("Failed to stop periodic action %s", actionName));
     }
   }

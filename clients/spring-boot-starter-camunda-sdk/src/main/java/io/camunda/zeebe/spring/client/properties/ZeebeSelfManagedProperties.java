@@ -62,7 +62,7 @@ public class ZeebeSelfManagedProperties {
     return audience;
   }
 
-  @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.base-url")
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.grpc-address")
   @Deprecated
   public String getGatewayAddress() {
     return gatewayAddress;

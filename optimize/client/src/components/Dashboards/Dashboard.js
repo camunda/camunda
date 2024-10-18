@@ -7,7 +7,6 @@
  */
 
 import {Component} from 'react';
-import {Redirect} from 'react-router-dom';
 
 import {format, BACKEND_DATE_FORMAT} from 'dates';
 import {withErrorHandling, withUser} from 'HOC';
@@ -358,7 +357,7 @@ export class Dashboard extends Component {
     }
 
     if (redirect) {
-      return <Redirect to={redirect} />;
+      return this.props.history.push(redirect);
     }
 
     const commonProps = {

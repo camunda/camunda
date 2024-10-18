@@ -7,9 +7,6 @@
  */
 package io.camunda.optimize.dto.optimize.rest;
 
-import lombok.Data;
-
-@Data
 public class ErrorResponseDto {
 
   private String errorCode;
@@ -44,6 +41,113 @@ public class ErrorResponseDto {
     this.errorCode = errorCode;
     this.errorMessage = errorMessage;
     this.detailedMessage = detailedMessage;
+  }
+
+  public String getErrorCode() {
+    return errorCode;
+  }
+
+  public void setErrorCode(final String errorCode) {
+    this.errorCode = errorCode;
+  }
+
+  public String getErrorMessage() {
+    return errorMessage;
+  }
+
+  public void setErrorMessage(final String errorMessage) {
+    this.errorMessage = errorMessage;
+  }
+
+  public String getDetailedMessage() {
+    return detailedMessage;
+  }
+
+  public void setDetailedMessage(final String detailedMessage) {
+    this.detailedMessage = detailedMessage;
+  }
+
+  public AuthorizedReportDefinitionResponseDto getReportDefinition() {
+    return reportDefinition;
+  }
+
+  public void setReportDefinition(final AuthorizedReportDefinitionResponseDto reportDefinition) {
+    this.reportDefinition = reportDefinition;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof ErrorResponseDto;
+  }
+
+  @Override
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = 1;
+    final Object $errorCode = getErrorCode();
+    result = result * PRIME + ($errorCode == null ? 43 : $errorCode.hashCode());
+    final Object $errorMessage = getErrorMessage();
+    result = result * PRIME + ($errorMessage == null ? 43 : $errorMessage.hashCode());
+    final Object $detailedMessage = getDetailedMessage();
+    result = result * PRIME + ($detailedMessage == null ? 43 : $detailedMessage.hashCode());
+    final Object $reportDefinition = getReportDefinition();
+    result = result * PRIME + ($reportDefinition == null ? 43 : $reportDefinition.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof ErrorResponseDto)) {
+      return false;
+    }
+    final ErrorResponseDto other = (ErrorResponseDto) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    final Object this$errorCode = getErrorCode();
+    final Object other$errorCode = other.getErrorCode();
+    if (this$errorCode == null
+        ? other$errorCode != null
+        : !this$errorCode.equals(other$errorCode)) {
+      return false;
+    }
+    final Object this$errorMessage = getErrorMessage();
+    final Object other$errorMessage = other.getErrorMessage();
+    if (this$errorMessage == null
+        ? other$errorMessage != null
+        : !this$errorMessage.equals(other$errorMessage)) {
+      return false;
+    }
+    final Object this$detailedMessage = getDetailedMessage();
+    final Object other$detailedMessage = other.getDetailedMessage();
+    if (this$detailedMessage == null
+        ? other$detailedMessage != null
+        : !this$detailedMessage.equals(other$detailedMessage)) {
+      return false;
+    }
+    final Object this$reportDefinition = getReportDefinition();
+    final Object other$reportDefinition = other.getReportDefinition();
+    if (this$reportDefinition == null
+        ? other$reportDefinition != null
+        : !this$reportDefinition.equals(other$reportDefinition)) {
+      return false;
+    }
+    return true;
+  }
+
+  @Override
+  public String toString() {
+    return "ErrorResponseDto(errorCode="
+        + getErrorCode()
+        + ", errorMessage="
+        + getErrorMessage()
+        + ", detailedMessage="
+        + getDetailedMessage()
+        + ", reportDefinition="
+        + getReportDefinition()
+        + ")";
   }
 
   public static final class Fields {

@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.schema.opensearch;
 
-import static io.camunda.webapps.schema.descriptors.operate.index.AbstractIndexDescriptor.SCHEMA_FOLDER_OPENSEARCH;
+import static io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor.SCHEMA_FOLDER_OPENSEARCH;
 import static java.lang.String.format;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -193,7 +193,12 @@ public class OpensearchSchemaManager implements SchemaManager {
 
   @Override
   public boolean isHealthy() {
-    return richOpenSearchClient.cluster().isHealthy();
+    if (operateProperties.getOpensearch().isHealthCheckEnabled()) {
+      return richOpenSearchClient.cluster().isHealthy();
+    } else {
+      LOGGER.warn("OpenSearch cluster health check is disabled.");
+      return true;
+    }
   }
 
   @Override

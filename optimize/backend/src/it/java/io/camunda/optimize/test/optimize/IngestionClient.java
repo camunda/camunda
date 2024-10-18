@@ -15,14 +15,20 @@ import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Supplier;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 public class IngestionClient {
+
   private static final Random RANDOM = new Random();
 
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
   private final Supplier<String> accessTokenSupplier;
+
+  public IngestionClient(
+      Supplier<OptimizeRequestExecutor> requestExecutorSupplier,
+      Supplier<String> accessTokenSupplier) {
+    this.requestExecutorSupplier = requestExecutorSupplier;
+    this.accessTokenSupplier = accessTokenSupplier;
+  }
 
   public Response ingestVariablesAndReturnResponse(
       final List<ExternalProcessVariableRequestDto> variables) {

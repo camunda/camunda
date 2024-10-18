@@ -13,8 +13,6 @@ import io.camunda.optimize.util.types.MapUtil;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.AutoDateHistogramAggregate;
@@ -45,8 +43,9 @@ import org.opensearch.client.opensearch._types.aggregations.StringTermsAggregate
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
 import org.opensearch.client.opensearch._types.aggregations.SumAggregate;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class AggregateHelperOS {
+
+  private AggregateHelperOS() {}
 
   /* It is a suggested workaround from ES (and OS inherits it) to distinguish between 0 and null
    * values in aggregates based on doc count in a bucket (if doc count is 0 value is supposed to be

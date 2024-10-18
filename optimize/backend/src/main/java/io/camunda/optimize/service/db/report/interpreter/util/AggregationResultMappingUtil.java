@@ -8,11 +8,11 @@
 package io.camunda.optimize.service.db.report.interpreter.util;
 
 import java.util.Optional;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class AggregationResultMappingUtil {
+
+  private AggregationResultMappingUtil() {}
+
   public static Double mapToDoubleOrNull(final Double value) {
     return Double.isInfinite(value) || Double.isNaN(value) ? null : value;
   }

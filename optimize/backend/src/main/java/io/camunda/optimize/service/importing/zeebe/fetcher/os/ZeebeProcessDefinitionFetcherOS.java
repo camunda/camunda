@@ -15,19 +15,21 @@ import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.importing.zeebe.db.ZeebeProcessDefinitionFetcher;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 @Conditional(OpenSearchCondition.class)
 public class ZeebeProcessDefinitionFetcherOS
     extends AbstractZeebeRecordFetcherOS<ZeebeProcessDefinitionRecordDto>
     implements ZeebeProcessDefinitionFetcher {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ZeebeProcessDefinitionFetcherOS.class);
 
   public ZeebeProcessDefinitionFetcherOS(
       final int partitionId,

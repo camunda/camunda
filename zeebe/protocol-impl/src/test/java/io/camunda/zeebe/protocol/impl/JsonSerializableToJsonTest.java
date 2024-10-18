@@ -54,6 +54,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
@@ -71,6 +72,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -2512,7 +2514,8 @@ final class JsonSerializableToJsonTest {
                     .setName("Foo Bar")
                     .setEmail("foo@bar")
                     .setPassword("f00b4r")
-                    .setUserType(UserType.DEFAULT),
+                    .setUserType(UserType.DEFAULT)
+                    .addRoleKey(2L),
         """
         {
           "userKey": 1,
@@ -2520,7 +2523,8 @@ final class JsonSerializableToJsonTest {
           "name": "Foo Bar",
           "email": "foo@bar",
           "password": "f00b4r",
-          "userType": "DEFAULT"
+          "userType": "DEFAULT",
+          "roleKeysList": [2]
         }
         """
       },
@@ -2543,7 +2547,8 @@ final class JsonSerializableToJsonTest {
           "name": "Foo Bar",
           "email": "foo@bar",
           "password": "f00b4r",
-          "userType": "REGULAR"
+          "userType": "REGULAR",
+          "roleKeysList": []
         }
         """
       },
@@ -2675,12 +2680,18 @@ final class JsonSerializableToJsonTest {
       {
         "Role record",
         (Supplier<RoleRecord>)
-            () -> new RoleRecord().setRoleKey(1L).setName("role").setEntityKey(2L),
+            () ->
+                new RoleRecord()
+                    .setRoleKey(1L)
+                    .setName("role")
+                    .setEntityKey(2L)
+                    .setEntityType(EntityType.USER),
         """
         {
           "roleKey": 1,
           "name": "role",
-          "entityKey": 2
+          "entityKey": 2,
+          "entityType": "USER"
         }
         """
       },
@@ -2694,7 +2705,8 @@ final class JsonSerializableToJsonTest {
         {
           "roleKey": -1,
           "name": "",
-          "entityKey": -1
+          "entityKey": -1,
+          "entityType": "UNSPECIFIED"
         }
         """
       },
@@ -2735,7 +2747,32 @@ final class JsonSerializableToJsonTest {
             "entityKey": -1
           }
           """
-      }
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////// ScaleRecord ////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ScaleRecord (empty)",
+        (Supplier<ScaleRecord>) ScaleRecord::new,
+        """
+        {
+          "currentPartitionCount": -1,
+          "desiredPartitionCount": -1
+        }
+        """
+      },
+      {
+        "ScaleRecord",
+        (Supplier<ScaleRecord>)
+            () -> new ScaleRecord().setCurrentPartitionCount(3).setDesiredPartitionCount(5),
+        """
+        {
+         "currentPartitionCount": 3,
+         "desiredPartitionCount": 5
+        }
+        """
+      },
     };
   }
 

@@ -48,24 +48,22 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.List;
 import java.util.stream.Collectors;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class ProcessQueryFilterEnhancerES implements QueryFilterEnhancerES<ProcessFilterDto<?>> {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ProcessQueryFilterEnhancerES.class);
   private final ConfigurationService configurationService;
   private final Environment environment;
-  @Getter private final InstanceStartDateQueryFilterES instanceStartDateQueryFilter;
-  @Getter private final InstanceEndDateQueryFilterES instanceEndDateQueryFilter;
+  private final InstanceStartDateQueryFilterES instanceStartDateQueryFilter;
+  private final InstanceEndDateQueryFilterES instanceEndDateQueryFilter;
   private final ProcessVariableQueryFilterES variableQueryFilter;
   private final ProcessMultiVariableQueryFilterES multiVariableQueryFilter;
   private final ExecutedFlowNodeQueryFilterES executedFlowNodeQueryFilter;
@@ -93,6 +91,69 @@ public class ProcessQueryFilterEnhancerES implements QueryFilterEnhancerES<Proce
   private final InstancesContainingUserTasksFilterES instancesContainingUserTasksFilter;
   private final FlowNodeStartDateQueryFilterES flowNodeStartDateQueryFilter;
   private final FlowNodeEndDateQueryFilterES flowNodeEndDateQueryFilter;
+
+  public ProcessQueryFilterEnhancerES(
+      ConfigurationService configurationService,
+      Environment environment,
+      InstanceStartDateQueryFilterES instanceStartDateQueryFilter,
+      InstanceEndDateQueryFilterES instanceEndDateQueryFilter,
+      ProcessVariableQueryFilterES variableQueryFilter,
+      ProcessMultiVariableQueryFilterES multiVariableQueryFilter,
+      ExecutedFlowNodeQueryFilterES executedFlowNodeQueryFilter,
+      ExecutingFlowNodeQueryFilterES executingFlowNodeQueryFilter,
+      CanceledFlowNodeQueryFilterES canceledFlowNodeQueryFilter,
+      DurationQueryFilterES durationQueryFilter,
+      RunningInstancesOnlyQueryFilterES runningInstancesOnlyQueryFilter,
+      CompletedInstancesOnlyQueryFilterES completedInstancesOnlyQueryFilter,
+      CanceledInstancesOnlyQueryFilterES canceledInstancesOnlyQueryFilter,
+      NonCanceledInstancesOnlyQueryFilterES nonCanceledInstancesOnlyQueryFilter,
+      SuspendedInstancesOnlyQueryFilterES suspendedInstancesOnlyQueryFilter,
+      NonSuspendedInstancesOnlyQueryFilterES nonSuspendedInstancesOnlyQueryFilter,
+      FlowNodeDurationQueryFilterES flowNodeDurationQueryFilter,
+      AssigneeQueryFilterES assigneeQueryFilter,
+      CandidateGroupQueryFilterES candidateGroupQueryFilter,
+      OpenIncidentQueryFilterES openIncidentQueryFilter,
+      DeletedIncidentQueryFilterES deletedIncidentQueryFilter,
+      ResolvedIncidentQueryFilterES resolvedIncidentQueryFilter,
+      NoIncidentQueryFilterES noIncidentQueryFilter,
+      RunningFlowNodesOnlyQueryFilterES runningFlowNodesOnlyQueryFilter,
+      CompletedFlowNodesOnlyQueryFilterES completedFlowNodesOnlyQueryFilter,
+      CanceledFlowNodesOnlyQueryFilterES canceledFlowNodesOnlyQueryFilter,
+      CompletedOrCanceledFlowNodesOnlyQueryFilterES completedOrCanceledFlowNodesOnlyQueryFilter,
+      InstancesContainingUserTasksFilterES instancesContainingUserTasksFilter,
+      FlowNodeStartDateQueryFilterES flowNodeStartDateQueryFilter,
+      FlowNodeEndDateQueryFilterES flowNodeEndDateQueryFilter) {
+    this.configurationService = configurationService;
+    this.environment = environment;
+    this.instanceStartDateQueryFilter = instanceStartDateQueryFilter;
+    this.instanceEndDateQueryFilter = instanceEndDateQueryFilter;
+    this.variableQueryFilter = variableQueryFilter;
+    this.multiVariableQueryFilter = multiVariableQueryFilter;
+    this.executedFlowNodeQueryFilter = executedFlowNodeQueryFilter;
+    this.executingFlowNodeQueryFilter = executingFlowNodeQueryFilter;
+    this.canceledFlowNodeQueryFilter = canceledFlowNodeQueryFilter;
+    this.durationQueryFilter = durationQueryFilter;
+    this.runningInstancesOnlyQueryFilter = runningInstancesOnlyQueryFilter;
+    this.completedInstancesOnlyQueryFilter = completedInstancesOnlyQueryFilter;
+    this.canceledInstancesOnlyQueryFilter = canceledInstancesOnlyQueryFilter;
+    this.nonCanceledInstancesOnlyQueryFilter = nonCanceledInstancesOnlyQueryFilter;
+    this.suspendedInstancesOnlyQueryFilter = suspendedInstancesOnlyQueryFilter;
+    this.nonSuspendedInstancesOnlyQueryFilter = nonSuspendedInstancesOnlyQueryFilter;
+    this.flowNodeDurationQueryFilter = flowNodeDurationQueryFilter;
+    this.assigneeQueryFilter = assigneeQueryFilter;
+    this.candidateGroupQueryFilter = candidateGroupQueryFilter;
+    this.openIncidentQueryFilter = openIncidentQueryFilter;
+    this.deletedIncidentQueryFilter = deletedIncidentQueryFilter;
+    this.resolvedIncidentQueryFilter = resolvedIncidentQueryFilter;
+    this.noIncidentQueryFilter = noIncidentQueryFilter;
+    this.runningFlowNodesOnlyQueryFilter = runningFlowNodesOnlyQueryFilter;
+    this.completedFlowNodesOnlyQueryFilter = completedFlowNodesOnlyQueryFilter;
+    this.canceledFlowNodesOnlyQueryFilter = canceledFlowNodesOnlyQueryFilter;
+    this.completedOrCanceledFlowNodesOnlyQueryFilter = completedOrCanceledFlowNodesOnlyQueryFilter;
+    this.instancesContainingUserTasksFilter = instancesContainingUserTasksFilter;
+    this.flowNodeStartDateQueryFilter = flowNodeStartDateQueryFilter;
+    this.flowNodeEndDateQueryFilter = flowNodeEndDateQueryFilter;
+  }
 
   @Override
   public void addFilterToQuery(
@@ -207,5 +268,13 @@ public class ProcessQueryFilterEnhancerES implements QueryFilterEnhancerES<Proce
 
   private boolean isAssigneeFiltersEnabled() {
     return configurationService.getUiConfiguration().isUserTaskAssigneeAnalyticsEnabled();
+  }
+
+  public InstanceStartDateQueryFilterES getInstanceStartDateQueryFilter() {
+    return this.instanceStartDateQueryFilter;
+  }
+
+  public InstanceEndDateQueryFilterES getInstanceEndDateQueryFilter() {
+    return this.instanceEndDateQueryFilter;
   }
 }

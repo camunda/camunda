@@ -8,7 +8,7 @@
 
 import {FormManager} from 'modules/formManager';
 import {useForm} from 'modules/queries/useForm';
-import {Process, Variable} from 'modules/types';
+import type {Process, Variable} from 'modules/types';
 import {getProcessDisplayName} from 'modules/utils/getProcessDisplayName';
 import {useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';

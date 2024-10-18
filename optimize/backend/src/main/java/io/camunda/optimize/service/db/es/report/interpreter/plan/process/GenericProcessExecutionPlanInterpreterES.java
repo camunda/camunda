@@ -14,22 +14,54 @@ import io.camunda.optimize.service.db.es.report.interpreter.view.process.Process
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.report.interpreter.plan.process.GenericProcessExecutionPlanInterpreter;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class GenericProcessExecutionPlanInterpreterES
     extends AbstractProcessExecutionPlanInterpreterES
     implements GenericProcessExecutionPlanInterpreter {
-  @Getter private final ProcessDefinitionReader processDefinitionReader;
-  @Getter private final OptimizeElasticsearchClient esClient;
-  @Getter private final ProcessQueryFilterEnhancerES queryFilterEnhancer;
-  @Getter private final ProcessGroupByInterpreterFacadeES groupByInterpreter;
-  @Getter private final ProcessViewInterpreterFacadeES viewInterpreter;
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(GenericProcessExecutionPlanInterpreterES.class);
+  private final ProcessDefinitionReader processDefinitionReader;
+  private final OptimizeElasticsearchClient esClient;
+  private final ProcessQueryFilterEnhancerES queryFilterEnhancer;
+  private final ProcessGroupByInterpreterFacadeES groupByInterpreter;
+  private final ProcessViewInterpreterFacadeES viewInterpreter;
+
+  public GenericProcessExecutionPlanInterpreterES(
+      ProcessDefinitionReader processDefinitionReader,
+      OptimizeElasticsearchClient esClient,
+      ProcessQueryFilterEnhancerES queryFilterEnhancer,
+      ProcessGroupByInterpreterFacadeES groupByInterpreter,
+      ProcessViewInterpreterFacadeES viewInterpreter) {
+    this.processDefinitionReader = processDefinitionReader;
+    this.esClient = esClient;
+    this.queryFilterEnhancer = queryFilterEnhancer;
+    this.groupByInterpreter = groupByInterpreter;
+    this.viewInterpreter = viewInterpreter;
+  }
+
+  public ProcessDefinitionReader getProcessDefinitionReader() {
+    return this.processDefinitionReader;
+  }
+
+  public OptimizeElasticsearchClient getEsClient() {
+    return this.esClient;
+  }
+
+  public ProcessQueryFilterEnhancerES getQueryFilterEnhancer() {
+    return this.queryFilterEnhancer;
+  }
+
+  public ProcessGroupByInterpreterFacadeES getGroupByInterpreter() {
+    return this.groupByInterpreter;
+  }
+
+  public ProcessViewInterpreterFacadeES getViewInterpreter() {
+    return this.viewInterpreter;
+  }
 }

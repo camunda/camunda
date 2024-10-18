@@ -10,10 +10,10 @@ package io.camunda.search.clients;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.search.security.auth.Authentication;
+import io.camunda.security.auth.SecurityContext;
 
 public interface ProcessDefinitionSearchClient {
 
   SearchQueryResult<ProcessDefinitionEntity> searchProcessDefinitions(
-      ProcessDefinitionQuery filter, Authentication authentication);
+      ProcessDefinitionQuery filter, SecurityContext securityContext);
 }

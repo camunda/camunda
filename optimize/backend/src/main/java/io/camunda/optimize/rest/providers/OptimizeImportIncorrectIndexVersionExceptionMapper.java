@@ -15,13 +15,15 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
 @Provider
-@Slf4j
 public class OptimizeImportIncorrectIndexVersionExceptionMapper
     implements ExceptionMapper<OptimizeImportIncorrectIndexVersionException> {
+
   public static final String ERROR_CODE = "importIndexVersionMismatch";
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(OptimizeImportIncorrectIndexVersionExceptionMapper.class);
 
   private final LocalizationService localizationService;
 
@@ -41,9 +43,10 @@ public class OptimizeImportIncorrectIndexVersionExceptionMapper
   }
 
   private ImportedIndexMismatchResponseDto getIndexMismatchResponseDto(
-      OptimizeImportIncorrectIndexVersionException exception) {
-    String errorMessage = localizationService.getDefaultLocaleMessageForApiErrorCode(ERROR_CODE);
-    String detailedErrorMessage = exception.getMessage();
+      final OptimizeImportIncorrectIndexVersionException exception) {
+    final String errorMessage =
+        localizationService.getDefaultLocaleMessageForApiErrorCode(ERROR_CODE);
+    final String detailedErrorMessage = exception.getMessage();
 
     return new ImportedIndexMismatchResponseDto(
         ERROR_CODE, errorMessage, detailedErrorMessage, exception.getMismatchingIndices());

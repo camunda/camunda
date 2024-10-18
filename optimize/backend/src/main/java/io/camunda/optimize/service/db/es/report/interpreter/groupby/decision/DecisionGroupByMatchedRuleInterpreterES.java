@@ -28,19 +28,26 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class DecisionGroupByMatchedRuleInterpreterES extends AbstractDecisionGroupByInterpreterES {
+
   private static final String MATCHED_RULES_AGGREGATION = "matchedRules";
   private final ConfigurationService configurationService;
-  @Getter private final DecisionDistributedByNoneInterpreterES distributedByInterpreter;
-  @Getter private final DecisionViewInterpreterFacadeES viewInterpreter;
+  private final DecisionDistributedByNoneInterpreterES distributedByInterpreter;
+  private final DecisionViewInterpreterFacadeES viewInterpreter;
+
+  public DecisionGroupByMatchedRuleInterpreterES(
+      ConfigurationService configurationService,
+      DecisionDistributedByNoneInterpreterES distributedByInterpreter,
+      DecisionViewInterpreterFacadeES viewInterpreter) {
+    this.configurationService = configurationService;
+    this.distributedByInterpreter = distributedByInterpreter;
+    this.viewInterpreter = viewInterpreter;
+  }
 
   @Override
   public Set<DecisionGroupBy> getSupportedGroupBys() {
@@ -85,5 +92,13 @@ public class DecisionGroupByMatchedRuleInterpreterES extends AbstractDecisionGro
     }
 
     compositeCommandResult.setGroups(matchedRules);
+  }
+
+  public DecisionDistributedByNoneInterpreterES getDistributedByInterpreter() {
+    return this.distributedByInterpreter;
+  }
+
+  public DecisionViewInterpreterFacadeES getViewInterpreter() {
+    return this.viewInterpreter;
   }
 }

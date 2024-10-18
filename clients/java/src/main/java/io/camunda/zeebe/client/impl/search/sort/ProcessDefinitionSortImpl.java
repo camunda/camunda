@@ -23,7 +23,7 @@ public class ProcessDefinitionSortImpl extends SearchQuerySortBase<ProcessDefini
 
   @Override
   public ProcessDefinitionSort processDefinitionKey() {
-    return field("key");
+    return field("processDefinitionKey");
   }
 
   @Override
@@ -48,7 +48,7 @@ public class ProcessDefinitionSortImpl extends SearchQuerySortBase<ProcessDefini
 
   @Override
   public ProcessDefinitionSort processDefinitionId() {
-    return field("bpmnProcessId");
+    return field("processDefinitionId");
   }
 
   @Override

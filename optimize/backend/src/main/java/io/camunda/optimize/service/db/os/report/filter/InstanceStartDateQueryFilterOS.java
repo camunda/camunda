@@ -14,15 +14,15 @@ import io.camunda.optimize.service.db.filter.FilterContext;
 import io.camunda.optimize.service.db.os.report.filter.util.DateFilterQueryUtilOS;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Conditional(OpenSearchCondition.class)
 public class InstanceStartDateQueryFilterOS implements QueryFilterOS<DateFilterDataDto<?>> {
+
+  public InstanceStartDateQueryFilterOS() {}
 
   @Override
   public List<Query> filterQueries(

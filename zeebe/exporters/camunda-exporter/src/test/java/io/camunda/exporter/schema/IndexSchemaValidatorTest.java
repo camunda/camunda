@@ -20,15 +20,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 public class IndexSchemaValidatorTest {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
-  private static final IndexSchemaValidator VALIDATOR =
-      new IndexSchemaValidator(
-          Mockito.mock(ElasticsearchSchemaManager.class, Mockito.CALLS_REAL_METHODS));
+  private static final IndexSchemaValidator VALIDATOR = new IndexSchemaValidator();
 
   @Test
   void shouldDetectIndexWithAddedProperty() throws IOException {

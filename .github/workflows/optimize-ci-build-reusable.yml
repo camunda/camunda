@@ -78,7 +78,7 @@ jobs:
       - name: Generate production .tar.gz
         uses: ./.github/actions/run-maven
         with:
-          parameters: -f optimize/pom.xml install -DskipTests -Dskip.docker -PrunAssembly
+          parameters: -f optimize/pom.xml install -DskipTests -Dskip.docker -PrunAssembly -T 1
 
       #########################################################################
       # Build Docker image

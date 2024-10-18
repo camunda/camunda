@@ -23,15 +23,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
 @Conditional(CCSMCondition.class)
 public class CCSMIdentityService extends AbstractIdentityService {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(CCSMIdentityService.class);
   private final CCSMTokenService ccsmTokenService;
   private final CCSMUserCache userCache;
 
@@ -72,12 +72,6 @@ public class CCSMIdentityService extends AbstractIdentityService {
   }
 
   @Override
-  public List<IdentityWithMetadataResponseDto> getGroupsById(final Set<String> groupIds) {
-    // Groups do not exist in CCSM
-    return Collections.emptyList();
-  }
-
-  @Override
   public List<GroupDto> getAllGroupsOfUser(final String userId) {
     return Collections.emptyList();
   }
@@ -102,14 +96,20 @@ public class CCSMIdentityService extends AbstractIdentityService {
             .toList());
   }
 
-  public List<UserDto> getUsersByEmail(final Set<String> emails) {
-    return userCache.searchForUsersUsingEmails(emails).stream().map(UserDto.class::cast).toList();
-  }
-
   @Override
   public List<IdentityWithMetadataResponseDto> getUsersById(final Set<String> userIds) {
     return userCache.getUsersById(userIds).stream()
         .map(IdentityWithMetadataResponseDto.class::cast)
         .toList();
+  }
+
+  @Override
+  public List<IdentityWithMetadataResponseDto> getGroupsById(final Set<String> groupIds) {
+    // Groups do not exist in CCSM
+    return Collections.emptyList();
+  }
+
+  public List<UserDto> getUsersByEmail(final Set<String> emails) {
+    return userCache.searchForUsersUsingEmails(emails).stream().map(UserDto.class::cast).toList();
   }
 }

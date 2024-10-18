@@ -45,31 +45,29 @@ import io.camunda.optimize.service.db.os.report.filter.util.IncidentFilterQueryU
 import io.camunda.optimize.service.db.os.report.filter.util.ModelElementFilterQueryUtilOS;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
+import io.camunda.optimize.util.types.ListUtil;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 @Conditional(OpenSearchCondition.class)
 public class ProcessQueryFilterEnhancerOS implements QueryFilterEnhancerOS<ProcessFilterDto<?>> {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ProcessQueryFilterEnhancerOS.class);
   private final ConfigurationService configurationService;
   private final Environment environment;
-  @Getter private final InstanceStartDateQueryFilterOS instanceStartDateQueryFilter;
-  @Getter private final InstanceEndDateQueryFilterOS instanceEndDateQueryFilter;
+  private final InstanceStartDateQueryFilterOS instanceStartDateQueryFilter;
+  private final InstanceEndDateQueryFilterOS instanceEndDateQueryFilter;
   private final ProcessVariableQueryFilterOS variableQueryFilter;
   private final ProcessMultiVariableQueryFilterOS multiVariableQueryFilter;
   private final ExecutedFlowNodeQueryFilterOS executedFlowNodeQueryFilter;
@@ -98,6 +96,69 @@ public class ProcessQueryFilterEnhancerOS implements QueryFilterEnhancerOS<Proce
   private final FlowNodeStartDateQueryFilterOS flowNodeStartDateQueryFilter;
   private final FlowNodeEndDateQueryFilterOS flowNodeEndDateQueryFilter;
 
+  public ProcessQueryFilterEnhancerOS(
+      ConfigurationService configurationService,
+      Environment environment,
+      InstanceStartDateQueryFilterOS instanceStartDateQueryFilter,
+      InstanceEndDateQueryFilterOS instanceEndDateQueryFilter,
+      ProcessVariableQueryFilterOS variableQueryFilter,
+      ProcessMultiVariableQueryFilterOS multiVariableQueryFilter,
+      ExecutedFlowNodeQueryFilterOS executedFlowNodeQueryFilter,
+      ExecutingFlowNodeQueryFilterOS executingFlowNodeQueryFilter,
+      CanceledFlowNodeQueryFilterOS canceledFlowNodeQueryFilter,
+      DurationQueryFilterOS durationQueryFilter,
+      RunningInstancesOnlyQueryFilterOS runningInstancesOnlyQueryFilter,
+      CompletedInstancesOnlyQueryFilterOS completedInstancesOnlyQueryFilter,
+      CanceledInstancesOnlyQueryFilterOS canceledInstancesOnlyQueryFilter,
+      NonCanceledInstancesOnlyQueryFilterOS nonCanceledInstancesOnlyQueryFilter,
+      SuspendedInstancesOnlyQueryFilterOS suspendedInstancesOnlyQueryFilter,
+      NonSuspendedInstancesOnlyQueryFilterOS nonSuspendedInstancesOnlyQueryFilter,
+      FlowNodeDurationQueryFilterOS flowNodeDurationQueryFilter,
+      AssigneeQueryFilterOS assigneeQueryFilter,
+      CandidateGroupQueryFilterOS candidateGroupQueryFilter,
+      OpenIncidentQueryFilterOS openIncidentQueryFilter,
+      DeletedIncidentQueryFilterOS deletedIncidentQueryFilter,
+      ResolvedIncidentQueryFilterOS resolvedIncidentQueryFilter,
+      NoIncidentQueryFilterOS noIncidentQueryFilter,
+      RunningFlowNodesOnlyQueryFilterOS runningFlowNodesOnlyQueryFilter,
+      CompletedFlowNodesOnlyQueryFilterOS completedFlowNodesOnlyQueryFilter,
+      CanceledFlowNodesOnlyQueryFilterOS canceledFlowNodesOnlyQueryFilter,
+      CompletedOrCanceledFlowNodesOnlyQueryFilterOS completedOrCanceledFlowNodesOnlyQueryFilter,
+      InstancesContainingUserTasksFilterOS instancesContainingUserTasksFilter,
+      FlowNodeStartDateQueryFilterOS flowNodeStartDateQueryFilter,
+      FlowNodeEndDateQueryFilterOS flowNodeEndDateQueryFilter) {
+    this.configurationService = configurationService;
+    this.environment = environment;
+    this.instanceStartDateQueryFilter = instanceStartDateQueryFilter;
+    this.instanceEndDateQueryFilter = instanceEndDateQueryFilter;
+    this.variableQueryFilter = variableQueryFilter;
+    this.multiVariableQueryFilter = multiVariableQueryFilter;
+    this.executedFlowNodeQueryFilter = executedFlowNodeQueryFilter;
+    this.executingFlowNodeQueryFilter = executingFlowNodeQueryFilter;
+    this.canceledFlowNodeQueryFilter = canceledFlowNodeQueryFilter;
+    this.durationQueryFilter = durationQueryFilter;
+    this.runningInstancesOnlyQueryFilter = runningInstancesOnlyQueryFilter;
+    this.completedInstancesOnlyQueryFilter = completedInstancesOnlyQueryFilter;
+    this.canceledInstancesOnlyQueryFilter = canceledInstancesOnlyQueryFilter;
+    this.nonCanceledInstancesOnlyQueryFilter = nonCanceledInstancesOnlyQueryFilter;
+    this.suspendedInstancesOnlyQueryFilter = suspendedInstancesOnlyQueryFilter;
+    this.nonSuspendedInstancesOnlyQueryFilter = nonSuspendedInstancesOnlyQueryFilter;
+    this.flowNodeDurationQueryFilter = flowNodeDurationQueryFilter;
+    this.assigneeQueryFilter = assigneeQueryFilter;
+    this.candidateGroupQueryFilter = candidateGroupQueryFilter;
+    this.openIncidentQueryFilter = openIncidentQueryFilter;
+    this.deletedIncidentQueryFilter = deletedIncidentQueryFilter;
+    this.resolvedIncidentQueryFilter = resolvedIncidentQueryFilter;
+    this.noIncidentQueryFilter = noIncidentQueryFilter;
+    this.runningFlowNodesOnlyQueryFilter = runningFlowNodesOnlyQueryFilter;
+    this.completedFlowNodesOnlyQueryFilter = completedFlowNodesOnlyQueryFilter;
+    this.canceledFlowNodesOnlyQueryFilter = canceledFlowNodesOnlyQueryFilter;
+    this.completedOrCanceledFlowNodesOnlyQueryFilter = completedOrCanceledFlowNodesOnlyQueryFilter;
+    this.instancesContainingUserTasksFilter = instancesContainingUserTasksFilter;
+    this.flowNodeStartDateQueryFilter = flowNodeStartDateQueryFilter;
+    this.flowNodeEndDateQueryFilter = flowNodeEndDateQueryFilter;
+  }
+
   @Override
   public List<Query> filterQueries(
       final List<ProcessFilterDto<?>> filters, final FilterContext filterContext) {
@@ -116,74 +177,64 @@ public class ProcessQueryFilterEnhancerOS implements QueryFilterEnhancerOS<Proce
 
   private List<Query> allQueries(
       final List<ProcessFilterDto<?>> filters, final FilterContext filterContext) {
-    return Stream.of(
-            instanceStartDateQueryFilter.filterQueries(
-                extractInstanceFilters(filters, InstanceStartDateFilterDto.class), filterContext),
-            instanceEndDateQueryFilter.filterQueries(
-                extractInstanceFilters(filters, InstanceEndDateFilterDto.class), filterContext),
-            variableQueryFilter.filterQueries(
-                extractInstanceFilters(filters, VariableFilterDto.class), filterContext),
-            multiVariableQueryFilter.filterQueries(
-                extractInstanceFilters(filters, MultipleVariableFilterDto.class), filterContext),
-            executedFlowNodeQueryFilter.filterQueries(
-                extractInstanceFilters(filters, ExecutedFlowNodeFilterDto.class), filterContext),
-            executingFlowNodeQueryFilter.filterQueries(
-                extractInstanceFilters(filters, ExecutingFlowNodeFilterDto.class), filterContext),
-            canceledFlowNodeQueryFilter.filterQueries(
-                extractInstanceFilters(filters, CanceledFlowNodeFilterDto.class), filterContext),
-            durationQueryFilter.filterQueries(
-                extractInstanceFilters(filters, DurationFilterDto.class), filterContext),
-            runningInstancesOnlyQueryFilter.filterQueries(
-                extractInstanceFilters(filters, RunningInstancesOnlyFilterDto.class),
-                filterContext),
-            completedInstancesOnlyQueryFilter.filterQueries(
-                extractInstanceFilters(filters, CompletedInstancesOnlyFilterDto.class),
-                filterContext),
-            canceledInstancesOnlyQueryFilter.filterQueries(
-                extractInstanceFilters(filters, CanceledInstancesOnlyFilterDto.class),
-                filterContext),
-            nonCanceledInstancesOnlyQueryFilter.filterQueries(
-                extractInstanceFilters(filters, NonCanceledInstancesOnlyFilterDto.class),
-                filterContext),
-            suspendedInstancesOnlyQueryFilter.filterQueries(
-                extractInstanceFilters(filters, SuspendedInstancesOnlyFilterDto.class),
-                filterContext),
-            nonSuspendedInstancesOnlyQueryFilter.filterQueries(
-                extractInstanceFilters(filters, NonSuspendedInstancesOnlyFilterDto.class),
-                filterContext),
-            flowNodeDurationQueryFilter.filterQueries(
-                extractInstanceFilters(filters, FlowNodeDurationFilterDto.class), filterContext),
-            candidateGroupQueryFilter.filterQueries(
-                extractInstanceFilters(filters, CandidateGroupFilterDto.class), filterContext),
-            openIncidentQueryFilter.filterQueries(
-                extractInstanceFilters(filters, OpenIncidentFilterDto.class), filterContext),
-            deletedIncidentQueryFilter.filterQueries(
-                extractInstanceFilters(filters, DeletedIncidentFilterDto.class), filterContext),
-            resolvedIncidentQueryFilter.filterQueries(
-                extractInstanceFilters(filters, ResolvedIncidentFilterDto.class), filterContext),
-            noIncidentQueryFilter.filterQueries(
-                extractInstanceFilters(filters, NoIncidentFilterDto.class), filterContext),
-            runningFlowNodesOnlyQueryFilter.filterQueries(
-                extractInstanceFilters(filters, RunningFlowNodesOnlyFilterDto.class),
-                filterContext),
-            completedFlowNodesOnlyQueryFilter.filterQueries(
-                extractInstanceFilters(filters, CompletedFlowNodesOnlyFilterDto.class),
-                filterContext),
-            canceledFlowNodesOnlyQueryFilter.filterQueries(
-                extractInstanceFilters(filters, CanceledFlowNodesOnlyFilterDto.class),
-                filterContext),
-            completedOrCanceledFlowNodesOnlyQueryFilter.filterQueries(
-                extractInstanceFilters(filters, CompletedOrCanceledFlowNodesOnlyFilterDto.class),
-                filterContext),
-            instancesContainingUserTasksFilter.filterQueries(
-                extractInstanceFilters(filters, UserTaskFlowNodesOnlyFilterDto.class),
-                filterContext),
-            flowNodeStartDateQueryFilter.filterQueries(
-                extractInstanceFilters(filters, FlowNodeStartDateFilterDto.class), filterContext),
-            flowNodeEndDateQueryFilter.filterQueries(
-                extractInstanceFilters(filters, FlowNodeEndDateFilterDto.class), filterContext))
-        .flatMap(Collection::stream)
-        .toList();
+    return ListUtil.concat(
+        instanceStartDateQueryFilter.filterQueries(
+            extractInstanceFilters(filters, InstanceStartDateFilterDto.class), filterContext),
+        instanceEndDateQueryFilter.filterQueries(
+            extractInstanceFilters(filters, InstanceEndDateFilterDto.class), filterContext),
+        variableQueryFilter.filterQueries(
+            extractInstanceFilters(filters, VariableFilterDto.class), filterContext),
+        multiVariableQueryFilter.filterQueries(
+            extractInstanceFilters(filters, MultipleVariableFilterDto.class), filterContext),
+        executedFlowNodeQueryFilter.filterQueries(
+            extractInstanceFilters(filters, ExecutedFlowNodeFilterDto.class), filterContext),
+        executingFlowNodeQueryFilter.filterQueries(
+            extractInstanceFilters(filters, ExecutingFlowNodeFilterDto.class), filterContext),
+        canceledFlowNodeQueryFilter.filterQueries(
+            extractInstanceFilters(filters, CanceledFlowNodeFilterDto.class), filterContext),
+        durationQueryFilter.filterQueries(
+            extractInstanceFilters(filters, DurationFilterDto.class), filterContext),
+        runningInstancesOnlyQueryFilter.filterQueries(
+            extractInstanceFilters(filters, RunningInstancesOnlyFilterDto.class), filterContext),
+        completedInstancesOnlyQueryFilter.filterQueries(
+            extractInstanceFilters(filters, CompletedInstancesOnlyFilterDto.class), filterContext),
+        canceledInstancesOnlyQueryFilter.filterQueries(
+            extractInstanceFilters(filters, CanceledInstancesOnlyFilterDto.class), filterContext),
+        nonCanceledInstancesOnlyQueryFilter.filterQueries(
+            extractInstanceFilters(filters, NonCanceledInstancesOnlyFilterDto.class),
+            filterContext),
+        suspendedInstancesOnlyQueryFilter.filterQueries(
+            extractInstanceFilters(filters, SuspendedInstancesOnlyFilterDto.class), filterContext),
+        nonSuspendedInstancesOnlyQueryFilter.filterQueries(
+            extractInstanceFilters(filters, NonSuspendedInstancesOnlyFilterDto.class),
+            filterContext),
+        flowNodeDurationQueryFilter.filterQueries(
+            extractInstanceFilters(filters, FlowNodeDurationFilterDto.class), filterContext),
+        candidateGroupQueryFilter.filterQueries(
+            extractInstanceFilters(filters, CandidateGroupFilterDto.class), filterContext),
+        openIncidentQueryFilter.filterQueries(
+            extractInstanceFilters(filters, OpenIncidentFilterDto.class), filterContext),
+        deletedIncidentQueryFilter.filterQueries(
+            extractInstanceFilters(filters, DeletedIncidentFilterDto.class), filterContext),
+        resolvedIncidentQueryFilter.filterQueries(
+            extractInstanceFilters(filters, ResolvedIncidentFilterDto.class), filterContext),
+        noIncidentQueryFilter.filterQueries(
+            extractInstanceFilters(filters, NoIncidentFilterDto.class), filterContext),
+        runningFlowNodesOnlyQueryFilter.filterQueries(
+            extractInstanceFilters(filters, RunningFlowNodesOnlyFilterDto.class), filterContext),
+        completedFlowNodesOnlyQueryFilter.filterQueries(
+            extractInstanceFilters(filters, CompletedFlowNodesOnlyFilterDto.class), filterContext),
+        canceledFlowNodesOnlyQueryFilter.filterQueries(
+            extractInstanceFilters(filters, CanceledFlowNodesOnlyFilterDto.class), filterContext),
+        completedOrCanceledFlowNodesOnlyQueryFilter.filterQueries(
+            extractInstanceFilters(filters, CompletedOrCanceledFlowNodesOnlyFilterDto.class),
+            filterContext),
+        instancesContainingUserTasksFilter.filterQueries(
+            extractInstanceFilters(filters, UserTaskFlowNodesOnlyFilterDto.class), filterContext),
+        flowNodeStartDateQueryFilter.filterQueries(
+            extractInstanceFilters(filters, FlowNodeStartDateFilterDto.class), filterContext),
+        flowNodeEndDateQueryFilter.filterQueries(
+            extractInstanceFilters(filters, FlowNodeEndDateFilterDto.class), filterContext));
   }
 
   @SuppressWarnings(UNCHECKED_CAST)
@@ -208,5 +259,13 @@ public class ProcessQueryFilterEnhancerOS implements QueryFilterEnhancerOS<Proce
 
   private boolean isAssigneeFiltersEnabled() {
     return configurationService.getUiConfiguration().isUserTaskAssigneeAnalyticsEnabled();
+  }
+
+  public InstanceStartDateQueryFilterOS getInstanceStartDateQueryFilter() {
+    return this.instanceStartDateQueryFilter;
+  }
+
+  public InstanceEndDateQueryFilterOS getInstanceEndDateQueryFilter() {
+    return this.instanceEndDateQueryFilter;
   }
 }

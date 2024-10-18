@@ -7,9 +7,7 @@
  */
 package io.camunda.optimize.service.db;
 
-import lombok.NonNull;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 
 public record DatabaseQueryWrapper(
-    @NonNull co.elastic.clients.elasticsearch._types.query_dsl.Query esQuery,
-    @NonNull Query osQuery) {}
+    co.elastic.clients.elasticsearch._types.query_dsl.Query esQuery, Query osQuery) {}

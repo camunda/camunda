@@ -58,14 +58,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
-import lombok.NonNull;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
 import org.springframework.core.env.Environment;
 
-@Setter
-@Slf4j
 public class ConfigurationService {
 
   private static final String ERROR_NO_ENGINE_WITH_ALIAS = "No Engine configured with alias ";
@@ -76,6 +72,7 @@ public class ConfigurationService {
   private static final TypeRef<List<String>> LIST_OF_STRINGS_TYPE_REF = new TypeRef<>() {};
   private static final TypeRef<HashMap<String, WebhookConfiguration>> WEBHOOKS_MAP_TYPEREF =
       new TypeRef<>() {};
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ConfigurationService.class);
   // @formatter:on
   // job executor settings
   protected Integer jobExecutorQueueSize;
@@ -211,7 +208,11 @@ public class ConfigurationService {
     return convertToDatabaseProperty(configuredProperty);
   }
 
-  public static DatabaseType convertToDatabaseProperty(final @NonNull String configuredProperty) {
+  public static DatabaseType convertToDatabaseProperty(final String configuredProperty) {
+    if (configuredProperty == null) {
+      throw new OptimizeConfigurationException("configuredProperty cannot be null");
+    }
+
     if (configuredProperty.equalsIgnoreCase(ELASTICSEARCH_DATABASE_PROPERTY)) {
       return DatabaseType.ELASTICSEARCH;
     } else if (configuredProperty.equalsIgnoreCase(OPENSEARCH_DATABASE_PROPERTY)) {
@@ -1047,5 +1048,335 @@ public class ConfigurationService {
               ConfigurationServiceConstants.DATABASE_IMPORT_EXECUTOR_THREAD_COUNT, Integer.class);
     }
     return jobExecutorThreadCount;
+  }
+
+  public void setJobExecutorQueueSize(Integer jobExecutorQueueSize) {
+    this.jobExecutorQueueSize = jobExecutorQueueSize;
+  }
+
+  public void setJobExecutorThreadCount(Integer jobExecutorThreadCount) {
+    this.jobExecutorThreadCount = jobExecutorThreadCount;
+  }
+
+  public void setElasticSearchConfiguration(ElasticSearchConfiguration elasticSearchConfiguration) {
+    this.elasticSearchConfiguration = elasticSearchConfiguration;
+  }
+
+  public void setOpenSearchConfiguration(OpenSearchConfiguration openSearchConfiguration) {
+    this.openSearchConfiguration = openSearchConfiguration;
+  }
+
+  public void setConfigJsonContext(ReadContext configJsonContext) {
+    this.configJsonContext = configJsonContext;
+  }
+
+  public void setSecurityConfiguration(SecurityConfiguration securityConfiguration) {
+    this.securityConfiguration = securityConfiguration;
+  }
+
+  public void setUsersConfiguration(UsersConfiguration usersConfiguration) {
+    this.usersConfiguration = usersConfiguration;
+  }
+
+  public void setConfiguredEngines(Map<String, EngineConfiguration> configuredEngines) {
+    this.configuredEngines = configuredEngines;
+  }
+
+  public void setConfiguredZeebe(ZeebeConfiguration configuredZeebe) {
+    this.configuredZeebe = configuredZeebe;
+  }
+
+  public void setEngineDateFormat(String engineDateFormat) {
+    this.engineDateFormat = engineDateFormat;
+  }
+
+  public void setInitialBackoff(Long initialBackoff) {
+    this.initialBackoff = initialBackoff;
+  }
+
+  public void setMaximumBackoff(Long maximumBackoff) {
+    this.maximumBackoff = maximumBackoff;
+  }
+
+  public void setEngineConnectTimeout(Integer engineConnectTimeout) {
+    this.engineConnectTimeout = engineConnectTimeout;
+  }
+
+  public void setEngineReadTimeout(Integer engineReadTimeout) {
+    this.engineReadTimeout = engineReadTimeout;
+  }
+
+  public void setCurrentTimeBackoffMilliseconds(Integer currentTimeBackoffMilliseconds) {
+    this.currentTimeBackoffMilliseconds = currentTimeBackoffMilliseconds;
+  }
+
+  public void setEngineImportProcessInstanceMaxPageSize(
+      Integer engineImportProcessInstanceMaxPageSize) {
+    this.engineImportProcessInstanceMaxPageSize = engineImportProcessInstanceMaxPageSize;
+  }
+
+  public void setEngineImportVariableInstanceMaxPageSize(
+      Integer engineImportVariableInstanceMaxPageSize) {
+    this.engineImportVariableInstanceMaxPageSize = engineImportVariableInstanceMaxPageSize;
+  }
+
+  public void setEngineImportVariableIncludeObjectVariableValue(
+      Boolean engineImportVariableIncludeObjectVariableValue) {
+    this.engineImportVariableIncludeObjectVariableValue =
+        engineImportVariableIncludeObjectVariableValue;
+  }
+
+  public void setEngineImportProcessDefinitionXmlMaxPageSize(
+      Integer engineImportProcessDefinitionXmlMaxPageSize) {
+    this.engineImportProcessDefinitionXmlMaxPageSize = engineImportProcessDefinitionXmlMaxPageSize;
+  }
+
+  public void setEngineImportProcessDefinitionMaxPageSize(
+      Integer engineImportProcessDefinitionMaxPageSize) {
+    this.engineImportProcessDefinitionMaxPageSize = engineImportProcessDefinitionMaxPageSize;
+  }
+
+  public void setEngineImportActivityInstanceMaxPageSize(
+      Integer engineImportActivityInstanceMaxPageSize) {
+    this.engineImportActivityInstanceMaxPageSize = engineImportActivityInstanceMaxPageSize;
+  }
+
+  public void setEngineImportIncidentMaxPageSize(Integer engineImportIncidentMaxPageSize) {
+    this.engineImportIncidentMaxPageSize = engineImportIncidentMaxPageSize;
+  }
+
+  public void setEngineImportUserTaskInstanceMaxPageSize(
+      Integer engineImportUserTaskInstanceMaxPageSize) {
+    this.engineImportUserTaskInstanceMaxPageSize = engineImportUserTaskInstanceMaxPageSize;
+  }
+
+  public void setEngineImportIdentityLinkLogsMaxPageSize(
+      Integer engineImportIdentityLinkLogsMaxPageSize) {
+    this.engineImportIdentityLinkLogsMaxPageSize = engineImportIdentityLinkLogsMaxPageSize;
+  }
+
+  public void setEngineImportUserOperationLogsMaxPageSize(
+      Integer engineImportUserOperationLogsMaxPageSize) {
+    this.engineImportUserOperationLogsMaxPageSize = engineImportUserOperationLogsMaxPageSize;
+  }
+
+  public void setEngineImportDecisionDefinitionXmlMaxPageSize(
+      Integer engineImportDecisionDefinitionXmlMaxPageSize) {
+    this.engineImportDecisionDefinitionXmlMaxPageSize =
+        engineImportDecisionDefinitionXmlMaxPageSize;
+  }
+
+  public void setEngineImportDecisionDefinitionMaxPageSize(
+      Integer engineImportDecisionDefinitionMaxPageSize) {
+    this.engineImportDecisionDefinitionMaxPageSize = engineImportDecisionDefinitionMaxPageSize;
+  }
+
+  public void setEngineImportDecisionInstanceMaxPageSize(
+      Integer engineImportDecisionInstanceMaxPageSize) {
+    this.engineImportDecisionInstanceMaxPageSize = engineImportDecisionInstanceMaxPageSize;
+  }
+
+  public void setEngineImportTenantMaxPageSize(Integer engineImportTenantMaxPageSize) {
+    this.engineImportTenantMaxPageSize = engineImportTenantMaxPageSize;
+  }
+
+  public void setEngineImportGroupMaxPageSize(Integer engineImportGroupMaxPageSize) {
+    this.engineImportGroupMaxPageSize = engineImportGroupMaxPageSize;
+  }
+
+  public void setEngineImportAuthorizationMaxPageSize(
+      Integer engineImportAuthorizationMaxPageSize) {
+    this.engineImportAuthorizationMaxPageSize = engineImportAuthorizationMaxPageSize;
+  }
+
+  public void setImportIndexAutoStorageIntervalInSec(Integer importIndexAutoStorageIntervalInSec) {
+    this.importIndexAutoStorageIntervalInSec = importIndexAutoStorageIntervalInSec;
+  }
+
+  public void setImportDmnDataEnabled(Boolean importDmnDataEnabled) {
+    this.importDmnDataEnabled = importDmnDataEnabled;
+  }
+
+  public void setImportUserTaskWorkerDataEnabled(Boolean importUserTaskWorkerDataEnabled) {
+    this.importUserTaskWorkerDataEnabled = importUserTaskWorkerDataEnabled;
+  }
+
+  public void setSkipDataAfterNestedDocLimitReached(Boolean skipDataAfterNestedDocLimitReached) {
+    this.skipDataAfterNestedDocLimitReached = skipDataAfterNestedDocLimitReached;
+  }
+
+  public void setCustomerOnboarding(Boolean customerOnboarding) {
+    this.customerOnboarding = customerOnboarding;
+  }
+
+  public void setContainerHost(String containerHost) {
+    this.containerHost = containerHost;
+  }
+
+  public void setContextPath(String contextPath) {
+    this.contextPath = contextPath;
+  }
+
+  public void setContainerKeystorePassword(String containerKeystorePassword) {
+    this.containerKeystorePassword = containerKeystorePassword;
+  }
+
+  public void setContainerKeystoreLocation(String containerKeystoreLocation) {
+    this.containerKeystoreLocation = containerKeystoreLocation;
+  }
+
+  public void setContainerEnableSniCheck(Boolean containerEnableSniCheck) {
+    this.containerEnableSniCheck = containerEnableSniCheck;
+  }
+
+  public void setContainerHttpsPort(Integer containerHttpsPort) {
+    this.containerHttpsPort = containerHttpsPort;
+  }
+
+  public void setActuatorPort(Integer actuatorPort) {
+    this.actuatorPort = actuatorPort;
+  }
+
+  public void setContainerHttp2Enabled(Boolean containerHttp2Enabled) {
+    this.containerHttp2Enabled = containerHttp2Enabled;
+  }
+
+  public void setContainerAccessUrl(Optional<String> containerAccessUrl) {
+    this.containerAccessUrl = containerAccessUrl;
+  }
+
+  public void setMaxRequestHeaderSizeInBytes(Integer maxRequestHeaderSizeInBytes) {
+    this.maxRequestHeaderSizeInBytes = maxRequestHeaderSizeInBytes;
+  }
+
+  public void setMaxResponseHeaderSizeInBytes(Integer maxResponseHeaderSizeInBytes) {
+    this.maxResponseHeaderSizeInBytes = maxResponseHeaderSizeInBytes;
+  }
+
+  public void setContainerHttpPort(Optional<Integer> containerHttpPort) {
+    this.containerHttpPort = containerHttpPort;
+  }
+
+  public void setMaxStatusConnections(Integer maxStatusConnections) {
+    this.maxStatusConnections = maxStatusConnections;
+  }
+
+  public void setEmailEnabled(Boolean emailEnabled) {
+    this.emailEnabled = emailEnabled;
+  }
+
+  public void setNotificationEmailAddress(String notificationEmailAddress) {
+    this.notificationEmailAddress = notificationEmailAddress;
+  }
+
+  public void setNotificationEmailHostname(String notificationEmailHostname) {
+    this.notificationEmailHostname = notificationEmailHostname;
+  }
+
+  public void setNotificationEmailPort(Integer notificationEmailPort) {
+    this.notificationEmailPort = notificationEmailPort;
+  }
+
+  public void setNotificationEmailCheckServerIdentity(
+      Boolean notificationEmailCheckServerIdentity) {
+    this.notificationEmailCheckServerIdentity = notificationEmailCheckServerIdentity;
+  }
+
+  public void setNotificationEmailCompanyBranding(String notificationEmailCompanyBranding) {
+    this.notificationEmailCompanyBranding = notificationEmailCompanyBranding;
+  }
+
+  public void setEmailAuthenticationConfiguration(
+      EmailAuthenticationConfiguration emailAuthenticationConfiguration) {
+    this.emailAuthenticationConfiguration = emailAuthenticationConfiguration;
+  }
+
+  public void setConfiguredWebhooks(Map<String, WebhookConfiguration> configuredWebhooks) {
+    this.configuredWebhooks = configuredWebhooks;
+  }
+
+  public void setDigestCronTrigger(String digestCronTrigger) {
+    this.digestCronTrigger = digestCronTrigger;
+  }
+
+  public void setEntityConfiguration(EntityConfiguration entityConfiguration) {
+    this.entityConfiguration = entityConfiguration;
+  }
+
+  public void setCsvConfiguration(CsvConfiguration csvConfiguration) {
+    this.csvConfiguration = csvConfiguration;
+  }
+
+  public void setQuartzProperties(Properties quartzProperties) {
+    this.quartzProperties = quartzProperties;
+  }
+
+  public void setCleanupServiceConfiguration(CleanupConfiguration cleanupServiceConfiguration) {
+    this.cleanupServiceConfiguration = cleanupServiceConfiguration;
+  }
+
+  public void setSharingEnabled(Boolean sharingEnabled) {
+    this.sharingEnabled = sharingEnabled;
+  }
+
+  public void setAvailableLocales(List<String> availableLocales) {
+    this.availableLocales = availableLocales;
+  }
+
+  public void setFallbackLocale(String fallbackLocale) {
+    this.fallbackLocale = fallbackLocale;
+  }
+
+  public void setUiConfiguration(UIConfiguration uiConfiguration) {
+    this.uiConfiguration = uiConfiguration;
+  }
+
+  public void setUserTaskIdentityCacheConfiguration(
+      UserTaskIdentityCacheConfiguration userTaskIdentityCacheConfiguration) {
+    this.userTaskIdentityCacheConfiguration = userTaskIdentityCacheConfiguration;
+  }
+
+  public void setUserIdentityCacheConfiguration(
+      UserIdentityCacheConfiguration userIdentityCacheConfiguration) {
+    this.userIdentityCacheConfiguration = userIdentityCacheConfiguration;
+  }
+
+  public void setTelemetryConfiguration(TelemetryConfiguration telemetryConfiguration) {
+    this.telemetryConfiguration = telemetryConfiguration;
+  }
+
+  public void setExternalVariableConfiguration(
+      ExternalVariableConfiguration externalVariableConfiguration) {
+    this.externalVariableConfiguration = externalVariableConfiguration;
+  }
+
+  public void setCaches(GlobalCacheConfiguration caches) {
+    this.caches = caches;
+  }
+
+  public void setAnalytics(AnalyticsConfiguration analytics) {
+    this.analytics = analytics;
+  }
+
+  public void setOptimizeApiConfiguration(OptimizeApiConfiguration optimizeApiConfiguration) {
+    this.optimizeApiConfiguration = optimizeApiConfiguration;
+  }
+
+  public void setOnboarding(OnboardingConfiguration onboarding) {
+    this.onboarding = onboarding;
+  }
+
+  public void setPanelNotificationConfiguration(
+      PanelNotificationConfiguration panelNotificationConfiguration) {
+    this.panelNotificationConfiguration = panelNotificationConfiguration;
+  }
+
+  public void setM2mAuth0ClientConfiguration(
+      M2mAuth0ClientConfiguration m2mAuth0ClientConfiguration) {
+    this.m2mAuth0ClientConfiguration = m2mAuth0ClientConfiguration;
+  }
+
+  public void setMultiTenancyEnabled(Boolean multiTenancyEnabled) {
+    this.multiTenancyEnabled = multiTenancyEnabled;
   }
 }

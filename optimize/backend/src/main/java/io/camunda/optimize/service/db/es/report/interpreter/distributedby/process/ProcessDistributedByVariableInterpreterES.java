@@ -58,21 +58,28 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class ProcessDistributedByVariableInterpreterES
     extends AbstractProcessDistributedByInterpreterES {
+
   private static final String PARENT_FILTER_AGGREGATION = "matchAllFilter";
 
-  @Getter private final ProcessViewInterpreterFacadeES viewInterpreter;
+  private final ProcessViewInterpreterFacadeES viewInterpreter;
   private final DateAggregationServiceES dateAggregationService;
   private final VariableAggregationServiceES variableAggregationService;
+
+  public ProcessDistributedByVariableInterpreterES(
+      ProcessViewInterpreterFacadeES viewInterpreter,
+      DateAggregationServiceES dateAggregationService,
+      VariableAggregationServiceES variableAggregationService) {
+    this.viewInterpreter = viewInterpreter;
+    this.dateAggregationService = dateAggregationService;
+    this.variableAggregationService = variableAggregationService;
+  }
 
   @Override
   public Set<ProcessDistributedBy> getSupportedDistributedBys() {
@@ -362,5 +369,9 @@ public class ProcessDistributedByVariableInterpreterES
   private AggregateByDateUnit getDistributeByDateUnit(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     return context.getReportData().getConfiguration().getDistributeByDateVariableUnit();
+  }
+
+  public ProcessViewInterpreterFacadeES getViewInterpreter() {
+    return this.viewInterpreter;
   }
 }
