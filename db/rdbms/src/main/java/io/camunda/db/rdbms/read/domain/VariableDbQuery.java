@@ -17,7 +17,11 @@ import io.camunda.util.ObjectBuilder;
 import java.util.Objects;
 import java.util.function.Function;
 
-public record VariableDbQuery(VariableFilter filter, VariableSort sort, SearchQueryPage page) {
+public record VariableDbQuery(VariableDbFilter filter, VariableSort sort, SearchQueryPage page) {
+
+  public VariableDbQuery(VariableFilter filter, VariableSort sort, SearchQueryPage page) {
+    this(VariableDbFilter.of(filter), sort, page);
+  }
 
   public VariableDbQuery {
     // There should be a default in the SearchQueryPage, so this should never happen
@@ -67,7 +71,7 @@ public record VariableDbQuery(VariableFilter filter, VariableSort sort, SearchQu
     public VariableDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, EMPTY_SORT);
-      return new VariableDbQuery(filter, sort, page().sanitize());
+      return new VariableDbQuery(VariableDbFilter.of(filter), sort, page().sanitize());
     }
   }
 }

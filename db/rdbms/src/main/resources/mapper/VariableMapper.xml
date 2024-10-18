@@ -76,9 +76,15 @@
     <if test="filter.variableFilters != null and !filter.variableFilters.isEmpty()">
       AND (
       <foreach collection="filter.variableFilters" item="variableFilter">
-        (VAR_NAME = #{variableFilter}
-        <if test="variableFilter.eq != null">
-          AND VAR_VALUE = #{variableFilter.eq}
+        (VAR_NAME = #{variableFilter.name}
+        <if test="variableFilter.operator != null and variableFilter.value != null">
+            <if test="!variableFilter.numericNeeded">
+              AND VAR_VALUE ${variableFilter.operator} #{variableFilter.value}
+            </if>
+            <if test="variableFilter.numericNeeded">
+              <!-- TODO This will not work for BIGINT variables ... -->
+              AND CAST(VAR_VALUE as INTEGER) ${variableFilter.operator} #{variableFilter.value}
+            </if>
         </if>
         )
         OR

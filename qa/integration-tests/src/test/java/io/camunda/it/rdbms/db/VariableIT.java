@@ -12,6 +12,7 @@ import static io.camunda.it.rdbms.db.fixtures.VariableFixtures.createAndSaveVari
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.read.domain.VariableDbFilter;
 import io.camunda.db.rdbms.read.domain.VariableDbQuery;
 import io.camunda.db.rdbms.read.service.VariableReader;
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
