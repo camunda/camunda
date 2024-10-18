@@ -59,8 +59,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
 
   @Override
   public void init(final ExporterConfiguration configuration) {
-    final var operateIndexPrefix = configuration.getIndex().getPrefix();
-    final var tasklistIndexPrefix = configuration.getIndex().getTasklistPrefix();
+    final var globalPrefix = configuration.getIndex().getPrefix();
     final var isElasticsearch =
         ConnectionTypes.from(configuration.getConnect().getType())
             .equals(ConnectionTypes.ELASTICSEARCH);
@@ -68,32 +67,32 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
     templateDescriptorsMap =
         Map.of(
             ListViewTemplate.class,
-            new ListViewTemplate(operateIndexPrefix, isElasticsearch),
+            new ListViewTemplate(globalPrefix, isElasticsearch),
             VariableTemplate.class,
-            new VariableTemplate(operateIndexPrefix, isElasticsearch),
+            new VariableTemplate(globalPrefix, isElasticsearch),
             PostImporterQueueTemplate.class,
-            new PostImporterQueueTemplate(operateIndexPrefix, isElasticsearch),
+            new PostImporterQueueTemplate(globalPrefix, isElasticsearch),
             FlowNodeInstanceTemplate.class,
-            new FlowNodeInstanceTemplate(operateIndexPrefix, isElasticsearch),
+            new FlowNodeInstanceTemplate(globalPrefix, isElasticsearch),
             IncidentTemplate.class,
-            new IncidentTemplate(operateIndexPrefix, isElasticsearch),
+            new IncidentTemplate(globalPrefix, isElasticsearch),
             SequenceFlowTemplate.class,
-            new SequenceFlowTemplate(operateIndexPrefix, isElasticsearch),
+            new SequenceFlowTemplate(globalPrefix, isElasticsearch),
             DecisionInstanceTemplate.class,
-            new DecisionInstanceTemplate(operateIndexPrefix, isElasticsearch));
+            new DecisionInstanceTemplate(globalPrefix, isElasticsearch));
 
     indexDescriptorsMap =
         Map.of(
             DecisionIndex.class,
-            new DecisionIndex(operateIndexPrefix, isElasticsearch),
+            new DecisionIndex(globalPrefix, isElasticsearch),
             DecisionRequirementsIndex.class,
-            new DecisionRequirementsIndex(operateIndexPrefix, isElasticsearch),
+            new DecisionRequirementsIndex(globalPrefix, isElasticsearch),
             MetricIndex.class,
-            new MetricIndex(operateIndexPrefix, isElasticsearch),
+            new MetricIndex(globalPrefix, isElasticsearch),
             ProcessIndex.class,
-            new ProcessIndex(operateIndexPrefix, isElasticsearch),
+            new ProcessIndex(globalPrefix, isElasticsearch),
             FormIndex.class,
-            new FormIndex(tasklistIndexPrefix, isElasticsearch));
+            new FormIndex(globalPrefix, isElasticsearch));
 
     exportHandlers =
         Set.of(

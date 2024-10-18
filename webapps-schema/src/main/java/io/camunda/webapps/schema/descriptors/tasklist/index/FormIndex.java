@@ -28,18 +28,8 @@ public class FormIndex extends TasklistIndexDescriptor implements Prio4Backup {
   }
 
   @Override
-  public String getFullQualifiedName() {
-    return String.format("%s-%s-%s_", getIndexPrefix(), getIndexName(), getVersion());
-  }
-
-  @Override
   public String getAlias() {
     return getFullQualifiedName() + "alias";
-  }
-
-  @Override
-  public String getAllVersionsIndexNameRegexPattern() {
-    return String.format("%s-%s-\\d.*", getIndexPrefix(), getIndexName());
   }
 
   @Override
