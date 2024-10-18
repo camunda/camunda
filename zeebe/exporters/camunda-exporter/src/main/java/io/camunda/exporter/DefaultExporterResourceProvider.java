@@ -51,10 +51,9 @@ import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTempla
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
+import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
-import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
-import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
