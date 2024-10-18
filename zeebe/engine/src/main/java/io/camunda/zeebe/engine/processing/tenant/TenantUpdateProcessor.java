@@ -23,11 +23,14 @@ import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.Optional;
 
 public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<TenantRecord> {
 
   private final TenantState tenantState;
   private final AuthorizationCheckBehavior authCheckBehavior;
+  private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
@@ -36,10 +39,12 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
   public TenantUpdateProcessor(
       final TenantState tenantState,
       final AuthorizationCheckBehavior authCheckBehavior,
+      final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
     this.tenantState = tenantState;
     this.authCheckBehavior = authCheckBehavior;
+    this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
@@ -48,64 +53,99 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
 
   @Override
   public void processNewCommand(final TypedRecord<TenantRecord> command) {
+    if (!isAuthorizedToUpdate(command)) {
+      return;
+    }
+
     final var record = command.getValue();
     final var tenantKey = record.getTenantKey();
 
     final var persistedRecord = tenantState.getTenantByKey(tenantKey);
     if (persistedRecord.isEmpty()) {
-      final var errorMessage =
+      rejectCommand(
+          command,
+          RejectionType.NOT_FOUND,
           "Expected to update tenant with key '%s', but no tenant with this key exists."
-              .formatted(tenantKey);
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+              .formatted(tenantKey));
       return;
     }
 
-    final var authorizationRequest =
-        new AuthorizationRequest(command, AuthorizationResourceType.TENANT, PermissionType.UPDATE)
-            .addResourceId(record.getTenantId());
-    if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
-      final var errorMessage =
-          AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE.formatted(
-              authorizationRequest.getPermissionType(), authorizationRequest.getResourceType());
-      rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, errorMessage);
-      return;
-    }
-
-    final var updatedTenantId = record.getTenantId();
-    if (!updatedTenantId.equals(persistedRecord.get().getTenantId())
-        && tenantState.getTenantKeyById(updatedTenantId).isPresent()) {
-      final var errorMessage =
+    if (tenantIdConflict(record)) {
+      rejectCommand(
+          command,
+          RejectionType.ALREADY_EXISTS,
           "Expected to update tenant with ID '%s', but a tenant with this ID already exists."
-              .formatted(updatedTenantId);
-      rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);
+              .formatted(record.getTenantId()));
       return;
     }
 
-    stateWriter.appendFollowUpEvent(
-        persistedRecord.get().getTenantKey(), TenantIntent.UPDATED, record);
-    responseWriter.writeEventOnCommand(
-        persistedRecord.get().getTenantKey(), TenantIntent.UPDATED, record, command);
-
-    distributeCommand(command, record);
+    updateExistingTenant(persistedRecord.get(), record);
+    updateStateAndDistribute(command, persistedRecord.get());
   }
 
   @Override
   public void processDistributedCommand(final TypedRecord<TenantRecord> command) {
-    final TenantRecord tenantRecord = command.getValue();
-    final long tenantKey = tenantState.getTenantKeyById(tenantRecord.getTenantId()).get();
-    stateWriter.appendFollowUpEvent(tenantKey, TenantIntent.UPDATED, tenantRecord);
+    stateWriter.appendFollowUpEvent(
+        command.getValue().getTenantKey(), TenantIntent.UPDATED, command.getValue());
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private void distributeCommand(
-      final TypedRecord<TenantRecord> command, final TenantRecord record) {
-    final long tenantKey = tenantState.getTenantKeyById(record.getTenantId()).get();
+  private boolean isAuthorizedToUpdate(final TypedRecord<TenantRecord> command) {
+    final var authorizationRequest =
+        new AuthorizationRequest(command, AuthorizationResourceType.TENANT, PermissionType.UPDATE)
+            .addResourceId(command.getValue().getTenantId());
+    if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
+      rejectCommandWithUnauthorizedError(command, authorizationRequest);
+      return false;
+    }
+    return true;
+  }
+
+  private boolean tenantIdConflict(final TenantRecord record) {
+    final Optional<Long> tenantKeyById = tenantState.getTenantKeyById(record.getTenantId());
+    return tenantKeyById.isPresent() && !tenantKeyById.get().equals(record.getTenantKey());
+  }
+
+  private void updateExistingTenant(
+      final TenantRecord existingTenant, final TenantRecord updateRecord) {
+    if (!updateRecord.getTenantId().isEmpty()) {
+      existingTenant.setTenantId(updateRecord.getTenantId());
+    }
+    if (!updateRecord.getName().isEmpty()) {
+      existingTenant.setName(updateRecord.getName());
+    }
+  }
+
+  private void updateStateAndDistribute(
+      final TypedRecord<TenantRecord> command, final TenantRecord tenantRecord) {
+    stateWriter.appendFollowUpEvent(
+        tenantRecord.getTenantKey(), TenantIntent.UPDATED, tenantRecord);
+    responseWriter.writeEventOnCommand(
+        tenantRecord.getTenantKey(), TenantIntent.UPDATED, tenantRecord, command);
+    distributeCommand(command);
+  }
+
+  private void distributeCommand(final TypedRecord<TenantRecord> command) {
+    final long distributionKey = keyGenerator.nextKey();
     commandDistributionBehavior
-        .withKey(tenantKey)
+        .withKey(distributionKey)
         .inQueue(DistributionQueue.IDENTITY.getQueueId())
         .distribute(command);
+  }
+
+  private void rejectCommandWithUnauthorizedError(
+      final TypedRecord<TenantRecord> command, final AuthorizationRequest authorizationRequest) {
+    final var errorMessage =
+        AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE.formatted(
+            authorizationRequest.getPermissionType(), authorizationRequest.getResourceType());
+    rejectCommand(command, RejectionType.UNAUTHORIZED, errorMessage);
+  }
+
+  private void rejectCommand(
+      final TypedRecord<TenantRecord> command,
+      final RejectionType type,
+      final String errorMessage) {
+    rejectionWriter.appendRejection(command, type, errorMessage);
+    responseWriter.writeRejectionOnCommand(command, type, errorMessage);
   }
 }

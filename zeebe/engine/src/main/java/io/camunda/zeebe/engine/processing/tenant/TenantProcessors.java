@@ -35,6 +35,10 @@ public class TenantProcessors {
             ValueType.TENANT,
             TenantIntent.UPDATE,
             new TenantUpdateProcessor(
-                tenantState, authCheckBehavior, writers, commandDistributionBehavior));
+                tenantState,
+                authCheckBehavior,
+                keyGenerator,
+                writers,
+                commandDistributionBehavior));
   }
 }
