@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.protocol.record.intent;
 
-public enum RoleIntent implements Intent {
+public enum GroupIntent implements Intent {
   CREATE(0),
   CREATED(1),
   UPDATE(2),
@@ -29,7 +29,7 @@ public enum RoleIntent implements Intent {
 
   private final short value;
 
-  RoleIntent(final int value) {
+  GroupIntent(final int value) {
     this.value = (short) value;
   }
 

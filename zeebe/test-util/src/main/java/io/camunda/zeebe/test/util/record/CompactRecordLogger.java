@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
+import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobKind;
@@ -102,7 +103,8 @@ public class CompactRecordLogger {
           entry("SIGNAL", "SIG"),
           entry("COMMAND_DISTRIBUTION", "DSTR"),
           entry("USER_TASK", "UT"),
-          entry("ROLE", "RL"));
+          entry("ROLE", "RL"),
+          entry("GROUP", "GR"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
       ofEntries(
@@ -154,6 +156,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.CLOCK, this::summarizeClock);
     valueLoggers.put(ValueType.ROLE, this::summarizeRole);
     valueLoggers.put(ValueType.TENANT, this::summarizeTenant);
+    valueLoggers.put(ValueType.GROUP, this::summarizeGroup);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -903,6 +906,24 @@ public class CompactRecordLogger {
         .append(formatId(value.getName()))
         .append(", EntityKey=")
         .append(shortenKey(value.getEntityKey()))
+        .append("]");
+
+    return builder.toString();
+  }
+
+  private String summarizeGroup(final Record<?> record) {
+    final var value = (GroupRecordValue) record.getValue();
+
+    final StringBuilder builder = new StringBuilder("Group[");
+    builder
+        .append("Key=")
+        .append(shortenKey(value.getGroupKey()))
+        .append(", Name=")
+        .append(formatId(value.getName()))
+        .append(", EntityKey=")
+        .append(shortenKey(value.getEntityKey()))
+        .append(", EntityType=")
+        .append(value.getEntityType())
         .append("]");
 
     return builder.toString();
