@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.util.client;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.function.Function;
@@ -41,6 +42,17 @@ public class TenantClient {
    */
   public TenantUpdateClient updateTenant(final long tenantKey) {
     return new TenantUpdateClient(writer, tenantKey);
+  }
+
+  /**
+   * Creates a new {@link TenantAddEntityClient} for adding an entity to a tenant. The client uses
+   * the internal command writer to submit the add entity commands.
+   *
+   * @param tenantKey the key of the tenant
+   * @return a new instance of {@link TenantAddEntityClient}
+   */
+  public TenantAddEntityClient addEntity(final long tenantKey) {
+    return new TenantAddEntityClient(writer, tenantKey);
   }
 
   public static class TenantCreationClient {
@@ -199,6 +211,54 @@ public class TenantClient {
      * @return this instance with rejection expectation
      */
     public TenantUpdateClient expectRejection() {
+      expectation = REJECTION_SUPPLIER;
+      return this;
+    }
+  }
+
+  public static class TenantAddEntityClient {
+
+    private static final Function<Long, Record<TenantRecordValue>> SUCCESS_SUPPLIER =
+        (position) ->
+            RecordingExporter.tenantRecords()
+                .withIntent(TenantIntent.ENTITY_ADDED)
+                .withSourceRecordPosition(position)
+                .getFirst();
+
+    private static final Function<Long, Record<TenantRecordValue>> REJECTION_SUPPLIER =
+        (position) ->
+            RecordingExporter.tenantRecords()
+                .onlyCommandRejections()
+                .withIntent(TenantIntent.ADD_ENTITY)
+                .withSourceRecordPosition(position)
+                .getFirst();
+
+    private final CommandWriter writer;
+    private final TenantRecord tenantRecord;
+    private Function<Long, Record<TenantRecordValue>> expectation = SUCCESS_SUPPLIER;
+
+    public TenantAddEntityClient(final CommandWriter writer, final long tenantKey) {
+      this.writer = writer;
+      tenantRecord = new TenantRecord();
+      tenantRecord.setTenantKey(tenantKey);
+    }
+
+    public TenantAddEntityClient withEntityKey(final long entityKey) {
+      tenantRecord.setEntityKey(entityKey);
+      return this;
+    }
+
+    public TenantAddEntityClient withEntityType(final EntityType entityType) {
+      tenantRecord.setEntityType(entityType);
+      return this;
+    }
+
+    public Record<TenantRecordValue> add() {
+      final long position = writer.writeCommand(TenantIntent.ADD_ENTITY, tenantRecord);
+      return expectation.apply(position);
+    }
+
+    public TenantAddEntityClient expectRejection() {
       expectation = REJECTION_SUPPLIER;
       return this;
     }
