@@ -1,6 +1,10 @@
 @echo on
 REM set constants
-set CAMUNDA_VERSION=8.6.2
+
+if not defined CAMUNDA_VERSION (
+  set CAMUNDA_VERSION=8.6.2
+)
+
 set CAMUNDA_CONNECTORS_VERSION=8.6.2
 set ELASTICSEARCH_VERSION=8.13.4
 

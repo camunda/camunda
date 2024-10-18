@@ -1,7 +1,9 @@
 #!/bin/bash
 
 # set constants
-CAMUNDA_VERSION="8.6.2"
+if [[ "$CAMUNDA_VERSION" == "" ]]; then
+  CAMUNDA_VERSION="8.6.2"
+fi
 ELASTICSEARCH_VERSION="8.13.4"
 EXPECTED_JAVA_VERSION=21
 
