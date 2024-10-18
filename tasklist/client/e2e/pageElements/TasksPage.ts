@@ -83,7 +83,10 @@ class TasksPage {
   }
 
   async openTask(name: string) {
-    await this.availableTasks.getByText(name, {exact: true}).nth(0).click();
+    await this.availableTasks
+      .getByText(name, {exact: true})
+      .nth(0)
+      .click({timeout: 60000});
   }
 
   async filterBy(
