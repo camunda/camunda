@@ -167,6 +167,11 @@ public class SchemaManager {
   }
 
   private String allIndexNames() {
+
+    // The wildcard is required as without it, requests would fail if the index didn't exist.
+    // this way all descriptors can be retrieved in one request without errors due to not created
+    // indices
+
     return indexDescriptors.stream()
         .map(descriptor -> descriptor.getFullQualifiedName() + "*")
         .collect(Collectors.joining(","));
