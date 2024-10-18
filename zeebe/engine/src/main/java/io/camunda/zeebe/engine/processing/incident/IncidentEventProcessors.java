@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.incident;
 
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -23,11 +24,16 @@ public final class IncidentEventProcessors {
       final ProcessingState processingState,
       final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor,
       final Writers writers,
-      final BpmnJobActivationBehavior jobActivationBehavior) {
+      final BpmnJobActivationBehavior jobActivationBehavior,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     typedRecordProcessors.onCommand(
         ValueType.INCIDENT,
         IncidentIntent.RESOLVE,
         new IncidentResolveProcessor(
-            processingState, bpmnStreamProcessor, writers, jobActivationBehavior));
+            processingState,
+            bpmnStreamProcessor,
+            writers,
+            jobActivationBehavior,
+            authCheckBehavior));
   }
 }
