@@ -7,15 +7,14 @@
  */
 package io.camunda.webapps.schema.entities.operate;
 
+import io.camunda.webapps.schema.entities.tasklist.TasklistEntity;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-public class MetricEntity extends OperateZeebeEntity<MetricEntity> {
+public class MetricEntity extends TasklistEntity<MetricEntity> {
   private String event;
   private String value;
   private OffsetDateTime eventTime;
-
-  private String tenantId;
 
   public MetricEntity() {
     super();
@@ -54,18 +53,9 @@ public class MetricEntity extends OperateZeebeEntity<MetricEntity> {
     return this;
   }
 
-  public String getTenantId() {
-    return tenantId;
-  }
-
-  public MetricEntity setTenantId(final String tenantId) {
-    this.tenantId = tenantId;
-    return this;
-  }
-
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), event, value, eventTime, tenantId);
+    return Objects.hash(super.hashCode(), event, value, eventTime);
   }
 
   @Override
@@ -82,7 +72,6 @@ public class MetricEntity extends OperateZeebeEntity<MetricEntity> {
     final MetricEntity that = (MetricEntity) o;
     return Objects.equals(event, that.event)
         && Objects.equals(value, that.value)
-        && Objects.equals(eventTime, that.eventTime)
-        && Objects.equals(tenantId, that.tenantId);
+        && Objects.equals(eventTime, that.eventTime);
   }
 }
