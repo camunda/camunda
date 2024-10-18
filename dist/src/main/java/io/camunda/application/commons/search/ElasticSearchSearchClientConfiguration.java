@@ -56,6 +56,9 @@ public class ElasticSearchSearchClientConfiguration {
   @ConditionalOnSessionPersistence
   public ElasticsearchSessionDocumentClient elasticsearchSessionDocumentClient(
       final RetryElasticsearchClient client) {
-    return new ElasticsearchSessionDocumentClient(client);
+    final ElasticsearchSessionDocumentClient documentClient =
+        new ElasticsearchSessionDocumentClient(client);
+    documentClient.setup();
+    return documentClient;
   }
 }

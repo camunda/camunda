@@ -85,8 +85,8 @@ public class SessionDocumentMapper {
           request.getHeader(POLLING_HEADER);
           session.setPolling(true);
         }
-      } catch (final Exception e) {
-
+      } catch (final Exception ignored) {
+        // It's not a polling request
       }
       session.setCreationTime(getInstantFor(document.get(CREATION_TIME)));
       session.setMaxInactiveInterval(

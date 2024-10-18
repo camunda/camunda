@@ -22,7 +22,13 @@ import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
+import org.elasticsearch.action.admin.indices.alias.Alias;
+import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest;
+import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
+import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
+import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
+import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.get.GetRequest;
@@ -33,10 +39,12 @@ import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
+import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.*;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.SearchHit;
@@ -46,10 +54,8 @@ import org.slf4j.LoggerFactory;
 
 public class RetryElasticsearchClient {
 
-  /*  public static final String REFRESH_INTERVAL = "index.refresh_interval";
-  public static final String NO_REFRESH = "-1";
   public static final String NUMBERS_OF_REPLICA = "index.number_of_replicas";
-  public static final String NO_REPLICA = "0";*/
+  public static final String NO_REPLICA = "0";
   public static final int SCROLL_KEEP_ALIVE_MS = 60_000;
   public static final int DEFAULT_NUMBER_OF_RETRIES =
       30 * 10; // 30*10 with 2 seconds = 10 minutes retry loop
@@ -63,6 +69,7 @@ public class RetryElasticsearchClient {
   private RequestOptions requestOptions = RequestOptions.DEFAULT;
   private int numberOfRetries = DEFAULT_NUMBER_OF_RETRIES;
   private int delayIntervalInSeconds = DEFAULT_DELAY_INTERVAL_IN_SECONDS;
+  private final int numberOfReplicas = 1;
 
   public RetryElasticsearchClient(
       final RestHighLevelClient esClient, final ObjectMapper objectMapper) {
@@ -278,5 +285,105 @@ public class RetryElasticsearchClient {
           }
           return doneOnSearchHits;
         });
+  }
+
+  public boolean createIndex(final CreateIndexRequest createIndexRequest) {
+    return executeWithRetries(
+        "CreateIndex " + createIndexRequest.index(),
+        () -> {
+          if (!indicesExist(createIndexRequest.index())) {
+            return esClient.indices().create(createIndexRequest, requestOptions).isAcknowledged();
+          }
+
+          final String replicas =
+              getOrDefaultNumbersOfReplica(createIndexRequest.index(), NO_REPLICA);
+          if (!replicas.equals(String.valueOf(numberOfReplicas))) {
+            final UpdateSettingsRequest updateSettingsRequest =
+                new UpdateSettingsRequest(createIndexRequest.index());
+            final Settings settings =
+                Settings.builder().put(NUMBERS_OF_REPLICA, numberOfReplicas).build();
+            updateSettingsRequest.settings(settings);
+            esClient.indices().putSettings(updateSettingsRequest, requestOptions).isAcknowledged();
+          }
+
+          try {
+            if (createIndexRequest.aliases() != null
+                && !createIndexRequest.aliases().isEmpty()
+                && !aliasExist(
+                    createIndexRequest.aliases().iterator().next(), createIndexRequest.index())) {
+              final IndicesAliasesRequest request = new IndicesAliasesRequest();
+              final IndicesAliasesRequest.AliasActions aliasAction =
+                  new IndicesAliasesRequest.AliasActions(
+                          IndicesAliasesRequest.AliasActions.Type.ADD)
+                      .index(createIndexRequest.index())
+                      .alias(createIndexRequest.aliases().iterator().next().name())
+                      .writeIndex(false);
+              request.addAliasAction(aliasAction);
+
+              esClient.indices().updateAliases(request, RequestOptions.DEFAULT);
+              LOGGER.info(
+                  "Alias is created. Index: {}, alias: {} ",
+                  createIndexRequest.index(),
+                  createIndexRequest.aliases().iterator().next().name());
+
+              return true;
+            }
+          } catch (final Exception ex) {
+            LOGGER.error(
+                String.format(
+                    "Exception occurred when creating an alias. Index: %s, alias: %s, error: %s ",
+                    createIndexRequest.index(),
+                    createIndexRequest.aliases().iterator().next().name(),
+                    ex.getMessage()),
+                ex);
+          }
+          return true;
+        });
+  }
+
+  private boolean indicesExist(final String indexPattern) throws IOException {
+    return esClient
+        .indices()
+        .exists(
+            new GetIndexRequest(indexPattern)
+                .indicesOptions(IndicesOptions.fromOptions(true, false, true, false)),
+            requestOptions);
+  }
+
+  public String getOrDefaultNumbersOfReplica(final String indexName, final String defaultValue) {
+    final Map<String, String> settings = getIndexSettingsFor(indexName, NUMBERS_OF_REPLICA);
+    String numbersOfReplica = getOrDefaultForNullValue(settings, NUMBERS_OF_REPLICA, defaultValue);
+    if (numbersOfReplica.trim().equals(NO_REPLICA)) {
+      numbersOfReplica = defaultValue;
+    }
+    return numbersOfReplica;
+  }
+
+  protected Map<String, String> getIndexSettingsFor(
+      final String indexName, final String... fields) {
+    return executeWithRetries(
+        "GetIndexSettings " + indexName,
+        () -> {
+          final Map<String, String> settings = new HashMap<>();
+          final GetSettingsResponse response =
+              esClient
+                  .indices()
+                  .getSettings(new GetSettingsRequest().indices(indexName), requestOptions);
+          for (final String field : fields) {
+            settings.put(field, response.getSetting(indexName, field));
+          }
+          return settings;
+        });
+  }
+
+  public static <K, V> V getOrDefaultForNullValue(
+      final Map<K, V> map, final K key, final V defaultValue) {
+    final V value = map.get(key);
+    return value == null ? defaultValue : value;
+  }
+
+  private boolean aliasExist(final Alias alias, final String index) throws IOException {
+    final GetAliasesRequest aliasExistsReq = new GetAliasesRequest(alias.name()).indices(index);
+    return esClient.indices().existsAlias(aliasExistsReq, RequestOptions.DEFAULT);
   }
 }
