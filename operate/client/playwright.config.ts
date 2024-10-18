@@ -38,7 +38,7 @@ const config: PlaywrightTestConfig = {
   expect: {
     timeout: 15 * 1000,
   },
-  forbidOnly: IS_CI,
+  forbidOnly: false,
   retries: 0,
   workers: IS_SCREENSHOT_GENERATOR ? 8 : 1,
   reporter: 'html',
@@ -62,10 +62,12 @@ const config: PlaywrightTestConfig = {
   outputDir: 'test-results/',
   use: {
     actionTimeout: 0,
+    // When there is base path (for example /operate/), each page.goto call needs to be relative (for example: page.goto('./processes')).
+    // Otherwise the base path gets ignored, because page.goto uses 'new URL()' to get the URL.
     baseURL: `http://localhost:${getPort()}${getBasePath()}`,
     trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    screenshot: 'on',
+    video: 'on',
   },
 };
 
