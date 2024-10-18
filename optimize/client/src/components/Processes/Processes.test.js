@@ -12,7 +12,7 @@ import {DecisionTree, Settings} from '@carbon/icons-react';
 
 import {addNotification} from 'notifications';
 import {EntityList} from 'components';
-import {isUserSearchAvailable, getOptimizeDatabase} from 'config';
+import {isUserSearchAvailable} from 'config';
 import {track} from 'tracking';
 
 import {Processes} from './Processes';
@@ -41,7 +41,6 @@ jest.mock('./service', () => ({
 
 jest.mock('config', () => ({
   isUserSearchAvailable: jest.fn().mockReturnValue(true),
-  getOptimizeDatabase: jest.fn().mockReturnValue('elasticsearch'),
 }));
 
 jest.mock('tracking', () => ({track: jest.fn()}));
@@ -203,29 +202,4 @@ it('display the search info correctly', async () => {
 
   const textWithQuery = node.find(EntityList).prop('description')('def', 1);
   expect(textWithQuery).toBe('1 of 1 process listed.');
-});
-
-it('should not display adoption dashboard when running optimize with opensearch', async () => {
-  const node = shallow(<Processes {...props} />);
-
-  await runAllEffects();
-  await flushPromises();
-
-  expect(node.find('.processOverview')).toExist();
-
-  getOptimizeDatabase.mockReturnValue('opensearch');
-  await runAllEffects();
-  await flushPromises();
-
-  expect(node.find('.processOverview')).not.toExist();
-});
-
-it('should not display the link to view the dashboard in opensearch mode', async () => {
-  getOptimizeDatabase.mockReturnValue('opensearch');
-  const node = shallow(<Processes {...props} />);
-
-  await runAllEffects();
-  await flushPromises();
-
-  expect(node.find(EntityList).prop('rows')[0].link).not.toBeDefined();
 });

@@ -33,8 +33,6 @@ jest.mock('services', () => ({
   ]),
 }));
 
-jest.mock('./CreateNewButton', () => () => <div className="CreateNewButton">CreateNewButton</div>);
-
 const props = {
   mightFail: jest.fn().mockImplementation((data, cb, err, final) => {
     cb(data);

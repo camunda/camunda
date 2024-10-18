@@ -8,12 +8,10 @@
 
 import {createReportUpdate, reportConfig} from 'services';
 import {Select} from 'components';
-import {useUiConfig} from 'hooks';
 
 import './View.scss';
 
 export default function View({report, onChange, variables}) {
-  const {optimizeDatabase} = useUiConfig();
   const views = reportConfig.view;
   const selectedOption = report.view ? views.find(({matcher}) => matcher(report)) : null;
 
@@ -41,7 +39,7 @@ export default function View({report, onChange, variables}) {
       disabled={report.definitions.length === 0 || !report.definitions[0].key}
     >
       {views
-        .filter(({visible, key}) => visible(report, optimizeDatabase) && key !== 'none')
+        .filter(({visible, key}) => visible(report) && key !== 'none')
         .map(({key, enabled, label}) => {
           if (key === 'variable') {
             const numberVariables = variables?.filter(({type}) =>

@@ -24,22 +24,6 @@ const config = {
   },
 };
 
-jest.mock('hooks', () => ({
-  useUiConfig: jest.fn(() => ({
-    optimizeDatabase: 'opensearch',
-  })),
-}));
-
-it('should hide user task, incident, flow node and variable views if optimizeDatabase is opensearch', () => {
-  const node = shallow(<View {...config} />);
-
-  expect(node.find(Select.Option).length).toBe(2);
-  expect(node.find({label: 'User task'})).not.toExist();
-  expect(node.find({label: 'Incident'})).not.toExist();
-  expect(node.find({label: 'Flow node'})).not.toExist();
-  expect(node.find({label: 'Variable'})).not.toExist();
-});
-
 it('should disable variable submenu if there are no number variables', () => {
   reportConfig.view = [
     {

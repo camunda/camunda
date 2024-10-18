@@ -180,18 +180,3 @@ it('should display a warning if optimize is running in opensearch mode', async (
 
   expect(tags[0].key).toBe('opensearchWarning');
 });
-
-it('should hide analysis tab if optimize is running in opensearch mode', async () => {
-  (useUiConfig as jest.Mock).mockReturnValue({
-    ...defaultUiConfig,
-    optimizeDatabase: 'opensearch',
-  });
-  const node = shallow(<Header />);
-
-  await runLastEffect();
-  await node.update();
-
-  const elements = node.find(C3Navigation).prop('navbar').elements;
-
-  expect(elements.find((element: any) => element.key === 'analysis')).toBeUndefined();
-});
