@@ -18,6 +18,7 @@ package io.camunda.zeebe.client.api.worker;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.command.CommandWithOneOrMoreTenantsStep;
+import io.camunda.zeebe.client.api.worker.usertask.UserTaskListenerJobHandler;
 import java.time.Duration;
 import java.util.List;
 
@@ -60,6 +61,12 @@ public interface JobWorkerBuilderStep1 {
      * @return the builder for this worker
      */
     JobWorkerBuilderStep3 handler(JobHandler handler);
+
+    UserTaskListenerJobWorkerBuilderStep3 handler(UserTaskListenerJobHandler handler);
+  }
+
+  interface UserTaskListenerJobWorkerBuilderStep3 {
+    JobWorkerBuilderStep3 eventType(String eventType);
   }
 
   interface JobWorkerBuilderStep3 extends CommandWithOneOrMoreTenantsStep<JobWorkerBuilderStep3> {

@@ -365,6 +365,7 @@ public final class ResponseMapper {
         .setDeadline(job.getDeadline())
         .setVariables(bufferAsJson(job.getVariablesBuffer()))
         .setTenantId(job.getTenantId())
+        .setJobListenerEventType(job.getJobListenerEventType().name())
         .build();
   }
 
