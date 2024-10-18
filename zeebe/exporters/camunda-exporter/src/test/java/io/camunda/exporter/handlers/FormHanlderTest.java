@@ -50,7 +50,7 @@ public class FormHanlderTest {
 
     // when - then
     assertThat(underTest.handlesRecord(formCreatedRecord)).isTrue();
-    assertThat(underTest.handlesRecord(formCreatedRecord)).isTrue();
+    assertThat(underTest.handlesRecord(formDeletedRecord)).isTrue();
   }
 
   @Test
@@ -118,6 +118,7 @@ public class FormHanlderTest {
     assertThat(formEntity.getSchema())
         .isEqualTo(new String(formValue.getResource(), StandardCharsets.UTF_8));
     assertThat(formEntity.getTenantId()).isEqualTo(formValue.getTenantId());
+    assertThat(formEntity.getIsDeleted()).isFalse();
   }
 
   @Test
