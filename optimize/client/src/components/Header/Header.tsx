@@ -35,17 +35,18 @@ export default function Header({noActions}: {noActions?: boolean}) {
   const location = useLocation();
   const {mightFail} = useErrorHandling();
   const {getBaseDocsUrl} = useDocs();
-  const userSideBar = useUserMenu();
   const {
     optimizeProfile,
     enterpriseMode,
     webappsLinks,
     optimizeDatabase,
+    optimizeVersion,
     onboarding,
     notificationsUrl,
     validLicense,
     licenseType,
   } = useUiConfig();
+  const userSideBar = useUserMenu(optimizeVersion);
 
   useEffect(() => {
     mightFail(getUserToken(), setUserToken, showError);
