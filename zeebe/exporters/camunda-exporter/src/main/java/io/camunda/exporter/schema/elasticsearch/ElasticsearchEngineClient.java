@@ -204,7 +204,10 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
           .getIndexTemplate(req -> req.name(namePattern))
           .indexTemplates()
           .stream()
-          .filter(indexTemplateItem -> indexTemplateItem.indexTemplate().template() != null)
+          .filter(
+              indexTemplateItem ->
+                  indexTemplateItem.indexTemplate().template() != null
+                      && indexTemplateItem.indexTemplate().template().mappings() != null)
           .collect(
               Collectors.toMap(
                   IndexTemplateItem::name, item -> item.indexTemplate().template().mappings()));
