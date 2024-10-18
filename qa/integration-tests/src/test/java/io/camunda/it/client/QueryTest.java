@@ -21,7 +21,33 @@ import java.util.Objects;
 import java.util.function.Function;
 import org.awaitility.Awaitility;
 
-abstract class QueryTest {
+/**
+ * This class provides several static methods to facilitate common operations such as deploying
+ * resources, starting process instances, and waiting for certain conditions to be met. These
+ * methods are designed to be used in integration tests to reduce code duplication and improve
+ * readability.
+ *
+ * <p>Example usage:
+ *
+ * <pre>{@code
+ * ZeebeClient zeebeClient = ...; // initialize your Zeebe client
+ *
+ * // Deploy a resource
+ * DeploymentEvent deploymentEvent = deployResource(zeebeClient, "path/to/resource.bpmn");
+ *
+ * // Start a process instance
+ * ProcessInstanceEvent processInstanceEvent = startProcessInstance(zeebeClient, "processId");
+ *
+ * // Wait for process instances to start
+ * waitForProcessInstancesToStart(zeebeClient, 1);
+ *
+ * // Assert sorting of query results
+ * SearchQueryResponse<Incident> resultAsc = ...; // get ascending sorted result
+ * SearchQueryResponse<Incident> resultDesc = ...; // get descending sorted result
+ * assertSorted(resultAsc, resultDesc, Incident::getCreationTime);
+ * }</pre>
+ */
+class QueryTest {
 
   static DeploymentEvent deployResource(final ZeebeClient zeebeClient, final String resourceName) {
     return zeebeClient
