@@ -41,7 +41,7 @@ public interface FlownodeInstanceFilter extends SearchRequestFilter {
    * @param value the bpmn process id of flow node instance
    * @return the updated filter
    */
-  FlownodeInstanceFilter bpmnProcessId(final String value);
+  FlownodeInstanceFilter processDefinitionId(final String value);
 
   /**
    * Filters flow node instances by process instance key.
