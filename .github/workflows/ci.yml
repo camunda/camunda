@@ -748,6 +748,7 @@ jobs:
       - protobuf-checks
       - tasklist-frontend-tests
       - zeebe-ci
+      - c8run-build-test
     steps:
       - uses: actions/checkout@v4
       - name: Check for aborted jobs
@@ -833,7 +834,7 @@ jobs:
 
   deploy-camunda-docker-snapshot:
     name: Deploy snapshot Camunda Docker image
-    needs: [ docker-checks, check-results ]
+    needs: [ check-results ]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions: {}  # GITHUB_TOKEN unused in this job
@@ -883,3 +884,8 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  c8run-build-test:
+    name: Deploy c8run
+    needs: [ docker-checks ]
+    uses: ./.github/workflows/c8run-build.yaml
