@@ -46,6 +46,10 @@ jest.mock('modules/stores/processes/processes.migration', () => ({
  * - ScriptTask
  * - EventBasedGateway
  * - IntermediateTimerEvent
+ * - SignalEventSubProcess
+ * - SignalStartEvent
+ * - SignalIntermediateCatch
+ * - SignalBoundaryEvent
  *
  * orderProcess_v2.bpmn contains:
  * - checkPayment (service task)
@@ -67,6 +71,10 @@ jest.mock('modules/stores/processes/processes.migration', () => ({
  * - ScriptTask
  * - EventBasedGateway
  * - IntermediateTimerEvent
+ * - SignalEventSubProcess
+ * - SignalStartEvent
+ * - SignalIntermediateCatch
+ * - SignalBoundaryEvent
  */
 describe('processInstanceMigrationMappingStore', () => {
   afterEach(() => {
@@ -158,6 +166,22 @@ describe('processInstanceMigrationMappingStore', () => {
         id: 'IntermediateTimerEvent',
         type: 'bpmn:IntermediateCatchEvent',
       },
+      {
+        id: 'SignalIntermediateCatch',
+        type: 'bpmn:IntermediateCatchEvent',
+      },
+      {
+        id: 'SignalBoundaryEvent',
+        type: 'bpmn:BoundaryEvent',
+      },
+      {
+        id: 'SignalEventSubProcess',
+        type: 'bpmn:SubProcess',
+      },
+      {
+        id: 'SignalStartEvent',
+        type: 'bpmn:StartEvent',
+      },
     ]);
 
     expect(isAutoMappable('checkPayment')).toBe(true);
@@ -174,6 +198,10 @@ describe('processInstanceMigrationMappingStore', () => {
     expect(isAutoMappable('SendTask')).toBe(true);
     expect(isAutoMappable('EventBasedGateway')).toBe(true);
     expect(isAutoMappable('IntermediateTimerEvent')).toBe(true);
+    expect(isAutoMappable('SignalIntermediateCatch')).toBe(true);
+    expect(isAutoMappable('SignalBoundaryEvent')).toBe(true);
+    expect(isAutoMappable('SignalEventSubProcess')).toBe(true);
+    expect(isAutoMappable('SignalStartEvent')).toBe(true);
 
     expect(isAutoMappable('requestForPayment')).toBe(false);
     expect(isAutoMappable('TimerInterrupting')).toBe(false);
@@ -502,6 +530,54 @@ describe('processInstanceMigrationMappingStore', () => {
           {
             id: 'IntermediateTimerEvent',
             name: 'IntermediateTimerEvent',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'SignalIntermediateCatch',
+          name: 'Signal intermediate catch',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'SignalIntermediateCatch',
+            name: 'Signal intermediate catch',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'SignalBoundaryEvent',
+          name: 'Signal boundary event',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'SignalBoundaryEvent',
+            name: 'Signal boundary event',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'SignalEventSubProcess',
+          name: 'Signal event sub process',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'SignalEventSubProcess',
+            name: 'Signal event sub process',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'SignalStartEvent',
+          name: 'Signal start event',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'SignalStartEvent',
+            name: 'Signal start event',
           },
         ],
       },
