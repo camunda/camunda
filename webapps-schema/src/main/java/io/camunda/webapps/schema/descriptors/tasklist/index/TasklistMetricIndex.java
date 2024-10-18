@@ -7,6 +7,7 @@
  */
 package io.camunda.webapps.schema.descriptors.tasklist.index;
 
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
 import io.camunda.webapps.schema.descriptors.tasklist.TasklistIndexDescriptor;
 
@@ -19,7 +20,7 @@ public class TasklistMetricIndex extends TasklistIndexDescriptor implements Prio
   public static final String EVENT = "event";
   public static final String VALUE = "value";
   public static final String EVENT_TIME = "eventTime";
-  public static final String TENANT_ID = "tenantId";
+  public static final String TENANT_ID = IndexDescriptor.TENANT_ID;
 
   public TasklistMetricIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
