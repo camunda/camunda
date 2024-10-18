@@ -84,13 +84,14 @@ jobs:
       - uses: ./.github/actions/build-operate-setup
         name: Build setup
         with:
+          maven-cache-key-modifier: operate-tests
           nexusUsername: ${{ steps.secrets.outputs.NEXUS_USR }}
           nexusPassword: ${{ steps.secrets.outputs.NEXUS_PSW }}
 
       # Build: all Maven artifacts
       - name: Build Maven
         run: |
-          mvn clean install -B -T1C -P -docker,skipFrontendBuild -DskipTests -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+          ./mvnw clean install -B -T1C -P -docker,skipFrontendBuild -DskipTests -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
 
       # Run integration tests in parallel
       - name: Backend - ${{ inputs.test-type }}

@@ -67,6 +67,7 @@ jobs:
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
         with:
+          maven-cache-key-modifier: optimize-tests
           secrets: ${{ toJSON(secrets) }}
       - name: Login to Harbor registry
         uses: ./.github/actions/login-registry
@@ -130,6 +131,7 @@ jobs:
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
         with:
+          maven-cache-key-modifier: optimize-tests
           secrets: ${{ toJSON(secrets) }}
       - name: Login to Harbor registry
         uses: ./.github/actions/login-registry
@@ -209,6 +211,7 @@ jobs:
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
         with:
+          maven-cache-key-modifier: optimize-tests
           secrets: ${{ toJSON(secrets) }}
 
       - name: Login to Harbor registry
@@ -290,6 +293,7 @@ jobs:
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
         with:
+          maven-cache-key-modifier: optimize-tests
           secrets: ${{ toJSON(secrets) }}
 
       - name: Login to Harbor registry
@@ -373,6 +377,7 @@ jobs:
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
         with:
+          maven-cache-key-modifier: optimize-tests
           secrets: ${{ toJSON(secrets) }}
 
       - name: Login to Harbor registry

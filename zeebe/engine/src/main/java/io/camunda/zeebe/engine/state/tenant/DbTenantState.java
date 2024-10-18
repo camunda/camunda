@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.state.authorization.EntityTypeValue;
 import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Optional;
 
 public class DbTenantState implements MutableTenantState {
@@ -58,17 +59,65 @@ public class DbTenantState implements MutableTenantState {
   public void createTenant(final TenantRecord tenantRecord) {
     tenantKey.wrapLong(tenantRecord.getTenantKey());
     tenantId.wrapString(tenantRecord.getTenantId());
-    persistedTenant.setTenant(tenantRecord);
-
+    persistedTenant.wrap(tenantRecord);
     tenantsColumnFamily.insert(tenantKey, persistedTenant);
     tenantByIdColumnFamily.insert(tenantId, fkTenantKey);
   }
 
   @Override
+  public void updateTenant(final TenantRecord updatedTenantRecord) {
+    tenantKey.wrapLong(updatedTenantRecord.getTenantKey());
+    final PersistedTenant persistedTenant = tenantsColumnFamily.get(tenantKey);
+
+    if (persistedTenant != null) {
+      final String oldTenantId = persistedTenant.getTenantId();
+      final String newTenantId = updatedTenantRecord.getTenantId();
+
+      if (!oldTenantId.equals(newTenantId)) {
+        tenantId.wrapString(oldTenantId);
+        tenantByIdColumnFamily.deleteExisting(tenantId);
+
+        tenantId.wrapString(newTenantId);
+        tenantByIdColumnFamily.insert(tenantId, fkTenantKey);
+      }
+
+      persistedTenant.wrap(updatedTenantRecord);
+      tenantsColumnFamily.update(tenantKey, persistedTenant);
+    }
+  }
+
+  @Override
+  public void addEntity(final TenantRecord tenantRecord) {
+    tenantKey.wrapLong(tenantRecord.getTenantKey());
+    entityKey.wrapLong(tenantRecord.getEntityKey());
+    entityType.setEntityType(tenantRecord.getEntityType());
+    entityByTenantColumnFamily.insert(entityByTenantKey, entityType);
+  }
+
+  @Override
   public Optional<TenantRecord> getTenantByKey(final long tenantKey) {
     this.tenantKey.wrapLong(tenantKey);
-    return Optional.ofNullable(tenantsColumnFamily.get(this.tenantKey))
-        .map(PersistedTenant::getTenant);
+    final PersistedTenant persistedTenant = tenantsColumnFamily.get(this.tenantKey);
+
+    if (persistedTenant != null) {
+      final TenantRecord tenantRecord = new TenantRecord();
+      tenantRecord
+          .setTenantKey(persistedTenant.getTenantKey())
+          .setTenantId(persistedTenant.getTenantId())
+          .setName(persistedTenant.getName());
+
+      // Retrieve entityKey if it exists for the tenant
+      final EntityTypeValue entityTypeValue =
+          entityByTenantColumnFamily.get(new DbCompositeKey<>(fkTenantKey, entityKey));
+
+      if (entityTypeValue != null) {
+        tenantRecord.setEntityKey(entityKey.getValue());
+      }
+
+      return Optional.of(tenantRecord);
+    }
+
+    return Optional.empty();
   }
 
   @Override
@@ -76,5 +125,19 @@ public class DbTenantState implements MutableTenantState {
     this.tenantId.wrapString(tenantId);
     return Optional.ofNullable(tenantByIdColumnFamily.get(this.tenantId))
         .map(fkTenantKey -> fkTenantKey.inner().getValue());
+  }
+
+  @Override
+  public Optional<EntityType> getEntityType(final long tenantKey, final long entityKey) {
+    this.tenantKey.wrapLong(tenantKey);
+    this.entityKey.wrapLong(entityKey);
+
+    final var entityTypeValue = entityByTenantColumnFamily.get(entityByTenantKey);
+
+    if (entityTypeValue == null) {
+      return Optional.empty();
+    }
+
+    return Optional.of(entityTypeValue.getEntityType());
   }
 }

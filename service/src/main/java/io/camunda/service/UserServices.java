@@ -11,7 +11,8 @@ import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserQuery;
-import io.camunda.search.security.auth.Authentication;
+import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.SecurityContext;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserCreateRequest;
@@ -33,7 +34,8 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
 
   @Override
   public SearchQueryResult<UserEntity> search(final UserQuery query) {
-    return userSearchClient.searchUsers(query, authentication);
+    return userSearchClient.searchUsers(
+        query, SecurityContext.of(s -> s.withAuthentication(authentication)));
   }
 
   @Override

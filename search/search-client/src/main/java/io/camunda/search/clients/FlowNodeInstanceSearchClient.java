@@ -10,10 +10,10 @@ package io.camunda.search.clients;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.search.security.auth.Authentication;
+import io.camunda.security.auth.SecurityContext;
 
 public interface FlowNodeInstanceSearchClient {
 
   SearchQueryResult<FlowNodeInstanceEntity> searchFlowNodeInstances(
-      FlowNodeInstanceQuery filter, Authentication authentication);
+      FlowNodeInstanceQuery filter, SecurityContext securityContext);
 }

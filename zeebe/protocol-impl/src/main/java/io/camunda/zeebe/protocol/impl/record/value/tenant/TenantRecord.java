@@ -10,9 +10,11 @@ package io.camunda.zeebe.protocol.impl.record.value.tenant;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import org.agrona.DirectBuffer;
 
@@ -21,13 +23,16 @@ public final class TenantRecord extends UnifiedRecordValue implements TenantReco
   private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
   private final StringProperty nameProp = new StringProperty("name", "");
   private final LongProperty entityKeyProp = new LongProperty("entityKey", -1L);
+  private final EnumProperty<EntityType> entityTypeProp =
+      new EnumProperty<>("entityType", EntityType.class, EntityType.UNSPECIFIED);
 
   public TenantRecord() {
-    super(4);
+    super(5);
     declareProperty(tenantKeyProp)
         .declareProperty(tenantIdProp)
         .declareProperty(nameProp)
-        .declareProperty(entityKeyProp);
+        .declareProperty(entityKeyProp)
+        .declareProperty(entityTypeProp);
   }
 
   public void wrap(final TenantRecord record) {
@@ -35,6 +40,7 @@ public final class TenantRecord extends UnifiedRecordValue implements TenantReco
     tenantIdProp.setValue(record.getTenantIdBuffer());
     nameProp.setValue(record.getNameBuffer());
     entityKeyProp.setValue(record.getEntityKey());
+    entityTypeProp.setValue(record.getEntityType());
   }
 
   public TenantRecord copy() {
@@ -93,6 +99,16 @@ public final class TenantRecord extends UnifiedRecordValue implements TenantReco
 
   public TenantRecord setEntityKey(final long entityKey) {
     entityKeyProp.setValue(entityKey);
+    return this;
+  }
+
+  @Override
+  public EntityType getEntityType() {
+    return entityTypeProp.getValue();
+  }
+
+  public TenantRecord setEntityType(final EntityType entityType) {
+    entityTypeProp.setValue(entityType);
     return this;
   }
 

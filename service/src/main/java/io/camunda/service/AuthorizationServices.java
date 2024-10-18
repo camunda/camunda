@@ -12,7 +12,8 @@ import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.search.security.auth.Authentication;
+import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.SecurityContext;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerAuthorizationPatchRequest;
@@ -46,7 +47,8 @@ public class AuthorizationServices<T>
 
   @Override
   public SearchQueryResult<AuthorizationEntity> search(final AuthorizationQuery query) {
-    return authorizationSearchClient.searchAuthorizations(query, authentication);
+    return authorizationSearchClient.searchAuthorizations(
+        query, SecurityContext.of(s -> s.withAuthentication(authentication)));
   }
 
   public Set<String> fetchAssignedPermissions(

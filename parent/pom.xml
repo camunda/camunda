@@ -883,6 +883,13 @@
         <version>${project.version}</version>
       </dependency>
 
+      <!-- Camunda security modules -->
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-security-core</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
       <!-- Camunda Process Testing modules -->
 
       <dependency>
