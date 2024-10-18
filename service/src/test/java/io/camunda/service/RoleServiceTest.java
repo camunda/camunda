@@ -101,6 +101,4 @@ public class RoleServiceTest {
         assertThrowsExactly(CamundaSearchException.class, () -> services.getByRoleKey(key));
     assertThat(exception.getMessage()).isEqualTo("Found role with roleKey 200 more than once");
   }
-
-  // TODO - test for creating a role
 }
