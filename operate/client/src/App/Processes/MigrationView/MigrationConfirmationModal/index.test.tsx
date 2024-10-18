@@ -71,6 +71,31 @@ describe('MigrationConfirmationModal', () => {
     onSubmitMock.mockClear();
   });
 
+  it('should submit on enter', async () => {
+    const onSubmitMock = jest.fn();
+
+    const {user} = render(
+      <MigrationConfirmationModal
+        open={true}
+        setOpen={jest.fn()}
+        onSubmit={onSubmitMock}
+      />,
+    );
+
+    expect(screen.getByRole('button', {name: /confirm/i})).toBeDisabled();
+
+    await user.keyboard('[Enter]');
+    expect(onSubmitMock).not.toHaveBeenCalled();
+
+    await user.type(screen.getByRole('textbox'), 'MIGRATE');
+    expect(screen.getByRole('button', {name: /confirm/i})).toBeEnabled();
+
+    await user.keyboard('[Enter]');
+    expect(onSubmitMock).toHaveBeenCalledTimes(1);
+
+    onSubmitMock.mockClear();
+  });
+
   it('should auto focus', () => {
     render(
       <MigrationConfirmationModal

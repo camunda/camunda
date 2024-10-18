@@ -66,6 +66,9 @@ const isMigratableFlowNode = (businessObject: BusinessObject) => {
       'bpmn:SubProcess',
       'bpmn:CallActivity',
       'bpmn:ReceiveTask',
+      'bpmn:BusinessRuleTask',
+      'bpmn:ScriptTask',
+      'bpmn:SendTask',
     ],
   });
 };
