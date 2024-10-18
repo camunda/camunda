@@ -415,7 +415,9 @@ final class CamundaExporterIT {
       CamundaExporterIT.this.shouldExportUserRecord(
           () ->
               client
-                  .get(b -> b.id(recordId).index("camunda-record-users-8.7.0_"), UserEntity.class)
+                  .get(
+                      b -> b.id(recordId).index("camunda-record-identity-users-8.7.0_"),
+                      UserEntity.class)
                   .source(),
           record);
     }
@@ -430,7 +432,7 @@ final class CamundaExporterIT {
           () ->
               client
                   .get(
-                      b -> b.id(recordId).index("camunda-record-authorizations-8.7.0_"),
+                      b -> b.id(recordId).index("camunda-record-identity-authorizations-8.7.0_"),
                       AuthorizationEntity.class)
                   .source(),
           record);
@@ -448,7 +450,8 @@ final class CamundaExporterIT {
               CONTAINER,
               () ->
                   client
-                      .search(s -> s.index("camunda-record-users-8.7.0_"), UserEntity.class)
+                      .search(
+                          s -> s.index("camunda-record-identity-users-8.7.0_"), UserEntity.class)
                       .hits()
                       .total()
                       .value());
@@ -505,7 +508,9 @@ final class CamundaExporterIT {
       CamundaExporterIT.this.shouldExportUserRecord(
           () ->
               client
-                  .get(b -> b.id(recordId).index("camunda-record-users-8.7.0_"), UserEntity.class)
+                  .get(
+                      b -> b.id(recordId).index("camunda-record-identity-users-8.7.0_"),
+                      UserEntity.class)
                   .source(),
           record);
     }
@@ -520,7 +525,7 @@ final class CamundaExporterIT {
           () ->
               client
                   .get(
-                      b -> b.id(recordId).index("camunda-record-authorizations-8.7.0_"),
+                      b -> b.id(recordId).index("camunda-record-identity-authorizations-8.7.0_"),
                       AuthorizationEntity.class)
                   .source(),
           record);
@@ -538,7 +543,8 @@ final class CamundaExporterIT {
               CONTAINER,
               () ->
                   client
-                      .search(s -> s.index("camunda-record-users-8.7.0_"), UserEntity.class)
+                      .search(
+                          s -> s.index("camunda-record-identity-users-8.7.0_"), UserEntity.class)
                       .hits()
                       .total()
                       .value());

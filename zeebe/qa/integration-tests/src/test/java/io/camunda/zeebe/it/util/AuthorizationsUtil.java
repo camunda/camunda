@@ -102,7 +102,7 @@ public class AuthorizationsUtil {
                       }
                     }"""
                         .formatted(username)))
-            .uri(new URI("http://%s/users-8.7.0_/_count/".formatted(elasticsearchUrl)))
+            .uri(new URI("http://%s/identity-users-8.7.0_/_count/".formatted(elasticsearchUrl)))
             .header("Content-Type", "application/json")
             .build();
 
