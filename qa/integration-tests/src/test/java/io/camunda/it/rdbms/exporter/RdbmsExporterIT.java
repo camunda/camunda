@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.exporter.rdbms.RdbmsExporter;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
+import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -75,6 +76,18 @@ class RdbmsExporterIT {
         ((ProcessInstanceRecordValue) processInstanceRecord.getValue()).getProcessInstanceKey();
     final var processInstance = rdbmsService.getProcessInstanceReader().findOne(key);
     assertThat(processInstance).isNotNull();
+
+    // given
+    final var processInstanceCompletedRecord = getProcessInstanceCompletedRecord(1L, key);
+
+    // when
+    exporter.export(processInstanceCompletedRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var completedProcessInstance = rdbmsService.getProcessInstanceReader().findOne(key);
+    assertThat(completedProcessInstance).isNotEmpty();
+    assertThat(completedProcessInstance.get().state()).isEqualTo(ProcessInstanceState.COMPLETED);
   }
 
   @Test
@@ -187,6 +200,26 @@ class RdbmsExporterIT {
         .withValue(
             ImmutableProcessInstanceRecordValue.builder()
                 .from((ProcessInstanceRecordValue) recordValueRecord.getValue())
+                .withBpmnElementType(BpmnElementType.PROCESS)
+                .withVersion(1)
+                .build())
+        .build();
+  }
+
+  private ImmutableRecord<RecordValue> getProcessInstanceCompletedRecord(
+      final Long position, final long processInstanceKey) {
+    final Record<RecordValue> recordValueRecord =
+        factory.generateRecord(ValueType.PROCESS_INSTANCE);
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withPosition(position)
+        .withTimestamp(System.currentTimeMillis())
+        .withKey(processInstanceKey)
+        .withValue(
+            ImmutableProcessInstanceRecordValue.builder()
+                .from((ProcessInstanceRecordValue) recordValueRecord.getValue())
+                .withProcessInstanceKey(processInstanceKey)
                 .withBpmnElementType(BpmnElementType.PROCESS)
                 .withVersion(1)
                 .build())

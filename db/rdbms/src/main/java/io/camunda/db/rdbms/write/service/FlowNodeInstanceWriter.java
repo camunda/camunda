@@ -12,6 +12,7 @@ import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
+import io.camunda.db.rdbms.write.queue.QueueItemMerger;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import java.time.OffsetDateTime;
 import org.slf4j.Logger;
@@ -36,13 +37,45 @@ public class FlowNodeInstanceWriter {
             flowNode));
   }
 
-  public void end(final long flowNodeKey, final FlowNodeState state, final OffsetDateTime endDate) {
-    final var dto = new EndFlowNodeDto(flowNodeKey, state, endDate);
-    executionQueue.executeInQueue(
-        new QueueItem(
-            ContextType.FLOW_NODE,
-            flowNodeKey,
-            "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.updateStateAndEndDate",
-            dto));
+  public void end(
+      final long flowNodeInstanceKey, final FlowNodeState state, final OffsetDateTime endDate) {
+    final var dto = new EndFlowNodeDto(flowNodeInstanceKey, state, endDate);
+    final boolean wasMerged =
+        executionQueue.tryMergeWithExistingQueueItem(new EndFlowNodeToInsertMerger(dto));
+
+    if (!wasMerged) {
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.FLOW_NODE,
+              flowNodeInstanceKey,
+              "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.updateStateAndEndDate",
+              dto));
+    }
+  }
+
+  public static class EndFlowNodeToInsertMerger implements QueueItemMerger {
+
+    private final EndFlowNodeDto dto;
+
+    public EndFlowNodeToInsertMerger(final EndFlowNodeDto dto) {
+      this.dto = dto;
+    }
+
+    @Override
+    public boolean canBeMerged(final QueueItem queueItem) {
+      return queueItem.contextType() == ContextType.FLOW_NODE
+          && queueItem.id().equals(dto.flowNodeInstanceKey())
+          && queueItem.parameter() instanceof FlowNodeInstanceDbModel;
+    }
+
+    @Override
+    public QueueItem merge(final QueueItem originalItem) {
+      final var newParameter =
+          ((FlowNodeInstanceDbModel) originalItem.parameter())
+              .toBuilder().state(dto.state()).endDate(dto.endDate()).build();
+
+      return new QueueItem(
+          originalItem.contextType(), originalItem.id(), originalItem.statementId(), newParameter);
+    }
   }
 }

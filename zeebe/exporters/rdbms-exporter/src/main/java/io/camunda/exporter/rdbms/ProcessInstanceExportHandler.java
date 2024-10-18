@@ -39,33 +39,15 @@ public class ProcessInstanceExportHandler
     if (record.getIntent().equals(ProcessInstanceIntent.ELEMENT_ACTIVATING)) {
       processInstanceWriter.create(map(record));
     } else if (record.getIntent().equals(ProcessInstanceIntent.ELEMENT_COMPLETED)) {
-      processInstanceWriter.update(
-          new ProcessInstanceDbModel(
-              value.getProcessInstanceKey(),
-              value.getBpmnProcessId(),
-              value.getProcessDefinitionKey(),
-              ProcessInstanceState.COMPLETED,
-              null,
-              DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())),
-              value.getTenantId(),
-              value.getParentProcessInstanceKey(),
-              value.getParentElementInstanceKey(),
-              null,
-              value.getVersion()));
+      processInstanceWriter.end(
+          value.getProcessInstanceKey(),
+          ProcessInstanceState.COMPLETED,
+          DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
     } else if (record.getIntent().equals(ProcessInstanceIntent.ELEMENT_TERMINATED)) {
-      processInstanceWriter.update(
-          new ProcessInstanceDbModel(
-              value.getProcessInstanceKey(),
-              value.getBpmnProcessId(),
-              value.getProcessDefinitionKey(),
-              ProcessInstanceState.CANCELED,
-              null,
-              DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())),
-              value.getTenantId(),
-              value.getParentProcessInstanceKey(),
-              value.getParentElementInstanceKey(),
-              null,
-              value.getVersion()));
+      processInstanceWriter.end(
+          value.getProcessInstanceKey(),
+          ProcessInstanceState.CANCELED,
+          DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
     }
   }
 
