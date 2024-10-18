@@ -28,5 +28,10 @@ public class RoleProcessors {
         RoleIntent.CREATE,
         new RoleCreateProcessor(
             roleState, authCheckBehavior, keyGenerator, writers, commandDistributionBehavior));
+    typedRecordProcessors.onCommand(
+        ValueType.ROLE,
+        RoleIntent.UPDATE,
+        new RoleUpdateProcessor(
+            roleState, keyGenerator, authCheckBehavior, writers, commandDistributionBehavior));
   }
 }

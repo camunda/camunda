@@ -26,6 +26,10 @@ public class RoleClient {
     return new RoleCreationClient(writer, name);
   }
 
+  public RoleUpdateClient updateRole(final long roleKey) {
+    return new RoleUpdateClient(writer, roleKey);
+  }
+
   public static class RoleCreationClient {
 
     private static final Function<Long, Record<RoleRecordValue>> SUCCESS_SUPPLIER =
@@ -58,6 +62,48 @@ public class RoleClient {
     }
 
     public RoleCreationClient expectRejection() {
+      expectation = REJECTION_SUPPLIER;
+      return this;
+    }
+  }
+
+  public static class RoleUpdateClient {
+
+    private static final Function<Long, Record<RoleRecordValue>> SUCCESS_SUPPLIER =
+        (position) ->
+            RecordingExporter.roleRecords()
+                .withIntent(RoleIntent.UPDATED)
+                .withSourceRecordPosition(position)
+                .getFirst();
+
+    private static final Function<Long, Record<RoleRecordValue>> REJECTION_SUPPLIER =
+        (position) ->
+            RecordingExporter.roleRecords()
+                .onlyCommandRejections()
+                .withIntent(RoleIntent.UPDATE)
+                .withSourceRecordPosition(position)
+                .getFirst();
+    private final CommandWriter writer;
+    private final RoleRecord roleRecord;
+    private Function<Long, Record<RoleRecordValue>> expectation = SUCCESS_SUPPLIER;
+
+    public RoleUpdateClient(final CommandWriter writer, final long roleKey) {
+      this.writer = writer;
+      roleRecord = new RoleRecord();
+      roleRecord.setRoleKey(roleKey);
+    }
+
+    public RoleUpdateClient withName(final String name) {
+      roleRecord.setName(name);
+      return this;
+    }
+
+    public Record<RoleRecordValue> update() {
+      final long position = writer.writeCommand(RoleIntent.UPDATE, roleRecord);
+      return expectation.apply(position);
+    }
+
+    public RoleUpdateClient expectRejection() {
       expectation = REJECTION_SUPPLIER;
       return this;
     }

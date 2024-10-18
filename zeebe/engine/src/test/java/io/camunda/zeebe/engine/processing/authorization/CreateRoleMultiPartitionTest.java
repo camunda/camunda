@@ -30,7 +30,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
-public class RoleMultiPartitionTest {
+public class CreateRoleMultiPartitionTest {
   private static final int PARTITION_COUNT = 3;
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.multiplePartition(PARTITION_COUNT);
@@ -100,9 +100,6 @@ public class RoleMultiPartitionTest {
   @Test
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // given the user creation distribution is intercepted
-    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
-      interceptUserCreateForPartition(partitionId);
-    }
     ENGINE
         .user()
         .newUser(UUID.randomUUID().toString())
@@ -110,6 +107,10 @@ public class RoleMultiPartitionTest {
         .withPassword("baz")
         .withEmail("foobar@baz.com")
         .create();
+
+    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
+      interceptUserCreateForPartition(partitionId);
+    }
 
     // when
     final var name = UUID.randomUUID().toString();
