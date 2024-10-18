@@ -134,9 +134,9 @@ public class SearchClients
 
   @Override
   public SearchQueryResult<RoleEntity> searchRoles(
-      final RoleQuery filter, final Authentication authentication) {
+      final RoleQuery filter, final SecurityContext securityContext) {
     final var executor =
-        new SearchClientBasedQueryExecutor(searchClient, transformers, authentication);
+        new SearchClientBasedQueryExecutor(searchClient, transformers, securityContext);
     return executor.search(filter, RoleEntity.class);
   }
 

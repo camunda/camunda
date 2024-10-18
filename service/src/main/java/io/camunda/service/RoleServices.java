@@ -14,7 +14,8 @@ import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.search.security.auth.Authentication;
+import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.SecurityContext;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.role.BrokerRoleCreateRequest;
@@ -35,7 +36,8 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
 
   @Override
   public SearchQueryResult<RoleEntity> search(final RoleQuery query) {
-    return roleSearchClient.searchRoles(query, authentication);
+    return roleSearchClient.searchRoles(
+        query, SecurityContext.of(s -> s.withAuthentication(authentication)));
   }
 
   @Override
