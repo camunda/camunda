@@ -24,6 +24,7 @@ import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,7 +42,11 @@ public final class DecisionDefinitionServiceTest {
     decisionRequirementSearchClient = mock(DecisionRequirementSearchClient.class);
     services =
         new DecisionDefinitionServices(
-            mock(BrokerClient.class), client, decisionRequirementSearchClient, null);
+            mock(BrokerClient.class),
+            new SecurityConfiguration(),
+            client,
+            decisionRequirementSearchClient,
+            null);
   }
 
   @Test

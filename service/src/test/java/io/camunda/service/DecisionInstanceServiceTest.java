@@ -19,6 +19,7 @@ import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,7 +33,9 @@ class DecisionInstanceServiceTest {
   @BeforeEach
   public void before() {
     client = mock(DecisionInstanceSearchClient.class);
-    services = new DecisionInstanceServices(mock(BrokerClient.class), client, null);
+    services =
+        new DecisionInstanceServices(
+            mock(BrokerClient.class), new SecurityConfiguration(), client, null);
   }
 
   @Test
