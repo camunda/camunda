@@ -131,6 +131,10 @@ class ZeebeGrpcApi {
   evaluateDecision = (evaluateDecisionRequest: EvaluateDecisionRequest) => {
     return this.zeebe.evaluateDecision(evaluateDecisionRequest);
   };
+
+  broadcastSignal = (signalName: string) => {
+    return this.zeebe.broadcastSignal({signalName});
+  };
 }
 
 const zeebeGrpcApi = new ZeebeGrpcApi();

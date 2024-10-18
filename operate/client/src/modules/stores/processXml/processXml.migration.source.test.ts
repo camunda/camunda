@@ -57,6 +57,10 @@ describe('stores/processXml/processXml.migration.source', () => {
       'SendTask',
       'EventBasedGateway',
       'IntermediateTimerEvent',
+      'SignalIntermediateCatch',
+      'SignalBoundaryEvent',
+      'SignalEventSubProcess',
+      'SignalStartEvent',
     ]);
   });
 
