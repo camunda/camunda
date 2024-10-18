@@ -9,13 +9,7 @@ package io.camunda.zeebe.engine.processing.tenant;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
-import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
@@ -27,16 +21,15 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
-public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor<TenantRecord> {
+public class TenantAddEntityProcessor extends AbstractTenantProcessor {
 
-  private final TenantState tenantState;
+  private static final String TENANT_NOT_FOUND_ERROR =
+      "Expected to add entity to tenant with key '%s', but no tenant with this key exists.";
+
+  private static final String ENTITY_NOT_FOUND_ERROR =
+      "Expected to add entity with key '%s' and type '%s' to tenant with key '%s', but the entity doesn't exist.";
+
   private final UserState userState;
-  private final AuthorizationCheckBehavior authCheckBehavior;
-  private final KeyGenerator keyGenerator;
-  private final StateWriter stateWriter;
-  private final TypedRejectionWriter rejectionWriter;
-  private final TypedResponseWriter responseWriter;
-  private final CommandDistributionBehavior commandDistributionBehavior;
 
   public TenantAddEntityProcessor(
       final TenantState tenantState,
@@ -45,54 +38,36 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
-    this.tenantState = tenantState;
+    super(tenantState, authCheckBehavior, keyGenerator, writers, commandDistributionBehavior);
     this.userState = userState;
-    this.authCheckBehavior = authCheckBehavior;
-    this.keyGenerator = keyGenerator;
-    stateWriter = writers.state();
-    rejectionWriter = writers.rejection();
-    responseWriter = writers.response();
-    this.commandDistributionBehavior = commandDistributionBehavior;
   }
 
   @Override
   public void processNewCommand(final TypedRecord<TenantRecord> command) {
     final var record = command.getValue();
-
     final var tenantKey = record.getTenantKey();
-    final var persistedRecord = tenantState.getTenantByKey(tenantKey);
-    if (persistedRecord.isEmpty()) {
+
+    if (!tenantExistsWithKey(tenantKey)) {
+      rejectCommand(command, RejectionType.NOT_FOUND, TENANT_NOT_FOUND_ERROR.formatted(tenantKey));
+      return;
+    }
+
+    if (!isAuthorized(
+        command, AuthorizationResourceType.TENANT, PermissionType.UPDATE, record.getTenantId())) {
+      return;
+    }
+
+    if (!isEntityPresent(record)) {
       rejectCommand(
           command,
           RejectionType.NOT_FOUND,
-          "Expected to add entity to tenant with key '%s', but no tenant with this key exists."
-              .formatted(tenantKey));
+          ENTITY_NOT_FOUND_ERROR.formatted(
+              record.getEntityKey(), record.getEntityType(), tenantKey));
       return;
     }
 
-    final var authorizationRequest =
-        new AuthorizationRequest(command, AuthorizationResourceType.TENANT, PermissionType.UPDATE)
-            .addResourceId(record.getTenantId());
-    if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
-      rejectCommandWithUnauthorizedError(command, authorizationRequest);
-      return;
-    }
-
-    final var entityKey = record.getEntityKey();
-    final var entityType = record.getEntityType();
-    if (!isEntityPresent(entityKey, entityType)) {
-      rejectCommand(
-          command,
-          RejectionType.NOT_FOUND,
-          "Expected to add entity with key '%s' and type '%s' to tenant with key '%s', but the entity doesn't exist."
-              .formatted(entityKey, entityType, tenantKey));
-      return;
-    }
-
-    stateWriter.appendFollowUpEvent(tenantKey, TenantIntent.ENTITY_ADDED, record);
-    responseWriter.writeEventOnCommand(tenantKey, TenantIntent.ENTITY_ADDED, record, command);
-
-    distributeCommand(command);
+    appendEventAndWriteResponse(tenantKey, TenantIntent.ENTITY_ADDED, record, command);
+    distributeCommand(command, keyGenerator.nextKey());
   }
 
   @Override
@@ -102,33 +77,10 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private boolean isEntityPresent(final long entityKey, final EntityType entityType) {
-    if (EntityType.USER == entityType) {
-      return userState.getUser(entityKey).isPresent();
+  private boolean isEntityPresent(final TenantRecord record) {
+    if (EntityType.USER == record.getEntityType()) {
+      return userState.getUser(record.getEntityKey()).isPresent();
     }
     return false;
-  }
-
-  private void rejectCommandWithUnauthorizedError(
-      final TypedRecord<TenantRecord> command, final AuthorizationRequest authorizationRequest) {
-    final var errorMessage =
-        AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE.formatted(
-            authorizationRequest.getPermissionType(), authorizationRequest.getResourceType());
-    rejectCommand(command, RejectionType.UNAUTHORIZED, errorMessage);
-  }
-
-  private void rejectCommand(
-      final TypedRecord<TenantRecord> command,
-      final RejectionType type,
-      final String errorMessage) {
-    rejectionWriter.appendRejection(command, type, errorMessage);
-    responseWriter.writeRejectionOnCommand(command, type, errorMessage);
-  }
-
-  private void distributeCommand(final TypedRecord<TenantRecord> command) {
-    commandDistributionBehavior
-        .withKey(keyGenerator.nextKey())
-        .inQueue(DistributionQueue.IDENTITY.getQueueId())
-        .distribute(command);
   }
 }
