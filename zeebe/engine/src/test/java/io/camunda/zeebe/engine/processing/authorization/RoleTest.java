@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
@@ -27,10 +28,11 @@ public class RoleTest {
 
   @Test
   public void shouldCreateRole() {
-    final var roleRecord = ENGINE.role().newRole("Role").create();
+    final var name = UUID.randomUUID().toString();
+    final var roleRecord = ENGINE.role().newRole(name).create();
 
     final var createdRole = roleRecord.getValue();
-    Assertions.assertThat(createdRole).isNotNull().hasFieldOrPropertyWithValue("name", "Role");
+    Assertions.assertThat(createdRole).isNotNull().hasFieldOrPropertyWithValue("name", name);
   }
 
   @Test
@@ -108,5 +110,82 @@ public class RoleTest {
             "Expected to update role with name '"
                 + anotherName
                 + "', but a role with this name already exists");
+  }
+
+  @Test
+  public void shouldAddEntityToRole() {
+    final var userKey =
+        ENGINE
+            .user()
+            .newUser("username")
+            .withName("Foo Bar")
+            .withEmail("foo@bar.com")
+            .withPassword("password")
+            .create()
+            .getValue()
+            .getUserKey();
+    final var name = UUID.randomUUID().toString();
+    final var roleKey = ENGINE.role().newRole(name).create().getValue().getRoleKey();
+    final var updatedRole =
+        ENGINE
+            .role()
+            .addEntity(roleKey)
+            .withEntityKey(userKey)
+            .withEntityType(EntityType.USER)
+            .add()
+            .getValue();
+
+    Assertions.assertThat(updatedRole)
+        .isNotNull()
+        .hasFieldOrPropertyWithValue("entityKey", userKey);
+  }
+
+  @Test
+  public void shouldRejectIfRoleIsNotPresentWhileAddingEntity() {
+    // given
+    final var name = UUID.randomUUID().toString();
+    final var roleRecord = ENGINE.role().newRole(name).create();
+
+    // when
+    final var notPresentRoleKey = 1L;
+    final var notPresentUpdateRecord =
+        ENGINE.role().addEntity(notPresentRoleKey).expectRejection().add();
+
+    final var createdRole = roleRecord.getValue();
+    Assertions.assertThat(createdRole).isNotNull().hasFieldOrPropertyWithValue("name", name);
+
+    assertThat(notPresentUpdateRecord)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to update role with key '"
+                + notPresentRoleKey
+                + "', but a role with this key does not exist.");
+  }
+
+  @Test
+  public void shouldRejectIfEntityIsNotPresent() {
+    // given
+    final var name = UUID.randomUUID().toString();
+    final var roleRecord = ENGINE.role().newRole(name).create();
+
+    // when
+    final var createdRole = roleRecord.getValue();
+    final var roleKey = createdRole.getRoleKey();
+    final var notPresentUpdateRecord =
+        ENGINE
+            .role()
+            .addEntity(roleKey)
+            .withEntityKey(1L)
+            .withEntityType(EntityType.USER)
+            .expectRejection()
+            .add();
+
+    Assertions.assertThat(createdRole).isNotNull().hasFieldOrPropertyWithValue("name", name);
+
+    assertThat(notPresentUpdateRecord)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to add an entity with key '%s' and type '%s' to role with key '%s', but the entity doesn't exist."
+                .formatted(1L, EntityType.USER, roleKey));
   }
 }

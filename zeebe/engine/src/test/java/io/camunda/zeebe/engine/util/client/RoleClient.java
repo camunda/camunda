@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.util.client;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.function.Function;
@@ -28,6 +29,10 @@ public class RoleClient {
 
   public RoleUpdateClient updateRole(final long roleKey) {
     return new RoleUpdateClient(writer, roleKey);
+  }
+
+  public RoleAddEntityClient addEntity(final long key) {
+    return new RoleAddEntityClient(writer, key);
   }
 
   public static class RoleCreationClient {
@@ -104,6 +109,53 @@ public class RoleClient {
     }
 
     public RoleUpdateClient expectRejection() {
+      expectation = REJECTION_SUPPLIER;
+      return this;
+    }
+  }
+
+  public static class RoleAddEntityClient {
+
+    private static final Function<Long, Record<RoleRecordValue>> SUCCESS_SUPPLIER =
+        (position) ->
+            RecordingExporter.roleRecords()
+                .withIntent(RoleIntent.ENTITY_ADDED)
+                .withSourceRecordPosition(position)
+                .getFirst();
+
+    private static final Function<Long, Record<RoleRecordValue>> REJECTION_SUPPLIER =
+        (position) ->
+            RecordingExporter.roleRecords()
+                .onlyCommandRejections()
+                .withIntent(RoleIntent.ADD_ENTITY)
+                .withSourceRecordPosition(position)
+                .getFirst();
+    private final CommandWriter writer;
+    private final RoleRecord roleRecord;
+    private Function<Long, Record<RoleRecordValue>> expectation = SUCCESS_SUPPLIER;
+
+    public RoleAddEntityClient(final CommandWriter writer, final long key) {
+      this.writer = writer;
+      roleRecord = new RoleRecord();
+      roleRecord.setRoleKey(key);
+    }
+
+    public RoleAddEntityClient withEntityKey(final long entityKey) {
+      roleRecord.setEntityKey(entityKey);
+      return this;
+    }
+
+    public RoleAddEntityClient withEntityType(final EntityType entityType) {
+      roleRecord.setEntityType(entityType);
+      return this;
+    }
+
+    public Record<RoleRecordValue> add() {
+      final long position = writer.writeCommand(RoleIntent.ADD_ENTITY, roleRecord);
+      return expectation.apply(position);
+    }
+
+    public RoleAddEntityClient expectRejection() {
       expectation = REJECTION_SUPPLIER;
       return this;
     }
