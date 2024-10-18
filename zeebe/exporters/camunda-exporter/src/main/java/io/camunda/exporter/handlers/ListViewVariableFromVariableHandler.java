@@ -109,7 +109,7 @@ public class ListViewVariableFromVariableHandler
     }
   }
 
-  private String getVariableScript() {
+  protected String getVariableScript() {
     return String.format(
         "if (ctx._source.%s == null || ctx._source.%s < params.%s) { "
             + "ctx._source.%s = params.%s; " // position

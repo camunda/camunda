@@ -107,6 +107,44 @@ public class ListViewFlowNodeFromJobHandlerTest {
   }
 
   @Test
+  public void shouldUpsertEntityWithConcurrencyModeOnFlush() {
+    // given
+    final ListViewFlowNodeFromJobHandler underTest =
+        new ListViewFlowNodeFromJobHandler(indexName, true);
+    // given
+    final FlowNodeInstanceForListViewEntity inputEntity =
+        new FlowNodeInstanceForListViewEntity()
+            .setId("111")
+            .setKey(111L)
+            .setPartitionId(3)
+            .setPositionJob(123L)
+            .setActivityId("A")
+            .setProcessInstanceKey(66L)
+            .setTenantId("tenantId")
+            .setJobFailedWithRetriesLeft(true);
+    inputEntity.getJoinRelation().setParent(66L);
+
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
+    expectedUpdateFields.put(JOB_POSITION, 123L);
+    expectedUpdateFields.put(ListViewTemplate.JOB_FAILED_WITH_RETRIES_LEFT, true);
+
+    // when
+    underTest.flush(inputEntity, mockRequest);
+
+    // then
+    verify(mockRequest, times(1))
+        .upsertWithScriptAndRouting(
+            indexName,
+            inputEntity.getId(),
+            inputEntity,
+            underTest.getFlowNodeInstanceFromJobScript(),
+            expectedUpdateFields,
+            String.valueOf(inputEntity.getProcessInstanceKey()));
+  }
+
+  @Test
   public void shouldUpdateEntityFromRecord() {
     // given
     final Record<JobRecordValue> jobRecord =

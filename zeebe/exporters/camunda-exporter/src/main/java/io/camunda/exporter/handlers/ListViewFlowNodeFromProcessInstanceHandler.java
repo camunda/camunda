@@ -157,7 +157,7 @@ public class ListViewFlowNodeFromProcessInstanceHandler
     return bpmnElementType.equals(type);
   }
 
-  private String getFlowNodeInstanceScript() {
+  protected String getFlowNodeInstanceScript() {
     return String.format(
         "if (ctx._source.%s == null || ctx._source.%s < params.%s) { "
             + "ctx._source.%s = params.%s; " // position

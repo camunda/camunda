@@ -192,6 +192,42 @@ public class ListViewFlowNodeFromProcesInstanceHandlerTest {
   }
 
   @Test
+  void shouldUpsertWithConcurrencyModeEntityOnFlush() {
+    // given
+    final ListViewFlowNodeFromProcessInstanceHandler underTest =
+        new ListViewFlowNodeFromProcessInstanceHandler(indexName, true);
+    final FlowNodeInstanceForListViewEntity inputEntity =
+        new FlowNodeInstanceForListViewEntity()
+            .setId("111")
+            .setPosition(123L)
+            .setProcessInstanceKey(66L)
+            .setPartitionId(3)
+            .setActivityId("A")
+            .setActivityType(FlowNodeType.CALL_ACTIVITY)
+            .setActivityState(FlowNodeState.ACTIVE);
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
+    expectedUpdateFields.put(POSITION, 123L);
+    expectedUpdateFields.put(ListViewTemplate.ACTIVITY_ID, "A");
+    expectedUpdateFields.put(ListViewTemplate.ACTIVITY_TYPE, FlowNodeType.CALL_ACTIVITY);
+    expectedUpdateFields.put(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.ACTIVE);
+
+    // when
+    underTest.flush(inputEntity, mockRequest);
+
+    // then
+    verify(mockRequest, times(1))
+        .upsertWithScriptAndRouting(
+            indexName,
+            inputEntity.getId(),
+            inputEntity,
+            underTest.getFlowNodeInstanceScript(),
+            expectedUpdateFields,
+            String.valueOf(inputEntity.getProcessInstanceKey()));
+  }
+
+  @Test
   void shouldUpdateEntityFromRecord() {
     // given
     final long timestamp = new Date().getTime();

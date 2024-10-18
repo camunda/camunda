@@ -115,7 +115,7 @@ public class ListViewFlowNodeFromJobHandler
     }
   }
 
-  private String getFlowNodeInstanceFromJobScript() {
+  protected String getFlowNodeInstanceFromJobScript() {
     return String.format(
         "if (ctx._source.%s == null || ctx._source.%s < params.%s) { "
             + "ctx._source.%s = params.%s; " // position

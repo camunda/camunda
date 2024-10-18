@@ -119,7 +119,7 @@ public class ListViewFlowNodeFromIncidentHandler
     return (str == null) ? null : str.strip();
   }
 
-  private String getIncidentScript() {
+  protected String getIncidentScript() {
     return String.format(
         "if (ctx._source.%s == null || ctx._source.%s < params.%s) { "
             + "ctx._source.%s = params.%s; " // position

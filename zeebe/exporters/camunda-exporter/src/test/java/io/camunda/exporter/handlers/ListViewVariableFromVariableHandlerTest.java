@@ -98,6 +98,40 @@ public class ListViewVariableFromVariableHandlerTest {
   }
 
   @Test
+  public void shouldUpsertEntityWithConcurrencyModeOnFlush() {
+    // given
+    final ListViewVariableFromVariableHandler underTest =
+        new ListViewVariableFromVariableHandler(indexName, true);
+    final VariableForListViewEntity inputEntity =
+        new VariableForListViewEntity()
+            .setId("66-A")
+            .setProcessInstanceKey(66L)
+            .setPosition(123L)
+            .setVarName("A")
+            .setVarValue("B");
+
+    final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
+    expectedUpdateFields.put(POSITION, inputEntity.getPosition());
+    expectedUpdateFields.put(VAR_NAME, inputEntity.getVarName());
+    expectedUpdateFields.put(VAR_VALUE, inputEntity.getVarValue());
+
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    // when
+    underTest.flush(inputEntity, mockRequest);
+
+    // then
+    verify(mockRequest, times(1))
+        .upsertWithScriptAndRouting(
+            indexName,
+            inputEntity.getId(),
+            inputEntity,
+            underTest.getVariableScript(),
+            expectedUpdateFields,
+            String.valueOf(inputEntity.getProcessInstanceKey()));
+  }
+
+  @Test
   public void shouldUpdateEntityFromRecord() {
     // having
     final Record<VariableRecordValue> variableRecord =

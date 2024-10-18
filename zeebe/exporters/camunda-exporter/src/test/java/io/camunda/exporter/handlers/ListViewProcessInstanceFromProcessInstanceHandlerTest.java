@@ -164,7 +164,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
   }
 
   @Test
-  void shouldAddEntityOnFlush() {
+  void shouldUpsertEntityOnFlush() {
     // given
     final ProcessInstanceForListViewEntity inputEntity =
         new ProcessInstanceForListViewEntity()
@@ -194,6 +194,49 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
 
     // then
     verify(mockRequest, times(1)).upsert(indexName, "111", inputEntity, expectedUpdateFields);
+  }
+
+  @Test
+  void shouldUpsertEntityWithConcurrencyModeOnFlush() {
+    // given
+    final ListViewProcessInstanceFromProcessInstanceHandler underTest =
+        new ListViewProcessInstanceFromProcessInstanceHandler(indexName, true);
+    final ProcessInstanceForListViewEntity inputEntity =
+        new ProcessInstanceForListViewEntity()
+            .setId("111")
+            .setProcessInstanceKey(111L)
+            .setProcessName("process")
+            .setProcessVersion(2)
+            .setProcessDefinitionKey(444L)
+            .setBpmnProcessId("bpmnProcessId")
+            .setPosition(123L)
+            .setStartDate(OffsetDateTime.now())
+            .setEndDate(OffsetDateTime.now())
+            .setState(ProcessInstanceState.ACTIVE);
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
+    expectedUpdateFields.put(ListViewTemplate.PROCESS_NAME, "process");
+    expectedUpdateFields.put(ListViewTemplate.PROCESS_VERSION, 2);
+    expectedUpdateFields.put(ListViewTemplate.PROCESS_KEY, 444L);
+    expectedUpdateFields.put(ListViewTemplate.BPMN_PROCESS_ID, "bpmnProcessId");
+    expectedUpdateFields.put(ListViewTemplate.STATE, ProcessInstanceState.ACTIVE);
+    expectedUpdateFields.put(ListViewTemplate.START_DATE, inputEntity.getStartDate());
+    expectedUpdateFields.put(ListViewTemplate.END_DATE, inputEntity.getEndDate());
+    expectedUpdateFields.put(POSITION, 123L);
+
+    // when
+    underTest.flush(inputEntity, mockRequest);
+
+    // then
+    verify(mockRequest, times(1))
+        .upsertWithScriptAndRouting(
+            indexName,
+            "111",
+            inputEntity,
+            underTest.getProcessInstanceScript(),
+            expectedUpdateFields,
+            "111");
   }
 
   @Test
