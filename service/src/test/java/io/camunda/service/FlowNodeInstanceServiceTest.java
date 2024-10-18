@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.clients.FlowNodeInstanceSearchClient;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,7 +28,9 @@ public final class FlowNodeInstanceServiceTest {
   @BeforeEach
   public void before() {
     client = mock(FlowNodeInstanceSearchClient.class);
-    services = new FlowNodeInstanceServices(mock(BrokerClient.class), client, null);
+    services =
+        new FlowNodeInstanceServices(
+            mock(BrokerClient.class), new SecurityConfiguration(), client, null);
   }
 
   @Test

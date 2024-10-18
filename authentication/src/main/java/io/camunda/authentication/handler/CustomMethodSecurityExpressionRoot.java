@@ -9,7 +9,6 @@ package io.camunda.authentication.handler;
 
 import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.service.AuthorizationServices;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Optional;
@@ -27,13 +26,12 @@ public class CustomMethodSecurityExpressionRoot extends SecurityExpressionRoot
       Set.of(
           PermissionType.UPDATE.name(), PermissionType.CREATE.name(), PermissionType.DELETE.name());
 
-  private final AuthorizationServices<AuthorizationRecord> authorizationServices;
+  private final AuthorizationServices authorizationServices;
   private Object filterObject;
   private Object returnObject;
 
   public CustomMethodSecurityExpressionRoot(
-      final Authentication authentication,
-      final AuthorizationServices<AuthorizationRecord> authorizationServices) {
+      final Authentication authentication, final AuthorizationServices authorizationServices) {
     super(authentication);
     this.authorizationServices = authorizationServices;
   }

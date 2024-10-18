@@ -16,6 +16,7 @@ import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -31,9 +32,10 @@ public class IncidentServices
 
   public IncidentServices(
       final BrokerClient brokerClient,
+      final SecurityConfiguration securityConfiguration,
       final IncidentSearchClient incidentSearchClient,
       final Authentication authentication) {
-    super(brokerClient, authentication);
+    super(brokerClient, securityConfiguration, authentication);
     this.incidentSearchClient = incidentSearchClient;
   }
 
@@ -50,7 +52,8 @@ public class IncidentServices
 
   @Override
   public IncidentServices withAuthentication(final Authentication authentication) {
-    return new IncidentServices(brokerClient, incidentSearchClient, authentication);
+    return new IncidentServices(
+        brokerClient, securityConfiguration, incidentSearchClient, authentication);
   }
 
   public IncidentEntity getByKey(final Long key) {

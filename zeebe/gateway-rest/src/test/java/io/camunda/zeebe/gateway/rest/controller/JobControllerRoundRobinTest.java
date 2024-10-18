@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 
 import com.jayway.jsonpath.JsonPath;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.JobServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
@@ -388,7 +389,8 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
     public JobServices<JobActivationResponse> jobServices(
         final BrokerClient brokerClient,
         final ActivateJobsHandler<JobActivationResponse> activateJobsHandler) {
-      return new JobServices<>(brokerClient, activateJobsHandler, null);
+      return new JobServices<>(
+          brokerClient, new SecurityConfiguration(), activateJobsHandler, null);
     }
   }
 }

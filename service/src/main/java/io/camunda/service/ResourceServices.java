@@ -8,6 +8,7 @@
 package io.camunda.service;
 
 import io.camunda.security.auth.Authentication;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteResourceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeployResourceRequest;
@@ -18,13 +19,16 @@ import java.util.concurrent.CompletableFuture;
 
 public final class ResourceServices extends ApiServices<ResourceServices> {
 
-  public ResourceServices(final BrokerClient brokerClient, final Authentication authentication) {
-    super(brokerClient, authentication);
+  public ResourceServices(
+      final BrokerClient brokerClient,
+      final SecurityConfiguration securityConfiguration,
+      final Authentication authentication) {
+    super(brokerClient, securityConfiguration, authentication);
   }
 
   @Override
   public ResourceServices withAuthentication(final Authentication authentication) {
-    return new ResourceServices(brokerClient, authentication);
+    return new ResourceServices(brokerClient, securityConfiguration, authentication);
   }
 
   public CompletableFuture<DeploymentRecord> deployResources(

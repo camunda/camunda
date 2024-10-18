@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.service;
 
+import io.camunda.application.commons.service.ServiceSecurityConfiguration.ServiceSecurityProperties;
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
 import io.camunda.search.clients.DecisionInstanceSearchClient;
@@ -54,118 +55,153 @@ public class CamundaServicesConfiguration {
   @Bean
   public JobServices<JobActivationResponse> jobServices(
       final BrokerClient brokerClient,
+      final ServiceSecurityProperties securityConfiguration,
       final ActivateJobsHandler<JobActivationResponse> activateJobsHandler) {
-    return new JobServices<>(brokerClient, activateJobsHandler, null);
+    return new JobServices<>(brokerClient, securityConfiguration, activateJobsHandler, null);
   }
 
   @Bean
   public DecisionDefinitionServices decisionDefinitionServices(
       final BrokerClient brokerClient,
+      final ServiceSecurityProperties securityConfiguration,
       final DecisionDefinitionSearchClient decisionDefinitionSearchClient,
       final DecisionRequirementSearchClient decisionRequirementSearchClient) {
     return new DecisionDefinitionServices(
-        brokerClient, decisionDefinitionSearchClient, decisionRequirementSearchClient, null);
+        brokerClient,
+        securityConfiguration,
+        decisionDefinitionSearchClient,
+        decisionRequirementSearchClient,
+        null);
   }
 
   @Bean
   public DecisionInstanceServices decisionInstanceServices(
       final BrokerClient brokerClient,
+      final ServiceSecurityProperties securityConfiguration,
       final DecisionInstanceSearchClient decisionInstanceSearchClient) {
-    return new DecisionInstanceServices(brokerClient, decisionInstanceSearchClient, null);
+    return new DecisionInstanceServices(
+        brokerClient, securityConfiguration, decisionInstanceSearchClient, null);
   }
 
   @Bean
   public ProcessDefinitionServices processDefinitionServices(
       final BrokerClient brokerClient,
+      final ServiceSecurityProperties securityConfiguration,
       final ProcessDefinitionSearchClient processDefinitionSearchClient) {
-    return new ProcessDefinitionServices(brokerClient, processDefinitionSearchClient, null);
+    return new ProcessDefinitionServices(
+        brokerClient, securityConfiguration, processDefinitionSearchClient, null);
   }
 
   @Bean
   public ProcessInstanceServices processInstanceServices(
       final BrokerClient brokerClient,
+      final ServiceSecurityProperties securityConfiguration,
       final ProcessInstanceSearchClient processInstanceSearchClient) {
-    return new ProcessInstanceServices(brokerClient, processInstanceSearchClient, null);
+    return new ProcessInstanceServices(
+        brokerClient, securityConfiguration, processInstanceSearchClient, null);
   }
 
   @Bean
   public DecisionRequirementsServices decisionRequirementsServices(
       final BrokerClient brokerClient,
+      final ServiceSecurityProperties securityConfiguration,
       final DecisionRequirementSearchClient decisionRequirementSearchClient) {
-    return new DecisionRequirementsServices(brokerClient, decisionRequirementSearchClient, null);
+    return new DecisionRequirementsServices(
+        brokerClient, securityConfiguration, decisionRequirementSearchClient, null);
   }
 
   @Bean
   public FlowNodeInstanceServices flownodeInstanceServices(
       final BrokerClient brokerClient,
+      final ServiceSecurityProperties securityConfiguration,
       final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient) {
-    return new FlowNodeInstanceServices(brokerClient, flowNodeInstanceSearchClient, null);
+    return new FlowNodeInstanceServices(
+        brokerClient, securityConfiguration, flowNodeInstanceSearchClient, null);
   }
 
   @Bean
   public IncidentServices incidentServices(
-      final BrokerClient brokerClient, final IncidentSearchClient incidentSearchClient) {
-    return new IncidentServices(brokerClient, incidentSearchClient, null);
+      final BrokerClient brokerClient,
+      final ServiceSecurityProperties securityConfiguration,
+      final IncidentSearchClient incidentSearchClient) {
+    return new IncidentServices(brokerClient, securityConfiguration, incidentSearchClient, null);
   }
 
   @Bean
   public UserServices userServices(
-      final BrokerClient brokerClient, final UserSearchClient userSearchClient) {
-    return new UserServices(brokerClient, userSearchClient, null);
+      final BrokerClient brokerClient,
+      final ServiceSecurityProperties securityConfiguration,
+      final UserSearchClient userSearchClient) {
+    return new UserServices(brokerClient, securityConfiguration, userSearchClient, null);
   }
 
   @Bean
   public UserTaskServices userTaskServices(
-      final BrokerClient brokerClient, final UserTaskSearchClient userTaskSearchClient) {
-    return new UserTaskServices(brokerClient, userTaskSearchClient, null);
+      final BrokerClient brokerClient,
+      final ServiceSecurityProperties securityConfiguration,
+      final UserTaskSearchClient userTaskSearchClient) {
+    return new UserTaskServices(brokerClient, securityConfiguration, userTaskSearchClient, null);
   }
 
   @Bean
   public VariableServices variableServices(
-      final BrokerClient brokerClient, final VariableSearchClient variableSearchClient) {
-    return new VariableServices(brokerClient, variableSearchClient, null);
+      final BrokerClient brokerClient,
+      final ServiceSecurityProperties securityConfiguration,
+      final VariableSearchClient variableSearchClient) {
+    return new VariableServices(brokerClient, securityConfiguration, variableSearchClient, null);
   }
 
   @Bean
-  public MessageServices messageServices(final BrokerClient brokerClient) {
-    return new MessageServices(brokerClient, null);
+  public MessageServices messageServices(
+      final BrokerClient brokerClient, final ServiceSecurityProperties securityConfiguration) {
+    return new MessageServices(brokerClient, securityConfiguration, null);
   }
 
   @Bean
-  public DocumentServices documentServices(final BrokerClient brokerClient) {
-    return new DocumentServices(brokerClient, null);
+  public DocumentServices documentServices(
+      final BrokerClient brokerClient, final ServiceSecurityProperties securityConfiguration) {
+    return new DocumentServices(brokerClient, securityConfiguration, null);
   }
 
   @Bean
   public AuthorizationServices authorizationServices(
-      final BrokerClient brokerClient, final AuthorizationSearchClient authorizationSearchClient) {
-    return new AuthorizationServices(brokerClient, authorizationSearchClient, null);
+      final BrokerClient brokerClient,
+      final ServiceSecurityProperties securityConfiguration,
+      final AuthorizationSearchClient authorizationSearchClient) {
+    return new AuthorizationServices(
+        brokerClient, securityConfiguration, authorizationSearchClient, null);
   }
 
   @Bean
-  public ClockServices clockServices(final BrokerClient brokerClient) {
-    return new ClockServices(brokerClient, null);
+  public ClockServices clockServices(
+      final BrokerClient brokerClient, final ServiceSecurityProperties securityConfiguration) {
+    return new ClockServices(brokerClient, securityConfiguration, null);
   }
 
   @Bean
-  public ResourceServices resourceServices(final BrokerClient brokerClient) {
-    return new ResourceServices(brokerClient, null);
+  public ResourceServices resourceServices(
+      final BrokerClient brokerClient, final ServiceSecurityProperties securityConfiguration) {
+    return new ResourceServices(brokerClient, securityConfiguration, null);
   }
 
   @Bean
-  public ElementInstanceServices elementServices(final BrokerClient brokerClient) {
-    return new ElementInstanceServices(brokerClient, null);
+  public ElementInstanceServices elementServices(
+      final BrokerClient brokerClient, final ServiceSecurityProperties securityConfiguration) {
+    return new ElementInstanceServices(brokerClient, securityConfiguration, null);
   }
 
   @Bean
-  public SignalServices signalServices(final BrokerClient brokerClient) {
-    return new SignalServices(brokerClient, null);
+  public SignalServices signalServices(
+      final BrokerClient brokerClient, final ServiceSecurityProperties securityConfiguration) {
+    return new SignalServices(brokerClient, securityConfiguration, null);
   }
 
   @Bean
   public FormServices formServices(
-      final BrokerClient brokerClient, final FormSearchClient formSearchClient) {
-    return new FormServices(brokerClient, formSearchClient, null);
+      final BrokerClient brokerClient,
+      final ServiceSecurityProperties securityConfiguration,
+      final FormSearchClient formSearchClient) {
+    return new FormServices(brokerClient, securityConfiguration, formSearchClient, null);
   }
 
   @Bean

@@ -20,6 +20,7 @@ import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -39,10 +40,11 @@ public final class DecisionDefinitionServices
 
   public DecisionDefinitionServices(
       final BrokerClient brokerClient,
+      final SecurityConfiguration securityConfiguration,
       final DecisionDefinitionSearchClient decisionDefinitionSearchClient,
       final DecisionRequirementSearchClient decisionRequirementSearchClient,
       final Authentication authentication) {
-    super(brokerClient, authentication);
+    super(brokerClient, securityConfiguration, authentication);
     this.decisionDefinitionSearchClient = decisionDefinitionSearchClient;
     this.decisionRequirementSearchClient = decisionRequirementSearchClient;
   }
@@ -51,6 +53,7 @@ public final class DecisionDefinitionServices
   public DecisionDefinitionServices withAuthentication(final Authentication authentication) {
     return new DecisionDefinitionServices(
         brokerClient,
+        securityConfiguration,
         decisionDefinitionSearchClient,
         decisionRequirementSearchClient,
         authentication);

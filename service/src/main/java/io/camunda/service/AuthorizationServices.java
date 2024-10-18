@@ -14,6 +14,7 @@ import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerAuthorizationPatchRequest;
@@ -27,22 +28,24 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-public class AuthorizationServices<T>
-    extends SearchQueryService<AuthorizationServices<T>, AuthorizationQuery, AuthorizationEntity> {
+public class AuthorizationServices
+    extends SearchQueryService<AuthorizationServices, AuthorizationQuery, AuthorizationEntity> {
 
   private final AuthorizationSearchClient authorizationSearchClient;
 
   public AuthorizationServices(
       final BrokerClient brokerClient,
+      final SecurityConfiguration securityConfiguration,
       final AuthorizationSearchClient authorizationSearchClient,
       final Authentication authentication) {
-    super(brokerClient, authentication);
+    super(brokerClient, securityConfiguration, authentication);
     this.authorizationSearchClient = authorizationSearchClient;
   }
 
   @Override
-  public AuthorizationServices<T> withAuthentication(final Authentication authentication) {
-    return new AuthorizationServices<>(brokerClient, authorizationSearchClient, authentication);
+  public AuthorizationServices withAuthentication(final Authentication authentication) {
+    return new AuthorizationServices(
+        brokerClient, securityConfiguration, authorizationSearchClient, authentication);
   }
 
   @Override

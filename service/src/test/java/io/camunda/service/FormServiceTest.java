@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.clients.FormSearchClient;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,7 +28,8 @@ public final class FormServiceTest {
   @BeforeEach
   public void before() {
     client = mock(FormSearchClient.class);
-    services = new FormServices(mock(BrokerClient.class), client, null);
+    services =
+        new FormServices(mock(BrokerClient.class), new SecurityConfiguration(), client, null);
   }
 
   @Test

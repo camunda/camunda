@@ -8,6 +8,7 @@
 package io.camunda.service;
 
 import io.camunda.security.auth.Authentication;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerBroadcastSignalRequest;
@@ -17,13 +18,16 @@ import java.util.concurrent.CompletableFuture;
 
 public class SignalServices extends ApiServices<SignalServices> {
 
-  public SignalServices(final BrokerClient brokerClient, final Authentication authentication) {
-    super(brokerClient, authentication);
+  public SignalServices(
+      final BrokerClient brokerClient,
+      final SecurityConfiguration securityConfiguration,
+      final Authentication authentication) {
+    super(brokerClient, securityConfiguration, authentication);
   }
 
   @Override
   public SignalServices withAuthentication(final Authentication authentication) {
-    return new SignalServices(brokerClient, authentication);
+    return new SignalServices(brokerClient, securityConfiguration, authentication);
   }
 
   public CompletableFuture<BrokerResponse<SignalRecord>> broadcastSignal(

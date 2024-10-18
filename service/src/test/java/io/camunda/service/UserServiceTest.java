@@ -16,6 +16,7 @@ import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.filter.UserFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,7 +29,8 @@ public class UserServiceTest {
   @BeforeEach
   public void before() {
     client = mock(UserSearchClient.class);
-    services = new UserServices(mock(BrokerClient.class), client, null);
+    services =
+        new UserServices(mock(BrokerClient.class), new SecurityConfiguration(), client, null);
   }
 
   @Test

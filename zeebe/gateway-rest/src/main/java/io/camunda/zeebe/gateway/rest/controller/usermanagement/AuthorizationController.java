@@ -13,7 +13,6 @@ import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -25,10 +24,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @CamundaRestController
 @RequestMapping("/v2/authorizations")
 public class AuthorizationController {
-  private final AuthorizationServices<AuthorizationRecord> authorizationServices;
+  private final AuthorizationServices authorizationServices;
 
-  public AuthorizationController(
-      final AuthorizationServices<AuthorizationRecord> authorizationServices) {
+  public AuthorizationController(final AuthorizationServices authorizationServices) {
     this.authorizationServices = authorizationServices;
   }
 

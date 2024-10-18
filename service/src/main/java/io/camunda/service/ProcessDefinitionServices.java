@@ -16,6 +16,7 @@ import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.Optional;
@@ -28,9 +29,10 @@ public class ProcessDefinitionServices
 
   public ProcessDefinitionServices(
       final BrokerClient brokerClient,
+      final SecurityConfiguration securityConfiguration,
       final ProcessDefinitionSearchClient processDefinitionSearchClient,
       final Authentication authentication) {
-    super(brokerClient, authentication);
+    super(brokerClient, securityConfiguration, authentication);
     this.processDefinitionSearchClient = processDefinitionSearchClient;
   }
 
@@ -43,7 +45,7 @@ public class ProcessDefinitionServices
   @Override
   public ProcessDefinitionServices withAuthentication(final Authentication authentication) {
     return new ProcessDefinitionServices(
-        brokerClient, processDefinitionSearchClient, authentication);
+        brokerClient, securityConfiguration, processDefinitionSearchClient, authentication);
   }
 
   public ProcessDefinitionEntity getByKey(final Long processDefinitionKey) {

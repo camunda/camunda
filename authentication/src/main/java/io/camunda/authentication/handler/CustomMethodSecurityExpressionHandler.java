@@ -8,7 +8,6 @@
 package io.camunda.authentication.handler;
 
 import io.camunda.service.AuthorizationServices;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import org.aopalliance.intercept.MethodInvocation;
 import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionOperations;
@@ -18,10 +17,9 @@ import org.springframework.security.core.Authentication;
 
 public class CustomMethodSecurityExpressionHandler extends DefaultMethodSecurityExpressionHandler {
   private final AuthenticationTrustResolver trustResolver = new AuthenticationTrustResolverImpl();
-  private final AuthorizationServices<AuthorizationRecord> authorizationServices;
+  private final AuthorizationServices authorizationServices;
 
-  public CustomMethodSecurityExpressionHandler(
-      final AuthorizationServices<AuthorizationRecord> authorizationServices) {
+  public CustomMethodSecurityExpressionHandler(final AuthorizationServices authorizationServices) {
     this.authorizationServices = authorizationServices;
   }
 

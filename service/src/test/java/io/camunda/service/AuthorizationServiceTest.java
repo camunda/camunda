@@ -16,20 +16,22 @@ import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class AuthorizationServiceTest {
 
-  private AuthorizationServices<AuthorizationRecord> services;
+  private AuthorizationServices services;
   private AuthorizationSearchClient client;
 
   @BeforeEach
   public void before() {
     client = mock(AuthorizationSearchClient.class);
-    services = new AuthorizationServices<>(mock(BrokerClient.class), client, null);
+    services =
+        new AuthorizationServices(
+            mock(BrokerClient.class), new SecurityConfiguration(), client, null);
   }
 
   @Test
