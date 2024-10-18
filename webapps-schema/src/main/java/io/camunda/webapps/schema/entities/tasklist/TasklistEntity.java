@@ -19,7 +19,8 @@ public abstract class TasklistEntity<T extends TasklistEntity<T>> extends Abstra
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String id;
 
-  private long key;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Long key;
 
   private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
@@ -29,24 +30,24 @@ public abstract class TasklistEntity<T extends TasklistEntity<T>> extends Abstra
   public TasklistEntity() {}
 
   public TasklistEntity(
-      final String id, final long key, final String tenantId, final int partitionId) {
+      final String id, final Long key, final String tenantId, final int partitionId) {
     this.id = id;
     this.key = key;
     this.tenantId = tenantId;
     this.partitionId = partitionId;
   }
 
-  public TasklistEntity(final String id, final long key, final String tenantId) {
+  public TasklistEntity(final String id, final Long key, final String tenantId) {
     this.id = id;
     this.key = key;
     this.tenantId = tenantId;
   }
 
-  public long getKey() {
+  public Long getKey() {
     return key;
   }
 
-  public T setKey(final long key) {
+  public T setKey(final Long key) {
     this.key = key;
     return (T) this;
   }
@@ -98,9 +99,9 @@ public abstract class TasklistEntity<T extends TasklistEntity<T>> extends Abstra
       return false;
     }
     final TasklistEntity<?> that = (TasklistEntity<?>) o;
-    return key == that.key
+    return Objects.equals(key, that.key)
         && Objects.equals(id, that.id)
-        && partitionId.equals(that.partitionId)
+        && Objects.equals(partitionId, that.partitionId)
         && Objects.equals(tenantId, that.tenantId);
   }
 }
