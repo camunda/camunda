@@ -10,7 +10,8 @@ package io.camunda.exporter;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.exporter.config.ExporterConfiguration;
-import java.util.stream.Stream;
+import io.camunda.webapps.schema.descriptors.ComponentNames;
+import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
 public class DefaultExporterResourceProviderTest {
@@ -72,6 +73,7 @@ public class DefaultExporterResourceProviderTest {
   }
 
   private boolean startsWithValidComponent(final String str) {
-    return Stream.of("operate", "tasklist").anyMatch(str::startsWith);
+    return Arrays.stream(ComponentNames.values())
+        .anyMatch((componentName) -> str.startsWith(componentName.toString()));
   }
 }

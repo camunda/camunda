@@ -7,6 +7,8 @@
  */
 package io.camunda.webapps.schema.descriptors.operate;
 
+import static io.camunda.webapps.schema.descriptors.ComponentNames.OPERATE;
+
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 
 public abstract class OperateIndexDescriptor extends AbstractIndexDescriptor {
@@ -17,6 +19,6 @@ public abstract class OperateIndexDescriptor extends AbstractIndexDescriptor {
 
   @Override
   public String getComponentName() {
-    return "operate";
+    return OPERATE.toString();
   }
 }
