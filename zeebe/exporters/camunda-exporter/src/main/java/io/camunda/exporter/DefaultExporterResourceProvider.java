@@ -16,6 +16,7 @@ import io.camunda.exporter.handlers.DecisionRequirementsHandler;
 import io.camunda.exporter.handlers.EventFromIncidentHandler;
 import io.camunda.exporter.handlers.EventFromJobHandler;
 import io.camunda.exporter.handlers.EventFromProcessInstanceHandler;
+import io.camunda.exporter.handlers.EventFromProcessMessageSubscriptionHandler;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.FlowNodeInstanceIncidentHandler;
 import io.camunda.exporter.handlers.FlowNodeInstanceProcessInstanceHandler;
@@ -139,6 +140,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new EventFromJobHandler(
                 templateDescriptorsMap.get(EventTemplate.class).getFullQualifiedName(), false),
             new EventFromProcessInstanceHandler(
+                templateDescriptorsMap.get(EventTemplate.class).getFullQualifiedName(), false),
+            new EventFromProcessMessageSubscriptionHandler(
                 templateDescriptorsMap.get(EventTemplate.class).getFullQualifiedName(), false));
   }
 
