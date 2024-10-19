@@ -44,35 +44,11 @@ public class CreateIndexStep extends UpgradeStep {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = super.hashCode();
-    final Object $readOnlyAliases = readOnlyAliases;
-    result = result * PRIME + ($readOnlyAliases == null ? 43 : $readOnlyAliases.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof CreateIndexStep)) {
-      return false;
-    }
-    final CreateIndexStep other = (CreateIndexStep) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    final Object this$readOnlyAliases = readOnlyAliases;
-    final Object other$readOnlyAliases = other.readOnlyAliases;
-    if (this$readOnlyAliases == null
-        ? other$readOnlyAliases != null
-        : !this$readOnlyAliases.equals(other$readOnlyAliases)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 }

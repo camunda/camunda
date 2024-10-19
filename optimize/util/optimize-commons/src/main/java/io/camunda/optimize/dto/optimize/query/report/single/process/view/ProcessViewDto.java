@@ -114,40 +114,12 @@ public class ProcessViewDto implements Combinable {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $entity = getEntity();
-    result = result * PRIME + ($entity == null ? 43 : $entity.hashCode());
-    final Object $properties = getProperties();
-    result = result * PRIME + ($properties == null ? 43 : $properties.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof ProcessViewDto)) {
-      return false;
-    }
-    final ProcessViewDto other = (ProcessViewDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$entity = getEntity();
-    final Object other$entity = other.getEntity();
-    if (this$entity == null ? other$entity != null : !this$entity.equals(other$entity)) {
-      return false;
-    }
-    final Object this$properties = getProperties();
-    final Object other$properties = other.getProperties();
-    if (this$properties == null
-        ? other$properties != null
-        : !this$properties.equals(other$properties)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

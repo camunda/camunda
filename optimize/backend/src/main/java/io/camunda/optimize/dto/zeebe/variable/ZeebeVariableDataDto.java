@@ -98,69 +98,12 @@ public class ZeebeVariableDataDto implements VariableRecordValue {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $name = getName();
-    result = result * PRIME + ($name == null ? 43 : $name.hashCode());
-    final Object $value = getValue();
-    result = result * PRIME + ($value == null ? 43 : $value.hashCode());
-    final long $scopeKey = getScopeKey();
-    result = result * PRIME + (int) ($scopeKey >>> 32 ^ $scopeKey);
-    final long $processInstanceKey = getProcessInstanceKey();
-    result = result * PRIME + (int) ($processInstanceKey >>> 32 ^ $processInstanceKey);
-    final long $processDefinitionKey = getProcessDefinitionKey();
-    result = result * PRIME + (int) ($processDefinitionKey >>> 32 ^ $processDefinitionKey);
-    final Object $bpmnProcessId = getBpmnProcessId();
-    result = result * PRIME + ($bpmnProcessId == null ? 43 : $bpmnProcessId.hashCode());
-    final Object $tenantId = getTenantId();
-    result = result * PRIME + ($tenantId == null ? 43 : $tenantId.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof ZeebeVariableDataDto)) {
-      return false;
-    }
-    final ZeebeVariableDataDto other = (ZeebeVariableDataDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$name = getName();
-    final Object other$name = other.getName();
-    if (this$name == null ? other$name != null : !this$name.equals(other$name)) {
-      return false;
-    }
-    final Object this$value = getValue();
-    final Object other$value = other.getValue();
-    if (this$value == null ? other$value != null : !this$value.equals(other$value)) {
-      return false;
-    }
-    if (getScopeKey() != other.getScopeKey()) {
-      return false;
-    }
-    if (getProcessInstanceKey() != other.getProcessInstanceKey()) {
-      return false;
-    }
-    if (getProcessDefinitionKey() != other.getProcessDefinitionKey()) {
-      return false;
-    }
-    final Object this$bpmnProcessId = getBpmnProcessId();
-    final Object other$bpmnProcessId = other.getBpmnProcessId();
-    if (this$bpmnProcessId == null
-        ? other$bpmnProcessId != null
-        : !this$bpmnProcessId.equals(other$bpmnProcessId)) {
-      return false;
-    }
-    final Object this$tenantId = getTenantId();
-    final Object other$tenantId = other.getTenantId();
-    if (this$tenantId == null ? other$tenantId != null : !this$tenantId.equals(other$tenantId)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

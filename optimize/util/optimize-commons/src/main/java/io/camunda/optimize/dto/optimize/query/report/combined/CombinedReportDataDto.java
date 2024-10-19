@@ -85,49 +85,12 @@ public class CombinedReportDataDto implements ReportDataDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $configuration = getConfiguration();
-    result = result * PRIME + ($configuration == null ? 43 : $configuration.hashCode());
-    final Object $visualization = getVisualization();
-    result = result * PRIME + ($visualization == null ? 43 : $visualization.hashCode());
-    final Object $reports = getReports();
-    result = result * PRIME + ($reports == null ? 43 : $reports.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof CombinedReportDataDto)) {
-      return false;
-    }
-    final CombinedReportDataDto other = (CombinedReportDataDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$configuration = getConfiguration();
-    final Object other$configuration = other.getConfiguration();
-    if (this$configuration == null
-        ? other$configuration != null
-        : !this$configuration.equals(other$configuration)) {
-      return false;
-    }
-    final Object this$visualization = getVisualization();
-    final Object other$visualization = other.getVisualization();
-    if (this$visualization == null
-        ? other$visualization != null
-        : !this$visualization.equals(other$visualization)) {
-      return false;
-    }
-    final Object this$reports = getReports();
-    final Object other$reports = other.getReports();
-    if (this$reports == null ? other$reports != null : !this$reports.equals(other$reports)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

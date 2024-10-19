@@ -51,42 +51,12 @@ public class DurationChartEntryDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $key = getKey();
-    result = result * PRIME + ($key == null ? 43 : $key.hashCode());
-    final Object $value = getValue();
-    result = result * PRIME + ($value == null ? 43 : $value.hashCode());
-    result = result * PRIME + (isOutlier() ? 79 : 97);
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof DurationChartEntryDto)) {
-      return false;
-    }
-    final DurationChartEntryDto other = (DurationChartEntryDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$key = getKey();
-    final Object other$key = other.getKey();
-    if (this$key == null ? other$key != null : !this$key.equals(other$key)) {
-      return false;
-    }
-    final Object this$value = getValue();
-    final Object other$value = other.getValue();
-    if (this$value == null ? other$value != null : !this$value.equals(other$value)) {
-      return false;
-    }
-    if (isOutlier() != other.isOutlier()) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

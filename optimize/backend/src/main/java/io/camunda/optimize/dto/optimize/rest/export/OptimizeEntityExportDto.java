@@ -106,60 +106,12 @@ public abstract class OptimizeEntityExportDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $id = getId();
-    result = result * PRIME + ($id == null ? 43 : $id.hashCode());
-    final Object $exportEntityType = getExportEntityType();
-    result = result * PRIME + ($exportEntityType == null ? 43 : $exportEntityType.hashCode());
-    final Object $name = getName();
-    result = result * PRIME + ($name == null ? 43 : $name.hashCode());
-    final Object $description = getDescription();
-    result = result * PRIME + ($description == null ? 43 : $description.hashCode());
-    result = result * PRIME + getSourceIndexVersion();
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof OptimizeEntityExportDto)) {
-      return false;
-    }
-    final OptimizeEntityExportDto other = (OptimizeEntityExportDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$id = getId();
-    final Object other$id = other.getId();
-    if (this$id == null ? other$id != null : !this$id.equals(other$id)) {
-      return false;
-    }
-    final Object this$exportEntityType = getExportEntityType();
-    final Object other$exportEntityType = other.getExportEntityType();
-    if (this$exportEntityType == null
-        ? other$exportEntityType != null
-        : !this$exportEntityType.equals(other$exportEntityType)) {
-      return false;
-    }
-    final Object this$name = getName();
-    final Object other$name = other.getName();
-    if (this$name == null ? other$name != null : !this$name.equals(other$name)) {
-      return false;
-    }
-    final Object this$description = getDescription();
-    final Object other$description = other.getDescription();
-    if (this$description == null
-        ? other$description != null
-        : !this$description.equals(other$description)) {
-      return false;
-    }
-    if (getSourceIndexVersion() != other.getSourceIndexVersion()) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

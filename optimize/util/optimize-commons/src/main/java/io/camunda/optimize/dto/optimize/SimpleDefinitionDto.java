@@ -105,38 +105,12 @@ public class SimpleDefinitionDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $key = getKey();
-    result = result * PRIME + ($key == null ? 43 : $key.hashCode());
-    final Object $type = getType();
-    result = result * PRIME + ($type == null ? 43 : $type.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof SimpleDefinitionDto)) {
-      return false;
-    }
-    final SimpleDefinitionDto other = (SimpleDefinitionDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$key = getKey();
-    final Object other$key = other.getKey();
-    if (this$key == null ? other$key != null : !this$key.equals(other$key)) {
-      return false;
-    }
-    final Object this$type = getType();
-    final Object other$type = other.getType();
-    if (this$type == null ? other$type != null : !this$type.equals(other$type)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

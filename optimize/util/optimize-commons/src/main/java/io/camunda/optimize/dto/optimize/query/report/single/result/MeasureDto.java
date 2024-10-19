@@ -85,57 +85,12 @@ public class MeasureDto<T> {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $property = getProperty();
-    result = result * PRIME + ($property == null ? 43 : $property.hashCode());
-    final Object $aggregationType = getAggregationType();
-    result = result * PRIME + ($aggregationType == null ? 43 : $aggregationType.hashCode());
-    final Object $userTaskDurationTime = getUserTaskDurationTime();
-    result =
-        result * PRIME + ($userTaskDurationTime == null ? 43 : $userTaskDurationTime.hashCode());
-    final Object $data = getData();
-    result = result * PRIME + ($data == null ? 43 : $data.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof MeasureDto)) {
-      return false;
-    }
-    final MeasureDto<?> other = (MeasureDto<?>) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$property = getProperty();
-    final Object other$property = other.getProperty();
-    if (this$property == null ? other$property != null : !this$property.equals(other$property)) {
-      return false;
-    }
-    final Object this$aggregationType = getAggregationType();
-    final Object other$aggregationType = other.getAggregationType();
-    if (this$aggregationType == null
-        ? other$aggregationType != null
-        : !this$aggregationType.equals(other$aggregationType)) {
-      return false;
-    }
-    final Object this$userTaskDurationTime = getUserTaskDurationTime();
-    final Object other$userTaskDurationTime = other.getUserTaskDurationTime();
-    if (this$userTaskDurationTime == null
-        ? other$userTaskDurationTime != null
-        : !this$userTaskDurationTime.equals(other$userTaskDurationTime)) {
-      return false;
-    }
-    final Object this$data = getData();
-    final Object other$data = other.getData();
-    if (this$data == null ? other$data != null : !this$data.equals(other$data)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

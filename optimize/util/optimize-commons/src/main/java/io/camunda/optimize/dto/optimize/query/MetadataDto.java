@@ -44,42 +44,12 @@ public class MetadataDto implements OptimizeDto, Serializable {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $schemaVersion = getSchemaVersion();
-    result = result * PRIME + ($schemaVersion == null ? 43 : $schemaVersion.hashCode());
-    final Object $installationId = getInstallationId();
-    result = result * PRIME + ($installationId == null ? 43 : $installationId.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof MetadataDto)) {
-      return false;
-    }
-    final MetadataDto other = (MetadataDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$schemaVersion = getSchemaVersion();
-    final Object other$schemaVersion = other.getSchemaVersion();
-    if (this$schemaVersion == null
-        ? other$schemaVersion != null
-        : !this$schemaVersion.equals(other$schemaVersion)) {
-      return false;
-    }
-    final Object this$installationId = getInstallationId();
-    final Object other$installationId = other.getInstallationId();
-    if (this$installationId == null
-        ? other$installationId != null
-        : !this$installationId.equals(other$installationId)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

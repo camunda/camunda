@@ -7,8 +7,6 @@
  */
 package io.camunda.optimize.dto.optimize.query.report.single.configuration.target_value;
 
-import java.util.Objects;
-
 public class SingleReportCountChartDto {
 
   private Boolean isBelow = false;
@@ -16,18 +14,12 @@ public class SingleReportCountChartDto {
 
   @Override
   public int hashCode() {
-    return Objects.hash(isBelow, value);
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (!(o instanceof final SingleReportCountChartDto that)) {
-      return false;
-    }
-    return Objects.equals(isBelow, that.isBelow) && Objects.equals(value, that.value);
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

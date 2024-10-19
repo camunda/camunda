@@ -132,58 +132,12 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = super.hashCode();
-    final Object $bpmn20Xml = getBpmn20Xml();
-    result = result * PRIME + ($bpmn20Xml == null ? 43 : $bpmn20Xml.hashCode());
-    final Object $flowNodeData = getFlowNodeData();
-    result = result * PRIME + ($flowNodeData == null ? 43 : $flowNodeData.hashCode());
-    final Object $userTaskNames = getUserTaskNames();
-    result = result * PRIME + ($userTaskNames == null ? 43 : $userTaskNames.hashCode());
-    result = result * PRIME + (isOnboarded() ? 79 : 97);
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof ProcessDefinitionOptimizeDto)) {
-      return false;
-    }
-    final ProcessDefinitionOptimizeDto other = (ProcessDefinitionOptimizeDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    final Object this$bpmn20Xml = getBpmn20Xml();
-    final Object other$bpmn20Xml = other.getBpmn20Xml();
-    if (this$bpmn20Xml == null
-        ? other$bpmn20Xml != null
-        : !this$bpmn20Xml.equals(other$bpmn20Xml)) {
-      return false;
-    }
-    final Object this$flowNodeData = getFlowNodeData();
-    final Object other$flowNodeData = other.getFlowNodeData();
-    if (this$flowNodeData == null
-        ? other$flowNodeData != null
-        : !this$flowNodeData.equals(other$flowNodeData)) {
-      return false;
-    }
-    final Object this$userTaskNames = getUserTaskNames();
-    final Object other$userTaskNames = other.getUserTaskNames();
-    if (this$userTaskNames == null
-        ? other$userTaskNames != null
-        : !this$userTaskNames.equals(other$userTaskNames)) {
-      return false;
-    }
-    if (isOnboarded() != other.isOnboarded()) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

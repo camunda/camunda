@@ -33,27 +33,7 @@ public class AlertEmailValidationResponseDto extends ErrorResponseDto {
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof AlertEmailValidationResponseDto)) {
-      return false;
-    }
-    final AlertEmailValidationResponseDto other = (AlertEmailValidationResponseDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    final Object this$invalidAlertEmails = getInvalidAlertEmails();
-    final Object other$invalidAlertEmails = other.getInvalidAlertEmails();
-    if (this$invalidAlertEmails == null
-        ? other$invalidAlertEmails != null
-        : !this$invalidAlertEmails.equals(other$invalidAlertEmails)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override
@@ -63,11 +43,7 @@ public class AlertEmailValidationResponseDto extends ErrorResponseDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = super.hashCode();
-    final Object $invalidAlertEmails = getInvalidAlertEmails();
-    result = result * PRIME + ($invalidAlertEmails == null ? 43 : $invalidAlertEmails.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   public static final class Fields {

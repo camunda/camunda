@@ -55,25 +55,7 @@ public abstract class UpgradeStep {
   }
 
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof UpgradeStep)) {
-      return false;
-    }
-    final UpgradeStep other = (UpgradeStep) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$index = this.getIndex();
-    final Object other$index = other.getIndex();
-    if (this$index == null ? other$index != null : !this$index.equals(other$index)) {
-      return false;
-    }
-    if (this.isSkipIndexConversion() != other.isSkipIndexConversion()) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   protected boolean canEqual(final Object other) {
@@ -81,12 +63,7 @@ public abstract class UpgradeStep {
   }
 
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $index = this.getIndex();
-    result = result * PRIME + ($index == null ? 43 : $index.hashCode());
-    result = result * PRIME + (this.isSkipIndexConversion() ? 79 : 97);
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   public String toString() {

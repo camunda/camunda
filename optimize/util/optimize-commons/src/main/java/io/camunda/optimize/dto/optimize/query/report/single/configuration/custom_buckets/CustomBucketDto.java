@@ -145,62 +145,12 @@ public class CustomBucketDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    result = result * PRIME + (isActive() ? 79 : 97);
-    final Object $bucketSize = getBucketSize();
-    result = result * PRIME + ($bucketSize == null ? 43 : $bucketSize.hashCode());
-    final Object $bucketSizeUnit = getBucketSizeUnit();
-    result = result * PRIME + ($bucketSizeUnit == null ? 43 : $bucketSizeUnit.hashCode());
-    final Object $baseline = getBaseline();
-    result = result * PRIME + ($baseline == null ? 43 : $baseline.hashCode());
-    final Object $baselineUnit = getBaselineUnit();
-    result = result * PRIME + ($baselineUnit == null ? 43 : $baselineUnit.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof CustomBucketDto)) {
-      return false;
-    }
-    final CustomBucketDto other = (CustomBucketDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (isActive() != other.isActive()) {
-      return false;
-    }
-    final Object this$bucketSize = getBucketSize();
-    final Object other$bucketSize = other.getBucketSize();
-    if (this$bucketSize == null
-        ? other$bucketSize != null
-        : !this$bucketSize.equals(other$bucketSize)) {
-      return false;
-    }
-    final Object this$bucketSizeUnit = getBucketSizeUnit();
-    final Object other$bucketSizeUnit = other.getBucketSizeUnit();
-    if (this$bucketSizeUnit == null
-        ? other$bucketSizeUnit != null
-        : !this$bucketSizeUnit.equals(other$bucketSizeUnit)) {
-      return false;
-    }
-    final Object this$baseline = getBaseline();
-    final Object other$baseline = other.getBaseline();
-    if (this$baseline == null ? other$baseline != null : !this$baseline.equals(other$baseline)) {
-      return false;
-    }
-    final Object this$baselineUnit = getBaselineUnit();
-    final Object other$baselineUnit = other.getBaselineUnit();
-    if (this$baselineUnit == null
-        ? other$baselineUnit != null
-        : !this$baselineUnit.equals(other$baselineUnit)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

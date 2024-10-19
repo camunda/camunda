@@ -91,51 +91,12 @@ public class ReportResultResponseDto<T> {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final long $instanceCount = getInstanceCount();
-    result = result * PRIME + (int) ($instanceCount >>> 32 ^ $instanceCount);
-    final long $instanceCountWithoutFilters = getInstanceCountWithoutFilters();
-    result =
-        result * PRIME + (int) ($instanceCountWithoutFilters >>> 32 ^ $instanceCountWithoutFilters);
-    final Object $measures = getMeasures();
-    result = result * PRIME + ($measures == null ? 43 : $measures.hashCode());
-    final Object $pagination = getPagination();
-    result = result * PRIME + ($pagination == null ? 43 : $pagination.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof ReportResultResponseDto)) {
-      return false;
-    }
-    final ReportResultResponseDto<?> other = (ReportResultResponseDto<?>) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (getInstanceCount() != other.getInstanceCount()) {
-      return false;
-    }
-    if (getInstanceCountWithoutFilters() != other.getInstanceCountWithoutFilters()) {
-      return false;
-    }
-    final Object this$measures = getMeasures();
-    final Object other$measures = other.getMeasures();
-    if (this$measures == null ? other$measures != null : !this$measures.equals(other$measures)) {
-      return false;
-    }
-    final Object this$pagination = getPagination();
-    final Object other$pagination = other.getPagination();
-    if (this$pagination == null
-        ? other$pagination != null
-        : !this$pagination.equals(other$pagination)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

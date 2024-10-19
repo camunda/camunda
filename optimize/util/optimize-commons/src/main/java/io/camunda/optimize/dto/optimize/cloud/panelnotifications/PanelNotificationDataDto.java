@@ -68,75 +68,12 @@ public class PanelNotificationDataDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $uniqueId = getUniqueId();
-    result = result * PRIME + ($uniqueId == null ? 43 : $uniqueId.hashCode());
-    final Object $source = getSource();
-    result = result * PRIME + ($source == null ? 43 : $source.hashCode());
-    final Object $type = getType();
-    result = result * PRIME + ($type == null ? 43 : $type.hashCode());
-    final Object $orgId = getOrgId();
-    result = result * PRIME + ($orgId == null ? 43 : $orgId.hashCode());
-    final Object $title = getTitle();
-    result = result * PRIME + ($title == null ? 43 : $title.hashCode());
-    final Object $description = getDescription();
-    result = result * PRIME + ($description == null ? 43 : $description.hashCode());
-    final Object $meta = getMeta();
-    result = result * PRIME + ($meta == null ? 43 : $meta.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof PanelNotificationDataDto)) {
-      return false;
-    }
-    final PanelNotificationDataDto other = (PanelNotificationDataDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$uniqueId = getUniqueId();
-    final Object other$uniqueId = other.getUniqueId();
-    if (this$uniqueId == null ? other$uniqueId != null : !this$uniqueId.equals(other$uniqueId)) {
-      return false;
-    }
-    final Object this$source = getSource();
-    final Object other$source = other.getSource();
-    if (this$source == null ? other$source != null : !this$source.equals(other$source)) {
-      return false;
-    }
-    final Object this$type = getType();
-    final Object other$type = other.getType();
-    if (this$type == null ? other$type != null : !this$type.equals(other$type)) {
-      return false;
-    }
-    final Object this$orgId = getOrgId();
-    final Object other$orgId = other.getOrgId();
-    if (this$orgId == null ? other$orgId != null : !this$orgId.equals(other$orgId)) {
-      return false;
-    }
-    final Object this$title = getTitle();
-    final Object other$title = other.getTitle();
-    if (this$title == null ? other$title != null : !this$title.equals(other$title)) {
-      return false;
-    }
-    final Object this$description = getDescription();
-    final Object other$description = other.getDescription();
-    if (this$description == null
-        ? other$description != null
-        : !this$description.equals(other$description)) {
-      return false;
-    }
-    final Object this$meta = getMeta();
-    final Object other$meta = other.getMeta();
-    if (this$meta == null ? other$meta != null : !this$meta.equals(other$meta)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

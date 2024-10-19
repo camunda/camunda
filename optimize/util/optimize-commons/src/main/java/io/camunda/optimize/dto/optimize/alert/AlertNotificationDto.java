@@ -56,65 +56,12 @@ public class AlertNotificationDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $alert = getAlert();
-    result = result * PRIME + ($alert == null ? 43 : $alert.hashCode());
-    final Object $currentValue = getCurrentValue();
-    result = result * PRIME + ($currentValue == null ? 43 : $currentValue.hashCode());
-    final Object $type = getType();
-    result = result * PRIME + ($type == null ? 43 : $type.hashCode());
-    final Object $alertMessage = getAlertMessage();
-    result = result * PRIME + ($alertMessage == null ? 43 : $alertMessage.hashCode());
-    final Object $reportLink = getReportLink();
-    result = result * PRIME + ($reportLink == null ? 43 : $reportLink.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof AlertNotificationDto)) {
-      return false;
-    }
-    final AlertNotificationDto other = (AlertNotificationDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$alert = getAlert();
-    final Object other$alert = other.getAlert();
-    if (this$alert == null ? other$alert != null : !this$alert.equals(other$alert)) {
-      return false;
-    }
-    final Object this$currentValue = getCurrentValue();
-    final Object other$currentValue = other.getCurrentValue();
-    if (this$currentValue == null
-        ? other$currentValue != null
-        : !this$currentValue.equals(other$currentValue)) {
-      return false;
-    }
-    final Object this$type = getType();
-    final Object other$type = other.getType();
-    if (this$type == null ? other$type != null : !this$type.equals(other$type)) {
-      return false;
-    }
-    final Object this$alertMessage = getAlertMessage();
-    final Object other$alertMessage = other.getAlertMessage();
-    if (this$alertMessage == null
-        ? other$alertMessage != null
-        : !this$alertMessage.equals(other$alertMessage)) {
-      return false;
-    }
-    final Object this$reportLink = getReportLink();
-    final Object other$reportLink = other.getReportLink();
-    if (this$reportLink == null
-        ? other$reportLink != null
-        : !this$reportLink.equals(other$reportLink)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

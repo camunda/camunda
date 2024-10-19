@@ -153,89 +153,7 @@ public class ProcessVariableDto implements OptimizeDto {
   }
 
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof ProcessVariableDto)) {
-      return false;
-    }
-    final ProcessVariableDto other = (ProcessVariableDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$id = this.getId();
-    final Object other$id = other.getId();
-    if (this$id == null ? other$id != null : !this$id.equals(other$id)) {
-      return false;
-    }
-    final Object this$name = this.getName();
-    final Object other$name = other.getName();
-    if (this$name == null ? other$name != null : !this$name.equals(other$name)) {
-      return false;
-    }
-    final Object this$type = this.getType();
-    final Object other$type = other.getType();
-    if (this$type == null ? other$type != null : !this$type.equals(other$type)) {
-      return false;
-    }
-    final Object this$value = this.getValue();
-    final Object other$value = other.getValue();
-    if (this$value == null ? other$value != null : !this$value.equals(other$value)) {
-      return false;
-    }
-    final Object this$timestamp = this.getTimestamp();
-    final Object other$timestamp = other.getTimestamp();
-    if (this$timestamp == null
-        ? other$timestamp != null
-        : !this$timestamp.equals(other$timestamp)) {
-      return false;
-    }
-    final Object this$valueInfo = this.getValueInfo();
-    final Object other$valueInfo = other.getValueInfo();
-    if (this$valueInfo == null
-        ? other$valueInfo != null
-        : !this$valueInfo.equals(other$valueInfo)) {
-      return false;
-    }
-    final Object this$processDefinitionKey = this.getProcessDefinitionKey();
-    final Object other$processDefinitionKey = other.getProcessDefinitionKey();
-    if (this$processDefinitionKey == null
-        ? other$processDefinitionKey != null
-        : !this$processDefinitionKey.equals(other$processDefinitionKey)) {
-      return false;
-    }
-    final Object this$processDefinitionId = this.getProcessDefinitionId();
-    final Object other$processDefinitionId = other.getProcessDefinitionId();
-    if (this$processDefinitionId == null
-        ? other$processDefinitionId != null
-        : !this$processDefinitionId.equals(other$processDefinitionId)) {
-      return false;
-    }
-    final Object this$processInstanceId = this.getProcessInstanceId();
-    final Object other$processInstanceId = other.getProcessInstanceId();
-    if (this$processInstanceId == null
-        ? other$processInstanceId != null
-        : !this$processInstanceId.equals(other$processInstanceId)) {
-      return false;
-    }
-    final Object this$version = this.getVersion();
-    final Object other$version = other.getVersion();
-    if (this$version == null ? other$version != null : !this$version.equals(other$version)) {
-      return false;
-    }
-    final Object this$engineAlias = this.getEngineAlias();
-    final Object other$engineAlias = other.getEngineAlias();
-    if (this$engineAlias == null
-        ? other$engineAlias != null
-        : !this$engineAlias.equals(other$engineAlias)) {
-      return false;
-    }
-    final Object this$tenantId = this.getTenantId();
-    final Object other$tenantId = other.getTenantId();
-    if (this$tenantId == null ? other$tenantId != null : !this$tenantId.equals(other$tenantId)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   protected boolean canEqual(final Object other) {
@@ -243,34 +161,7 @@ public class ProcessVariableDto implements OptimizeDto {
   }
 
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $id = this.getId();
-    result = result * PRIME + ($id == null ? 43 : $id.hashCode());
-    final Object $name = this.getName();
-    result = result * PRIME + ($name == null ? 43 : $name.hashCode());
-    final Object $type = this.getType();
-    result = result * PRIME + ($type == null ? 43 : $type.hashCode());
-    final Object $value = this.getValue();
-    result = result * PRIME + ($value == null ? 43 : $value.hashCode());
-    final Object $timestamp = this.getTimestamp();
-    result = result * PRIME + ($timestamp == null ? 43 : $timestamp.hashCode());
-    final Object $valueInfo = this.getValueInfo();
-    result = result * PRIME + ($valueInfo == null ? 43 : $valueInfo.hashCode());
-    final Object $processDefinitionKey = this.getProcessDefinitionKey();
-    result =
-        result * PRIME + ($processDefinitionKey == null ? 43 : $processDefinitionKey.hashCode());
-    final Object $processDefinitionId = this.getProcessDefinitionId();
-    result = result * PRIME + ($processDefinitionId == null ? 43 : $processDefinitionId.hashCode());
-    final Object $processInstanceId = this.getProcessInstanceId();
-    result = result * PRIME + ($processInstanceId == null ? 43 : $processInstanceId.hashCode());
-    final Object $version = this.getVersion();
-    result = result * PRIME + ($version == null ? 43 : $version.hashCode());
-    final Object $engineAlias = this.getEngineAlias();
-    result = result * PRIME + ($engineAlias == null ? 43 : $engineAlias.hashCode());
-    final Object $tenantId = this.getTenantId();
-    result = result * PRIME + ($tenantId == null ? 43 : $tenantId.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   public String toString() {

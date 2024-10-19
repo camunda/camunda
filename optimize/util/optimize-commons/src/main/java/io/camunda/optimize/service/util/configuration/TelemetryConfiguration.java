@@ -55,33 +55,12 @@ public class TelemetryConfiguration {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    result = result * PRIME + (isInitializeTelemetry() ? 79 : 97);
-    final long $reportingIntervalInHours = getReportingIntervalInHours();
-    result = result * PRIME + (int) ($reportingIntervalInHours >>> 32 ^ $reportingIntervalInHours);
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof TelemetryConfiguration)) {
-      return false;
-    }
-    final TelemetryConfiguration other = (TelemetryConfiguration) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (isInitializeTelemetry() != other.isInitializeTelemetry()) {
-      return false;
-    }
-    if (getReportingIntervalInHours() != other.getReportingIntervalInHours()) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

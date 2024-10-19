@@ -51,52 +51,12 @@ public class ExternalVariableConfiguration {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $variableIngestion = getVariableIngestion();
-    result = result * PRIME + ($variableIngestion == null ? 43 : $variableIngestion.hashCode());
-    final Object $variableIndexRollover = getVariableIndexRollover();
-    result =
-        result * PRIME + ($variableIndexRollover == null ? 43 : $variableIndexRollover.hashCode());
-    final Object $importConfiguration = getImportConfiguration();
-    result = result * PRIME + ($importConfiguration == null ? 43 : $importConfiguration.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof ExternalVariableConfiguration)) {
-      return false;
-    }
-    final ExternalVariableConfiguration other = (ExternalVariableConfiguration) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$variableIngestion = getVariableIngestion();
-    final Object other$variableIngestion = other.getVariableIngestion();
-    if (this$variableIngestion == null
-        ? other$variableIngestion != null
-        : !this$variableIngestion.equals(other$variableIngestion)) {
-      return false;
-    }
-    final Object this$variableIndexRollover = getVariableIndexRollover();
-    final Object other$variableIndexRollover = other.getVariableIndexRollover();
-    if (this$variableIndexRollover == null
-        ? other$variableIndexRollover != null
-        : !this$variableIndexRollover.equals(other$variableIndexRollover)) {
-      return false;
-    }
-    final Object this$importConfiguration = getImportConfiguration();
-    final Object other$importConfiguration = other.getImportConfiguration();
-    if (this$importConfiguration == null
-        ? other$importConfiguration != null
-        : !this$importConfiguration.equals(other$importConfiguration)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override
