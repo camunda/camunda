@@ -15,17 +15,20 @@ import io.camunda.exporter.store.OpensearchBatchRequest;
 import io.camunda.exporter.utils.OpensearchScriptBuilder;
 import io.camunda.search.connect.os.OpensearchConnector;
 import java.io.IOException;
+import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.core.BulkRequest;
 
 class OpensearchAdapter implements ClientAdapter {
   private final OpenSearchClient client;
   private final OpensearchEngineClient searchEngineClient;
+  private final OpenSearchAsyncClient asyncClient;
 
   OpensearchAdapter(final ExporterConfiguration configuration) {
     final var connector = new OpensearchConnector(configuration.getConnect());
     client = connector.createClient();
     searchEngineClient = new OpensearchEngineClient(client);
+    asyncClient = connector.createAsyncClient();
   }
 
   @Override

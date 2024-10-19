@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter;
 
+import io.camunda.exporter.archiver.Archiver;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
@@ -36,4 +37,6 @@ public interface ExporterResourceProvider {
    * @return A {@link Set} of {@link ExportHandler} to be registered with the exporter
    */
   Set<ExportHandler> getExportHandlers();
+
+  Archiver getArchiver(int partitionId);
 }
