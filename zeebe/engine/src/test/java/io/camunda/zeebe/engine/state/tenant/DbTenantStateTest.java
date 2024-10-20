@@ -204,4 +204,41 @@ public class DbTenantStateTest {
     assertThat(entityType).isPresent();
     assertThat(entityType.get()).isEqualTo(EntityType.USER);
   }
+
+  @Test
+  void shouldRemoveEntityFromTenant() {
+    // given
+    final long tenantKey = 1L;
+    final long entityKey1 = 100L;
+    final long entityKey2 = 101L;
+    final String tenantId = "tenant-1";
+    final var tenantRecord =
+        new TenantRecord().setTenantKey(tenantKey).setTenantId(tenantId).setName("Tenant One");
+
+    tenantState.createTenant(tenantRecord);
+
+    // Add two entities to the tenant
+    tenantState.addEntity(
+        new TenantRecord()
+            .setTenantKey(tenantKey)
+            .setEntityKey(entityKey1)
+            .setEntityType(EntityType.USER));
+    tenantState.addEntity(
+        new TenantRecord()
+            .setTenantKey(tenantKey)
+            .setEntityKey(entityKey2)
+            .setEntityType(EntityType.USER));
+
+    // when
+    tenantState.removeEntity(tenantKey, entityKey1);
+
+    // then
+    // Ensure the first entity is removed
+    final var deletedEntity = tenantState.getEntityType(tenantKey, entityKey1);
+    assertThat(deletedEntity).isEmpty();
+
+    // Ensure the second entity still exists
+    final var remainingEntityType = tenantState.getEntityType(tenantKey, entityKey2).get();
+    assertThat(remainingEntityType).isEqualTo(EntityType.USER);
+  }
 }
