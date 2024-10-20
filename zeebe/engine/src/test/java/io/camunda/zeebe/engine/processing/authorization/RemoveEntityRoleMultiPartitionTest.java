@@ -25,6 +25,7 @@ import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -49,6 +50,11 @@ public class RemoveEntityRoleMultiPartitionTest {
             .withPassword("zabraboof")
             .create()
             .getKey();
+  }
+
+  @Before
+  public void beforeEach() {
+    RecordingExporter.reset();
   }
 
   @Test
