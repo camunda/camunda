@@ -9,6 +9,8 @@ package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface TenantState {
@@ -39,4 +41,13 @@ public interface TenantState {
    *     Optional} if not
    */
   Optional<EntityType> getEntityType(final long tenantKey, final long entityKey);
+
+  /**
+   * Retrieves all entities associated with a given tenant key, grouped by their entity type.
+   *
+   * @param tenantKey the key of the tenant whose entities are being retrieved
+   * @return a {@link Map} where each key is an {@link EntityType} and the corresponding value is a
+   *     {@link List} of entity keys associated with that type
+   */
+  Map<EntityType, List<Long>> getEntitiesByType(long tenantKey);
 }
