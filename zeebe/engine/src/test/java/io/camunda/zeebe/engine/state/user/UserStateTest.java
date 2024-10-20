@@ -383,4 +383,30 @@ public class UserStateTest {
     // then
     assertThat(persistedUser.getTenantIdsList()).isEmpty();
   }
+
+  @Test
+  void shouldRemoveTenantFromUser() {
+    // given
+    final long userKey = 1L;
+    final var username = "username";
+    final var name = "Foo";
+    final var email = "foo@bar.com";
+    final var password = "password";
+    userState.create(
+        new UserRecord()
+            .setUserKey(userKey)
+            .setUsername(username)
+            .setName(name)
+            .setEmail(email)
+            .setPassword(password));
+    final var tenantId = "test-tenant-id";
+    userState.addTenantId(userKey, tenantId);
+
+    // when
+    userState.removeTenant(userKey, tenantId);
+
+    // then
+    final var persistedUser = userState.getUser(userKey).get();
+    assertThat(persistedUser.getTenantIdsList()).isEmpty();
+  }
 }
