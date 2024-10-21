@@ -94,7 +94,9 @@ final class DefaultUserCreatorIT {
 
     // then default user should not be created
     // We send a clock reset command so we have a record we can limit our RecordingExporter on
-    client.newClockResetCommand().send().join();
+    // We don't join the future, because we are unauthorized to send this command. Joining it will
+    // result in an exception.
+    client.newClockResetCommand().send();
 
     final var userCreateRecords =
         RecordingExporter.records()
@@ -148,7 +150,9 @@ final class DefaultUserCreatorIT {
 
     // then default user should be created once
     // We send a clock reset command so we have a record we can limit our RecordingExporter on
-    client.newClockResetCommand().send().join();
+    // We don't join the future, because we are unauthorized to send this command. Joining it will
+    // result in an exception.
+    client.newClockResetCommand().send();
 
     Assertions.assertThat(
             RecordingExporter.records()
