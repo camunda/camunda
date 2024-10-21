@@ -21,17 +21,17 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
-public class TenantAddEntityProcessor extends AbstractTenantProcessor {
+public class TenantRemoveEntityProcessor extends AbstractTenantProcessor {
 
   private static final String TENANT_NOT_FOUND_ERROR =
-      "Expected to add entity to tenant with key '%s', but no tenant with this key exists.";
+      "Expected to update entity to tenant with key '%s', but no tenant with this key exists.";
 
   private static final String ENTITY_NOT_FOUND_ERROR =
-      "Expected to add entity with key '%s' and type '%s' to tenant with key '%s', but the entity doesn't exist.";
+      "Expected to remove an entity with key '%s' and type '%s' from tenant with key '%s', but the entity doesn't exist.";
 
   private final UserState userState;
 
-  public TenantAddEntityProcessor(
+  public TenantRemoveEntityProcessor(
       final TenantState tenantState,
       final UserState userState,
       final AuthorizationCheckBehavior authCheckBehavior,
@@ -66,21 +66,27 @@ public class TenantAddEntityProcessor extends AbstractTenantProcessor {
       return;
     }
 
-    appendEventAndWriteResponse(tenantKey, TenantIntent.ENTITY_ADDED, record, command);
+    appendEventAndWriteResponse(tenantKey, TenantIntent.ENTITY_REMOVED, record, command);
     distributeCommand(command, keyGenerator.nextKey());
   }
 
   @Override
   public void processDistributedCommand(final TypedRecord<TenantRecord> command) {
     stateWriter.appendFollowUpEvent(
-        command.getKey(), TenantIntent.ENTITY_ADDED, command.getValue());
+        command.getValue().getTenantKey(), TenantIntent.ENTITY_REMOVED, command.getValue());
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
   private boolean isEntityPresent(final long entityKey, final EntityType entityType) {
-    if (EntityType.USER == entityType) {
-      return userState.getUser(entityKey).isPresent();
-    }
-    return false;
+    return switch (entityType) {
+      case USER -> userState.getUser(entityKey).isPresent();
+      case MAPPING ->
+          throw new UnsupportedOperationException("MAPPING entity type is not implemented yet.");
+      default ->
+          throw new IllegalStateException(
+              "Unknown or unsupported entity type: '"
+                  + entityType
+                  + "'. Please contact support for clarification.");
+    };
   }
 }

@@ -53,6 +53,16 @@ public class TenantProcessors {
                 authCheckBehavior,
                 keyGenerator,
                 writers,
+                commandDistributionBehavior))
+        .onCommand(
+            ValueType.TENANT,
+            TenantIntent.REMOVE_ENTITY,
+            new TenantAddEntityProcessor(
+                processingState.getTenantState(),
+                processingState.getUserState(),
+                authCheckBehavior,
+                keyGenerator,
+                writers,
                 commandDistributionBehavior));
   }
 }
