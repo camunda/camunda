@@ -17,9 +17,6 @@ public abstract class TasklistEntity<T extends TasklistEntity<T>> extends Abstra
     implements TenantOwned {
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
-  private String id;
-
-  @JsonInclude(JsonInclude.Include.NON_NULL)
   private Long key;
 
   private String tenantId = DEFAULT_TENANT_IDENTIFIER;
@@ -31,14 +28,14 @@ public abstract class TasklistEntity<T extends TasklistEntity<T>> extends Abstra
 
   public TasklistEntity(
       final String id, final Long key, final String tenantId, final int partitionId) {
-    this.id = id;
+    setId(id);
     this.key = key;
     this.tenantId = tenantId;
     this.partitionId = partitionId;
   }
 
   public TasklistEntity(final String id, final Long key, final String tenantId) {
-    this.id = id;
+    setId(id);
     this.key = key;
     this.tenantId = tenantId;
   }
@@ -71,7 +68,7 @@ public abstract class TasklistEntity<T extends TasklistEntity<T>> extends Abstra
     return (T) this;
   }
 
-  @Override
+  /*  @Override
   public String getId() {
     return id;
   }
@@ -80,11 +77,11 @@ public abstract class TasklistEntity<T extends TasklistEntity<T>> extends Abstra
   public T setId(final String id) {
     this.id = id;
     return (T) this;
-  }
+  }*/
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), id, key, tenantId, partitionId);
+    return Objects.hash(super.hashCode(), key, tenantId, partitionId);
   }
 
   @Override
@@ -100,7 +97,6 @@ public abstract class TasklistEntity<T extends TasklistEntity<T>> extends Abstra
     }
     final TasklistEntity<?> that = (TasklistEntity<?>) o;
     return Objects.equals(key, that.key)
-        && Objects.equals(id, that.id)
         && Objects.equals(partitionId, that.partitionId)
         && Objects.equals(tenantId, that.tenantId);
   }
