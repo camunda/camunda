@@ -115,7 +115,7 @@ export function NodeDateFilter({
     >
       <Modal.Header
         title={t('common.filter.modalHeader', {
-          type: t(`common.filter.types.${filterType}`),
+          type: t(`common.filter.types.${filterType}`).toString(),
         })}
       />
       <Modal.Content>

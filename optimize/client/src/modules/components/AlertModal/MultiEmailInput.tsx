@@ -50,7 +50,7 @@ export default function MultiEmailInput({emails, onChange, ...rest}: MultiEmailI
   function handlePaste(evt: ClipboardEvent) {
     const paste = (
       evt.clipboardData ||
-      // @ts-ignore
+      // @ts-expect-error this type is missing in window global types
       window.clipboardData
     ).getData('text');
     if (!paste.includes('@')) {

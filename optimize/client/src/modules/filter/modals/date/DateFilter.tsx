@@ -34,7 +34,7 @@ export default function DateFilter({
   close,
   className,
   modalTitle = t('common.filter.modalHeader', {
-    type: t(`common.filter.types.${filterType}`),
+    type: t(`common.filter.types.${filterType}`).toString(),
   }),
 }: FilterProps<'instanceStartDate' | 'instanceEndDate'>) {
   const [filterState, setFilterState] = useState<DateFilterState>(() => {

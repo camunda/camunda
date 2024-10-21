@@ -201,7 +201,7 @@ export default function SelectionFilter({filter, type, config, setFilter, report
                             removeValue(value);
                           }
                           setCustomValues(
-                            customValues.filter((customValue, idxToRemove) => idx !== idxToRemove)
+                            customValues.filter((_customValue, idxToRemove) => idx !== idxToRemove)
                           );
                         }}
                       />

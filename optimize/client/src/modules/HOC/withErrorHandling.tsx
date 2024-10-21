@@ -10,18 +10,18 @@ import {ComponentType} from 'react';
 
 import {useErrorHandling} from 'hooks';
 
-export interface WithErrorHandlingProps<D = any> {
-  mightFail: <T = D, R = unknown>(
+export interface WithErrorHandlingProps<Error = unknown> {
+  mightFail: <T = unknown, R = unknown, E extends Error = Error>(
     retriever: Promise<T>,
     successHandler: (response: T) => R,
-    errorHandler?: ((error: any) => void) | undefined,
+    errorHandler?: ((error: E) => void) | undefined,
     finallyHandler?: () => void
   ) => Promise<R | undefined>;
-  error?: any;
+  error?: Error;
   resetError?: () => void;
 }
 
-export default function withErrorHandling<P extends object, T = any>(
+export default function withErrorHandling<P extends object, T = unknown>(
   Component: ComponentType<P>
 ): ComponentType<Omit<P, keyof WithErrorHandlingProps<T>>> {
   const Wrapper = (props: Omit<P, keyof WithErrorHandlingProps<T>>) => {

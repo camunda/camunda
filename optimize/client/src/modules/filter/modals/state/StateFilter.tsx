@@ -38,8 +38,9 @@ export default function StateFilter({
 
   function createFilter() {
     const type = options?.mappings[selectedOption]?.key;
-    type &&
+    if (type) {
       addFilter({type, appliedTo: applyTo.map(({identifier}) => identifier), data: undefined});
+    }
   }
 
   const isFilterValid = typeof selectedOption !== 'undefined' && applyTo.length > 0;

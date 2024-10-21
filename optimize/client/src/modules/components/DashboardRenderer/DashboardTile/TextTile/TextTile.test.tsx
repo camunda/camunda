@@ -92,7 +92,7 @@ it('should include an editor with rendered content', () => {
 it('should update the key to reload it when loadTileData function is called', async () => {
   const node = shallow(<TextTile {...props} children={(props) => <p {...props}>child</p>} />);
 
-  node.find('p').prop<Function>('loadTileData')();
+  node.find('p').prop<jest.Mock>('loadTileData')();
 
   expect(node.find('TextEditor').key()).toBe('1');
 });
@@ -139,7 +139,7 @@ it('should close modal when modal invokes onClose', () => {
   );
 
   node.find('.EditTile').simulate('click');
-  node.find('TextTileEditModal').prop<Function>('onClose')();
+  node.find('TextTileEditModal').prop<jest.Mock>('onClose')();
 
   expect(node.find('TextTileEditModal')).not.toExist();
 });
@@ -163,7 +163,7 @@ it('should invoke onTileUpdate when modal is saved', () => {
 
   node.find('.EditTile').simulate('click');
 
-  node.find('TextTileEditModal').prop<Function>('onConfirm')('newText');
+  node.find('TextTileEditModal').prop<jest.Mock>('onConfirm')('newText');
 
   expect(spy).toHaveBeenCalledWith({...tile, configuration: {text: 'newText'}});
 });

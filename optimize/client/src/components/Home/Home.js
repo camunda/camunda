@@ -250,7 +250,7 @@ export function Home({mightFail, user}) {
         />
         <Copier
           entity={copying}
-          onCopy={(name, redirect) => {
+          onCopy={(_name, redirect) => {
             setCopying(null);
             if (!redirect) {
               loadList();

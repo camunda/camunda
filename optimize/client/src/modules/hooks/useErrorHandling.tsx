@@ -8,14 +8,18 @@
 
 import {useCallback, useEffect, useRef, useState} from 'react';
 
-export default function useErrorHandling<D = any>() {
-  const [error, setError] = useState<any>(undefined);
+export default function useErrorHandling<Error = unknown>() {
+  const [error, setError] = useState<Error | undefined>(undefined);
   const mounted = useRef<boolean>();
 
-  const mightFail = useCallback(async function callback<T = D, R = unknown>(
+  const mightFail = useCallback(async function callback<
+    T = unknown,
+    R = unknown,
+    E extends Error = Error,
+  >(
     retriever: Promise<T>,
     successHandler: (response: T) => R,
-    errorHandler?: ((error: any) => void) | undefined,
+    errorHandler?: ((error: E) => void) | undefined,
     finallyHandler?: () => void
   ): Promise<R | undefined> {
     try {
@@ -25,8 +29,8 @@ export default function useErrorHandling<D = any>() {
       }
     } catch (error) {
       if (mounted.current) {
-        errorHandler?.(error);
-        setError(error);
+        errorHandler?.(error as E);
+        setError(error as E);
       }
     } finally {
       finallyHandler?.();

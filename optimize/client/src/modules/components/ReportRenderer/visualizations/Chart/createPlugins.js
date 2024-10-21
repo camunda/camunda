@@ -36,7 +36,7 @@ export default function createPlugins({updateReport, report: {hyper, data, resul
       endDate: 'instanceEndDate',
     };
 
-    !!dataPoints.length &&
+    if (dataPoints.length) {
       plugins.push(
         zoomIn({
           updateReport,
@@ -48,6 +48,7 @@ export default function createPlugins({updateReport, report: {hyper, data, resul
           },
         })
       );
+    }
   }
 
   return plugins;

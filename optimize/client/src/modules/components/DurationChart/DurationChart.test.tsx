@@ -61,9 +61,10 @@ it('should format tooltip durations', () => {
   runAllEffects();
 
   const durationInMs = 1020;
-  const chartConfiguration = ChartMock.mock.calls[0]?.[1] as any;
+  const chartConfiguration = ChartMock.mock.calls[0]?.[1] as ChartConfiguration;
 
   expect(
+    // @ts-expect-error too complex to type
     chartConfiguration.options.plugins.tooltip.callbacks.label({
       label: durationInMs,
       dataset: {data: [1]},
@@ -81,6 +82,6 @@ it('should use logaritmic scale for large values', () => {
 
   runAllEffects();
 
-  const chartConfiguration = ChartMock.mock.calls[0]?.[1] as any;
-  expect(chartConfiguration.options.scales.y.type).toBe('logarithmic');
+  const chartConfiguration = ChartMock.mock.calls[0]?.[1] as ChartConfiguration;
+  expect(chartConfiguration.options?.scales?.y?.type).toBe('logarithmic');
 });

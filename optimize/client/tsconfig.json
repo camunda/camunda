@@ -17,7 +17,7 @@
     "baseUrl": "src",
     "useDefineForClassFields": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true,
+    "noUncheckedIndexedAccess": true
   },
   "include": ["./src", "./vite.config.ts"]
 }

@@ -81,7 +81,7 @@ export class NodeDuration extends Component<
   }
 
   async componentDidUpdate(
-    prevProps: FilterProps<'flowNodeDuration'>,
+    _prevProps: FilterProps<'flowNodeDuration'>,
     prevState: NodeDurationState
   ) {
     if (prevState.applyTo && prevState.applyTo !== this.state.applyTo) {
