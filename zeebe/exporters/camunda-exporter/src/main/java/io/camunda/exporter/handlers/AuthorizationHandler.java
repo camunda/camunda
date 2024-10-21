@@ -18,8 +18,13 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.Permissio
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class AuthorizationRecordValueExportHandler
+public class AuthorizationHandler
     implements ExportHandler<AuthorizationEntity, AuthorizationRecordValue> {
+  private final String indexName;
+
+  public AuthorizationHandler(final String indexName) {
+    this.indexName = indexName;
+  }
 
   @Override
   public ValueType getHandledValueType() {
@@ -60,11 +65,7 @@ public class AuthorizationRecordValueExportHandler
   @Override
   public void flush(final AuthorizationEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.add(getIndexName(), entity);
-  }
-
-  private String getIndexName() {
-    return "authorizations";
+    batchRequest.add(indexName, entity);
   }
 
   private List<Permission> getPermissions(final List<PermissionValue> permissionValues) {
