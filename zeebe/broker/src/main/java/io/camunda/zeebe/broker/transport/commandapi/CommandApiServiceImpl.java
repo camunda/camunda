@@ -8,7 +8,6 @@
 package io.camunda.zeebe.broker.transport.commandapi;
 
 import io.camunda.zeebe.broker.Loggers;
-import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.system.configuration.QueryApiCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
@@ -16,7 +15,6 @@ import io.camunda.zeebe.broker.transport.backpressure.RequestLimiter;
 import io.camunda.zeebe.broker.transport.queryapi.QueryApiRequestHandler;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
-import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.Actor;
@@ -31,7 +29,7 @@ import java.util.function.Consumer;
 import org.agrona.collections.IntHashSet;
 
 public final class CommandApiServiceImpl extends Actor
-    implements PartitionListener, DiskSpaceUsageListener, CommandApiService {
+    implements DiskSpaceUsageListener, CommandApiService {
 
   private final PartitionAwareRequestLimiter limiter;
   private final ServerTransport serverTransport;
@@ -42,7 +40,6 @@ public final class CommandApiServiceImpl extends Actor
 
   public CommandApiServiceImpl(
       final ServerTransport serverTransport,
-      final BrokerInfo localBroker,
       final PartitionAwareRequestLimiter limiter,
       final ActorSchedulingService scheduler,
       final QueryApiCfg queryApiCfg) {
@@ -67,7 +64,7 @@ public final class CommandApiServiceImpl extends Actor
   @Override
   protected void onActorClosing() {
     for (final Integer leadPartition : leadPartitions) {
-      removeLeaderHandlers(leadPartition);
+      unregisterHandlers(leadPartition);
     }
     leadPartitions.clear();
     actor.runOnCompletion(
@@ -87,16 +84,23 @@ public final class CommandApiServiceImpl extends Actor
   }
 
   @Override
-  public ActorFuture<Void> onBecomingFollower(final int partitionId, final long term) {
-    return removeLeaderHandlersAsync(partitionId);
+  public CommandResponseWriter newCommandResponseWriter() {
+    return new CommandResponseWriterImpl(serverTransport);
   }
 
   @Override
-  public ActorFuture<Void> onBecomingLeader(
-      final int partitionId,
-      final long term,
-      final LogStream logStream,
-      final QueryService queryService) {
+  public Consumer<TypedRecord<?>> getOnProcessedListener(final int partitionId) {
+    final RequestLimiter<Intent> partitionLimiter = limiter.getLimiter(partitionId);
+    return typedRecord -> {
+      if (typedRecord.getRecordType() == RecordType.COMMAND && typedRecord.hasRequestMetadata()) {
+        partitionLimiter.onResponse(typedRecord.getRequestStreamId(), typedRecord.getRequestId());
+      }
+    };
+  }
+
+  @Override
+  public ActorFuture<Void> registerHandlers(
+      final int partitionId, final LogStream logStream, final QueryService queryService) {
     final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
     actor.call(
         () -> {
@@ -128,44 +132,15 @@ public final class CommandApiServiceImpl extends Actor
   }
 
   @Override
-  public ActorFuture<Void> onBecomingInactive(final int partitionId, final long term) {
-    return removeLeaderHandlersAsync(partitionId);
-  }
-
-  private ActorFuture<Void> removeLeaderHandlersAsync(final int partitionId) {
-    return actor.call(() -> removeLeaderHandlers(partitionId));
-  }
-
-  private void removeLeaderHandlers(final int partitionId) {
-    commandHandler.removePartition(partitionId);
-    queryHandler.removePartition(partitionId);
-    cleanLeadingPartition(partitionId);
-  }
-
-  private void cleanLeadingPartition(final int partitionId) {
-    leadPartitions.remove(partitionId);
-    removeForPartitionId(partitionId);
-  }
-
-  private void removeForPartitionId(final int partitionId) {
-    limiter.removePartition(partitionId);
-    serverTransport.unsubscribe(partitionId, RequestType.COMMAND);
-    serverTransport.unsubscribe(partitionId, RequestType.QUERY);
-  }
-
-  @Override
-  public CommandResponseWriter newCommandResponseWriter() {
-    return new CommandResponseWriterImpl(serverTransport);
-  }
-
-  @Override
-  public Consumer<TypedRecord<?>> getOnProcessedListener(final int partitionId) {
-    final RequestLimiter<Intent> partitionLimiter = limiter.getLimiter(partitionId);
-    return typedRecord -> {
-      if (typedRecord.getRecordType() == RecordType.COMMAND && typedRecord.hasRequestMetadata()) {
-        partitionLimiter.onResponse(typedRecord.getRequestStreamId(), typedRecord.getRequestId());
-      }
-    };
+  public ActorFuture<Void> unregisterHandlers(final int partitionId) {
+    return actor.call(
+        () -> {
+          commandHandler.removePartition(partitionId);
+          queryHandler.removePartition(partitionId);
+          leadPartitions.remove(partitionId);
+          serverTransport.unsubscribe(partitionId, RequestType.COMMAND);
+          serverTransport.unsubscribe(partitionId, RequestType.QUERY);
+        });
   }
 
   @Override

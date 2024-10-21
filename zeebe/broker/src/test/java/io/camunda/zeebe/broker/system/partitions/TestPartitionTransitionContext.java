@@ -26,6 +26,7 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
+import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderService;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -342,6 +343,11 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
 
   @Override
   public Consumer<TypedRecord<?>> getOnProcessedListener() {
+    return null;
+  }
+
+  @Override
+  public CommandApiService getCommandApiService() {
     return null;
   }
 
