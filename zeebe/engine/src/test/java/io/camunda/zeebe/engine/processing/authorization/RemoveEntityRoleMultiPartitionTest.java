@@ -26,7 +26,6 @@ import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -34,13 +33,13 @@ import org.junit.rules.TestWatcher;
 public class RemoveEntityRoleMultiPartitionTest {
 
   private static final int PARTITION_COUNT = 3;
-  private static long userKey;
   @Rule public final EngineRule engine = EngineRule.multiplePartition(PARTITION_COUNT);
   @Rule public final TestWatcher testWatcher = new RecordingExporterTestWatcher();
 
-  @Before
-  public void setUp() {
-    userKey =
+  @Test
+  public void shouldDistributeRoleRemoveEntityCommand() {
+    // when
+    final var userKey =
         engine
             .user()
             .newUser("foo")
@@ -49,11 +48,6 @@ public class RemoveEntityRoleMultiPartitionTest {
             .withPassword("zabraboof")
             .create()
             .getKey();
-  }
-
-  @Test
-  public void shouldDistributeRoleRemoveEntityCommand() {
-    // when
     final var name = UUID.randomUUID().toString();
     final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
     engine.role().addEntity(roleKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
@@ -107,6 +101,15 @@ public class RemoveEntityRoleMultiPartitionTest {
   @Test
   public void shouldDistributeInIdentityQueue() {
     // when
+    final var userKey =
+        engine
+            .user()
+            .newUser("foo")
+            .withEmail("foo@bar")
+            .withName("Foo Bar")
+            .withPassword("zabraboof")
+            .create()
+            .getKey();
     final var name = UUID.randomUUID().toString();
     final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
     engine.role().addEntity(roleKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
@@ -129,6 +132,15 @@ public class RemoveEntityRoleMultiPartitionTest {
   @Test
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // given the user creation distribution is intercepted
+    final var userKey =
+        engine
+            .user()
+            .newUser("foo")
+            .withEmail("foo@bar")
+            .withName("Foo Bar")
+            .withPassword("zabraboof")
+            .create()
+            .getKey();
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
       interceptUserCreateForPartition(partitionId);
     }
