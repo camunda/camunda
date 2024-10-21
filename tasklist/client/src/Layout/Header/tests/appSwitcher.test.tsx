@@ -13,10 +13,25 @@ import {Header} from '..';
 import {getWrapper} from './mocks';
 import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
+import * as licenseMocks from 'modules/mock-schema/mocks/license';
 
 describe('App switcher', () => {
   afterEach(() => {
     window.clientConfig = DEFAULT_MOCK_CLIENT_CONFIG;
+  });
+
+  beforeEach(() => {
+    nodeMockServer.use(
+      http.get(
+        '/v2/license',
+        () => {
+          return HttpResponse.json(licenseMocks.saasLicense);
+        },
+        {
+          once: true,
+        },
+      ),
+    );
   });
 
   it('should not render links for CCSM', async () => {
