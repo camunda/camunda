@@ -117,6 +117,12 @@
       },
       "isTruncated": {
         "type": "boolean"
+      },
+      "action": {
+        "type": "keyword"
+      },
+      "changedAttributes": {
+        "type": "keyword"
       }
     }
   }
