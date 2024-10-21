@@ -7,17 +7,18 @@
  */
 package io.camunda.operate.data;
 
-import static io.camunda.operate.util.ThreadUtil.sleepFor;
+import static io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex.ID;
 import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_TENANT_ID;
 
 import io.camunda.operate.data.usertest.UserTestDataGenerator;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.store.ZeebeStore;
+import io.camunda.operate.store.ProcessStore;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.worker.JobWorker;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.time.Duration;
+import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
@@ -41,7 +42,7 @@ public abstract class AbstractDataGenerator implements DataGenerator {
   protected boolean manuallyCalled = false;
   protected ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(3);
   private boolean shutdown = false;
-  @Autowired private ZeebeStore zeebeStore;
+  @Autowired private ProcessStore processStore;
 
   @PostConstruct
   private void startDataGenerator() {
@@ -87,7 +88,8 @@ public abstract class AbstractDataGenerator implements DataGenerator {
                   String.format(
                       "Error occurred when creating demo data: %s. Retrying...", ex.getMessage()),
                   ex);
-              sleepFor(2000);
+              //              sleepFor(2000);
+              throw ex;
             }
           }
         });
@@ -105,9 +107,8 @@ public abstract class AbstractDataGenerator implements DataGenerator {
 
   public boolean shouldCreateData(final boolean manuallyCalled) {
     if (!manuallyCalled) { // when called manually, always create the data
-      final boolean exists =
-          zeebeStore.zeebeIndicesExists(
-              operateProperties.getZeebeElasticsearch().getPrefix() + "*");
+      final Optional<Long> processCount = processStore.getDistinctCountFor(ID);
+      final boolean exists = processCount.isPresent() && processCount.get() > 0L;
       if (exists) {
         // data already exists
         LOGGER.debug("Data already exists in Zeebe.");

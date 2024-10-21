@@ -41,9 +41,13 @@ import org.springframework.stereotype.Component;
 /**
  * Migrates an operate schema from one version to another. Requires an already created destination
  * schema provided by a schema manager. Tries to detect source/previous schema if not provided.
+ *
+ * @deprecated Old-style migration that is not supported anymore. Moreover, schema manager is
+ *     happening in Zeebe exporter now.
  */
 @Component
 @Configuration
+@Deprecated
 public class Migrator {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(Migrator.class);

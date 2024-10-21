@@ -41,21 +41,21 @@ public class MigrationRunner {
 
   @PostConstruct
   private void init() {
-    initTestFixtureMap();
-    selectAndRunTestFixtures();
-    runMigration();
+    //    initTestFixtureMap();
+    //    selectAndRunTestFixtures();
+    //    runMigration();
   }
 
   private void initTestFixtureMap() {
     testFixtureMap = new HashMap<>();
-    for (TestFixture testFixture : testFixtures) {
+    for (final TestFixture testFixture : testFixtures) {
       testFixtureMap.put(testFixture.getVersion(), testFixture);
     }
   }
 
   private void selectAndRunTestFixtures() {
     LOGGER.info("Upgrade path under test: {}", upgradePath);
-    for (String version : upgradePath) {
+    for (final String version : upgradePath) {
       final TestFixture testFixture = testFixtureMap.get(version);
       if (testFixture == null) {
         throw new RuntimeException("No test fixture found for version " + version);
@@ -74,7 +74,7 @@ public class MigrationRunner {
       args[2] = "--camunda.operate.zeebeelasticsearch.host=" + testContext.getExternalElsHost();
       args[3] = "--camunda.operate.zeebeelasticsearch.port=" + testContext.getExternalElsPort();
       SchemaMigration.main(args);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new RuntimeException(e);
     }
   }

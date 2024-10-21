@@ -19,6 +19,8 @@ import io.camunda.operate.property.OperateOpensearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.IndexMapping;
 import io.camunda.operate.schema.IndexMapping.IndexMappingProperty;
+import io.camunda.operate.schema.OperateManagedIndex;
+import io.camunda.operate.schema.OperateManagedTemplate;
 import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.LambdaExceptionUtil;
@@ -70,16 +72,16 @@ public class OpensearchSchemaManager implements SchemaManager {
   private final ObjectMapper objectMapper;
   private final JsonbJsonpMapper jsonpMapper = new JsonbJsonpMapper();
 
-  private final List<IndexTemplateDescriptor> templateDescriptors;
+  private final List<OperateManagedTemplate> templateDescriptors;
 
-  private final List<IndexDescriptor> indexDescriptors;
+  private final List<OperateManagedIndex> indexDescriptors;
 
   @Autowired
   public OpensearchSchemaManager(
       final OperateProperties operateProperties,
       final RichOpenSearchClient richOpenSearchClient,
-      final List<IndexTemplateDescriptor> templateDescriptors,
-      final List<IndexDescriptor> indexDescriptors,
+      final List<OperateManagedTemplate> templateDescriptors,
+      final List<OperateManagedIndex> indexDescriptors,
       @Qualifier("operateObjectMapper") final ObjectMapper objectMapper) {
     super();
     this.operateProperties = operateProperties;
@@ -263,6 +265,10 @@ public class OpensearchSchemaManager implements SchemaManager {
     return richOpenSearchClient.index().getIndexMappings(indexNamePattern);
   }
 
+  /**
+   * @deprecated schema manager is happening in Zeebe exporter now
+   */
+  @Deprecated
   @Override
   public void updateSchema(final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields) {
     for (final Map.Entry<IndexDescriptor, Set<IndexMappingProperty>> indexNewFields :
@@ -396,8 +402,9 @@ public class OpensearchSchemaManager implements SchemaManager {
     return null;
   }
 
-  private void createTemplate(final IndexTemplateDescriptor templateDescriptor) {
+  private void createTemplate(final OperateManagedTemplate template) {
 
+    final IndexTemplateDescriptor templateDescriptor = (IndexTemplateDescriptor) template;
     final String json = readTemplateJson(templateDescriptor.getSchemaClasspathFilename());
 
     final PutIndexTemplateRequest indexTemplateRequest =
@@ -482,7 +489,8 @@ public class OpensearchSchemaManager implements SchemaManager {
     }
   }
 
-  private void createIndex(final IndexDescriptor indexDescriptor) {
+  private void createIndex(final OperateManagedIndex index) {
+    final IndexDescriptor indexDescriptor = (IndexDescriptor) index;
     createIndex(indexDescriptor, indexDescriptor.getSchemaClasspathFilename());
   }
 
