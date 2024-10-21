@@ -17,7 +17,6 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
-import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -25,7 +24,6 @@ import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -34,7 +32,7 @@ public class UpdateTenantMultiPartitionTest {
 
   private static final int PARTITION_COUNT = 3;
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.multiplePartition(PARTITION_COUNT);
+  @Rule public final EngineRule engine = EngineRule.multiplePartition(PARTITION_COUNT);
 
   @Rule public final TestWatcher testWatcher = new RecordingExporterTestWatcher();
 
@@ -43,7 +41,7 @@ public class UpdateTenantMultiPartitionTest {
     // when
     final var tenantId = UUID.randomUUID().toString();
     final var tenantKey =
-        ENGINE
+        engine
             .tenant()
             .newTenant()
             .withTenantId(tenantId)
@@ -51,7 +49,7 @@ public class UpdateTenantMultiPartitionTest {
             .create()
             .getValue()
             .getTenantKey();
-    ENGINE
+    engine
         .tenant()
         .updateTenant(tenantKey)
         .withTenantId(tenantId + "-updated")
@@ -106,8 +104,8 @@ public class UpdateTenantMultiPartitionTest {
     // when
     final var tenantId = UUID.randomUUID().toString();
     final var tenantRecord =
-        ENGINE.tenant().newTenant().withTenantId(tenantId).withName("Tenant 1").create();
-    ENGINE
+        engine.tenant().newTenant().withTenantId(tenantId).withName("Tenant 1").create();
+    engine
         .tenant()
         .updateTenant(tenantRecord.getKey())
         .withTenantId(tenantId + "-updated")
@@ -125,48 +123,37 @@ public class UpdateTenantMultiPartitionTest {
 
   @Test
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
-    // given the user creation distribution is intercepted
-    ENGINE
-        .user()
-        .newUser(UUID.randomUUID().toString())
-        .withName("Foo Bar")
-        .withPassword("baz")
-        .withEmail("foobar@baz.com")
-        .create();
-
-    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
-      interceptUserCreateForPartition(partitionId);
-    }
-
     // when
     final var tenantId = UUID.randomUUID().toString();
     final var tenantKey =
-        ENGINE.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
-    ENGINE.tenant().updateTenant(tenantKey).withTenantId(tenantId + "-updated").update();
+        engine.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
+    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
+      interceptTenantCreateForPartition(partitionId);
+    }
+    engine.tenant().updateTenant(tenantKey).withTenantId(tenantId + "-updated").update();
 
     // Increase time to trigger a redistribution
-    ENGINE.increaseTime(Duration.ofMinutes(1));
+    engine.increaseTime(Duration.ofMinutes(1));
 
     // then
     assertThat(
             RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
-                .limit(3))
+                .limit(2))
         .extracting(r -> r.getValue().getValueType(), r -> r.getValue().getIntent())
         .containsExactly(
-            tuple(ValueType.USER, UserIntent.CREATE),
             tuple(ValueType.TENANT, TenantIntent.CREATE),
             tuple(ValueType.TENANT, TenantIntent.UPDATE));
   }
 
-  private void interceptUserCreateForPartition(final int partitionId) {
+  private void interceptTenantCreateForPartition(final int partitionId) {
     final var hasInterceptedPartition = new AtomicBoolean(false);
-    ENGINE.interceptInterPartitionCommands(
+    engine.interceptInterPartitionCommands(
         (receiverPartitionId, valueType, intent, recordKey, command) -> {
           if (hasInterceptedPartition.get()) {
             return true;
           }
           hasInterceptedPartition.set(true);
-          return !(receiverPartitionId == partitionId && intent == UserIntent.CREATE);
+          return !(receiverPartitionId == partitionId && intent == TenantIntent.CREATE);
         });
   }
 }

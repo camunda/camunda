@@ -25,7 +25,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -33,7 +32,7 @@ import org.junit.rules.TestWatcher;
 public class DeleteUserMultiPartitionTest {
   private static final int PARTITION_COUNT = 3;
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.multiplePartition(PARTITION_COUNT);
+  @Rule public final EngineRule engine = EngineRule.multiplePartition(PARTITION_COUNT);
 
   @Rule public final TestWatcher testWatcher = new RecordingExporterTestWatcher();
 
@@ -42,7 +41,7 @@ public class DeleteUserMultiPartitionTest {
     final var username = UUID.randomUUID().toString();
 
     final var userRecord =
-        ENGINE
+        engine
             .user()
             .newUser(username)
             .withName("Foo Bar")
@@ -50,7 +49,7 @@ public class DeleteUserMultiPartitionTest {
             .withPassword("password")
             .create();
 
-    ENGINE
+    engine
         .user()
         .deleteUser(userRecord.getKey())
         .withUsername(username)
@@ -108,7 +107,7 @@ public class DeleteUserMultiPartitionTest {
     final var username = UUID.randomUUID().toString();
     // when
     final var userRecord =
-        ENGINE
+        engine
             .user()
             .newUser(username)
             .withName("Foo Bar")
@@ -116,7 +115,7 @@ public class DeleteUserMultiPartitionTest {
             .withPassword("password")
             .create();
 
-    ENGINE
+    engine
         .user()
         .deleteUser(userRecord.getKey())
         .withUsername(username)
@@ -137,7 +136,7 @@ public class DeleteUserMultiPartitionTest {
   @Test
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     final var userRecord =
-        ENGINE
+        engine
             .user()
             .newUser("foobar")
             .withName("Foo Bar")
@@ -151,7 +150,7 @@ public class DeleteUserMultiPartitionTest {
     }
 
     // when
-    ENGINE
+    engine
         .user()
         .deleteUser(userRecord.getKey())
         .withUsername("foobar")
@@ -161,7 +160,7 @@ public class DeleteUserMultiPartitionTest {
         .delete();
 
     // Increase time to trigger a redistribution
-    ENGINE.increaseTime(Duration.ofMinutes(1));
+    engine.increaseTime(Duration.ofMinutes(1));
 
     // then
     assertThat(
@@ -175,7 +174,7 @@ public class DeleteUserMultiPartitionTest {
 
   private void interceptUserCreateForPartition(final int partitionId) {
     final var hasInterceptedPartition = new AtomicBoolean(false);
-    ENGINE.interceptInterPartitionCommands(
+    engine.interceptInterPartitionCommands(
         (receiverPartitionId, valueType, intent, recordKey, command) -> {
           if (hasInterceptedPartition.get()) {
             return true;
