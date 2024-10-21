@@ -140,7 +140,7 @@ test.describe.serial('Process Instance Migration', () => {
     await processesPage.migrationModal.confirmButton.click();
 
     // Expect auto mapping for each flow node
-    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(22);
+    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(29);
 
     await expect(
       page.getByLabel(/target flow node for check payment/i),
@@ -176,10 +176,10 @@ test.describe.serial('Process Instance Migration', () => {
       page.getByLabel(/target flow node for timer non-interrupting/i),
     ).toHaveValue('TimerNonInterrupting');
     await expect(
-      page.getByLabel(/target flow node for message intermediate catch/i),
+      page.getByLabel(/target flow node for message intermediate catch$/i),
     ).toHaveValue('MessageIntermediateCatch');
     await expect(
-      page.getByLabel(/target flow node for timer intermediate catch/i),
+      page.getByLabel(/target flow node for timer intermediate catch$/i),
     ).toHaveValue('TimerIntermediateCatch');
     await expect(
       page.getByLabel(/target flow node for message event sub process/i),
@@ -418,6 +418,14 @@ test.describe.serial('Process Instance Migration', () => {
       sourceFlowNodeName: 'Timer intermediate catch',
       targetFlowNodeName: 'Timer intermediate catch 2',
     });
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Message intermediate catch B',
+      targetFlowNodeName: 'Message intermediate catch B2',
+    });
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Timer intermediate catch B',
+      targetFlowNodeName: 'Timer intermediate catch B2',
+    });
 
     /**
      * Map event sub processes with containing tasks
@@ -461,6 +469,18 @@ test.describe.serial('Process Instance Migration', () => {
     await migrationView.mapFlowNode({
       sourceFlowNodeName: 'Send Task',
       targetFlowNodeName: 'Send Task 2',
+    });
+
+    /**
+     * Map gateways
+     */
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Event based gateway',
+      targetFlowNodeName: 'Event based gateway 2',
+    });
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Exclusive gateway',
+      targetFlowNodeName: 'Exclusive gateway 2',
     });
 
     await migrationView.nextButton.click();
@@ -694,7 +714,7 @@ test.describe.serial('Process Instance Migration', () => {
     /**
      * Expect that the correlation key has been updated if source and target message event have the same message id
      */
-    await processInstancePage.diagram.clickEvent('Message intermediate catch');
+    await processInstancePage.diagram.clickEvent('Message intermediate catch2');
     await processInstancePage.diagram.showMetaData();
     await expect(
       processInstancePage.metadataModal.getByText(
@@ -710,6 +730,58 @@ test.describe.serial('Process Instance Migration', () => {
     await processInstancePage.metadataModal
       .getByRole('button', {name: /close/i})
       .click();
+  });
+
+  test('Migrated gateways', async ({
+    processesPage,
+    processInstancePage,
+    page,
+  }) => {
+    const {processV3} = initialData;
+
+    await processesPage.navigateToProcesses({
+      searchParams: {
+        active: 'true',
+        incidents: 'true',
+        process: processV3.bpmnProcessId,
+
+        version: processV3.version.toString(),
+      },
+    });
+
+    await processesPage.getNthProcessInstanceLink(0).click();
+
+    await processInstancePage.diagram.resetDiagramZoomButton.click();
+
+    /**
+     * Expect that the correlation key on the event based gateway has been updated
+     */
+    await processInstancePage.diagram.clickGateway('Event based gateway 2');
+    await processInstancePage.diagram.showMetaData();
+    await expect(
+      processInstancePage.metadataModal.getByText(
+        '"correlationKey": "myFirstCorrelationKey"',
+      ),
+    ).toBeVisible();
+    await expect(
+      processInstancePage.metadataModal.getByText(
+        '"messageName": "Message_3",',
+      ),
+    ).toBeVisible();
+    await page.waitForTimeout(500); // wait until metadata modal is fully rendered
+    await processInstancePage.metadataModal
+      .getByRole('button', {name: /close/i})
+      .click();
+
+    /**
+     * Expect that the incident on exclusive gateway has been migrated
+     */
+    await processInstancePage.diagram.clickGateway('Exclusive gateway 2');
+    await expect(
+      processInstancePage.diagram.popover.getByRole('heading', {
+        name: 'Incident',
+      }),
+    ).toBeVisible();
   });
 
   test('Migrated date tag', async ({processesPage, processInstancePage}) => {
