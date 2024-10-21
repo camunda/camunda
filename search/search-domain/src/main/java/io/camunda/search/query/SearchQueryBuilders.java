@@ -105,6 +105,15 @@ public final class SearchQueryBuilders {
     return fn.apply(userSearchQuery()).build();
   }
 
+  public static RoleQuery.Builder roleSearchQuery() {
+    return new RoleQuery.Builder();
+  }
+
+  public static RoleQuery roleSearchQuery(
+      final Function<RoleQuery.Builder, ObjectBuilder<RoleQuery>> fn) {
+    return fn.apply(roleSearchQuery()).build();
+  }
+
   public static AuthorizationQuery.Builder authorizationSearchQuery() {
     return new AuthorizationQuery.Builder();
   }

@@ -18,6 +18,7 @@ import io.camunda.search.clients.FormSearchClient;
 import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
+import io.camunda.search.clients.RoleSearchClient;
 import io.camunda.search.clients.SearchClients;
 import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.clients.UserTaskSearchClient;
@@ -37,6 +38,7 @@ import io.camunda.service.MessageServices;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ResourceServices;
+import io.camunda.service.RoleServices;
 import io.camunda.service.SignalServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserTaskServices;
@@ -125,6 +127,12 @@ public class CamundaServicesConfiguration {
       final ServiceSecurityProperties securityConfiguration,
       final IncidentSearchClient incidentSearchClient) {
     return new IncidentServices(brokerClient, securityConfiguration, incidentSearchClient, null);
+  }
+
+  @Bean
+  public RoleServices roleServices(
+      final BrokerClient brokerClient, final RoleSearchClient roleSearchClient) {
+    return new RoleServices(brokerClient, roleSearchClient, null);
   }
 
   @Bean
