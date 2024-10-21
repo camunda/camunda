@@ -33,7 +33,11 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
+import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.ActivePartitions;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.Mixed;
 import io.camunda.zeebe.management.cluster.BrokerState;
 import io.camunda.zeebe.management.cluster.BrokerStateCode;
 import io.camunda.zeebe.management.cluster.Error;
@@ -42,6 +46,7 @@ import io.camunda.zeebe.management.cluster.ExporterStateCode;
 import io.camunda.zeebe.management.cluster.ExporterStatus;
 import io.camunda.zeebe.management.cluster.ExportingConfig;
 import io.camunda.zeebe.management.cluster.GetTopologyResponse;
+import io.camunda.zeebe.management.cluster.MessageCorrelation;
 import io.camunda.zeebe.management.cluster.MessageCorrelationHashMod;
 import io.camunda.zeebe.management.cluster.Operation;
 import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
@@ -49,6 +54,10 @@ import io.camunda.zeebe.management.cluster.PartitionConfig;
 import io.camunda.zeebe.management.cluster.PartitionState;
 import io.camunda.zeebe.management.cluster.PartitionStateCode;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
+import io.camunda.zeebe.management.cluster.RequestHandling;
+import io.camunda.zeebe.management.cluster.RequestHandlingActivePartitions;
+import io.camunda.zeebe.management.cluster.RequestHandlingAllPartitions;
+import io.camunda.zeebe.management.cluster.RequestHandlingMixed;
 import io.camunda.zeebe.management.cluster.TopologyChange;
 import io.camunda.zeebe.management.cluster.TopologyChange.StatusEnum;
 import io.camunda.zeebe.management.cluster.TopologyChangeCompletedInner;
@@ -57,6 +66,7 @@ import java.net.ConnectException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -180,7 +190,7 @@ final class ClusterApiUtils {
                   partitionForceReconfigureOperation.members().stream()
                       .map(MemberId::id)
                       .map(Integer::parseInt)
-                      .collect(Collectors.toList()));
+                      .collect(toList()));
       case final MemberRemoveOperation memberRemoveOperation ->
           new Operation()
               .operation(OperationEnum.BROKER_REMOVE)
@@ -291,16 +301,32 @@ final class ClusterApiUtils {
   }
 
   private static io.camunda.zeebe.management.cluster.RoutingState mapRoutingState(
-      final io.camunda.zeebe.dynamic.config.state.RoutingState routingState) {
+      final RoutingState routingState) {
     return new io.camunda.zeebe.management.cluster.RoutingState()
         .version(routingState.version())
-        .activePartitions(routingState.activePartitions().stream().toList())
+        .requestHandling(mapRequestHanding(routingState.requestHandling()))
         .messageCorrelation(mapMessageCorrelation(routingState.messageCorrelation()));
   }
 
-  private static io.camunda.zeebe.management.cluster.MessageCorrelation mapMessageCorrelation(
-      final io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation
-          messageCorrelation) {
+  private static RequestHandling mapRequestHanding(
+      final RoutingState.RequestHandling requestHandling) {
+    return switch (requestHandling) {
+      case ActivePartitions(final var activePartitions, final var inactivePartitions) ->
+          new RequestHandlingActivePartitions(
+              new ArrayList<>(activePartitions), new ArrayList<>(inactivePartitions));
+      case AllPartitions(final var partitionCount) ->
+          new RequestHandlingAllPartitions(partitionCount);
+      case Mixed(final var base, final var additional) ->
+          new RequestHandlingMixed(
+              new RequestHandlingAllPartitions(base.partitionCount()),
+              new RequestHandlingActivePartitions(
+                  new ArrayList<>(additional.activePartitions()),
+                  new ArrayList<>(additional.inactivePartitions())));
+    };
+  }
+
+  private static MessageCorrelation mapMessageCorrelation(
+      final RoutingState.MessageCorrelation messageCorrelation) {
     return switch (messageCorrelation) {
       case HashMod(final var partitionCount) ->
           new MessageCorrelationHashMod().partitionCount(partitionCount);
