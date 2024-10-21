@@ -354,9 +354,49 @@ public class UserTaskHandlerTest {
     underTest.flush(taskEntity, mockRequest);
     final Map<String, Object> expectedUpdates = new HashMap<>();
     expectedUpdates.put(TaskTemplate.ASSIGNEE, taskEntity.getAssignee());
+    expectedUpdates.put(TaskTemplate.CHANGED_ATTRIBUTES, List.of("assignee"));
 
     // then
     assertThat(taskEntity.getAssignee()).isEqualTo(taskRecordValue.getAssignee());
+    verify(mockRequest, times(1))
+        .upsertWithRouting(
+            indexName,
+            taskEntity.getId(),
+            taskEntity,
+            expectedUpdates,
+            taskEntity.getProcessInstanceId());
+  }
+
+  @Test
+  void flushedEntityShouldContainAssigneeOnUnassign() {
+    final long processInstanceKey = 123;
+    final UserTaskRecordValue taskRecordValue =
+        ImmutableUserTaskRecordValue.builder()
+            .withAssignee("")
+            .withProcessInstanceKey(processInstanceKey)
+            .build();
+
+    final Record<UserTaskRecordValue> taskRecord =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r ->
+                r.withIntent(UserTaskIntent.ASSIGNED)
+                    .withValue(taskRecordValue)
+                    .withTimestamp(System.currentTimeMillis()));
+
+    // when
+    final TaskEntity taskEntity = new TaskEntity().setId("id").setAssignee("test-assignee");
+    underTest.updateEntity(taskRecord, taskEntity);
+
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    underTest.flush(taskEntity, mockRequest);
+    final Map<String, Object> expectedUpdates = new HashMap<>();
+    expectedUpdates.put(TaskTemplate.ASSIGNEE, null);
+    expectedUpdates.put(TaskTemplate.CHANGED_ATTRIBUTES, List.of("assignee"));
+
+    // then
+    assertThat(taskEntity.getAssignee()).isEqualTo(null);
     verify(mockRequest, times(1))
         .upsertWithRouting(
             indexName,
@@ -445,6 +485,10 @@ public class UserTaskHandlerTest {
     expectedUpdates.put(TaskTemplate.DUE_DATE, taskEntity.getDueDate());
     expectedUpdates.put(TaskTemplate.CANDIDATE_USERS, taskEntity.getCandidateUsers());
     expectedUpdates.put(TaskTemplate.CANDIDATE_GROUPS, taskEntity.getCandidateGroups());
+    expectedUpdates.put(
+        TaskTemplate.CHANGED_ATTRIBUTES,
+        List.of(
+            "priority", "dueDate", "followUpDate", "candidateUsersList", "candidateGroupsList"));
 
     // then
     assertThat(taskEntity.getPriority()).isEqualTo(taskRecordValue.getPriority());
