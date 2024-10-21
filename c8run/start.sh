@@ -31,6 +31,7 @@ function checkCamundaStartup {
       fi
     done
   echo "$NAME has successfully been started.";
+  rm "$POLLING_CAMUNDA_PID_PATH"
   printEndpoints
 }
 
