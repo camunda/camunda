@@ -140,7 +140,7 @@ test.describe.serial('Process Instance Migration', () => {
     await processesPage.migrationModal.confirmButton.click();
 
     // Expect auto mapping for each flow node
-    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(21);
+    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(22);
 
     await expect(
       page.getByLabel(/target flow node for check payment/i),
@@ -205,6 +205,9 @@ test.describe.serial('Process Instance Migration', () => {
     await expect(
       page.getByLabel(/target flow node for send task/i),
     ).toHaveValue('SendTask');
+    await expect(
+      page.getByLabel(/target flow node for timer start event/i),
+    ).toHaveValue('TimerStartEvent');
 
     // Expect pre-selected process and version
     await expect(migrationView.targetProcessComboBox).toHaveValue(
@@ -434,6 +437,10 @@ test.describe.serial('Process Instance Migration', () => {
     await migrationView.mapFlowNode({
       sourceFlowNodeName: 'Task F',
       targetFlowNodeName: 'Task F2',
+    });
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Timer start event',
+      targetFlowNodeName: 'Timer start event 2',
     });
 
     /**

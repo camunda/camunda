@@ -41,6 +41,7 @@ describe('stores/processXml/processXml.list', () => {
       'TaskX',
       'TimerEventSubProcess',
       'TaskY',
+      'TimerStartEvent',
       'MessageReceiveTask',
       'BusinessRuleTask',
       'ScriptTask',
