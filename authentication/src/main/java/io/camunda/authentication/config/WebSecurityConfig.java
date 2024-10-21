@@ -26,6 +26,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
 
@@ -119,7 +120,11 @@ public class WebSecurityConfig {
           .csrf(AbstractHttpConfigurer::disable)
           .cors(AbstractHttpConfigurer::disable)
           .formLogin(AbstractHttpConfigurer::disable)
-          .anonymous(AbstractHttpConfigurer::disable);
+          .anonymous(AbstractHttpConfigurer::disable)
+          .sessionManagement(
+              httpSecuritySessionManagementConfigurer ->
+                  httpSecuritySessionManagementConfigurer.sessionCreationPolicy(
+                      SessionCreationPolicy.IF_REQUIRED));
     } catch (final Exception e) {
       throw new RuntimeException(e);
     }

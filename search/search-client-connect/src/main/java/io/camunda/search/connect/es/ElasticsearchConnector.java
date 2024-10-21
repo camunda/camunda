@@ -26,6 +26,8 @@ import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.RestHighLevelClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,6 +69,15 @@ public final class ElasticsearchConnector {
 
     // And create the API client
     return new ElasticsearchClient(transport);
+  }
+
+  public RestHighLevelClient createRestHighLevelClient() {
+    LOGGER.debug("Creating Elasticsearch connection...");
+    // create rest client
+    final var restClient = createRestClient(configuration);
+    final RestHighLevelClient esClient =
+        new RestHighLevelClientBuilder(restClient).setApiCompatibilityMode(true).build();
+    return esClient;
   }
 
   private RestClient createRestClient(final ConnectConfiguration configuration) {
