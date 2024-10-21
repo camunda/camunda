@@ -45,7 +45,9 @@ public class CamundaSessionRepository
 
   private void startExpiredSessionCheck() {
     sessionThreadScheduler.scheduleAtFixedRate(
-        () -> sessionStorageClient.consumeSessions(this::purgeAndFetchWebSession),
+        () ->
+            sessionStorageClient.consumeSessions(
+                doc -> purgeAndFetchWebSession((String) doc.get(WebSession.ID), doc)),
         Duration.ofMillis(1000));
   }
 
@@ -79,7 +81,7 @@ public class CamundaSessionRepository
   @Override
   public WebSession findById(final String id) {
     LOGGER.debug("Retrieve session {} from Elasticsearch", id);
-    return purgeAndFetchWebSession(sessionStorageClient.getSessionDocument(id));
+    return purgeAndFetchWebSession(id, sessionStorageClient.getSessionDocument(id));
   }
 
   @Override
@@ -88,10 +90,10 @@ public class CamundaSessionRepository
     sessionStorageClient.deleteSessionDocument(id);
   }
 
-  private WebSession purgeAndFetchWebSession(final Map<String, Object> document) {
+  private WebSession purgeAndFetchWebSession(final String id, final Map<String, Object> document) {
     final WebSession session = sessionDocumentMapper.documentToSession(request, document);
     if (session == null || session.shouldBeDeleted()) {
-      deleteById(sessionDocumentMapper.getSessionIdFrom(document));
+      deleteById(id);
       return null;
     }
     return session;

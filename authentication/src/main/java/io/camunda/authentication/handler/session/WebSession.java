@@ -27,9 +27,6 @@ public class WebSession implements Session {
   public static final String MAX_INACTIVE_INTERVAL_IN_SECONDS = "maxInactiveIntervalInSeconds";
   public static final String ATTRIBUTES = "attributes";
 
-  public static final String INDEX_NAME = "web-session";
-  public static final String INDEX_VERSION = "1.1.0";
-
   private final MapSession delegate;
 
   private boolean changed;
@@ -157,16 +154,16 @@ public class WebSession implements Session {
     return this;
   }
 
+  public boolean shouldBeDeleted() {
+    return isExpired() || containsAuthentication() && !isAuthenticated();
+  }
+
   @Override
   public void setLastAccessedTime(final Instant lastAccessedTime) {
     if (!polling) {
       delegate.setLastAccessedTime(lastAccessedTime);
       changed = true;
     }
-  }
-
-  public boolean shouldBeDeleted() {
-    return isExpired() || containsAuthentication() && !isAuthenticated();
   }
 
   @Override

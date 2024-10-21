@@ -44,7 +44,7 @@ public class SessionDocumentMapper {
     setupConverter();
   }
 
-  private void setupConverter() {
+  public void setupConverter() {
     conversionService.addConverter(Object.class, byte[].class, new SerializingConverter());
     conversionService.addConverter(byte[].class, Object.class, new DeserializingConverter());
   }
@@ -93,8 +93,7 @@ public class SessionDocumentMapper {
           getDurationFor(document.get(MAX_INACTIVE_INTERVAL_IN_SECONDS)));
 
       final Object attributesObject = document.get(ATTRIBUTES);
-      if (attributesObject != null
-          && attributesObject.getClass().isInstance(new HashMap<String, String>())) {
+      if (attributesObject instanceof Map) {
         final Map<String, Object> attributes = (Map<String, Object>) document.get(ATTRIBUTES);
         attributes
             .keySet()
@@ -148,6 +147,9 @@ public class SessionDocumentMapper {
     }
     if (object instanceof Integer) {
       return Duration.ofSeconds((Integer) object);
+    }
+    if (object instanceof Long) {
+      return Duration.ofSeconds((Long) object);
     }
     return null;
   }
