@@ -51,7 +51,7 @@ public class WebSecurityProperties {
       Duration.ofDays(2 * 365 /* 2 Years */).getSeconds();
 
   public static final boolean DEFAULT_INCLUDE_SUB_DOMAINS = true;
-  private String contentSecurityPolicy = DEFAULT_SAAS_SECURITY_POLICY;
+  private String contentSecurityPolicy;
   private long httpStrictTransportSecurityMaxAgeInSeconds = DEFAULT_HSTS_MAX_AGE;
   private boolean httpStrictTransportSecurityIncludeSubDomains = DEFAULT_INCLUDE_SUB_DOMAINS;
 

@@ -14,9 +14,10 @@ import static io.camunda.operate.webapp.security.OperateURIs.PUBLIC_API;
 import static io.camunda.operate.webapp.security.OperateURIs.ROOT;
 
 import com.auth0.AuthenticationController;
+import io.camunda.operate.OperateProfileService;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.security.BaseWebConfigurer;
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -30,7 +31,15 @@ import org.springframework.stereotype.Component;
 @Component("webSecurityConfig")
 public class SSOWebSecurityConfig extends BaseWebConfigurer {
 
-  @Autowired protected OAuth2WebConfigurer oAuth2WebConfigurer;
+  protected OAuth2WebConfigurer oAuth2WebConfigurer;
+
+  public SSOWebSecurityConfig(
+      final OperateProperties operateProperties,
+      final OperateProfileService errorMessageService,
+      final OAuth2WebConfigurer oAuth2WebConfigurer) {
+    super(operateProperties, errorMessageService);
+    this.oAuth2WebConfigurer = oAuth2WebConfigurer;
+  }
 
   @Bean
   public AuthenticationController authenticationController() {
