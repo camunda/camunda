@@ -44,13 +44,16 @@ jobs:
           secret/data/products/optimize/ci/camunda-optimize AUTH0_CLIENTSECRET;
           secret/data/products/optimize/ci/camunda-optimize AUTH0_USEREMAIL;
           secret/data/products/optimize/ci/camunda-optimize AUTH0_USERPASSWORD;
+          secret/data/products/optimize/ci/optimize NEXUS_PASSWORD;
+          secret/data/products/optimize/ci/optimize NEXUS_USERNAME;
     - name: Setup Maven
-      uses: ./.github/actions/setup-maven
+      uses: ./.github/actions/setup-java-build
       with:
-          maven-cache-key-modifier: optimize-tests
-          secrets: ${{ toJSON(secrets) }}
-          java-version: 21
-          distribution: zulu
+        camunda-nexus-username: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
+        camunda-nexus-password: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
+        maven-cache-key-modifier: optimize-tests
+        maven-distribution: zulu
+        maven-version: 3.8.6
     - name: Setup Chrome
       shell: bash
       run: |
