@@ -33,13 +33,13 @@ function useForm(
       const {response, error} =
         version === null
           ? await request(
-              api.getEmbeddedForm({
+              api.v1.getEmbeddedForm({
                 id,
                 processDefinitionKey,
               }),
             )
           : await request(
-              api.getDeployedForm({
+              api.v1.getDeployedForm({
                 id,
                 processDefinitionKey,
                 version,

@@ -34,9 +34,12 @@ class Authentication {
   }
 
   handleLogin = async (username: string, password: string) => {
-    const {response, error} = await request(api.login({username, password}), {
-      skipSessionCheck: true,
-    });
+    const {response, error} = await request(
+      api.v1.login({username, password}),
+      {
+        skipSessionCheck: true,
+      },
+    );
 
     if (error === null) {
       this.activateSession();
@@ -64,7 +67,7 @@ class Authentication {
   };
 
   handleLogout = async () => {
-    const {error} = await request(api.logout(), {
+    const {error} = await request(api.v1.logout(), {
       skipSessionCheck: true,
     });
 

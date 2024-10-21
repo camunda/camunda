@@ -16,7 +16,7 @@ function useAssignTask() {
   const client = useQueryClient();
   return useMutation<Task, RequestError | Error, Task['id']>({
     mutationFn: async (taskId) => {
-      const {response, error} = await request(api.assignTask(taskId));
+      const {response, error} = await request(api.v1.assignTask(taskId));
 
       if (response !== null) {
         return response.json();
