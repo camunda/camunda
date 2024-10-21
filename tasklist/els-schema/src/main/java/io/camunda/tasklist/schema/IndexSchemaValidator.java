@@ -15,6 +15,8 @@ import java.util.Set;
 
 public interface IndexSchemaValidator {
 
+  boolean isHealthCheckEnabled();
+
   boolean hasAnyTasklistIndices();
 
   boolean schemaExists();
