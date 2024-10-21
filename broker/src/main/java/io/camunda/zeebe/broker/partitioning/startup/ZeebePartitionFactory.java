@@ -43,6 +43,11 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotDirectorPart
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionTransitionStep;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
+<<<<<<< HEAD:broker/src/main/java/io/camunda/zeebe/broker/partitioning/startup/ZeebePartitionFactory.java
+=======
+import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceTransitionStep;
+import io.camunda.zeebe.db.AccessMetricsConfiguration;
+>>>>>>> a00267fd (fix: complete future with error when leadership change is cancelled):zeebe/broker/src/main/java/io/camunda/zeebe/broker/partitioning/startup/ZeebePartitionFactory.java
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
@@ -79,6 +84,7 @@ public final class ZeebePartitionFactory {
           new BackupServiceTransitionStep(),
           new InterPartitionCommandServiceStep(),
           new StreamProcessorTransitionStep(),
+          new CommandApiServiceTransitionStep(),
           new SnapshotDirectorPartitionTransitionStep(),
           new ExporterDirectorPartitionTransitionStep(),
           new BackupApiRequestHandlerStep(),
