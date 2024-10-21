@@ -21,8 +21,7 @@ import styles from './styles.module.scss';
 
 const EmptyPage: React.FC = () => {
   const filters = useTaskFilters();
-  const {isPending, data} = useTasks(filters);
-  const tasks = data?.pages.flat() ?? [];
+  const {isPending, data: tasks} = useTasks(filters);
   const hasNoTasks = tasks.length === 0;
   const isOldUser = getStateLocally('hasCompletedTask') === true;
   const [searchParams, setSearchParams] = useSearchParams();

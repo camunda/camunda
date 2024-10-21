@@ -17,14 +17,14 @@ const HTTP_STATUS_NOT_FOUND = 404;
 type Data = Process;
 
 function useProcessDefinition(
-  processDefinitionId: string,
+  processDefinitionId: number,
   options?: {enabled?: boolean},
 ) {
   return useQuery<Data, RequestError>({
     queryKey: ['processDefinition', processDefinitionId],
     queryFn: async () => {
       const {response, error} = await request(
-        api.getProcess({processDefinitionId: processDefinitionId!}),
+        api.getProcess({processDefinitionId}),
       );
 
       if (response !== null) {

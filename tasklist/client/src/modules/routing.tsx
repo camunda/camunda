@@ -7,17 +7,24 @@
  */
 
 import {useParams} from 'react-router-dom';
+import {z} from 'zod';
+
+const taskDetailsParamsSchema = z.object({
+  id: z.coerce.number().int().min(0),
+});
+
+type TaskDetailsParams = z.infer<typeof taskDetailsParamsSchema>;
 
 /* istanbul ignore file */
 
 const pages = {
   initial: '/',
   login: '/login',
-  taskDetails(id: string = ':id') {
-    return `/${id}`;
+  taskDetails(id?: number) {
+    return `/${id ?? ':id'}`;
   },
-  taskDetailsProcess(id: string = ':id') {
-    return `/${id}/process`;
+  taskDetailsProcess(id?: number) {
+    return `/${id ?? ':id'}/process`;
   },
   processes(
     options: {tenantId?: string; matchAllChildren?: boolean} = {
@@ -38,10 +45,15 @@ const pages = {
   },
 } as const;
 
-function useTaskDetailsParams(): {id: string} {
-  const {id} = useParams<'id'>();
+function useTaskDetailsParams(): {id: number} {
+  const params = useParams<keyof TaskDetailsParams>();
+  const result = taskDetailsParamsSchema.safeParse(params);
 
-  return {id: id ?? ''};
+  if (result.success === false) {
+    throw new Error('Invalid param value');
+  }
+
+  return {id: result.data.id};
 }
 
 function useStartProcessParams(): {bpmnProcessId: string} {

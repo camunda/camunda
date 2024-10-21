@@ -6,8 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {Form, Task, TasksSearchBody, Variable} from './types';
+import type {Variable} from './types';
 import {mergePathname} from './utils/mergePathname';
+import {
+  endpoints,
+  type QueryUserTasksRequestBody,
+  type UserTask,
+  type Form,
+} from '@vzeta/camunda-api-zod-schemas/tasklist';
 
 const BASENAME = window.clientConfig?.contextPath ?? '/';
 const BASE_REQUEST_OPTIONS: RequestInit = {
@@ -45,7 +51,7 @@ const api = {
   startProcess: (payload: {
     bpmnProcessId: string;
     variables: Variable[];
-    tenantId?: Task['tenantId'];
+    tenantId?: UserTask['tenantId'];
   }) => {
     const {bpmnProcessId, variables, tenantId} = payload;
     const url = getFullURL(`/v1/internal/processes/${bpmnProcessId}/start`);
@@ -63,7 +69,7 @@ const api = {
       },
     });
   },
-  getProcess: (params: {processDefinitionId: string}) => {
+  getProcess: (params: {processDefinitionId: number}) => {
     const url = getFullURL(
       `/v1/internal/processes/${params.processDefinitionId}`,
     );
@@ -77,7 +83,7 @@ const api = {
   },
   getProcesses: (params: {
     query?: string;
-    tenantId?: Task['tenantId'];
+    tenantId?: UserTask['tenantId'];
     isStartedByForm?: boolean;
   }) => {
     const url = getFullURL('/v1/internal/processes');
@@ -130,46 +136,15 @@ const api = {
         'Content-Type': 'application/json',
       },
     }),
-  getEmbeddedForm: ({
-    id,
-    processDefinitionKey,
-  }: Pick<Form, 'id' | 'processDefinitionKey'>) => {
-    const url = getFullURL(`/v1/forms/${id}`);
-
-    url.searchParams.set('processDefinitionKey', processDefinitionKey);
-
-    return new Request(url, {
+  getForm: ({formKey}: Pick<Form, 'formKey'>) => {
+    return new Request(getFullURL(endpoints.getForm.getUrl({formKey})), {
       ...BASE_REQUEST_OPTIONS,
-      method: 'GET',
+      method: endpoints.getForm.method,
       headers: {
         'Content-Type': 'application/json',
       },
     });
   },
-  getDeployedForm: ({
-    id,
-    processDefinitionKey,
-    version,
-  }: Pick<Form, 'id' | 'processDefinitionKey'> & {
-    version: NonNullable<Form['version']> | 'latest';
-  }) => {
-    const url = getFullURL(`/v1/forms/${id}`);
-
-    url.searchParams.set('processDefinitionKey', processDefinitionKey);
-
-    if (version !== 'latest') {
-      url.searchParams.set('version', version.toString());
-    }
-
-    return new Request(url, {
-      ...BASE_REQUEST_OPTIONS,
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-  },
-
   getFullVariable: (variableId: Variable['id']) => {
     return new Request(getFullURL(`/v1/variables/${variableId}`), {
       ...BASE_REQUEST_OPTIONS,
@@ -179,22 +154,25 @@ const api = {
       },
     });
   },
-  getAllVariables: ({taskId}: {taskId: Task['id']}) => {
-    return new Request(getFullURL(`/v1/tasks/${taskId}/variables/search`), {
-      ...BASE_REQUEST_OPTIONS,
-      method: 'POST',
-      body: JSON.stringify({variableNames: []}),
-      headers: {
-        'Content-Type': 'application/json',
+  getAllVariables: ({userTaskKey}: {userTaskKey: UserTask['userTaskKey']}) => {
+    return new Request(
+      getFullURL(`/v1/tasks/${userTaskKey}/variables/search`),
+      {
+        ...BASE_REQUEST_OPTIONS,
+        method: 'POST',
+        body: JSON.stringify({variableNames: []}),
+        headers: {
+          'Content-Type': 'application/json',
+        },
       },
-    });
+    );
   },
   searchVariables: ({
-    taskId,
+    userTaskKey,
     variableNames,
   }: {
-    taskId: Task['id'];
-    variableNames: Task['name'][];
+    userTaskKey: UserTask['userTaskKey'];
+    variableNames: string[];
   }) => {
     const body = {
       includeVariables: variableNames.map((name) => ({
@@ -203,19 +181,22 @@ const api = {
       })),
     };
 
-    return new Request(getFullURL(`/v1/tasks/${taskId}/variables/search`), {
-      ...BASE_REQUEST_OPTIONS,
-      method: 'POST',
-      body: JSON.stringify(body),
-      headers: {
-        'Content-Type': 'application/json',
+    return new Request(
+      getFullURL(`/v1/tasks/${userTaskKey}/variables/search`),
+      {
+        ...BASE_REQUEST_OPTIONS,
+        method: 'POST',
+        body: JSON.stringify(body),
+        headers: {
+          'Content-Type': 'application/json',
+        },
       },
-    });
+    );
   },
-  searchTasks: (body: TasksSearchBody) => {
-    return new Request(getFullURL('/v1/tasks/search'), {
+  searchTasks: (body: QueryUserTasksRequestBody) => {
+    return new Request(getFullURL(endpoints.queryUserTasks.getUrl()), {
       ...BASE_REQUEST_OPTIONS,
-      method: 'POST',
+      method: endpoints.queryUserTasks.method,
       body: JSON.stringify(body),
       headers: {
         'Content-Type': 'application/json',
@@ -223,8 +204,8 @@ const api = {
       },
     });
   },
-  unassignTask: (taskId: Task['id']) => {
-    return new Request(getFullURL(`/v1/tasks/${taskId}/unassign`), {
+  unassignTask: (userTaskKey: UserTask['userTaskKey']) => {
+    return new Request(getFullURL(`/v1/tasks/${userTaskKey}/unassign`), {
       ...BASE_REQUEST_OPTIONS,
       method: 'PATCH',
       headers: {
@@ -232,8 +213,8 @@ const api = {
       },
     });
   },
-  assignTask: (taskId: Task['id']) => {
-    return new Request(getFullURL(`/v1/tasks/${taskId}/assign`), {
+  assignTask: (userTaskKey: UserTask['userTaskKey']) => {
+    return new Request(getFullURL(`/v1/tasks/${userTaskKey}/assign`), {
       ...BASE_REQUEST_OPTIONS,
       method: 'PATCH',
       headers: {
@@ -242,13 +223,13 @@ const api = {
     });
   },
   completeTask: ({
-    taskId,
+    userTaskKey,
     ...body
   }: {
-    taskId: Task['id'];
+    userTaskKey: UserTask['userTaskKey'];
     variables: Pick<Variable, 'name' | 'value'>[];
   }) => {
-    return new Request(getFullURL(`/v1/tasks/${taskId}/complete`), {
+    return new Request(getFullURL(`/v1/tasks/${userTaskKey}/complete`), {
       ...BASE_REQUEST_OPTIONS,
       method: 'PATCH',
       headers: {
@@ -257,8 +238,8 @@ const api = {
       body: JSON.stringify(body),
     });
   },
-  getTask: (taskId: Task['id']) => {
-    return new Request(getFullURL(`/v1/tasks/${taskId}`), {
+  getTask: (userTaskKey: UserTask['userTaskKey']) => {
+    return new Request(getFullURL(`/v1/tasks/${userTaskKey}`), {
       ...BASE_REQUEST_OPTIONS,
       method: 'GET',
       headers: {

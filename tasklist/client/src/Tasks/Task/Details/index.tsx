@@ -8,7 +8,8 @@
 
 import {Section} from '@carbon/react';
 import {Outlet, useMatch, useNavigate} from 'react-router-dom';
-import type {CurrentUser, Process, Task} from 'modules/types';
+import type {CurrentUser, Process} from 'modules/types';
+import type {UserTask} from '@vzeta/camunda-api-zod-schemas/tasklist';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {useTask} from 'modules/queries/useTask';
 import {useProcessDefinition} from 'modules/queries/useProcessDefinition';
@@ -24,7 +25,7 @@ import {useTranslation} from 'react-i18next';
 import {notificationsStore} from 'modules/stores/notifications';
 
 type OutletContext = {
-  task: Task;
+  task: UserTask;
   currentUser: CurrentUser;
   refetch: () => void;
   process: Process | undefined;
@@ -38,10 +39,10 @@ const Details: React.FC = () => {
     refetchOnReconnect: false,
     refetchInterval: 5000,
   });
-  const taskState = task?.taskState;
+  const taskState = task?.state;
   const isTaskCompleted = taskState === 'COMPLETED';
   const {data: process, isLoading: processLoading} = useProcessDefinition(
-    task?.processDefinitionKey ?? '',
+    task?.processDefinitionKey ?? 0,
     {
       enabled: task !== undefined && !isTaskCompleted,
     },

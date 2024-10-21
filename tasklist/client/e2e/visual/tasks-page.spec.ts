@@ -172,7 +172,7 @@ function mockResponses(
       });
     }
 
-    if (route.request().url().includes('v1/tasks/search')) {
+    if (route.request().url().includes('v2/user-tasks/search')) {
       return route.fulfill({
         status: 200,
         body: JSON.stringify(tasks),

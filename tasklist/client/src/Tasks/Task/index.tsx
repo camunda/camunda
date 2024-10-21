@@ -17,7 +17,7 @@ import {observer} from 'mobx-react-lite';
 import {useCompleteTask} from 'modules/mutations/useCompleteTask';
 import {useTranslation} from 'react-i18next';
 import {pages, useTaskDetailsParams} from 'modules/routing';
-import type {Task as TaskType, Variable} from 'modules/types';
+import type {Variable} from 'modules/types';
 import {tracking} from 'modules/tracking';
 import {notificationsStore} from 'modules/stores/notifications';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
@@ -33,16 +33,6 @@ import {shouldFetchMore} from './shouldFetchMore';
 import {Variables} from './Variables';
 import {FormJS} from './FormJS';
 
-const CAMUNDA_FORMS_PREFIX = 'camunda-forms:bpmn:';
-
-function isCamundaForms(formKey: NonNullable<TaskType['formKey']>): boolean {
-  return formKey.startsWith(CAMUNDA_FORMS_PREFIX);
-}
-
-function getFormId(formKey: NonNullable<TaskType['formKey']>): string {
-  return formKey.replace(CAMUNDA_FORMS_PREFIX, '');
-}
-
 const Task: React.FC = observer(() => {
   const {
     task,
@@ -51,9 +41,8 @@ const Task: React.FC = observer(() => {
   } = useOutletContext<OutletContext>();
 
   const filters = useTaskFilters();
-  const {data, refetch: refetchAllTasks} = useTasks(filters);
+  const {data: tasks, refetch: refetchAllTasks} = useTasks(filters);
   const {t} = useTranslation();
-  const tasks = data?.pages.flat() ?? [];
   const hasRemainingTasks = tasks.length > 0;
 
   const {id} = useTaskDetailsParams();
@@ -62,8 +51,7 @@ const Task: React.FC = observer(() => {
 
   const [searchParams, setSearchParams] = useSearchParams();
   const {mutateAsync: completeTask} = useCompleteTask();
-  const {formKey, processDefinitionKey, formId, id: taskId} = task;
-
+  const {formKey, userTaskKey} = task;
   const {enabled: autoSelectNextTaskEnabled} = autoSelectNextTaskStore;
   const {goToTask: autoSelectGoToTask} = useAutoSelectNextTask();
 
@@ -80,13 +68,13 @@ const Task: React.FC = observer(() => {
       eventName: 'task-opened',
       ...(taskOpenedRef ?? {}),
     });
-  }, [searchParams, setSearchParams, taskId]);
+  }, [searchParams, setSearchParams, userTaskKey]);
 
   async function handleSubmission(
     variables: Pick<Variable, 'name' | 'value'>[],
   ) {
     await completeTask({
-      taskId,
+      userTaskKey,
       variables,
     });
 
@@ -96,7 +84,7 @@ const Task: React.FC = observer(() => {
 
     tracking.track({
       eventName: 'task-completed',
-      isCamundaForm: formKey ? isCamundaForms(formKey) : false,
+      isCamundaForm: true,
       hasRemainingTasks,
       filter: filters.filter,
       customFilters: Object.keys(customFilters ?? {}),
@@ -114,14 +102,15 @@ const Task: React.FC = observer(() => {
     storeStateLocally('hasCompletedTask', true);
 
     if (autoSelectNextTaskEnabled) {
-      const newTasks = (await refetchAllTasks()).data?.pages[0] ?? [];
-      const openTasks = newTasks.filter(
-        ({taskState}) => taskState === 'CREATED',
-      );
-      if (openTasks.length > 1 && openTasks[0].id === id) {
-        autoSelectGoToTask(openTasks[1].id);
-      } else if (openTasks.length > 0 && openTasks[0].id !== id) {
-        autoSelectGoToTask(openTasks[0].id);
+      const newTasks = (await refetchAllTasks()).data?.pages[0].items ?? [];
+      const openTasks = newTasks.filter(({state}) => state === 'CREATED');
+      if (openTasks.length > 1 && openTasks[0].userTaskKey === Number(id)) {
+        autoSelectGoToTask(openTasks[1].userTaskKey);
+      } else if (
+        openTasks.length > 0 &&
+        openTasks[0].userTaskKey !== Number(id)
+      ) {
+        autoSelectGoToTask(openTasks[0].userTaskKey);
       } else {
         navigate({
           pathname: pages.initial,
@@ -155,25 +144,22 @@ const Task: React.FC = observer(() => {
     }
   }
 
-  const isDeployedForm = typeof formId === 'string';
-  const isEmbeddedForm = typeof formKey === 'string' && task.isFormEmbedded;
-  if (isEmbeddedForm || isDeployedForm) {
+  if (formKey !== undefined) {
     return (
       <FormJS
-        key={task.id}
+        key={task.userTaskKey}
         task={task}
-        id={isEmbeddedForm ? getFormId(formKey) : formId!}
+        formKey={formKey}
         user={currentUser}
         onSubmit={handleSubmission}
         onSubmitSuccess={handleSubmissionSuccess}
         onSubmitFailure={handleSubmissionFailure}
-        processDefinitionKey={processDefinitionKey!}
       />
     );
   } else {
     return (
       <Variables
-        key={task.id}
+        key={userTaskKey}
         task={task}
         user={currentUser}
         onSubmit={handleSubmission}

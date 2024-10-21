@@ -9,7 +9,8 @@
 import {useMutation, type UseMutationOptions} from '@tanstack/react-query';
 import {api} from 'modules/api';
 import {request, type RequestError} from 'modules/request';
-import type {Process, ProcessInstance, Task, Variable} from 'modules/types';
+import type {Process, ProcessInstance, Variable} from 'modules/types';
+import type {UserTask} from '@vzeta/camunda-api-zod-schemas/tasklist';
 
 function useStartProcess(
   options: Pick<
@@ -19,7 +20,7 @@ function useStartProcess(
       {
         bpmnProcessId: Process['bpmnProcessId'];
         variables?: Variable[];
-        tenantId?: Task['tenantId'];
+        tenantId?: UserTask['tenantId'];
       }
     >,
     'onSuccess'
@@ -29,7 +30,7 @@ function useStartProcess(
     ProcessInstance,
     RequestError | Error,
     Pick<Process, 'bpmnProcessId'> & {variables?: Variable[]} & {
-      tenantId?: Task['tenantId'];
+      tenantId?: UserTask['tenantId'];
     }
   >({
     ...options,

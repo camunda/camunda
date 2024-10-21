@@ -21,9 +21,8 @@ import * as userMocks from 'modules/mock-schema/mocks/current-user';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
 
-const MOCK_FORM_ID = 'form-0';
-const MOCK_PROCESS_DEFINITION_KEY = 'process';
-const MOCK_TASK_ID = 'task-0';
+const MOCK_FORM_KEY = 0;
+const MOCK_TASK_KEY = 1;
 const REQUESTED_VARIABLES = ['myVar', 'isCool'];
 const DYNAMIC_FORM_REQUESTED_VARIABLES = ['radio_field', 'radio_field_options'];
 
@@ -115,9 +114,8 @@ describe('<FormJS />', () => {
 
     render(
       <FormJS
-        id={MOCK_FORM_ID}
-        processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
-        task={unassignedTaskWithForm(MOCK_TASK_ID)}
+        formKey={MOCK_FORM_KEY}
+        task={unassignedTaskWithForm({userTaskKey: MOCK_TASK_KEY})}
         user={userMocks.currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -171,9 +169,8 @@ describe('<FormJS />', () => {
 
     render(
       <FormJS
-        id={MOCK_FORM_ID}
-        processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
-        task={assignedTaskWithForm(MOCK_TASK_ID)}
+        formKey={MOCK_FORM_KEY}
+        task={assignedTaskWithForm({userTaskKey: MOCK_TASK_KEY})}
         user={userMocks.currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -226,9 +223,8 @@ describe('<FormJS />', () => {
 
     render(
       <FormJS
-        id={MOCK_FORM_ID}
-        processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
-        task={assignedTaskWithForm(MOCK_TASK_ID)}
+        formKey={MOCK_FORM_KEY}
+        task={assignedTaskWithForm({userTaskKey: MOCK_TASK_KEY})}
         user={userMocks.currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -279,9 +275,8 @@ describe('<FormJS />', () => {
     const mockOnSubmit = vi.fn();
     const {user} = render(
       <FormJS
-        id={MOCK_FORM_ID}
-        processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
-        task={assignedTaskWithForm(MOCK_TASK_ID)}
+        formKey={MOCK_FORM_KEY}
+        task={assignedTaskWithForm({userTaskKey: MOCK_TASK_KEY})}
         user={userMocks.currentUser}
         onSubmit={mockOnSubmit}
         onSubmitFailure={noop}
@@ -349,9 +344,8 @@ describe('<FormJS />', () => {
     const mockOnSubmit = vi.fn();
     const {user} = render(
       <FormJS
-        id={MOCK_FORM_ID}
-        processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
-        task={assignedTaskWithForm(MOCK_TASK_ID)}
+        formKey={MOCK_FORM_KEY}
+        task={assignedTaskWithForm({userTaskKey: MOCK_TASK_KEY})}
         user={userMocks.currentUser}
         onSubmit={mockOnSubmit}
         onSubmitFailure={noop}
@@ -427,9 +421,8 @@ describe('<FormJS />', () => {
 
     render(
       <FormJS
-        id={MOCK_FORM_ID}
-        processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
-        task={assignedTaskWithForm(MOCK_TASK_ID)}
+        formKey={MOCK_FORM_KEY}
+        task={assignedTaskWithForm({userTaskKey: MOCK_TASK_KEY})}
         user={userMocks.currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -460,9 +453,8 @@ describe('<FormJS />', () => {
     );
     render(
       <FormJS
-        id={MOCK_FORM_ID}
-        processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
-        task={assignedTaskWithForm(MOCK_TASK_ID)}
+        formKey={MOCK_FORM_KEY}
+        task={assignedTaskWithForm({userTaskKey: MOCK_TASK_KEY})}
         user={userMocks.currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
@@ -503,9 +495,8 @@ describe('<FormJS />', () => {
 
     render(
       <FormJS
-        id={MOCK_FORM_ID}
-        processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
-        task={assignedTaskWithForm(MOCK_TASK_ID)}
+        formKey={MOCK_FORM_KEY}
+        task={assignedTaskWithForm({userTaskKey: MOCK_TASK_KEY})}
         user={userMocks.currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}

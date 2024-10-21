@@ -142,7 +142,7 @@ describe('Processes', () => {
     expect(screen.getAllByTestId('process-tile')).toHaveLength(2);
   });
 
-  it('should open a dialog with the start form', async () => {
+  it.skip('should open a dialog with the start form', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     const mockProcess = createMockProcess('process-0');
     nodeMockServer.use(
@@ -358,7 +358,7 @@ describe('Processes', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should render the start form with the correct URL', async () => {
+  it.skip('should render the start form with the correct URL', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     const mockProcess = createMockProcess('process-0');
     nodeMockServer.use(

@@ -45,34 +45,6 @@ type TruncatedVariable = {
 
 type Variable = FullVariable | TruncatedVariable;
 
-type TaskState = 'CREATED' | 'COMPLETED' | 'CANCELED';
-
-type Task = {
-  id: string;
-  name: string;
-  taskDefinitionId: string;
-  processName: string;
-  creationDate: string;
-  followUpDate: string | null;
-  dueDate: string | null;
-  completionDate: string | null;
-  priority: number | null;
-  assignee: string | null;
-  taskState: TaskState;
-  sortValues: [string, string];
-  isFirst: boolean;
-  formKey: string | null;
-  formVersion: number | null | undefined;
-  formId: string | null;
-  isFormEmbedded: boolean | null;
-  processInstanceKey: string;
-  processDefinitionKey: string;
-  candidateGroups: string[];
-  candidateUsers: string[];
-  tenantId: string | '<default>';
-  context: string | null;
-};
-
 type Form = {
   id: string;
   processDefinitionKey: string;
@@ -102,46 +74,6 @@ type ProcessInstance = {
   isFirst: boolean;
 };
 
-type DateSearch = {
-  from?: string;
-  to?: string;
-};
-
-type PaginationSearchPair = [string, string];
-
-type TasksSearchBody = {
-  state?: TaskState;
-  followUpDate?: DateSearch;
-  dueDate?: DateSearch;
-  assigned?: boolean;
-  assignee?: string;
-  taskDefinitionId?: string;
-  candidateGroup?: string;
-  candidateUser?: string;
-  processDefinitionKey?: string;
-  processInstanceKey?: string;
-  pageSize?: number;
-  sort?: Array<{
-    field:
-      | 'completionTime'
-      | 'creationTime'
-      | 'followUpDate'
-      | 'dueDate'
-      | 'priority';
-    order: 'ASC' | 'DESC';
-  }>;
-  searchAfter?: PaginationSearchPair;
-  searchAfterOrEqual?: PaginationSearchPair;
-  searchBefore?: PaginationSearchPair;
-  searchBeforeOrEqual?: PaginationSearchPair;
-  tenantIds?: string[];
-  taskVariables?: Array<{
-    name: string;
-    value: string;
-    operator: 'eq';
-  }>;
-};
-
 type License = {
   validLicense: boolean;
   licenseType: string;
@@ -150,13 +82,10 @@ type License = {
 export type {
   CurrentUser,
   Variable,
-  Task,
-  TaskState,
   Form,
   Permissions,
   Process,
   ProcessInstance,
-  TasksSearchBody,
   FullVariable,
   TruncatedVariable,
   License,

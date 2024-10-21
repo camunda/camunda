@@ -9,18 +9,12 @@
 import {useQuery, type UseQueryOptions} from '@tanstack/react-query';
 import {api} from 'modules/api';
 import {request, type RequestError} from 'modules/request';
-import type {Form} from 'modules/types';
+import type {Form} from '@vzeta/camunda-api-zod-schemas/tasklist';
 
 type QueryData = Form | {schema: null};
 
 function useForm(
-  {
-    id,
-    processDefinitionKey,
-    version,
-  }: Pick<Form, 'id' | 'processDefinitionKey'> & {
-    version: Form['version'] | 'latest';
-  },
+  {formKey}: Pick<Form, 'formKey'>,
   options: Pick<
     UseQueryOptions<QueryData, RequestError | Error>,
     'refetchOnWindowFocus' | 'refetchOnReconnect' | 'enabled'
@@ -28,23 +22,13 @@ function useForm(
 ) {
   return useQuery<QueryData, RequestError | Error>({
     ...options,
-    queryKey: ['form', id, processDefinitionKey, version],
+    queryKey: ['form', formKey],
     queryFn: async () => {
-      const {response, error} =
-        version === null
-          ? await request(
-              api.getEmbeddedForm({
-                id,
-                processDefinitionKey,
-              }),
-            )
-          : await request(
-              api.getDeployedForm({
-                id,
-                processDefinitionKey,
-                version,
-              }),
-            );
+      const {response, error} = await request(
+        api.getForm({
+          formKey,
+        }),
+      );
 
       if (response !== null) {
         return response.json();

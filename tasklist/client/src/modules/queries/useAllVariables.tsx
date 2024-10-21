@@ -14,11 +14,12 @@ import {
 } from '@tanstack/react-query';
 import {api} from 'modules/api';
 import {request, type RequestError} from 'modules/request';
-import type {FullVariable, Task, Variable} from 'modules/types';
+import type {FullVariable, Variable} from 'modules/types';
+import type {UserTask} from '@vzeta/camunda-api-zod-schemas/tasklist';
 import {useState} from 'react';
 
 type Param = {
-  taskId: Task['id'];
+  userTaskKey: UserTask['userTaskKey'];
 };
 
 type Options = Pick<
@@ -76,13 +77,15 @@ function useFetchFullVariable(variablesQueryKey: QueryKey) {
 }
 
 function useAllVariables(params: Param, options: Options = {}) {
-  const {taskId} = params;
-  const variablesQueryKey = ['variables', taskId];
+  const {userTaskKey} = params;
+  const variablesQueryKey = ['variables', userTaskKey];
   const queryResult = useQuery<Variable[], RequestError | Error>({
     ...options,
     queryKey: variablesQueryKey,
     queryFn: async () => {
-      const {response, error} = await request(api.getAllVariables({taskId}));
+      const {response, error} = await request(
+        api.getAllVariables({userTaskKey}),
+      );
 
       if (response !== null) {
         return response.json();

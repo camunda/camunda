@@ -9,10 +9,11 @@
 import {useQuery, type UseQueryOptions} from '@tanstack/react-query';
 import {api} from 'modules/api';
 import {request, type RequestError} from 'modules/request';
-import type {Task, Variable} from 'modules/types';
+import type {Variable} from 'modules/types';
+import type {UserTask} from '@vzeta/camunda-api-zod-schemas/tasklist';
 
 type Params = {
-  taskId: Task['id'];
+  userTaskKey: UserTask['userTaskKey'];
   variableNames: Variable['name'][];
 };
 
@@ -22,14 +23,14 @@ type Options = Pick<
 >;
 
 function useVariables(params: Params, options: Options = {}) {
-  const {taskId, variableNames} = params;
-  const variablesQueryKey = ['variables', taskId, ...variableNames];
+  const {userTaskKey, variableNames} = params;
+  const variablesQueryKey = ['variables', userTaskKey, ...variableNames];
   return useQuery<Variable[], RequestError | Error>({
     ...options,
     queryKey: variablesQueryKey,
     queryFn: async () => {
       const {response, error} = await request(
-        api.searchVariables({taskId, variableNames}),
+        api.searchVariables({userTaskKey, variableNames}),
       );
 
       if (response !== null) {

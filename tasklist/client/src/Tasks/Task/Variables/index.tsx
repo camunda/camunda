@@ -15,7 +15,8 @@ import {match, Pattern} from 'ts-pattern';
 import {Button, Heading, type InlineLoadingProps, Layer} from '@carbon/react';
 import {Information, Add} from '@carbon/react/icons';
 import {C3EmptyState} from '@camunda/camunda-composite-components';
-import type {Variable, CurrentUser, Task} from 'modules/types';
+import type {Variable, CurrentUser} from 'modules/types';
+import type {UserTask} from '@vzeta/camunda-api-zod-schemas/tasklist';
 import {usePermissions} from 'modules/hooks/usePermissions';
 import {
   ScrollableContent,
@@ -51,7 +52,7 @@ type Props = {
   onSubmit: (variables: Pick<Variable, 'name' | 'value'>[]) => Promise<void>;
   onSubmitSuccess: () => void;
   onSubmitFailure: (error: Error) => void;
-  task: Task;
+  task: UserTask;
   user: CurrentUser;
 };
 
@@ -63,7 +64,7 @@ const Variables: React.FC<Props> = ({
   user,
 }) => {
   const formRef = useRef<HTMLFormElement | null>(null);
-  const {assignee, taskState} = task;
+  const {assignee, state} = task;
   const {hasPermission} = usePermissions(['write']);
   const {t} = useTranslation();
   const {
@@ -74,7 +75,7 @@ const Variables: React.FC<Props> = ({
     status,
   } = useAllVariables(
     {
-      taskId: task.id,
+      userTaskKey: task.userTaskKey,
     },
     {
       refetchOnWindowFocus: assignee === null,
@@ -86,7 +87,7 @@ const Variables: React.FC<Props> = ({
     useState<NonNullable<InlineLoadingProps['status']>>('inactive');
   const canCompleteTask =
     user.userId === assignee &&
-    taskState === 'CREATED' &&
+    state === 'CREATED' &&
     hasPermission &&
     status === 'success';
   const hasEmptyNewVariable = (values: FormValues) =>
@@ -150,7 +151,7 @@ const Variables: React.FC<Props> = ({
         <>
           <div className={styles.panelHeader}>
             <Heading>{t('variablesTitle')}</Heading>
-            {taskState !== 'COMPLETED' && (
+            {state !== 'COMPLETED' && (
               <Button
                 kind="ghost"
                 type="button"
@@ -195,7 +196,7 @@ const Variables: React.FC<Props> = ({
                         <C3EmptyState
                           heading={t('variablesNoVariablesHeading')}
                           description={
-                            taskState === 'COMPLETED'
+                            state === 'COMPLETED'
                               ? ''
                               : t('variablesClickOnAddVariablesPrompt')
                           }
@@ -262,7 +263,7 @@ const Variables: React.FC<Props> = ({
                     onError={() => {
                       setSubmissionState('inactive');
                     }}
-                    isHidden={taskState === 'COMPLETED'}
+                    isHidden={state === 'COMPLETED'}
                     isDisabled={
                       submitting ||
                       hasValidationErrors ||

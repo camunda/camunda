@@ -108,13 +108,13 @@ describe('<Header />', () => {
         return HttpResponse.json(userMocks.currentUser);
       }),
       http.patch('/v1/tasks/:taskId/assign', () => {
-        return HttpResponse.json(taskMocks.assignedTask('0'));
+        return HttpResponse.json(taskMocks.assignedTask());
       }),
     );
 
     const {user, rerender} = render(
       <Header
-        task={taskMocks.unassignedTask('0')}
+        task={taskMocks.unassignedTask()}
         user={userMocks.currentUser}
         onAssignmentError={noop}
       />,
@@ -158,13 +158,13 @@ describe('<Header />', () => {
         return HttpResponse.json(userMocks.currentUser);
       }),
       http.patch('/v1/tasks/:taskId/unassign', () => {
-        return HttpResponse.json(taskMocks.unassignedTask('0'));
+        return HttpResponse.json(taskMocks.unassignedTask());
       }),
     );
 
     const {user, rerender} = render(
       <Header
-        task={taskMocks.assignedTask('0')}
+        task={taskMocks.assignedTask()}
         user={userMocks.currentUser}
         onAssignmentError={noop}
       />,

@@ -16,7 +16,7 @@ function useAutoSelectNextTask() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const navigateToTaskDetailsWithRef = (taskId: string) => {
+  const navigateToTaskDetailsWithRef = (taskId: number) => {
     const search = new URLSearchParams(location.search);
     search.set(
       'ref',

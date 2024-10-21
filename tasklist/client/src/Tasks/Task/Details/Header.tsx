@@ -14,7 +14,8 @@ import {CheckmarkFilled} from '@carbon/react/icons';
 import {AssigneeTag} from 'Tasks/AssigneeTag';
 import {AsyncActionButton} from 'modules/components/AsyncActionButton';
 import {Restricted} from 'modules/components/Restricted';
-import type {CurrentUser, Task} from 'modules/types';
+import type {CurrentUser} from 'modules/types';
+import type {UserTask} from '@vzeta/camunda-api-zod-schemas/tasklist';
 import {useAssignTask} from 'modules/mutations/useAssignTask';
 import {useUnassignTask} from 'modules/mutations/useUnassignTask';
 import {notificationsStore} from 'modules/stores/notifications';
@@ -40,23 +41,33 @@ type AssignmentStatus =
   | 'unassignmentSuccessful';
 
 type Props = {
-  task: Task;
+  task: UserTask;
   user: CurrentUser;
   onAssignmentError: () => void;
 };
 
 const Header: React.FC<Props> = ({task, user, onAssignmentError}) => {
-  const {id, name, processName, assignee, taskState} = task;
+  const {
+    userTaskKey,
+    assignee,
+    state,
+    elementName,
+    elementId,
+    processName,
+    processDefinitionId,
+  } = task;
   const {t} = useTranslation();
 
   return (
     <header className={styles.header} title={t('taskDetailsHeader')}>
       <div className={styles.headerLeftContainer}>
-        <span className={styles.taskName}>{name}</span>
-        <span className={styles.processName}>{processName}</span>
+        <span className={styles.taskName}>{elementName ?? elementId}</span>
+        <span className={styles.processName}>
+          {processName ?? processDefinitionId}
+        </span>
       </div>
       <div className={styles.headerRightContainer}>
-        {taskState === 'COMPLETED' ? (
+        {state === 'COMPLETED' ? (
           <span
             className={styles.taskStatus}
             data-testid="completion-label"
@@ -93,11 +104,11 @@ const Header: React.FC<Props> = ({task, user, onAssignmentError}) => {
             />
           </span>
         )}
-        {taskState === 'CREATED' && (
+        {state === 'CREATED' && (
           <Restricted scopes={['write']}>
             <span className={styles.assignButtonContainer}>
               <AssignButton
-                id={id}
+                id={userTaskKey}
                 assignee={assignee}
                 onAssignmentError={onAssignmentError}
               />
@@ -110,8 +121,8 @@ const Header: React.FC<Props> = ({task, user, onAssignmentError}) => {
 };
 
 const AssignButton: React.FC<{
-  id: string;
-  assignee: string | null;
+  id: number;
+  assignee: string | undefined;
   onAssignmentError: () => void;
 }> = ({id, assignee, onAssignmentError}) => {
   const isAssigned = assignee !== null;

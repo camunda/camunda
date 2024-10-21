@@ -9,15 +9,16 @@
 import {useMutation} from '@tanstack/react-query';
 import {api} from 'modules/api';
 import {type RequestError, request} from 'modules/request';
-import type {Task, Variable} from 'modules/types';
+import type {Variable} from 'modules/types';
+import type {UserTask} from '@vzeta/camunda-api-zod-schemas/tasklist';
 
 type Payload = {
-  taskId: Task['id'];
+  userTaskKey: UserTask['userTaskKey'];
   variables: Pick<Variable, 'name' | 'value'>[];
 };
 
 function useCompleteTask() {
-  return useMutation<Task, RequestError | Error, Payload>({
+  return useMutation<UserTask, RequestError | Error, Payload>({
     mutationFn: async (payload) => {
       const {response, error} = await request(api.completeTask(payload));
 

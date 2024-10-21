@@ -65,6 +65,8 @@ describe('<AvailableTasks />', () => {
         loading
         onScrollDown={noop}
         onScrollUp={noop}
+        hasNextPage={false}
+        hasPreviousPage={false}
         tasks={[]}
       />,
       {
@@ -80,6 +82,8 @@ describe('<AvailableTasks />', () => {
         loading={false}
         onScrollDown={noop}
         onScrollUp={noop}
+        hasNextPage={false}
+        hasPreviousPage={false}
         tasks={tasksMocks.tasks}
       />,
     );
@@ -96,6 +100,8 @@ describe('<AvailableTasks />', () => {
         loading={false}
         onScrollDown={noop}
         onScrollUp={noop}
+        hasNextPage={false}
+        hasPreviousPage={false}
         tasks={tasksMocks.tasks}
       />,
       {wrapper: getWrapper()},
@@ -108,21 +114,25 @@ describe('<AvailableTasks />', () => {
     const withinFirstTask = within(screen.getByTestId('task-0'));
     const withinSecondTask = within(screen.getByTestId('task-1'));
 
-    expect(withinFirstTask.getByText(firstTask.name)).toBeInTheDocument();
     expect(
-      withinFirstTask.getByText(firstTask.processName),
+      withinFirstTask.getByText(firstTask.elementName!),
     ).toBeInTheDocument();
     expect(
-      withinFirstTask.getByTitle('Created on 28th of May, 2023 at 10:11 AM'),
+      withinFirstTask.getByText(firstTask.processName!),
+    ).toBeInTheDocument();
+    expect(
+      withinFirstTask.getByTitle('Created on 1st of January at 12:00 AM'),
     ).toBeInTheDocument();
     expect(await withinFirstTask.findByText('Me')).toBeInTheDocument();
 
-    expect(withinSecondTask.getByText(secondTask.name)).toBeInTheDocument();
     expect(
-      withinSecondTask.getByText(secondTask.processName),
+      withinSecondTask.getByText(secondTask.elementName!),
     ).toBeInTheDocument();
     expect(
-      withinSecondTask.getByTitle('Created on 29th of May, 2023 at 1:14 PM'),
+      withinSecondTask.getByText(secondTask.processName!),
+    ).toBeInTheDocument();
+    expect(
+      withinSecondTask.getByTitle('Created on 1st of January at 12:00 AM'),
     ).toBeInTheDocument();
     expect(withinSecondTask.getByText('mustermann')).toBeInTheDocument();
   });
@@ -133,6 +143,8 @@ describe('<AvailableTasks />', () => {
         loading={false}
         onScrollDown={noop}
         onScrollUp={noop}
+        hasNextPage={false}
+        hasPreviousPage={false}
         tasks={[]}
       />,
       {wrapper: getWrapper()},

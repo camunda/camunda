@@ -9,14 +9,14 @@
 import {observer} from 'mobx-react-lite';
 import {pages} from 'modules/routing';
 import {newProcessInstance} from 'modules/stores/newProcessInstance';
-import type {Task} from 'modules/types';
+import type {UserTask} from '@vzeta/camunda-api-zod-schemas/tasklist';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {tracking} from 'modules/tracking';
 import {useQuery} from '@tanstack/react-query';
 import {request, type RequestError} from 'modules/request';
 import {api} from 'modules/api';
 
-type NewTasksResponse = Task[];
+type NewTasksResponse = UserTask[];
 
 const NewProcessInstanceTasksPolling: React.FC = observer(() => {
   const {instance} = newProcessInstance;
@@ -35,9 +35,13 @@ const NewProcessInstanceTasksPolling: React.FC = observer(() => {
 
       const {response, error} = await request(
         api.searchTasks({
-          pageSize: 10,
-          processInstanceKey: id,
-          state: 'CREATED',
+          filter: {
+            processInstanceKey: Number(id),
+            state: 'CREATED',
+          },
+          page: {
+            limit: 10,
+          },
         }),
       );
 

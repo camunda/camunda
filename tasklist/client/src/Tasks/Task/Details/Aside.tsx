@@ -9,12 +9,13 @@
 import {ContainedList, ContainedListItem, Tag} from '@carbon/react';
 import {formatDate} from 'modules/utils/formatDate';
 import styles from './Aside.module.scss';
-import type {CurrentUser, Task} from 'modules/types';
+import type {CurrentUser} from 'modules/types';
+import type {UserTask} from '@vzeta/camunda-api-zod-schemas/tasklist';
 import {useTranslation} from 'react-i18next';
 import {getPriorityLabel} from 'modules/utils/getPriorityLabel';
 
 type Props = {
-  task: Task;
+  task: UserTask;
   user: CurrentUser;
 };
 

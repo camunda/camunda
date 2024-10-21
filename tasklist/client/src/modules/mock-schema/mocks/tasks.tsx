@@ -6,137 +6,52 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {Task} from 'modules/types';
+import type {
+  QueryUserTasksResponseBody,
+  UserTask,
+} from '@vzeta/camunda-api-zod-schemas/tasklist';
 import {currentUser} from './current-user';
-import {DEFAULT_TENANT_ID} from 'modules/constants/multiTenancy';
-import {formatRFC3339} from 'date-fns';
+import {assignedTask} from './task';
 
-const tasks: Task[] = [
-  {
-    id: '0',
-    name: 'name',
-    processName: 'processName',
-    creationDate: '2023-05-28 10:11:12',
-    completionDate: formatRFC3339(new Date()),
-    assignee: currentUser.userId,
-    priority: 50,
-    taskState: 'CREATED',
-    sortValues: ['0', '1'],
-    isFirst: true,
-    formKey: null,
-    formId: null,
-    formVersion: null,
-    isFormEmbedded: null,
-    processDefinitionKey: 'process-definition-id',
-    taskDefinitionId: 'task-definition-id',
-    processInstanceKey: 'process-instance-key',
-    followUpDate: null,
-    dueDate: null,
-    candidateGroups: [],
-    candidateUsers: [],
-    tenantId: DEFAULT_TENANT_ID,
-    context: 'My Task',
-  },
-  {
-    id: '1',
-    name: 'name',
-    processName: 'processName',
-    creationDate: '2023-05-29 13:14:15',
-    completionDate: formatRFC3339(new Date()),
-    priority: 25,
-    assignee: 'mustermann',
-    taskState: 'CREATED',
-    sortValues: ['1', '2'],
-    isFirst: false,
-    formKey: null,
-    formId: null,
-    formVersion: null,
-    isFormEmbedded: null,
-    processDefinitionKey: 'process-definition-id',
-    taskDefinitionId: 'task-definition-id',
-    processInstanceKey: 'process-instance-key',
-    followUpDate: null,
-    dueDate: null,
-    candidateGroups: [],
-    candidateUsers: [],
-    tenantId: DEFAULT_TENANT_ID,
-    context: 'My Task',
-  },
-  {
-    id: '2',
-    name: 'name',
-    processName: 'processName',
-    creationDate: '2023-05-30 16:17:18',
-    completionDate: formatRFC3339(new Date()),
-    priority: 75,
-    assignee: null,
-    taskState: 'CREATED',
-    sortValues: ['2', '3'],
-    isFirst: false,
-    formKey: null,
-    formId: null,
-    formVersion: null,
-    isFormEmbedded: null,
-    processDefinitionKey: 'process-definition-id',
-    taskDefinitionId: 'task-definition-id',
-    processInstanceKey: 'process-instance-key',
-    followUpDate: null,
-    dueDate: null,
-    candidateGroups: [],
-    candidateUsers: [],
-    tenantId: DEFAULT_TENANT_ID,
-    context: 'My Task',
-  },
+const tasks: UserTask[] = [
+  assignedTask({userTaskKey: 0}),
+  assignedTask({userTaskKey: 1, assignee: 'mustermann'}),
+  assignedTask({userTaskKey: 2}),
 ];
 
-const tasksAssignedToDemoUser: Task[] = tasks.map((task) => ({
+const tasksAssignedToDemoUser: UserTask[] = tasks.map((task) => ({
   ...task,
   assignee: currentUser.userId,
 }));
 
-const unassignedTasks: Task[] = tasks.map((task) => ({
+const unassignedTasks: UserTask[] = tasks.map((task) => ({
   ...task,
-  assignee: null,
 }));
 
-const completedTasks: Task[] = tasks.map((task) => ({
+const completedTasks: UserTask[] = tasks.map((task) => ({
   ...task,
   assignee: task.assignee === null ? currentUser.userId : task.assignee,
   taskState: 'COMPLETED',
 }));
 
-const generateTask = (id: string, name?: string): Task => {
+function getQueryTasksResponseMock(
+  tasks: UserTask[],
+  totalItems: number = tasks.length,
+): QueryUserTasksResponseBody {
   return {
-    id,
-    name: name ?? `TASK ${id}`,
-    processName: 'Flight registration',
-    assignee: 'demo',
-    creationDate: '2024-01-13T12:13:18.655Z',
-    taskState: 'CREATED',
-    sortValues: [id, id],
-    followUpDate: null,
-    dueDate: null,
-    isFirst: false,
-    processDefinitionKey: 'process-definition-id',
-    taskDefinitionId: 'task-definition-id',
-    processInstanceKey: 'process-instance-key',
-    completionDate: null,
-    priority: 50,
-    formKey: null,
-    formId: null,
-    formVersion: null,
-    isFormEmbedded: null,
-    candidateGroups: [],
-    candidateUsers: [],
-    tenantId: DEFAULT_TENANT_ID,
-    context: 'My Task',
+    items: tasks,
+    page: {
+      totalItems,
+      firstSortValues: [0, 1],
+      lastSortValues: [2, 3],
+    },
   };
-};
+}
 
 export {
   tasks,
   tasksAssignedToDemoUser,
   unassignedTasks,
   completedTasks,
-  generateTask,
+  getQueryTasksResponseMock,
 };

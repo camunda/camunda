@@ -53,7 +53,7 @@ test.describe('form-js integration', () => {
         });
       }
 
-      if (route.request().url().includes('v1/tasks/search')) {
+      if (route.request().url().includes('v2/user-tasks/search')) {
         return route.fulfill({
           status: 200,
           body: JSON.stringify([MOCK_TASK]),

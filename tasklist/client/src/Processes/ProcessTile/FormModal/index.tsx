@@ -47,9 +47,7 @@ const FormModal: React.FC<Props> = ({
   const processDisplayName = getProcessDisplayName(process);
   const {data, fetchStatus, status} = useForm(
     {
-      id: process.startEventFormId!,
-      processDefinitionKey: process.id,
-      version: 'latest',
+      formKey: Number(process.startEventFormId!),
     },
     {
       enabled: isOpen && process.startEventFormId !== null,

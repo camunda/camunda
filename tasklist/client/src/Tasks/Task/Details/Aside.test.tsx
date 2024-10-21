@@ -48,13 +48,19 @@ describe('<Aside />', () => {
     window.clientConfig = DEFAULT_MOCK_CLIENT_CONFIG;
   });
 
-  it('should render completed task details', async () => {
+  beforeEach(() => {
     nodeMockServer.use(
-      http.get('/v1/internal/users/current', () => {
-        return HttpResponse.json(userMocks.currentUser);
-      }),
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentUser);
+        },
+        {once: true},
+      ),
     );
+  });
 
+  it('should render completed task details', async () => {
     render(
       <Aside task={taskMocks.completedTask()} user={userMocks.currentUser} />,
       {

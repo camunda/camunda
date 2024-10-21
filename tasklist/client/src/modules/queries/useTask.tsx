@@ -13,27 +13,27 @@ import {
 } from '@tanstack/react-query';
 import {api} from 'modules/api';
 import {type RequestError, request} from 'modules/request';
-import type {Task} from 'modules/types';
+import type {UserTask} from '@vzeta/camunda-api-zod-schemas/tasklist';
 
-function getUseTaskQueryKey(id: Task['id']) {
-  return ['task', id];
+function getUseTaskQueryKey(userTaskKey: UserTask['userTaskKey']) {
+  return ['task', userTaskKey];
 }
 
 function useTask(
-  id: Task['id'],
+  userTaskKey: UserTask['userTaskKey'],
   options?: Pick<
-    UseQueryOptions<Task, RequestError | Error>,
+    UseQueryOptions<UserTask, RequestError | Error>,
     | 'enabled'
     | 'refetchOnWindowFocus'
     | 'refetchOnReconnect'
     | 'refetchInterval'
   >,
 ) {
-  return useQuery<Task, RequestError | Error>({
+  return useQuery<UserTask, RequestError | Error>({
     ...options,
-    queryKey: getUseTaskQueryKey(id),
+    queryKey: getUseTaskQueryKey(userTaskKey),
     queryFn: async () => {
-      const {response, error} = await request(api.getTask(id));
+      const {response, error} = await request(api.getTask(userTaskKey));
 
       if (response !== null) {
         return response.json();
@@ -45,23 +45,21 @@ function useTask(
   });
 }
 
-function useRemoveFormReference(task: Task) {
+function useRemoveFormReference(task: UserTask) {
   const client = useQueryClient();
 
   function removeFormReference() {
-    client.setQueryData<Task>(getUseTaskQueryKey(task.id), (cachedTask) => {
-      if (cachedTask === undefined) {
-        return cachedTask;
-      }
+    client.setQueryData<UserTask>(
+      getUseTaskQueryKey(task.userTaskKey),
+      (cachedTask) => {
+        if (cachedTask === undefined) {
+          return cachedTask;
+        }
+        const {formKey: _, ...updatedTask} = cachedTask;
 
-      return {
-        ...cachedTask,
-        formKey: null,
-        isFormEmbedded: null,
-        formId: null,
-        formVersion: null,
-      };
-    });
+        return updatedTask;
+      },
+    );
   }
 
   return {removeFormReference};

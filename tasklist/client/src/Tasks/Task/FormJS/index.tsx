@@ -7,7 +7,8 @@
  */
 
 import {useMemo, useRef, useState} from 'react';
-import type {Form, Variable, CurrentUser, Task} from 'modules/types';
+import type {Variable, CurrentUser} from 'modules/types';
+import type {UserTask} from '@vzeta/camunda-api-zod-schemas/tasklist';
 import {useRemoveFormReference} from 'modules/queries/useTask';
 import {getSchemaVariables} from '@bpmn-io/form-js-viewer';
 import {DetailsFooter} from 'modules/components/DetailsFooter';
@@ -53,9 +54,8 @@ function extractVariablesFromFormSchema(
 }
 
 type Props = {
-  id: Form['id'];
-  processDefinitionKey: Form['processDefinitionKey'];
-  task: Task;
+  formKey: NonNullable<UserTask['formKey']>;
+  task: UserTask;
   onSubmit: (variables: Variable[]) => Promise<void>;
   onSubmitSuccess: () => void;
   onSubmitFailure: (error: Error) => void;
@@ -63,8 +63,7 @@ type Props = {
 };
 
 const FormJS: React.FC<Props> = ({
-  id,
-  processDefinitionKey,
+  formKey,
   task,
   onSubmit,
   onSubmitSuccess,
@@ -75,12 +74,10 @@ const FormJS: React.FC<Props> = ({
   const formManagerRef = useRef<FormManager | null>(null);
   const [submissionState, setSubmissionState] =
     useState<NonNullable<InlineLoadingProps['status']>>('inactive');
-  const {assignee, taskState, formVersion} = task;
+  const {assignee, state} = task;
   const {data, isLoading} = useForm(
     {
-      id,
-      processDefinitionKey,
-      version: formVersion ?? null,
+      formKey,
     },
     {
       refetchOnReconnect: false,
@@ -92,7 +89,7 @@ const FormJS: React.FC<Props> = ({
   const extractedVariables = extractVariablesFromFormSchema(schema);
   const {data: variablesData, status} = useVariables(
     {
-      taskId: task.id,
+      userTaskKey: task.userTaskKey,
       variableNames: extractedVariables,
     },
     {
@@ -109,7 +106,7 @@ const FormJS: React.FC<Props> = ({
     extractedVariables.length === 0 || status === 'success';
   const canCompleteTask =
     user.userId === assignee &&
-    taskState === 'CREATED' &&
+    state === 'CREATED' &&
     hasPermission &&
     hasFetchedVariables;
   const {removeFormReference} = useRemoveFormReference(task);
@@ -185,7 +182,7 @@ const FormJS: React.FC<Props> = ({
             onError={() => {
               setSubmissionState('inactive');
             }}
-            isHidden={taskState === 'COMPLETED'}
+            isHidden={state === 'COMPLETED'}
             isDisabled={!canCompleteTask}
           />
         </DetailsFooter>

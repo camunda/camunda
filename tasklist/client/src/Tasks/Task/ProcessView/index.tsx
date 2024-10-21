@@ -23,7 +23,7 @@ const ProcessView: React.FC = () => {
   }
 
   const {name, version, bpmnXml} = process;
-  const {taskDefinitionId} = task;
+  const {elementId} = task;
 
   return (
     <Layer className={styles.container}>
@@ -35,7 +35,7 @@ const ProcessView: React.FC = () => {
       </div>
       {bpmnXml !== null ? (
         <Layer className={styles.diagramFrame}>
-          <BPMNDiagram xml={bpmnXml} highlightActivity={[taskDefinitionId]} />
+          <BPMNDiagram xml={bpmnXml} highlightActivity={[elementId]} />
         </Layer>
       ) : null}
     </Layer>

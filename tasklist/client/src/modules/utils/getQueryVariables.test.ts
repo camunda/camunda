@@ -6,22 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {TasksSearchBody} from 'modules/types';
 import {getQueryVariables} from './getQueryVariables';
 import {storeStateLocally} from './localStorage';
-
-function mergeWithDefaultQuery(
-  query: Partial<TasksSearchBody>,
-): TasksSearchBody {
-  return {
-    pageSize: undefined,
-    searchAfter: undefined,
-    searchAfterOrEqual: undefined,
-    searchBefore: undefined,
-    searchBeforeOrEqual: undefined,
-    ...query,
-  };
-}
 
 describe('getQueryVariables()', () => {
   it('should return correct query body for all open tasks filter', () => {
@@ -32,19 +18,24 @@ describe('getQueryVariables()', () => {
           sortBy: 'creation',
           sortOrder: 'asc',
         },
-        {},
+        {
+          pageSize: 10,
+        },
       ),
-    ).toStrictEqual(
-      mergeWithDefaultQuery({
-        sort: [
-          {
-            field: 'creationTime',
-            order: 'ASC',
-          },
-        ],
+    ).toStrictEqual({
+      sort: [
+        {
+          field: 'creationDate',
+          order: 'asc',
+        },
+      ],
+      filter: {
         state: 'CREATED',
-      }),
-    );
+      },
+      page: {
+        limit: 10,
+      },
+    });
   });
 
   it('should return correct query body for assigned to me filter', () => {
@@ -56,22 +47,25 @@ describe('getQueryVariables()', () => {
           sortOrder: 'asc',
         },
         {
-          assignee: 'demo',
+          currentUserId: 'demo',
+          pageSize: 10,
         },
       ),
-    ).toStrictEqual(
-      mergeWithDefaultQuery({
-        sort: [
-          {
-            field: 'creationTime',
-            order: 'ASC',
-          },
-        ],
-        assigned: true,
+    ).toStrictEqual({
+      sort: [
+        {
+          field: 'creationDate',
+          order: 'asc',
+        },
+      ],
+      filter: {
         assignee: 'demo',
         state: 'CREATED',
-      }),
-    );
+      },
+      page: {
+        limit: 10,
+      },
+    });
   });
 
   it('should return correct query body for unassigned filter', () => {
@@ -82,20 +76,24 @@ describe('getQueryVariables()', () => {
           sortBy: 'creation',
           sortOrder: 'asc',
         },
-        {},
+        {
+          pageSize: 10,
+        },
       ),
-    ).toStrictEqual(
-      mergeWithDefaultQuery({
-        sort: [
-          {
-            field: 'creationTime',
-            order: 'ASC',
-          },
-        ],
-        assigned: false,
+    ).toStrictEqual({
+      sort: [
+        {
+          field: 'creationDate',
+          order: 'asc',
+        },
+      ],
+      filter: {
         state: 'CREATED',
-      }),
-    );
+      },
+      page: {
+        limit: 10,
+      },
+    });
   });
 
   it('should return correct query body for completed filter', () => {
@@ -106,19 +104,24 @@ describe('getQueryVariables()', () => {
           sortBy: 'creation',
           sortOrder: 'asc',
         },
-        {},
+        {
+          pageSize: 10,
+        },
       ),
-    ).toStrictEqual(
-      mergeWithDefaultQuery({
-        sort: [
-          {
-            field: 'creationTime',
-            order: 'ASC',
-          },
-        ],
+    ).toStrictEqual({
+      sort: [
+        {
+          field: 'creationDate',
+          order: 'asc',
+        },
+      ],
+      filter: {
         state: 'COMPLETED',
-      }),
-    );
+      },
+      page: {
+        limit: 10,
+      },
+    });
   });
 
   it('should return correct query body for custom filter', () => {
@@ -145,30 +148,33 @@ describe('getQueryVariables()', () => {
           sortBy: 'creation',
           sortOrder: 'asc',
         },
-        {},
+        {
+          pageSize: 10,
+        },
       ),
-    ).toStrictEqual(
-      mergeWithDefaultQuery({
-        sort: [
-          {
-            field: 'creationTime',
-            order: 'ASC',
-          },
-        ],
-        taskVariables: [
+    ).toStrictEqual({
+      sort: [
+        {
+          field: 'creationDate',
+          order: 'asc',
+        },
+      ],
+      filter: {
+        variables: [
           {
             name: 'var1',
             value: 'value1',
-            operator: 'eq',
           },
           {
             name: 'var2',
             value: 'value2',
-            operator: 'eq',
           },
         ],
-      }),
-    );
+      },
+      page: {
+        limit: 10,
+      },
+    });
   });
 
   it('should return correct query body for persistable custom filter', () => {
@@ -196,31 +202,33 @@ describe('getQueryVariables()', () => {
           sortOrder: 'asc',
         },
         {
-          assignee: 'demo',
+          currentUserId: 'demo',
+          pageSize: 10,
         },
       ),
-    ).toStrictEqual(
-      mergeWithDefaultQuery({
-        sort: [
-          {
-            field: 'creationTime',
-            order: 'ASC',
-          },
-        ],
-        taskVariables: [
+    ).toStrictEqual({
+      sort: [
+        {
+          field: 'creationDate',
+          order: 'asc',
+        },
+      ],
+      filter: {
+        variables: [
           {
             name: 'var1',
             value: 'value1',
-            operator: 'eq',
           },
           {
             name: 'var2',
             value: 'value2',
-            operator: 'eq',
           },
         ],
-      }),
-    );
+      },
+      page: {
+        limit: 10,
+      },
+    });
   });
 
   it('should return correct query body for page params', () => {
@@ -230,52 +238,25 @@ describe('getQueryVariables()', () => {
           filter: 'custom',
           sortBy: 'creation',
           sortOrder: 'asc',
+          candidateGroup: 'admin',
         },
         {
-          searchAfter: [
-            '2023-08-25T15:41:45.322+0300',
-            '2023-08-25T15:41:45.322+0300',
-          ],
-          searchAfterOrEqual: [
-            '2023-08-25T15:41:45.322+0300',
-            '2023-08-25T15:41:45.322+0300',
-          ],
-          searchBefore: [
-            '2023-08-25T15:41:45.322+0300',
-            '2023-08-25T15:41:45.322+0300',
-          ],
-          searchBeforeOrEqual: [
-            '2023-08-25T15:41:45.322+0300',
-            '2023-08-25T15:41:45.322+0300',
-          ],
           pageSize: 10,
         },
       ),
     ).toStrictEqual({
       sort: [
         {
-          field: 'creationTime',
-          order: 'ASC',
+          field: 'creationDate',
+          order: 'asc',
         },
       ],
-      pageSize: 10,
-      searchAfter: [
-        '2023-08-25T15:41:45.322+0300',
-        '2023-08-25T15:41:45.322+0300',
-      ],
-      searchAfterOrEqual: [
-        '2023-08-25T15:41:45.322+0300',
-        '2023-08-25T15:41:45.322+0300',
-      ],
-      searchBefore: [
-        '2023-08-25T15:41:45.322+0300',
-        '2023-08-25T15:41:45.322+0300',
-      ],
-      searchBeforeOrEqual: [
-        '2023-08-25T15:41:45.322+0300',
-        '2023-08-25T15:41:45.322+0300',
-      ],
-      taskVariables: undefined,
+      filter: {
+        candidateGroups: ['admin'],
+      },
+      page: {
+        limit: 10,
+      },
     });
   });
 
@@ -287,19 +268,24 @@ describe('getQueryVariables()', () => {
           sortBy: 'due',
           sortOrder: 'asc',
         },
-        {},
+        {
+          pageSize: 10,
+        },
       ),
-    ).toStrictEqual(
-      mergeWithDefaultQuery({
-        sort: [
-          {
-            field: 'dueDate',
-            order: 'ASC',
-          },
-        ],
+    ).toStrictEqual({
+      sort: [
+        {
+          field: 'dueDate',
+          order: 'asc',
+        },
+      ],
+      filter: {
         state: 'CREATED',
-      }),
-    );
+      },
+      page: {
+        limit: 10,
+      },
+    });
 
     expect(
       getQueryVariables(
@@ -308,19 +294,24 @@ describe('getQueryVariables()', () => {
           sortBy: 'due',
           sortOrder: 'desc',
         },
-        {},
+        {
+          pageSize: 10,
+        },
       ),
-    ).toStrictEqual(
-      mergeWithDefaultQuery({
-        sort: [
-          {
-            field: 'dueDate',
-            order: 'DESC',
-          },
-        ],
+    ).toStrictEqual({
+      sort: [
+        {
+          field: 'dueDate',
+          order: 'desc',
+        },
+      ],
+      filter: {
         state: 'CREATED',
-      }),
-    );
+      },
+      page: {
+        limit: 10,
+      },
+    });
 
     expect(
       getQueryVariables(
@@ -329,19 +320,24 @@ describe('getQueryVariables()', () => {
           sortBy: 'follow-up',
           sortOrder: 'asc',
         },
-        {},
+        {
+          pageSize: 10,
+        },
       ),
-    ).toStrictEqual(
-      mergeWithDefaultQuery({
-        sort: [
-          {
-            field: 'followUpDate',
-            order: 'ASC',
-          },
-        ],
+    ).toStrictEqual({
+      sort: [
+        {
+          field: 'followUpDate',
+          order: 'asc',
+        },
+      ],
+      filter: {
         state: 'CREATED',
-      }),
-    );
+      },
+      page: {
+        limit: 10,
+      },
+    });
 
     expect(
       getQueryVariables(
@@ -350,19 +346,24 @@ describe('getQueryVariables()', () => {
           sortBy: 'follow-up',
           sortOrder: 'desc',
         },
-        {},
+        {
+          pageSize: 10,
+        },
       ),
-    ).toStrictEqual(
-      mergeWithDefaultQuery({
-        sort: [
-          {
-            field: 'followUpDate',
-            order: 'DESC',
-          },
-        ],
+    ).toStrictEqual({
+      sort: [
+        {
+          field: 'followUpDate',
+          order: 'desc',
+        },
+      ],
+      filter: {
         state: 'CREATED',
-      }),
-    );
+      },
+      page: {
+        limit: 10,
+      },
+    });
 
     expect(
       getQueryVariables(
@@ -371,19 +372,24 @@ describe('getQueryVariables()', () => {
           sortBy: 'completion',
           sortOrder: 'asc',
         },
-        {},
+        {
+          pageSize: 10,
+        },
       ),
-    ).toStrictEqual(
-      mergeWithDefaultQuery({
-        sort: [
-          {
-            field: 'completionTime',
-            order: 'ASC',
-          },
-        ],
+    ).toStrictEqual({
+      sort: [
+        {
+          field: 'completionDate',
+          order: 'asc',
+        },
+      ],
+      filter: {
         state: 'CREATED',
-      }),
-    );
+      },
+      page: {
+        limit: 10,
+      },
+    });
 
     expect(
       getQueryVariables(
@@ -392,18 +398,23 @@ describe('getQueryVariables()', () => {
           sortBy: 'completion',
           sortOrder: 'desc',
         },
-        {},
+        {
+          pageSize: 10,
+        },
       ),
-    ).toStrictEqual(
-      mergeWithDefaultQuery({
-        sort: [
-          {
-            field: 'completionTime',
-            order: 'DESC',
-          },
-        ],
+    ).toStrictEqual({
+      sort: [
+        {
+          field: 'completionDate',
+          order: 'desc',
+        },
+      ],
+      filter: {
         state: 'CREATED',
-      }),
-    );
+      },
+      page: {
+        limit: 10,
+      },
+    });
   });
 });

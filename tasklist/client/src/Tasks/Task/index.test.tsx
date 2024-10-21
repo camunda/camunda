@@ -90,7 +90,7 @@ describe('<Task />', () => {
         {once: true},
       ),
       http.post(
-        '/v1/tasks/search',
+        '/v2/user-tasks/search',
         async () => {
           return HttpResponse.json([taskMocks.unassignedTask()]);
         },
@@ -149,72 +149,7 @@ describe('<Task />', () => {
         {once: true},
       ),
       http.post(
-        '/v1/tasks/search',
-        async () => {
-          return HttpResponse.json([taskMocks.unassignedTask()]);
-        },
-        {once: true},
-      ),
-      http.get(
-        '/v1/internal/processes/:processId',
-        async () => new HttpResponse(undefined, {status: 404}),
-      ),
-    );
-
-    render(<Component />, {
-      wrapper: getWrapper(['/0']),
-    });
-
-    await waitForElementToBeRemoved(() =>
-      screen.queryByTestId('details-skeleton'),
-    );
-
-    expect(screen.getByTestId('details-info')).toBeInTheDocument();
-    expect(screen.getByTestId('embedded-form')).toBeInTheDocument();
-    expect(
-      await screen.findByRole('button', {name: /complete task/i}),
-    ).toBeInTheDocument();
-  });
-
-  it('should render created task with deployed form', async () => {
-    nodeMockServer.use(
-      http.get(
-        '/v1/tasks/:taskId',
-        () => {
-          return HttpResponse.json(taskMocks.assignedTaskWithFormDeployed());
-        },
-        {once: true},
-      ),
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
-        },
-        {once: true},
-      ),
-      http.get(
-        '/v1/forms/:formId',
-        () => {
-          return HttpResponse.json(formMocks.form);
-        },
-        {once: true},
-      ),
-      http.post(
-        '/v1/tasks/:taskId/variables/search',
-        () => {
-          return HttpResponse.json(variableMocks.variables);
-        },
-        {once: true},
-      ),
-      http.post(
-        '/v1/tasks/:taskId/variables/search',
-        () => {
-          return HttpResponse.json(variableMocks.variables);
-        },
-        {once: true},
-      ),
-      http.post(
-        '/v1/tasks/search',
+        '/v2/user-tasks/search',
         async () => {
           return HttpResponse.json([taskMocks.unassignedTask()]);
         },
@@ -265,7 +200,7 @@ describe('<Task />', () => {
         {once: true},
       ),
       http.post(
-        '/v1/tasks/search',
+        '/v2/user-tasks/search',
         async () => {
           return HttpResponse.json([taskMocks.unassignedTask()]);
         },
@@ -320,60 +255,7 @@ describe('<Task />', () => {
         {once: true},
       ),
       http.post(
-        '/v1/tasks/search',
-        async () => {
-          return HttpResponse.json([taskMocks.unassignedTask()]);
-        },
-        {once: true},
-      ),
-      http.get(
-        '/v1/internal/processes/:processId',
-        async () => new HttpResponse(undefined, {status: 404}),
-      ),
-    );
-
-    render(<Component />, {
-      wrapper: getWrapper(['/0']),
-    });
-
-    expect(await screen.findByTestId('details-info')).toBeInTheDocument();
-    expect(await screen.findByTestId('embedded-form')).toBeInTheDocument();
-    // jest-dom is not parsing the visibility properly so need to check the class
-    expect(screen.queryByText(/complete task/i)).toHaveClass('hide');
-  });
-
-  it('should render completed task with deployed form', async () => {
-    nodeMockServer.use(
-      http.get(
-        '/v1/tasks/:taskId',
-        () => {
-          return HttpResponse.json(taskMocks.completedTaskWithFormDeployed());
-        },
-        {once: true},
-      ),
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
-        },
-        {once: true},
-      ),
-      http.get(
-        '/v1/forms/:formId',
-        () => {
-          return HttpResponse.json(formMocks.form);
-        },
-        {once: true},
-      ),
-      http.post(
-        '/v1/tasks/:taskId/variables/search',
-        () => {
-          return HttpResponse.json(variableMocks.variables);
-        },
-        {once: true},
-      ),
-      http.post(
-        '/v1/tasks/search',
+        '/v2/user-tasks/search',
         async () => {
           return HttpResponse.json([taskMocks.unassignedTask()]);
         },
@@ -433,7 +315,7 @@ describe('<Task />', () => {
         {once: true},
       ),
       http.post(
-        '/v1/tasks/search',
+        '/v2/user-tasks/search',
         async () => {
           return HttpResponse.json([taskMocks.unassignedTask()]);
         },
@@ -489,7 +371,7 @@ describe('<Task />', () => {
         return HttpResponse.json(variableMocks.variables);
       }),
       http.post(
-        '/v1/tasks/search',
+        '/v2/user-tasks/search',
         async () => {
           return HttpResponse.json([taskMocks.unassignedTask()]);
         },
@@ -556,7 +438,7 @@ describe('<Task />', () => {
         {once: true},
       ),
       http.post(
-        '/v1/tasks/search',
+        '/v2/user-tasks/search',
         async () => {
           return HttpResponse.json([taskMocks.unassignedTask()]);
         },
@@ -623,7 +505,7 @@ describe('<Task />', () => {
         {once: true},
       ),
       http.post(
-        '/v1/tasks/search',
+        '/v2/user-tasks/search',
         async () => {
           return HttpResponse.json([taskMocks.unassignedTask()]);
         },
@@ -694,7 +576,7 @@ describe('<Task />', () => {
         {once: true},
       ),
       http.post(
-        '/v1/tasks/search',
+        '/v2/user-tasks/search',
         async () => {
           return HttpResponse.json([taskMocks.unassignedTask()]);
         },
