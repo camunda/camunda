@@ -17,7 +17,7 @@ const DateLabel: React.FC<{
   absoluteLabel: string;
   icon?: React.ReactNode;
   align?: React.ComponentProps<typeof Popover>['align'];
-}> = ({date, relativeLabel, absoluteLabel, icon, align = 'top-left'}) => (
+}> = ({date, relativeLabel, absoluteLabel, icon, align = 'top-start'}) => (
   <LabelWithPopover
     title={
       ['week', 'months', 'years'].includes(date.relative.resolution)
