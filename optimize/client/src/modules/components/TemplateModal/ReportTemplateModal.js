@@ -9,7 +9,6 @@
 import React, {useEffect, useState} from 'react';
 import {getMaxNumDataSourcesForReport} from 'config';
 import {t} from 'translation';
-import {useUiConfig} from 'hooks';
 
 import TemplateModal from './TemplateModal';
 import {
@@ -29,7 +28,6 @@ import {
 import './ReportTemplateModal.scss';
 
 export default function ReportTemplateModal({onClose, onConfirm, initialDefinitions}) {
-  const {optimizeDatabase} = useUiConfig();
   const [reportDataSourceLimit, setReportDataSourceLimit] = useState(100);
 
   const templateGroups = [
@@ -39,7 +37,19 @@ export default function ReportTemplateModal({onClose, onConfirm, initialDefiniti
     },
     {
       name: 'templatesGroup',
-      templates: getTemplates(optimizeDatabase),
+      templates: [
+        locateBottlenecsOnAHitmapTemplate(),
+        localeIncidentHotspotsOnAHeatmapTemplate(),
+        monitorTargetAsKpiTemplate(),
+        monitorTargetAsMetricTemplate(),
+        monitorTargetsOverTimeTemplate(),
+        correlateMetricsInLineBarChartTemplate(),
+        correlateDurationAndCountInPieChartTemplate(),
+        listIncidentsAsTableTemplate(),
+        compareProcessesAndVersionsInABarChartTemplate(),
+        analyzeSharesAsPieChartTemplate(),
+        analyzeOrExportRawDataFromATableTemplate(),
+      ],
     },
   ];
 
@@ -76,31 +86,4 @@ export default function ReportTemplateModal({onClose, onConfirm, initialDefiniti
       initialDefinitions={initialDefinitions}
     />
   );
-}
-
-function getTemplates(optimizeDatabase) {
-  if (optimizeDatabase === 'opensearch') {
-    return [
-      monitorTargetAsMetricTemplate(),
-      monitorTargetsOverTimeTemplate(),
-      correlateMetricsInLineBarChartTemplate(),
-      compareProcessesAndVersionsInABarChartTemplate(),
-      analyzeSharesAsPieChartTemplate(),
-      analyzeOrExportRawDataFromATableTemplate(),
-    ];
-  }
-
-  return [
-    locateBottlenecsOnAHitmapTemplate(),
-    localeIncidentHotspotsOnAHeatmapTemplate(),
-    monitorTargetAsKpiTemplate(),
-    monitorTargetAsMetricTemplate(),
-    monitorTargetsOverTimeTemplate(),
-    correlateMetricsInLineBarChartTemplate(),
-    correlateDurationAndCountInPieChartTemplate(),
-    listIncidentsAsTableTemplate(),
-    compareProcessesAndVersionsInABarChartTemplate(),
-    analyzeSharesAsPieChartTemplate(),
-    analyzeOrExportRawDataFromATableTemplate(),
-  ];
 }
