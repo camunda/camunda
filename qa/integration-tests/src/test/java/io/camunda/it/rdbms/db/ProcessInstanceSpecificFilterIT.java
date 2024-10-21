@@ -64,7 +64,7 @@ public class ProcessInstanceSpecificFilterIT {
         ProcessDefinitionFixtures.createRandomized(
             b ->
                 b.processDefinitionKey(1337L)
-                    .bpmnProcessId("test-process")
+                    .processDefinitionId("test-process")
                     .name("Test Process")
                     .versionTag("Version 1")));
     createAndSaveRandomProcessInstances(rdbmsWriter);
@@ -73,7 +73,7 @@ public class ProcessInstanceSpecificFilterIT {
         ProcessInstanceFixtures.createRandomized(
             b ->
                 b.processInstanceKey(42L)
-                    .bpmnProcessId("test-process")
+                    .processDefinitionId("test-process")
                     .processDefinitionKey(1337L)
                     .state(ProcessInstanceState.ACTIVE)
                     .startDate(NOW)

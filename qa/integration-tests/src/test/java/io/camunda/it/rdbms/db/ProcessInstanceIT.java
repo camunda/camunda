@@ -49,7 +49,7 @@ public class ProcessInstanceIT {
         ProcessInstanceFixtures.createRandomized(
             b ->
                 b.processInstanceKey(processInstanceKey)
-                    .bpmnProcessId("test-process")
+                    .processDefinitionId("test-process")
                     .processDefinitionKey(1337L)
                     .state(ProcessInstanceState.ACTIVE)
                     .startDate(NOW)
@@ -84,7 +84,7 @@ public class ProcessInstanceIT {
         ProcessInstanceFixtures.createRandomized(
             b ->
                 b.processInstanceKey(processInstanceKey)
-                    .bpmnProcessId("test-process-unique")
+                    .processDefinitionId("test-process-unique")
                     .processDefinitionKey(1338L)
                     .state(ProcessInstanceState.ACTIVE)
                     .startDate(NOW)
@@ -124,13 +124,13 @@ public class ProcessInstanceIT {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
 
-    final String bpmnProcessId = ProcessInstanceFixtures.nextStringId();
-    createAndSaveRandomProcessInstances(rdbmsWriter, bpmnProcessId);
+    final String processDefinitionId = ProcessInstanceFixtures.nextStringId();
+    createAndSaveRandomProcessInstances(rdbmsWriter, processDefinitionId);
 
     final var searchResult =
         processInstanceReader.search(
             new ProcessInstanceDbQuery(
-                new ProcessInstanceFilter.Builder().processDefinitionIds(bpmnProcessId).build(),
+                new ProcessInstanceFilter.Builder().processDefinitionIds(processDefinitionId).build(),
                 ProcessInstanceSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(5))));
 
@@ -174,7 +174,7 @@ public class ProcessInstanceIT {
         ProcessInstanceFixtures.createRandomized(
             b ->
                 b.processInstanceKey(processInstanceKey)
-                    .bpmnProcessId("test-process")
+                    .processDefinitionId("test-process")
                     .processDefinitionKey(1337L)
                     .state(ProcessInstanceState.ACTIVE)
                     .startDate(NOW)

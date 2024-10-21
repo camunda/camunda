@@ -27,7 +27,7 @@ public final class ProcessDefinitionFixtures {
     final var builder =
         new ProcessDefinitionDbModelBuilder()
             .processDefinitionKey(processDefinitionKey)
-            .bpmnProcessId("process-" + processDefinitionKey)
+            .processDefinitionId("process-" + processDefinitionKey)
             .name("Process " + processDefinitionKey)
             .version(version)
             .versionTag("Version " + version)

@@ -59,22 +59,22 @@ public class ProcessInstanceSortIT {
                 b ->
                     b.processDefinitionKey(processDefinitionKey)
                         .processInstanceKey(processInstanceKey)
-                        .bpmnProcessId("test-process-2")),
+                        .processDefinitionId("test-process-2")),
             ProcessInstanceFixtures.createRandomized(
                 b ->
                     b.processDefinitionKey(processDefinitionKey)
                         .processInstanceKey(processInstanceKey2)
-                        .bpmnProcessId("test-process-1")),
+                        .processDefinitionId("test-process-1")),
             ProcessInstanceFixtures.createRandomized(
                 b ->
                     b.processDefinitionKey(processDefinitionKey)
                         .processInstanceKey(processInstanceKey3)
-                        .bpmnProcessId("test-process-4")),
+                        .processDefinitionId("test-process-4")),
             ProcessInstanceFixtures.createRandomized(
                 b ->
                     b.processDefinitionKey(processDefinitionKey)
                         .processInstanceKey(processInstanceKey4)
-                        .bpmnProcessId("test-process-3"))));
+                        .processDefinitionId("test-process-3"))));
 
     final var searchResult =
         processInstanceReader
@@ -110,22 +110,22 @@ public class ProcessInstanceSortIT {
         List.of(
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.bpmnProcessId(bpmProcessId)
+                    b.processDefinitionId(bpmProcessId)
                         .processInstanceKey(processInstanceKey)
                         .version(2)),
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.bpmnProcessId(bpmProcessId)
+                    b.processDefinitionId(bpmProcessId)
                         .processInstanceKey(processInstanceKey2)
                         .version(1)),
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.bpmnProcessId(bpmProcessId)
+                    b.processDefinitionId(bpmProcessId)
                         .processInstanceKey(processInstanceKey3)
                         .version(4)),
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.bpmnProcessId(bpmProcessId)
+                    b.processDefinitionId(bpmProcessId)
                         .processInstanceKey(processInstanceKey4)
                         .version(3))));
 
@@ -161,22 +161,22 @@ public class ProcessInstanceSortIT {
         List.of(
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.bpmnProcessId(bpmProcessId)
+                    b.processDefinitionId(bpmProcessId)
                         .processInstanceKey(processInstanceKey)
                         .processDefinitionKey(processInstanceKey2)),
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.bpmnProcessId(bpmProcessId)
+                    b.processDefinitionId(bpmProcessId)
                         .processInstanceKey(processInstanceKey2)
                         .processDefinitionKey(processInstanceKey)),
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.bpmnProcessId(bpmProcessId)
+                    b.processDefinitionId(bpmProcessId)
                         .processInstanceKey(processInstanceKey3)
                         .processDefinitionKey(processInstanceKey4)),
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.bpmnProcessId(bpmProcessId)
+                    b.processDefinitionId(bpmProcessId)
                         .processInstanceKey(processInstanceKey4)
                         .processDefinitionKey(processInstanceKey3))));
 
@@ -211,28 +211,28 @@ public class ProcessInstanceSortIT {
         rdbmsWriter,
         ProcessDefinitionFixtures.createRandomized(
             b ->
-                b.bpmnProcessId(bpmProcessId)
+                b.processDefinitionId(bpmProcessId)
                     .processDefinitionKey(processInstanceKey)
                     .name("Test Process 1")));
     createAndSaveProcessDefinition(
         rdbmsWriter,
         ProcessDefinitionFixtures.createRandomized(
             b ->
-                b.bpmnProcessId(bpmProcessId)
+                b.processDefinitionId(bpmProcessId)
                     .processDefinitionKey(processInstanceKey2)
                     .name("Test Process 2")));
     createAndSaveProcessDefinition(
         rdbmsWriter,
         ProcessDefinitionFixtures.createRandomized(
             b ->
-                b.bpmnProcessId(bpmProcessId)
+                b.processDefinitionId(bpmProcessId)
                     .processDefinitionKey(processInstanceKey3)
                     .name("Test Process 3")));
     createAndSaveProcessDefinition(
         rdbmsWriter,
         ProcessDefinitionFixtures.createRandomized(
             b ->
-                b.bpmnProcessId(bpmProcessId)
+                b.processDefinitionId(bpmProcessId)
                     .processDefinitionKey(processInstanceKey4)
                     .name("Test Process 4")));
     createAndSaveProcessInstances(
@@ -240,22 +240,22 @@ public class ProcessInstanceSortIT {
         List.of(
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.bpmnProcessId(bpmProcessId)
+                    b.processDefinitionId(bpmProcessId)
                         .processInstanceKey(processInstanceKey)
                         .processDefinitionKey(processInstanceKey2)),
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.bpmnProcessId(bpmProcessId)
+                    b.processDefinitionId(bpmProcessId)
                         .processInstanceKey(processInstanceKey2)
                         .processDefinitionKey(processInstanceKey)),
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.bpmnProcessId(bpmProcessId)
+                    b.processDefinitionId(bpmProcessId)
                         .processInstanceKey(processInstanceKey3)
                         .processDefinitionKey(processInstanceKey4)),
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.bpmnProcessId(bpmProcessId)
+                    b.processDefinitionId(bpmProcessId)
                         .processInstanceKey(processInstanceKey4)
                         .processDefinitionKey(processInstanceKey3))));
 
@@ -290,28 +290,28 @@ public class ProcessInstanceSortIT {
         rdbmsWriter,
         ProcessDefinitionFixtures.createRandomized(
             b ->
-                b.bpmnProcessId(bpmProcessId)
+                b.processDefinitionId(bpmProcessId)
                     .processDefinitionKey(processInstanceKey)
                     .versionTag("Version 1")));
     createAndSaveProcessDefinition(
         rdbmsWriter,
         ProcessDefinitionFixtures.createRandomized(
             b ->
-                b.bpmnProcessId(bpmProcessId)
+                b.processDefinitionId(bpmProcessId)
                     .processDefinitionKey(processInstanceKey2)
                     .versionTag("Version 2")));
     createAndSaveProcessDefinition(
         rdbmsWriter,
         ProcessDefinitionFixtures.createRandomized(
             b ->
-                b.bpmnProcessId(bpmProcessId)
+                b.processDefinitionId(bpmProcessId)
                     .processDefinitionKey(processInstanceKey3)
                     .versionTag("Version 3")));
     createAndSaveProcessDefinition(
         rdbmsWriter,
         ProcessDefinitionFixtures.createRandomized(
             b ->
-                b.bpmnProcessId(bpmProcessId)
+                b.processDefinitionId(bpmProcessId)
                     .processDefinitionKey(processInstanceKey4)
                     .versionTag("Version 4")));
     createAndSaveProcessInstances(
@@ -319,22 +319,22 @@ public class ProcessInstanceSortIT {
         List.of(
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.bpmnProcessId(bpmProcessId)
+                    b.processDefinitionId(bpmProcessId)
                         .processInstanceKey(processInstanceKey)
                         .processDefinitionKey(processInstanceKey2)),
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.bpmnProcessId(bpmProcessId)
+                    b.processDefinitionId(bpmProcessId)
                         .processInstanceKey(processInstanceKey2)
                         .processDefinitionKey(processInstanceKey)),
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.bpmnProcessId(bpmProcessId)
+                    b.processDefinitionId(bpmProcessId)
                         .processInstanceKey(processInstanceKey3)
                         .processDefinitionKey(processInstanceKey4)),
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.bpmnProcessId(bpmProcessId)
+                    b.processDefinitionId(bpmProcessId)
                         .processInstanceKey(processInstanceKey4)
                         .processDefinitionKey(processInstanceKey3))));
 
@@ -370,22 +370,22 @@ public class ProcessInstanceSortIT {
         List.of(
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.bpmnProcessId(bpmProcessId)
+                    b.processDefinitionId(bpmProcessId)
                         .processInstanceKey(processInstanceKey)
                         .startDate(NOW.plusDays(2))),
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.bpmnProcessId(bpmProcessId)
+                    b.processDefinitionId(bpmProcessId)
                         .processInstanceKey(processInstanceKey2)
                         .startDate(NOW.plusDays(1))),
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.bpmnProcessId(bpmProcessId)
+                    b.processDefinitionId(bpmProcessId)
                         .processInstanceKey(processInstanceKey3)
                         .startDate(NOW.plusDays(4))),
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.bpmnProcessId(bpmProcessId)
+                    b.processDefinitionId(bpmProcessId)
                         .processInstanceKey(processInstanceKey4)
                         .startDate(NOW.plusDays(3)))));
 
@@ -421,22 +421,22 @@ public class ProcessInstanceSortIT {
         List.of(
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.bpmnProcessId(bpmProcessId)
+                    b.processDefinitionId(bpmProcessId)
                         .processInstanceKey(processInstanceKey)
                         .endDate(NOW.plusDays(2))),
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.bpmnProcessId(bpmProcessId)
+                    b.processDefinitionId(bpmProcessId)
                         .processInstanceKey(processInstanceKey2)
                         .endDate(NOW.plusDays(1))),
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.bpmnProcessId(bpmProcessId)
+                    b.processDefinitionId(bpmProcessId)
                         .processInstanceKey(processInstanceKey3)
                         .endDate(NOW.plusDays(4))),
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.bpmnProcessId(bpmProcessId)
+                    b.processDefinitionId(bpmProcessId)
                         .processInstanceKey(processInstanceKey4)
                         .endDate(NOW.plusDays(3)))));
 
@@ -472,22 +472,22 @@ public class ProcessInstanceSortIT {
         List.of(
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.bpmnProcessId(bpmProcessId)
+                    b.processDefinitionId(bpmProcessId)
                         .processInstanceKey(processInstanceKey)
                         .parentProcessInstanceKey(processInstanceKey2)),
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.bpmnProcessId(bpmProcessId)
+                    b.processDefinitionId(bpmProcessId)
                         .processInstanceKey(processInstanceKey2)
                         .parentProcessInstanceKey(processInstanceKey)),
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.bpmnProcessId(bpmProcessId)
+                    b.processDefinitionId(bpmProcessId)
                         .processInstanceKey(processInstanceKey3)
                         .parentProcessInstanceKey(processInstanceKey4)),
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.bpmnProcessId(bpmProcessId)
+                    b.processDefinitionId(bpmProcessId)
                         .processInstanceKey(processInstanceKey4)
                         .parentProcessInstanceKey(processInstanceKey3))));
 
@@ -523,22 +523,22 @@ public class ProcessInstanceSortIT {
         List.of(
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.bpmnProcessId(bpmProcessId)
+                    b.processDefinitionId(bpmProcessId)
                         .processInstanceKey(processInstanceKey)
                         .tenantId("tenant-2")),
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.bpmnProcessId(bpmProcessId)
+                    b.processDefinitionId(bpmProcessId)
                         .processInstanceKey(processInstanceKey2)
                         .tenantId("tenant-1")),
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.bpmnProcessId(bpmProcessId)
+                    b.processDefinitionId(bpmProcessId)
                         .processInstanceKey(processInstanceKey3)
                         .tenantId("tenant-4")),
             ProcessInstanceFixtures.createRandomized(
                 b ->
-                    b.bpmnProcessId(bpmProcessId)
+                    b.processDefinitionId(bpmProcessId)
                         .processInstanceKey(processInstanceKey4)
                         .tenantId("tenant-3"))));
 
@@ -576,25 +576,25 @@ public class ProcessInstanceSortIT {
                 b ->
                     b.processDefinitionKey(processDefinitionKey)
                         .processInstanceKey(processInstanceKey)
-                        .bpmnProcessId("test-process-2")
+                        .processDefinitionId("test-process-2")
                         .startDate(NOW.plusDays(1))),
             ProcessInstanceFixtures.createRandomized(
                 b ->
                     b.processDefinitionKey(processDefinitionKey)
                         .processInstanceKey(processInstanceKey2)
-                        .bpmnProcessId("test-process-1")
+                        .processDefinitionId("test-process-1")
                         .startDate(NOW.plusDays(1))),
             ProcessInstanceFixtures.createRandomized(
                 b ->
                     b.processDefinitionKey(processDefinitionKey)
                         .processInstanceKey(processInstanceKey3)
-                        .bpmnProcessId("test-process-1")
+                        .processDefinitionId("test-process-1")
                         .startDate(NOW.plusDays(2))),
             ProcessInstanceFixtures.createRandomized(
                 b ->
                     b.processDefinitionKey(processDefinitionKey)
                         .processInstanceKey(processInstanceKey4)
-                        .bpmnProcessId("test-process-2")
+                        .processDefinitionId("test-process-2")
                         .startDate(NOW.plusDays(2)))));
 
     final var searchResult =

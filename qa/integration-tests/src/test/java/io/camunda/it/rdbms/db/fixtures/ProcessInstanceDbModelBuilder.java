@@ -14,7 +14,7 @@ import java.time.OffsetDateTime;
 public class ProcessInstanceDbModelBuilder {
 
   private Long processInstanceKey;
-  private String bpmnProcessId;
+  private String processDefinitionId;
   private Long processDefinitionKey;
   private ProcessInstanceState state;
   private OffsetDateTime startDate;
@@ -34,8 +34,8 @@ public class ProcessInstanceDbModelBuilder {
     return this;
   }
 
-  public ProcessInstanceDbModelBuilder bpmnProcessId(final String bpmnProcessId) {
-    this.bpmnProcessId = bpmnProcessId;
+  public ProcessInstanceDbModelBuilder processDefinitionId(final String processDefinitionId) {
+    this.processDefinitionId = processDefinitionId;
     return this;
   }
 
@@ -90,7 +90,7 @@ public class ProcessInstanceDbModelBuilder {
   public ProcessInstanceDbModel build() {
     return new ProcessInstanceDbModel(
         processInstanceKey,
-        bpmnProcessId,
+        processDefinitionId,
         processDefinitionKey,
         state,
         startDate,

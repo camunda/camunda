@@ -41,7 +41,7 @@ public final class ProcessInstanceFixtures {
         new ProcessInstanceDbModelBuilder()
             .processInstanceKey(nextKey())
             .processDefinitionKey(nextKey())
-            .bpmnProcessId("process-" + RANDOM.nextInt(1000))
+            .processDefinitionId("process-" + RANDOM.nextInt(1000))
             .parentProcessInstanceKey(nextKey())
             .parentElementInstanceKey(nextKey())
             .startDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
@@ -57,11 +57,11 @@ public final class ProcessInstanceFixtures {
   }
 
   public static void createAndSaveRandomProcessInstances(
-      final RdbmsWriter rdbmsWriter, final String bpmnProcessId) {
+      final RdbmsWriter rdbmsWriter, final String processDefinitionId) {
     for (int i = 0; i < 20; i++) {
       rdbmsWriter
           .getProcessInstanceWriter()
-          .create(ProcessInstanceFixtures.createRandomized(b -> b.bpmnProcessId(bpmnProcessId)));
+          .create(ProcessInstanceFixtures.createRandomized(b -> b.processDefinitionId(processDefinitionId)));
     }
 
     rdbmsWriter.flush();
