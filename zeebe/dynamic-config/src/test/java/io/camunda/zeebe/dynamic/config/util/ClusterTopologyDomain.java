@@ -16,6 +16,8 @@ import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.ActivePartitions;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import io.camunda.zeebe.util.ReflectUtil;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
@@ -65,6 +67,19 @@ public final class ClusterTopologyDomain extends DomainContextBase {
     return Arbitraries.of(
             ReflectUtil.implementationsOfSealedInterface(RequestHandling.class).toList())
         .flatMap(Arbitraries::forType);
+  }
+
+  @Provide
+  Arbitrary<AllPartitions> allPartitions() {
+    return Arbitraries.integers().between(1, 5).map(AllPartitions::new);
+  }
+
+  @Provide
+  Arbitrary<ActivePartitions> activePartitions() {
+    final var activePartitions = Arbitraries.integers().between(1, 5).set();
+    final var inactivePartitions = Arbitraries.integers().between(6, 10).set();
+
+    return Combinators.combine(activePartitions, inactivePartitions).as(ActivePartitions::new);
   }
 
   @Provide
