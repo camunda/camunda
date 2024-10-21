@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -73,11 +74,21 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
   @Override
   public void updateEntity(final Record<UserTaskRecordValue> record, final TaskEntity entity) {
     entity.setProcessInstanceId(String.valueOf(record.getValue().getProcessInstanceKey()));
+    entity.setChangedAttributes(new ArrayList<>());
+    entity.setAction(record.getValue().getAction());
     switch (record.getIntent()) {
       case UserTaskIntent.CREATED -> createTaskEntity(entity, record);
-      case UserTaskIntent.ASSIGNED -> entity.setAssignee(record.getValue().getAssignee());
+      case UserTaskIntent.ASSIGNED -> {
+        entity.setChangedAttributes(List.of("assignee"));
+        if (ExporterUtil.isEmpty(record.getValue().getAssignee())) {
+          entity.setAssignee(null);
+        } else {
+          entity.setAssignee(record.getValue().getAssignee());
+        }
+      }
       case UserTaskIntent.UPDATED -> {
         for (final String attribute : record.getValue().getChangedAttributes()) {
+          entity.getChangedAttributes().add(attribute);
           switch (attribute) {
             case "candidateGroupsList" ->
                 entity.setCandidateGroups(
@@ -134,6 +145,35 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
   private Map<String, Object> getUpdatedFields(final TaskEntity entity) {
 
     final Map<String, Object> updateFields = new HashMap<>();
+    if (entity.getChangedAttributes() != null) {
+      for (final String changedAttribute : entity.getChangedAttributes()) {
+        switch (changedAttribute) {
+          case "assignee" -> updateFields.put(TaskTemplate.ASSIGNEE, entity.getAssignee());
+          case "candidateGroupsList" ->
+              updateFields.put(TaskTemplate.CANDIDATE_GROUPS, entity.getCandidateGroups());
+          case "candidateUsersList" ->
+              updateFields.put(TaskTemplate.CANDIDATE_USERS, entity.getCandidateUsers());
+          case "dueDate" -> updateFields.put(TaskTemplate.DUE_DATE, entity.getDueDate());
+          case "followUpDate" ->
+              updateFields.put(TaskTemplate.FOLLOW_UP_DATE, entity.getFollowUpDate());
+          case "priority" -> updateFields.put(TaskTemplate.PRIORITY, entity.getPriority());
+          default ->
+              LOGGER.warn(
+                  "Attribute update not mapped while importing ZEEBE_USER_TASKS: {}",
+                  changedAttribute);
+        }
+      }
+    }
+    if (entity.getCompletionTime() != null) {
+      updateFields.put(TaskTemplate.COMPLETION_TIME, entity.getCompletionTime());
+    }
+
+    if (entity.getChangedAttributes() != null && !entity.getChangedAttributes().isEmpty()) {
+      updateFields.put(TaskTemplate.CHANGED_ATTRIBUTES, entity.getChangedAttributes());
+    }
+    if (entity.getAction() != null) {
+      updateFields.put(TaskTemplate.ACTION, entity.getAction());
+    }
     if (entity.getState() != null) {
       updateFields.put(TaskTemplate.STATE, entity.getState());
     }
@@ -145,35 +185,6 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
     }
     if (entity.getBpmnProcessId() != null) {
       updateFields.put(TaskTemplate.BPMN_PROCESS_ID, entity.getBpmnProcessId());
-    }
-    if (entity.getCompletionTime() != null) {
-      updateFields.put(TaskTemplate.COMPLETION_TIME, entity.getCompletionTime());
-    }
-    if (entity.getAssignee() != null) {
-      updateFields.put(TaskTemplate.ASSIGNEE, entity.getAssignee());
-    }
-    if (entity.getPriority() != null) {
-      updateFields.put(TaskTemplate.PRIORITY, entity.getPriority());
-    }
-    if (entity.getDueDate() != null) {
-      updateFields.put(TaskTemplate.DUE_DATE, entity.getDueDate());
-    }
-    if (entity.getFollowUpDate() != null) {
-      updateFields.put(TaskTemplate.FOLLOW_UP_DATE, entity.getFollowUpDate());
-    }
-    if (entity.getCandidateUsers() != null) {
-      updateFields.put(TaskTemplate.CANDIDATE_USERS, entity.getCandidateUsers());
-    }
-    if (entity.getCandidateGroups() != null) {
-      updateFields.put(TaskTemplate.CANDIDATE_GROUPS, entity.getCandidateGroups());
-    }
-
-    // TODO Check how to parse these
-    if (entity.getChangedAttributes() != null) {
-      updateFields.put(TaskTemplate.CHANGED_ATTRIBUTES, entity.getChangedAttributes());
-    }
-    if (entity.getAction() != null) {
-      updateFields.put(TaskTemplate.ACTION, entity.getAction());
     }
 
     return updateFields;
@@ -221,7 +232,10 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
             record.getValue().getFormKey() > 0
                 ? String.valueOf(record.getValue().getFormKey())
                 : null)
-        .setExternalFormReference(record.getValue().getExternalFormReference())
+        .setExternalFormReference(
+            ExporterUtil.isEmpty(record.getValue().getExternalFormReference())
+                ? null
+                : record.getValue().getExternalFormReference())
         .setCustomHeaders(record.getValue().getCustomHeaders())
         .setPriority(record.getValue().getPriority())
         .setPartitionId(record.getPartitionId())

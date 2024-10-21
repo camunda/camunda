@@ -9,6 +9,7 @@ package io.camunda.webapps.schema.entities.tasklist;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
 
 public class TaskEntity extends TasklistEntity<TaskEntity> {
@@ -74,7 +75,7 @@ public class TaskEntity extends TasklistEntity<TaskEntity> {
   private String action;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
-  private String changedAttributes;
+  private List<String> changedAttributes;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private TaskJoinRelationship join;
@@ -310,11 +311,11 @@ public class TaskEntity extends TasklistEntity<TaskEntity> {
     return this;
   }
 
-  public String getChangedAttributes() {
+  public List<String> getChangedAttributes() {
     return changedAttributes;
   }
 
-  public TaskEntity setChangedAttributes(final String changedAttributes) {
+  public TaskEntity setChangedAttributes(final List<String> changedAttributes) {
     this.changedAttributes = changedAttributes;
     return this;
   }
