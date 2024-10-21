@@ -75,6 +75,7 @@ import io.camunda.zeebe.client.api.search.query.IncidentQuery;
 import io.camunda.zeebe.client.api.search.query.ProcessDefinitionQuery;
 import io.camunda.zeebe.client.api.search.query.ProcessInstanceQuery;
 import io.camunda.zeebe.client.api.search.query.UserTaskQuery;
+import io.camunda.zeebe.client.api.search.query.UserTaskVariableQuery;
 import io.camunda.zeebe.client.api.search.query.VariableQuery;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
@@ -127,6 +128,7 @@ import io.camunda.zeebe.client.impl.search.query.IncidentQueryImpl;
 import io.camunda.zeebe.client.impl.search.query.ProcessDefinitionQueryImpl;
 import io.camunda.zeebe.client.impl.search.query.ProcessInstanceQueryImpl;
 import io.camunda.zeebe.client.impl.search.query.UserTaskQueryImpl;
+import io.camunda.zeebe.client.impl.search.query.UserTaskVariableQueryImpl;
 import io.camunda.zeebe.client.impl.search.query.VariableQueryImpl;
 import io.camunda.zeebe.client.impl.util.ExecutorResource;
 import io.camunda.zeebe.client.impl.util.VersionUtil;
@@ -706,6 +708,11 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public VariableGetRequest newVariableGetRequest(final long variableKey) {
     return new VariableGetRequestImpl(httpClient, variableKey);
+  }
+
+  @Override
+  public UserTaskVariableQuery newUserTaskVariablesRequest(final long userTaskKey) {
+    return new UserTaskVariableQueryImpl(httpClient, jsonMapper, userTaskKey);
   }
 
   private JobClient newJobClient() {
