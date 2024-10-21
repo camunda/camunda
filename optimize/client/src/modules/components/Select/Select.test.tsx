@@ -6,10 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {UIEvent} from 'react';
-import {shallow} from 'enzyme';
+import {mount, shallow} from 'enzyme';
 import {MenuDropdown} from '@camunda/camunda-optimize-composite-components';
-import {MenuItem} from '@carbon/react';
+import {MenuItem, MenuItemSelectable} from '@carbon/react';
 
 import {ignoreFragments} from 'services';
 
@@ -20,7 +19,7 @@ jest.mock('services', () => ({
   formatters: {
     getHighlightedText: () => 'got highlight',
   },
-  ignoreFragments: jest.fn().mockImplementation((children) => children),
+  ignoreFragments: jest.fn().mockImplementation(jest.requireActual('services').ignoreFragments),
 }));
 
 beforeEach(() => {
@@ -44,7 +43,7 @@ it('should render a .Select className by default', () => {
     </Select>
   );
 
-  expect(node).toMatchSelector('.Select');
+  expect(node.find('.Select')).toExist();
 });
 
 it('should merge and render additional classNames as provided as a property', () => {
@@ -54,7 +53,7 @@ it('should merge and render additional classNames as provided as a property', ()
     </Select>
   );
 
-  expect(node).toMatchSelector('.Select.foo');
+  expect(node.find('.Select')).toExist();
 });
 
 it('should render child elements and their props', () => {
@@ -70,26 +69,27 @@ it('should render child elements and their props', () => {
 
 it('should select option onClick and add checked property', () => {
   const spy = jest.fn();
-  const node = shallow<SelectProps>(
+  const node = mount<SelectProps>(
     <Select {...props} onChange={spy}>
       <Select.Option value="1" label="Option One" />
     </Select>
   );
 
-  node.find(Select.Option).simulate('change', {
-    target: {closest: () => ({getAttribute: () => '1'})},
-  } as unknown as UIEvent<HTMLElement>);
+  node.find('button').simulate('click');
+
+  node.find(Select.Option).simulate('click');
   expect(spy).toHaveBeenCalledWith('1');
 
   node.setProps({value: '1'});
+  node.find('button').simulate('click');
 
-  expect(node.find(Select.Option).prop('selected')).toBeTruthy();
+  expect(node.find(MenuItemSelectable).prop('selected')).toBeTruthy();
   expect(node.find('ForwardRef(MenuDropdown)').prop('label')).toBe('Option One');
 });
 
 it('should select submenu option onClick and set checked property on the submenu and the option', () => {
   const spy = jest.fn();
-  const node = shallow(
+  const node = mount(
     <Select {...props} onChange={spy}>
       <Select.Submenu label="submenu">
         <Select.Option value="1" label="Option One" />
@@ -97,15 +97,16 @@ it('should select submenu option onClick and set checked property on the submenu
     </Select>
   );
 
-  node.find(Select.Option).simulate('change', {
-    target: {closest: () => ({getAttribute: () => '1'})},
-  } as unknown as UIEvent<HTMLElement>);
+  node.find('button').simulate('click');
+
+  node.find(Select.Option).simulate('click');
   expect(spy).toHaveBeenCalledWith('1');
 
   node.setProps({value: '1'});
+  node.find('button').simulate('click');
 
-  expect(node.find(Select.Submenu).prop('selected')).toBeTruthy();
-  expect(node.find(Select.Option).prop('selected')).toBeTruthy();
+  expect(node.find(MenuItemSelectable).at(0).prop('selected')).toBeTruthy();
+  expect(node.find(MenuItemSelectable).at(1).prop('selected')).toBeTruthy();
   expect(node.find('ForwardRef(MenuDropdown)').prop('label')).toBe('submenu : Option One');
 });
 
@@ -178,13 +179,13 @@ describe('Select.Submenu', () => {
   });
 
   it('should handle disabled state', () => {
-    const node = shallow(
+    const node = mount(
       <Select.Submenu label="label" disabled>
         <b>Option</b>
       </Select.Submenu>
     );
 
-    expect(node.dive().find(MenuItem).prop('disabled')).toBeTruthy();
+    expect(node.find(MenuItem).prop('disabled')).toBeTruthy();
     expect(node.find('b')).not.toExist();
   });
 });

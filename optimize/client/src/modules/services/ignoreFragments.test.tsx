@@ -23,3 +23,23 @@ it('should remove all fragments from children', () => {
   const values = result?.map((child) => child?.props.value);
   expect(values).toEqual(['1', '2', '3']);
 });
+
+it('should handle one child', () => {
+  const result = ignoreFragments(
+    <>
+      <option value="1">first</option>
+    </>
+  );
+
+  expect(result.length).toBe(1);
+  const values = result?.map((child) => child?.props.value);
+  expect(values).toEqual(['1']);
+});
+
+it('should handle one child without fragment', () => {
+  const result = ignoreFragments(<option value="1">first</option>);
+
+  expect(result.length).toBe(1);
+  const values = result?.map((child) => child?.props.value);
+  expect(values).toEqual(['1']);
+});
