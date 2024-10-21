@@ -65,11 +65,7 @@ public class AuthorizationHandler
   @Override
   public void flush(final AuthorizationEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.add(getIndexName(), entity);
-  }
-
-  private String getIndexName() {
-    return indexName;
+    batchRequest.add(indexName, entity);
   }
 
   private List<Permission> getPermissions(final List<PermissionValue> permissionValues) {
