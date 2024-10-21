@@ -222,7 +222,7 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
                   icon={
                     <Notification className={styles.inlineIcon} color="blue" />
                   }
-                  align="top-right"
+                  align="top-end"
                 />
               ) : null}
               {secondaryDate.overDueDate !== undefined ? (
@@ -231,7 +231,7 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
                   relativeLabel={t('availableTasksOverdueRelativeLabel')}
                   absoluteLabel={t('availableTasksOverdueAbsoluteLabel')}
                   icon={<Warning className={styles.inlineIcon} color="red" />}
-                  align="top-right"
+                  align="top-end"
                 />
               ) : null}
               {secondaryDate.dueDate !== undefined ? (
@@ -239,7 +239,7 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
                   date={secondaryDate.dueDate}
                   relativeLabel={t('availableTasksDueRelativeLabel')}
                   absoluteLabel={t('availableTasksDueAbsoluteLabel')}
-                  align="top-right"
+                  align="top-end"
                 />
               ) : null}
               {secondaryDate.completionDate !== undefined ? (
@@ -253,7 +253,7 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
                       color="green"
                     />
                   }
-                  align="top-right"
+                  align="top-end"
                 />
               ) : null}
             </div>
