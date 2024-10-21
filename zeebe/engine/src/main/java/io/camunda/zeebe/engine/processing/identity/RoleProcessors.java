@@ -61,5 +61,14 @@ public class RoleProcessors {
             keyGenerator,
             writers,
             commandDistributionBehavior));
+    typedRecordProcessors.onCommand(
+        ValueType.ROLE,
+        RoleIntent.DELETE,
+        new RoleDeleteProcessor(
+            processingState.getRoleState(),
+            authCheckBehavior,
+            keyGenerator,
+            writers,
+            commandDistributionBehavior));
   }
 }
