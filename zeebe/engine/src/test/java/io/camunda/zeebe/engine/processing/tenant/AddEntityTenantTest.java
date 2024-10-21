@@ -8,10 +8,10 @@
 package io.camunda.zeebe.engine.processing.tenant;
 
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
+import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
@@ -54,45 +54,27 @@ public class AddEntityTenantTest {
 
     // when add user entity to tenant
     final var updatedTenant =
-        ENGINE
-            .tenant()
-            .addEntity(tenantKey)
-            .withEntityKey(userKey)
-            .withEntityType(EntityType.USER)
-            .add()
-            .getValue();
+        ENGINE.tenant().addEntity(tenantKey).withEntityKey(userKey).add().getValue();
 
     // then assert that the entity was added correctly
     Assertions.assertThat(updatedTenant)
         .isNotNull()
-        .hasFieldOrPropertyWithValue("entityKey", userKey);
+        .hasFieldOrPropertyWithValue("entityKey", userKey)
+        .hasFieldOrPropertyWithValue("tenantKey", tenantKey)
+        .hasFieldOrPropertyWithValue("entityType", USER);
   }
 
   @Test
   public void shouldRejectIfTenantIsNotPresentWhileAddingEntity() {
-    // when create a tenant
-    final var tenantId = UUID.randomUUID().toString();
-    final var tenantRecord =
-        ENGINE.tenant().newTenant().withTenantId(tenantId).withName("Tenant 1").create();
-
     // when try adding entity to a non-existent tenant
-    final var notPresentTenantKey = 1L;
-    final var notPresentUpdateRecord =
-        ENGINE.tenant().addEntity(notPresentTenantKey).expectRejection().add();
-
-    // then
-    final var createdTenant = tenantRecord.getValue();
-    Assertions.assertThat(createdTenant)
-        .isNotNull()
-        .hasFieldOrPropertyWithValue("name", "Tenant 1");
-
-    // assert that the rejection is for tenant not found
+    final var entityKey = 1L;
+    final var notPresentUpdateRecord = ENGINE.tenant().addEntity(entityKey).expectRejection().add();
+    // then assert that the rejection is for tenant not found
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to add entity to tenant with key '"
-                + notPresentTenantKey
-                + "', but no tenant with this key exists.");
+            "Expected to add entity to tenant with key '%s', but no tenant with this key exists."
+                .formatted(entityKey));
   }
 
   @Test
@@ -109,7 +91,7 @@ public class AddEntityTenantTest {
             .tenant()
             .addEntity(tenantKey)
             .withEntityKey(1L)
-            .withEntityType(EntityType.USER)
+            .withEntityType(USER)
             .expectRejection()
             .add();
 
@@ -117,8 +99,7 @@ public class AddEntityTenantTest {
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to add entity with key '1' and type 'USER' to tenant with key '"
-                + tenantKey
-                + "', but the entity doesn't exist.");
+            "Expected to add entity with key '1' to tenant with key '%s', but the entity doesn't exist."
+                .formatted(tenantKey));
   }
 }

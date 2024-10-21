@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
+import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.Optional;
 
 public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor<TenantRecord> {
 
@@ -79,13 +81,12 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
     }
 
     final var entityKey = record.getEntityKey();
-    final var entityType = record.getEntityType();
-    if (!isEntityPresent(entityKey, entityType)) {
+    if (!isEntityPresent(entityKey, record)) {
       rejectCommand(
           command,
           RejectionType.NOT_FOUND,
-          "Expected to add entity with key '%s' and type '%s' to tenant with key '%s', but the entity doesn't exist."
-              .formatted(entityKey, entityType, tenantKey));
+          "Expected to add entity with key '%s' to tenant with key '%s', but the entity doesn't exist."
+              .formatted(entityKey, tenantKey));
       return;
     }
 
@@ -102,10 +103,13 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private boolean isEntityPresent(final long entityKey, final EntityType entityType) {
-    if (EntityType.USER == entityType) {
-      return userState.getUser(entityKey).isPresent();
+  private boolean isEntityPresent(final long entityKey, final TenantRecord record) {
+    final Optional<UserRecord> user = userState.getUser(entityKey);
+    if (user.isPresent()) {
+      record.setEntityType(EntityType.USER);
+      return true;
     }
+    // For now, we're only dealing with users. Extend this logic for other entity types later.
     return false;
   }
 

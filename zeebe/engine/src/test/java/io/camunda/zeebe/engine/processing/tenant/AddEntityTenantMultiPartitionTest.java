@@ -57,19 +57,20 @@ public class AddEntityTenantMultiPartitionTest {
     final var tenantId = UUID.randomUUID().toString();
     final var tenantKey =
         engine.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
-    engine
-        .tenant()
-        .addEntity(tenantKey)
-        .withEntityKey(userKey)
-        .withEntityType(EntityType.USER)
-        .add();
+    engine.tenant().addEntity(tenantKey).withEntityKey(userKey).add();
 
     // then
     assertThat(
             RecordingExporter.records()
                 .withPartitionId(1)
                 .limitByCount(
-                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 2))
+                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 3)
+                .filter(
+                    record ->
+                        record.getValueType() == ValueType.TENANT
+                            || (record.getValueType() == ValueType.COMMAND_DISTRIBUTION
+                                && ((CommandDistributionRecordValue) record.getValue()).getIntent()
+                                    == TenantIntent.ADD_ENTITY)))
         .extracting(
             Record::getIntent,
             Record::getRecordType,
@@ -126,21 +127,16 @@ public class AddEntityTenantMultiPartitionTest {
 
   @Test
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
-    // given the user creation distribution is intercepted
+    // given the tenant creation distribution is intercepted
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
-      interceptUserCreateForPartition(partitionId);
+      interceptTenantCreateForPartition(partitionId); // Intercept tenant creation
     }
 
     // when
     final var tenantId = UUID.randomUUID().toString();
     final var tenantKey =
         engine.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
-    engine
-        .tenant()
-        .addEntity(tenantKey)
-        .withEntityKey(userKey)
-        .withEntityType(EntityType.USER)
-        .add();
+    engine.tenant().addEntity(tenantKey).withEntityKey(userKey).add();
 
     // Increase time to trigger redistribution
     engine.increaseTime(Duration.ofMinutes(1));
@@ -156,7 +152,7 @@ public class AddEntityTenantMultiPartitionTest {
             tuple(ValueType.TENANT, TenantIntent.ADD_ENTITY));
   }
 
-  private void interceptUserCreateForPartition(final int partitionId) {
+  private void interceptTenantCreateForPartition(final int partitionId) {
     final var hasInterceptedPartition = new AtomicBoolean(false);
     engine.interceptInterPartitionCommands(
         (receiverPartitionId, valueType, intent, recordKey, command) -> {
@@ -164,7 +160,7 @@ public class AddEntityTenantMultiPartitionTest {
             return true;
           }
           hasInterceptedPartition.set(true);
-          return !(receiverPartitionId == partitionId && intent == UserIntent.CREATE);
+          return !(receiverPartitionId == partitionId && intent == TenantIntent.CREATE);
         });
   }
 }
