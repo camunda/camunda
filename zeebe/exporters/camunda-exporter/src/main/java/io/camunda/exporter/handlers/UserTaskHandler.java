@@ -104,7 +104,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
                       ? TaskState.COMPLETED
                       : TaskState.CANCELED)
               .setCompletionTime(
-                  ExporterUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+                  ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
       case UserTaskIntent.MIGRATED ->
           entity
               .setFlowNodeBpmnId(record.getValue().getElementId())
@@ -189,12 +189,12 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
                       ? TaskState.CANCELED
                       : TaskState.COMPLETED)
               .setCompletionTime(
-                  ExporterUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+                  ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
       case UserTaskIntent.CREATED ->
           entity
               .setState(TaskState.CREATED)
               .setCreationTime(
-                  ExporterUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+                  ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
       case UserTaskIntent.MIGRATED -> entity.setState(TaskState.CREATED);
       default -> {}
     }
@@ -205,7 +205,10 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
         .setId(String.valueOf(record.getValue().getElementInstanceKey()))
         .setKey(record.getKey())
         .setState(TaskState.CREATED)
-        .setAssignee(record.getValue().getAssignee())
+        .setAssignee(
+            ExporterUtil.isEmpty(record.getValue().getAssignee())
+                ? null
+                : record.getValue().getAssignee())
         .setDueDate(ExporterUtil.toOffsetDateTime(record.getValue().getDueDate()))
         .setFollowUpDate(ExporterUtil.toOffsetDateTime(record.getValue().getFollowUpDate()))
         .setFlowNodeInstanceId(String.valueOf(record.getValue().getElementInstanceKey()))
@@ -214,16 +217,22 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
         .setBpmnProcessId(record.getValue().getBpmnProcessId())
         .setProcessDefinitionId(String.valueOf(record.getValue().getProcessDefinitionKey()))
         .setProcessDefinitionVersion(record.getValue().getProcessDefinitionVersion())
-        .setFormKey(String.valueOf(record.getValue().getFormKey()))
+        .setFormKey(
+            record.getValue().getFormKey() > 0
+                ? String.valueOf(record.getValue().getFormKey())
+                : null)
         .setExternalFormReference(record.getValue().getExternalFormReference())
         .setCustomHeaders(record.getValue().getCustomHeaders())
         .setPriority(record.getValue().getPriority())
         .setPartitionId(record.getPartitionId())
         .setTenantId(record.getValue().getTenantId())
         .setPosition(record.getPosition())
-        .setAction(record.getValue().getAction())
+        .setAction(
+            ExporterUtil.isEmpty(record.getValue().getAction())
+                ? null
+                : record.getValue().getAction())
         .setCreationTime(
-            ExporterUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+            ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
 
     if (!record.getValue().getCandidateGroupsList().isEmpty()) {
       entity.setCandidateGroups(record.getValue().getCandidateGroupsList().toArray(new String[0]));

@@ -33,6 +33,10 @@ public final class ExporterUtil {
     return tenantId;
   }
 
+  public static boolean isEmpty(final String str) {
+    return str == null || str.isEmpty();
+  }
+
   public static String toStringOrNull(final Object object) {
     return toStringOrDefault(object, null);
   }
@@ -54,9 +58,9 @@ public final class ExporterUtil {
   }
 
   public static OffsetDateTime toOffsetDateTime(final String timestamp) {
-    return timestamp != null
-        ? toOffsetDateTime(timestamp, DateTimeFormatter.ISO_ZONED_DATE_TIME)
-        : null;
+    return isEmpty(timestamp)
+        ? null
+        : toOffsetDateTime(timestamp, DateTimeFormatter.ISO_ZONED_DATE_TIME);
   }
 
   public static OffsetDateTime toOffsetDateTime(
@@ -70,5 +74,4 @@ public final class ExporterUtil {
 
     return null;
   }
-
 }
