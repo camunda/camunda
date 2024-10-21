@@ -25,7 +25,6 @@ import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -33,14 +32,14 @@ import org.junit.rules.TestWatcher;
 public class CreateTenantMultiPartitionTest {
   private static final int PARTITION_COUNT = 3;
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.multiplePartition(PARTITION_COUNT);
+  @Rule public final EngineRule engine = EngineRule.multiplePartition(PARTITION_COUNT);
 
   @Rule public final TestWatcher testWatcher = new RecordingExporterTestWatcher();
 
   @Test
   public void shouldDistributeTenantCreateCommand() {
     // when
-    ENGINE.tenant().newTenant().withTenantId("tenant-123").withName("New Tenant").create();
+    engine.tenant().newTenant().withTenantId("tenant-123").withName("New Tenant").create();
 
     // then
     assertThat(
@@ -82,7 +81,7 @@ public class CreateTenantMultiPartitionTest {
   @Test
   public void shouldDistributeInIdentityQueue() {
     // when
-    ENGINE
+    engine
         .tenant()
         .newTenant()
         .withTenantId("tenant-identity")
@@ -106,14 +105,14 @@ public class CreateTenantMultiPartitionTest {
     }
 
     // when creating a tenant
-    ENGINE.tenant().newTenant().withTenantId("tenant-queue").withName("Queued Tenant").create();
+    engine.tenant().newTenant().withTenantId("tenant-queue").withName("Queued Tenant").create();
 
     // Create a role to ensure proper order
     final var roleName = UUID.randomUUID().toString();
-    ENGINE.role().newRole(roleName).create();
+    engine.role().newRole(roleName).create();
 
     // Increase time to trigger a redistribution
-    ENGINE.increaseTime(Duration.ofMinutes(1));
+    engine.increaseTime(Duration.ofMinutes(1));
 
     // then
     assertThat(
@@ -126,7 +125,7 @@ public class CreateTenantMultiPartitionTest {
 
   private void interceptTenantCreateForPartition(final int partitionId) {
     final var hasInterceptedPartition = new AtomicBoolean(false);
-    ENGINE.interceptInterPartitionCommands(
+    engine.interceptInterPartitionCommands(
         (receiverPartitionId, valueType, intent, recordKey, command) -> {
           if (hasInterceptedPartition.get()) {
             return true;

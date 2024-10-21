@@ -25,7 +25,6 @@ import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -33,7 +32,7 @@ import org.junit.rules.TestWatcher;
 public class CreateRoleMultiPartitionTest {
   private static final int PARTITION_COUNT = 3;
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.multiplePartition(PARTITION_COUNT);
+  @Rule public final EngineRule engine = EngineRule.multiplePartition(PARTITION_COUNT);
 
   @Rule public final TestWatcher testWatcher = new RecordingExporterTestWatcher();
 
@@ -41,7 +40,7 @@ public class CreateRoleMultiPartitionTest {
   public void shouldDistributeRoleCreateCommand() {
     // when
     final var name = UUID.randomUUID().toString();
-    ENGINE.role().newRole(name).create();
+    engine.role().newRole(name).create();
 
     assertThat(
             RecordingExporter.records()
@@ -86,7 +85,7 @@ public class CreateRoleMultiPartitionTest {
   public void shouldDistributeInIdentityQueue() {
     // when
     final var name = UUID.randomUUID().toString();
-    ENGINE.role().newRole(name).create();
+    engine.role().newRole(name).create();
 
     // then
     assertThat(
@@ -100,7 +99,7 @@ public class CreateRoleMultiPartitionTest {
   @Test
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // given the user creation distribution is intercepted
-    ENGINE
+    engine
         .user()
         .newUser(UUID.randomUUID().toString())
         .withName("Foo Bar")
@@ -114,10 +113,10 @@ public class CreateRoleMultiPartitionTest {
 
     // when
     final var name = UUID.randomUUID().toString();
-    ENGINE.role().newRole(name).create();
+    engine.role().newRole(name).create();
 
     // Increase time to trigger a redistribution
-    ENGINE.increaseTime(Duration.ofMinutes(1));
+    engine.increaseTime(Duration.ofMinutes(1));
 
     // then
     assertThat(
@@ -130,13 +129,13 @@ public class CreateRoleMultiPartitionTest {
 
   private void interceptUserCreateForPartition(final int partitionId) {
     final var hasInterceptedPartition = new AtomicBoolean(false);
-    ENGINE.interceptInterPartitionCommands(
+    engine.interceptInterPartitionCommands(
         (receiverPartitionId, valueType, intent, recordKey, command) -> {
           if (hasInterceptedPartition.get()) {
             return true;
           }
           hasInterceptedPartition.set(true);
-          return !(receiverPartitionId == partitionId && intent == RoleIntent.CREATE);
+          return !(receiverPartitionId == partitionId && intent == UserIntent.CREATE);
         });
   }
 }
