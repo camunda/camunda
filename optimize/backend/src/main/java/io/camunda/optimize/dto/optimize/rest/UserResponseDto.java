@@ -46,40 +46,12 @@ public class UserResponseDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $userDto = getUserDto();
-    result = result * PRIME + ($userDto == null ? 43 : $userDto.hashCode());
-    final Object $authorizations = getAuthorizations();
-    result = result * PRIME + ($authorizations == null ? 43 : $authorizations.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof UserResponseDto)) {
-      return false;
-    }
-    final UserResponseDto other = (UserResponseDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$userDto = getUserDto();
-    final Object other$userDto = other.getUserDto();
-    if (this$userDto == null ? other$userDto != null : !this$userDto.equals(other$userDto)) {
-      return false;
-    }
-    final Object this$authorizations = getAuthorizations();
-    final Object other$authorizations = other.getAuthorizations();
-    if (this$authorizations == null
-        ? other$authorizations != null
-        : !this$authorizations.equals(other$authorizations)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

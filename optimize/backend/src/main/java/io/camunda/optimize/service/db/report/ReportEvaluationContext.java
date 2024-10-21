@@ -102,56 +102,7 @@ public class ReportEvaluationContext<R extends ReportDefinitionDto<?>> {
   }
 
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof ReportEvaluationContext)) {
-      return false;
-    }
-    final ReportEvaluationContext<?> other = (ReportEvaluationContext<?>) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$reportDefinition = this.getReportDefinition();
-    final Object other$reportDefinition = other.getReportDefinition();
-    if (this$reportDefinition == null
-        ? other$reportDefinition != null
-        : !this$reportDefinition.equals(other$reportDefinition)) {
-      return false;
-    }
-    final Object this$pagination = this.getPagination();
-    final Object other$pagination = other.getPagination();
-    if (this$pagination == null
-        ? other$pagination != null
-        : !this$pagination.equals(other$pagination)) {
-      return false;
-    }
-    if (this.isCsvExport() != other.isCsvExport()) {
-      return false;
-    }
-    if (this.isJsonExport() != other.isJsonExport()) {
-      return false;
-    }
-    final Object this$hiddenFlowNodeIds = this.getHiddenFlowNodeIds();
-    final Object other$hiddenFlowNodeIds = other.getHiddenFlowNodeIds();
-    if (this$hiddenFlowNodeIds == null
-        ? other$hiddenFlowNodeIds != null
-        : !this$hiddenFlowNodeIds.equals(other$hiddenFlowNodeIds)) {
-      return false;
-    }
-    final Object this$combinedRangeMinMaxStats = this.getCombinedRangeMinMaxStats();
-    final Object other$combinedRangeMinMaxStats = other.getCombinedRangeMinMaxStats();
-    if (this$combinedRangeMinMaxStats == null
-        ? other$combinedRangeMinMaxStats != null
-        : !this$combinedRangeMinMaxStats.equals(other$combinedRangeMinMaxStats)) {
-      return false;
-    }
-    final Object this$timezone = this.getTimezone();
-    final Object other$timezone = other.getTimezone();
-    if (this$timezone == null ? other$timezone != null : !this$timezone.equals(other$timezone)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   protected boolean canEqual(final Object other) {
@@ -159,23 +110,7 @@ public class ReportEvaluationContext<R extends ReportDefinitionDto<?>> {
   }
 
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $reportDefinition = this.getReportDefinition();
-    result = result * PRIME + ($reportDefinition == null ? 43 : $reportDefinition.hashCode());
-    final Object $pagination = this.getPagination();
-    result = result * PRIME + ($pagination == null ? 43 : $pagination.hashCode());
-    result = result * PRIME + (this.isCsvExport() ? 79 : 97);
-    result = result * PRIME + (this.isJsonExport() ? 79 : 97);
-    final Object $hiddenFlowNodeIds = this.getHiddenFlowNodeIds();
-    result = result * PRIME + ($hiddenFlowNodeIds == null ? 43 : $hiddenFlowNodeIds.hashCode());
-    final Object $combinedRangeMinMaxStats = this.getCombinedRangeMinMaxStats();
-    result =
-        result * PRIME
-            + ($combinedRangeMinMaxStats == null ? 43 : $combinedRangeMinMaxStats.hashCode());
-    final Object $timezone = this.getTimezone();
-    result = result * PRIME + ($timezone == null ? 43 : $timezone.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   public String toString() {

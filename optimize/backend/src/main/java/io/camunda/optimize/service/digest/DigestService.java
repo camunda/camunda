@@ -469,63 +469,7 @@ public class DigestService implements ConfigurationReloadable {
     }
 
     public boolean equals(final Object o) {
-      if (o == this) {
-        return true;
-      }
-      if (!(o instanceof DigestTemplateKpiSummaryDto)) {
-        return false;
-      }
-      final DigestTemplateKpiSummaryDto other = (DigestTemplateKpiSummaryDto) o;
-      if (!other.canEqual((Object) this)) {
-        return false;
-      }
-      final Object this$reportName = this.getReportName();
-      final Object other$reportName = other.getReportName();
-      if (this$reportName == null
-          ? other$reportName != null
-          : !this$reportName.equals(other$reportName)) {
-        return false;
-      }
-      final Object this$reportLink = this.getReportLink();
-      final Object other$reportLink = other.getReportLink();
-      if (this$reportLink == null
-          ? other$reportLink != null
-          : !this$reportLink.equals(other$reportLink)) {
-        return false;
-      }
-      final Object this$kpiType = this.getKpiType();
-      final Object other$kpiType = other.getKpiType();
-      if (this$kpiType == null ? other$kpiType != null : !this$kpiType.equals(other$kpiType)) {
-        return false;
-      }
-      if (this.isTargetMet() != other.isTargetMet()) {
-        return false;
-      }
-      final Object this$target = this.getTarget();
-      final Object other$target = other.getTarget();
-      if (this$target == null ? other$target != null : !this$target.equals(other$target)) {
-        return false;
-      }
-      final Object this$current = this.getCurrent();
-      final Object other$current = other.getCurrent();
-      if (this$current == null ? other$current != null : !this$current.equals(other$current)) {
-        return false;
-      }
-      final Object this$changeInPercent = this.getChangeInPercent();
-      final Object other$changeInPercent = other.getChangeInPercent();
-      if (this$changeInPercent == null
-          ? other$changeInPercent != null
-          : !this$changeInPercent.equals(other$changeInPercent)) {
-        return false;
-      }
-      final Object this$changeType = this.getChangeType();
-      final Object other$changeType = other.getChangeType();
-      if (this$changeType == null
-          ? other$changeType != null
-          : !this$changeType.equals(other$changeType)) {
-        return false;
-      }
-      return true;
+      return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
     }
 
     protected boolean canEqual(final Object other) {
@@ -533,24 +477,7 @@ public class DigestService implements ConfigurationReloadable {
     }
 
     public int hashCode() {
-      final int PRIME = 59;
-      int result = 1;
-      final Object $reportName = this.getReportName();
-      result = result * PRIME + ($reportName == null ? 43 : $reportName.hashCode());
-      final Object $reportLink = this.getReportLink();
-      result = result * PRIME + ($reportLink == null ? 43 : $reportLink.hashCode());
-      final Object $kpiType = this.getKpiType();
-      result = result * PRIME + ($kpiType == null ? 43 : $kpiType.hashCode());
-      result = result * PRIME + (this.isTargetMet() ? 79 : 97);
-      final Object $target = this.getTarget();
-      result = result * PRIME + ($target == null ? 43 : $target.hashCode());
-      final Object $current = this.getCurrent();
-      result = result * PRIME + ($current == null ? 43 : $current.hashCode());
-      final Object $changeInPercent = this.getChangeInPercent();
-      result = result * PRIME + ($changeInPercent == null ? 43 : $changeInPercent.hashCode());
-      final Object $changeType = this.getChangeType();
-      result = result * PRIME + ($changeType == null ? 43 : $changeType.hashCode());
-      return result;
+      return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
     }
 
     public String toString() {

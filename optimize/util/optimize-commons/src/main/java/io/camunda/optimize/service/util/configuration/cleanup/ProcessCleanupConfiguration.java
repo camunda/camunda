@@ -103,58 +103,12 @@ public class ProcessCleanupConfiguration {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    result = result * PRIME + (isEnabled() ? 79 : 97);
-    final Object $cleanupMode = getCleanupMode();
-    result = result * PRIME + ($cleanupMode == null ? 43 : $cleanupMode.hashCode());
-    result = result * PRIME + getBatchSize();
-    final Object $processDefinitionSpecificConfiguration =
-        getProcessDefinitionSpecificConfiguration();
-    result =
-        result * PRIME
-            + ($processDefinitionSpecificConfiguration == null
-                ? 43
-                : $processDefinitionSpecificConfiguration.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof ProcessCleanupConfiguration)) {
-      return false;
-    }
-    final ProcessCleanupConfiguration other = (ProcessCleanupConfiguration) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (isEnabled() != other.isEnabled()) {
-      return false;
-    }
-    final Object this$cleanupMode = getCleanupMode();
-    final Object other$cleanupMode = other.getCleanupMode();
-    if (this$cleanupMode == null
-        ? other$cleanupMode != null
-        : !this$cleanupMode.equals(other$cleanupMode)) {
-      return false;
-    }
-    if (getBatchSize() != other.getBatchSize()) {
-      return false;
-    }
-    final Object this$processDefinitionSpecificConfiguration =
-        getProcessDefinitionSpecificConfiguration();
-    final Object other$processDefinitionSpecificConfiguration =
-        other.getProcessDefinitionSpecificConfiguration();
-    if (this$processDefinitionSpecificConfiguration == null
-        ? other$processDefinitionSpecificConfiguration != null
-        : !this$processDefinitionSpecificConfiguration.equals(
-            other$processDefinitionSpecificConfiguration)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

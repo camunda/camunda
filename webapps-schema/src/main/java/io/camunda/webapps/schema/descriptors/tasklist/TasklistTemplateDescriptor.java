@@ -7,6 +7,8 @@
  */
 package io.camunda.webapps.schema.descriptors.tasklist;
 
+import static io.camunda.webapps.schema.descriptors.ComponentNames.TASK_LIST;
+
 import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 
 public abstract class TasklistTemplateDescriptor extends AbstractTemplateDescriptor {
@@ -17,6 +19,6 @@ public abstract class TasklistTemplateDescriptor extends AbstractTemplateDescrip
 
   @Override
   public String getComponentName() {
-    return "tasklist";
+    return TASK_LIST.toString();
   }
 }

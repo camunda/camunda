@@ -23,14 +23,13 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepor
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.VariableViewPropertyDto;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 import io.camunda.optimize.service.db.report.ExecutionContext;
+import io.camunda.optimize.service.db.report.interpreter.view.process.ProcessViewVariableInterpreterHelper;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.plan.process.ProcessView;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
-import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import jakarta.ws.rs.BadRequestException;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -50,21 +49,23 @@ public class ProcessViewVariableInterpreterES
   @Override
   public ViewProperty getViewProperty(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    final VariableViewPropertyDto variableViewDto = getVariableViewDto(context);
+    final VariableViewPropertyDto variableViewDto =
+        ProcessViewVariableInterpreterHelper.getVariableViewDto(context);
     return ViewProperty.VARIABLE(variableViewDto.getName(), variableViewDto.getType());
   }
 
   @Override
   public Map<String, Aggregation.Builder.ContainerBuilder> createAggregations(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    final VariableViewPropertyDto variableViewDto = getVariableViewDto(context);
+    final VariableViewPropertyDto variableViewDto =
+        ProcessViewVariableInterpreterHelper.getVariableViewDto(context);
     final VariableType variableType = variableViewDto.getType();
     if (!VariableType.getNumericTypes().contains(variableType)) {
       throw new BadRequestException(
           "Only numeric variable types are supported for reports with view on variables!");
     }
 
-    Aggregation.Builder.ContainerBuilder builder =
+    final Aggregation.Builder.ContainerBuilder builder =
         new Aggregation.Builder()
             .filter(
                 f ->
@@ -97,7 +98,7 @@ public class ProcessViewVariableInterpreterES
                     null, getNestedVariableValueFieldForType(variableType)))
         .forEach((k) -> builder.aggregations(k.key(), k.value().build()));
 
-    Aggregation.Builder.ContainerBuilder aggBuilder =
+    final Aggregation.Builder.ContainerBuilder aggBuilder =
         new Aggregation.Builder().nested(n -> n.path(VARIABLES));
     aggBuilder.aggregations(FILTERED_VARIABLES_AGGREGATION, a -> builder);
     return Map.of(NESTED_VARIABLE_AGGREGATION, aggBuilder);
@@ -127,19 +128,5 @@ public class ProcessViewVariableInterpreterES
                       .build());
             });
     return viewResultBuilder.build();
-  }
-
-  private VariableViewPropertyDto getVariableViewDto(
-      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    return context.getReportData().getView().getProperties().stream()
-        .map(property -> property.getViewPropertyDtoIfOfType(VariableViewPropertyDto.class))
-        .filter(Optional::isPresent)
-        .map(Optional::get)
-        // we take the first as only one variable view property is supported
-        .findFirst()
-        .orElseThrow(
-            () ->
-                new OptimizeRuntimeException(
-                    "No variable view property found in report configuration"));
   }
 }

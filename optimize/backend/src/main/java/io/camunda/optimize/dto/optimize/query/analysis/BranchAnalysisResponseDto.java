@@ -53,47 +53,12 @@ public class BranchAnalysisResponseDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $endEvent = getEndEvent();
-    result = result * PRIME + ($endEvent == null ? 43 : $endEvent.hashCode());
-    final Object $total = getTotal();
-    result = result * PRIME + ($total == null ? 43 : $total.hashCode());
-    final Object $followingNodes = getFollowingNodes();
-    result = result * PRIME + ($followingNodes == null ? 43 : $followingNodes.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof BranchAnalysisResponseDto)) {
-      return false;
-    }
-    final BranchAnalysisResponseDto other = (BranchAnalysisResponseDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$endEvent = getEndEvent();
-    final Object other$endEvent = other.getEndEvent();
-    if (this$endEvent == null ? other$endEvent != null : !this$endEvent.equals(other$endEvent)) {
-      return false;
-    }
-    final Object this$total = getTotal();
-    final Object other$total = other.getTotal();
-    if (this$total == null ? other$total != null : !this$total.equals(other$total)) {
-      return false;
-    }
-    final Object this$followingNodes = getFollowingNodes();
-    final Object other$followingNodes = other.getFollowingNodes();
-    if (this$followingNodes == null
-        ? other$followingNodes != null
-        : !this$followingNodes.equals(other$followingNodes)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

@@ -13,6 +13,13 @@ import {processXmlStore as processXmlMigrationTargetStore} from 'modules/stores/
 import {processInstanceMigrationMappingStore} from './processInstanceMigrationMapping';
 import {waitFor} from '@testing-library/react';
 
+jest.mock('modules/stores/processes/processes.migration', () => ({
+  processesStore: {
+    migrationState: {selectedTargetProcess: {bpmnProcessId: 'orderProcess'}},
+    getSelectedProcessDetails: () => ({bpmnProcessId: 'orderProcess'}),
+  },
+}));
+
 /**
  * In these tests a migration mapping from orderProcess.bpmn to orderProcess_v2.bpmn is tested
  *

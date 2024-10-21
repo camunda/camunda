@@ -382,8 +382,10 @@ public final class EventAppliers implements EventApplier {
     register(UserTaskIntent.CREATED, new UserTaskCreatedApplier(state));
     register(UserTaskIntent.CANCELING, new UserTaskCancelingApplier(state));
     register(UserTaskIntent.CANCELED, new UserTaskCanceledApplier(state));
-    register(UserTaskIntent.COMPLETING, new UserTaskCompletingApplier(state));
-    register(UserTaskIntent.COMPLETED, new UserTaskCompletedApplier(state));
+    register(UserTaskIntent.COMPLETING, 1, new UserTaskCompletingV1Applier(state));
+    register(UserTaskIntent.COMPLETING, 2, new UserTaskCompletingV2Applier(state));
+    register(UserTaskIntent.COMPLETED, 1, new UserTaskCompletedV1Applier(state));
+    register(UserTaskIntent.COMPLETED, 2, new UserTaskCompletedV2Applier(state));
     register(UserTaskIntent.ASSIGNING, new UserTaskAssigningApplier(state));
     register(UserTaskIntent.ASSIGNED, new UserTaskAssignedApplier(state));
     register(UserTaskIntent.UPDATING, new UserTaskUpdatingApplier(state));
@@ -464,6 +466,10 @@ public final class EventAppliers implements EventApplier {
     register(
         RoleIntent.ENTITY_REMOVED,
         new RoleEntityRemovedApplier(state.getRoleState(), state.getUserState()));
+    register(
+        RoleIntent.DELETED,
+        new RoleDeletedApplier(
+            state.getRoleState(), state.getUserState(), state.getAuthorizationState()));
   }
 
   private void registerScalingAppliers(final MutableProcessingState state) {
@@ -473,6 +479,10 @@ public final class EventAppliers implements EventApplier {
 
   private void registerTenantAppliers(final MutableProcessingState state) {
     register(TenantIntent.CREATED, new TenantCreatedApplier(state.getTenantState()));
+    register(TenantIntent.UPDATED, new TenantUpdatedApplier(state.getTenantState()));
+    register(
+        TenantIntent.ENTITY_ADDED,
+        new TenantEntityAddedApplier(state.getTenantState(), state.getUserState()));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {

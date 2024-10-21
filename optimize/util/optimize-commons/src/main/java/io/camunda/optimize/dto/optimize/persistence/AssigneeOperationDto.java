@@ -74,22 +74,7 @@ public class AssigneeOperationDto implements OptimizeDto, Serializable {
   }
 
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof AssigneeOperationDto)) {
-      return false;
-    }
-    final AssigneeOperationDto other = (AssigneeOperationDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$id = this.getId();
-    final Object other$id = other.getId();
-    if (this$id == null ? other$id != null : !this$id.equals(other$id)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   protected boolean canEqual(final Object other) {
@@ -97,11 +82,7 @@ public class AssigneeOperationDto implements OptimizeDto, Serializable {
   }
 
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $id = this.getId();
-    result = result * PRIME + ($id == null ? 43 : $id.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   public static final class Fields {

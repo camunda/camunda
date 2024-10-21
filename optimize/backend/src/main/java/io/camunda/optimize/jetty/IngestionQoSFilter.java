@@ -211,65 +211,12 @@ public class IngestionQoSFilter implements Filter {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    result = result * PRIME + (suspended == null ? 43 : suspended.hashCode());
-    result = result * PRIME + (resumed == null ? 43 : resumed.hashCode());
-    result = result * PRIME + (int) (waitMs >>> 32 ^ waitMs);
-    result = result * PRIME + (int) (suspendMs >>> 32 ^ suspendMs);
-    result = result * PRIME + maxRequests;
-    result = result * PRIME + (passes == null ? 43 : passes.hashCode());
-    result = result * PRIME + java.util.Arrays.deepHashCode(queues);
-    result = result * PRIME + java.util.Arrays.deepHashCode(listeners);
-    final Object $maxRequestCountProvider = maxRequestCountProvider;
-    result =
-        result * PRIME
-            + ($maxRequestCountProvider == null ? 43 : $maxRequestCountProvider.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof IngestionQoSFilter)) {
-      return false;
-    }
-    final IngestionQoSFilter other = (IngestionQoSFilter) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (suspended == null ? other.suspended != null : !suspended.equals(other.suspended)) {
-      return false;
-    }
-    if (resumed == null ? other.resumed != null : !resumed.equals(other.resumed)) {
-      return false;
-    }
-    if (waitMs != other.waitMs) {
-      return false;
-    }
-    if (suspendMs != other.suspendMs) {
-      return false;
-    }
-    if (maxRequests != other.maxRequests) {
-      return false;
-    }
-    if (passes == null ? other.passes != null : !passes.equals(other.passes)) {
-      return false;
-    }
-    if (!java.util.Arrays.deepEquals(queues, other.queues)) {
-      return false;
-    }
-    if (!java.util.Arrays.deepEquals(listeners, other.listeners)) {
-      return false;
-    }
-    if (maxRequestCountProvider == null
-        ? other.maxRequestCountProvider != null
-        : !maxRequestCountProvider.equals(other.maxRequestCountProvider)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

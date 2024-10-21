@@ -8,6 +8,9 @@
 package io.camunda.exporter.utils;
 
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 public final class ExporterUtil {
 
@@ -20,5 +23,21 @@ public final class ExporterUtil {
       return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
     }
     return tenantId;
+  }
+
+  public static String toStringOrNull(final Object object) {
+    return toStringOrDefault(object, null);
+  }
+
+  public static String toStringOrDefault(final Object object, final String defaultString) {
+    return object == null ? defaultString : object.toString();
+  }
+
+  public static String trimWhitespace(final String str) {
+    return (str == null) ? null : str.strip();
+  }
+
+  public static OffsetDateTime toOffsetDateTime(final Instant timestamp) {
+    return OffsetDateTime.ofInstant(timestamp, ZoneOffset.UTC);
   }
 }

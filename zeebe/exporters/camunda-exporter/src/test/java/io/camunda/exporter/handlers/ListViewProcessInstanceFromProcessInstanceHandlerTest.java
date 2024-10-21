@@ -156,7 +156,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
   @Test
   public void shouldCreateNewEntity() {
     // when
-    final var result = (underTest.createNewEntity("id"));
+    final var result = underTest.createNewEntity("id");
 
     // then
     assertThat(result).isNotNull();

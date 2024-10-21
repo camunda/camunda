@@ -98,76 +98,12 @@ public class MixpanelConfigResponseDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    result = result * PRIME + (isEnabled() ? 79 : 97);
-    final Object $apiHost = getApiHost();
-    result = result * PRIME + ($apiHost == null ? 43 : $apiHost.hashCode());
-    final Object $token = getToken();
-    result = result * PRIME + ($token == null ? 43 : $token.hashCode());
-    final Object $organizationId = getOrganizationId();
-    result = result * PRIME + ($organizationId == null ? 43 : $organizationId.hashCode());
-    final Object $osanoScriptUrl = getOsanoScriptUrl();
-    result = result * PRIME + ($osanoScriptUrl == null ? 43 : $osanoScriptUrl.hashCode());
-    final Object $stage = getStage();
-    result = result * PRIME + ($stage == null ? 43 : $stage.hashCode());
-    final Object $clusterId = getClusterId();
-    result = result * PRIME + ($clusterId == null ? 43 : $clusterId.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof MixpanelConfigResponseDto)) {
-      return false;
-    }
-    final MixpanelConfigResponseDto other = (MixpanelConfigResponseDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (isEnabled() != other.isEnabled()) {
-      return false;
-    }
-    final Object this$apiHost = getApiHost();
-    final Object other$apiHost = other.getApiHost();
-    if (this$apiHost == null ? other$apiHost != null : !this$apiHost.equals(other$apiHost)) {
-      return false;
-    }
-    final Object this$token = getToken();
-    final Object other$token = other.getToken();
-    if (this$token == null ? other$token != null : !this$token.equals(other$token)) {
-      return false;
-    }
-    final Object this$organizationId = getOrganizationId();
-    final Object other$organizationId = other.getOrganizationId();
-    if (this$organizationId == null
-        ? other$organizationId != null
-        : !this$organizationId.equals(other$organizationId)) {
-      return false;
-    }
-    final Object this$osanoScriptUrl = getOsanoScriptUrl();
-    final Object other$osanoScriptUrl = other.getOsanoScriptUrl();
-    if (this$osanoScriptUrl == null
-        ? other$osanoScriptUrl != null
-        : !this$osanoScriptUrl.equals(other$osanoScriptUrl)) {
-      return false;
-    }
-    final Object this$stage = getStage();
-    final Object other$stage = other.getStage();
-    if (this$stage == null ? other$stage != null : !this$stage.equals(other$stage)) {
-      return false;
-    }
-    final Object this$clusterId = getClusterId();
-    final Object other$clusterId = other.getClusterId();
-    if (this$clusterId == null
-        ? other$clusterId != null
-        : !this$clusterId.equals(other$clusterId)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

@@ -45,51 +45,12 @@ public class BranchAnalysisOutcomeDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $activitiesReached = getActivitiesReached();
-    result = result * PRIME + ($activitiesReached == null ? 43 : $activitiesReached.hashCode());
-    final Object $activityCount = getActivityCount();
-    result = result * PRIME + ($activityCount == null ? 43 : $activityCount.hashCode());
-    final Object $activityId = getActivityId();
-    result = result * PRIME + ($activityId == null ? 43 : $activityId.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof BranchAnalysisOutcomeDto)) {
-      return false;
-    }
-    final BranchAnalysisOutcomeDto other = (BranchAnalysisOutcomeDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$activitiesReached = getActivitiesReached();
-    final Object other$activitiesReached = other.getActivitiesReached();
-    if (this$activitiesReached == null
-        ? other$activitiesReached != null
-        : !this$activitiesReached.equals(other$activitiesReached)) {
-      return false;
-    }
-    final Object this$activityCount = getActivityCount();
-    final Object other$activityCount = other.getActivityCount();
-    if (this$activityCount == null
-        ? other$activityCount != null
-        : !this$activityCount.equals(other$activityCount)) {
-      return false;
-    }
-    final Object this$activityId = getActivityId();
-    final Object other$activityId = other.getActivityId();
-    if (this$activityId == null
-        ? other$activityId != null
-        : !this$activityId.equals(other$activityId)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

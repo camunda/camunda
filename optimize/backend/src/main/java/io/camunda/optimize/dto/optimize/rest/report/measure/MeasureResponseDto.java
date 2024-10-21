@@ -93,46 +93,7 @@ public class MeasureResponseDto<T> {
   }
 
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof MeasureResponseDto)) {
-      return false;
-    }
-    final MeasureResponseDto<?> other = (MeasureResponseDto<?>) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$property = this.getProperty();
-    final Object other$property = other.getProperty();
-    if (this$property == null ? other$property != null : !this$property.equals(other$property)) {
-      return false;
-    }
-    final Object this$aggregationType = this.getAggregationType();
-    final Object other$aggregationType = other.getAggregationType();
-    if (this$aggregationType == null
-        ? other$aggregationType != null
-        : !this$aggregationType.equals(other$aggregationType)) {
-      return false;
-    }
-    final Object this$userTaskDurationTime = this.getUserTaskDurationTime();
-    final Object other$userTaskDurationTime = other.getUserTaskDurationTime();
-    if (this$userTaskDurationTime == null
-        ? other$userTaskDurationTime != null
-        : !this$userTaskDurationTime.equals(other$userTaskDurationTime)) {
-      return false;
-    }
-    final Object this$data = this.getData();
-    final Object other$data = other.getData();
-    if (this$data == null ? other$data != null : !this$data.equals(other$data)) {
-      return false;
-    }
-    final Object this$type = this.getType();
-    final Object other$type = other.getType();
-    if (this$type == null ? other$type != null : !this$type.equals(other$type)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   protected boolean canEqual(final Object other) {
@@ -140,20 +101,7 @@ public class MeasureResponseDto<T> {
   }
 
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $property = this.getProperty();
-    result = result * PRIME + ($property == null ? 43 : $property.hashCode());
-    final Object $aggregationType = this.getAggregationType();
-    result = result * PRIME + ($aggregationType == null ? 43 : $aggregationType.hashCode());
-    final Object $userTaskDurationTime = this.getUserTaskDurationTime();
-    result =
-        result * PRIME + ($userTaskDurationTime == null ? 43 : $userTaskDurationTime.hashCode());
-    final Object $data = this.getData();
-    result = result * PRIME + ($data == null ? 43 : $data.hashCode());
-    final Object $type = this.getType();
-    result = result * PRIME + ($type == null ? 43 : $type.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   public String toString() {

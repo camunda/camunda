@@ -130,88 +130,12 @@ public abstract class DefinitionOptimizeResponseDto implements Serializable, Opt
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $id = getId();
-    result = result * PRIME + ($id == null ? 43 : $id.hashCode());
-    final Object $key = getKey();
-    result = result * PRIME + ($key == null ? 43 : $key.hashCode());
-    final Object $version = getVersion();
-    result = result * PRIME + ($version == null ? 43 : $version.hashCode());
-    final Object $versionTag = getVersionTag();
-    result = result * PRIME + ($versionTag == null ? 43 : $versionTag.hashCode());
-    final Object $name = getName();
-    result = result * PRIME + ($name == null ? 43 : $name.hashCode());
-    final Object $dataSource = getDataSource();
-    result = result * PRIME + ($dataSource == null ? 43 : $dataSource.hashCode());
-    final Object $tenantId = getTenantId();
-    result = result * PRIME + ($tenantId == null ? 43 : $tenantId.hashCode());
-    result = result * PRIME + (isDeleted() ? 79 : 97);
-    final Object $type = getType();
-    result = result * PRIME + ($type == null ? 43 : $type.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof DefinitionOptimizeResponseDto)) {
-      return false;
-    }
-    final DefinitionOptimizeResponseDto other = (DefinitionOptimizeResponseDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$id = getId();
-    final Object other$id = other.getId();
-    if (this$id == null ? other$id != null : !this$id.equals(other$id)) {
-      return false;
-    }
-    final Object this$key = getKey();
-    final Object other$key = other.getKey();
-    if (this$key == null ? other$key != null : !this$key.equals(other$key)) {
-      return false;
-    }
-    final Object this$version = getVersion();
-    final Object other$version = other.getVersion();
-    if (this$version == null ? other$version != null : !this$version.equals(other$version)) {
-      return false;
-    }
-    final Object this$versionTag = getVersionTag();
-    final Object other$versionTag = other.getVersionTag();
-    if (this$versionTag == null
-        ? other$versionTag != null
-        : !this$versionTag.equals(other$versionTag)) {
-      return false;
-    }
-    final Object this$name = getName();
-    final Object other$name = other.getName();
-    if (this$name == null ? other$name != null : !this$name.equals(other$name)) {
-      return false;
-    }
-    final Object this$dataSource = getDataSource();
-    final Object other$dataSource = other.getDataSource();
-    if (this$dataSource == null
-        ? other$dataSource != null
-        : !this$dataSource.equals(other$dataSource)) {
-      return false;
-    }
-    final Object this$tenantId = getTenantId();
-    final Object other$tenantId = other.getTenantId();
-    if (this$tenantId == null ? other$tenantId != null : !this$tenantId.equals(other$tenantId)) {
-      return false;
-    }
-    if (isDeleted() != other.isDeleted()) {
-      return false;
-    }
-    final Object this$type = getType();
-    final Object other$type = other.getType();
-    if (this$type == null ? other$type != null : !this$type.equals(other$type)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

@@ -41,32 +41,12 @@ public class IndexRolloverConfiguration {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    result = result * PRIME + getScheduleIntervalInMinutes();
-    result = result * PRIME + getMaxIndexSizeGB();
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof IndexRolloverConfiguration)) {
-      return false;
-    }
-    final IndexRolloverConfiguration other = (IndexRolloverConfiguration) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (getScheduleIntervalInMinutes() != other.getScheduleIntervalInMinutes()) {
-      return false;
-    }
-    if (getMaxIndexSizeGB() != other.getMaxIndexSizeGB()) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

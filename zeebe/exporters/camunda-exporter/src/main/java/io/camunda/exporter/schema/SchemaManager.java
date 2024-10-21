@@ -59,12 +59,36 @@ public class SchemaManager {
   }
 
   public void initialiseResources() {
-    final var existingTemplateNames =
-        searchEngineClient.getMappings("*", MappingSource.INDEX_TEMPLATE).keySet();
+    initialiseIndices();
+    initialiseIndexTemplates();
+  }
+
+  private void initialiseIndices() {
+    if (indexDescriptors.isEmpty()) {
+      return;
+    }
+
     final var existingIndexNames =
+        searchEngineClient.getMappings(allIndexNames(), MappingSource.INDEX).keySet();
+
+    indexDescriptors.stream()
+        .filter(descriptor -> !existingIndexNames.contains(descriptor.getFullQualifiedName()))
+        .forEach(
+            descriptor ->
+                searchEngineClient.createIndex(
+                    descriptor, getIndexSettings(descriptor.getIndexName())));
+  }
+
+  private void initialiseIndexTemplates() {
+    if (indexTemplateDescriptors.isEmpty()) {
+      return;
+    }
+
+    final var existingTemplateNames =
         searchEngineClient
-            .getMappings(config.getIndex().getPrefix() + "*", MappingSource.INDEX)
+            .getMappings(config.getIndex().getPrefix() + "*", MappingSource.INDEX_TEMPLATE)
             .keySet();
+
     indexTemplateDescriptors.stream()
         .filter(descriptor -> !existingTemplateNames.contains(descriptor.getTemplateName()))
         .forEach(
@@ -75,13 +99,6 @@ public class SchemaManager {
               searchEngineClient.createIndex(
                   descriptor, getIndexSettings(descriptor.getIndexName()));
             });
-
-    indexDescriptors.stream()
-        .filter(descriptor -> !existingIndexNames.contains(descriptor.getFullQualifiedName()))
-        .forEach(
-            descriptor ->
-                searchEngineClient.createIndex(
-                    descriptor, getIndexSettings(descriptor.getIndexName())));
   }
 
   public void updateSchema(final Map<IndexDescriptor, Collection<IndexMappingProperty>> newFields) {
@@ -123,20 +140,40 @@ public class SchemaManager {
 
   private Map<IndexDescriptor, Collection<IndexMappingProperty>> validateIndices(
       final IndexSchemaValidator schemaValidator, final SearchEngineClient searchEngineClient) {
-    final var currentIndices =
-        searchEngineClient.getMappings(config.getIndex().getPrefix() + "*", MappingSource.INDEX);
+    if (indexDescriptors.isEmpty()) {
+      return Map.of();
+    }
+
+    final var currentIndices = searchEngineClient.getMappings(allIndexNames(), MappingSource.INDEX);
 
     return schemaValidator.validateIndexMappings(currentIndices, indexDescriptors);
   }
 
   private Map<IndexDescriptor, Collection<IndexMappingProperty>> validateIndexTemplates(
       final IndexSchemaValidator schemaValidator, final SearchEngineClient searchEngineClient) {
-    final var currentTemplates = searchEngineClient.getMappings("*", MappingSource.INDEX_TEMPLATE);
+    if (indexTemplateDescriptors.isEmpty()) {
+      return Map.of();
+    }
+
+    final var currentTemplates =
+        searchEngineClient.getMappings(
+            config.getIndex().getPrefix() + "*", MappingSource.INDEX_TEMPLATE);
 
     return schemaValidator.validateIndexMappings(
         currentTemplates,
         indexTemplateDescriptors.stream()
             .map(IndexDescriptor.class::cast)
             .collect(Collectors.toSet()));
+  }
+
+  private String allIndexNames() {
+
+    // The wildcard is required as without it, requests would fail if the index didn't exist.
+    // this way all descriptors can be retrieved in one request without errors due to not created
+    // indices
+
+    return indexDescriptors.stream()
+        .map(descriptor -> descriptor.getFullQualifiedName() + "*")
+        .collect(Collectors.joining(","));
   }
 }

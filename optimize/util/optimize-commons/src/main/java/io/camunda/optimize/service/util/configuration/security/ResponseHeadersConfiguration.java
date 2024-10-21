@@ -90,83 +90,12 @@ public class ResponseHeadersConfiguration {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $httpStrictTransportSecurityMaxAge = getHttpStrictTransportSecurityMaxAge();
-    result =
-        result * PRIME
-            + ($httpStrictTransportSecurityMaxAge == null
-                ? 43
-                : $httpStrictTransportSecurityMaxAge.hashCode());
-    final Object $httpStrictTransportSecurityIncludeSubdomains =
-        getHttpStrictTransportSecurityIncludeSubdomains();
-    result =
-        result * PRIME
-            + ($httpStrictTransportSecurityIncludeSubdomains == null
-                ? 43
-                : $httpStrictTransportSecurityIncludeSubdomains.hashCode());
-    final Object $xsssProtection = getXsssProtection();
-    result = result * PRIME + ($xsssProtection == null ? 43 : $xsssProtection.hashCode());
-    final Object $xContentTypeOptions = getXContentTypeOptions();
-    result = result * PRIME + ($xContentTypeOptions == null ? 43 : $xContentTypeOptions.hashCode());
-    final Object $contentSecurityPolicy = getContentSecurityPolicy();
-    result =
-        result * PRIME + ($contentSecurityPolicy == null ? 43 : $contentSecurityPolicy.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof ResponseHeadersConfiguration)) {
-      return false;
-    }
-    final ResponseHeadersConfiguration other = (ResponseHeadersConfiguration) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$httpStrictTransportSecurityMaxAge = getHttpStrictTransportSecurityMaxAge();
-    final Object other$httpStrictTransportSecurityMaxAge =
-        other.getHttpStrictTransportSecurityMaxAge();
-    if (this$httpStrictTransportSecurityMaxAge == null
-        ? other$httpStrictTransportSecurityMaxAge != null
-        : !this$httpStrictTransportSecurityMaxAge.equals(other$httpStrictTransportSecurityMaxAge)) {
-      return false;
-    }
-    final Object this$httpStrictTransportSecurityIncludeSubdomains =
-        getHttpStrictTransportSecurityIncludeSubdomains();
-    final Object other$httpStrictTransportSecurityIncludeSubdomains =
-        other.getHttpStrictTransportSecurityIncludeSubdomains();
-    if (this$httpStrictTransportSecurityIncludeSubdomains == null
-        ? other$httpStrictTransportSecurityIncludeSubdomains != null
-        : !this$httpStrictTransportSecurityIncludeSubdomains.equals(
-            other$httpStrictTransportSecurityIncludeSubdomains)) {
-      return false;
-    }
-    final Object this$xsssProtection = getXsssProtection();
-    final Object other$xsssProtection = other.getXsssProtection();
-    if (this$xsssProtection == null
-        ? other$xsssProtection != null
-        : !this$xsssProtection.equals(other$xsssProtection)) {
-      return false;
-    }
-    final Object this$xContentTypeOptions = getXContentTypeOptions();
-    final Object other$xContentTypeOptions = other.getXContentTypeOptions();
-    if (this$xContentTypeOptions == null
-        ? other$xContentTypeOptions != null
-        : !this$xContentTypeOptions.equals(other$xContentTypeOptions)) {
-      return false;
-    }
-    final Object this$contentSecurityPolicy = getContentSecurityPolicy();
-    final Object other$contentSecurityPolicy = other.getContentSecurityPolicy();
-    if (this$contentSecurityPolicy == null
-        ? other$contentSecurityPolicy != null
-        : !this$contentSecurityPolicy.equals(other$contentSecurityPolicy)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

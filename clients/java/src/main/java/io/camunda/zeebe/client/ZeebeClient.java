@@ -46,6 +46,8 @@ import io.camunda.zeebe.client.api.fetch.DecisionDefinitionGetXmlRequest;
 import io.camunda.zeebe.client.api.fetch.DecisionInstanceGetRequest;
 import io.camunda.zeebe.client.api.fetch.DecisionRequirementsGetRequest;
 import io.camunda.zeebe.client.api.fetch.DecisionRequirementsGetXmlRequest;
+import io.camunda.zeebe.client.api.fetch.FlowNodeInstanceGetRequest;
+import io.camunda.zeebe.client.api.fetch.IncidentGetRequest;
 import io.camunda.zeebe.client.api.fetch.ProcessDefinitionGetRequest;
 import io.camunda.zeebe.client.api.fetch.ProcessDefinitionGetXmlRequest;
 import io.camunda.zeebe.client.api.fetch.ProcessInstanceGetRequest;
@@ -835,6 +837,29 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   FlownodeInstanceQuery newFlownodeInstanceQuery();
 
   /**
+   * Gets a flow node instance by key.
+   *
+   * <pre>
+   *   long flowNodeInstanceKey = ...;
+   *
+   *   zeebeClient
+   *   .newFlowNodeInstanceGetRequest(flowNodeInstanceKey)
+   *   .send();
+   *   </pre>
+   *
+   * <p><strong>Experimental: This method is under development, and as such using it may have no
+   * effect on the client builder when called. The respective API on compatible clusters is not
+   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
+   * warning is removed, anything described below may not yet have taken effect, and the interface
+   * and its description are subject to change.</strong>
+   *
+   * @param flowNodeInstanceKey the key of the flow node instance
+   * @return a builder for the request to get a flow node instance
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
+  FlowNodeInstanceGetRequest newFlowNodeInstanceGetRequest(long flowNodeInstanceKey);
+
+  /**
    * Executes a search request to query user tasks.
    *
    * <pre>
@@ -1023,6 +1048,29 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   IncidentQuery newIncidentQuery();
+
+  /**
+   * Gets an incident by key.
+   *
+   * <pre>
+   *   long incidentKey = ...;
+   *
+   *   zeebeClient
+   *   .newIncidentGetRequest(incidentKey)
+   *   .send();
+   *   </pre>
+   *
+   * <p><strong>Experimental: This method is under development, and as such using it may have no
+   * effect on the client builder when called. The respective API on compatible clusters is not
+   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
+   * warning is removed, anything described below may not yet have taken effect, and the interface
+   * and its description are subject to change.</strong>
+   *
+   * @param incidentKey the key of the incident
+   * @return a builder for the request to get an incident
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
+  IncidentGetRequest newIncidentGetRequest(long incidentKey);
 
   /**
    * Command to create a user.

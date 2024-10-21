@@ -51,47 +51,12 @@ public class CollectionDataDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $configuration = getConfiguration();
-    result = result * PRIME + ($configuration == null ? 43 : $configuration.hashCode());
-    final Object $roles = getRoles();
-    result = result * PRIME + ($roles == null ? 43 : $roles.hashCode());
-    final Object $scope = getScope();
-    result = result * PRIME + ($scope == null ? 43 : $scope.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof CollectionDataDto)) {
-      return false;
-    }
-    final CollectionDataDto other = (CollectionDataDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$configuration = getConfiguration();
-    final Object other$configuration = other.getConfiguration();
-    if (this$configuration == null
-        ? other$configuration != null
-        : !this$configuration.equals(other$configuration)) {
-      return false;
-    }
-    final Object this$roles = getRoles();
-    final Object other$roles = other.getRoles();
-    if (this$roles == null ? other$roles != null : !this$roles.equals(other$roles)) {
-      return false;
-    }
-    final Object this$scope = getScope();
-    final Object other$scope = other.getScope();
-    if (this$scope == null ? other$scope != null : !this$scope.equals(other$scope)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

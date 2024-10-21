@@ -108,12 +108,21 @@ public final class SearchResponseMapper {
     return new SearchQueryResponseImpl<>(instances, page);
   }
 
+  public static FlowNodeInstance toFlowNodeInstanceGetResponse(
+      final FlowNodeInstanceItem response) {
+    return new FlowNodeInstanceImpl(response);
+  }
+
   public static SearchQueryResponse<Incident> toIncidentSearchResponse(
       final IncidentSearchQueryResponse response) {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<Incident> incidents =
         toSearchResponseInstances(response.getItems(), IncidentImpl::new);
     return new SearchQueryResponseImpl<>(incidents, page);
+  }
+
+  public static Incident toIncidentGetResponse(final IncidentItem response) {
+    return new IncidentImpl(response);
   }
 
   private static SearchResponsePage toSearchResponsePage(

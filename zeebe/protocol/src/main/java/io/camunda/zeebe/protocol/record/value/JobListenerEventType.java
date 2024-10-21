@@ -33,5 +33,11 @@ public enum JobListenerEventType {
    * the listener should be triggered at the end of an execution, such as the completion of a
    * process instance, sub-process or element (task, event, gateway).
    */
-  END
+  END,
+
+  /**
+   * Represents the `complete` event for a task listener. This event type is used to indicate that
+   * the listener should be triggered after a user task complete operation was invoked.
+   */
+  COMPLETE
 }

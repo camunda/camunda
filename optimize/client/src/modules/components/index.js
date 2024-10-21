@@ -14,7 +14,6 @@ export {BPMNDiagram, ClickBehavior, PartHighlight} from './BPMNDiagram';
 export {CopyToClipboard} from './CopyToClipboard';
 export {ReportRenderer, NoDataNotice} from './ReportRenderer';
 export {ErrorBoundary} from './ErrorBoundary';
-export {Icon} from './Icon';
 export {ActionItem} from './ActionItem';
 export {ShareEntity} from './ShareEntity';
 export {DashboardRenderer, DiagramScrollLock} from './DashboardRenderer';
