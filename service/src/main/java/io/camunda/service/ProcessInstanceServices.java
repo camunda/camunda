@@ -16,6 +16,7 @@ import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -48,15 +49,17 @@ public final class ProcessInstanceServices
 
   public ProcessInstanceServices(
       final BrokerClient brokerClient,
+      final SecurityConfiguration securityConfiguration,
       final ProcessInstanceSearchClient processInstanceSearchClient,
       final Authentication authentication) {
-    super(brokerClient, authentication);
+    super(brokerClient, securityConfiguration, authentication);
     this.processInstanceSearchClient = processInstanceSearchClient;
   }
 
   @Override
   public ProcessInstanceServices withAuthentication(final Authentication authentication) {
-    return new ProcessInstanceServices(brokerClient, processInstanceSearchClient, authentication);
+    return new ProcessInstanceServices(
+        brokerClient, securityConfiguration, processInstanceSearchClient, authentication);
   }
 
   @Override
@@ -66,7 +69,8 @@ public final class ProcessInstanceServices
         SecurityContext.of(
             s ->
                 s.withAuthentication(authentication)
-                    .withAuthorization(
+                    .withAuthorizationIfEnabled(
+                        securityConfiguration.getAuthorizations().isEnabled(),
                         a ->
                             a.resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
                                 .permissionType(PermissionType.READ_INSTANCE))));

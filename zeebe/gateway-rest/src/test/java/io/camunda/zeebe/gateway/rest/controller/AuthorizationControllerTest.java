@@ -53,7 +53,7 @@ import org.springframework.http.ProblemDetail;
 @WebMvcTest(AuthorizationController.class)
 public class AuthorizationControllerTest extends RestControllerTest {
 
-  @MockBean private AuthorizationServices<AuthorizationRecord> authorizationServices;
+  @MockBean private AuthorizationServices authorizationServices;
 
   @BeforeEach
   void setup() {

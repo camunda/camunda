@@ -13,6 +13,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserQuery;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserCreateRequest;
@@ -26,9 +27,10 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
 
   public UserServices(
       final BrokerClient brokerClient,
+      final SecurityConfiguration securityConfiguration,
       final UserSearchClient userSearchClient,
       final Authentication authentication) {
-    super(brokerClient, authentication);
+    super(brokerClient, securityConfiguration, authentication);
     this.userSearchClient = userSearchClient;
   }
 
@@ -40,7 +42,7 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
 
   @Override
   public UserServices withAuthentication(final Authentication authentication) {
-    return new UserServices(brokerClient, userSearchClient, authentication);
+    return new UserServices(brokerClient, securityConfiguration, userSearchClient, authentication);
   }
 
   public CompletableFuture<UserRecord> createUser(final UserDTO request) {

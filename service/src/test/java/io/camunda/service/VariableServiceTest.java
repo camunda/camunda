@@ -18,6 +18,7 @@ import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.filter.VariableFilter.Builder;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.List;
 import org.assertj.core.util.Arrays;
@@ -32,7 +33,8 @@ public class VariableServiceTest {
   @BeforeEach
   public void before() {
     client = mock(VariableSearchClient.class);
-    services = new VariableServices(mock(BrokerClient.class), client, null);
+    services =
+        new VariableServices(mock(BrokerClient.class), new SecurityConfiguration(), client, null);
   }
 
   @Test

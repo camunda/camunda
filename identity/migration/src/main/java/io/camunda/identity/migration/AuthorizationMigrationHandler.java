@@ -10,7 +10,6 @@ package io.camunda.identity.migration;
 import io.camunda.identity.migration.dto.UserResourceAuthorization;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -25,11 +24,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class AuthorizationMigrationHandler {
 
-  private final AuthorizationServices<AuthorizationRecord> authorizationService;
+  private final AuthorizationServices authorizationService;
   private final ManagementIdentityProxy managementIdentityProxy;
 
   public AuthorizationMigrationHandler(
-      final AuthorizationServices<AuthorizationRecord> authorizationService,
+      final AuthorizationServices authorizationService,
       final ManagementIdentityProxy managementIdentityProxy) {
     this.authorizationService = authorizationService;
     this.managementIdentityProxy = managementIdentityProxy;

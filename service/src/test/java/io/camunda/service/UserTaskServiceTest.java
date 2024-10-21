@@ -18,6 +18,7 @@ import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.UserTaskFilter.Builder;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.List;
 import org.assertj.core.util.Arrays;
@@ -32,7 +33,8 @@ public class UserTaskServiceTest {
   @BeforeEach
   public void before() {
     client = mock(UserTaskSearchClient.class);
-    services = new UserTaskServices(mock(BrokerClient.class), client, null);
+    services =
+        new UserTaskServices(mock(BrokerClient.class), new SecurityConfiguration(), client, null);
   }
 
   @Test
