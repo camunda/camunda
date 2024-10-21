@@ -10,10 +10,12 @@ package io.camunda.zeebe.engine.processing.authorization;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.RoleState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
@@ -31,6 +33,8 @@ public class RoleTest {
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
   private final RoleState roleState = ENGINE.getProcessingState().getRoleState();
   private final UserState userState = ENGINE.getProcessingState().getUserState();
+  private final AuthorizationState authorizationState =
+      ENGINE.getProcessingState().getAuthorizationState();
 
   @BeforeClass
   public static void setUp() {
@@ -52,6 +56,8 @@ public class RoleTest {
 
     final var createdRole = roleRecord.getValue();
     Assertions.assertThat(createdRole).isNotNull().hasFieldOrPropertyWithValue("name", name);
+    final var ownerType = authorizationState.getOwnerType(createdRole.getRoleKey());
+    Assertions.assertThat(ownerType).isPresent().hasValue(AuthorizationOwnerType.ROLE);
   }
 
   @Test
