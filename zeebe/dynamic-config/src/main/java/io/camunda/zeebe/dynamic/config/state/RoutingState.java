@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.dynamic.config.state;
 
+import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
+import io.camunda.zeebe.protocol.Protocol;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -20,19 +23,13 @@ import java.util.stream.IntStream;
  * used to resolve conflicts when the members receive gossip updates out of order.
  */
 public record RoutingState(
-    long version, Set<Integer> activePartitions, MessageCorrelation messageCorrelation) {
+    long version, RequestHandling requestHandling, MessageCorrelation messageCorrelation) {
   public RoutingState {
-    Objects.requireNonNull(activePartitions);
+    Objects.requireNonNull(requestHandling);
     Objects.requireNonNull(messageCorrelation);
 
     if (version < 0) {
       throw new IllegalArgumentException("Version must be positive");
-    }
-
-    for (final var partition : activePartitions) {
-      if (partition <= 0) {
-        throw new IllegalArgumentException("Partition id must be positive");
-      }
     }
   }
 
@@ -57,9 +54,23 @@ public record RoutingState(
    */
   public static RoutingState initializeWithPartitionCount(final int partitionCount) {
     return new RoutingState(
-        1,
-        IntStream.rangeClosed(1, partitionCount).boxed().collect(Collectors.toSet()),
-        new MessageCorrelation.HashMod(partitionCount));
+        1, new AllPartitions(partitionCount), new MessageCorrelation.HashMod(partitionCount));
+  }
+
+  private static void validatePartitionId(final int partitionId) {
+    if (partitionId < Protocol.START_PARTITION_ID) {
+      throw new IllegalArgumentException(
+          "Partition %d must be greater than %d"
+              .formatted(partitionId, Protocol.START_PARTITION_ID));
+    }
+    if (partitionId > Protocol.MAXIMUM_PARTITIONS) {
+      throw new IllegalArgumentException(
+          "Partition %d must be less than %d".formatted(partitionId, Protocol.MAXIMUM_PARTITIONS));
+    }
+  }
+
+  private static Set<Integer> allPartitions(final int partitionCount) {
+    return IntStream.rangeClosed(1, partitionCount).boxed().collect(Collectors.toSet());
   }
 
   /** Strategy used to correlate messages via their correlation key to partitions. */
@@ -69,6 +80,54 @@ public record RoutingState(
         if (partitionCount <= 0) {
           throw new IllegalArgumentException("Partition count must be positive");
         }
+      }
+    }
+  }
+
+  public sealed interface RequestHandling {
+    Set<Integer> activePartitions();
+
+    record AllPartitions(int partitionCount) implements RequestHandling {
+      public AllPartitions {
+        validatePartitionId(partitionCount);
+      }
+
+      @Override
+      public Set<Integer> activePartitions() {
+        return allPartitions(partitionCount);
+      }
+    }
+
+    record ActivePartitions(Set<Integer> activePartitions, Set<Integer> inactivePartitions)
+        implements RequestHandling {
+      public ActivePartitions {
+        Objects.requireNonNull(activePartitions);
+        Objects.requireNonNull(inactivePartitions);
+        for (final int activePartition : activePartitions) {
+          validatePartitionId(activePartition);
+          if (inactivePartitions.contains(activePartition)) {
+            throw new IllegalArgumentException(
+                "Partition %d cannot be active and inactive at the same time."
+                    .formatted(activePartition));
+          }
+        }
+
+        for (final int inactivePartition : inactivePartitions) {
+          validatePartitionId(inactivePartition);
+        }
+      }
+    }
+
+    record Mixed(AllPartitions base, ActivePartitions additional) implements RequestHandling {
+
+      @Override
+      public Set<Integer> activePartitions() {
+        final var all =
+            new HashSet<Integer>(base.partitionCount + additional.activePartitions.size());
+        all.addAll(base.activePartitions());
+        all.addAll(additional.activePartitions);
+        all.removeAll(additional.inactivePartitions);
+        return all;
       }
     }
   }

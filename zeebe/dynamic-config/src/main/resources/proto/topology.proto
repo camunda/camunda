@@ -19,8 +19,29 @@ message ClusterTopology {
 
 message RoutingState {
   int64  version = 1;
-  repeated sint32 activePartitions = 2;
+  RequestHandling requestHandling = 2;
   MessageCorrelation messageCorrelation = 3;
+}
+
+message RequestHandling {
+  oneof strategy {
+    AllPartitions allPartitions = 1;
+    ActivePartitions activePartitions = 2;
+    Mixed mixedPartitions = 3;
+  }
+
+  message AllPartitions {
+    sint32 partitionCount = 1;
+  }
+  message ActivePartitions {
+    repeated sint32 activePartitions = 1;
+    repeated sint32 inactivePartitions = 2;
+  }
+
+  message Mixed {
+    AllPartitions base = 1;
+    ActivePartitions additional = 2;
+  }
 }
 
 message MessageCorrelation {

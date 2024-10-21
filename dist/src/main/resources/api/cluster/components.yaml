@@ -142,7 +142,7 @@ schemas:
     type: object
     required:
       - version
-      - activePartitions
+      - requestHandling
       - messageCorrelation
     properties:
       version:
@@ -150,6 +150,47 @@ schemas:
         format: int64
         description: The version of the routing state
         example: 1
+      requestHandling:
+        $ref: "components.yaml#/schemas/RequestHandling"
+      messageCorrelation:
+        $ref: "components.yaml#/schemas/MessageCorrelation"
+
+  RequestHandling:
+    description: The request handling strategy
+    oneOf:
+      - $ref: "components.yaml#/schemas/RequestHandlingAllPartitions"
+      - $ref: "components.yaml#/schemas/RequestHandlingActivePartitions"
+      - $ref: "components.yaml#/schemas/RequestHandlingMixed"
+    discriminator:
+      propertyName: strategy
+      mapping:
+        AllPartitions: "components.yaml#/schemas/RequestHandlingAllPartitions"
+        ActivePartitions: "components.yaml#/schemas/RequestHandlingActivePartitions"
+        Mixed: "components.yaml#/schemas/RequestHandlingMixed"
+
+  RequestHandlingAllPartitions:
+    description: Requests are handled by all partitions
+    type: object
+    required:
+      - partitionCount
+    properties:
+      strategy:
+        type: string
+      partitionCount:
+        type: integer
+        format: int32
+        description: The number of partitions
+        example: 3
+
+  RequestHandlingActivePartitions:
+    description: Requests are only handled by active partitions, inactive partitions are excluded
+    type: object
+    required:
+      - activePartitions
+      - inactivePartitions
+    properties:
+      strategy:
+        type: string
       activePartitions:
         type: array
         description: The list of active partitions that accept round-robin requests
@@ -157,9 +198,27 @@ schemas:
         items:
           type: integer
           format: int32
-      messageCorrelation:
-        $ref: "components.yaml#/schemas/MessageCorrelation"
+      inactivePartitions:
+        type: array
+        description: The list of active partitions that accept round-robin requests
+        example: [ 1, 2, 3 ]
+        items:
+          type: integer
+          format: int32
 
+  RequestHandlingMixed:
+    description: Requests are only handled by active partitions, inactive partitions are excluded
+    type: object
+    required:
+      - base
+      - additional
+    properties:
+      strategy:
+        type: string
+      base:
+        $ref: "components.yaml#/schemas/RequestHandlingAllPartitions"
+      additional:
+        $ref: "components.yaml#/schemas/RequestHandlingActivePartitions"
 
   MessageCorrelation:
     description: The message correlation strategy

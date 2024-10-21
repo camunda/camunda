@@ -15,6 +15,7 @@ import io.camunda.zeebe.dynamic.config.state.CompletedChange;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
 import io.camunda.zeebe.util.ReflectUtil;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
@@ -55,9 +56,15 @@ public final class ClusterTopologyDomain extends DomainContextBase {
   @Provide
   Arbitrary<RoutingState> routingStates() {
     final var version = Arbitraries.longs().greaterOrEqual(0);
-    final var activePartitions = Arbitraries.integers().greaterOrEqual(1).set().ofMaxSize(10);
-    return Combinators.combine(version, activePartitions, messageCorrelation())
+    return Combinators.combine(version, requestHandling(), messageCorrelation())
         .as(RoutingState::new);
+  }
+
+  @Provide
+  Arbitrary<RequestHandling> requestHandling() {
+    return Arbitraries.of(
+            ReflectUtil.implementationsOfSealedInterface(RequestHandling.class).toList())
+        .flatMap(Arbitraries::forType);
   }
 
   @Provide

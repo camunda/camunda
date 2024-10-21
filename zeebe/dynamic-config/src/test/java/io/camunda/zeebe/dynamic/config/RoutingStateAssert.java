@@ -29,7 +29,7 @@ public class RoutingStateAssert extends AbstractAssert<RoutingStateAssert, Routi
   }
 
   public RoutingStateAssert hasActivatedPartitions(final int partitionCount) {
-    Assertions.assertThat(actual.activePartitions())
+    Assertions.assertThat(actual.requestHandling().activePartitions())
         .containsExactlyElementsOf(IntStream.rangeClosed(1, partitionCount).boxed().toList());
     return this;
   }

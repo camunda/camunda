@@ -11,6 +11,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -65,7 +66,8 @@ public final class RoundRobinDispatchStrategy implements RequestDispatchStrategy
 
     final var newPartitionRing =
         routingState
-            .map(RoutingState::activePartitions)
+            .map(RoutingState::requestHandling)
+            .map(RequestHandling::activePartitions)
             .map(PartitionRing::of)
             .orElseGet(() -> PartitionRing.all(topologyManager.getTopology().getPartitionsCount()));
     final var newValue = new VersionedPartitionRing(expectedVersion, newPartitionRing);
