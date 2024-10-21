@@ -17,7 +17,6 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
-import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -101,22 +100,12 @@ public class UpdateRoleMultiPartitionTest {
 
   @Test
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
-    // given the user creation distribution is intercepted
-    engine
-        .user()
-        .newUser(UUID.randomUUID().toString())
-        .withName("Foo Bar")
-        .withPassword("baz")
-        .withEmail("foobar@baz.com")
-        .create();
-
-    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
-      interceptUserCreateForPartition(partitionId);
-    }
-
     // when
     final var name = UUID.randomUUID().toString();
     final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
+    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
+      interceptRoleCreateForPartition(partitionId);
+    }
     engine.role().updateRole(roleKey).withName(name + "-updated").update();
 
     // Increase time to trigger a redistribution
@@ -125,15 +114,13 @@ public class UpdateRoleMultiPartitionTest {
     // then
     assertThat(
             RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
-                .limit(3))
+                .limit(2))
         .extracting(r -> r.getValue().getValueType(), r -> r.getValue().getIntent())
         .containsExactly(
-            tuple(ValueType.USER, UserIntent.CREATE),
-            tuple(ValueType.ROLE, RoleIntent.CREATE),
-            tuple(ValueType.ROLE, RoleIntent.UPDATE));
+            tuple(ValueType.ROLE, RoleIntent.CREATE), tuple(ValueType.ROLE, RoleIntent.UPDATE));
   }
 
-  private void interceptUserCreateForPartition(final int partitionId) {
+  private void interceptRoleCreateForPartition(final int partitionId) {
     final var hasInterceptedPartition = new AtomicBoolean(false);
     engine.interceptInterPartitionCommands(
         (receiverPartitionId, valueType, intent, recordKey, command) -> {
@@ -141,7 +128,7 @@ public class UpdateRoleMultiPartitionTest {
             return true;
           }
           hasInterceptedPartition.set(true);
-          return !(receiverPartitionId == partitionId && intent == UserIntent.CREATE);
+          return !(receiverPartitionId == partitionId && intent == RoleIntent.CREATE);
         });
   }
 }
