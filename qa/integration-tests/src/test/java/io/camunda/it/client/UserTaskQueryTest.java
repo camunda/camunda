@@ -80,6 +80,26 @@ class UserTaskQueryTest {
   }
 
   @Test
+  public void shouldRetrieveVariablesFromUserTask() {
+    final UserTaskVariableFilterRequest variableValueFilter =
+        new UserTaskVariableFilterRequest().name("task02").value("1");
+
+    final var resultUserTaskQuery =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.variables(List.of(variableValueFilter)))
+            .send()
+            .join();
+
+    // Retrieve userTaskKey that contains variables
+    final var userTaskKey = resultUserTaskQuery.items().getFirst().getUserTaskKey();
+
+    final var resultVariableQuery =
+        camundaClient.newUserTaskVariablesRequest(userTaskKey).send().join();
+    assertThat(resultVariableQuery.items().size()).isEqualTo(1);
+  }
+
+  @Test
   public void shouldRetrieveTaskByProcessVariable() {
     final UserTaskVariableFilterRequest variableValueFilter =
         new UserTaskVariableFilterRequest().name("process01").value("\"pVar\"");
@@ -90,7 +110,7 @@ class UserTaskQueryTest {
             .filter(f -> f.variables(List.of(variableValueFilter)))
             .send()
             .join();
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().size()).isEqualTo(2);
   }
 
   @Test
