@@ -19,6 +19,7 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnRestGatewayEnabled
@@ -53,6 +54,7 @@ public class ElasticSearchSearchClientConfiguration {
   }
 
   @Bean
+  @Primary
   @ConditionalOnSessionPersistence
   public ElasticsearchSessionDocumentClient elasticsearchSessionDocumentClient(
       final RetryElasticsearchClient client) {

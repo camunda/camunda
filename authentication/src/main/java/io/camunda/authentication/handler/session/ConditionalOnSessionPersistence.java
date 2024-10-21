@@ -24,5 +24,5 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplicat
         + " or "
         + "${camunda.tasklist.persistentSessionsEnabled:false}"
         + " or "
-        + "${camunda.persistent.sessions.enabled:true}")
+        + "${camunda.persistent.sessions.enabled:false}")
 public @interface ConditionalOnSessionPersistence {}
