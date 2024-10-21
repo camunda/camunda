@@ -333,6 +333,7 @@ test.describe.serial('Process Instance Migration', () => {
 
     const migrateOperationEntry = commonPage.operationsList
       .getByRole('listitem')
+      .filter({hasText: /^Migrate/i})
       .first();
 
     const operationId = await migrateOperationEntry
