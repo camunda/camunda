@@ -32,6 +32,8 @@ jobs:
 
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
+        with:
+          maven-extra-args: "-Dskip.fe.build=false"
 
       - name: upload zeebe artifact for windows to use
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4
