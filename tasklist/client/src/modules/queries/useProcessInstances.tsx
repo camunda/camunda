@@ -22,7 +22,7 @@ function useProcessInstances() {
     queryKey: ['processInstances', userId],
     queryFn: async () => {
       const {response, error} = await request(
-        api.searchProcessInstances({
+        api.v1.searchProcessInstances({
           userId: userId!,
           pageSize: 50,
         }),

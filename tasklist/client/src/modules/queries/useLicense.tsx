@@ -15,7 +15,7 @@ function useLicense() {
   return useQuery<License, RequestError | Error>({
     queryKey: ['license'],
     queryFn: async () => {
-      const {response, error} = await request(api.getLicense());
+      const {response, error} = await request(api.v2.getLicense());
 
       if (response !== null) {
         return await response.json();
