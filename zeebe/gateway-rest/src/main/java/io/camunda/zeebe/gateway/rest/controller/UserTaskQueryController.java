@@ -149,7 +149,8 @@ public class UserTaskQueryController {
         .fold(RestErrorMapper::mapProblemToResponse, this::searchUserTaskVariableQuery);
   }
 
-  private ResponseEntity<VariableSearchQueryResponse> searchUserTaskVariableQuery(final VariableQuery query) {
+  private ResponseEntity<VariableSearchQueryResponse> searchUserTaskVariableQuery(
+      final VariableQuery query) {
     try {
       final var result =
           variableServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
