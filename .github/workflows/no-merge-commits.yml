@@ -14,4 +14,4 @@ jobs:
           fetch-depth: ${{ steps.depth.outputs.depth }}
       - uses: NexusPHP/no-merge-commits@v2.1.0
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ github.token }}
