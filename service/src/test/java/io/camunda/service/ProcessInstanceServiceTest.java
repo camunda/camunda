@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.ProcessInstanceSearchClient;
@@ -21,20 +22,29 @@ import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 public final class ProcessInstanceServiceTest {
 
   private ProcessInstanceServices services;
   private ProcessInstanceSearchClient client;
+  private SecurityConfiguration securityConfiguration;
 
   @BeforeEach
   public void before() {
     client = mock(ProcessInstanceSearchClient.class);
-    services = new ProcessInstanceServices(mock(BrokerClient.class), client, null);
+    securityConfiguration = new SecurityConfiguration();
+    services =
+        new ProcessInstanceServices(mock(BrokerClient.class), securityConfiguration, client, null);
   }
 
   @Test
@@ -96,5 +106,52 @@ public final class ProcessInstanceServiceTest {
         assertThrowsExactly(CamundaSearchException.class, () -> services.getByKey(key));
     assertThat(exception.getMessage())
         .isEqualTo("Found Process Instance with key 200 more than once");
+  }
+
+  @Test
+  public void shouldAddAuthenticationWhenEnabled() {
+    // given
+    securityConfiguration.getAuthorizations().setEnabled(true);
+    final var authentication = mock(Authentication.class);
+    final ProcessInstanceQuery searchQuery =
+        SearchQueryBuilders.processInstanceSearchQuery().build();
+
+    // when
+    services.withAuthentication(authentication).search(searchQuery);
+
+    // then
+    // assertThat(searchQueryResult.key()).isEqualTo(key);
+    final ArgumentCaptor<SecurityContext> securityContextArgumentCaptor =
+        ArgumentCaptor.forClass(SecurityContext.class);
+    verify(client).searchProcessInstances(any(), securityContextArgumentCaptor.capture());
+    assertThat(securityContextArgumentCaptor.getValue())
+        .isEqualTo(
+            SecurityContext.of(
+                s ->
+                    s.withAuthentication(authentication)
+                        .withAuthorization(
+                            a ->
+                                a.permissionType(PermissionType.READ_INSTANCE)
+                                    .resourceType(AuthorizationResourceType.PROCESS_DEFINITION))));
+  }
+
+  @Test
+  public void shouldNotAddAuthenticationWhenDisabled() {
+    // given
+    securityConfiguration.getAuthorizations().setEnabled(false);
+    final var authentication = mock(Authentication.class);
+    final ProcessInstanceQuery searchQuery =
+        SearchQueryBuilders.processInstanceSearchQuery().build();
+
+    // when
+    services.withAuthentication(authentication).search(searchQuery);
+
+    // then
+    final ArgumentCaptor<SecurityContext> securityContextArgumentCaptor =
+        ArgumentCaptor.forClass(SecurityContext.class);
+    verify(client).searchProcessInstances(any(), securityContextArgumentCaptor.capture());
+    assertThat(securityContextArgumentCaptor.getValue())
+        .isEqualTo(
+            SecurityContext.of(s -> s.withAuthentication(authentication).withoutAuthorization()));
   }
 }

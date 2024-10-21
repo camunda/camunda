@@ -167,6 +167,16 @@ public final class RaftLog implements Closeable {
   }
 
   public void reset(final long index) {
+    if (index < commitIndex) {
+      throw new IllegalStateException(
+          String.format(
+              """
+               Expected to delete index after %d, but it is lower than the commit index %d.\
+               Deleting committed entries can lead to inconsistencies and is prohibited.\
+               This can happen if a quorum of nodes has experienced data loss and became leader.\
+               This situation probably requires manual intervention to resume operations""",
+              index, commitIndex));
+    }
     journal.reset(index);
     lastAppendedEntry = null;
   }
@@ -175,7 +185,11 @@ public final class RaftLog implements Closeable {
     if (index < commitIndex) {
       throw new IllegalStateException(
           String.format(
-              "Expected to delete index after %d, but it is lower than the commit index %d. Deleting committed entries can lead to inconsistencies and is prohibited.",
+              """
+                 Expected to delete index after %d, but it is lower than the commit index %d.\
+                 Deleting committed entries can lead to inconsistencies and is prohibited.\
+               This can happen if a quorum of nodes has experienced data loss and became leader.\
+               This situation probably requires manual intervention to resume operations""",
               index, commitIndex));
     }
     journal.deleteAfter(index);

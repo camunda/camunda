@@ -9,7 +9,7 @@
 import React, {useState, useEffect} from 'react';
 
 import {t} from 'translation';
-import {useDocs, useUiConfig} from 'hooks';
+import {useDocs} from 'hooks';
 import {getMaxNumDataSourcesForReport} from 'config';
 
 import TemplateModal from './TemplateModal';
@@ -31,7 +31,6 @@ export default function DashboardTemplateModal({
   const [optimizeProfileLoaded, setOptimizeProfileLoaded] = useState(false);
   const [reportDataSourceLimit, setReportDataSourceLimit] = useState(100);
   const {generateDocsLink} = useDocs();
-  const {optimizeDatabase} = useUiConfig();
 
   useEffect(() => {
     (async () => {
@@ -40,7 +39,25 @@ export default function DashboardTemplateModal({
     })();
   }, []);
 
-  const templateGroups = getTemplateGroups(generateDocsLink, optimizeDatabase);
+  const templateGroups = [
+    {
+      name: 'blankGroup',
+      templates: [{name: 'blank', disableDescription: true}],
+    },
+    {
+      name: 'singleProcessGroup',
+      templates: [
+        processDashboardTemplate(generateDocsLink),
+        productivityDashboardTemplate(generateDocsLink),
+        efficiencyDashboardTemplate(generateDocsLink),
+        accelerationDashboardTemplate(generateDocsLink),
+      ],
+    },
+    {
+      name: 'multiProcessGroup',
+      templates: [portfolioPerformanceDashboardTemplate(), operationsMonitoringDashboardTemplate()],
+    },
+  ];
 
   if (!optimizeProfileLoaded) {
     return null;
@@ -72,36 +89,4 @@ export default function DashboardTemplateModal({
       })}
     />
   );
-}
-
-function getTemplateGroups(generateDocsLink, optimizeDatabase) {
-  const templateGroups = [
-    {
-      name: 'blankGroup',
-      templates: [{name: 'blank', disableDescription: true}],
-    },
-  ];
-
-  if (optimizeDatabase !== 'opensearch') {
-    templateGroups.push(
-      {
-        name: 'singleProcessGroup',
-        templates: [
-          processDashboardTemplate(generateDocsLink),
-          productivityDashboardTemplate(generateDocsLink),
-          efficiencyDashboardTemplate(generateDocsLink),
-          accelerationDashboardTemplate(generateDocsLink),
-        ],
-      },
-      {
-        name: 'multiProcessGroup',
-        templates: [
-          portfolioPerformanceDashboardTemplate(),
-          operationsMonitoringDashboardTemplate(),
-        ],
-      }
-    );
-  }
-
-  return templateGroups;
 }

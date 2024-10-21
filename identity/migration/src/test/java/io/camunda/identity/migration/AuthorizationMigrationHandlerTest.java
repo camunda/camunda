@@ -16,7 +16,6 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.identity.migration.dto.UserResourceAuthorization;
 import io.camunda.service.AuthorizationServices;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import java.util.Collection;
 import java.util.List;
 import org.hamcrest.Matchers;
@@ -29,7 +28,7 @@ import org.mockito.MockitoAnnotations;
 
 class AuthorizationMigrationHandlerTest {
 
-  @Mock AuthorizationServices<AuthorizationRecord> authorizationServices;
+  @Mock AuthorizationServices authorizationServices;
   @Mock ManagementIdentityProxy managementIdentityProxy;
   AuthorizationMigrationHandler migrationHandler;
 

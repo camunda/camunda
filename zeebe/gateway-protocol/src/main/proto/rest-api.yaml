@@ -690,6 +690,56 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /user-tasks/{userTaskKey}/variables:
+    post:
+      tags:
+        - User task
+      summary: Query user tasks variables (alpha)
+      description: |
+        Search for user tasks based on given criteria.
+
+        :::note
+        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
+      parameters:
+        - name: userTaskKey
+          in: path
+          required: true
+          description: The key of the user task.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserTaskVariablesSearchQueryRequest"
+      responses:
+        "200":
+          description: >
+            The user task varialbes search successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VariableSearchQueryResponse"
+        "400":
+          description: >
+            The user task variables search query failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
 
   /variables/search:
     post:
@@ -2525,6 +2575,11 @@ components:
       properties:
         filter:
           $ref: "#/components/schemas/UserTaskFilterRequest"
+    UserTaskVariablesSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      description: User task search query request.
+      type: object
     UserTaskSearchQueryResponse:
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"

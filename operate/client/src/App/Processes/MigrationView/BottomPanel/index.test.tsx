@@ -27,6 +27,7 @@ jest.mock('modules/stores/processes/processes.migration', () => ({
 
 const {
   requestForPayment,
+  ExclusiveGateway,
   checkPayment,
   shipArticles,
   shippingSubProcess,
@@ -46,6 +47,8 @@ const {
   BusinessRuleTask,
   ScriptTask,
   SendTask,
+  EventBasedGateway,
+  IntermediateTimerEvent,
 } = elements;
 
 /**
@@ -63,6 +66,7 @@ describe('MigrationView/BottomPanel', () => {
 
     expect(await screen.findByText(requestForPayment.name)).toBeInTheDocument();
     expect(screen.getByText(checkPayment.name)).toBeInTheDocument();
+    expect(screen.getByText(ExclusiveGateway.name)).toBeInTheDocument();
     expect(screen.getByText(shipArticles.name)).toBeInTheDocument();
     expect(screen.getByText(shippingSubProcess.name)).toBeInTheDocument();
     expect(screen.getByText(confirmDelivery.name)).toBeInTheDocument();
@@ -81,9 +85,11 @@ describe('MigrationView/BottomPanel', () => {
     expect(screen.getByText(ScriptTask.name)).toBeInTheDocument();
     expect(screen.getByText(SendTask.name)).toBeInTheDocument();
     expect(screen.getByText(TimerStartEvent.name)).toBeInTheDocument();
+    expect(screen.getByText(EventBasedGateway.name)).toBeInTheDocument();
+    expect(screen.getByText(IntermediateTimerEvent.name)).toBeInTheDocument();
 
-    // expect table to have 1 header + 20 content rows
-    expect(screen.getAllByRole('row')).toHaveLength(21);
+    // expect table to have 1 header + 23 content rows
+    expect(screen.getAllByRole('row')).toHaveLength(24);
   });
 
   it.each([
@@ -289,7 +295,6 @@ describe('MigrationView/BottomPanel', () => {
     expect(comboboxTimerInterrupting).toBeEnabled();
 
     expect(comboboxTimerIntermediateCatch).toHaveValue('');
-    expect(comboboxTimerIntermediateCatch).toBeDisabled();
 
     // Expect no auto-mapping (different bpmn type)
     expect(comboboxRequestForPayment).toHaveValue('');
@@ -446,8 +451,8 @@ describe('MigrationView/BottomPanel', () => {
       }),
     ).toBeVisible();
 
-    // Expect all 20 rows to be visible (+1 header row)
-    expect(await screen.findAllByRole('row')).toHaveLength(21);
+    // Expect all 23 rows to be visible (+1 header row)
+    expect(await screen.findAllByRole('row')).toHaveLength(24);
 
     // Toggle on unmapped flow nodes
     await user.click(screen.getByLabelText(/show only not mapped/i));
@@ -492,6 +497,15 @@ describe('MigrationView/BottomPanel', () => {
     expect(
       screen.queryByText(getMatcherFunction(SendTask.name)),
     ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(getMatcherFunction(EventBasedGateway.name)),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(getMatcherFunction(ExclusiveGateway.name)),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(getMatcherFunction(IntermediateTimerEvent.name)),
+    ).not.toBeInTheDocument();
 
     // Expect 6 not mapped rows (+1 header row)
     expect(await screen.findAllByRole('row')).toHaveLength(8);
@@ -512,9 +526,7 @@ describe('MigrationView/BottomPanel', () => {
     expect(
       screen.getByText(getMatcherFunction(TimerInterrupting.name)),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(getMatcherFunction(TimerIntermediateCatch.name)),
-    ).toBeInTheDocument();
+
     expect(
       screen.getByText(getMatcherFunction(TaskY.name)),
     ).toBeInTheDocument();
@@ -526,6 +538,6 @@ describe('MigrationView/BottomPanel', () => {
     await user.click(screen.getByLabelText(/show only not mapped/i));
 
     // Expect all rows to be visible again
-    expect(await screen.findAllByRole('row')).toHaveLength(21);
+    expect(await screen.findAllByRole('row')).toHaveLength(24);
   });
 });

@@ -67,7 +67,7 @@ public class EventFromJobHandler extends AbstractEventHandler<JobRecordValue> {
                 ID_PATTERN,
                 recordValue.getProcessInstanceKey(),
                 recordValue.getElementInstanceKey()))
-        .setPositionIncident(record.getPosition());
+        .setPositionJob(record.getPosition());
     loadEventGeneralData(record, entity);
     final long processDefinitionKey = recordValue.getProcessDefinitionKey();
     if (processDefinitionKey > 0) {

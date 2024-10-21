@@ -9,7 +9,7 @@ package io.camunda.exporter;
 
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.exporter.handlers.AuthorizationRecordValueExportHandler;
+import io.camunda.exporter.handlers.AuthorizationHandler;
 import io.camunda.exporter.handlers.DecisionEvaluationHandler;
 import io.camunda.exporter.handlers.DecisionHandler;
 import io.camunda.exporter.handlers.DecisionRequirementsHandler;
@@ -22,12 +22,16 @@ import io.camunda.exporter.handlers.FlowNodeInstanceIncidentHandler;
 import io.camunda.exporter.handlers.FlowNodeInstanceProcessInstanceHandler;
 import io.camunda.exporter.handlers.FormHandler;
 import io.camunda.exporter.handlers.IncidentHandler;
+import io.camunda.exporter.handlers.ListViewFlowNodeFromIncidentHandler;
+import io.camunda.exporter.handlers.ListViewFlowNodeFromJobHandler;
+import io.camunda.exporter.handlers.ListViewFlowNodeFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHandler;
+import io.camunda.exporter.handlers.ListViewVariableFromVariableHandler;
 import io.camunda.exporter.handlers.MetricFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
 import io.camunda.exporter.handlers.ProcessHandler;
 import io.camunda.exporter.handlers.SequenceFlowHandler;
-import io.camunda.exporter.handlers.UserRecordValueExportHandler;
+import io.camunda.exporter.handlers.UserHandler;
 import io.camunda.exporter.handlers.VariableHandler;
 import io.camunda.exporter.utils.XMLUtil;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
@@ -48,6 +52,8 @@ import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -106,15 +112,28 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             FormIndex.class,
             new FormIndex(globalPrefix, isElasticsearch),
             TasklistMetricIndex.class,
-            new TasklistMetricIndex(globalPrefix, isElasticsearch));
+            new TasklistMetricIndex(globalPrefix, isElasticsearch),
+            UserIndex.class,
+            new UserIndex(globalPrefix, isElasticsearch),
+            AuthorizationIndex.class,
+            new AuthorizationIndex(globalPrefix, isElasticsearch));
 
     exportHandlers =
         Set.of(
-            new UserRecordValueExportHandler(),
-            new AuthorizationRecordValueExportHandler(),
+            new UserHandler(indexDescriptorsMap.get(UserIndex.class).getFullQualifiedName()),
+            new AuthorizationHandler(
+                indexDescriptorsMap.get(AuthorizationIndex.class).getFullQualifiedName()),
             new DecisionHandler(
                 indexDescriptorsMap.get(DecisionIndex.class).getFullQualifiedName()),
             new ListViewProcessInstanceFromProcessInstanceHandler(
+                templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(), false),
+            new ListViewFlowNodeFromIncidentHandler(
+                templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(), false),
+            new ListViewFlowNodeFromJobHandler(
+                templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(), false),
+            new ListViewFlowNodeFromProcessInstanceHandler(
+                templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(), false),
+            new ListViewVariableFromVariableHandler(
                 templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(), false),
             new VariableHandler(
                 templateDescriptorsMap.get(VariableTemplate.class).getFullQualifiedName(),

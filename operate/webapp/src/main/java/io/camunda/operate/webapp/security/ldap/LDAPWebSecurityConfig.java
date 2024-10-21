@@ -9,12 +9,13 @@ package io.camunda.operate.webapp.security.ldap;
 
 import static io.camunda.operate.OperateProfileService.LDAP_AUTH_PROFILE;
 
+import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.property.LdapProperties;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.security.BaseWebConfigurer;
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -30,8 +31,18 @@ import org.springframework.util.StringUtils;
 @EnableWebSecurity
 @Component("webSecurityConfig")
 public class LDAPWebSecurityConfig extends BaseWebConfigurer {
-  @Autowired protected OAuth2WebConfigurer oAuth2WebConfigurer;
-  @Autowired private LDAPUserService userService;
+  protected OAuth2WebConfigurer oAuth2WebConfigurer;
+  private final LDAPUserService userService;
+
+  public LDAPWebSecurityConfig(
+      final OperateProperties operateProperties,
+      final OperateProfileService errorMessageService,
+      final OAuth2WebConfigurer oAuth2WebConfigurer,
+      final LDAPUserService ldapUserService) {
+    super(operateProperties, errorMessageService);
+    this.oAuth2WebConfigurer = oAuth2WebConfigurer;
+    userService = ldapUserService;
+  }
 
   @Override
   protected void applyAuthenticationSettings(final AuthenticationManagerBuilder auth)
@@ -59,7 +70,7 @@ public class LDAPWebSecurityConfig extends BaseWebConfigurer {
   }
 
   private void setUpActiveDirectoryLDAP(
-      AuthenticationManagerBuilder auth, LdapProperties ldapConfig) {
+      final AuthenticationManagerBuilder auth, final LdapProperties ldapConfig) {
     final ActiveDirectoryLdapAuthenticationProvider adLDAPProvider =
         new ActiveDirectoryLdapAuthenticationProvider(
             ldapConfig.getDomain(), ldapConfig.getUrl(), ldapConfig.getBaseDn());
@@ -70,8 +81,8 @@ public class LDAPWebSecurityConfig extends BaseWebConfigurer {
     auth.authenticationProvider(adLDAPProvider);
   }
 
-  private void setupStandardLDAP(AuthenticationManagerBuilder auth, LdapProperties ldapConfig)
-      throws Exception {
+  private void setupStandardLDAP(
+      final AuthenticationManagerBuilder auth, final LdapProperties ldapConfig) throws Exception {
     auth.ldapAuthentication()
         .userDnPatterns(ldapConfig.getUserDnPatterns())
         .userSearchFilter(ldapConfig.getUserSearchFilter())
