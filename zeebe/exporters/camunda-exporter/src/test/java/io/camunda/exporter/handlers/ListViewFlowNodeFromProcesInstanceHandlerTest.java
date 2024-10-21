@@ -23,7 +23,6 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
-import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.Arrays;
 import java.util.Date;
@@ -130,7 +129,7 @@ public class ListViewFlowNodeFromProcesInstanceHandlerTest {
     // given
     final ProcessInstanceRecordValue processInstanceRecordValue =
         ImmutableProcessInstanceRecordValue.builder()
-            .from(factory.generateObject(DecisionRecordValue.class))
+            .from(factory.generateObject(ProcessInstanceRecordValue.class))
             .withBpmnElementType(BpmnElementType.SERVICE_TASK)
             .build();
 
