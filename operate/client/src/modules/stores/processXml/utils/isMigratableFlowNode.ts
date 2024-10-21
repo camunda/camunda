@@ -58,6 +58,30 @@ const isMigratableFlowNode = (businessObject: BusinessObject) => {
     });
   }
 
+<<<<<<< HEAD
+=======
+  /**
+   * Check exclusive and event based gateways
+   */
+  if (
+    hasType({
+      businessObject,
+      types: ['bpmn:ExclusiveGateway', 'bpmn:EventBasedGateway'],
+    })
+  ) {
+    return true;
+  }
+
+  if (
+    hasType({businessObject, types: ['bpmn:StartEvent']}) &&
+    hasEventType({businessObject, types: ['bpmn:TimerEventDefinition']}) &&
+    businessObject.$parent !== undefined &&
+    isEventSubProcess({businessObject: businessObject.$parent})
+  ) {
+    return true;
+  }
+
+>>>>>>> 9b384586 (feat: add migration support for exclusive and event based gateways)
   return hasType({
     businessObject,
     types: [
