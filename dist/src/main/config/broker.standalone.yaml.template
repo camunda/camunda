@@ -1015,6 +1015,7 @@
         #     prefix:
         #     numberOfShards: 3
         #     numberOfReplicas: 0
+        #     variableSizeThreshold: 8191
         #
         #   retention:
         #     enabled: false
