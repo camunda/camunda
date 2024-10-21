@@ -7,7 +7,11 @@
  */
 package io.camunda.zeebe.engine.processing.incident;
 
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
+
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -24,6 +28,8 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 
@@ -47,12 +53,14 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
   private final TypedResponseWriter responseWriter;
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final JobState jobState;
+  private final AuthorizationCheckBehavior authCheckBehavior;
 
   public IncidentResolveProcessor(
       final ProcessingState processingState,
       final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor,
       final Writers writers,
-      final BpmnJobActivationBehavior jobActivationBehavior) {
+      final BpmnJobActivationBehavior jobActivationBehavior,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     this.bpmnStreamProcessor = bpmnStreamProcessor;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
@@ -61,6 +69,7 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
     elementInstanceState = processingState.getElementInstanceState();
     this.jobActivationBehavior = jobActivationBehavior;
     jobState = processingState.getJobState();
+    this.authCheckBehavior = authCheckBehavior;
   }
 
   @Override
@@ -71,6 +80,18 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
     if (incident == null) {
       final var errorMessage = String.format(NO_INCIDENT_FOUND_MSG, key);
       rejectResolveCommand(command, errorMessage, RejectionType.NOT_FOUND);
+      return;
+    }
+
+    final var authRequest =
+        new AuthorizationRequest(
+                command, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.UPDATE)
+            .addResourceId(incident.getBpmnProcessId());
+    if (!authCheckBehavior.isAuthorized(authRequest)) {
+      final var reason =
+          UNAUTHORIZED_ERROR_MESSAGE.formatted(
+              authRequest.getPermissionType(), authRequest.getResourceType());
+      rejectResolveCommand(command, reason, RejectionType.UNAUTHORIZED);
       return;
     }
 
@@ -96,7 +117,7 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
       final RejectionType rejectionType) {
 
     rejectionWriter.appendRejection(command, rejectionType, errorMessage);
-    responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+    responseWriter.writeRejectionOnCommand(command, rejectionType, errorMessage);
   }
 
   private void attemptToContinueProcessProcessing(
