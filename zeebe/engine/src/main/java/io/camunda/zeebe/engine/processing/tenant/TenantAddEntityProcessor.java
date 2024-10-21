@@ -11,52 +11,76 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
+import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
-public class TenantCreateProcessor extends AbstractTenantProcessor {
+public class TenantAddEntityProcessor extends AbstractTenantProcessor {
 
-  private static final String TENANT_ALREADY_EXISTS_ERROR =
-      "Expected to create tenant with ID '%s', but a tenant with this ID already exists";
+  private static final String TENANT_NOT_FOUND_ERROR =
+      "Expected to add entity to tenant with key '%s', but no tenant with this key exists.";
 
-  public TenantCreateProcessor(
+  private static final String ENTITY_NOT_FOUND_ERROR =
+      "Expected to add entity with key '%s' and type '%s' to tenant with key '%s', but the entity doesn't exist.";
+
+  private final UserState userState;
+
+  public TenantAddEntityProcessor(
       final TenantState tenantState,
+      final UserState userState,
       final AuthorizationCheckBehavior authCheckBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
     super(tenantState, authCheckBehavior, keyGenerator, writers, commandDistributionBehavior);
+    this.userState = userState;
   }
 
   @Override
   public void processNewCommand(final TypedRecord<TenantRecord> command) {
+    final var record = command.getValue();
+    final var tenantKey = record.getTenantKey();
 
-    if (!isAuthorized(command, AuthorizationResourceType.TENANT, PermissionType.CREATE)) {
+    if (!tenantExistsWithKey(tenantKey)) {
+      rejectCommand(command, RejectionType.NOT_FOUND, TENANT_NOT_FOUND_ERROR.formatted(tenantKey));
       return;
     }
 
-    final var record = command.getValue();
-    if (tenantExistsWithId(record.getTenantId())) {
+    if (!isAuthorized(
+        command, AuthorizationResourceType.TENANT, PermissionType.UPDATE, record.getTenantId())) {
+      return;
+    }
+
+    if (!isEntityPresent(record.getEntityKey(), record.getEntityType())) {
       rejectCommand(
           command,
-          RejectionType.ALREADY_EXISTS,
-          TENANT_ALREADY_EXISTS_ERROR.formatted(record.getTenantId()));
-    } else {
-      final long key = keyGenerator.nextKey();
-      record.setTenantKey(key);
-      appendEventAndWriteResponse(key, TenantIntent.CREATED, record, command);
-      distributeCommand(command, record.getTenantKey());
+          RejectionType.NOT_FOUND,
+          ENTITY_NOT_FOUND_ERROR.formatted(
+              record.getEntityKey(), record.getEntityType(), tenantKey));
+      return;
     }
+
+    appendEventAndWriteResponse(tenantKey, TenantIntent.ENTITY_ADDED, record, command);
+    distributeCommand(command, keyGenerator.nextKey());
   }
 
   @Override
   public void processDistributedCommand(final TypedRecord<TenantRecord> command) {
-    stateWriter.appendFollowUpEvent(command.getKey(), TenantIntent.CREATED, command.getValue());
+    stateWriter.appendFollowUpEvent(
+        command.getKey(), TenantIntent.ENTITY_ADDED, command.getValue());
     commandDistributionBehavior.acknowledgeCommand(command);
+  }
+
+  private boolean isEntityPresent(final long entityKey, final EntityType entityType) {
+    if (EntityType.USER == entityType) {
+      return userState.getUser(entityKey).isPresent();
+    }
+    return false;
   }
 }

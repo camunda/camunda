@@ -25,6 +25,7 @@ import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,6 +38,11 @@ public class UpdateTenantMultiPartitionTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.multiplePartition(PARTITION_COUNT);
 
   @Rule public final TestWatcher testWatcher = new RecordingExporterTestWatcher();
+
+  @Before
+  public void beforeEach() {
+    RecordingExporter.reset();
+  }
 
   @Test
   public void shouldDistributeTenantUpdateCommand() {
