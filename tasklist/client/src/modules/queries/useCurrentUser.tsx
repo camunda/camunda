@@ -15,7 +15,7 @@ function useCurrentUser() {
   return useQuery<CurrentUser, RequestError | Error>({
     queryKey: ['currentUser'],
     queryFn: async () => {
-      const {response, error} = await request(api.getCurrentUser());
+      const {response, error} = await request(api.v1.getCurrentUser());
 
       if (response !== null) {
         const currentUser = await response.json();
