@@ -33,6 +33,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.escalation.EscalationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -2515,7 +2516,8 @@ final class JsonSerializableToJsonTest {
                     .setEmail("foo@bar")
                     .setPassword("f00b4r")
                     .setUserType(UserType.DEFAULT)
-                    .addRoleKey(2L),
+                    .addRoleKey(2L)
+                    .addTenantId("tenant-id-1"),
         """
         {
           "userKey": 1,
@@ -2524,7 +2526,8 @@ final class JsonSerializableToJsonTest {
           "email": "foo@bar",
           "password": "f00b4r",
           "userType": "DEFAULT",
-          "roleKeysList": [2]
+          "roleKeysList": [2],
+          "tenantIdsList": ["tenant-id-1"]
         }
         """
       },
@@ -2548,7 +2551,8 @@ final class JsonSerializableToJsonTest {
           "email": "foo@bar",
           "password": "f00b4r",
           "userType": "REGULAR",
-          "roleKeysList": []
+          "roleKeysList": [],
+          "tenantIdsList": []
         }
         """
       },
@@ -2717,19 +2721,20 @@ final class JsonSerializableToJsonTest {
       {
         "TenantRecord",
         (Supplier<UnifiedRecordValue>)
-            () -> {
-              return new TenantRecord()
-                  .setTenantKey(123L)
-                  .setTenantId("tenant-abc")
-                  .setName("Test Tenant")
-                  .setEntityKey(456L);
-            },
+            () ->
+                new TenantRecord()
+                    .setTenantKey(123L)
+                    .setTenantId("tenant-abc")
+                    .setName("Test Tenant")
+                    .setEntityKey(456L)
+                    .setEntityType(EntityType.USER),
         """
         {
           "tenantKey": 123,
           "tenantId": "tenant-abc",
           "name": "Test Tenant",
-          "entityKey": 456
+          "entityKey": 456,
+          "entityType": "USER"
         }
         """
       },
@@ -2744,7 +2749,8 @@ final class JsonSerializableToJsonTest {
             "tenantKey": -1,
             "tenantId": "",
             "name": "",
-            "entityKey": -1
+            "entityKey": -1,
+            "entityType": "UNSPECIFIED"
           }
           """
       },
@@ -2772,6 +2778,42 @@ final class JsonSerializableToJsonTest {
          "desiredPartitionCount": 5
         }
         """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////// GroupRecord /////////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Group record",
+        (Supplier<GroupRecord>)
+            () ->
+                new GroupRecord()
+                    .setGroupKey(1L)
+                    .setName("group")
+                    .setEntityKey(2L)
+                    .setEntityType(EntityType.USER),
+        """
+      {
+        "groupKey": 1,
+        "name": "group",
+        "entityKey": 2,
+        "entityType": "USER"
+      }
+      """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// Empty GroupRecord /////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty GroupRecord",
+        (Supplier<GroupRecord>) GroupRecord::new,
+        """
+      {
+        "groupKey": -1,
+        "name": "",
+        "entityKey": -1,
+        "entityType": "UNSPECIFIED"
+      }
+      """
       },
     };
   }

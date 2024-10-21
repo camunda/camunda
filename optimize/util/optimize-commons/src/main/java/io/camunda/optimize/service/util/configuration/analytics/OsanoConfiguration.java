@@ -36,33 +36,12 @@ public class OsanoConfiguration {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $scriptUrl = getScriptUrl();
-    result = result * PRIME + ($scriptUrl == null ? 43 : $scriptUrl.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof OsanoConfiguration)) {
-      return false;
-    }
-    final OsanoConfiguration other = (OsanoConfiguration) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$scriptUrl = getScriptUrl();
-    final Object other$scriptUrl = other.getScriptUrl();
-    if (this$scriptUrl == null
-        ? other$scriptUrl != null
-        : !this$scriptUrl.equals(other$scriptUrl)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

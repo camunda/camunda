@@ -33,31 +33,7 @@ public class VariableAggregationContextES extends VariableAggregationContext {
   }
 
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof VariableAggregationContextES)) {
-      return false;
-    }
-    final VariableAggregationContextES other = (VariableAggregationContextES) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$baseQueryForMinMaxStats = this.getBaseQueryForMinMaxStats();
-    final Object other$baseQueryForMinMaxStats = other.getBaseQueryForMinMaxStats();
-    if (this$baseQueryForMinMaxStats == null
-        ? other$baseQueryForMinMaxStats != null
-        : !this$baseQueryForMinMaxStats.equals(other$baseQueryForMinMaxStats)) {
-      return false;
-    }
-    final Object this$subAggregations = this.getSubAggregations();
-    final Object other$subAggregations = other.getSubAggregations();
-    if (this$subAggregations == null
-        ? other$subAggregations != null
-        : !this$subAggregations.equals(other$subAggregations)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   protected boolean canEqual(final Object other) {
@@ -65,15 +41,7 @@ public class VariableAggregationContextES extends VariableAggregationContext {
   }
 
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $baseQueryForMinMaxStats = this.getBaseQueryForMinMaxStats();
-    result =
-        result * PRIME
-            + ($baseQueryForMinMaxStats == null ? 43 : $baseQueryForMinMaxStats.hashCode());
-    final Object $subAggregations = this.getSubAggregations();
-    result = result * PRIME + ($subAggregations == null ? 43 : $subAggregations.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   public String toString() {

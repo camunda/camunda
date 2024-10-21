@@ -7,6 +7,7 @@
  */
 package io.camunda.webapps.schema.descriptors.tasklist.index;
 
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
 import io.camunda.webapps.schema.descriptors.tasklist.TasklistIndexDescriptor;
 
@@ -19,27 +20,12 @@ public class FormIndex extends TasklistIndexDescriptor implements Prio4Backup {
   public static final String KEY = "key";
   public static final String BPMN_ID = "bpmnId";
   public static final String SCHEMA = "schema";
-  public static final String TENANT_ID = "tenantId";
+  public static final String TENANT_ID = IndexDescriptor.TENANT_ID;
   public static final String VERSION = "version";
   public static final String IS_DELETED = "isDeleted";
 
   public FormIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
-  }
-
-  @Override
-  public String getFullQualifiedName() {
-    return String.format("%s-%s-%s_", getIndexPrefix(), getIndexName(), getVersion());
-  }
-
-  @Override
-  public String getAlias() {
-    return getFullQualifiedName() + "alias";
-  }
-
-  @Override
-  public String getAllVersionsIndexNameRegexPattern() {
-    return String.format("%s-%s-\\d.*", getIndexPrefix(), getIndexName());
   }
 
   @Override

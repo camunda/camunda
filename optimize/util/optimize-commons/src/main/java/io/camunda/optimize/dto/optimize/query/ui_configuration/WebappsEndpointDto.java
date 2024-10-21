@@ -36,40 +36,12 @@ public class WebappsEndpointDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $endpoint = getEndpoint();
-    result = result * PRIME + ($endpoint == null ? 43 : $endpoint.hashCode());
-    final Object $engineName = getEngineName();
-    result = result * PRIME + ($engineName == null ? 43 : $engineName.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof WebappsEndpointDto)) {
-      return false;
-    }
-    final WebappsEndpointDto other = (WebappsEndpointDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$endpoint = getEndpoint();
-    final Object other$endpoint = other.getEndpoint();
-    if (this$endpoint == null ? other$endpoint != null : !this$endpoint.equals(other$endpoint)) {
-      return false;
-    }
-    final Object this$engineName = getEngineName();
-    final Object other$engineName = other.getEngineName();
-    if (this$engineName == null
-        ? other$engineName != null
-        : !this$engineName.equals(other$engineName)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

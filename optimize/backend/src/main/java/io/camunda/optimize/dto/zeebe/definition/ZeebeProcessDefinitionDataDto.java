@@ -127,55 +127,7 @@ public class ZeebeProcessDefinitionDataDto implements ProcessMetadataValue {
   }
 
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof ZeebeProcessDefinitionDataDto)) {
-      return false;
-    }
-    final ZeebeProcessDefinitionDataDto other = (ZeebeProcessDefinitionDataDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (!java.util.Arrays.equals(this.getResource(), other.getResource())) {
-      return false;
-    }
-    if (this.getProcessDefinitionKey() != other.getProcessDefinitionKey()) {
-      return false;
-    }
-    if (this.getVersion() != other.getVersion()) {
-      return false;
-    }
-    if (!java.util.Arrays.equals(this.getChecksum(), other.getChecksum())) {
-      return false;
-    }
-    final Object this$resourceName = this.getResourceName();
-    final Object other$resourceName = other.getResourceName();
-    if (this$resourceName == null
-        ? other$resourceName != null
-        : !this$resourceName.equals(other$resourceName)) {
-      return false;
-    }
-    final Object this$bpmnProcessId = this.getBpmnProcessId();
-    final Object other$bpmnProcessId = other.getBpmnProcessId();
-    if (this$bpmnProcessId == null
-        ? other$bpmnProcessId != null
-        : !this$bpmnProcessId.equals(other$bpmnProcessId)) {
-      return false;
-    }
-    final Object this$tenantId = this.getTenantId();
-    final Object other$tenantId = other.getTenantId();
-    if (this$tenantId == null ? other$tenantId != null : !this$tenantId.equals(other$tenantId)) {
-      return false;
-    }
-    final Object this$versionTag = this.getVersionTag();
-    final Object other$versionTag = other.getVersionTag();
-    if (this$versionTag == null
-        ? other$versionTag != null
-        : !this$versionTag.equals(other$versionTag)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   protected boolean canEqual(final Object other) {
@@ -183,21 +135,6 @@ public class ZeebeProcessDefinitionDataDto implements ProcessMetadataValue {
   }
 
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    result = result * PRIME + java.util.Arrays.hashCode(this.getResource());
-    final long $processDefinitionKey = this.getProcessDefinitionKey();
-    result = result * PRIME + (int) ($processDefinitionKey >>> 32 ^ $processDefinitionKey);
-    result = result * PRIME + this.getVersion();
-    result = result * PRIME + java.util.Arrays.hashCode(this.getChecksum());
-    final Object $resourceName = this.getResourceName();
-    result = result * PRIME + ($resourceName == null ? 43 : $resourceName.hashCode());
-    final Object $bpmnProcessId = this.getBpmnProcessId();
-    result = result * PRIME + ($bpmnProcessId == null ? 43 : $bpmnProcessId.hashCode());
-    final Object $tenantId = this.getTenantId();
-    result = result * PRIME + ($tenantId == null ? 43 : $tenantId.hashCode());
-    final Object $versionTag = this.getVersionTag();
-    result = result * PRIME + ($versionTag == null ? 43 : $versionTag.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 }

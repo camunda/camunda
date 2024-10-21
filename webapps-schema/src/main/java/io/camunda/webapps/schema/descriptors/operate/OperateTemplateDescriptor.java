@@ -7,6 +7,8 @@
  */
 package io.camunda.webapps.schema.descriptors.operate;
 
+import static io.camunda.webapps.schema.descriptors.ComponentNames.OPERATE;
+
 import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 
 public abstract class OperateTemplateDescriptor extends AbstractTemplateDescriptor {
@@ -17,6 +19,6 @@ public abstract class OperateTemplateDescriptor extends AbstractTemplateDescript
 
   @Override
   public String getComponentName() {
-    return "operate";
+    return OPERATE.toString();
   }
 }

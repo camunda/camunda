@@ -15,8 +15,7 @@ public class ListViewJoinRelation {
 
   public ListViewJoinRelation() {}
 
-  public ListViewJoinRelation(String name) {
-
+  public ListViewJoinRelation(final String name) {
     this.name = name;
   }
 
@@ -24,16 +23,18 @@ public class ListViewJoinRelation {
     return name;
   }
 
-  public void setName(String name) {
+  public ListViewJoinRelation setName(final String name) {
     this.name = name;
+    return this;
   }
 
   public Long getParent() {
     return parent;
   }
 
-  public void setParent(Long parent) {
+  public ListViewJoinRelation setParent(final Long parent) {
     this.parent = parent;
+    return this;
   }
 
   @Override
@@ -44,7 +45,7 @@ public class ListViewJoinRelation {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

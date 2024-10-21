@@ -7,34 +7,30 @@
  */
 package io.camunda.it.client;
 
+import static io.camunda.it.client.QueryTest.deployResource;
+import static io.camunda.it.client.QueryTest.startProcessInstance;
+import static io.camunda.it.client.QueryTest.waitForProcessInstancesToStart;
+import static io.camunda.it.client.QueryTest.waitForProcessesToBeDeployed;
+import static io.camunda.it.client.QueryTest.waitUntilProcessInstanceHasIncidents;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.ProblemException;
-import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.api.response.Process;
-import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.client.api.search.response.Incident;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-@Disabled("Disabled until https://github.com/camunda/camunda/issues/23706 has been fixed!")
+@ZeebeIntegration
 class IncidentQueryTest {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(IncidentQueryTest.class);
 
   private static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
 
@@ -59,16 +55,16 @@ class IncidentQueryTest {
     processes.forEach(
         process ->
             DEPLOYED_PROCESSES.addAll(
-                deployResource(String.format("process/%s", process)).getProcesses()));
+                deployResource(zeebeClient, String.format("process/%s", process)).getProcesses()));
 
-    waitForProcessesToBeDeployed();
+    waitForProcessesToBeDeployed(zeebeClient, 3);
 
-    startProcessInstance("service_tasks_v1");
-    startProcessInstance("service_tasks_v2", "{\"path\":222}");
-    startProcessInstance("incident_process_v1");
+    startProcessInstance(zeebeClient, "service_tasks_v1");
+    startProcessInstance(zeebeClient, "service_tasks_v2", "{\"path\":222}");
+    startProcessInstance(zeebeClient, "incident_process_v1");
 
-    waitForProcessInstancesToStart(3);
-    waitForProcessInstancesToExecute(3);
+    waitForProcessInstancesToStart(zeebeClient, 3);
+    waitUntilProcessInstanceHasIncidents(zeebeClient, 1);
 
     incident = zeebeClient.newIncidentQuery().send().join().items().getFirst();
   }
@@ -441,63 +437,5 @@ class IncidentQueryTest {
         .containsExactlyElementsOf(sortedAsc);
     assertThat(resultDesc.items().stream().map(Incident::getCreationTime).toList())
         .containsExactlyElementsOf(sortedDesc);
-  }
-
-  private static void waitForProcessesToBeDeployed() {
-    Awaitility.await("should deploy processes and import in Operate")
-        .atMost(Duration.ofSeconds(15))
-        .ignoreExceptions() // Ignore exceptions and continue retrying
-        .untilAsserted(
-            () -> {
-              final var result = zeebeClient.newProcessDefinitionQuery().send().join();
-              assertThat(result.items().size()).isEqualTo(DEPLOYED_PROCESSES.size());
-            });
-  }
-
-  private static void waitForProcessInstancesToStart(final int expectedProcessInstances) {
-    Awaitility.await("should start process instances and import in Operate")
-        .atMost(Duration.ofSeconds(60))
-        .ignoreExceptions() // Ignore exceptions and continue retrying
-        .untilAsserted(
-            () -> {
-              final var result = zeebeClient.newProcessInstanceQuery().send().join();
-              assertThat(result.items().size()).isEqualTo(expectedProcessInstances);
-            });
-  }
-
-  private static void waitForProcessInstancesToExecute(final int expectedProcessInstances) {
-    Awaitility.await("should receive data from ES")
-        .atMost(Duration.ofMinutes(1))
-        .ignoreExceptions() // Ignore exceptions and continue retrying
-        .untilAsserted(
-            () ->
-                assertThat(zeebeClient.newProcessInstanceQuery().send().join().items().size())
-                    .isEqualTo(expectedProcessInstances));
-  }
-
-  private static DeploymentEvent deployResource(final String resourceName) {
-    return zeebeClient
-        .newDeployResourceCommand()
-        .addResourceFromClasspath(resourceName)
-        .send()
-        .join();
-  }
-
-  private static ProcessInstanceEvent startProcessInstance(final String bpmnProcessId) {
-    return startProcessInstance(bpmnProcessId, null);
-  }
-
-  private static ProcessInstanceEvent startProcessInstance(
-      final String bpmnProcessId, final String payload) {
-    final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3
-        createProcessInstanceCommandStep3 =
-            zeebeClient.newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion();
-    if (payload != null) {
-      createProcessInstanceCommandStep3.variables(payload);
-    }
-    final ProcessInstanceEvent processInstanceEvent =
-        createProcessInstanceCommandStep3.send().join();
-    LOGGER.info("Process instance started for process [{}]", bpmnProcessId);
-    return processInstanceEvent;
   }
 }

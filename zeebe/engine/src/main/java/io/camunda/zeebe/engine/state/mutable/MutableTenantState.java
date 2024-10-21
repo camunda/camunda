@@ -24,4 +24,11 @@ public interface MutableTenantState extends TenantState {
    * @param updatedTenantRecord the updated tenant record with new values
    */
   void updateTenant(final TenantRecord updatedTenantRecord);
+
+  /**
+   * Adds an entity to the specified tenant.
+   *
+   * @param tenantRecord the tenant record containing the tenant key and the entity to add
+   */
+  void addEntity(final TenantRecord tenantRecord);
 }

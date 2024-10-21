@@ -17,4 +17,6 @@ public interface MutableUserState extends UserState {
   void addRole(final long userKey, final long roleKey);
 
   void removeRole(final long userKey, final long roleKey);
+
+  void addTenantId(final long userKey, final String tenantId);
 }

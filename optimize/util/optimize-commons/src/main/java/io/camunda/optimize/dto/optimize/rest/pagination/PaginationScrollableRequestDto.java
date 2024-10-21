@@ -75,47 +75,12 @@ public class PaginationScrollableRequestDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $limit = getLimit();
-    result = result * PRIME + ($limit == null ? 43 : $limit.hashCode());
-    final Object $scrollId = getScrollId();
-    result = result * PRIME + ($scrollId == null ? 43 : $scrollId.hashCode());
-    final Object $scrollTimeout = getScrollTimeout();
-    result = result * PRIME + ($scrollTimeout == null ? 43 : $scrollTimeout.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof PaginationScrollableRequestDto)) {
-      return false;
-    }
-    final PaginationScrollableRequestDto other = (PaginationScrollableRequestDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$limit = getLimit();
-    final Object other$limit = other.getLimit();
-    if (this$limit == null ? other$limit != null : !this$limit.equals(other$limit)) {
-      return false;
-    }
-    final Object this$scrollId = getScrollId();
-    final Object other$scrollId = other.getScrollId();
-    if (this$scrollId == null ? other$scrollId != null : !this$scrollId.equals(other$scrollId)) {
-      return false;
-    }
-    final Object this$scrollTimeout = getScrollTimeout();
-    final Object other$scrollTimeout = other.getScrollTimeout();
-    if (this$scrollTimeout == null
-        ? other$scrollTimeout != null
-        : !this$scrollTimeout.equals(other$scrollTimeout)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

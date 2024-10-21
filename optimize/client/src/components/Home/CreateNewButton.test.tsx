@@ -9,15 +9,7 @@
 import {shallow} from 'enzyme';
 import {MenuItem} from '@carbon/react';
 
-import {useUiConfig} from 'hooks';
-
 import CreateNewButton from './CreateNewButton';
-
-jest.mock('hooks', () => ({
-  useUiConfig: jest.fn(() => ({
-    optimizeDatabase: 'elasticsearch',
-  })),
-}));
 
 const props = {
   create: jest.fn(),
@@ -66,14 +58,4 @@ it('should call the createKpi prop', () => {
   node.find({label: 'Process KPI'}).simulate('click');
 
   expect(spy).toHaveBeenCalledWith('kpi');
-});
-
-it('should not show the kpi option if optimize is running in opensearch mode', async () => {
-  (useUiConfig as jest.Mock).mockReturnValueOnce({
-    optimizeDatabase: 'opensearch',
-  });
-
-  const node = shallow(<CreateNewButton {...props} />);
-
-  expect(node.find({label: 'Process KPI'})).not.toExist();
 });

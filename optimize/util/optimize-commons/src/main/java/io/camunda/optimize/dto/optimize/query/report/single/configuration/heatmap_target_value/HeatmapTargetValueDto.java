@@ -39,38 +39,12 @@ public class HeatmapTargetValueDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $active = getActive();
-    result = result * PRIME + ($active == null ? 43 : $active.hashCode());
-    final Object $values = getValues();
-    result = result * PRIME + ($values == null ? 43 : $values.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof HeatmapTargetValueDto)) {
-      return false;
-    }
-    final HeatmapTargetValueDto other = (HeatmapTargetValueDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$active = getActive();
-    final Object other$active = other.getActive();
-    if (this$active == null ? other$active != null : !this$active.equals(other$active)) {
-      return false;
-    }
-    final Object this$values = getValues();
-    final Object other$values = other.getValues();
-    if (this$values == null ? other$values != null : !this$values.equals(other$values)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

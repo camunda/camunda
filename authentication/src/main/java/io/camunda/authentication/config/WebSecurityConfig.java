@@ -14,7 +14,6 @@ import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.handler.CustomMethodSecurityExpressionHandler;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.UserServices;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -43,7 +42,7 @@ public class WebSecurityConfig {
   @Bean
   @ConditionalOnMissingBean(MethodSecurityExpressionHandler.class)
   public MethodSecurityExpressionHandler methodSecurityExpressionHandler(
-      final AuthorizationServices<AuthorizationRecord> authorizationServices) {
+      final AuthorizationServices authorizationServices) {
     return new CustomMethodSecurityExpressionHandler(authorizationServices);
   }
 

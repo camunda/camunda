@@ -52,40 +52,12 @@ public class TenantIdWithDefinitionsDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $id = getId();
-    result = result * PRIME + ($id == null ? 43 : $id.hashCode());
-    final Object $definitions = getDefinitions();
-    result = result * PRIME + ($definitions == null ? 43 : $definitions.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof TenantIdWithDefinitionsDto)) {
-      return false;
-    }
-    final TenantIdWithDefinitionsDto other = (TenantIdWithDefinitionsDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$id = getId();
-    final Object other$id = other.getId();
-    if (this$id == null ? other$id != null : !this$id.equals(other$id)) {
-      return false;
-    }
-    final Object this$definitions = getDefinitions();
-    final Object other$definitions = other.getDefinitions();
-    if (this$definitions == null
-        ? other$definitions != null
-        : !this$definitions.equals(other$definitions)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

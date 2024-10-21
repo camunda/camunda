@@ -15,6 +15,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.entities.operate.listview.ListViewJoinRelation;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
 import io.camunda.zeebe.protocol.record.Record;
@@ -23,7 +24,6 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
-import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -134,7 +134,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     final long expectedId = 123;
     final ProcessInstanceRecordValue processInstanceRecordValue =
         ImmutableProcessInstanceRecordValue.builder()
-            .from(factory.generateObject(DecisionRecordValue.class))
+            .from(factory.generateObject(ProcessInstanceRecordValue.class))
             .withBpmnElementType(BpmnElementType.PROCESS)
             .withProcessInstanceKey(expectedId)
             .build();
@@ -164,7 +164,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
   }
 
   @Test
-  void shouldAddEntityOnFlush() {
+  void shouldUpsertEntityOnFlush() {
     // given
     final ProcessInstanceForListViewEntity inputEntity =
         new ProcessInstanceForListViewEntity()
@@ -197,9 +197,58 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
   }
 
   @Test
+  void shouldUpsertEntityWithConcurrencyModeOnFlush() {
+    // given
+    final ListViewProcessInstanceFromProcessInstanceHandler underTest =
+        new ListViewProcessInstanceFromProcessInstanceHandler(indexName, true);
+    final ProcessInstanceForListViewEntity inputEntity =
+        new ProcessInstanceForListViewEntity()
+            .setId("111")
+            .setProcessInstanceKey(111L)
+            .setProcessName("process")
+            .setProcessVersion(2)
+            .setProcessDefinitionKey(444L)
+            .setBpmnProcessId("bpmnProcessId")
+            .setPosition(123L)
+            .setStartDate(OffsetDateTime.now())
+            .setEndDate(OffsetDateTime.now())
+            .setState(ProcessInstanceState.ACTIVE);
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
+    expectedUpdateFields.put(ListViewTemplate.PROCESS_NAME, "process");
+    expectedUpdateFields.put(ListViewTemplate.PROCESS_VERSION, 2);
+    expectedUpdateFields.put(ListViewTemplate.PROCESS_KEY, 444L);
+    expectedUpdateFields.put(ListViewTemplate.BPMN_PROCESS_ID, "bpmnProcessId");
+    expectedUpdateFields.put(ListViewTemplate.STATE, ProcessInstanceState.ACTIVE);
+    expectedUpdateFields.put(ListViewTemplate.START_DATE, inputEntity.getStartDate());
+    expectedUpdateFields.put(ListViewTemplate.END_DATE, inputEntity.getEndDate());
+    expectedUpdateFields.put(POSITION, 123L);
+
+    // when
+    underTest.flush(inputEntity, mockRequest);
+
+    // then
+    verify(mockRequest, times(1))
+        .upsertWithScriptAndRouting(
+            indexName,
+            "111",
+            inputEntity,
+            underTest.getProcessInstanceScript(),
+            expectedUpdateFields,
+            "111");
+  }
+
+  @Test
   void shouldUpdateEntityFromRecord() {
     // given
     final long timestamp = new Date().getTime();
+    final ProcessInstanceRecordValue processInstanceRecordValue =
+        ImmutableProcessInstanceRecordValue.builder()
+            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+            .withBpmnElementType(BpmnElementType.PROCESS)
+            .build();
+
     final Record<ProcessInstanceRecordValue> processInstanceRecord =
         factory.generateRecord(
             ValueType.PROCESS_INSTANCE,
@@ -207,8 +256,8 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
                 r.withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
                     .withTimestamp(timestamp)
                     .withPartitionId(3)
-                    .withPosition(55L));
-    final ProcessInstanceRecordValue processInstanceRecordValue = processInstanceRecord.getValue();
+                    .withPosition(55L)
+                    .withValue(processInstanceRecordValue));
 
     // when
     final ProcessInstanceForListViewEntity processInstanceForListViewEntity =
@@ -245,6 +294,8 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
         .isEqualTo(processInstanceRecordValue.getParentProcessInstanceKey());
     assertThat(processInstanceForListViewEntity.getParentFlowNodeInstanceKey())
         .isEqualTo(processInstanceRecordValue.getParentElementInstanceKey());
+    assertThat(processInstanceForListViewEntity.getJoinRelation())
+        .isEqualTo(new ListViewJoinRelation(ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION));
     assertThat(processInstanceForListViewEntity.getTreePath())
         .isEqualTo("PI_" + processInstanceRecordValue.getProcessInstanceKey());
   }
@@ -253,12 +304,20 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
   void shouldUpdateEndTimeForCompletedRecord() {
     // given
     final long timestamp = new Date().getTime();
+    final ProcessInstanceRecordValue processInstanceRecordValue =
+        ImmutableProcessInstanceRecordValue.builder()
+            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+            .withBpmnElementType(BpmnElementType.PROCESS)
+            .build();
     final Record<ProcessInstanceRecordValue> processInstanceRecord =
         factory.generateRecord(
             ValueType.PROCESS_INSTANCE,
-            r -> r.withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED).withTimestamp(timestamp));
+            r ->
+                r.withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                    .withTimestamp(timestamp)
+                    .withValue(processInstanceRecordValue));
 
-    // when
+    // when then
     final ProcessInstanceForListViewEntity processInstanceForListViewEntity =
         new ProcessInstanceForListViewEntity();
     underTest.updateEntity(processInstanceRecord, processInstanceForListViewEntity);
@@ -274,12 +333,20 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
   void shouldUpdateEndTimeForTerminatedRecord() {
     // given
     final long timestamp = new Date().getTime();
+    final ProcessInstanceRecordValue processInstanceRecordValue =
+        ImmutableProcessInstanceRecordValue.builder()
+            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+            .withBpmnElementType(BpmnElementType.PROCESS)
+            .build();
     final Record<ProcessInstanceRecordValue> processInstanceRecord =
         factory.generateRecord(
             ValueType.PROCESS_INSTANCE,
-            r -> r.withIntent(ProcessInstanceIntent.ELEMENT_TERMINATED).withTimestamp(timestamp));
+            r ->
+                r.withIntent(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                    .withTimestamp(timestamp)
+                    .withValue(processInstanceRecordValue));
 
-    // when
+    // when then
     final ProcessInstanceForListViewEntity processInstanceForListViewEntity =
         new ProcessInstanceForListViewEntity();
     underTest.updateEntity(processInstanceRecord, processInstanceForListViewEntity);
@@ -300,7 +367,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
             ValueType.PROCESS_INSTANCE,
             r -> r.withIntent(ProcessInstanceIntent.ELEMENT_MIGRATED).withTimestamp(timestamp));
 
-    // when
+    // when then
     final ProcessInstanceForListViewEntity processInstanceForListViewEntity =
         new ProcessInstanceForListViewEntity();
     underTest.updateEntity(processInstanceRecord, processInstanceForListViewEntity);

@@ -7,8 +7,6 @@
  */
 package io.camunda.optimize.dto.optimize.query.report.single.configuration.target_value;
 
-import java.util.Objects;
-
 public class SingleReportDurationChartDto {
 
   private TargetValueUnit unit = TargetValueUnit.HOURS;
@@ -17,20 +15,12 @@ public class SingleReportDurationChartDto {
 
   @Override
   public int hashCode() {
-    return Objects.hash(unit, isBelow, value);
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (!(o instanceof final SingleReportDurationChartDto that)) {
-      return false;
-    }
-    return unit == that.unit
-        && Objects.equals(isBelow, that.isBelow)
-        && Objects.equals(value, that.value);
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

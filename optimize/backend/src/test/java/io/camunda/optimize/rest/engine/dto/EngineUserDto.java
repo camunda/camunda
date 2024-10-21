@@ -41,40 +41,12 @@ public class EngineUserDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $profile = getProfile();
-    result = result * PRIME + ($profile == null ? 43 : $profile.hashCode());
-    final Object $credentials = getCredentials();
-    result = result * PRIME + ($credentials == null ? 43 : $credentials.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof EngineUserDto)) {
-      return false;
-    }
-    final EngineUserDto other = (EngineUserDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$profile = getProfile();
-    final Object other$profile = other.getProfile();
-    if (this$profile == null ? other$profile != null : !this$profile.equals(other$profile)) {
-      return false;
-    }
-    final Object this$credentials = getCredentials();
-    final Object other$credentials = other.getCredentials();
-    if (this$credentials == null
-        ? other$credentials != null
-        : !this$credentials.equals(other$credentials)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

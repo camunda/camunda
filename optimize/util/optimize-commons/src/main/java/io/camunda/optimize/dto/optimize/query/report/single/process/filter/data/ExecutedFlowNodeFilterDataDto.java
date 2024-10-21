@@ -40,38 +40,12 @@ public class ExecutedFlowNodeFilterDataDto implements FilterDataDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $operator = getOperator();
-    result = result * PRIME + ($operator == null ? 43 : $operator.hashCode());
-    final Object $values = getValues();
-    result = result * PRIME + ($values == null ? 43 : $values.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof ExecutedFlowNodeFilterDataDto)) {
-      return false;
-    }
-    final ExecutedFlowNodeFilterDataDto other = (ExecutedFlowNodeFilterDataDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$operator = getOperator();
-    final Object other$operator = other.getOperator();
-    if (this$operator == null ? other$operator != null : !this$operator.equals(other$operator)) {
-      return false;
-    }
-    final Object this$values = getValues();
-    final Object other$values = other.getValues();
-    if (this$values == null ? other$values != null : !this$values.equals(other$values)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

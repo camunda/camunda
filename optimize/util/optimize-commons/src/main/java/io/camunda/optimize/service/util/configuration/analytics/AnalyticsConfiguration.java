@@ -62,42 +62,12 @@ public class AnalyticsConfiguration {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    result = result * PRIME + (isEnabled() ? 79 : 97);
-    final Object $mixpanel = getMixpanel();
-    result = result * PRIME + ($mixpanel == null ? 43 : $mixpanel.hashCode());
-    final Object $osano = getOsano();
-    result = result * PRIME + ($osano == null ? 43 : $osano.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof AnalyticsConfiguration)) {
-      return false;
-    }
-    final AnalyticsConfiguration other = (AnalyticsConfiguration) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (isEnabled() != other.isEnabled()) {
-      return false;
-    }
-    final Object this$mixpanel = getMixpanel();
-    final Object other$mixpanel = other.getMixpanel();
-    if (this$mixpanel == null ? other$mixpanel != null : !this$mixpanel.equals(other$mixpanel)) {
-      return false;
-    }
-    final Object this$osano = getOsano();
-    final Object other$osano = other.getOsano();
-    if (this$osano == null ? other$osano != null : !this$osano.equals(other$osano)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

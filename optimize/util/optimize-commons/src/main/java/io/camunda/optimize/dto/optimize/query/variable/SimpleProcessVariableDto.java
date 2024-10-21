@@ -78,36 +78,12 @@ public class SimpleProcessVariableDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $id = getId();
-    result = result * PRIME + ($id == null ? 43 : $id.hashCode());
-    final long $version = getVersion();
-    result = result * PRIME + (int) ($version >>> 32 ^ $version);
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof SimpleProcessVariableDto)) {
-      return false;
-    }
-    final SimpleProcessVariableDto other = (SimpleProcessVariableDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$id = getId();
-    final Object other$id = other.getId();
-    if (this$id == null ? other$id != null : !this$id.equals(other$id)) {
-      return false;
-    }
-    if (getVersion() != other.getVersion()) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

@@ -710,8 +710,7 @@ public class PassiveRole extends InactiveRole {
     final long lastEntryIndex = request.prevLogIndex() + request.entries().size();
 
     // Ensure the commitIndex is not increased beyond the index of the last entry in the request.
-    final long commitIndex =
-        Math.max(raft.getCommitIndex(), Math.min(request.commitIndex(), lastEntryIndex));
+    final long commitIndex = Math.min(request.commitIndex(), lastEntryIndex);
 
     // Track the last log index while entries are appended.
     long lastLogIndex = request.prevLogIndex();

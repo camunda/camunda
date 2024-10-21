@@ -53,27 +53,7 @@ public class ConflictResponseDto extends ErrorResponseDto {
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof ConflictResponseDto)) {
-      return false;
-    }
-    final ConflictResponseDto other = (ConflictResponseDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    final Object this$conflictedItems = getConflictedItems();
-    final Object other$conflictedItems = other.getConflictedItems();
-    if (this$conflictedItems == null
-        ? other$conflictedItems != null
-        : !this$conflictedItems.equals(other$conflictedItems)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override
@@ -83,10 +63,6 @@ public class ConflictResponseDto extends ErrorResponseDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = super.hashCode();
-    final Object $conflictedItems = getConflictedItems();
-    result = result * PRIME + ($conflictedItems == null ? 43 : $conflictedItems.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 }

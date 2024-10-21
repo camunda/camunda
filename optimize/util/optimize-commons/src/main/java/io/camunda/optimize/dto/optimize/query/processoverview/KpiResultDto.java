@@ -143,88 +143,12 @@ public class KpiResultDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $reportId = getReportId();
-    result = result * PRIME + ($reportId == null ? 43 : $reportId.hashCode());
-    final Object $collectionId = getCollectionId();
-    result = result * PRIME + ($collectionId == null ? 43 : $collectionId.hashCode());
-    final Object $reportName = getReportName();
-    result = result * PRIME + ($reportName == null ? 43 : $reportName.hashCode());
-    final Object $value = getValue();
-    result = result * PRIME + ($value == null ? 43 : $value.hashCode());
-    final Object $target = getTarget();
-    result = result * PRIME + ($target == null ? 43 : $target.hashCode());
-    result = result * PRIME + (isBelow() ? 79 : 97);
-    final Object $type = getType();
-    result = result * PRIME + ($type == null ? 43 : $type.hashCode());
-    final Object $measure = getMeasure();
-    result = result * PRIME + ($measure == null ? 43 : $measure.hashCode());
-    final Object $unit = getUnit();
-    result = result * PRIME + ($unit == null ? 43 : $unit.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof KpiResultDto)) {
-      return false;
-    }
-    final KpiResultDto other = (KpiResultDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$reportId = getReportId();
-    final Object other$reportId = other.getReportId();
-    if (this$reportId == null ? other$reportId != null : !this$reportId.equals(other$reportId)) {
-      return false;
-    }
-    final Object this$collectionId = getCollectionId();
-    final Object other$collectionId = other.getCollectionId();
-    if (this$collectionId == null
-        ? other$collectionId != null
-        : !this$collectionId.equals(other$collectionId)) {
-      return false;
-    }
-    final Object this$reportName = getReportName();
-    final Object other$reportName = other.getReportName();
-    if (this$reportName == null
-        ? other$reportName != null
-        : !this$reportName.equals(other$reportName)) {
-      return false;
-    }
-    final Object this$value = getValue();
-    final Object other$value = other.getValue();
-    if (this$value == null ? other$value != null : !this$value.equals(other$value)) {
-      return false;
-    }
-    final Object this$target = getTarget();
-    final Object other$target = other.getTarget();
-    if (this$target == null ? other$target != null : !this$target.equals(other$target)) {
-      return false;
-    }
-    if (isBelow() != other.isBelow()) {
-      return false;
-    }
-    final Object this$type = getType();
-    final Object other$type = other.getType();
-    if (this$type == null ? other$type != null : !this$type.equals(other$type)) {
-      return false;
-    }
-    final Object this$measure = getMeasure();
-    final Object other$measure = other.getMeasure();
-    if (this$measure == null ? other$measure != null : !this$measure.equals(other$measure)) {
-      return false;
-    }
-    final Object this$unit = getUnit();
-    final Object other$unit = other.getUnit();
-    if (this$unit == null ? other$unit != null : !this$unit.equals(other$unit)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

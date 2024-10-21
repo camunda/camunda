@@ -29,33 +29,12 @@ public class GetVariableNamesForReportsRequestDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $reportIds = getReportIds();
-    result = result * PRIME + ($reportIds == null ? 43 : $reportIds.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof GetVariableNamesForReportsRequestDto)) {
-      return false;
-    }
-    final GetVariableNamesForReportsRequestDto other = (GetVariableNamesForReportsRequestDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$reportIds = getReportIds();
-    final Object other$reportIds = other.getReportIds();
-    if (this$reportIds == null
-        ? other$reportIds != null
-        : !this$reportIds.equals(other$reportIds)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

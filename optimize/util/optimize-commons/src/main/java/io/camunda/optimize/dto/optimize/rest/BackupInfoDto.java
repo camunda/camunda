@@ -68,52 +68,12 @@ public class BackupInfoDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final long $backupId = getBackupId();
-    result = result * PRIME + (int) ($backupId >>> 32 ^ $backupId);
-    final Object $failureReason = getFailureReason();
-    result = result * PRIME + ($failureReason == null ? 43 : $failureReason.hashCode());
-    final Object $state = getState();
-    result = result * PRIME + ($state == null ? 43 : $state.hashCode());
-    final Object $details = getDetails();
-    result = result * PRIME + ($details == null ? 43 : $details.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof BackupInfoDto)) {
-      return false;
-    }
-    final BackupInfoDto other = (BackupInfoDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (getBackupId() != other.getBackupId()) {
-      return false;
-    }
-    final Object this$failureReason = getFailureReason();
-    final Object other$failureReason = other.getFailureReason();
-    if (this$failureReason == null
-        ? other$failureReason != null
-        : !this$failureReason.equals(other$failureReason)) {
-      return false;
-    }
-    final Object this$state = getState();
-    final Object other$state = other.getState();
-    if (this$state == null ? other$state != null : !this$state.equals(other$state)) {
-      return false;
-    }
-    final Object this$details = getDetails();
-    final Object other$details = other.getDetails();
-    if (this$details == null ? other$details != null : !this$details.equals(other$details)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

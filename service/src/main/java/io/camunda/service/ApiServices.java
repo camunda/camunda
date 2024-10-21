@@ -8,6 +8,7 @@
 package io.camunda.service;
 
 import io.camunda.security.auth.Authentication;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
@@ -23,10 +24,15 @@ import org.agrona.concurrent.UnsafeBuffer;
 public abstract class ApiServices<T extends ApiServices<T>> {
 
   protected final BrokerClient brokerClient;
+  protected final SecurityConfiguration securityConfiguration;
   protected final Authentication authentication;
 
-  protected ApiServices(final BrokerClient brokerClient, final Authentication authentication) {
+  protected ApiServices(
+      final BrokerClient brokerClient,
+      final SecurityConfiguration securityConfiguration,
+      final Authentication authentication) {
     this.brokerClient = brokerClient;
+    this.securityConfiguration = securityConfiguration;
     this.authentication = authentication;
   }
 

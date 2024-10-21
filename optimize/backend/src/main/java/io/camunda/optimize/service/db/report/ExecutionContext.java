@@ -205,88 +205,7 @@ public class ExecutionContext<D extends SingleReportDataDto, P extends Execution
   }
 
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof ExecutionContext)) {
-      return false;
-    }
-    final ExecutionContext<?, ?> other = (ExecutionContext<?, ?>) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$plan = this.getPlan();
-    final Object other$plan = other.getPlan();
-    if (this$plan == null ? other$plan != null : !this$plan.equals(other$plan)) {
-      return false;
-    }
-    final Object this$reportData = this.getReportData();
-    final Object other$reportData = other.getReportData();
-    if (this$reportData == null
-        ? other$reportData != null
-        : !this$reportData.equals(other$reportData)) {
-      return false;
-    }
-    final Object this$timezone = this.getTimezone();
-    final Object other$timezone = other.getTimezone();
-    if (this$timezone == null ? other$timezone != null : !this$timezone.equals(other$timezone)) {
-      return false;
-    }
-    if (this.getUnfilteredTotalInstanceCount() != other.getUnfilteredTotalInstanceCount()) {
-      return false;
-    }
-    final Object this$pagination = this.getPagination();
-    final Object other$pagination = other.getPagination();
-    if (this$pagination == null
-        ? other$pagination != null
-        : !this$pagination.equals(other$pagination)) {
-      return false;
-    }
-    if (this.isCsvExport() != other.isCsvExport()) {
-      return false;
-    }
-    if (this.isJsonExport() != other.isJsonExport()) {
-      return false;
-    }
-    final Object this$combinedRangeMinMaxStats = this.getCombinedRangeMinMaxStats();
-    final Object other$combinedRangeMinMaxStats = other.getCombinedRangeMinMaxStats();
-    if (this$combinedRangeMinMaxStats == null
-        ? other$combinedRangeMinMaxStats != null
-        : !this$combinedRangeMinMaxStats.equals(other$combinedRangeMinMaxStats)) {
-      return false;
-    }
-    final Object this$allDistributedByKeysAndLabels = this.getAllDistributedByKeysAndLabels();
-    final Object other$allDistributedByKeysAndLabels = other.getAllDistributedByKeysAndLabels();
-    if (this$allDistributedByKeysAndLabels == null
-        ? other$allDistributedByKeysAndLabels != null
-        : !this$allDistributedByKeysAndLabels.equals(other$allDistributedByKeysAndLabels)) {
-      return false;
-    }
-    final Object this$allVariablesNames = this.getAllVariablesNames();
-    final Object other$allVariablesNames = other.getAllVariablesNames();
-    if (this$allVariablesNames == null
-        ? other$allVariablesNames != null
-        : !this$allVariablesNames.equals(other$allVariablesNames)) {
-      return false;
-    }
-    final Object this$hiddenFlowNodeIds = this.getHiddenFlowNodeIds();
-    final Object other$hiddenFlowNodeIds = other.getHiddenFlowNodeIds();
-    if (this$hiddenFlowNodeIds == null
-        ? other$hiddenFlowNodeIds != null
-        : !this$hiddenFlowNodeIds.equals(other$hiddenFlowNodeIds)) {
-      return false;
-    }
-    final Object this$filterContext = this.getFilterContext();
-    final Object other$filterContext = other.getFilterContext();
-    if (this$filterContext == null
-        ? other$filterContext != null
-        : !this$filterContext.equals(other$filterContext)) {
-      return false;
-    }
-    if (this.isMultiIndexAlias() != other.isMultiIndexAlias()) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   protected boolean canEqual(final Object other) {
@@ -294,40 +213,7 @@ public class ExecutionContext<D extends SingleReportDataDto, P extends Execution
   }
 
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $plan = this.getPlan();
-    result = result * PRIME + ($plan == null ? 43 : $plan.hashCode());
-    final Object $reportData = this.getReportData();
-    result = result * PRIME + ($reportData == null ? 43 : $reportData.hashCode());
-    final Object $timezone = this.getTimezone();
-    result = result * PRIME + ($timezone == null ? 43 : $timezone.hashCode());
-    final long $unfilteredTotalInstanceCount = this.getUnfilteredTotalInstanceCount();
-    result =
-        result * PRIME
-            + (int) ($unfilteredTotalInstanceCount >>> 32 ^ $unfilteredTotalInstanceCount);
-    final Object $pagination = this.getPagination();
-    result = result * PRIME + ($pagination == null ? 43 : $pagination.hashCode());
-    result = result * PRIME + (this.isCsvExport() ? 79 : 97);
-    result = result * PRIME + (this.isJsonExport() ? 79 : 97);
-    final Object $combinedRangeMinMaxStats = this.getCombinedRangeMinMaxStats();
-    result =
-        result * PRIME
-            + ($combinedRangeMinMaxStats == null ? 43 : $combinedRangeMinMaxStats.hashCode());
-    final Object $allDistributedByKeysAndLabels = this.getAllDistributedByKeysAndLabels();
-    result =
-        result * PRIME
-            + ($allDistributedByKeysAndLabels == null
-                ? 43
-                : $allDistributedByKeysAndLabels.hashCode());
-    final Object $allVariablesNames = this.getAllVariablesNames();
-    result = result * PRIME + ($allVariablesNames == null ? 43 : $allVariablesNames.hashCode());
-    final Object $hiddenFlowNodeIds = this.getHiddenFlowNodeIds();
-    result = result * PRIME + ($hiddenFlowNodeIds == null ? 43 : $hiddenFlowNodeIds.hashCode());
-    final Object $filterContext = this.getFilterContext();
-    result = result * PRIME + ($filterContext == null ? 43 : $filterContext.hashCode());
-    result = result * PRIME + (this.isMultiIndexAlias() ? 79 : 97);
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   public String toString() {

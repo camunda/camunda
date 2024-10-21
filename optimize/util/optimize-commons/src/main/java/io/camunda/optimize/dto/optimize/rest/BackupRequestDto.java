@@ -36,31 +36,12 @@ public class BackupRequestDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $backupId = getBackupId();
-    result = result * PRIME + ($backupId == null ? 43 : $backupId.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof BackupRequestDto)) {
-      return false;
-    }
-    final BackupRequestDto other = (BackupRequestDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$backupId = getBackupId();
-    final Object other$backupId = other.getBackupId();
-    if (this$backupId == null ? other$backupId != null : !this$backupId.equals(other$backupId)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override
