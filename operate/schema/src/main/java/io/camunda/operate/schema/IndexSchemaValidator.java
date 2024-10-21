@@ -15,6 +15,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.operate.schema.migration.SemanticVersion;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import jakarta.annotation.PostConstruct;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -31,11 +32,16 @@ public class IndexSchemaValidator {
 
   private static final Pattern VERSION_PATTERN = Pattern.compile(".*-(\\d+\\.\\d+\\.\\d+.*)_.*");
 
-  @Autowired Set<IndexDescriptor> indexDescriptors;
-
+  @Autowired Set<OperateManagedDataStructure> operateManagedIndices;
   @Autowired SchemaManager schemaManager;
-
+  private Set<IndexDescriptor> indexDescriptors;
   @Autowired private OperateProperties operateProperties;
+
+  @PostConstruct
+  public void setup() {
+    indexDescriptors =
+        operateManagedIndices.stream().map(IndexDescriptor.class::cast).collect(Collectors.toSet());
+  }
 
   private Set<String> getAllIndexNamesForIndex(final String index) {
     final String indexPattern = String.format("%s-%s*", getIndexPrefix(), index);
@@ -148,7 +154,9 @@ public class IndexSchemaValidator {
    * @return newFields map with the new field definitions per index
    * @throws OperateRuntimeException in case some fields would need to be deleted or have different
    *     settings
+   * @deprecated schema manager is happening in Zeebe exporter now
    */
+  @Deprecated
   public Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexMappings() {
     final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields = new HashMap<>();
     final Map<String, IndexMapping> indexMappings =

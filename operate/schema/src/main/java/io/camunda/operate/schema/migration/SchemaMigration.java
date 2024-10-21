@@ -59,7 +59,7 @@ public class SchemaMigration implements CommandLineRunner {
 
   @Override
   public void run(final String... args) {
-    LOGGER.info("SchemaMigration finished.");
+    // calls postconstruct method of SchemaStartup
   }
 
   public static class ApplicationErrorListener

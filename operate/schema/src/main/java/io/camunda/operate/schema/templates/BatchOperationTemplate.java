@@ -9,6 +9,7 @@ package io.camunda.operate.schema.templates;
 
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.schema.OperateManagedTemplate;
 import io.camunda.operate.schema.backup.Prio3Backup;
 import io.camunda.webapps.schema.descriptors.operate.OperateTemplateDescriptor;
 import jakarta.annotation.PostConstruct;
@@ -16,7 +17,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class BatchOperationTemplate extends OperateTemplateDescriptor implements Prio3Backup {
+public class BatchOperationTemplate extends OperateTemplateDescriptor
+    implements Prio3Backup, OperateManagedTemplate {
 
   public static final String INDEX_NAME = "batch-operation";
 

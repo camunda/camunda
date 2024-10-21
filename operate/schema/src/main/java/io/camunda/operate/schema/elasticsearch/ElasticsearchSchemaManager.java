@@ -15,10 +15,11 @@ import io.camunda.operate.property.OperateElasticsearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.IndexMapping;
 import io.camunda.operate.schema.IndexMapping.IndexMappingProperty;
+import io.camunda.operate.schema.OperateManagedIndex;
+import io.camunda.operate.schema.OperateManagedTemplate;
 import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchJSONUtil;
-import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
@@ -70,8 +71,8 @@ public class ElasticsearchSchemaManager implements SchemaManager {
 
   @Autowired protected RetryElasticsearchClient retryElasticsearchClient;
   @Autowired protected OperateProperties operateProperties;
-  @Autowired private List<AbstractIndexDescriptor> indexDescriptors;
-  @Autowired private List<IndexTemplateDescriptor> templateDescriptors;
+  @Autowired private List<OperateManagedIndex> indexDescriptors;
+  @Autowired private List<OperateManagedTemplate> templateDescriptors;
 
   @Autowired
   @Qualifier("operateObjectMapper")
@@ -218,6 +219,10 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     return retryElasticsearchClient.getIndexMappings(indexName);
   }
 
+  /**
+   * @deprecated schema manager is happening in Zeebe exporter now
+   */
+  @Deprecated
   @Override
   public void updateSchema(final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields) {
     for (final Map.Entry<IndexDescriptor, Set<IndexMappingProperty>> indexNewFields :
@@ -331,11 +336,13 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     templateDescriptors.forEach(this::createTemplate);
   }
 
-  private void createIndex(final IndexDescriptor indexDescriptor) {
+  private void createIndex(final OperateManagedIndex index) {
+    final IndexDescriptor indexDescriptor = (IndexDescriptor) index;
     createIndex(indexDescriptor, indexDescriptor.getSchemaClasspathFilename());
   }
 
-  private void createTemplate(final IndexTemplateDescriptor templateDescriptor) {
+  private void createTemplate(final OperateManagedTemplate template) {
+    final IndexTemplateDescriptor templateDescriptor = (IndexTemplateDescriptor) template;
     createTemplate(templateDescriptor, null);
   }
 
