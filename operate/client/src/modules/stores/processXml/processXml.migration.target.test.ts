@@ -66,6 +66,10 @@ describe('stores/processXml/processXml.migration.target', () => {
       'SendTask',
       'EventBasedGateway',
       'IntermediateTimerEvent',
+      'SignalIntermediateCatch',
+      'SignalBoundaryEvent',
+      'SignalEventSubProcess',
+      'SignalStartEvent',
     ]);
   });
 
@@ -141,6 +145,10 @@ describe('stores/processXml/processXml.migration.target', () => {
       'SendTask',
       'EventBasedGateway',
       'IntermediateTimerEvent',
+      'SignalIntermediateCatch',
+      'SignalBoundaryEvent',
+      'SignalEventSubProcess',
+      'SignalStartEvent',
     ]);
   });
 });
