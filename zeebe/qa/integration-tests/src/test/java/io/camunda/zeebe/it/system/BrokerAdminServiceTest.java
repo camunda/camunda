@@ -84,10 +84,31 @@ public class BrokerAdminServiceTest {
     // given
     partitions.pauseProcessing();
 
+    final Future<?> response1;
+    try (final var client = zeebe.newClientBuilder().build()) {
+      response1 =
+          client.newPublishMessageCommand().messageName("test1").correlationKey("test-key").send();
+
+      // then
+      assertThat(response1)
+          .failsWithin(Duration.ofSeconds(5))
+          .withThrowableThat()
+          .havingCause()
+          .withMessageContaining("UNAVAILABLE: Processing paused for partition");
+    }
+
     // when
     final var status = partitions.resumeProcessing();
 
     // then
+    final Future<?> response2;
+    try (final var client = zeebe.newClientBuilder().build()) {
+      response2 =
+          client.newPublishMessageCommand().messageName("test2").correlationKey("test-key").send();
+
+      assertThat(response2).isNotNull().succeedsWithin(Duration.ofSeconds(5));
+    }
+
     assertThat(status.get(1).streamProcessorPhase()).isEqualTo(Phase.PROCESSING.toString());
   }
 
@@ -107,8 +128,10 @@ public class BrokerAdminServiceTest {
           .failsWithin(Duration.ofSeconds(5))
           .withThrowableThat()
           .havingCause()
-          .withMessageContaining("Processing paused for partition");
+          .withMessageContaining("UNAVAILABLE: Processing paused for partition");
     }
+
+    // TODO: assert DEBUG statement is in log
   }
 
   @Test
