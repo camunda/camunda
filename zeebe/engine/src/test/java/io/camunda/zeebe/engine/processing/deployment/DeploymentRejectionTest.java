@@ -14,11 +14,13 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.ExecuteCommandResponseDecoder;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
@@ -124,7 +126,8 @@ public class DeploymentRejectionTest {
         .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
         .hasRecordType(RecordType.COMMAND_REJECTION)
         .hasIntent(DeploymentIntent.CREATE)
-        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason("Expected to deploy at least one resource, but none given");
   }
 
   @Test
@@ -273,5 +276,134 @@ public class DeploymentRejectionTest {
             tuple(ProcessIntent.CREATED, RecordType.EVENT),
             tuple(DeploymentIntent.CREATED, RecordType.EVENT),
             tuple(CommandDistributionIntent.STARTED, RecordType.EVENT));
+  }
+
+  @Test
+  public void shouldRejectDeploymentIfTargetResourceNotIncludedForBindingTypeDeployment() {
+    // given
+    final var process1 =
+        Bpmn.createExecutableProcess("process-1")
+            .startEvent()
+            .callActivity(
+                "callActivity",
+                builder ->
+                    builder
+                        .zeebeBindingType(ZeebeBindingType.deployment)
+                        .zeebeProcessId("test-process"))
+            .businessRuleTask(
+                "businessRuleTask",
+                builder ->
+                    builder
+                        .zeebeBindingType(ZeebeBindingType.deployment)
+                        .zeebeCalledDecisionId("test-decision")
+                        .zeebeResultVariable("foo"))
+            .endEvent()
+            .done();
+    final var process2 =
+        Bpmn.createExecutableProcess("process-2")
+            .startEvent()
+            .userTask(
+                "userTask",
+                builder ->
+                    builder
+                        .zeebeFormBindingType(ZeebeBindingType.deployment)
+                        .zeebeFormId("test-form"))
+            .endEvent()
+            .done();
+
+    // when
+    final var rejectedDeployment =
+        ENGINE
+            .deployment()
+            .withXmlResource("process 1.bpmn", process1)
+            .withXmlResource("process 2.bpmn", process2)
+            .expectRejection()
+            .deploy();
+
+    // then
+    Assertions.assertThat(rejectedDeployment)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeployment.getRejectionReason())
+        .startsWith("Expected to deploy new resources, but encountered the following errors:")
+        // the order of the element errors for a particular resource is not deterministic, so the
+        // assertion checks that one of the possible variants is included
+        .containsAnyOf(
+            """
+            'process 1.bpmn':
+            - Element: businessRuleTask > extensionElements > calledDecision
+                - ERROR: Expected to find decision with id 'test-decision' in current deployment, but not found.
+            - Element: callActivity > extensionElements > calledElement
+                - ERROR: Expected to find process with id 'test-process' in current deployment, but not found.
+            """,
+            """
+            'process 1.bpmn':
+            - Element: callActivity > extensionElements > calledElement
+                - ERROR: Expected to find process with id 'test-process' in current deployment, but not found.
+            - Element: businessRuleTask > extensionElements > calledDecision
+                - ERROR: Expected to find decision with id 'test-decision' in current deployment, but not found.
+            """)
+        .endsWith(
+            """
+            'process 2.bpmn':
+            - Element: userTask > extensionElements > formDefinition
+                - ERROR: Expected to find form with id 'test-form' in current deployment, but not found.
+            """);
+  }
+
+  @Test
+  public void shouldNotRejectDeploymentForBindingTypeDeploymentIfTargetIdIsExpression() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .callActivity(
+                "activity",
+                builder ->
+                    builder
+                        .zeebeBindingType(ZeebeBindingType.deployment)
+                        .zeebeProcessIdExpression("processIdVar"))
+            .businessRuleTask(
+                "businessRuleTask",
+                builder ->
+                    builder
+                        .zeebeBindingType(ZeebeBindingType.deployment)
+                        .zeebeCalledDecisionIdExpression("decisionIdVar")
+                        .zeebeResultVariable("foo"))
+            .userTask(
+                "userTask",
+                builder ->
+                    builder
+                        .zeebeFormBindingType(ZeebeBindingType.deployment)
+                        .zeebeFormId("=formIdVar"))
+            .endEvent()
+            .done();
+
+    // when
+    final var deployment = ENGINE.deployment().withXmlResource("process.bpmn", process).deploy();
+
+    // then
+    Assertions.assertThat(deployment)
+        .hasRecordType(RecordType.EVENT)
+        .hasValueType(ValueType.DEPLOYMENT)
+        .hasIntent(DeploymentIntent.CREATED);
+  }
+
+  @Test
+  public void
+      shouldNotRejectDeploymentIfTargetResourceMissingForBindingTypeDeploymentInNonExecutableProcess() {
+    // given
+    final String resource = "/processes/non-executable-process-deployment-binding.bpmn";
+
+    // when
+    final var deployment = ENGINE.deployment().withXmlClasspathResource(resource).deploy();
+
+    // then
+    Assertions.assertThat(deployment)
+        .hasRecordType(RecordType.EVENT)
+        .hasValueType(ValueType.DEPLOYMENT)
+        .hasIntent(DeploymentIntent.CREATED);
   }
 }
