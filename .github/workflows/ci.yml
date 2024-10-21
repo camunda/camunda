@@ -565,6 +565,7 @@ jobs:
       - optimize-frontend-unit-tests
       - optimize-backend-unit-tests
       - protobuf-checks
+      - c8run-build-test
     steps:
       - uses: actions/checkout@v4
       - name: Check for aborted jobs
@@ -635,7 +636,7 @@ jobs:
 
   deploy-camunda-docker-snapshot:
     name: Deploy snapshot Camunda Docker image
-    needs: [ docker-checks, check-results ]
+    needs: [ check-results ]
     runs-on: ubuntu-latest
     if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
     concurrency:
@@ -675,3 +676,8 @@ jobs:
           platforms: ${{ env.DOCKER_PLATFORMS }}
           dockerfile: camunda.Dockerfile
           push: true
+
+  c8run-build-test:
+    name: Deploy c8run
+    needs: [ docker-checks ]
+    uses: ./.github/workflows/c8run-build.yaml
