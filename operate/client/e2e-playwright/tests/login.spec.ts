@@ -26,7 +26,7 @@ test.describe('login page', () => {
     });
 
     await expect(
-      page.getByRole('alert').getByText('Username and password do not match'),
+      page.getByRole('alert').getByText('Credentials could not be verified'),
     ).toBeVisible();
     await expect(page).toHaveURL(`.${Paths.login()}`);
   });
