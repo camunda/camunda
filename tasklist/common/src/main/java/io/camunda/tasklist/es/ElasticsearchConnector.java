@@ -286,6 +286,10 @@ public class ElasticsearchConnector {
 
   public boolean checkHealth(final ElasticsearchClient elasticsearchClient) {
     final ElasticsearchProperties elsConfig = tasklistProperties.getElasticsearch();
+    if (!elsConfig.isHealthCheckEnabled()) {
+      LOGGER.debug("Elasticsearch health check is disabled");
+      return true;
+    }
     try {
       return RetryOperation.<Boolean>newBuilder()
           .noOfRetry(50)
@@ -312,6 +316,10 @@ public class ElasticsearchConnector {
 
   public boolean checkHealth(final RestHighLevelClient esClient) {
     final ElasticsearchProperties elsConfig = tasklistProperties.getElasticsearch();
+    if (!elsConfig.isHealthCheckEnabled()) {
+      LOGGER.debug("Elasticsearch health check is disabled");
+      return true;
+    }
     final RetryPolicy<Boolean> retryPolicy = getConnectionRetryPolicy(elsConfig);
     return Failsafe.with(retryPolicy)
         .get(

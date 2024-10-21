@@ -55,6 +55,11 @@ public class IndexSchemaValidatorElasticSearch extends IndexSchemaValidatorUtil
   }
 
   @Override
+  public boolean isHealthCheckEnabled() {
+    return tasklistProperties.getElasticsearch().isHealthCheckEnabled();
+  }
+
+  @Override
   public boolean hasAnyTasklistIndices() {
     final Set<String> indices =
         retryElasticsearchClient.getIndexNames(

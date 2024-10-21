@@ -43,6 +43,8 @@ public class ElasticsearchProperties {
   private String username;
   private String password;
 
+  private boolean healthCheckEnabled = true;
+
   @NestedConfigurationProperty private SslProperties ssl;
 
   private List<PluginConfiguration> interceptorPlugins;
@@ -159,6 +161,14 @@ public class ElasticsearchProperties {
 
   public void setConnectTimeout(final Integer connectTimeout) {
     this.connectTimeout = connectTimeout;
+  }
+
+  public boolean isHealthCheckEnabled() {
+    return healthCheckEnabled;
+  }
+
+  public void setHealthCheckEnabled(final boolean healthCheckEnabled) {
+    this.healthCheckEnabled = healthCheckEnabled;
   }
 
   public SslProperties getSsl() {

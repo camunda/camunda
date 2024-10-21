@@ -45,6 +45,7 @@ public class OpenSearchProperties {
 
   private boolean awsEnabled = false;
 
+  private boolean healthCheckEnabled = true;
   @NestedConfigurationProperty private SslProperties ssl;
 
   private List<PluginConfiguration> interceptorPlugins;
@@ -185,5 +186,13 @@ public class OpenSearchProperties {
 
   public void setAwsEnabled(final boolean awsEnabled) {
     this.awsEnabled = awsEnabled;
+  }
+
+  public boolean isHealthCheckEnabled() {
+    return healthCheckEnabled;
+  }
+
+  public void setHealthCheckEnabled(final boolean healthCheckEnabled) {
+    this.healthCheckEnabled = healthCheckEnabled;
   }
 }
