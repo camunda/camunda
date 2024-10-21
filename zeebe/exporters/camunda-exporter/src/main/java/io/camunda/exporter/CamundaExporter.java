@@ -13,6 +13,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.DECISION_EVALUATION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION_REQUIREMENTS;
 import static io.camunda.zeebe.protocol.record.ValueType.FORM;
 import static io.camunda.zeebe.protocol.record.ValueType.INCIDENT;
+import static io.camunda.zeebe.protocol.record.ValueType.JOB;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.ValueType.USER;
@@ -177,7 +178,6 @@ public class CamundaExporter implements Exporter {
   }
 
   private record CamundaExporterRecordFilter() implements RecordFilter {
-    // TODO include other value types to export
     private static final Set<ValueType> VALUE_TYPES_2_EXPORT =
         Set.of(
             USER,
@@ -186,6 +186,7 @@ public class CamundaExporter implements Exporter {
             DECISION_REQUIREMENTS,
             PROCESS_INSTANCE,
             VARIABLE,
+            JOB,
             INCIDENT,
             DECISION_EVALUATION,
             PROCESS,

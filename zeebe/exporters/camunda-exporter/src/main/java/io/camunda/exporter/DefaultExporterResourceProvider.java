@@ -22,7 +22,11 @@ import io.camunda.exporter.handlers.FlowNodeInstanceIncidentHandler;
 import io.camunda.exporter.handlers.FlowNodeInstanceProcessInstanceHandler;
 import io.camunda.exporter.handlers.FormHandler;
 import io.camunda.exporter.handlers.IncidentHandler;
+import io.camunda.exporter.handlers.ListViewFlowNodeFromIncidentHandler;
+import io.camunda.exporter.handlers.ListViewFlowNodeFromJobHandler;
+import io.camunda.exporter.handlers.ListViewFlowNodeFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHandler;
+import io.camunda.exporter.handlers.ListViewVariableFromVariableHandler;
 import io.camunda.exporter.handlers.MetricFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
 import io.camunda.exporter.handlers.ProcessHandler;
@@ -115,6 +119,14 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new DecisionHandler(
                 indexDescriptorsMap.get(DecisionIndex.class).getFullQualifiedName()),
             new ListViewProcessInstanceFromProcessInstanceHandler(
+                templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(), false),
+            new ListViewFlowNodeFromIncidentHandler(
+                templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(), false),
+            new ListViewFlowNodeFromJobHandler(
+                templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(), false),
+            new ListViewFlowNodeFromProcessInstanceHandler(
+                templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(), false),
+            new ListViewVariableFromVariableHandler(
                 templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(), false),
             new VariableHandler(
                 templateDescriptorsMap.get(VariableTemplate.class).getFullQualifiedName(),
