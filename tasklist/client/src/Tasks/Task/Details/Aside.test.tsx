@@ -48,13 +48,15 @@ describe('<Aside />', () => {
     window.clientConfig = DEFAULT_MOCK_CLIENT_CONFIG;
   });
 
-  it('should render completed task details', async () => {
+  beforeEach(() => {
     nodeMockServer.use(
       http.get('/v1/internal/users/current', () => {
         return HttpResponse.json(userMocks.currentUser);
       }),
     );
+  });
 
+  it('should render completed task details', async () => {
     render(
       <Aside task={taskMocks.completedTask()} user={userMocks.currentUser} />,
       {
@@ -69,12 +71,6 @@ describe('<Aside />', () => {
   });
 
   it('should render unassigned task details', async () => {
-    nodeMockServer.use(
-      http.get('/v1/internal/users/current', () => {
-        return HttpResponse.json(userMocks.currentUser);
-      }),
-    );
-
     render(
       <Aside task={taskMocks.unassignedTask()} user={userMocks.currentUser} />,
       {
@@ -92,12 +88,6 @@ describe('<Aside />', () => {
       ...DEFAULT_MOCK_CLIENT_CONFIG,
       isMultiTenancyEnabled: true,
     };
-
-    nodeMockServer.use(
-      http.get('/v1/internal/users/current', () => {
-        return HttpResponse.json(userMocks.currentUserWithTenants);
-      }),
-    );
 
     render(
       <Aside
