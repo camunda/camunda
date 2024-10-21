@@ -54,20 +54,17 @@ public class UserTaskProcessInstanceHandlerTest {
   @Test
   void shouldHandleRecord() {
     // given
-    VARIABLE_SCOPE_TYPES.forEach(
-        type -> {
-          final Record<ProcessInstanceRecordValue> processInstanceRecord =
-              factory.generateRecord(
-                  ValueType.PROCESS_INSTANCE,
-                  r ->
-                      r.withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
-                          .withValue(
-                              ImmutableProcessInstanceRecordValue.builder()
-                                  .withBpmnElementType(type)
-                                  .build()));
-          // when - then
-          assertThat(underTest.handlesRecord(processInstanceRecord)).isTrue();
-        });
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r ->
+                r.withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+                    .withValue(
+                        ImmutableProcessInstanceRecordValue.builder()
+                            .withBpmnElementType(BpmnElementType.PROCESS)
+                            .build()));
+    // when - then
+    assertThat(underTest.handlesRecord(processInstanceRecord)).isTrue();
   }
 
   @Test
@@ -128,7 +125,7 @@ public class UserTaskProcessInstanceHandlerTest {
     underTest.flush(inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).addWithRouting(indexName, inputEntity, inputEntity.getId());
+    verify(mockRequest, times(1)).add(indexName, inputEntity);
   }
 
   @Test
@@ -155,7 +152,6 @@ public class UserTaskProcessInstanceHandlerTest {
 
     // then
     assertThat(processInstanceEntity.getId()).isEqualTo(String.valueOf(expectedId));
-    assertThat(processInstanceEntity.getKey()).isEqualTo(expectedId);
     assertThat(processInstanceEntity.getTenantId())
         .isEqualTo(processInstanceRecordValue.getTenantId());
     assertThat(processInstanceEntity.getJoin()).isNotNull();

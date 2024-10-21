@@ -17,20 +17,10 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
-import java.util.Arrays;
 import java.util.List;
 
 public class UserTaskProcessInstanceHandler
     implements ExportHandler<TaskProcessInstanceEntity, ProcessInstanceRecordValue> {
-
-  private static final List<BpmnElementType> VARIABLE_SCOPE_TYPES =
-      Arrays.asList(
-          BpmnElementType.PROCESS,
-          BpmnElementType.SUB_PROCESS,
-          BpmnElementType.EVENT_SUB_PROCESS,
-          BpmnElementType.SERVICE_TASK,
-          BpmnElementType.USER_TASK,
-          BpmnElementType.MULTI_INSTANCE_BODY);
 
   private final String indexName;
 
@@ -50,9 +40,9 @@ public class UserTaskProcessInstanceHandler
 
   @Override
   public boolean handlesRecord(final Record<ProcessInstanceRecordValue> record) {
-    return record.getIntent().equals(ELEMENT_ACTIVATING)
+    return record.getIntent().name().equals(ELEMENT_ACTIVATING.name())
         && record.getValue().getBpmnElementType() != null
-        && VARIABLE_SCOPE_TYPES.contains(record.getValue().getBpmnElementType());
+        && record.getValue().getBpmnElementType().name().equals(BpmnElementType.PROCESS.name());
   }
 
   @Override
@@ -68,10 +58,7 @@ public class UserTaskProcessInstanceHandler
   @Override
   public void updateEntity(
       final Record<ProcessInstanceRecordValue> record, final TaskProcessInstanceEntity entity) {
-    entity
-        .setKey(record.getKey())
-        .setPartitionId(record.getPartitionId())
-        .setTenantId(record.getValue().getTenantId());
+    entity.setPartitionId(record.getPartitionId()).setTenantId(record.getValue().getTenantId());
 
     final TaskJoinRelationship join = new TaskJoinRelationship();
     join.setName(TaskJoinRelationshipType.PROCESS.getType());
@@ -81,6 +68,6 @@ public class UserTaskProcessInstanceHandler
 
   @Override
   public void flush(final TaskProcessInstanceEntity entity, final BatchRequest batchRequest) {
-    batchRequest.addWithRouting(indexName, entity, entity.getId());
+    batchRequest.add(indexName, entity);
   }
 }

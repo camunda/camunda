@@ -196,7 +196,8 @@ public class UserTaskHandlerTest {
     assertThat(taskEntity.getJoin().getName()).isEqualTo(TaskJoinRelationshipType.TASK.getType());
     assertThat(taskEntity.getState()).isEqualTo(TaskState.CREATED);
     assertThat(taskEntity.getCreationTime())
-        .isEqualTo(ExporterUtil.toOffsetDateTime(Instant.ofEpochMilli(taskRecord.getTimestamp())));
+        .isEqualTo(
+            ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(taskRecord.getTimestamp())));
   }
 
   @Test
@@ -224,7 +225,8 @@ public class UserTaskHandlerTest {
     // then
     assertThat(taskEntity.getState()).isEqualTo(TaskState.CANCELED);
     assertThat(taskEntity.getCompletionTime())
-        .isEqualTo(ExporterUtil.toOffsetDateTime(Instant.ofEpochMilli(taskRecord.getTimestamp())));
+        .isEqualTo(
+            ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(taskRecord.getTimestamp())));
   }
 
   @Test
@@ -252,7 +254,8 @@ public class UserTaskHandlerTest {
     // then
     assertThat(taskEntity.getState()).isEqualTo(TaskState.COMPLETED);
     assertThat(taskEntity.getCompletionTime())
-        .isEqualTo(ExporterUtil.toOffsetDateTime(Instant.ofEpochMilli(taskRecord.getTimestamp())));
+        .isEqualTo(
+            ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(taskRecord.getTimestamp())));
   }
 
   @Test
