@@ -14,7 +14,7 @@ import io.camunda.service.FormServices;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.VariableServices;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskVariablesSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskVariableSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQueryResponse;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
@@ -131,7 +131,7 @@ public class UserTaskQueryController {
   public ResponseEntity<VariableSearchQueryResponse> searchVariables(
       @PathVariable("userTaskKey") final Long userTaskKey,
       @RequestBody(required = false)
-          final UserTaskVariablesSearchQueryRequest userTaskVariablesSearchQueryRequest) {
+          final UserTaskVariableSearchQueryRequest userTaskVariablesSearchQueryRequest) {
     // Retrieve user tak data
     final var userTask = userTaskServices.getByKey(userTaskKey);
 
