@@ -10,7 +10,6 @@ package io.camunda.it.exporter;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.it.utils.CamundaExporterITInvocationProvider;
-import io.camunda.webapps.schema.entities.tasklist.TaskState;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.search.filter.UserTaskFilter;
 import io.camunda.zeebe.client.api.search.response.UserTask;
@@ -31,8 +30,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(CamundaExporterITInvocationProvider.class)
 public class UserTaskExporterIT {
-
-  private static final int DEFAULT_VARIABLE_SIZE_THRESHOLD = 8191;
 
   @TestTemplate
   void shouldExportUserTask(final TestStandaloneBroker testBroker) {
@@ -294,7 +291,7 @@ public class UserTaskExporterIT {
       // when
       final var processInstanceId = startZeebeUserTaskProcess(client, t -> t.zeebeAssignee("demo"));
 
-      var userTasks = fetchUserTasks(client, Long.parseLong(processInstanceId));
+      final var userTasks = fetchUserTasks(client, Long.parseLong(processInstanceId));
 
       client.newUserTaskUnassignCommand(userTasks.getFirst().getUserTaskKey()).send().join();
 
@@ -304,13 +301,19 @@ public class UserTaskExporterIT {
           .timeout(Duration.ofSeconds(30))
           .until(
               () -> {
-                final var tasks = client.newUserTaskQuery().send().join().items();
+                final var tasks =
+                    client
+                        .newUserTaskQuery()
+                        .filter(f -> f.processInstanceKey(Long.valueOf(processInstanceId)))
+                        .send()
+                        .join()
+                        .items();
                 return tasks.getFirst().getAssignee() == null;
               });
 
-      userTasks = fetchUserTasks(client, Long.parseLong(processInstanceId));
-      assertThat(userTasks).hasSize(1);
-      assertThat(userTasks.getFirst().getAssignee()).isNull();
+      final var unassignedTasks = fetchUserTasks(client, Long.parseLong(processInstanceId));
+      assertThat(unassignedTasks).hasSize(1);
+      assertThat(unassignedTasks.getFirst().getAssignee()).isNull();
     }
   }
 
@@ -333,12 +336,12 @@ public class UserTaskExporterIT {
           client,
           f -> {
             f.processInstanceKey(Long.parseLong(processInstanceId));
-            f.state(TaskState.COMPLETED.name());
+            f.state("COMPLETED");
           });
 
       userTasks = fetchUserTasks(client, Long.parseLong(processInstanceId));
       assertThat(userTasks).hasSize(1);
-      assertThat(userTasks.getFirst().getState()).isEqualTo(TaskState.COMPLETED.name());
+      assertThat(userTasks.getFirst().getState()).isEqualTo("COMPLETED");
       assertThat(userTasks.getFirst().getCompletionDate()).isNotNull();
     }
   }
