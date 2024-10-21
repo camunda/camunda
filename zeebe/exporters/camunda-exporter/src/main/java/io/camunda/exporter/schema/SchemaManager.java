@@ -124,10 +124,12 @@ public class SchemaManager {
   private IndexSettings getIndexSettings(final String indexName) {
     final var templateReplicas =
         config
+            .getIndex()
             .getReplicasByIndexName()
             .getOrDefault(indexName, config.getIndex().getNumberOfReplicas());
     final var templateShards =
         config
+            .getIndex()
             .getShardsByIndexName()
             .getOrDefault(indexName, config.getIndex().getNumberOfShards());
 

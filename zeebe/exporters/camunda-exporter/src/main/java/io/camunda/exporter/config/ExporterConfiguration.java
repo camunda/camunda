@@ -17,8 +17,6 @@ public class ExporterConfiguration {
   private IndexSettings index = new IndexSettings();
   private BulkConfiguration bulk = new BulkConfiguration();
   private RetentionConfiguration retention = new RetentionConfiguration();
-  private Map<String, Integer> replicasByIndexName = new HashMap<>();
-  private Map<String, Integer> shardsByIndexName = new HashMap<>();
   private boolean createSchema = true;
 
   public ConnectConfiguration getConnect() {
@@ -53,22 +51,6 @@ public class ExporterConfiguration {
     this.retention = retention;
   }
 
-  public Map<String, Integer> getReplicasByIndexName() {
-    return replicasByIndexName;
-  }
-
-  public void setReplicasByIndexName(final Map<String, Integer> replicasByIndexName) {
-    this.replicasByIndexName = replicasByIndexName;
-  }
-
-  public Map<String, Integer> getShardsByIndexName() {
-    return shardsByIndexName;
-  }
-
-  public void setShardsByIndexName(final Map<String, Integer> shardsByIndexName) {
-    this.shardsByIndexName = shardsByIndexName;
-  }
-
   public boolean isCreateSchema() {
     return createSchema;
   }
@@ -88,10 +70,6 @@ public class ExporterConfiguration {
         + bulk
         + ", retention="
         + retention
-        + ", replicasByIndexName="
-        + replicasByIndexName
-        + ", shardsByIndexName="
-        + shardsByIndexName
         + ", createSchema="
         + createSchema
         + '}';
@@ -103,6 +81,10 @@ public class ExporterConfiguration {
 
     private Integer numberOfShards = 1;
     private Integer numberOfReplicas = 0;
+
+    private Map<String, Integer> replicasByIndexName = new HashMap<>();
+    private Map<String, Integer> shardsByIndexName = new HashMap<>();
+
     private Integer variableSizeThreshold = DEFAULT_VARIABLE_SIZE_THRESHOLD;
 
     public String getPrefix() {
@@ -147,7 +129,29 @@ public class ExporterConfiguration {
           + numberOfShards
           + ", numberOfReplicas="
           + numberOfReplicas
+          + ", replicasByIndexName="
+          + replicasByIndexName
+          + ", shardsByIndexName="
+          + shardsByIndexName
+          + ", variableSizeThreshold="
+          + variableSizeThreshold
           + '}';
+    }
+
+    public Map<String, Integer> getReplicasByIndexName() {
+      return replicasByIndexName;
+    }
+
+    public void setReplicasByIndexName(final Map<String, Integer> replicasByIndexName) {
+      this.replicasByIndexName = replicasByIndexName;
+    }
+
+    public Map<String, Integer> getShardsByIndexName() {
+      return shardsByIndexName;
+    }
+
+    public void setShardsByIndexName(final Map<String, Integer> shardsByIndexName) {
+      this.shardsByIndexName = shardsByIndexName;
     }
   }
 
