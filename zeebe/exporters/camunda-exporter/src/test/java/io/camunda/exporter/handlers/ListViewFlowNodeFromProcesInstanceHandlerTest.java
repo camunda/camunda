@@ -299,7 +299,7 @@ public class ListViewFlowNodeFromProcesInstanceHandlerTest {
   }
 
   @Test
-  void shouldUpdateEndTimeForTerminatedRecord() {
+  void shouldUpdateStateForTerminatedRecord() {
     // given
     final long timestamp = new Date().getTime();
     final ProcessInstanceRecordValue processInstanceRecordValue =
