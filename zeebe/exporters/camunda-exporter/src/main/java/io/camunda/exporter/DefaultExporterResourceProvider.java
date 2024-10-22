@@ -30,6 +30,7 @@ import io.camunda.exporter.handlers.ListViewVariableFromVariableHandler;
 import io.camunda.exporter.handlers.MetricFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
 import io.camunda.exporter.handlers.ProcessHandler;
+import io.camunda.exporter.handlers.RoleHandler;
 import io.camunda.exporter.handlers.SequenceFlowHandler;
 import io.camunda.exporter.handlers.UserHandler;
 import io.camunda.exporter.handlers.VariableHandler;
@@ -53,6 +54,7 @@ import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.RoleIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
 import java.util.Collection;
 import java.util.Map;
@@ -113,6 +115,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new FormIndex(globalPrefix, isElasticsearch),
             TasklistMetricIndex.class,
             new TasklistMetricIndex(globalPrefix, isElasticsearch),
+            RoleIndex.class,
+            new RoleIndex(globalPrefix, isElasticsearch),
             UserIndex.class,
             new UserIndex(globalPrefix, isElasticsearch),
             AuthorizationIndex.class,
@@ -120,6 +124,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
 
     exportHandlers =
         Set.of(
+            new RoleHandler(indexDescriptorsMap.get(RoleIndex.class).getFullQualifiedName()),
             new UserHandler(indexDescriptorsMap.get(UserIndex.class).getFullQualifiedName()),
             new AuthorizationHandler(
                 indexDescriptorsMap.get(AuthorizationIndex.class).getFullQualifiedName()),

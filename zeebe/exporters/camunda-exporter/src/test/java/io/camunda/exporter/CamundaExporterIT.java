@@ -35,6 +35,7 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity;
 import io.camunda.webapps.schema.entities.usermanagement.Permission;
+import io.camunda.webapps.schema.entities.usermanagement.RoleEntity;
 import io.camunda.webapps.schema.entities.usermanagement.UserEntity;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterException;
@@ -45,6 +46,7 @@ import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
+import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.io.IOException;
@@ -253,6 +255,33 @@ final class CamundaExporterIT {
                 retrievedIndexTemplate.at("/index_template/template/mappings"),
                 "/mappings-added-property.json"))
         .isTrue();
+  }
+
+  void shouldExportRoleRecord(
+      final Callable<RoleEntity> getResponse, final Record<RoleRecordValue> record)
+      throws Exception {
+    // given
+    CONFIG.setCreateSchema(true);
+    final var exporter = startExporter();
+
+    // when
+    exporter.export(record);
+
+    // then
+    final var responseRoleEntity = getResponse.call();
+
+    assertThat(responseRoleEntity)
+        .describedAs("User entity is updated correctly from the user record")
+        .extracting(
+            RoleEntity::getRoleKey,
+            RoleEntity::getName,
+            RoleEntity::getEntityKey,
+            RoleEntity::getId)
+        .containsExactly(
+            record.getValue().getRoleKey(),
+            record.getValue().getName(),
+            record.getValue().getEntityKey(),
+            String.valueOf(record.getKey()));
   }
 
   void shouldExportUserRecord(
