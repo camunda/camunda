@@ -94,7 +94,9 @@ jobs:
       #########################################################################
       # Build Operate frontend
       - name: Build frontend
-        uses: ./.github/actions/build-operate-fe
+        uses: ./.github/actions/build-frontend
+        with:
+          directory: ./operate/client
 
       #########################################################################
       # Build: maven artifacts and Docker images

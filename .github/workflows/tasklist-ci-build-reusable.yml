@@ -80,7 +80,9 @@ jobs:
       #########################################################################
       # Build frontend
       - name: Build frontend
-        uses: ./.github/actions/build-tasklist-fe
+        uses: ./.github/actions/build-frontend
+        with:
+          directory: ./tasklist/client
       #########################################################################
       # Build backend
       - name: Build backend
