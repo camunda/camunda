@@ -346,7 +346,7 @@ public class UserTaskHandlerTest {
                     .withTimestamp(System.currentTimeMillis()));
 
     // when
-    final TaskEntity taskEntity = new TaskEntity().setId("id");
+    final TaskEntity taskEntity = underTest.createNewEntity("id");
     underTest.updateEntity(taskRecord, taskEntity);
 
     final BatchRequest mockRequest = mock(BatchRequest.class);
@@ -385,7 +385,7 @@ public class UserTaskHandlerTest {
                     .withTimestamp(System.currentTimeMillis()));
 
     // when
-    final TaskEntity taskEntity = new TaskEntity().setId("id").setAssignee("test-assignee");
+    final TaskEntity taskEntity = underTest.createNewEntity("id").setAssignee("test-assignee");
     underTest.updateEntity(taskRecord, taskEntity);
 
     final BatchRequest mockRequest = mock(BatchRequest.class);
@@ -473,7 +473,7 @@ public class UserTaskHandlerTest {
                     .withTimestamp(System.currentTimeMillis()));
 
     // when
-    final TaskEntity taskEntity = new TaskEntity().setId("id");
+    final TaskEntity taskEntity = underTest.createNewEntity("id");
     underTest.updateEntity(taskRecord, taskEntity);
 
     final BatchRequest mockRequest = mock(BatchRequest.class);
@@ -498,6 +498,64 @@ public class UserTaskHandlerTest {
         .isEqualTo(taskRecordValue.getCandidateGroupsList());
     assertThat(Arrays.stream(taskEntity.getCandidateUsers()).toList())
         .isEqualTo(taskRecordValue.getCandidateUsersList());
+    verify(mockRequest, times(1))
+        .upsertWithRouting(
+            indexName,
+            taskEntity.getId(),
+            taskEntity,
+            expectedUpdates,
+            taskEntity.getProcessInstanceId());
+  }
+
+  @Test
+  void flushedEntityShouldContainSequentialUpdatesInTheSameBatch() {
+
+    final long processInstanceKey = 123;
+    final UserTaskRecordValue taskRecordValue =
+        ImmutableUserTaskRecordValue.builder()
+            .withChangedAttributes(List.of("priority"))
+            .withProcessInstanceKey(processInstanceKey)
+            .withPriority(99)
+            .build();
+
+    final Record<UserTaskRecordValue> taskRecord =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r ->
+                r.withIntent(UserTaskIntent.UPDATED)
+                    .withValue(taskRecordValue)
+                    .withTimestamp(System.currentTimeMillis()));
+
+    final UserTaskRecordValue assignTaskRecordValue =
+        ImmutableUserTaskRecordValue.builder()
+            .withAssignee("test-assignee")
+            .withProcessInstanceKey(processInstanceKey)
+            .build();
+
+    final Record<UserTaskRecordValue> assignTaskRecord =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r ->
+                r.withIntent(UserTaskIntent.ASSIGNED)
+                    .withValue(assignTaskRecordValue)
+                    .withTimestamp(System.currentTimeMillis()));
+
+    // when
+    final TaskEntity taskEntity = underTest.createNewEntity("id");
+    underTest.updateEntity(taskRecord, taskEntity);
+    underTest.updateEntity(assignTaskRecord, taskEntity);
+
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    underTest.flush(taskEntity, mockRequest);
+    final Map<String, Object> expectedUpdates = new HashMap<>();
+    expectedUpdates.put(TaskTemplate.PRIORITY, taskEntity.getPriority());
+    expectedUpdates.put(TaskTemplate.ASSIGNEE, taskEntity.getAssignee());
+    expectedUpdates.put(TaskTemplate.CHANGED_ATTRIBUTES, List.of("priority", "assignee"));
+
+    // then
+    assertThat(taskEntity.getPriority()).isEqualTo(taskRecordValue.getPriority());
+    assertThat(taskEntity.getAssignee()).isEqualTo(assignTaskRecordValue.getAssignee());
     verify(mockRequest, times(1))
         .upsertWithRouting(
             indexName,

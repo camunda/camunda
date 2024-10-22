@@ -67,19 +67,18 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
 
   @Override
   public TaskEntity createNewEntity(final String id) {
-    return new TaskEntity().setId(id);
+    return new TaskEntity().setId(id).setChangedAttributes(new ArrayList<>());
   }
 
   // TODO Check what happens with update/create on ES/OS with nulls
   @Override
   public void updateEntity(final Record<UserTaskRecordValue> record, final TaskEntity entity) {
     entity.setProcessInstanceId(String.valueOf(record.getValue().getProcessInstanceKey()));
-    entity.setChangedAttributes(new ArrayList<>());
     entity.setAction(record.getValue().getAction());
     switch (record.getIntent()) {
       case UserTaskIntent.CREATED -> createTaskEntity(entity, record);
       case UserTaskIntent.ASSIGNED -> {
-        entity.setChangedAttributes(List.of("assignee"));
+        entity.getChangedAttributes().add("assignee");
         if (ExporterUtil.isEmpty(record.getValue().getAssignee())) {
           entity.setAssignee(null);
         } else {
@@ -124,8 +123,6 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
               .setState(TaskState.CREATED);
       default -> {}
     }
-
-    mapStateRelatedProperties(record, entity);
 
     final TaskJoinRelationship joinRelation = new TaskJoinRelationship();
     joinRelation.setName(TaskJoinRelationshipType.TASK.getType());
@@ -188,27 +185,6 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
     }
 
     return updateFields;
-  }
-
-  private void mapStateRelatedProperties(
-      final Record<UserTaskRecordValue> record, final TaskEntity entity) {
-    switch (record.getIntent()) {
-      case UserTaskIntent.CANCELED, UserTaskIntent.COMPLETED ->
-          entity
-              .setState(
-                  record.getIntent().equals(UserTaskIntent.CANCELED)
-                      ? TaskState.CANCELED
-                      : TaskState.COMPLETED)
-              .setCompletionTime(
-                  ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
-      case UserTaskIntent.CREATED ->
-          entity
-              .setState(TaskState.CREATED)
-              .setCreationTime(
-                  ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
-      case UserTaskIntent.MIGRATED -> entity.setState(TaskState.CREATED);
-      default -> {}
-    }
   }
 
   private void createTaskEntity(final TaskEntity entity, final Record<UserTaskRecordValue> record) {
