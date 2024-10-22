@@ -11,8 +11,9 @@ import {formatters} from 'services';
 
 export interface Identity {
   id: string | null;
-  name: string;
+  name: string | null;
   email?: string;
+  type?: string;
 }
 
 export interface User {

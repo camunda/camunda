@@ -10,11 +10,24 @@ import {useState} from 'react';
 import {ActionableNotification, Button, Stack, Toggle, Tooltip} from '@carbon/react';
 import {Information} from '@carbon/icons-react';
 
-import {Modal, UserTypeahead} from 'components';
+import {Identity, Modal, User, UserTypeahead} from 'components';
 import {t} from 'translation';
 import {useDocs, useUiConfig} from 'hooks';
 
 import './ConfigureProcessModal.scss';
+
+interface ConfigureProcessModalProps {
+  initialConfig: {
+    owner: Identity;
+    digest: {enabled: boolean};
+  };
+  onClose: () => void;
+  onConfirm: (
+    config: {ownerId: string | null; processDigest: {enabled: boolean}},
+    emailEnabled: boolean,
+    ownerName?: string | null
+  ) => void;
+}
 
 export default function ConfigureProcessModal({
   initialConfig: {
@@ -23,8 +36,8 @@ export default function ConfigureProcessModal({
   },
   onClose,
   onConfirm,
-}) {
-  const [selectedUser, setSelectedUser] = useState(
+}: ConfigureProcessModalProps) {
+  const [selectedUser, setSelectedUser] = useState<User | null>(
     owner?.id ? {id: 'USER:' + owner.id, identity: {...owner, type: 'user'}} : null
   );
   const [digestEnabled, setDigestEnabled] = useState(enabled);
@@ -64,7 +77,7 @@ export default function ConfigureProcessModal({
             users={selectedUser ? [selectedUser] : []}
             onChange={(users) => {
               const newSelection = users[users.length - 1];
-              setSelectedUser(newSelection);
+              setSelectedUser(newSelection || null);
               if (!newSelection) {
                 setDigestEnabled(false);
               }
@@ -77,7 +90,7 @@ export default function ConfigureProcessModal({
             <Toggle
               id="digestSwitch"
               disabled={!selectedUser}
-              labelText={t('processes.emailDigest')}
+              labelText={t('processes.emailDigest').toString()}
               size="sm"
               hideLabel
               toggled={digestEnabled}
