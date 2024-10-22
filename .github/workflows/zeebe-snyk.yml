@@ -92,18 +92,36 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
-      - name: Setup Zeebe
-        uses: ./.github/actions/setup-zeebe
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.0.0
         with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
+            secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
+            secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW_READ_ONLY;
+            secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR;
+      - uses: ./.github/actions/setup-build
+        with:
+          camunda-nexus-username: ${{ steps.secrets.outputs.ARTIFACTS_USR }}
+          camunda-nexus-password: ${{ steps.secrets.outputs.ARTIFACTS_PSW }}
           maven-cache-key-modifier: snyk
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       # We need to build the Docker image (and thus the distribution) to scan it
       - name: Build Zeebe Distribution
         uses: ./.github/actions/build-zeebe
         id: build-zeebe
         if: inputs.build
+      # Logging to DockerHub to to avoid being rate-limited when using an anonymous account from GitHub-managed runners.
+      # jib-maven-plugin uses eclipse-temurin:xx image from DockerHub as base.
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
+          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW_READ_ONLY }}
       - name: Build Docker Image
         uses: ./.github/actions/build-platform-docker
         id: build-zeebe-docker

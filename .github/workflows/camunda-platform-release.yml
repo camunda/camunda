@@ -91,30 +91,15 @@ jobs:
           && sudo apt update \
           && sudo apt install gh -y
       - name: Setup Build Tooling
-        uses: ./.github/actions/setup-zeebe
+        uses: ./.github/actions/setup-build
         with:
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      - uses: s4u/maven-settings-action@v3.0.0
-        with:
-          servers: |
+          camunda-nexus-username: ${{ steps.secrets.outputs.ARTIFACTS_USR }}
+          camunda-nexus-password: ${{ steps.secrets.outputs.ARTIFACTS_PSW }}
+          maven-servers: |
             [{
-                "id": "camunda-nexus",
-                "username": "${{ steps.secrets.outputs.ARTIFACTS_USR }}",
-                "password": "${{ steps.secrets.outputs.ARTIFACTS_PSW }}"
-            },
-            {
                 "id": "central",
                 "username": "${{ steps.secrets.outputs.MAVEN_CENTRAL_DEPLOYMENT_USR }}",
                 "password": "${{ steps.secrets.outputs.MAVEN_CENTRAL_DEPLOYMENT_PSW }}"
-            }]
-          mirrors: |
-            [{
-                "id": "camunda-nexus",
-                "name": "Camunda Nexus",
-                "mirrorOf": "camunda-nexus",
-                "url": "https://repository.nexus.camunda.cloud/content/groups/internal/"
             }]
       - name: Maven Prepare Release
         id: maven-prepare-release
