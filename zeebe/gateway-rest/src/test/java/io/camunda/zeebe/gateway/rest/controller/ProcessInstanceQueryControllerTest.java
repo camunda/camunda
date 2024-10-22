@@ -22,7 +22,6 @@ import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.ProcessInstanceServices;
-import io.camunda.zeebe.gateway.rest.RestConfiguration;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import java.util.stream.Stream;
@@ -33,10 +32,8 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 
-@Import(RestConfiguration.class)
 @WebMvcTest(
     value = ProcessInstanceQueryController.class,
     properties = "camunda.rest.query.enabled=true")

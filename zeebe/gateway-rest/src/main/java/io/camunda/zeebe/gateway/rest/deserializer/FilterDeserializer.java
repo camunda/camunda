@@ -20,7 +20,7 @@ public abstract class FilterDeserializer<T> extends JsonDeserializer<T> {
     this.objectMapper = objectMapper;
   }
 
-  protected T deserialize(final TreeNode node, final Class<T> clazz) {
+  protected <S extends T> S deserialize(final TreeNode node, final Class<S> clazz) {
     try {
       return objectMapper.readValue(node.traverse(objectMapper), clazz);
     } catch (final IOException e) {

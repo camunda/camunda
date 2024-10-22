@@ -11,12 +11,18 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.IntNode;
+import io.camunda.zeebe.gateway.protocol.rest.AdvancedIntegerFilter;
 import io.camunda.zeebe.gateway.protocol.rest.IntegerFilter;
+import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import java.io.IOException;
+import org.springframework.boot.jackson.JsonComponent;
+import org.springframework.context.annotation.Lazy;
 
+@ConditionalOnRestGatewayEnabled
+@JsonComponent
 public class IntegerFilterDeserializer extends FilterDeserializer<IntegerFilter> {
 
-  public IntegerFilterDeserializer(final ObjectMapper objectMapper) {
+  public IntegerFilterDeserializer(@Lazy final ObjectMapper objectMapper) {
     super(objectMapper);
   }
 
@@ -27,12 +33,12 @@ public class IntegerFilterDeserializer extends FilterDeserializer<IntegerFilter>
     final var treeNode = parser.getCodec().readTree(parser);
 
     if (treeNode instanceof IntNode) {
-      final var filter = new IntegerFilter();
+      final var filter = new AdvancedIntegerFilter();
       filter.set$Eq(((IntNode) treeNode).intValue());
       return filter;
     }
 
     // this part can be deserialized automatically
-    return deserialize(treeNode, IntegerFilter.class);
+    return deserialize(treeNode, AdvancedIntegerFilter.class);
   }
 }

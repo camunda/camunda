@@ -11,12 +11,18 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NumericNode;
+import io.camunda.zeebe.gateway.protocol.rest.AdvancedLongFilter;
 import io.camunda.zeebe.gateway.protocol.rest.LongFilter;
+import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import java.io.IOException;
+import org.springframework.boot.jackson.JsonComponent;
+import org.springframework.context.annotation.Lazy;
 
+@ConditionalOnRestGatewayEnabled
+@JsonComponent
 public class LongFilterDeserializer extends FilterDeserializer<LongFilter> {
 
-  public LongFilterDeserializer(final ObjectMapper objectMapper) {
+  public LongFilterDeserializer(@Lazy final ObjectMapper objectMapper) {
     super(objectMapper);
   }
 
@@ -25,7 +31,7 @@ public class LongFilterDeserializer extends FilterDeserializer<LongFilter> {
       throws IOException {
 
     final var treeNode = parser.getCodec().readTree(parser);
-    final var filter = new LongFilter();
+    final var filter = new AdvancedLongFilter();
 
     if (treeNode instanceof NumericNode) {
       filter.set$Eq(((NumericNode) treeNode).longValue());
@@ -33,6 +39,6 @@ public class LongFilterDeserializer extends FilterDeserializer<LongFilter> {
     }
 
     // this part can be deserialized automatically
-    return deserialize(treeNode, LongFilter.class);
+    return deserialize(treeNode, AdvancedLongFilter.class);
   }
 }

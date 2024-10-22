@@ -345,7 +345,8 @@ public final class SearchQueryRequestMapper {
   }
 
   // TODO add common interface? (x-implements)
-  private static List<Operation<Integer>> mapIntegerFilterToOperation(final IntegerFilter filter) {
+  private static List<Operation<Integer>> mapIntegerFilterToOperation(
+      final AdvancedIntegerFilter filter) {
     final var operations = new ArrayList<Operation<Integer>>();
     if (filter.get$Eq() != null) {
       operations.add(Operation.eq(filter.get$Eq()));
@@ -368,7 +369,7 @@ public final class SearchQueryRequestMapper {
     return operations;
   }
 
-  private static List<Operation<Long>> mapLongFilterToOperation(final LongFilter filter) {
+  private static List<Operation<Long>> mapLongFilterToOperation(final AdvancedLongFilter filter) {
     final var operations = new ArrayList<Operation<Long>>();
     if (filter.get$Eq() != null) {
       operations.add(Operation.eq(filter.get$Eq()));
@@ -391,7 +392,8 @@ public final class SearchQueryRequestMapper {
     return operations;
   }
 
-  private static List<Operation<String>> mapStringFilterToOperation(final StringFilter filter) {
+  private static List<Operation<String>> mapStringFilterToOperation(
+      final AdvancedStringFilter filter) {
     final var operations = new ArrayList<Operation<String>>();
     if (filter.get$Eq() != null) {
       operations.add(Operation.eq(filter.get$Eq()));
@@ -405,24 +407,37 @@ public final class SearchQueryRequestMapper {
     return operations;
   }
 
+  private static <T> T mapToImplementation(final Object filter, final Class<T> implementation) {
+    if (filter.getClass().isAssignableFrom(implementation)) {
+      //noinspection unchecked
+      return (T) filter;
+    } else {
+      throw new IllegalArgumentException("Unexpected filter type: " + filter.getClass());
+    }
+  }
+
   private static ProcessInstanceFilter toProcessInstanceFilter(
       final ProcessInstanceFilterRequest filter) {
     final var builder = FilterBuilders.processInstance();
 
     if (filter != null) {
       ofNullable(filter.getProcessInstanceKey())
+          .map(f -> mapToImplementation(f, AdvancedLongFilter.class))
           .map(SearchQueryRequestMapper::mapLongFilterToOperation)
           .ifPresent(builder::processInstanceKeys);
       ofNullable(filter.getProcessDefinitionId())
+          .map(f -> mapToImplementation(f, AdvancedStringFilter.class))
           .map(SearchQueryRequestMapper::mapStringFilterToOperation)
           .ifPresent(builder::processDefinitionIds);
       ofNullable(filter.getProcessDefinitionName()).ifPresent(builder::processDefinitionNames);
       ofNullable(filter.getProcessDefinitionVersion())
+          .map(f -> mapToImplementation(f, AdvancedIntegerFilter.class))
           .map(SearchQueryRequestMapper::mapIntegerFilterToOperation)
           .ifPresent(builder::processDefinitionVersions);
       ofNullable(filter.getProcessDefinitionVersionTag())
           .ifPresent(builder::processDefinitionVersionTags);
       ofNullable(filter.getProcessDefinitionKey())
+          .map(f -> mapToImplementation(f, AdvancedLongFilter.class))
           .map(SearchQueryRequestMapper::mapLongFilterToOperation)
           .ifPresent(builder::processDefinitionKeys);
       ofNullable(filter.getParentProcessInstanceKey())

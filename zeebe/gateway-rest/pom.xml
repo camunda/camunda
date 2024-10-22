@@ -411,8 +411,7 @@
                 <library>spring-boot</library>
                 <jdk8>true</jdk8>
                 <openApiNullable>false</openApiNullable>
-                <!-- Don't use interface instead generate a class with all properties -->
-                <useOneOfInterfaces>false</useOneOfInterfaces>
+                <useOneOfInterfaces>true</useOneOfInterfaces>
               </configOptions>
             </configuration>
           </execution>

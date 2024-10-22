@@ -11,12 +11,18 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.TextNode;
+import io.camunda.zeebe.gateway.protocol.rest.AdvancedStringFilter;
 import io.camunda.zeebe.gateway.protocol.rest.StringFilter;
+import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import java.io.IOException;
+import org.springframework.boot.jackson.JsonComponent;
+import org.springframework.context.annotation.Lazy;
 
+@ConditionalOnRestGatewayEnabled
+@JsonComponent
 public class StringFilterDeserializer extends FilterDeserializer<StringFilter> {
 
-  public StringFilterDeserializer(final ObjectMapper objectMapper) {
+  public StringFilterDeserializer(@Lazy final ObjectMapper objectMapper) {
     super(objectMapper);
   }
 
@@ -25,7 +31,7 @@ public class StringFilterDeserializer extends FilterDeserializer<StringFilter> {
       throws IOException {
 
     final var treeNode = parser.getCodec().readTree(parser);
-    final var filter = new StringFilter();
+    final var filter = new AdvancedStringFilter();
 
     if (treeNode instanceof TextNode) {
       filter.set$Eq(((TextNode) treeNode).textValue());
@@ -33,6 +39,6 @@ public class StringFilterDeserializer extends FilterDeserializer<StringFilter> {
     }
 
     // this part can be deserialized automatically
-    return deserialize(treeNode, StringFilter.class);
+    return deserialize(treeNode, AdvancedStringFilter.class);
   }
 }
