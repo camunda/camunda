@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.camunda.db.rdbms.sql.UserTaskMapper">
+
+  <insert
+    flushCache="true"
+    id="insert"
+    parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel"
+    statementType="PREPARED">
+    INSERT INTO USER_TASK (USER_TASK_KEY, FLOW_NODE_BPM_ID, PROCESS_DEFINITION_ID, CREATION_TIME,
+                           COMPLETION_TIME, ASSIGNEE, STATE,
+                           FORM_KEY,
+                           PROCESS_DEFINITION_KEY, PROCESS_INSTANCE_KEY,
+                           ELEMENT_INSTANCE_KEY, TENANT_ID, DUE_DATE, FOLLOW_UP_DATE,
+                           EXTERNAL_FORM_REFERENCE, PROCESS_DEFINITION_VERSION, CUSTOM_HEADERS,
+                           PRIORITY)
+    VALUES (#{key}, #{flowNodeBpmnId}, #{processDefinitionId}, #{creationTime}, #{completionTime},
+            #{assignee}, #{state}, #{formKey},
+            #{processDefinitionKey}, #{processInstanceKey}, #{elementInstanceKey}, #{tenantId},
+            #{dueDate}, #{followUpDate},
+            #{externalFormReference}, #{processDefinitionVersion}, #{serializedCustomHeaders},
+            #{priority})
+  </insert>
+
+  <insert flushCache="true"
+    id="insertCandidateUsers"
+    parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel"
+    statementType="PREPARED">
+    INSERT INTO CANDIDATE_USER (USER_TASK_KEY, CANDIDATE_USER)
+    VALUES
+    <foreach collection="candidateUsers" item="candidateUser" separator=", ">
+      (#{key}, #{candidateUser})
+    </foreach>
+  </insert>
+
+  <insert flushCache="true"
+    id="insertCandidateGroups"
+    parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel"
+    statementType="PREPARED">
+    INSERT INTO CANDIDATE_GROUP (USER_TASK_KEY, CANDIDATE_GROUP)
+    VALUES
+    <foreach collection="candidateGroups" item="candidateGroup" separator=", ">
+      (#{key}, #{candidateGroup})
+    </foreach>
+  </insert>
+
+  <resultMap id="searchResultMap" type="io.camunda.db.rdbms.write.domain.UserTaskDbModel">
+    <constructor>
+      <idArg column="USER_TASK_KEY" javaType="java.lang.Long"/>
+      <arg column="FLOW_NODE_BPM_ID" javaType="java.lang.String"/>
+      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
+      <arg column="CREATION_TIME" javaType="java.time.OffsetDateTime"/>
+      <arg column="COMPLETION_TIME" javaType="java.time.OffsetDateTime"/>
+      <arg column="ASSIGNEE" javaType="java.lang.String"/>
+      <arg column="STATE"
+        javaType="io.camunda.db.rdbms.write.domain.UserTaskDbModel$UserTaskState"/>
+      <arg column="FORM_KEY" javaType="java.lang.Long"/>
+      <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
+      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg column="ELEMENT_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg column="TENANT_ID" javaType="java.lang.String"/>
+      <arg column="DUE_DATE" javaType="java.time.OffsetDateTime"/>
+      <arg column="FOLLOW_UP_DATE" javaType="java.time.OffsetDateTime"/>
+      <arg column="EXTERNAL_FORM_REFERENCE" javaType="java.lang.String"/>
+      <arg column="PROCESS_DEFINITION_VERSION" javaType="java.lang.Integer"/>
+      <arg column="CUSTOM_HEADERS" javaType="java.lang.String"/>
+      <arg column="PRIORITY" javaType="java.lang.Integer"/>
+    </constructor>
+    <collection property="candidateGroups" ofType="java.lang.String" javaType="java.util.List">
+      <id column="CANDIDATE_GROUP"/>
+    </collection>
+    <collection property="candidateUsers" ofType="java.lang.String" javaType="java.util.List">
+      <id column="CANDIDATE_USER"/>
+    </collection>
+  </resultMap>
+
+  <!-- default search statement for databases supporting LIMIT/OFFSET-->
+  <select id="search"
+    parameterType="io.camunda.db.rdbms.read.domain.UserTaskDbQuery"
+    resultMap="io.camunda.db.rdbms.sql.UserTaskMapper.searchResultMap"
+    statementType="PREPARED">
+    SELECT
+    ut.*,
+    cg.CANDIDATE_GROUP,
+    cu.CANDIDATE_USER
+    FROM
+    (SELECT
+    ut.USER_TASK_KEY,
+    ut.FLOW_NODE_BPM_ID,
+    ut.PROCESS_DEFINITION_ID,
+    ut.CREATION_TIME,
+    ut.COMPLETION_TIME,
+    ut.ASSIGNEE,
+    ut.STATE,
+    ut.FORM_KEY,
+    ut.PROCESS_DEFINITION_KEY,
+    ut.PROCESS_INSTANCE_KEY,
+    ut.ELEMENT_INSTANCE_KEY,
+    ut.TENANT_ID,
+    ut.DUE_DATE,
+    ut.FOLLOW_UP_DATE,
+    ut.EXTERNAL_FORM_REFERENCE,
+    ut.PROCESS_DEFINITION_VERSION,
+    ut.CUSTOM_HEADERS,
+    ut.PRIORITY
+    FROM USER_TASK ut
+    <include refid="io.camunda.db.rdbms.sql.UserTaskMapper.searchFilter"/>
+    ${paging.after}
+    ) as ut
+    LEFT JOIN CANDIDATE_USER cu ON (cu.USER_TASK_KEY = ut.USER_TASK_KEY)
+    LEFT JOIN CANDIDATE_GROUP cg ON (cg.USER_TASK_KEY = ut.USER_TASK_KEY)
+    <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
+      <foreach collection="sort.orderings" item="item" open="ORDER BY " separator=", ">
+        <include refid="io.camunda.db.rdbms.sql.UserTaskMapper.userTaskSortMapper"/>
+        ${item.order}
+      </foreach>
+    </if>
+  </select>
+
+  <select id="count"
+    resultType="java.lang.Long"
+    statementType="PREPARED">
+    SELECT COUNT(*)
+    FROM USER_TASK ut
+    <include refid="io.camunda.db.rdbms.sql.UserTaskMapper.searchFilter"/>
+  </select>
+
+  <sql id="userTaskSortMapper">
+    <choose>
+      <when test='item.field == "creationTime"'>
+        ut.CREATION_TIME
+      </when>
+      <when test='item.field == "completionTime"'>
+        ut.COMPLETION_TIME
+      </when>
+      <when test='item.field == "priority"'>
+        ut.PRIORITY
+      </when>
+      <when test='item.field == "dueDate"'>
+        ut.DUE_DATE
+      </when>
+      <when test='item.field == "followUpDate"'>
+        ut.FOLLOW_UP_DATE
+      </when>
+    </choose>
+  </sql>
+
+  <sql id="searchFilter">
+    WHERE 1 = 1
+    <!-- basic filters -->
+    <if test="filter.userTaskKeys != null and !filter.userTaskKeys.isEmpty()">
+      AND ut.USER_TASK_KEY IN
+      <foreach close=")" collection="filter.userTaskKeys" item="value" open="("
+        separator=", ">#{value}
+      </foreach>
+    </if>
+    <if test="filter.elementIds != null and !filter.elementIds.isEmpty()">
+      AND ut.FLOW_NODE_BPM_ID IN
+      <foreach close=")" collection="filter.elementIds" item="value" open="("
+        separator=", ">#{value}
+      </foreach>
+    </if>
+    <if test="filter.bpmnProcessIds != null and !filter.bpmnProcessIds.isEmpty()">
+      AND ut.PROCESS_DEFINITION_ID IN
+      <foreach close=")" collection="filter.bpmnProcessIds" item="value" open="("
+        separator=", ">#{value}
+      </foreach>
+    </if>
+    <if test="filter.assignees != null and !filter.assignees.isEmpty()">
+      AND ut.ASSIGNEE IN
+      <foreach close=")" collection="filter.assignees" item="value" open="("
+        separator=", ">#{value}
+      </foreach>
+    </if>
+    <if test="filter.states != null and !filter.states.isEmpty()">
+      AND ut.STATE IN
+      <foreach close=")" collection="filter.states" item="value" open="("
+        separator=", ">#{value}
+      </foreach>
+    </if>
+    <if test="filter.processInstanceKeys != null and !filter.processInstanceKeys.isEmpty()">
+      AND ut.PROCESS_INSTANCE_KEY IN
+      <foreach close=")" collection="filter.processInstanceKeys" item="value" open="("
+        separator=", ">#{value}
+      </foreach>
+    </if>
+    <if test="filter.processDefinitionKeys != null and !filter.processDefinitionKeys.isEmpty()">
+      AND ut.PROCESS_DEFINITION_KEY IN
+      <foreach close=")" collection="filter.processDefinitionKeys" item="value" open="("
+        separator=", ">#{value}
+      </foreach>
+    </if>
+    <if test="filter.tenantIds != null and !filter.tenantIds.isEmpty()">
+      AND ut.TENANT_ID IN
+      <foreach close=")" collection="filter.tenantIds" item="value" open="(" separator=", ">
+        #{value}
+      </foreach>
+    </if>
+
+    <!-- logig for candidate groups and users -->
+    <if test="filter.candidateGroups != null and !filter.candidateGroups.isEmpty()">
+      AND (Select count(*) from CANDIDATE_GROUP cg where cg.USER_TASK_KEY = ut.USER_TASK_KEY and
+      CANDIDATE_GROUP IN
+      <foreach close=")" collection="filter.candidateGroups" item="value" open="("
+        separator=", ">#{value}
+      </foreach>
+      ) > 0
+    </if>
+    <if test="filter.candidateUsers != null and !filter.candidateUsers.isEmpty()">
+      AND (Select count(*) from CANDIDATE_USER cu where cu.USER_TASK_KEY = ut.USER_TASK_KEY and
+      CANDIDATE_USER IN
+      <foreach close=")" collection="filter.candidateUsers" item="value" open="("
+        separator=", ">#{value}
+      </foreach>
+      ) > 0
+    </if>
+
+    <!-- TODO "variables" -->
+
+    <!-- TODO "type" ... never used? -->
+  </sql>
+
+  <update
+    flushCache="true"
+    id="update"
+    parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel"
+    statementType="PREPARED">
+    UPDATE USER_TASK
+    SET
+    COMPLETION_TIME = #{completionTime},
+    DUE_DATE = #{dueDate},
+    <if test="state != null">
+      STATE = #{state},
+    </if>
+    FOLLOW_UP_DATE = #{followUpDate},
+    CUSTOM_HEADERS = #{serializedCustomHeaders},
+    PRIORITY = #{priority}
+    WHERE USER_TASK_KEY = #{key}
+  </update>
+
+  <delete
+    flushCache="true"
+    id="deleteCandidateUsers"
+    parameterType="java.lang.Long"
+    statementType="PREPARED">
+    DELETE
+    FROM CANDIDATE_USER
+    WHERE USER_TASK_KEY = #{key};
+  </delete>
+
+  <delete
+    flushCache="true"
+    id="deleteCandidateGroups"
+    parameterType="java.lang.Long"
+    statementType="PREPARED">
+    DELETE
+    FROM CANDIDATE_GROUP
+    WHERE USER_TASK_KEY = #{key};
+  </delete>
+
+</mapper>
