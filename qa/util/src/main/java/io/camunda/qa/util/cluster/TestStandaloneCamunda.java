@@ -303,8 +303,6 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
               Map.of(
                   "connect",
                   Map.of("url", "http://" + esContainer.getHttpHostAddress()),
-                  "index",
-                  Map.of("prefix", "global"),
                   "bulk",
                   Map.of("size", 1)));
         });
