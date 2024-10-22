@@ -345,4 +345,65 @@ public class UserTaskExporterIT {
       assertThat(userTasks.getFirst().getCompletionDate()).isNotNull();
     }
   }
+
+  @Nested
+  class UserTaskWithFormsIT {
+    @TestTemplate
+    void shouldExportUserTaskWithExternalFormReference(final TestStandaloneBroker testBroker) {
+      // given
+      final var client = testBroker.newClientBuilder().build();
+
+      // when
+      ExporterTestUtil.createAndDeployUserTaskProcess(
+          client,
+          "test-process-id",
+          "zeebe-task",
+          t -> t.zeebeUserTask().zeebeExternalFormReference("test-form-reference"));
+
+      final var processInstanceId =
+          ExporterTestUtil.startProcessInstance(client, "test-process-id");
+
+      ExporterTestUtil.waitForProcessTasks(client, processInstanceId);
+
+      final var userTasks = fetchUserTasks(client, Long.parseLong(processInstanceId));
+
+      // then
+      assertThat(userTasks).hasSize(1);
+      assertThat(userTasks.getFirst().getExternalFormReference()).isEqualTo("test-form-reference");
+    }
+
+    @TestTemplate
+    void shouldExportUserTaskWithFormKeyReference(final TestStandaloneBroker testBroker) {
+      // given
+      final var client = testBroker.newClientBuilder().build();
+
+      final var form =
+          client
+              .newDeployResourceCommand()
+              .addResourceFromClasspath("form/form.form")
+              .send()
+              .join()
+              .getForm()
+              .getFirst();
+
+      // when
+      ExporterTestUtil.createAndDeployUserTaskProcess(
+          client,
+          "test-process-id",
+          "zeebe-task",
+          t -> t.zeebeUserTask().zeebeFormId(form.getFormId()));
+
+      final var processInstanceId =
+          ExporterTestUtil.startProcessInstance(client, "test-process-id");
+
+      ExporterTestUtil.waitForProcessTasks(client, processInstanceId);
+
+      final var userTasks = fetchUserTasks(client, Long.parseLong(processInstanceId));
+
+      // then
+      assertThat(userTasks).hasSize(1);
+      assertThat(userTasks.getFirst().getExternalFormReference()).isNull();
+      assertThat(userTasks.getFirst().getFormKey()).isEqualTo(form.getFormKey());
+    }
+  }
 }
