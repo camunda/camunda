@@ -27,7 +27,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -39,11 +38,10 @@ public class AddPermissionAuthorizationMultiPartitionTest {
   @Rule public final EngineRule engine = EngineRule.multiplePartition(PARTITION_COUNT);
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
-  private long ownerKey;
-
-  @Before
-  public void setUp() {
-    ownerKey =
+  @Test
+  public void shouldTestLifecycle() {
+    // when
+    final var ownerKey =
         engine
             .user()
             .newUser("foo")
@@ -52,11 +50,7 @@ public class AddPermissionAuthorizationMultiPartitionTest {
             .withPassword("zabraboof")
             .create()
             .getKey();
-  }
 
-  @Test
-  public void shouldTestLifecycle() {
-    // when
     engine
         .authorization()
         .permission()
@@ -110,6 +104,15 @@ public class AddPermissionAuthorizationMultiPartitionTest {
   @Test
   public void shouldDistributeInIdentityQueue() {
     // when
+    final var ownerKey =
+        engine
+            .user()
+            .newUser("foo")
+            .withEmail("foo@bar")
+            .withName("Foo Bar")
+            .withPassword("zabraboof")
+            .create()
+            .getKey();
     engine
         .authorization()
         .permission()
@@ -131,6 +134,15 @@ public class AddPermissionAuthorizationMultiPartitionTest {
   @Test
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // given the user creation distribution is intercepted
+    final var ownerKey =
+        engine
+            .user()
+            .newUser("foo")
+            .withEmail("foo@bar")
+            .withName("Foo Bar")
+            .withPassword("zabraboof")
+            .create()
+            .getKey();
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
       interceptUserCreateForPartition(partitionId);
     }
