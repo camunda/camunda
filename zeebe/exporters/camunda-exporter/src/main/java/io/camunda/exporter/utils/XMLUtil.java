@@ -66,6 +66,8 @@ public class XMLUtil {
       }
       final ProcessEntity processEntity = processEntityOpt.get();
       processEntity.setVersionTag(handler.versionTag);
+      processEntity.setIsPublic(handler.isPublic);
+      processEntity.setFormId(handler.formId);
       final Set<String> processChildrenIds = handler.getProcessChildrenIds(bpmnProcessId);
       is = new ByteArrayInputStream(byteArray);
       final BpmnModelInstance modelInstance = Bpmn.readModelFromStream(is);
@@ -96,6 +98,8 @@ public class XMLUtil {
     private String currentProcessId = null;
     private boolean isStartEvent = false;
     private String versionTag = null;
+    private boolean isPublic = false;
+    private String formId = null;
 
     @Override
     public void startElement(
@@ -110,26 +114,24 @@ public class XMLUtil {
             new ProcessEntity().setBpmnProcessId(elementId).setName(attributes.getValue("name")));
         processChildrenIds.put(elementId, new LinkedHashSet<>());
         currentProcessId = elementId;
-      } else if (currentProcessId != null && elementId != null) {
-        processChildrenIds.get(currentProcessId).add(elementId);
       } else if (startEventElement.equalsIgnoreCase(localName)) {
         isStartEvent = true;
+      } else if (currentProcessId != null && elementId != null) {
+        processChildrenIds.get(currentProcessId).add(elementId);
       } else if ("versionTag".equalsIgnoreCase(localName)) {
         versionTag = attributes.getValue("value");
       } else if (isStartEvent) {
         if (formDefinitionProperty.equalsIgnoreCase(localName)) {
-          /* TODO: Parse property in operate-process once Tasklist fields have been added
           if (attributes.getValue("formKey") != null) {
+            formId = attributes.getValue("formKey");
           }
-          */
         } else if ("property".equalsIgnoreCase(localName)) {
           final String name = attributes.getValue("name");
           final String value = attributes.getValue("value");
-          /* TODO: Parse property in operate-process once Tasklist fields have been added
           if (publicAccess.equalsIgnoreCase(name)
               && Boolean.TRUE.toString().equalsIgnoreCase(value)) {
-
-          } */
+            isPublic = true;
+          }
         }
       }
     }

@@ -20,6 +20,8 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
   private String bpmnXml;
   private String resourceName;
   private List<ProcessFlowNodeEntity> flowNodes = new ArrayList<>();
+  private String formId;
+  private Boolean isPublic;
   private String tenantId = DEFAULT_TENANT_ID;
 
   public String getName() {
@@ -49,7 +51,9 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
         bpmnXml,
         resourceName,
         flowNodes,
-        tenantId);
+        tenantId,
+        formId,
+        isPublic);
   }
 
   @Override
@@ -71,7 +75,9 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
         && Objects.equals(bpmnXml, that.bpmnXml)
         && Objects.equals(resourceName, that.resourceName)
         && Objects.equals(flowNodes, that.flowNodes)
-        && Objects.equals(tenantId, that.tenantId);
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(formId, that.formId)
+        && Objects.equals(isPublic, that.isPublic);
   }
 
   @Override
@@ -96,6 +102,10 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
         + '\''
         + ", flowNodes="
         + flowNodes
+        + ", formId="
+        + formId
+        + ", isPublic="
+        + isPublic
         + ", tenantId='"
         + tenantId
         + '\''
@@ -166,6 +176,24 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
 
   public ProcessEntity setTenantId(final String tenantId) {
     this.tenantId = tenantId;
+    return this;
+  }
+
+  public String getFormKey() {
+    return formId;
+  }
+
+  public ProcessEntity setFormId(final String formId) {
+    this.formId = formId;
+    return this;
+  }
+
+  public Boolean getIsPublic() {
+    return isPublic;
+  }
+
+  public ProcessEntity setIsPublic(final Boolean isPublic) {
+    this.isPublic = isPublic;
     return this;
   }
 }
