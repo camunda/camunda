@@ -36,11 +36,12 @@ export function rewriteHeaderStyles(styles?: CSSProperties) {
       return;
     }
 
-    styles &&
+    if (styles) {
       Object.entries(styles).forEach(([key, value]) => {
-        // @ts-ignore
+        // @ts-expect-error this simply rewrites the style
         th.style[key] = value;
       });
+    }
   };
 }
 
@@ -64,10 +65,10 @@ export function formatSorting<T extends object>(
   const {by, order} = sorting;
   let id = by;
   if (resultType === 'map') {
-    if (by === 'label' || by === 'key') {
-      id = columns[0]?.id!;
-    } else if (by === 'value') {
-      id = columns[1]?.id!;
+    if (columns[0]?.id && (by === 'label' || by === 'key')) {
+      id = columns[0]?.id;
+    } else if (columns[1]?.id && by === 'value') {
+      id = columns[1]?.id;
     }
   }
   return [{id, desc: order === 'desc'}];

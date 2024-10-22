@@ -28,7 +28,7 @@ export default function Select<T extends object | string | number>(props: Select
   const {labelText, helperText, ...rest} = props;
   const renderChildrenWithProps = (children: ReactNode) => {
     return Children.toArray(children)
-      .filter(isReactElement)
+      .filter(isReactElement<SubmenuProps | OptionProps>)
       .map((child) => {
         const newProps: SubmenuProps | OptionProps = {
           ...child.props,
@@ -92,7 +92,7 @@ export default function Select<T extends object | string | number>(props: Select
       )}
       <MenuDropdown
         {...rest}
-        onChange={(e: any) => onChange(e)}
+        onChange={(e: BaseSyntheticEvent) => onChange(e)}
         label={props.placeholder || getLabel() || t('common.select').toString()}
         menuTarget={document.querySelector<HTMLElement>('.fullscreen')}
       >
@@ -111,7 +111,6 @@ type SubmenuProps = Omit<ComponentProps<typeof MenuItemSelectable>, 'label'> & {
 
 Select.Submenu = function Submenu(props: SubmenuProps) {
   return (
-    // @ts-ignore
     // To make disabled state work, we can't pass children to it
     <MenuItemSelectable className="Submenu" {...props} label={props.label?.toString() || ''}>
       {!props.disabled && props.children}
@@ -127,7 +126,6 @@ Select.Option = function Option<T extends object | string | number = string>(
   props: OptionProps<T>
 ) {
   return (
-    // @ts-ignore
     // To make disabled state work, we can't pass children to it
     <MenuItemSelectable className="Option" {...props} label={props.label?.toString() || ''}>
       {!props.disabled && props.children}

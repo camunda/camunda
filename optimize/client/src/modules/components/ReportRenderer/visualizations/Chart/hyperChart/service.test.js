@@ -10,7 +10,7 @@ import {generateLegendLabels, getHyperChartProps} from './service';
 
 jest.mock('services', () => {
   return {
-    formatters: {formatReportResult: (data, result) => result},
+    formatters: {formatReportResult: (_data, result) => result},
   };
 });
 

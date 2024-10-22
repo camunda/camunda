@@ -29,11 +29,11 @@ export interface FilterProps<T extends FilterType> {
   config?: MultipleVarialbeFilterConfig | undefined;
   definitions: Definition[];
   filterLevel: FilterLevel;
-  filterType: ProcessFilter<T>['type'];
+  filterType: T;
   filterData?: Omit<ProcessFilter<T>, 'filterLevel'>;
   reportIds?: string[];
-  forceEnabled?: (...args: any[]) => boolean;
-  getPretext?: (...args: any[]) => ReactNode;
-  getPosttext?: (...args: any[]) => ReactNode;
+  forceEnabled?: (...args: unknown[]) => boolean;
+  getPretext?: (...args: unknown[]) => ReactNode;
+  getPosttext?: (...args: unknown[]) => ReactNode;
   modalTitle?: ReactNode;
 }

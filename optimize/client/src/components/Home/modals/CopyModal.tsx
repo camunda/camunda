@@ -49,7 +49,7 @@ export default function CopyModal({
 
   return (
     <Modal className="CopyModal" open onClose={onClose}>
-      <Modal.Header title={t('common.copyName', {name: entity.name})} />
+      <Modal.Header title={t('common.copyName', {name: entity.name || ''})} />
       <Modal.Content>
         <Form>
           <Stack gap={6}>

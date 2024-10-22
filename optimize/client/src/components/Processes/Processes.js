@@ -18,7 +18,6 @@ import {isUserSearchAvailable} from 'config';
 import {track} from 'tracking';
 
 import {DashboardView} from '../Dashboards/DashboardView';
-import KpiResult from './KpiResult';
 import KpiSummary from './KpiSummary';
 import ConfigureProcessModal from './ConfigureProcessModal';
 import KpiTooltip from './KpiTooltip';

@@ -65,7 +65,7 @@ export default function FiltersEdit({
                 </InstanceStateFilter>
               );
             case 'instanceStartDate':
-            case 'instanceEndDate':
+            case 'instanceEndDate': {
               const dateFilter = filter.find((filter) => filter.type === type);
               return (
                 <DateFilter
@@ -86,7 +86,8 @@ export default function FiltersEdit({
                   {deleter}
                 </DateFilter>
               );
-            case 'variable':
+            }
+            case 'variable': {
               const variableFilter = filter.find(
                 (filter) =>
                   filter.type === 'variable' &&
@@ -127,7 +128,8 @@ export default function FiltersEdit({
                   {deleter}
                 </DashboardVariableFilter>
               );
-            case 'assignee':
+            }
+            case 'assignee': {
               const identityFilter = filter.find((filter) => filter.type === type);
               return (
                 <DashboardAssigneeFilter
@@ -163,6 +165,7 @@ export default function FiltersEdit({
                   {deleter}
                 </DashboardAssigneeFilter>
               );
+            }
             default:
               return null;
           }
@@ -228,7 +231,7 @@ export default function FiltersEdit({
                       labelText={t('dashboard.filter.modal.allowCustomValues')}
                       className="customValueCheckbox"
                       checked={allowCustomValues}
-                      onChange={(evt, {checked}) => setAllowCustomValues(checked)}
+                      onChange={(_evt, {checked}) => setAllowCustomValues(checked)}
                     />
                   );
                 }
@@ -286,7 +289,7 @@ export default function FiltersEdit({
                     labelText={t('dashboard.filter.modal.allowCustomValues')}
                     className="customValueCheckbox"
                     checked={allowCustomValues}
-                    onChange={(evt, {checked}) => setAllowCustomValues(checked)}
+                    onChange={(_evt, {checked}) => setAllowCustomValues(checked)}
                   />
                 );
               }}

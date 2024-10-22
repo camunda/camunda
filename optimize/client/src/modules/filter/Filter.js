@@ -38,11 +38,11 @@ export default class Filter extends Component {
     editFilter: null,
   };
 
-  openNewFilterModal = (filterLevel) => (type) => (evt) => {
+  openNewFilterModal = (filterLevel) => (type) => () => {
     this.setState({newFilterType: type, newFilterLevel: filterLevel});
   };
 
-  openEditFilterModal = (filter) => (evt) => {
+  openEditFilterModal = (filter) => () => {
     this.setState({editFilter: filter});
   };
 
@@ -69,12 +69,13 @@ export default class Filter extends Component {
         return DurationFilter;
       case 'flowNodeDuration':
         return NodeDuration;
-      case 'executedFlowNodes':
+      case 'executedFlowNodes': {
         const {newFilterLevel, editFilter} = this.state;
         if (newFilterLevel === 'view' || editFilter?.filterLevel === 'view') {
           return NodeSelection;
         }
         return NodeFilter;
+      }
       case 'executingFlowNodes':
       case 'canceledFlowNodes':
         return NodeFilter;

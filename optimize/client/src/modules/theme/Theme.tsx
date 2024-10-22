@@ -45,14 +45,16 @@ export class Provider extends Component<{children: ReactNode}, ThemeState> {
 
 export const Consumer = ThemeContext.Consumer;
 
-export const themed = (Component: ComponentType<any>) => {
-  function Themed(props: any) {
-    return <Consumer>{(themeProps) => <Component {...props} {...themeProps} />}</Consumer>;
-  }
+export const themed = <P extends object>(
+  Component: ComponentType<P>
+): ComponentType<Omit<P, keyof ThemeContextProps>> => {
+  const Wrapper = (props: Omit<P, keyof ThemeContextProps>) => {
+    return <Consumer>{(themeProps) => <Component {...(props as P)} {...themeProps} />}</Consumer>;
+  };
 
-  Themed.WrappedComponent = Component;
+  Wrapper.WrappedComponent = Component;
 
-  Themed.displayName = `Themed(${Component.displayName || Component.name || 'Component'})`;
+  Wrapper.displayName = `Themed(${Component.displayName || Component.name || 'Component'})`;
 
-  return Themed;
+  return Wrapper;
 };
