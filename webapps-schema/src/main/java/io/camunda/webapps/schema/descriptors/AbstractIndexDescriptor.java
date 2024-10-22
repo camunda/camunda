@@ -19,6 +19,9 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
   protected String indexPrefix;
   protected boolean isElasticsearch;
 
+  // Will not use global prefix unless this value is true
+  protected boolean isGlobalPrefix = false;
+
   public AbstractIndexDescriptor(final String indexPrefix, final boolean isElasticsearch) {
     this.indexPrefix = indexPrefix;
     this.isElasticsearch = isElasticsearch;
@@ -26,7 +29,12 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
   @Override
   public String getFullQualifiedName() {
-    return String.format("%s-%s-%s_", getPrefixAndComponentName(), getIndexName(), getVersion());
+    if (isGlobalPrefix) {
+      return String.format(
+          "%s%s-%s-%s_", formattedIndexPrefix(), getComponentName(), getIndexName(), getVersion());
+    } else {
+      return String.format("%s-%s-%s_", getIndexPrefix(), getIndexName(), getVersion());
+    }
   }
 
   @Override
@@ -43,7 +51,12 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
   @Override
   public String getAllVersionsIndexNameRegexPattern() {
-    return String.format("%s-%s-\\d.*", getPrefixAndComponentName(), getIndexName());
+    if (isGlobalPrefix) {
+      return String.format(
+          "%s%s-%s-\\d.*", formattedIndexPrefix(), getComponentName(), getIndexName());
+    } else {
+      return String.format("%s-%s-\\d.*", getIndexPrefix(), getIndexName());
+    }
   }
 
   @Override
@@ -51,18 +64,16 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
     return "1.0.0";
   }
 
+  private String formattedIndexPrefix() {
+    return getIndexPrefix().isBlank() ? "" : getIndexPrefix() + "-";
+  }
+
   public String getIndexPrefix() {
     return indexPrefix;
   }
 
-  private String getPrefixAndComponentName() {
-    // Cannot start index with "-" so must not append "-" for empty prefix
-    final var prefix = getIndexPrefix().isBlank() ? getIndexPrefix() : getIndexPrefix() + "-";
-
-    // Legacy descriptors have the same index prefix as component name this avoids duplication.
-    return getIndexPrefix().contains(getComponentName())
-        ? getIndexPrefix()
-        : prefix + getComponentName();
+  public void setIsGlobalPrefix(final boolean isGlobalPrefix) {
+    this.isGlobalPrefix = isGlobalPrefix;
   }
 
   public abstract String getComponentName();
