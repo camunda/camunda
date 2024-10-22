@@ -57,7 +57,7 @@ public class AuthorizationQueryTransformerTest extends AbstractTransformerTest {
             "user"),
         Arguments.of(
             (Function<Builder, ObjectBuilder<AuthorizationFilter>>) f -> f.resourceKey("456"),
-            "resourceKey",
+            "permissions.resourceIds",
             "456"),
         Arguments.of(
             (Function<Builder, ObjectBuilder<AuthorizationFilter>>)

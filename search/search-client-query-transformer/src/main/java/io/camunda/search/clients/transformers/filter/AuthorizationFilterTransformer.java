@@ -21,8 +21,11 @@ public class AuthorizationFilterTransformer implements FilterTransformer<Authori
     return and(
         filter.ownerKey() == null ? null : term("ownerKey", filter.ownerKey()),
         filter.ownerType() == null ? null : term("ownerType", filter.ownerType()),
-        filter.resourceKey() == null ? null : term("resourceKey", filter.resourceKey()),
-        filter.resourceType() == null ? null : term("resourceType", filter.resourceType()));
+        filter.resourceKey() == null ? null : term("permissions.resourceIds", filter.resourceKey()),
+        filter.resourceType() == null ? null : term("resourceType", filter.resourceType()),
+        filter.permissionType() == null
+            ? null
+            : term("permissions.permissionType", filter.permissionType().name()));
   }
 
   @Override

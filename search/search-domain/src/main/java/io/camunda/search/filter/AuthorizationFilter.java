@@ -8,15 +8,21 @@
 package io.camunda.search.filter;
 
 import io.camunda.util.ObjectBuilder;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 
 public record AuthorizationFilter(
-    String ownerKey, String ownerType, String resourceKey, String resourceType)
+    String ownerKey,
+    String ownerType,
+    String resourceKey,
+    String resourceType,
+    PermissionType permissionType)
     implements FilterBase {
   public static final class Builder implements ObjectBuilder<AuthorizationFilter> {
     private String ownerKey;
     private String ownerType;
     private String resourceKey;
     private String resourceType;
+    private PermissionType permissionType;
 
     public Builder ownerKey(final String value) {
       ownerKey = value;
@@ -38,9 +44,15 @@ public record AuthorizationFilter(
       return this;
     }
 
+    public Builder permissionType(final PermissionType value) {
+      permissionType = value;
+      return this;
+    }
+
     @Override
     public AuthorizationFilter build() {
-      return new AuthorizationFilter(ownerKey, ownerType, resourceKey, resourceType);
+      return new AuthorizationFilter(
+          ownerKey, ownerType, resourceKey, resourceType, permissionType);
     }
   }
 }
