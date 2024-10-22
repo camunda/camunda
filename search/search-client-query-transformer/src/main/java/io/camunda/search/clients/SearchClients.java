@@ -52,9 +52,10 @@ public class SearchClients
   private final DocumentBasedSearchClient searchClient;
   private final ServiceTransformers transformers;
 
-  public SearchClients(final DocumentBasedSearchClient searchClient) {
+  public SearchClients(
+      final DocumentBasedSearchClient searchClient, final boolean camundaExporterEnabled) {
     this.searchClient = searchClient;
-    transformers = ServiceTransformers.newInstance();
+    transformers = ServiceTransformers.newInstance(camundaExporterEnabled);
   }
 
   @Override

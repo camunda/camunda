@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.service;
 
+import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.application.commons.service.ServiceSecurityConfiguration.ServiceSecurityProperties;
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
@@ -205,7 +206,11 @@ public class CamundaServicesConfiguration {
   }
 
   @Bean
-  public SearchClients searchClients(final DocumentBasedSearchClient searchClient) {
-    return new SearchClients(searchClient);
+  public SearchClients searchClients(
+      final DocumentBasedSearchClient searchClient, final BrokerBasedProperties brokerProperties) {
+    final boolean isCamundaExporterEnabled =
+        brokerProperties.getExporters().values().stream()
+            .anyMatch(v -> "io.camunda.exporter.CamundaExporter".equals(v.getClassName()));
+    return new SearchClients(searchClient, isCamundaExporterEnabled);
   }
 }

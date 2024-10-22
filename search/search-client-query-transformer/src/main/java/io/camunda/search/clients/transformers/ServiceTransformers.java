@@ -71,9 +71,9 @@ public final class ServiceTransformers {
 
   private ServiceTransformers() {}
 
-  public static ServiceTransformers newInstance() {
+  public static ServiceTransformers newInstance(final boolean camundaExporterEnabled) {
     final var serviceTransformers = new ServiceTransformers();
-    initializeTransformers(serviceTransformers);
+    initializeTransformers(serviceTransformers, camundaExporterEnabled);
     return serviceTransformers;
   }
 
@@ -97,7 +97,8 @@ public final class ServiceTransformers {
     transformers.put(cls, mapper);
   }
 
-  public static void initializeTransformers(final ServiceTransformers mappers) {
+  public static void initializeTransformers(
+      final ServiceTransformers mappers, final boolean camundaExporterEnabled) {
     // query -> request
     mappers.put(ProcessInstanceQuery.class, new TypedSearchQueryTransformer<>(mappers));
     mappers.put(UserTaskQuery.class, new TypedSearchQueryTransformer<>(mappers));
@@ -121,7 +122,8 @@ public final class ServiceTransformers {
 
     // filters -> search query
     mappers.put(ProcessInstanceFilter.class, new ProcessInstanceFilterTransformer(mappers));
-    mappers.put(UserTaskFilter.class, new UserTaskFilterTransformer(mappers));
+    mappers.put(
+        UserTaskFilter.class, new UserTaskFilterTransformer(mappers, camundaExporterEnabled));
     mappers.put(VariableValueFilter.class, new VariableValueFilterTransformer());
     mappers.put(DateValueFilter.class, new DateValueFilterTransformer());
     mappers.put(
