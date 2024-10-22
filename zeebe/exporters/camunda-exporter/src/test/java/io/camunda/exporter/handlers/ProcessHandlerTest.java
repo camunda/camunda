@@ -135,7 +135,7 @@ public class ProcessHandlerTest {
         .isEqualTo(new String(processRecordValue.getResource(), StandardCharsets.UTF_8));
     assertThat(processEntity.getTenantId()).isEqualTo(processRecordValue.getTenantId());
     assertThat(processEntity.getIsPublic()).isFalse();
-    assertThat(processEntity.getFormKey()).isNull();
+    assertThat(processEntity.getFormId()).isNull();
   }
 
   @Test
@@ -174,6 +174,6 @@ public class ProcessHandlerTest {
         .isEqualTo(new String(processRecordValue.getResource(), StandardCharsets.UTF_8));
     assertThat(processEntity.getTenantId()).isEqualTo(processRecordValue.getTenantId());
     assertThat(processEntity.getIsPublic()).isTrue();
-    assertThat(processEntity.getFormKey()).isNotNull();
+    assertThat(processEntity.getFormId()).isNotNull();
   }
 }
