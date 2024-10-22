@@ -61,7 +61,7 @@ public class DbUserState implements UserState, MutableUserState {
   public void addRole(final long userKey, final long roleKey) {
     this.userKey.wrapLong(userKey);
     final var persistedUser = userByUserKeyColumnFamily.get(this.userKey);
-    persistedUser.getUser().addRoleKey(roleKey);
+    persistedUser.addRoleKey(roleKey);
     userByUserKeyColumnFamily.update(this.userKey, persistedUser);
   }
 
@@ -69,9 +69,9 @@ public class DbUserState implements UserState, MutableUserState {
   public void removeRole(final long userKey, final long roleKey) {
     this.userKey.wrapLong(userKey);
     final var persistedUser = userByUserKeyColumnFamily.get(this.userKey);
-    final List<Long> roleKeys = persistedUser.getUser().getRoleKeysList();
+    final List<Long> roleKeys = persistedUser.getRoleKeysList();
     roleKeys.remove(roleKey);
-    persistedUser.getUser().setRoleKeysList(roleKeys);
+    persistedUser.setRoleKeysList(roleKeys);
     userByUserKeyColumnFamily.update(this.userKey, persistedUser);
   }
 
@@ -79,12 +79,12 @@ public class DbUserState implements UserState, MutableUserState {
   public void addTenantId(final long userKey, final String tenantId) {
     this.userKey.wrapLong(userKey);
     final var persistedUser = userByUserKeyColumnFamily.get(this.userKey);
-    persistedUser.getUser().addTenantId(tenantId);
+    persistedUser.addTenantId(tenantId);
     userByUserKeyColumnFamily.update(this.userKey, persistedUser);
   }
 
   @Override
-  public Optional<UserRecord> getUser(final DirectBuffer username) {
+  public Optional<PersistedUser> getUser(final DirectBuffer username) {
     this.username.wrapBuffer(username);
     final var key = userKeyByUsernameColumnFamily.get(this.username);
 
@@ -96,19 +96,19 @@ public class DbUserState implements UserState, MutableUserState {
   }
 
   @Override
-  public Optional<UserRecord> getUser(final String username) {
+  public Optional<PersistedUser> getUser(final String username) {
     return getUser(wrapString(username));
   }
 
   @Override
-  public Optional<UserRecord> getUser(final long userKey) {
+  public Optional<PersistedUser> getUser(final long userKey) {
     this.userKey.wrapLong(userKey);
     final var persistedUser = userByUserKeyColumnFamily.get(this.userKey);
 
     if (persistedUser == null) {
       return Optional.empty();
     }
-    return Optional.of(persistedUser.getUser().copy());
+    return Optional.of(persistedUser.copy());
   }
 
   @Override

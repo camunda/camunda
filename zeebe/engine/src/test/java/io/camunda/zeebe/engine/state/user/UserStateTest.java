@@ -201,11 +201,11 @@ public class UserStateTest {
     assertThat(persistedUser).isNotEmpty();
     assertThat(persistedUser.get())
         .extracting(
-            UserRecord::getUserKey,
-            UserRecord::getUsername,
-            UserRecord::getName,
-            UserRecord::getEmail,
-            UserRecord::getPassword)
+            PersistedUser::getUserKey,
+            PersistedUser::getUsername,
+            PersistedUser::getName,
+            PersistedUser::getEmail,
+            PersistedUser::getPassword)
         .containsExactly(userKey, username, name, email, password);
   }
 
