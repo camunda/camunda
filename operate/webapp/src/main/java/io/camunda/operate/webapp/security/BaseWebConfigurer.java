@@ -125,10 +125,7 @@ public abstract class BaseWebConfigurer {
   protected void applySecurityHeadersSettings(final HttpSecurity http) throws Exception {
     final WebSecurityProperties webSecurityConfig = operateProperties.getWebSecurity();
     // Only SaaS has CloudProperties
-    final String policyDirectives =
-        (operateProperties.getCloud().getClusterId() == null)
-            ? DEFAULT_SM_SECURITY_POLICY
-            : webSecurityConfig.getContentSecurityPolicy();
+    final String policyDirectives = getContentSecurityPolicy();
 
     http.headers(
         headers -> {
