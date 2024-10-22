@@ -41,27 +41,7 @@ public class ProcessDigestDto extends ProcessDigestResponseDto {
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof ProcessDigestDto)) {
-      return false;
-    }
-    final ProcessDigestDto other = (ProcessDigestDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    final Object this$kpiReportResults = getKpiReportResults();
-    final Object other$kpiReportResults = other.getKpiReportResults();
-    if (this$kpiReportResults == null
-        ? other$kpiReportResults != null
-        : !this$kpiReportResults.equals(other$kpiReportResults)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override
@@ -71,11 +51,7 @@ public class ProcessDigestDto extends ProcessDigestResponseDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = super.hashCode();
-    final Object $kpiReportResults = getKpiReportResults();
-    result = result * PRIME + ($kpiReportResults == null ? 43 : $kpiReportResults.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   /** Needed to inherit field name constants from {@link ProcessDigestResponseDto} */

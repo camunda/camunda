@@ -137,7 +137,11 @@ export default function SourcesModal({
           checked={allChecked}
           onSelect={({target}) => {
             const {checked} = target as HTMLInputElement;
-            checked ? deselectAll() : selectAll();
+            if (checked) {
+              deselectAll();
+            } else {
+              selectAll();
+            }
           }}
         />
       ),
@@ -220,11 +224,13 @@ export default function SourcesModal({
                 ariaLabel={key}
                 onSelect={({target}) => {
                   const {checked} = target as HTMLInputElement;
-                  checked
-                    ? setSelected([...selected, removeExtraTenants(format(def))])
-                    : setSelected((selected) =>
-                        selected.filter(({definitionKey}) => def.key !== definitionKey)
-                      );
+                  if (checked) {
+                    setSelected([...selected, removeExtraTenants(format(def))]);
+                  } else {
+                    setSelected((selected) =>
+                      selected.filter(({definitionKey}) => def.key !== definitionKey)
+                    );
+                  }
                 }}
               />,
               key,

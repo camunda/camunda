@@ -91,13 +91,16 @@ function getNodesBetween(start, end, viewer) {
         reachableNodes.push(...getNestedNodes(registry.get(current).businessObject));
       }
 
-      graph[current] &&
+      if (graph[current]) {
         graph[current].forEach(({node, via}) => {
-          via && reachableNodes.push(via);
+          if (via) {
+            reachableNodes.push(via);
+          }
           if (!reachableNodes.includes(node) && !unprocessed.includes(node)) {
             unprocessed.push(node);
           }
         });
+      }
     }
   }
 
@@ -118,7 +121,7 @@ function constructReachabilityGraphFrom(start, end, viewer) {
       graph[boundary.id] = [{node: current.id}];
     });
 
-    current.outgoing &&
+    if (current.outgoing) {
       current.outgoing.forEach((connection) => {
         const target = connection.targetRef;
         const targetId = target.id;
@@ -132,6 +135,7 @@ function constructReachabilityGraphFrom(start, end, viewer) {
 
         graph[targetId].push({node: current.id, via: connection.id});
       });
+    }
   }
 
   return graph;
@@ -179,7 +183,7 @@ function getNodes(mode, node, viewer) {
       unprocessed.push(current.attachedToRef);
     }
 
-    current[direction] &&
+    if (current[direction]) {
       current[direction].forEach((connection) => {
         const target = connection[refType];
         const targetId = target.id;
@@ -190,6 +194,7 @@ function getNodes(mode, node, viewer) {
           unprocessed.push(target);
         }
       });
+    }
   }
 
   return reachableNodes;

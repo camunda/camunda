@@ -94,63 +94,12 @@ public class UIConfiguration {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    result = result * PRIME + (isLogoutHidden() ? 79 : 97);
-    final Object $mixpanelToken = getMixpanelToken();
-    result = result * PRIME + ($mixpanelToken == null ? 43 : $mixpanelToken.hashCode());
-    result = result * PRIME + getMaxNumDataSourcesForReport();
-    result = result * PRIME + (isUserTaskAssigneeAnalyticsEnabled() ? 79 : 97);
-    final Object $consoleUrl = getConsoleUrl();
-    result = result * PRIME + ($consoleUrl == null ? 43 : $consoleUrl.hashCode());
-    final Object $modelerUrl = getModelerUrl();
-    result = result * PRIME + ($modelerUrl == null ? 43 : $modelerUrl.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof UIConfiguration)) {
-      return false;
-    }
-    final UIConfiguration other = (UIConfiguration) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (isLogoutHidden() != other.isLogoutHidden()) {
-      return false;
-    }
-    final Object this$mixpanelToken = getMixpanelToken();
-    final Object other$mixpanelToken = other.getMixpanelToken();
-    if (this$mixpanelToken == null
-        ? other$mixpanelToken != null
-        : !this$mixpanelToken.equals(other$mixpanelToken)) {
-      return false;
-    }
-    if (getMaxNumDataSourcesForReport() != other.getMaxNumDataSourcesForReport()) {
-      return false;
-    }
-    if (isUserTaskAssigneeAnalyticsEnabled() != other.isUserTaskAssigneeAnalyticsEnabled()) {
-      return false;
-    }
-    final Object this$consoleUrl = getConsoleUrl();
-    final Object other$consoleUrl = other.getConsoleUrl();
-    if (this$consoleUrl == null
-        ? other$consoleUrl != null
-        : !this$consoleUrl.equals(other$consoleUrl)) {
-      return false;
-    }
-    final Object this$modelerUrl = getModelerUrl();
-    final Object other$modelerUrl = other.getModelerUrl();
-    if (this$modelerUrl == null
-        ? other$modelerUrl != null
-        : !this$modelerUrl.equals(other$modelerUrl)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

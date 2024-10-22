@@ -77,6 +77,7 @@ public class PriorityElectionTimer implements ElectionTimer {
                 log.debug("Failed to poll a majority of the cluster in {}", pollTimeout);
                 reset();
               });
+      log.trace("Node triggering an election");
       triggerElection.run();
     } else {
       log.debug(

@@ -39,35 +39,12 @@ public class ZeebeConfigDto implements SchedulerConfig {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $name = getName();
-    result = result * PRIME + ($name == null ? 43 : $name.hashCode());
-    result = result * PRIME + getPartitionCount();
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof ZeebeConfigDto)) {
-      return false;
-    }
-    final ZeebeConfigDto other = (ZeebeConfigDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$name = getName();
-    final Object other$name = other.getName();
-    if (this$name == null ? other$name != null : !this$name.equals(other$name)) {
-      return false;
-    }
-    if (getPartitionCount() != other.getPartitionCount()) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

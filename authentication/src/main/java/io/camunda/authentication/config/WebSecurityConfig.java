@@ -14,7 +14,6 @@ import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.handler.CustomMethodSecurityExpressionHandler;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.UserServices;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -36,13 +35,24 @@ import org.springframework.security.web.SecurityFilterChain;
 @Profile("auth-basic|auth-oidc")
 public class WebSecurityConfig {
   public static final String[] UNAUTHENTICATED_PATHS =
-      new String[] {"/login**", "/logout**", "/error**", "/actuator**"};
+      new String[] {
+        "/login",
+        "/logout",
+        // endpoint for failure forwarding
+        "/error",
+        // all actuator endpoints
+        "/actuator/**",
+        // endpoints defined in BrokerHealthRoutes
+        "/ready",
+        "/health",
+        "/startup"
+      };
   private static final Logger LOG = LoggerFactory.getLogger(WebSecurityConfig.class);
 
   @Bean
   @ConditionalOnMissingBean(MethodSecurityExpressionHandler.class)
   public MethodSecurityExpressionHandler methodSecurityExpressionHandler(
-      final AuthorizationServices<AuthorizationRecord> authorizationServices) {
+      final AuthorizationServices authorizationServices) {
     return new CustomMethodSecurityExpressionHandler(authorizationServices);
   }
 

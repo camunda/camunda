@@ -34,9 +34,9 @@ export {ShareEntity} from './ShareEntity';
 export {ErrorPage} from './ErrorPage';
 export {ErrorBoundary} from './ErrorBoundary';
 export {TargetSelection} from './TargetSelection';
-// @ts-ignore
+// @ts-expect-error no types yet
 export {DefinitionSelection} from './DefinitionSelection';
-// @ts-ignore
+// @ts-expect-error no types yet
 export {ReportRenderer} from './ReportRenderer';
 export {Loading} from './Loading';
 export {EntityList} from './EntityList';

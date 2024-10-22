@@ -57,49 +57,12 @@ public class EntitiesDeleteRequestDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $reports = getReports();
-    result = result * PRIME + ($reports == null ? 43 : $reports.hashCode());
-    final Object $collections = getCollections();
-    result = result * PRIME + ($collections == null ? 43 : $collections.hashCode());
-    final Object $dashboards = getDashboards();
-    result = result * PRIME + ($dashboards == null ? 43 : $dashboards.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof EntitiesDeleteRequestDto)) {
-      return false;
-    }
-    final EntitiesDeleteRequestDto other = (EntitiesDeleteRequestDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$reports = getReports();
-    final Object other$reports = other.getReports();
-    if (this$reports == null ? other$reports != null : !this$reports.equals(other$reports)) {
-      return false;
-    }
-    final Object this$collections = getCollections();
-    final Object other$collections = other.getCollections();
-    if (this$collections == null
-        ? other$collections != null
-        : !this$collections.equals(other$collections)) {
-      return false;
-    }
-    final Object this$dashboards = getDashboards();
-    final Object other$dashboards = other.getDashboards();
-    if (this$dashboards == null
-        ? other$dashboards != null
-        : !this$dashboards.equals(other$dashboards)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

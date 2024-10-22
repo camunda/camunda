@@ -6,6 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import dotenv from 'dotenv';
+
 import config from '../config';
 import * as u from '../utils';
 
@@ -17,7 +19,7 @@ fixture('Smoke test').page(config.collectionsEndpoint);
 
 test('create a report from a template', async (t) => {
   if (!process.argv.includes('ci')) {
-    require('dotenv').config();
+    dotenv.config();
   }
   await t.maximizeWindow();
 

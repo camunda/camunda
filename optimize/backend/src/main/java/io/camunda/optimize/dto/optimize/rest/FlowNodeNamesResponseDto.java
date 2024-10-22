@@ -30,33 +30,12 @@ public class FlowNodeNamesResponseDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $flowNodeNames = getFlowNodeNames();
-    result = result * PRIME + ($flowNodeNames == null ? 43 : $flowNodeNames.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof FlowNodeNamesResponseDto)) {
-      return false;
-    }
-    final FlowNodeNamesResponseDto other = (FlowNodeNamesResponseDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$flowNodeNames = getFlowNodeNames();
-    final Object other$flowNodeNames = other.getFlowNodeNames();
-    if (this$flowNodeNames == null
-        ? other$flowNodeNames != null
-        : !this$flowNodeNames.equals(other$flowNodeNames)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

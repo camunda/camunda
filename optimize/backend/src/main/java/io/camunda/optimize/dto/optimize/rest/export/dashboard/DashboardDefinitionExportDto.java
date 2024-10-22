@@ -98,56 +98,12 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = super.hashCode();
-    final Object $tiles = getTiles();
-    result = result * PRIME + ($tiles == null ? 43 : $tiles.hashCode());
-    final Object $availableFilters = getAvailableFilters();
-    result = result * PRIME + ($availableFilters == null ? 43 : $availableFilters.hashCode());
-    final Object $collectionId = getCollectionId();
-    result = result * PRIME + ($collectionId == null ? 43 : $collectionId.hashCode());
-    result = result * PRIME + (isInstantPreviewDashboard() ? 79 : 97);
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof DashboardDefinitionExportDto)) {
-      return false;
-    }
-    final DashboardDefinitionExportDto other = (DashboardDefinitionExportDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    final Object this$tiles = getTiles();
-    final Object other$tiles = other.getTiles();
-    if (this$tiles == null ? other$tiles != null : !this$tiles.equals(other$tiles)) {
-      return false;
-    }
-    final Object this$availableFilters = getAvailableFilters();
-    final Object other$availableFilters = other.getAvailableFilters();
-    if (this$availableFilters == null
-        ? other$availableFilters != null
-        : !this$availableFilters.equals(other$availableFilters)) {
-      return false;
-    }
-    final Object this$collectionId = getCollectionId();
-    final Object other$collectionId = other.getCollectionId();
-    if (this$collectionId == null
-        ? other$collectionId != null
-        : !this$collectionId.equals(other$collectionId)) {
-      return false;
-    }
-    if (isInstantPreviewDashboard() != other.isInstantPreviewDashboard()) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

@@ -11,7 +11,7 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.immutable.TenantState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -20,7 +20,7 @@ public class TenantProcessors {
 
   public static void addTenantProcessors(
       final TypedRecordProcessors typedRecordProcessors,
-      final TenantState tenantState,
+      final ProcessingState processingState,
       final AuthorizationCheckBehavior authCheckBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
@@ -30,12 +30,26 @@ public class TenantProcessors {
             ValueType.TENANT,
             TenantIntent.CREATE,
             new TenantCreateProcessor(
-                tenantState, authCheckBehavior, keyGenerator, writers, commandDistributionBehavior))
+                processingState.getTenantState(),
+                authCheckBehavior,
+                keyGenerator,
+                writers,
+                commandDistributionBehavior))
         .onCommand(
             ValueType.TENANT,
             TenantIntent.UPDATE,
             new TenantUpdateProcessor(
-                tenantState,
+                processingState.getTenantState(),
+                authCheckBehavior,
+                keyGenerator,
+                writers,
+                commandDistributionBehavior))
+        .onCommand(
+            ValueType.TENANT,
+            TenantIntent.ADD_ENTITY,
+            new TenantAddEntityProcessor(
+                processingState.getTenantState(),
+                processingState.getUserState(),
                 authCheckBehavior,
                 keyGenerator,
                 writers,

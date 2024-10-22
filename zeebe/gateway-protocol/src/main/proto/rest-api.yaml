@@ -23,6 +23,28 @@ servers:
         default: http
         description: The schema of the Camunda 8 REST API server.
 
+tags:
+  - name: Authorization
+  - name: Clock
+  - name: Cluster
+  - name: Decision definition
+  - name: Decision instance
+  - name: Decision requirements
+  - name: Document
+  - name: Element instance
+  - name: Flow node instance
+  - name: Incident
+  - name: Job
+  - name: License
+  - name: Message
+  - name: Process definition
+  - name: Process instance
+  - name: Resource
+  - name: Signal
+  - name: User
+  - name: User task
+  - name: Variable
+
 paths:
   /topology:
     get:
@@ -678,6 +700,56 @@ paths:
         "400":
           description: >
             The user task search query failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /user-tasks/{userTaskKey}/variables:
+    post:
+      tags:
+        - User task
+      summary: Query user tasks variables (alpha)
+      description: |
+        Search for user tasks based on given criteria.
+
+        :::note
+        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
+      parameters:
+        - name: userTaskKey
+          in: path
+          required: true
+          description: The key of the user task.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserTaskVariablesSearchQueryRequest"
+      responses:
+        "200":
+          description: >
+            The user task varialbes search successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VariableSearchQueryResponse"
+        "400":
+          description: >
+            The user task variables search query failed.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -1994,7 +2066,7 @@ paths:
   /documents:
     post:
       tags:
-        - Documents
+        - Document
       summary: Upload document (alpha)
       description: |
         Upload a document to the Camunda 8 cluster.
@@ -2052,7 +2124,7 @@ paths:
   /documents/{documentId}:
     get:
       tags:
-        - Documents
+        - Document
       summary: Download document (alpha)
       description: |
         Download a document from the Camunda 8 cluster.
@@ -2098,7 +2170,7 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
     delete:
       tags:
-        - Documents
+        - Document
       summary: Delete document (alpha)
       description: |
         Delete a document from the Camunda 8 cluster.
@@ -2140,7 +2212,7 @@ paths:
   /document/{documentId}/links:
     post:
       tags:
-        - Documents
+        - Document
       summary: Create document link (alpha)
       description: |
         Create a link to a document in the Camunda 8 cluster.
@@ -2525,6 +2597,11 @@ components:
       properties:
         filter:
           $ref: "#/components/schemas/UserTaskFilterRequest"
+    UserTaskVariablesSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      description: User task search query request.
+      type: object
     UserTaskSearchQueryResponse:
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"

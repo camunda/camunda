@@ -148,82 +148,12 @@ public class CleanupConfiguration {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $cronTrigger = getCronTrigger();
-    result = result * PRIME + ($cronTrigger == null ? 43 : $cronTrigger.hashCode());
-    final Object $ttl = getTtl();
-    result = result * PRIME + ($ttl == null ? 43 : $ttl.hashCode());
-    final Object $processDataCleanupConfiguration = getProcessDataCleanupConfiguration();
-    result =
-        result * PRIME
-            + ($processDataCleanupConfiguration == null
-                ? 43
-                : $processDataCleanupConfiguration.hashCode());
-    final Object $decisionCleanupConfiguration = getDecisionCleanupConfiguration();
-    result =
-        result * PRIME
-            + ($decisionCleanupConfiguration == null
-                ? 43
-                : $decisionCleanupConfiguration.hashCode());
-    final Object $externalVariableCleanupConfiguration = getExternalVariableCleanupConfiguration();
-    result =
-        result * PRIME
-            + ($externalVariableCleanupConfiguration == null
-                ? 43
-                : $externalVariableCleanupConfiguration.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof CleanupConfiguration)) {
-      return false;
-    }
-    final CleanupConfiguration other = (CleanupConfiguration) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$cronTrigger = getCronTrigger();
-    final Object other$cronTrigger = other.getCronTrigger();
-    if (this$cronTrigger == null
-        ? other$cronTrigger != null
-        : !this$cronTrigger.equals(other$cronTrigger)) {
-      return false;
-    }
-    final Object this$ttl = getTtl();
-    final Object other$ttl = other.getTtl();
-    if (this$ttl == null ? other$ttl != null : !this$ttl.equals(other$ttl)) {
-      return false;
-    }
-    final Object this$processDataCleanupConfiguration = getProcessDataCleanupConfiguration();
-    final Object other$processDataCleanupConfiguration = other.getProcessDataCleanupConfiguration();
-    if (this$processDataCleanupConfiguration == null
-        ? other$processDataCleanupConfiguration != null
-        : !this$processDataCleanupConfiguration.equals(other$processDataCleanupConfiguration)) {
-      return false;
-    }
-    final Object this$decisionCleanupConfiguration = getDecisionCleanupConfiguration();
-    final Object other$decisionCleanupConfiguration = other.getDecisionCleanupConfiguration();
-    if (this$decisionCleanupConfiguration == null
-        ? other$decisionCleanupConfiguration != null
-        : !this$decisionCleanupConfiguration.equals(other$decisionCleanupConfiguration)) {
-      return false;
-    }
-    final Object this$externalVariableCleanupConfiguration =
-        getExternalVariableCleanupConfiguration();
-    final Object other$externalVariableCleanupConfiguration =
-        other.getExternalVariableCleanupConfiguration();
-    if (this$externalVariableCleanupConfiguration == null
-        ? other$externalVariableCleanupConfiguration != null
-        : !this$externalVariableCleanupConfiguration.equals(
-            other$externalVariableCleanupConfiguration)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

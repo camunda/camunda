@@ -42,32 +42,12 @@ public class ZeebeImportConfiguration {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    result = result * PRIME + getDynamicBatchSuccessAttempts();
-    result = result * PRIME + getMaxEmptyPagesToImport();
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof ZeebeImportConfiguration)) {
-      return false;
-    }
-    final ZeebeImportConfiguration other = (ZeebeImportConfiguration) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (getDynamicBatchSuccessAttempts() != other.getDynamicBatchSuccessAttempts()) {
-      return false;
-    }
-    if (getMaxEmptyPagesToImport() != other.getMaxEmptyPagesToImport()) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

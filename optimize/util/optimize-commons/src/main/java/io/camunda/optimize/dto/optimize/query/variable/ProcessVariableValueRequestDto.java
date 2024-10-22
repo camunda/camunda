@@ -113,104 +113,12 @@ public class ProcessVariableValueRequestDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $processInstanceId = getProcessInstanceId();
-    result = result * PRIME + ($processInstanceId == null ? 43 : $processInstanceId.hashCode());
-    final Object $processDefinitionKey = getProcessDefinitionKey();
-    result =
-        result * PRIME + ($processDefinitionKey == null ? 43 : $processDefinitionKey.hashCode());
-    final Object $processDefinitionVersions = getProcessDefinitionVersions();
-    result =
-        result * PRIME
-            + ($processDefinitionVersions == null ? 43 : $processDefinitionVersions.hashCode());
-    final Object $tenantIds = getTenantIds();
-    result = result * PRIME + ($tenantIds == null ? 43 : $tenantIds.hashCode());
-    final Object $name = getName();
-    result = result * PRIME + ($name == null ? 43 : $name.hashCode());
-    final Object $type = getType();
-    result = result * PRIME + ($type == null ? 43 : $type.hashCode());
-    final Object $valueFilter = getValueFilter();
-    result = result * PRIME + ($valueFilter == null ? 43 : $valueFilter.hashCode());
-    final Object $resultOffset = getResultOffset();
-    result = result * PRIME + ($resultOffset == null ? 43 : $resultOffset.hashCode());
-    final Object $numResults = getNumResults();
-    result = result * PRIME + ($numResults == null ? 43 : $numResults.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof ProcessVariableValueRequestDto)) {
-      return false;
-    }
-    final ProcessVariableValueRequestDto other = (ProcessVariableValueRequestDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$processInstanceId = getProcessInstanceId();
-    final Object other$processInstanceId = other.getProcessInstanceId();
-    if (this$processInstanceId == null
-        ? other$processInstanceId != null
-        : !this$processInstanceId.equals(other$processInstanceId)) {
-      return false;
-    }
-    final Object this$processDefinitionKey = getProcessDefinitionKey();
-    final Object other$processDefinitionKey = other.getProcessDefinitionKey();
-    if (this$processDefinitionKey == null
-        ? other$processDefinitionKey != null
-        : !this$processDefinitionKey.equals(other$processDefinitionKey)) {
-      return false;
-    }
-    final Object this$processDefinitionVersions = getProcessDefinitionVersions();
-    final Object other$processDefinitionVersions = other.getProcessDefinitionVersions();
-    if (this$processDefinitionVersions == null
-        ? other$processDefinitionVersions != null
-        : !this$processDefinitionVersions.equals(other$processDefinitionVersions)) {
-      return false;
-    }
-    final Object this$tenantIds = getTenantIds();
-    final Object other$tenantIds = other.getTenantIds();
-    if (this$tenantIds == null
-        ? other$tenantIds != null
-        : !this$tenantIds.equals(other$tenantIds)) {
-      return false;
-    }
-    final Object this$name = getName();
-    final Object other$name = other.getName();
-    if (this$name == null ? other$name != null : !this$name.equals(other$name)) {
-      return false;
-    }
-    final Object this$type = getType();
-    final Object other$type = other.getType();
-    if (this$type == null ? other$type != null : !this$type.equals(other$type)) {
-      return false;
-    }
-    final Object this$valueFilter = getValueFilter();
-    final Object other$valueFilter = other.getValueFilter();
-    if (this$valueFilter == null
-        ? other$valueFilter != null
-        : !this$valueFilter.equals(other$valueFilter)) {
-      return false;
-    }
-    final Object this$resultOffset = getResultOffset();
-    final Object other$resultOffset = other.getResultOffset();
-    if (this$resultOffset == null
-        ? other$resultOffset != null
-        : !this$resultOffset.equals(other$resultOffset)) {
-      return false;
-    }
-    final Object this$numResults = getNumResults();
-    final Object other$numResults = other.getNumResults();
-    if (this$numResults == null
-        ? other$numResults != null
-        : !this$numResults.equals(other$numResults)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

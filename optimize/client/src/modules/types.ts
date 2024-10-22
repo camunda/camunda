@@ -285,8 +285,7 @@ interface SingleReportData {
   definitions: Definition[];
 }
 
-export interface SingleProcessReportData<GroupByValue = unknown, DistributedByValue = unknown>
-  extends SingleReportData {
+export interface SingleProcessReportData extends SingleReportData {
   filter: ProcessFilter[];
   view: ProcessView | null;
   groupBy: ProcessGroupBy | null;
@@ -317,16 +316,13 @@ export interface Report<
   result: Result;
 }
 
-export type SingleProcessReport<GroupByValue = unknown, DistributedByValue = unknown> = Report<
+export type SingleProcessReport = Report<
   'process',
-  SingleProcessReportData<GroupByValue, DistributedByValue>,
+  SingleProcessReportData,
   {data: SingleProcessReportResultData[]}
 >;
 
-export type GenericReport<
-  GroupByValue = unknown,
-  DistributedByValue = unknown,
-> = SingleProcessReport<GroupByValue, DistributedByValue>;
+export type GenericReport = SingleProcessReport;
 
 type DashboardTileCommonProps = {
   id: string;

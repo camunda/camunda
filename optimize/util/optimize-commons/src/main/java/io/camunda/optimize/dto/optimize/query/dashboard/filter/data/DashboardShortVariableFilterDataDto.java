@@ -47,36 +47,12 @@ public class DashboardShortVariableFilterDataDto extends DashboardVariableFilter
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = super.hashCode();
-    final Object $defaultValues = getDefaultValues();
-    result = result * PRIME + ($defaultValues == null ? 43 : $defaultValues.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof DashboardShortVariableFilterDataDto)) {
-      return false;
-    }
-    final DashboardShortVariableFilterDataDto other = (DashboardShortVariableFilterDataDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    final Object this$defaultValues = getDefaultValues();
-    final Object other$defaultValues = other.getDefaultValues();
-    if (this$defaultValues == null
-        ? other$defaultValues != null
-        : !this$defaultValues.equals(other$defaultValues)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

@@ -26,6 +26,7 @@ import {
   HeaderGroup as HG,
   ColumnInstance,
   TableState,
+  RowPropGetter,
 } from 'react-table';
 import {
   DataTable,
@@ -255,7 +256,9 @@ export default function Table<T extends object>({
                   <TableBody {...getTableBodyProps()} onScroll={onScroll} tabIndex={0}>
                     {page.map((row) => {
                       prepareRow(row);
-                      const {key, ...rowProps} = row.getRowProps((row.original as any).__props);
+                      const {key, ...rowProps} = row.getRowProps(
+                        (row.original as {__props: RowPropGetter<T>}).__props
+                      );
                       return (
                         <TableRow key={key} {...rowProps} tabIndex={0}>
                           {row.cells.map((cell) => (

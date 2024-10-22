@@ -89,59 +89,12 @@ public class OnboardingConfiguration {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    result = result * PRIME + (isEnabled() ? 79 : 97);
-    final Object $appCuesScriptUrl = getAppCuesScriptUrl();
-    result = result * PRIME + ($appCuesScriptUrl == null ? 43 : $appCuesScriptUrl.hashCode());
-    result = result * PRIME + (isScheduleProcessOnboardingChecks() ? 79 : 97);
-    result = result * PRIME + (isEnableOnboardingEmails() ? 79 : 97);
-    result = result * PRIME + getIntervalForCheckingTriggerForOnboardingEmails();
-    final Object $properties = getProperties();
-    result = result * PRIME + ($properties == null ? 43 : $properties.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof OnboardingConfiguration)) {
-      return false;
-    }
-    final OnboardingConfiguration other = (OnboardingConfiguration) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (isEnabled() != other.isEnabled()) {
-      return false;
-    }
-    final Object this$appCuesScriptUrl = getAppCuesScriptUrl();
-    final Object other$appCuesScriptUrl = other.getAppCuesScriptUrl();
-    if (this$appCuesScriptUrl == null
-        ? other$appCuesScriptUrl != null
-        : !this$appCuesScriptUrl.equals(other$appCuesScriptUrl)) {
-      return false;
-    }
-    if (isScheduleProcessOnboardingChecks() != other.isScheduleProcessOnboardingChecks()) {
-      return false;
-    }
-    if (isEnableOnboardingEmails() != other.isEnableOnboardingEmails()) {
-      return false;
-    }
-    if (getIntervalForCheckingTriggerForOnboardingEmails()
-        != other.getIntervalForCheckingTriggerForOnboardingEmails()) {
-      return false;
-    }
-    final Object this$properties = getProperties();
-    final Object other$properties = other.getProperties();
-    if (this$properties == null
-        ? other$properties != null
-        : !this$properties.equals(other$properties)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override
@@ -200,42 +153,12 @@ public class OnboardingConfiguration {
 
     @Override
     public int hashCode() {
-      final int PRIME = 59;
-      int result = 1;
-      final Object $organizationId = getOrganizationId();
-      result = result * PRIME + ($organizationId == null ? 43 : $organizationId.hashCode());
-      final Object $clusterId = getClusterId();
-      result = result * PRIME + ($clusterId == null ? 43 : $clusterId.hashCode());
-      return result;
+      return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
     }
 
     @Override
     public boolean equals(final Object o) {
-      if (o == this) {
-        return true;
-      }
-      if (!(o instanceof Properties)) {
-        return false;
-      }
-      final Properties other = (Properties) o;
-      if (!other.canEqual((Object) this)) {
-        return false;
-      }
-      final Object this$organizationId = getOrganizationId();
-      final Object other$organizationId = other.getOrganizationId();
-      if (this$organizationId == null
-          ? other$organizationId != null
-          : !this$organizationId.equals(other$organizationId)) {
-        return false;
-      }
-      final Object this$clusterId = getClusterId();
-      final Object other$clusterId = other.getClusterId();
-      if (this$clusterId == null
-          ? other$clusterId != null
-          : !this$clusterId.equals(other$clusterId)) {
-        return false;
-      }
-      return true;
+      return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
     }
 
     @Override

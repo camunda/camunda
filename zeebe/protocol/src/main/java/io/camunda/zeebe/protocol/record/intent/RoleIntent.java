@@ -41,15 +41,10 @@ public enum RoleIntent implements Intent {
   @Override
   public boolean isEvent() {
     switch (this) {
-      case CREATE:
       case CREATED:
-      case UPDATE:
       case UPDATED:
-      case DELETE:
       case DELETED:
-      case ADD_ENTITY:
       case ENTITY_ADDED:
-      case REMOVE_ENTITY:
       case ENTITY_REMOVED:
         return true;
       default:

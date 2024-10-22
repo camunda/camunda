@@ -57,6 +57,13 @@ export default defineConfig(({mode}) => ({
     banner: '/*! licenses: /assets/vendor.LICENSE.txt */',
     legalComments: 'none',
   },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        api: 'modern-compiler',
+      },
+    },
+  },
   test: {
     globals: true,
     environment: 'jsdom',

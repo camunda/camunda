@@ -41,32 +41,12 @@ public class DimensionDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    result = result * PRIME + getWidth();
-    result = result * PRIME + getHeight();
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof DimensionDto)) {
-      return false;
-    }
-    final DimensionDto other = (DimensionDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (getWidth() != other.getWidth()) {
-      return false;
-    }
-    if (getHeight() != other.getHeight()) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

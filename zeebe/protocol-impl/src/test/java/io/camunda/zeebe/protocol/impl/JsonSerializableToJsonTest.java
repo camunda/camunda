@@ -33,6 +33,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.escalation.EscalationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -2777,6 +2778,42 @@ final class JsonSerializableToJsonTest {
          "desiredPartitionCount": 5
         }
         """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////// GroupRecord /////////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Group record",
+        (Supplier<GroupRecord>)
+            () ->
+                new GroupRecord()
+                    .setGroupKey(1L)
+                    .setName("group")
+                    .setEntityKey(2L)
+                    .setEntityType(EntityType.USER),
+        """
+      {
+        "groupKey": 1,
+        "name": "group",
+        "entityKey": 2,
+        "entityType": "USER"
+      }
+      """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// Empty GroupRecord /////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty GroupRecord",
+        (Supplier<GroupRecord>) GroupRecord::new,
+        """
+      {
+        "groupKey": -1,
+        "name": "",
+        "entityKey": -1,
+        "entityType": "UNSPECIFIED"
+      }
+      """
       },
     };
   }

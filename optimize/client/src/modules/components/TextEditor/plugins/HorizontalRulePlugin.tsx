@@ -27,7 +27,7 @@ export default function HorizontalRulePlugin() {
     return mergeRegister(
       editor.registerCommand(
         INSERT_HORIZONTAL_RULE_COMMAND,
-        (type) => {
+        () => {
           const selection = $getSelection();
 
           if (!$isRangeSelection(selection)) {

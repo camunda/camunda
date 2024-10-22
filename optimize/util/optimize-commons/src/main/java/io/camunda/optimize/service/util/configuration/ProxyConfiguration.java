@@ -93,46 +93,12 @@ public class ProxyConfiguration {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    result = result * PRIME + (isEnabled() ? 79 : 97);
-    final Object $host = getHost();
-    result = result * PRIME + ($host == null ? 43 : $host.hashCode());
-    final Object $port = getPort();
-    result = result * PRIME + ($port == null ? 43 : $port.hashCode());
-    result = result * PRIME + (isSslEnabled() ? 79 : 97);
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof ProxyConfiguration)) {
-      return false;
-    }
-    final ProxyConfiguration other = (ProxyConfiguration) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (isEnabled() != other.isEnabled()) {
-      return false;
-    }
-    final Object this$host = getHost();
-    final Object other$host = other.getHost();
-    if (this$host == null ? other$host != null : !this$host.equals(other$host)) {
-      return false;
-    }
-    final Object this$port = getPort();
-    final Object other$port = other.getPort();
-    if (this$port == null ? other$port != null : !this$port.equals(other$port)) {
-      return false;
-    }
-    if (isSslEnabled() != other.isSslEnabled()) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

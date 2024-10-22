@@ -68,6 +68,9 @@ final class BackupEndpointTest {
               new BrokerErrorException(new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "failure")),
               503),
           Arguments.of(
+              new BrokerErrorException(new BrokerError(ErrorCode.PARTITION_UNAVAILABLE, "failure")),
+              500),
+          Arguments.of(
               new BrokerErrorException(new BrokerError(ErrorCode.INTERNAL_ERROR, "failure")), 500),
           Arguments.of(
               new BrokerErrorException(new BrokerError(ErrorCode.UNSUPPORTED_MESSAGE, "failure")),

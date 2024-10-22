@@ -57,48 +57,11 @@ public class EntityNameRequestDto {
   }
 
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $collectionId = this.getCollectionId();
-    result = result * PRIME + ($collectionId == null ? 43 : $collectionId.hashCode());
-    final Object $dashboardId = this.getDashboardId();
-    result = result * PRIME + ($dashboardId == null ? 43 : $dashboardId.hashCode());
-    final Object $reportId = this.getReportId();
-    result = result * PRIME + ($reportId == null ? 43 : $reportId.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof EntityNameRequestDto)) {
-      return false;
-    }
-    final EntityNameRequestDto other = (EntityNameRequestDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$collectionId = this.getCollectionId();
-    final Object other$collectionId = other.getCollectionId();
-    if (this$collectionId == null
-        ? other$collectionId != null
-        : !this$collectionId.equals(other$collectionId)) {
-      return false;
-    }
-    final Object this$dashboardId = this.getDashboardId();
-    final Object other$dashboardId = other.getDashboardId();
-    if (this$dashboardId == null
-        ? other$dashboardId != null
-        : !this$dashboardId.equals(other$dashboardId)) {
-      return false;
-    }
-    final Object this$reportId = this.getReportId();
-    final Object other$reportId = other.getReportId();
-    if (this$reportId == null ? other$reportId != null : !this$reportId.equals(other$reportId)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   public String toString() {

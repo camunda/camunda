@@ -236,6 +236,25 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::userTaskSearchQuery);
   }
 
+  public static Either<ProblemDetail, VariableQuery> toUserTaskVariableQuery(
+      final UserTaskVariablesSearchQueryRequest request, final List<Long> treePath) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.variableSearchQuery().build());
+    }
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        toSearchQuerySort(
+            request.getSort(),
+            SortOptionBuilders::variable,
+            SearchQueryRequestMapper::applyVariableSortField);
+
+    final var variableFilterBuilder = FilterBuilders.variable();
+    variableFilterBuilder.scopeKeys(treePath);
+
+    return buildSearchQuery(
+        variableFilterBuilder.build(), sort, page, SearchQueryBuilders::variableSearchQuery);
+  }
+
   public static Either<ProblemDetail, VariableQuery> toVariableQuery(
       final VariableSearchQueryRequest request) {
 

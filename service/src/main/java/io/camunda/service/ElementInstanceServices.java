@@ -8,6 +8,7 @@
 package io.camunda.service;
 
 import io.camunda.security.auth.Authentication;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerSetVariablesRequest;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
@@ -17,13 +18,15 @@ import java.util.concurrent.CompletableFuture;
 public class ElementInstanceServices extends ApiServices<ElementInstanceServices> {
 
   public ElementInstanceServices(
-      final BrokerClient brokerClient, final Authentication authentication) {
-    super(brokerClient, authentication);
+      final BrokerClient brokerClient,
+      final SecurityConfiguration securityConfiguration,
+      final Authentication authentication) {
+    super(brokerClient, securityConfiguration, authentication);
   }
 
   @Override
   public ElementInstanceServices withAuthentication(final Authentication authentication) {
-    return new ElementInstanceServices(brokerClient, authentication);
+    return new ElementInstanceServices(brokerClient, securityConfiguration, authentication);
   }
 
   public CompletableFuture<VariableDocumentRecord> setVariables(final SetVariablesRequest request) {

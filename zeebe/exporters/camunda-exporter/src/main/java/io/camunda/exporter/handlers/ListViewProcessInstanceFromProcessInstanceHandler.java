@@ -201,7 +201,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
     return record.getIntent() == ELEMENT_MIGRATED;
   }
 
-  private static String getProcessInstanceScript() {
+  protected String getProcessInstanceScript() {
     return String.format(
         "if (ctx._source.%s == null || ctx._source.%s < params.%s) { "
             + "ctx._source.%s = params.%s; " // position

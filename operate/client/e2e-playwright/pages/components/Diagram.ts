@@ -48,18 +48,26 @@ export class Diagram {
     return this.getFlowNode(flowNodeName).click();
   }
 
-  async clickEvent(eventName: string) {
-    const event = await this.getEvent(eventName);
-    return event.click();
-  }
-
   getFlowNode(flowNodeName: string) {
     return this.diagram
       .locator('.djs-element')
       .filter({hasText: new RegExp(`^${flowNodeName}$`, 'i')});
   }
 
-  async getEvent(eventName: string) {
+  clickGateway(gatewayName: string) {
+    return this.clickLabeledElement(gatewayName);
+  }
+
+  clickEvent(eventName: string) {
+    return this.clickLabeledElement(eventName);
+  }
+
+  async clickLabeledElement(label: string) {
+    const element = await this.getLabeledElement(label);
+    return element.click();
+  }
+
+  async getLabeledElement(eventName: string) {
     const eventLabel = this.diagram
       .locator('.djs-element')
       .filter({hasText: new RegExp(`${eventName}`, 'i')});

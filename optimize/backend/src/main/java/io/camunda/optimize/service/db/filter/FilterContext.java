@@ -29,32 +29,12 @@ public final class FilterContext {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $timezone = getTimezone();
-    result = result * PRIME + ($timezone == null ? 43 : $timezone.hashCode());
-    result = result * PRIME + (isUserTaskReport() ? 79 : 97);
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof FilterContext)) {
-      return false;
-    }
-    final FilterContext other = (FilterContext) o;
-    final Object this$timezone = getTimezone();
-    final Object other$timezone = other.getTimezone();
-    if (this$timezone == null ? other$timezone != null : !this$timezone.equals(other$timezone)) {
-      return false;
-    }
-    if (isUserTaskReport() != other.isUserTaskReport()) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

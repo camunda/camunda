@@ -42,7 +42,7 @@ public class FlownodeInstanceFilterImpl
   }
 
   @Override
-  public FlownodeInstanceFilter bpmnProcessId(final String value) {
+  public FlownodeInstanceFilter processDefinitionId(final String value) {
     filter.processDefinitionId(value);
     return this;
   }

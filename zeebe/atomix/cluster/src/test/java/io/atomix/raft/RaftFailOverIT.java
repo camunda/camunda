@@ -17,20 +17,25 @@ package io.atomix.raft;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.atomix.raft.impl.RaftContext.State;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
+import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RunWith(Parameterized.class)
 public class RaftFailOverIT {
-
+  private static final Logger LOG = LoggerFactory.getLogger(RaftFailOverIT.class);
   @Rule @Parameter public RaftRule raftRule;
 
   @Parameters(name = "{index}: {0}")
@@ -64,6 +69,55 @@ public class RaftFailOverIT {
             .orElseThrow();
     assertThat(maxIndex).isEqualTo(lastIndex);
     assertMemberLogs(memberLog);
+  }
+
+  @Test
+  public void onFollowerRestartItBecomesReady() throws Exception {
+    Awaitility.await("Leader is up").until(() -> raftRule.getLeader().isPresent());
+    assertThat(
+            raftRule.getServers().stream()
+                .map(s -> s.getContext().getCommitIndex())
+                .distinct()
+                .count())
+        .isEqualTo(1L);
+
+    final var follower = raftRule.shutdownFollower();
+    raftRule.joinCluster(follower);
+
+    final var server = raftRule.getServer(follower);
+    Awaitility.await("Follower should be ready")
+        .until(() -> server.getContext().getState() == State.READY);
+  }
+
+  @Test
+  public void onFollowerRestartItBecomesReadyOnlyAfterCatchingUp() throws Exception {
+    Awaitility.await("Leader is up").until(() -> raftRule.getLeader().isPresent());
+    assertThat(
+            raftRule.getServers().stream()
+                .map(s -> s.getContext().getCommitIndex())
+                .distinct()
+                .count())
+        .isEqualTo(1L);
+
+    final var follower = raftRule.shutdownFollower();
+
+    raftRule.appendEntries(32);
+
+    final var bootstrapFuture = raftRule.bootstrapNodeAsync(follower);
+    final var server = raftRule.getServer(follower);
+
+    final Map<Long, State> states = new TreeMap<>();
+    server
+        .getContext()
+        .addStateChangeListener(
+            state -> {
+              final var commitIdx = server.getContext().getCommitIndex();
+              states.put(commitIdx, state);
+            });
+
+    bootstrapFuture.join();
+    assertThat(states)
+        .isEqualTo(Map.ofEntries(Map.entry(1L, State.ACTIVE), Map.entry(33L, State.READY)));
   }
 
   @Test
@@ -196,6 +250,7 @@ public class RaftFailOverIT {
     raftRule.takeCompactingSnapshot(200);
 
     // when
+    LOG.debug("Follower %s joining cluster".formatted(follower));
     raftRule.joinCluster(follower);
 
     // then

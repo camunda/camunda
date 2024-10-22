@@ -67,54 +67,12 @@ public class TokenResponseDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $accessToken = getAccessToken();
-    result = result * PRIME + ($accessToken == null ? 43 : $accessToken.hashCode());
-    final Object $tokenType = getTokenType();
-    result = result * PRIME + ($tokenType == null ? 43 : $tokenType.hashCode());
-    final long $expiresIn = getExpiresIn();
-    result = result * PRIME + (int) ($expiresIn >>> 32 ^ $expiresIn);
-    final Object $scope = getScope();
-    result = result * PRIME + ($scope == null ? 43 : $scope.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof TokenResponseDto)) {
-      return false;
-    }
-    final TokenResponseDto other = (TokenResponseDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$accessToken = getAccessToken();
-    final Object other$accessToken = other.getAccessToken();
-    if (this$accessToken == null
-        ? other$accessToken != null
-        : !this$accessToken.equals(other$accessToken)) {
-      return false;
-    }
-    final Object this$tokenType = getTokenType();
-    final Object other$tokenType = other.getTokenType();
-    if (this$tokenType == null
-        ? other$tokenType != null
-        : !this$tokenType.equals(other$tokenType)) {
-      return false;
-    }
-    if (getExpiresIn() != other.getExpiresIn()) {
-      return false;
-    }
-    final Object this$scope = getScope();
-    final Object other$scope = other.getScope();
-    if (this$scope == null ? other$scope != null : !this$scope.equals(other$scope)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

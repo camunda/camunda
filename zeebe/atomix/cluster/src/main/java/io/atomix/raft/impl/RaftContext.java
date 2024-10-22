@@ -158,6 +158,9 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private final RaftPartitionConfig partitionConfig;
   private final int partitionId;
 
+  // after firstCommitIndex is set it will be null
+  private AwaitingReadyCommitListener awaitingReadyCommitListener;
+
   public RaftContext(
       final String name,
       final int partitionId,
@@ -204,7 +207,6 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     // Load the current term and last vote from disk.
     term = meta.loadTerm();
     lastVotedFor = meta.loadVote();
-
     // Construct the core log, reader, writer, and compactor.
     raftLog =
         storage.openLog(
@@ -251,7 +253,19 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     registerHandlers(protocol);
     started = true;
 
-    addCommitListener(new AwaitingReadyCommitListener());
+    if (meta.hasCommitIndex()) {
+      setCommitIndex(meta.commitIndex());
+    }
+
+    log.debug(
+        "Server started with term={}, lastVotedFor={}, lastFlushedIndex={}, commitIndex={}",
+        term,
+        lastVotedFor,
+        meta.loadLastFlushedIndex(),
+        commitIndex);
+
+    // initialize the listener after setCommitIndex has been called
+    awaitingReadyCommitListener = new AwaitingReadyCommitListener();
 
     if (!raftLog.isEmpty() && term == 0) {
       // This will only happen when metastore is empty because the node has just restored from a
@@ -534,12 +548,19 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
         // leader counts itself in quorum, so in order to commit the leader must persist
         raftLog.flush();
       }
-      final long configurationIndex = cluster.getConfiguration().index();
-      if (configurationIndex > previousCommitIndex && configurationIndex <= commitIndex) {
-        cluster.commitCurrentConfiguration();
+      meta.storeCommitIndex(commitIndex);
+      final var clusterConfig = cluster.getConfiguration();
+      if (clusterConfig != null) {
+        final long configurationIndex = clusterConfig.index();
+        if (configurationIndex > previousCommitIndex && configurationIndex <= commitIndex) {
+          cluster.commitCurrentConfiguration();
+        }
       }
       replicationMetrics.setCommitIndex(commitIndex);
       notifyCommitListeners(commitIndex);
+    }
+    if (awaitingReadyCommitListener != null) {
+      awaitingReadyCommitListener.onCommit(commitIndex);
     }
     return previousCommitIndex;
   }
@@ -883,7 +904,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       }
       this.firstCommitIndex = firstCommitIndex;
       log.info(
-          "Setting firstCommitIndex to {}. RaftServer is ready only after it has committed events upto this index",
+          "Setting firstCommitIndex to {}. RaftServer is ready only after it has committed events up to this index",
           firstCommitIndex);
     }
   }
@@ -1250,19 +1271,18 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     COMPLETED
   }
 
-  /** Commit listener is active only until the server is ready * */
+  /** Commit listener is active only until the server is ready */
   final class AwaitingReadyCommitListener implements RaftCommitListener {
     private final Logger throttledLogger = new ThrottledLogger(log, Duration.ofSeconds(30));
 
     @Override
     public void onCommit(final long index) {
-      setFirstCommitIndex(index);
       // On start up, set the state to READY after the follower has caught up with the leader
       // https://github.com/zeebe-io/zeebe/issues/4877
       if (index >= firstCommitIndex) {
         log.info("Commit index is {}. RaftServer is ready", index);
         updateState(State.READY);
-        removeCommitListener(this);
+        awaitingReadyCommitListener = null;
       } else {
         throttledLogger.info(
             "Commit index is {}. RaftServer is ready only after it has committed events up to index {}",

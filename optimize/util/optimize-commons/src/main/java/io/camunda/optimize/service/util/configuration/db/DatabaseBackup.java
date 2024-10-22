@@ -31,35 +31,12 @@ public class DatabaseBackup {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $snapshotRepositoryName = getSnapshotRepositoryName();
-    result =
-        result * PRIME
-            + ($snapshotRepositoryName == null ? 43 : $snapshotRepositoryName.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof DatabaseBackup)) {
-      return false;
-    }
-    final DatabaseBackup other = (DatabaseBackup) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$snapshotRepositoryName = getSnapshotRepositoryName();
-    final Object other$snapshotRepositoryName = other.getSnapshotRepositoryName();
-    if (this$snapshotRepositoryName == null
-        ? other$snapshotRepositoryName != null
-        : !this$snapshotRepositoryName.equals(other$snapshotRepositoryName)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

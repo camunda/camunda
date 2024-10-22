@@ -17,6 +17,7 @@ package io.camunda.zeebe.client.impl.search.response;
 
 import io.camunda.zeebe.client.api.search.response.FlowNodeInstance;
 import io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceItem;
+import java.util.Objects;
 
 public final class FlowNodeInstanceImpl implements FlowNodeInstance {
 
@@ -106,5 +107,45 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
   @Override
   public String getType() {
     return type.getValue();
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        flowNodeInstanceKey,
+        processDefinitionKey,
+        processInstanceKey,
+        flowNodeId,
+        startDate,
+        endDate,
+        incident,
+        incidentKey,
+        state,
+        tenantId,
+        treePath,
+        type);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final FlowNodeInstanceImpl that = (FlowNodeInstanceImpl) o;
+    return Objects.equals(flowNodeInstanceKey, that.flowNodeInstanceKey)
+        && Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(processInstanceKey, that.processInstanceKey)
+        && Objects.equals(flowNodeId, that.flowNodeId)
+        && Objects.equals(startDate, that.startDate)
+        && Objects.equals(endDate, that.endDate)
+        && Objects.equals(incident, that.incident)
+        && Objects.equals(incidentKey, that.incidentKey)
+        && state == that.state
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(treePath, that.treePath)
+        && type == that.type;
   }
 }

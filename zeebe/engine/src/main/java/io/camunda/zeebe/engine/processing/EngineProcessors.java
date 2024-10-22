@@ -176,7 +176,8 @@ public final class EngineProcessors {
             config,
             authCheckBehavior);
 
-    addDecisionProcessors(typedRecordProcessors, decisionBehavior, writers, processingState);
+    addDecisionProcessors(
+        typedRecordProcessors, decisionBehavior, writers, processingState, authCheckBehavior);
 
     JobEventProcessors.addJobProcessors(
         typedRecordProcessors,
@@ -194,7 +195,8 @@ public final class EngineProcessors {
         bpmnStreamProcessor,
         typedRecordProcessors,
         writers,
-        bpmnBehaviors.jobActivationBehavior());
+        bpmnBehaviors.jobActivationBehavior(),
+        authCheckBehavior);
     addResourceDeletionProcessors(
         typedRecordProcessors,
         writers,
@@ -249,7 +251,7 @@ public final class EngineProcessors {
 
     TenantProcessors.addTenantProcessors(
         typedRecordProcessors,
-        processingState.getTenantState(),
+        processingState,
         authCheckBehavior,
         keyGenerator,
         writers,
@@ -368,13 +370,15 @@ public final class EngineProcessors {
       final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
-      final BpmnJobActivationBehavior jobActivationBehavior) {
+      final BpmnJobActivationBehavior jobActivationBehavior,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     IncidentEventProcessors.addProcessors(
         typedRecordProcessors,
         processingState,
         bpmnStreamProcessor,
         writers,
-        jobActivationBehavior);
+        jobActivationBehavior,
+        authCheckBehavior);
   }
 
   private static void addMessageProcessors(
@@ -407,11 +411,12 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final DecisionBehavior decisionBehavior,
       final Writers writers,
-      final MutableProcessingState processingState) {
+      final MutableProcessingState processingState,
+      final AuthorizationCheckBehavior authCheckBehavior) {
 
     final DecisionEvaluationEvaluteProcessor decisionEvaluationEvaluteProcessor =
         new DecisionEvaluationEvaluteProcessor(
-            decisionBehavior, processingState.getKeyGenerator(), writers);
+            decisionBehavior, processingState.getKeyGenerator(), writers, authCheckBehavior);
     typedRecordProcessors.onCommand(
         ValueType.DECISION_EVALUATION,
         DecisionEvaluationIntent.EVALUATE,

@@ -78,65 +78,12 @@ public class ProcessOverviewResponseDto {
 
   @Override
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $processDefinitionName = getProcessDefinitionName();
-    result =
-        result * PRIME + ($processDefinitionName == null ? 43 : $processDefinitionName.hashCode());
-    final Object $processDefinitionKey = getProcessDefinitionKey();
-    result =
-        result * PRIME + ($processDefinitionKey == null ? 43 : $processDefinitionKey.hashCode());
-    final Object $owner = getOwner();
-    result = result * PRIME + ($owner == null ? 43 : $owner.hashCode());
-    final Object $digest = getDigest();
-    result = result * PRIME + ($digest == null ? 43 : $digest.hashCode());
-    final Object $kpis = getKpis();
-    result = result * PRIME + ($kpis == null ? 43 : $kpis.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof ProcessOverviewResponseDto)) {
-      return false;
-    }
-    final ProcessOverviewResponseDto other = (ProcessOverviewResponseDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$processDefinitionName = getProcessDefinitionName();
-    final Object other$processDefinitionName = other.getProcessDefinitionName();
-    if (this$processDefinitionName == null
-        ? other$processDefinitionName != null
-        : !this$processDefinitionName.equals(other$processDefinitionName)) {
-      return false;
-    }
-    final Object this$processDefinitionKey = getProcessDefinitionKey();
-    final Object other$processDefinitionKey = other.getProcessDefinitionKey();
-    if (this$processDefinitionKey == null
-        ? other$processDefinitionKey != null
-        : !this$processDefinitionKey.equals(other$processDefinitionKey)) {
-      return false;
-    }
-    final Object this$owner = getOwner();
-    final Object other$owner = other.getOwner();
-    if (this$owner == null ? other$owner != null : !this$owner.equals(other$owner)) {
-      return false;
-    }
-    final Object this$digest = getDigest();
-    final Object other$digest = other.getDigest();
-    if (this$digest == null ? other$digest != null : !this$digest.equals(other$digest)) {
-      return false;
-    }
-    final Object this$kpis = getKpis();
-    final Object other$kpis = other.getKpis();
-    if (this$kpis == null ? other$kpis != null : !this$kpis.equals(other$kpis)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override

@@ -70,6 +70,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.awaitility.Awaitility;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
@@ -235,12 +236,20 @@ public final class RaftRule extends ExternalResource {
     bootstrapNode(nodeId, configurator);
   }
 
-  public void bootstrapNode(final String nodeId, final Configurator configurator) throws Exception {
+  public CompletableFuture<Void> bootstrapNodeAsync(final String nodeId) {
+    return bootstrapNodeAsync(nodeId, configurator);
+  }
+
+  public CompletableFuture<Void> bootstrapNodeAsync(
+      final String nodeId, final Configurator configurator) {
     final RaftMember member = getRaftMember(nodeId);
-    createServer(member.memberId(), configurator)
+    return createServer(member.memberId(), configurator)
         .bootstrap(getMemberIds())
-        .thenAccept(this::addCommitListener)
-        .get(30, TimeUnit.SECONDS);
+        .thenAccept(this::addCommitListener);
+  }
+
+  public void bootstrapNode(final String nodeId, final Configurator configurator) throws Exception {
+    bootstrapNodeAsync(nodeId, configurator).get(30, TimeUnit.SECONDS);
   }
 
   public void bootstrapNodeWithMemberIds(final String nodeId, final List<MemberId> memberIds)
@@ -270,6 +279,10 @@ public final class RaftRule extends ExternalResource {
 
   public Collection<RaftServer> getServers() {
     return servers.values();
+  }
+
+  public RaftServer getServer(final String id) {
+    return servers.get(id);
   }
 
   public void shutdownServer(final RaftServer raftServer) throws Exception {
@@ -495,6 +508,10 @@ public final class RaftRule extends ExternalResource {
     commitAwaiterRef.set(commitAwaiter);
 
     commitAwaiter.awaitCommit();
+  }
+
+  public RaftServer createServer(final MemberId memberId) {
+    return createServer(memberId, configurator);
   }
 
   private RaftServer createServer(final MemberId memberId, final Configurator configurator) {

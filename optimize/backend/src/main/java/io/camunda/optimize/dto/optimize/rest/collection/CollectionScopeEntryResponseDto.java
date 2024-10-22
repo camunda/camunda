@@ -80,48 +80,7 @@ public class CollectionScopeEntryResponseDto {
   }
 
   public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof CollectionScopeEntryResponseDto)) {
-      return false;
-    }
-    final CollectionScopeEntryResponseDto other = (CollectionScopeEntryResponseDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    final Object this$id = this.getId();
-    final Object other$id = other.getId();
-    if (this$id == null ? other$id != null : !this$id.equals(other$id)) {
-      return false;
-    }
-    final Object this$definitionType = this.getDefinitionType();
-    final Object other$definitionType = other.getDefinitionType();
-    if (this$definitionType == null
-        ? other$definitionType != null
-        : !this$definitionType.equals(other$definitionType)) {
-      return false;
-    }
-    final Object this$definitionKey = this.getDefinitionKey();
-    final Object other$definitionKey = other.getDefinitionKey();
-    if (this$definitionKey == null
-        ? other$definitionKey != null
-        : !this$definitionKey.equals(other$definitionKey)) {
-      return false;
-    }
-    final Object this$definitionName = this.getDefinitionName();
-    final Object other$definitionName = other.getDefinitionName();
-    if (this$definitionName == null
-        ? other$definitionName != null
-        : !this$definitionName.equals(other$definitionName)) {
-      return false;
-    }
-    final Object this$tenants = this.getTenants();
-    final Object other$tenants = other.getTenants();
-    if (this$tenants == null ? other$tenants != null : !this$tenants.equals(other$tenants)) {
-      return false;
-    }
-    return true;
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   protected boolean canEqual(final Object other) {
@@ -129,19 +88,7 @@ public class CollectionScopeEntryResponseDto {
   }
 
   public int hashCode() {
-    final int PRIME = 59;
-    int result = 1;
-    final Object $id = this.getId();
-    result = result * PRIME + ($id == null ? 43 : $id.hashCode());
-    final Object $definitionType = this.getDefinitionType();
-    result = result * PRIME + ($definitionType == null ? 43 : $definitionType.hashCode());
-    final Object $definitionKey = this.getDefinitionKey();
-    result = result * PRIME + ($definitionKey == null ? 43 : $definitionKey.hashCode());
-    final Object $definitionName = this.getDefinitionName();
-    result = result * PRIME + ($definitionName == null ? 43 : $definitionName.hashCode());
-    final Object $tenants = this.getTenants();
-    result = result * PRIME + ($tenants == null ? 43 : $tenants.hashCode());
-    return result;
+    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   public String toString() {

@@ -14,7 +14,8 @@ import EntityNameForm from './EntityNameForm';
 
 jest.mock('hooks', () => ({
   useErrorHandling: jest.fn().mockReturnValue({
-    mightFail: (promise: Promise<any>, cb: ((response: any) => any) | undefined) => cb?.(promise),
+    mightFail: (promise: Promise<unknown>, cb: ((response: unknown) => unknown) | undefined) =>
+      cb?.(promise),
   }),
 }));
 
