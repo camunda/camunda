@@ -31,15 +31,20 @@ jest.mock('hooks', () => ({
   useUser: jest.fn().mockReturnValue({user: {authorizations: [], name: 'userName'}}),
 }));
 
-const UserMenu = ({version}: {version?: string}) => {
-  const menu = useUserMenu(version);
+const props = {
+  version: '1.0.0',
+  timezoneInfo: 'Europe/Berlin',
+};
+
+const UserMenu = ({version, timezoneInfo}: {version: string; timezoneInfo: string}) => {
+  const menu = useUserMenu(version, timezoneInfo);
   return <div {...(menu as ComponentProps<'div'>)} />;
 };
 
 it('should go to temporary logout route on logout', () => {
   const spy = {replace: jest.fn()};
   (useHistory as jest.Mock).mockReturnValue(spy);
-  const node = shallow(<UserMenu />);
+  const node = shallow(<UserMenu {...props} />);
 
   const logout = node.props().bottomElements[0];
   logout.onClick();
@@ -48,7 +53,7 @@ it('should go to temporary logout route on logout', () => {
 
 it('should hide logout button if specified by the ui config', () => {
   (isLogoutHidden as jest.Mock).mockReturnValueOnce(true);
-  const node = shallow(<UserMenu />);
+  const node = shallow(<UserMenu {...props} />);
 
   runLastEffect();
 
@@ -57,7 +62,7 @@ it('should hide logout button if specified by the ui config', () => {
 });
 
 it('should display verison info in user menu', () => {
-  const node = shallow(<UserMenu version="1.0.0" />);
+  const node = shallow(<UserMenu {...props} />);
 
   const version = node.props().version;
   expect(version).toBe('1.0.0');

@@ -46,7 +46,9 @@ export default function Header({noActions}: {noActions?: boolean}) {
     validLicense,
     licenseType,
   } = useUiConfig();
-  const userSideBar = useUserMenu(optimizeVersion);
+  const timezoneInfo =
+    t('footer.timezone') + ' ' + Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const userSideBar = useUserMenu(optimizeVersion, timezoneInfo);
 
   useEffect(() => {
     mightFail(getUserToken(), setUserToken, showError);

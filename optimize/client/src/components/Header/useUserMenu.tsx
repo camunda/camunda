@@ -16,7 +16,7 @@ import {isLogoutHidden} from 'config';
 import {showError} from 'notifications';
 import {useErrorHandling, useUser} from 'hooks';
 
-export default function useUserMenu(optimizeVersion?: string) {
+export default function useUserMenu(optimizeVersion: string, timezone: string) {
   const [logoutHidden, setLogoutHidden] = useState(false);
   const history = useHistory();
   const {mightFail} = useErrorHandling();
@@ -37,6 +37,7 @@ export default function useUserMenu(optimizeVersion?: string) {
           name: user?.name || '',
         },
       },
+      customSection: <div className="timezone">{timezone}</div>,
     },
     elements: [
       {
