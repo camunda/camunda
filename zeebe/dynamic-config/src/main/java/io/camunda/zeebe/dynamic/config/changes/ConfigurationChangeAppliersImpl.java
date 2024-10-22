@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.dynamic.config.changes;
 
-import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
@@ -20,11 +18,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.util.Either;
-import java.util.function.UnaryOperator;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.StartPartitionScaleUpOperation;
 
 public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppliers {
 
@@ -93,40 +87,10 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
               bootstrapOperation.priority(),
               bootstrapOperation.memberId(),
               partitionChangeExecutor);
-      case null, default -> new FailingApplier(operation);
+      case StartPartitionScaleUpOperation(
+              final var ignoredMemberId,
+              final var desiredPartitionCount) ->
+          new StartPartitionScaleUpApplier(partitionScalingChangeExecutor, desiredPartitionCount);
     };
-  }
-
-  static class FailingApplier implements MemberOperationApplier {
-
-    private final ClusterConfigurationChangeOperation operation;
-
-    public FailingApplier(final ClusterConfigurationChangeOperation operation) {
-      this.operation = operation;
-    }
-
-    @Override
-    public MemberId memberId() {
-      return operation.memberId();
-    }
-
-    @Override
-    public Either<Exception, UnaryOperator<MemberState>> initMemberState(
-        final ClusterConfiguration currentClusterConfiguration) {
-      return Either.left(new UnknownOperationException(operation));
-    }
-
-    @Override
-    public ActorFuture<UnaryOperator<MemberState>> applyOperation() {
-      return CompletableActorFuture.completedExceptionally(
-          new UnknownOperationException(operation));
-    }
-
-    private static class UnknownOperationException extends RuntimeException {
-
-      public UnknownOperationException(final ClusterConfigurationChangeOperation operation) {
-        super("Unknown configuration change operation " + operation);
-      }
-    }
   }
 }
