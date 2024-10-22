@@ -14,8 +14,10 @@ import {loadDateTranslation} from 'dates';
 
 import {loadTranslation} from './service';
 
+type PrimitiveValue = string | number | boolean;
+
 interface TranslationObject {
-  [key: string]: string | number | TranslationObject;
+  [key: string]: PrimitiveValue | TranslationObject;
 }
 
 let translationObject: TranslationObject = {};
@@ -69,7 +71,7 @@ function injectData(template: string, data: TranslationObject = {}): string {
 
 function findValue(key: string, data: TranslationObject = {}): string {
   const keys = key.split('.');
-  let v: TranslationObject | undefined | string | number = data;
+  let v: TranslationObject | PrimitiveValue | undefined = data;
   for (let i = 0; i < keys.length; i++) {
     const currKey = keys[i];
     v = currKey && typeof v === 'object' ? v[currKey] : undefined;
