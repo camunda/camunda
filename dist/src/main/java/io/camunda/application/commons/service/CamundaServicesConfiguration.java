@@ -46,6 +46,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -207,7 +208,12 @@ public class CamundaServicesConfiguration {
 
   @Bean
   public SearchClients searchClients(
-      final DocumentBasedSearchClient searchClient, final BrokerBasedProperties brokerProperties) {
+      final DocumentBasedSearchClient searchClient,
+      // TODO: Temporary solution to change index reference for tasklist-task
+      @Autowired(required = false) final BrokerBasedProperties brokerProperties) {
+    if (brokerProperties == null) {
+      return new SearchClients(searchClient, false);
+    }
     final boolean isCamundaExporterEnabled =
         brokerProperties.getExporters().values().stream()
             .anyMatch(v -> "io.camunda.exporter.CamundaExporter".equals(v.getClassName()));
