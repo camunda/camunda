@@ -14,12 +14,16 @@ import java.io.IOException;
 
 public abstract class FilterDeserializer<T> extends JsonDeserializer<T> {
 
-  protected static final ObjectMapper OM = new ObjectMapper();
+  private final ObjectMapper objectMapper;
 
-  protected T deserialize(TreeNode node, Class<T> clazz) {
+  public FilterDeserializer(final ObjectMapper objectMapper) {
+    this.objectMapper = objectMapper;
+  }
+
+  protected T deserialize(final TreeNode node, final Class<T> clazz) {
     try {
-      return OM.readValue(node.traverse(OM), clazz);
-    } catch (IOException e) {
+      return objectMapper.readValue(node.traverse(objectMapper), clazz);
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }

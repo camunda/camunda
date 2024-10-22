@@ -22,6 +22,7 @@ import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.ProcessInstanceServices;
+import io.camunda.zeebe.gateway.rest.RestConfiguration;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import java.util.stream.Stream;
@@ -32,8 +33,10 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 
+@Import(RestConfiguration.class)
 @WebMvcTest(
     value = ProcessInstanceQueryController.class,
     properties = "camunda.rest.query.enabled=true")
@@ -435,14 +438,14 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
 
   @SafeVarargs
   private static Arguments processInstanceKeyArguments(
-      String filterValue, Operation<Long>... operations) {
+      final String filterValue, final Operation<Long>... operations) {
     final var filter = new ProcessInstanceFilter.Builder().processInstanceKeys(operations).build();
     return Arguments.of("processInstanceKey", filterValue, filter);
   }
 
   @SafeVarargs
   private static Arguments processDefinitionKeyArguments(
-      String filterValue, Operation<Long>... operations) {
+      final String filterValue, final Operation<Long>... operations) {
     final var filter =
         new ProcessInstanceFilter.Builder().processDefinitionKeys(operations).build();
     return Arguments.of("processDefinitionKey", filterValue, filter);
@@ -450,7 +453,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
 
   @SafeVarargs
   private static Arguments processDefinitionVersions(
-      String filterValue, Operation<Integer>... operations) {
+      final String filterValue, final Operation<Integer>... operations) {
     final var filter =
         new ProcessInstanceFilter.Builder().processDefinitionVersions(operations).build();
     return Arguments.of("processDefinitionVersion", filterValue, filter);
@@ -458,7 +461,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
 
   @SafeVarargs
   private static Arguments processDefinitionIdArguments(
-      String filterValue, Operation<String>... operations) {
+      final String filterValue, final Operation<String>... operations) {
     final var filter = new ProcessInstanceFilter.Builder().processDefinitionIds(operations).build();
     return Arguments.of("processDefinitionId", filterValue, filter);
   }
@@ -510,7 +513,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
   @ParameterizedTest
   @MethodSource("provideAdvancedSearchParameters")
   void shouldSearchProcessInstancesWithAdvancedFilter(
-      String filterKey, String filterValue, ProcessInstanceFilter filter) {
+      final String filterKey, final String filterValue, final ProcessInstanceFilter filter) {
     // given
     final var request =
         """

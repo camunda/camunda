@@ -24,6 +24,8 @@ import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.client.api.search.response.FlowNodeInstance;
 import io.camunda.zeebe.client.api.search.response.ProcessInstance;
+import io.camunda.zeebe.client.protocol.rest.LongFilter;
+import io.camunda.zeebe.client.protocol.rest.StringFilter;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.util.ArrayList;
@@ -186,6 +188,50 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   }
 
   @Test
+  void shouldQueryProcessInstancesByKeyFilterGtLt() {
+    // given
+    final long processInstanceKey =
+        PROCESS_INSTANCES.stream().findFirst().orElseThrow().getProcessInstanceKey();
+    final var longFilter = new LongFilter();
+    longFilter.set$Gt(processInstanceKey - 1);
+    longFilter.set$Lt(processInstanceKey + 1);
+
+    // when
+    final var result =
+        zeebeClient
+            .newProcessInstanceQuery()
+            .filter(f -> f.processInstanceKey(longFilter))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByKeyFilterGteLte() {
+    // given
+    final long processInstanceKey =
+        PROCESS_INSTANCES.stream().findFirst().orElseThrow().getProcessInstanceKey();
+    final var longFilter = new LongFilter();
+    longFilter.set$Gte(processInstanceKey);
+    longFilter.set$Lte(processInstanceKey);
+
+    // when
+    final var result =
+        zeebeClient
+            .newProcessInstanceQuery()
+            .filter(f -> f.processInstanceKey(longFilter))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
+  }
+
+  @Test
   void shouldQueryProcessInstancesByProcessDefinitionId() {
     // given
     final String bpmnProcessId = "service_tasks_v1";
@@ -201,6 +247,58 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
         zeebeClient
             .newProcessInstanceQuery()
             .filter(f -> f.processDefinitionId(bpmnProcessId))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
+  }
+
+  @Test
+  void shouldRetrieveProcessInstancesByProcessDefinitionIdFilterIn() {
+    // given
+    final String bpmnProcessId = "service_tasks_v1";
+    final long processInstanceKey =
+        PROCESS_INSTANCES.stream()
+            .filter(p -> Objects.equals(bpmnProcessId, p.getBpmnProcessId()))
+            .findFirst()
+            .orElseThrow()
+            .getProcessInstanceKey();
+    final var stringFilter = new StringFilter();
+    stringFilter.$in(List.of("non-existing", bpmnProcessId));
+
+    // when
+    final var result =
+        zeebeClient
+            .newProcessInstanceQuery()
+            .filter(f -> f.processDefinitionId(stringFilter))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
+  }
+
+  @Test
+  void shouldRetrieveProcessInstancesByProcessDefinitionIdFilterLike() {
+    // given
+    final String bpmnProcessId = "service_tasks_v1";
+    final long processInstanceKey =
+        PROCESS_INSTANCES.stream()
+            .filter(p -> Objects.equals(bpmnProcessId, p.getBpmnProcessId()))
+            .findFirst()
+            .orElseThrow()
+            .getProcessInstanceKey();
+    final var stringFilter = new StringFilter();
+    stringFilter.$like(bpmnProcessId.replace("_", "?"));
+
+    // when
+    final var result =
+        zeebeClient
+            .newProcessInstanceQuery()
+            .filter(f -> f.processDefinitionId(stringFilter))
             .send()
             .join();
 

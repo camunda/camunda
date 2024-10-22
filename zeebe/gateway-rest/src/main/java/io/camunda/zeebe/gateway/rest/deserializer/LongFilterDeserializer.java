@@ -7,22 +7,22 @@
  */
 package io.camunda.zeebe.gateway.rest.deserializer;
 
-import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NumericNode;
 import io.camunda.zeebe.gateway.protocol.rest.LongFilter;
-import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import java.io.IOException;
-import org.springframework.boot.jackson.JsonComponent;
 
-@ConditionalOnRestGatewayEnabled
-@JsonComponent
 public class LongFilterDeserializer extends FilterDeserializer<LongFilter> {
+
+  public LongFilterDeserializer(final ObjectMapper objectMapper) {
+    super(objectMapper);
+  }
 
   @Override
   public LongFilter deserialize(final JsonParser parser, final DeserializationContext context)
-      throws IOException, JacksonException {
+      throws IOException {
 
     final var treeNode = parser.getCodec().readTree(parser);
     final var filter = new LongFilter();
