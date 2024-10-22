@@ -122,7 +122,9 @@ jobs:
       #########################################################################
       # Build frontend
       - name: Build frontend
-        uses: ./.github/actions/build-operate-fe
+        uses: ./.github/actions/build-frontend
+        with:
+          directory: ./operate/client
 
       #########################################################################
       # Release: run Maven release
