@@ -27,12 +27,16 @@ import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import io.grpc.Status;
+import io.grpc.Status.Code;
+import io.grpc.StatusRuntimeException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.concurrent.Future;
 import org.agrona.DirectBuffer;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -88,6 +92,13 @@ public class BrokerAdminServiceTest {
     final var status = partitions.resumeProcessing();
 
     // then
+    try (final var client = zeebe.newClientBuilder().build()) {
+      final Future<?> response =
+          client.newPublishMessageCommand().messageName("test2").correlationKey("test-key").send();
+
+      assertThat(response).isNotNull().succeedsWithin(Duration.ofSeconds(5));
+    }
+
     assertThat(status.get(1).streamProcessorPhase()).isEqualTo(Phase.PROCESSING.toString());
   }
 
@@ -107,7 +118,11 @@ public class BrokerAdminServiceTest {
           .failsWithin(Duration.ofSeconds(5))
           .withThrowableThat()
           .havingCause()
-          .withMessageContaining("Processing paused for partition");
+          .withMessageContaining("UNAVAILABLE: Processing paused for partition")
+          .asInstanceOf(InstanceOfAssertFactories.throwable(StatusRuntimeException.class))
+          .extracting(StatusRuntimeException::getStatus)
+          .extracting(Status::getCode)
+          .isEqualTo(Code.UNAVAILABLE);
     }
   }
 
