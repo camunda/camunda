@@ -22,7 +22,11 @@ const isMigratableFlowNode = (businessObject: BusinessObject) => {
     }) &&
     hasEventType({
       businessObject,
-      types: ['bpmn:MessageEventDefinition', 'bpmn:TimerEventDefinition'],
+      types: [
+        'bpmn:MessageEventDefinition',
+        'bpmn:TimerEventDefinition',
+        'bpmn:SignalEventDefinition',
+      ],
     })
   ) {
     return true;
@@ -38,7 +42,11 @@ const isMigratableFlowNode = (businessObject: BusinessObject) => {
     }) &&
     hasEventType({
       businessObject,
-      types: ['bpmn:MessageEventDefinition', 'bpmn:TimerEventDefinition'],
+      types: [
+        'bpmn:MessageEventDefinition',
+        'bpmn:TimerEventDefinition',
+        'bpmn:SignalEventDefinition',
+      ],
     })
   ) {
     return true;
@@ -54,13 +62,35 @@ const isMigratableFlowNode = (businessObject: BusinessObject) => {
   ) {
     return isEventSubProcess({
       businessObject,
-      eventTypes: ['bpmn:MessageEventDefinition', 'bpmn:TimerEventDefinition'],
+      eventTypes: [
+        'bpmn:MessageEventDefinition',
+        'bpmn:TimerEventDefinition',
+        'bpmn:SignalEventDefinition',
+      ],
     });
   }
 
+  /**
+   * Check exclusive and event based gateways
+   */
+  if (
+    hasType({
+      businessObject,
+      types: ['bpmn:ExclusiveGateway', 'bpmn:EventBasedGateway'],
+    })
+  ) {
+    return true;
+  }
+
+  /**
+   * Check start events inside event sub processes
+   */
   if (
     hasType({businessObject, types: ['bpmn:StartEvent']}) &&
-    hasEventType({businessObject, types: ['bpmn:TimerEventDefinition']}) &&
+    hasEventType({
+      businessObject,
+      types: ['bpmn:TimerEventDefinition', 'bpmn:SignalEventDefinition'],
+    }) &&
     businessObject.$parent !== undefined &&
     isEventSubProcess({businessObject: businessObject.$parent})
   ) {

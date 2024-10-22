@@ -42,6 +42,7 @@ public class TaskSearchView {
   private String[] sortValues;
   private TaskImplementation implementation;
   private Integer priority;
+  private String externalFormReference;
 
   public String getId() {
     return id;
@@ -241,6 +242,15 @@ public class TaskSearchView {
     return this;
   }
 
+  public String getExternalFormReference() {
+    return externalFormReference;
+  }
+
+  public TaskSearchView setExternalFormReference(String externalFormReference) {
+    this.externalFormReference = externalFormReference;
+    return this;
+  }
+
   public Integer getPriority() {
     return priority;
   }
@@ -274,7 +284,8 @@ public class TaskSearchView {
             dueDate,
             first,
             implementation,
-            priority);
+            priority,
+            externalFormReference);
     result = 31 * result + Arrays.hashCode(candidateGroups);
     result = 31 * result + Arrays.hashCode(candidateUsers);
     result = 31 * result + Arrays.hashCode(sortValues);
@@ -315,7 +326,8 @@ public class TaskSearchView {
         && Objects.equals(followUpDate, that.followUpDate)
         && Objects.equals(dueDate, that.dueDate)
         && Objects.equals(priority, that.priority)
-        && Arrays.equals(sortValues, that.sortValues);
+        && Arrays.equals(sortValues, that.sortValues)
+        && Objects.equals(externalFormReference, that.externalFormReference);
   }
 
   @Override
@@ -370,7 +382,8 @@ public class TaskSearchView {
             .setCandidateGroups(taskEntity.getCandidateGroups())
             .setCandidateUsers(taskEntity.getCandidateUsers())
             .setImplementation(taskEntity.getImplementation())
-            .setPriority(taskEntity.getPriority());
+            .setPriority(taskEntity.getPriority())
+            .setExternalFormReference(taskEntity.getExternalFormReference());
     if (sortValues != null) {
       taskSearchView.setSortValues(toArrayOfStrings(sortValues));
     }

@@ -8,7 +8,6 @@
 package io.camunda.zeebe.broker.transport.commandapi;
 
 import io.camunda.zeebe.broker.Loggers;
-import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.system.configuration.QueryApiCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.transport.queryapi.QueryApiRequestHandler;
@@ -17,14 +16,13 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.ServerTransport;
 import org.agrona.collections.IntHashSet;
 
 public final class CommandApiServiceImpl extends Actor
-    implements PartitionListener, DiskSpaceUsageListener, CommandApiService {
+    implements DiskSpaceUsageListener, CommandApiService {
 
   private final ServerTransport serverTransport;
   private final CommandApiRequestHandler commandHandler;
@@ -56,7 +54,7 @@ public final class CommandApiServiceImpl extends Actor
   @Override
   protected void onActorClosing() {
     for (final Integer leadPartition : leadPartitions) {
-      removeLeaderHandlers(leadPartition);
+      unregisterHandlers(leadPartition);
     }
     leadPartitions.clear();
     actor.runOnCompletion(
@@ -73,57 +71,6 @@ public final class CommandApiServiceImpl extends Actor
             Loggers.TRANSPORT_LOGGER.warn("Failed to close query API request handler", error);
           }
         });
-  }
-
-  @Override
-  public ActorFuture<Void> onBecomingFollower(final int partitionId, final long term) {
-    return removeLeaderHandlersAsync(partitionId);
-  }
-
-  @Override
-  public ActorFuture<Void> onBecomingLeader(
-      final int partitionId,
-      final long term,
-      final LogStream logStream,
-      final QueryService queryService) {
-    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-    actor.call(
-        () -> {
-          leadPartitions.add(partitionId);
-          queryHandler.addPartition(partitionId, queryService);
-          serverTransport.subscribe(partitionId, RequestType.QUERY, queryHandler);
-
-          final var logStreamWriter = logStream.newLogStreamWriter();
-          commandHandler.addPartition(partitionId, logStreamWriter);
-          serverTransport.subscribe(partitionId, RequestType.COMMAND, commandHandler);
-          future.complete(null);
-        });
-    return future;
-  }
-
-  @Override
-  public ActorFuture<Void> onBecomingInactive(final int partitionId, final long term) {
-    return removeLeaderHandlersAsync(partitionId);
-  }
-
-  private ActorFuture<Void> removeLeaderHandlersAsync(final int partitionId) {
-    return actor.call(() -> removeLeaderHandlers(partitionId));
-  }
-
-  private void removeLeaderHandlers(final int partitionId) {
-    commandHandler.removePartition(partitionId);
-    queryHandler.removePartition(partitionId);
-    cleanLeadingPartition(partitionId);
-  }
-
-  private void cleanLeadingPartition(final int partitionId) {
-    leadPartitions.remove(partitionId);
-    removeForPartitionId(partitionId);
-  }
-
-  private void removeForPartitionId(final int partitionId) {
-    serverTransport.unsubscribe(partitionId, RequestType.COMMAND);
-    serverTransport.unsubscribe(partitionId, RequestType.QUERY);
   }
 
   @Override
@@ -144,6 +91,34 @@ public final class CommandApiServiceImpl extends Actor
   @Override
   public void onResumed(final int partitionId) {
     commandHandler.onResumed(partitionId);
+  }
+
+  @Override
+  public ActorFuture<Void> registerHandlers(
+      final int partitionId, final LogStream logStream, final QueryService queryService) {
+    return actor.call(
+        () -> {
+          // create the writer immediately so if the logStream is closed, this will throw an
+          // exception immediately
+          final var logStreamWriter = logStream.newLogStreamWriter();
+          leadPartitions.add(partitionId);
+          queryHandler.addPartition(partitionId, queryService);
+          serverTransport.subscribe(partitionId, RequestType.QUERY, queryHandler);
+          commandHandler.addPartition(partitionId, logStreamWriter);
+          serverTransport.subscribe(partitionId, RequestType.COMMAND, commandHandler);
+        });
+  }
+
+  @Override
+  public ActorFuture<Void> unregisterHandlers(final int partitionId) {
+    return actor.call(
+        () -> {
+          commandHandler.removePartition(partitionId);
+          queryHandler.removePartition(partitionId);
+          leadPartitions.remove(partitionId);
+          serverTransport.unsubscribe(partitionId, RequestType.COMMAND);
+          serverTransport.unsubscribe(partitionId, RequestType.QUERY);
+        });
   }
 
   @Override

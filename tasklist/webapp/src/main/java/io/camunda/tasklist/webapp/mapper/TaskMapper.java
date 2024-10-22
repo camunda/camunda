@@ -43,7 +43,11 @@ public class TaskMapper {
             .setTaskState(taskDTO.getTaskState())
             .setSortValues(taskDTO.getSortValues())
             .setIsFirst(taskDTO.getIsFirst())
-            .setFormKey(taskDTO.getFormKey())
+            .setFormKey(
+                (taskDTO.getExternalFormReference() == null
+                        || taskDTO.getExternalFormReference().isBlank())
+                    ? taskDTO.getFormKey()
+                    : taskDTO.getExternalFormReference())
             .setFormId(taskDTO.getFormId())
             .setFormVersion(taskDTO.getFormVersion())
             .setIsFormEmbedded(taskDTO.getIsFormEmbedded())
@@ -113,7 +117,11 @@ public class TaskMapper {
         .setCompletionDate(taskDTO.getCompletionTime())
         .setAssignee(taskDTO.getAssignee())
         .setTaskState(taskDTO.getTaskState())
-        .setFormKey(taskDTO.getFormKey())
+        .setFormKey(
+            taskDTO.getExternalFormReference() == null
+                    || taskDTO.getExternalFormReference().isBlank()
+                ? taskDTO.getFormKey()
+                : taskDTO.getExternalFormReference())
         .setFormId(taskDTO.getFormId())
         .setFormVersion(taskDTO.getFormVersion())
         .setIsFormEmbedded(taskDTO.getIsFormEmbedded())

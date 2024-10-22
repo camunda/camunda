@@ -4,19 +4,6 @@
 
 - [Backend Documentation](./webapp)
 - [Frontend Documentation](./client)
-- [Contribution Guidelines](https://github.com/camunda/camunda-operate/wiki/Contributing-to-Operate)
-- [Issue Tracker](https://app.camunda.com/jira/secure/RapidBoard.jspa?rapidView=61)
-- [Zeebe](https://zeebe.io)
-
-### Modules
-
-![modulesimg](https://user-images.githubusercontent.com/3302415/148035876-9d29b64b-f2ed-4402-b6b8-756401a1467c.png)
-
-_Source: [modules.puml](https://github.com/camunda/operate/blob/master/modules.puml)_
-
-## Building locally
-
-To build Operate locally, following Maven configuration is needed: https://confluence.camunda.com/display/HAN/Artifactory#Artifactory-ViaMaven
 
 ## Running locally
 
@@ -95,16 +82,6 @@ sudo sysctl -w vm.max_map_count=262144
 
 To set this value permanently, update the `vm.max_map_count` setting in /etc/sysctl.conf. For more info see here: https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html
 
-## Commit Message Guidelines
-
-- **feat** (new feature for the user, not a new feature for build script)
-- **fix** (bug fix for the user, not a fix to a build script)
-- **docs** (changes to the documentation)
-- **style** (changes to css, styling, etc; no business logic change)
-- **refactor** (refactoring production code, eg. renaming a variable)
-- **test** (adding missing tests, refactoring tests; no production code change)
-- **chore** (updating grunt tasks etc; no production code change)
-
 ## Testing environments
 
 - The **staging** environment is available here: https://stage.operate.camunda.cloud/ . Every commit to master (successfully built) will be published to stage automatically.
@@ -113,8 +90,6 @@ To set this value permanently, update the `vm.max_map_count` setting in /etc/sys
 ## Branch name flags
 
 - Every branch that starts with `fe-` (e.g. `fe-ope-123-frontend-fix`) will skip backend tests in CI.
-
-License: This repository contains files subject to a commercial license.
 
 ## Running visual regression tests
 
@@ -147,6 +122,12 @@ To run these locally you can follow the steps below:
 
 ### Run Operate backend
 
+Run regular backend first (it must be run in parallel in order to have access to Elasticsearch):
+
+```
+make env-up
+```
+
 To run E2E dedicated backend (Zeebe on port 26503 + Operate on port 8081):
 
 ```
@@ -170,3 +151,25 @@ yarn start:e2e
 yarn test:e2e
 ```
 
+## Running Operate Update screenshots automation
+
+### Run Operate backend
+
+```
+make env-up
+```
+
+### Start Development Server
+
+```
+cd client
+yarn start
+```
+
+### Run Operate Update screenshots automation locally (in client directory)
+
+```
+yarn generate-screenshots
+```
+
+Note that this automation is currently not triggered automatically, so to trigger it for the main branch, this has to be done manually via the [action page](https://github.com/camunda/camunda/actions/workflows/operate-update-docs-screenshots.yml).

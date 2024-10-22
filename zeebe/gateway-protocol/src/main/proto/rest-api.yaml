@@ -23,6 +23,28 @@ servers:
         default: http
         description: The schema of the Camunda 8 REST API server.
 
+tags:
+  - name: Authorization
+  - name: Clock
+  - name: Cluster
+  - name: Decision definition
+  - name: Decision instance
+  - name: Decision requirements
+  - name: Document
+  - name: Element instance
+  - name: Flow node instance
+  - name: Incident
+  - name: Job
+  - name: License
+  - name: Message
+  - name: Process definition
+  - name: Process instance
+  - name: Resource
+  - name: Signal
+  - name: User
+  - name: User task
+  - name: Variable
+
 paths:
   /topology:
     get:
@@ -2044,7 +2066,7 @@ paths:
   /documents:
     post:
       tags:
-        - Documents
+        - Document
       summary: Upload document (alpha)
       description: |
         Upload a document to the Camunda 8 cluster.
@@ -2102,7 +2124,7 @@ paths:
   /documents/{documentId}:
     get:
       tags:
-        - Documents
+        - Document
       summary: Download document (alpha)
       description: |
         Download a document from the Camunda 8 cluster.
@@ -2148,7 +2170,7 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
     delete:
       tags:
-        - Documents
+        - Document
       summary: Delete document (alpha)
       description: |
         Delete a document from the Camunda 8 cluster.
@@ -2190,7 +2212,7 @@ paths:
   /document/{documentId}/links:
     post:
       tags:
-        - Documents
+        - Document
       summary: Create document link (alpha)
       description: |
         Create a link to a document in the Camunda 8 cluster.

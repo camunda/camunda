@@ -25,6 +25,7 @@ jest.mock('modules/stores/processes/processes.migration', () => ({
  *
  * orderProcess.bpmn contains:
  * - checkPayment (service task)
+ * - ExclusiveGateway
  * - requestForPayment (service task)
  * - shipArticles (user task)
  * - MessageInterrupting (event)
@@ -43,9 +44,16 @@ jest.mock('modules/stores/processes/processes.migration', () => ({
  * - BusinessRuleTask
  * - SendTask
  * - ScriptTask
+ * - EventBasedGateway
+ * - IntermediateTimerEvent
+ * - SignalEventSubProcess
+ * - SignalStartEvent
+ * - SignalIntermediateCatch
+ * - SignalBoundaryEvent
  *
  * orderProcess_v2.bpmn contains:
  * - checkPayment (service task)
+ * - ExclusiveGateway
  * - requestForPayment (user task)
  * - shipArticles (user task)
  * - MessageInterrupting (event)
@@ -61,6 +69,12 @@ jest.mock('modules/stores/processes/processes.migration', () => ({
  * - BusinessRuleTask
  * - SendTask
  * - ScriptTask
+ * - EventBasedGateway
+ * - IntermediateTimerEvent
+ * - SignalEventSubProcess
+ * - SignalStartEvent
+ * - SignalIntermediateCatch
+ * - SignalBoundaryEvent
  */
 describe('processInstanceMigrationMappingStore', () => {
   afterEach(() => {
@@ -94,6 +108,11 @@ describe('processInstanceMigrationMappingStore', () => {
         id: 'checkPayment',
         type: 'bpmn:ServiceTask',
       },
+      {
+        id: 'ExclusiveGateway',
+        type: 'bpmn:ExclusiveGateway',
+      },
+
       {id: 'shipArticles', type: 'bpmn:UserTask'},
       {
         id: 'MessageInterrupting',
@@ -139,9 +158,34 @@ describe('processInstanceMigrationMappingStore', () => {
         id: 'SendTask',
         type: 'bpmn:SendTask',
       },
+      {
+        id: 'EventBasedGateway',
+        type: 'bpmn:EventBasedGateway',
+      },
+      {
+        id: 'IntermediateTimerEvent',
+        type: 'bpmn:IntermediateCatchEvent',
+      },
+      {
+        id: 'SignalIntermediateCatch',
+        type: 'bpmn:IntermediateCatchEvent',
+      },
+      {
+        id: 'SignalBoundaryEvent',
+        type: 'bpmn:BoundaryEvent',
+      },
+      {
+        id: 'SignalEventSubProcess',
+        type: 'bpmn:SubProcess',
+      },
+      {
+        id: 'SignalStartEvent',
+        type: 'bpmn:StartEvent',
+      },
     ]);
 
     expect(isAutoMappable('checkPayment')).toBe(true);
+    expect(isAutoMappable('ExclusiveGateway')).toBe(true);
     expect(isAutoMappable('shipArticles')).toBe(true);
     expect(isAutoMappable('MessageInterrupting')).toBe(true);
     expect(isAutoMappable('TimerNonInterrupting')).toBe(true);
@@ -152,6 +196,12 @@ describe('processInstanceMigrationMappingStore', () => {
     expect(isAutoMappable('BusinessRuleTask')).toBe(true);
     expect(isAutoMappable('ScriptTask')).toBe(true);
     expect(isAutoMappable('SendTask')).toBe(true);
+    expect(isAutoMappable('EventBasedGateway')).toBe(true);
+    expect(isAutoMappable('IntermediateTimerEvent')).toBe(true);
+    expect(isAutoMappable('SignalIntermediateCatch')).toBe(true);
+    expect(isAutoMappable('SignalBoundaryEvent')).toBe(true);
+    expect(isAutoMappable('SignalEventSubProcess')).toBe(true);
+    expect(isAutoMappable('SignalStartEvent')).toBe(true);
 
     expect(isAutoMappable('requestForPayment')).toBe(false);
     expect(isAutoMappable('TimerInterrupting')).toBe(false);
@@ -198,6 +248,18 @@ describe('processInstanceMigrationMappingStore', () => {
           {
             id: 'TaskYY',
             name: 'Task YY',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'ExclusiveGateway',
+          name: 'Payment OK?',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'ExclusiveGateway',
+            name: 'Payment OK?',
           },
         ],
       },
@@ -316,7 +378,12 @@ describe('processInstanceMigrationMappingStore', () => {
           id: 'TimerIntermediateCatch',
           name: 'Timer intermediate catch',
         },
-        selectableTargetFlowNodes: [],
+        selectableTargetFlowNodes: [
+          {
+            id: 'IntermediateTimerEvent',
+            name: 'IntermediateTimerEvent',
+          },
+        ],
       },
       {
         sourceFlowNode: {
@@ -439,6 +506,78 @@ describe('processInstanceMigrationMappingStore', () => {
           {
             id: 'SendTask',
             name: 'Send task',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'EventBasedGateway',
+          name: 'EventBasedGateway',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'EventBasedGateway',
+            name: 'EventBasedGateway',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'IntermediateTimerEvent',
+          name: 'IntermediateTimerEvent',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'IntermediateTimerEvent',
+            name: 'IntermediateTimerEvent',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'SignalIntermediateCatch',
+          name: 'Signal intermediate catch',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'SignalIntermediateCatch',
+            name: 'Signal intermediate catch',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'SignalBoundaryEvent',
+          name: 'Signal boundary event',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'SignalBoundaryEvent',
+            name: 'Signal boundary event',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'SignalEventSubProcess',
+          name: 'Signal event sub process',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'SignalEventSubProcess',
+            name: 'Signal event sub process',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'SignalStartEvent',
+          name: 'Signal start event',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'SignalStartEvent',
+            name: 'Signal start event',
           },
         ],
       },

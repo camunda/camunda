@@ -95,6 +95,30 @@ test.beforeAll(async ({request}) => {
       {timeout: SETUP_WAITING_TIME},
     )
     .toHaveProperty('total', 10);
+
+  // Wait until all signals have been received
+  await expect
+    .poll(
+      async () => {
+        const response = await request.post(
+          `${config.endpoint}/v1/flownode-instances/search`,
+          {
+            data: {
+              filter: {
+                flowNodeId: 'SignalIntermediateCatch',
+                state: 'ACTIVE',
+                processDefinitionKey:
+                  initialData.processV1.processDefinitionKey,
+              },
+            },
+          },
+        );
+
+        return await response.json();
+      },
+      {timeout: SETUP_WAITING_TIME},
+    )
+    .toHaveProperty('total', 10);
 });
 
 test.describe.serial('Process Instance Migration', () => {
@@ -140,7 +164,7 @@ test.describe.serial('Process Instance Migration', () => {
     await processesPage.migrationModal.confirmButton.click();
 
     // Expect auto mapping for each flow node
-    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(22);
+    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(34);
 
     await expect(
       page.getByLabel(/target flow node for check payment/i),
@@ -176,10 +200,10 @@ test.describe.serial('Process Instance Migration', () => {
       page.getByLabel(/target flow node for timer non-interrupting/i),
     ).toHaveValue('TimerNonInterrupting');
     await expect(
-      page.getByLabel(/target flow node for message intermediate catch/i),
+      page.getByLabel(/target flow node for message intermediate catch$/i),
     ).toHaveValue('MessageIntermediateCatch');
     await expect(
-      page.getByLabel(/target flow node for timer intermediate catch/i),
+      page.getByLabel(/target flow node for timer intermediate catch$/i),
     ).toHaveValue('TimerIntermediateCatch');
     await expect(
       page.getByLabel(/target flow node for message event sub process/i),
@@ -208,6 +232,18 @@ test.describe.serial('Process Instance Migration', () => {
     await expect(
       page.getByLabel(/target flow node for timer start event/i),
     ).toHaveValue('TimerStartEvent');
+    await expect(
+      page.getByLabel(/target flow node for signal start event/i),
+    ).toHaveValue('SignalStartEvent');
+    await expect(
+      page.getByLabel(/target flow node for signal boundary event/i),
+    ).toHaveValue('SignalBoundaryEvent');
+    await expect(
+      page.getByLabel(/target flow node for signal intermediate catch/i),
+    ).toHaveValue('SignalIntermediateCatch');
+    await expect(
+      page.getByLabel(/target flow node for signal event sub process/i),
+    ).toHaveValue('SignalEventSubProcess');
 
     // Expect pre-selected process and version
     await expect(migrationView.targetProcessComboBox).toHaveValue(
@@ -297,6 +333,7 @@ test.describe.serial('Process Instance Migration', () => {
 
     const migrateOperationEntry = commonPage.operationsList
       .getByRole('listitem')
+      .filter({hasText: /^Migrate/i})
       .first();
 
     const operationId = await migrateOperationEntry
@@ -418,6 +455,14 @@ test.describe.serial('Process Instance Migration', () => {
       sourceFlowNodeName: 'Timer intermediate catch',
       targetFlowNodeName: 'Timer intermediate catch 2',
     });
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Message intermediate catch B',
+      targetFlowNodeName: 'Message intermediate catch B2',
+    });
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Timer intermediate catch B',
+      targetFlowNodeName: 'Timer intermediate catch B2',
+    });
 
     /**
      * Map event sub processes with containing tasks
@@ -444,6 +489,26 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     /**
+     * Map signal elements
+     */
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Signal intermediate catch',
+      targetFlowNodeName: 'Signal intermediate catch 2',
+    });
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Signal start event',
+      targetFlowNodeName: 'Signal start event',
+    });
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Signal boundary event',
+      targetFlowNodeName: 'Signal boundary event 2',
+    });
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Signal event sub process',
+      targetFlowNodeName: 'Signal event sub process 2',
+    });
+
+    /**
      * Map other tasks
      */
     await migrationView.mapFlowNode({
@@ -461,6 +526,18 @@ test.describe.serial('Process Instance Migration', () => {
     await migrationView.mapFlowNode({
       sourceFlowNodeName: 'Send Task',
       targetFlowNodeName: 'Send Task 2',
+    });
+
+    /**
+     * Map gateways
+     */
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Event based gateway',
+      targetFlowNodeName: 'Event based gateway 2',
+    });
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Exclusive gateway',
+      targetFlowNodeName: 'Exclusive gateway 2',
     });
 
     await migrationView.nextButton.click();
@@ -694,7 +771,7 @@ test.describe.serial('Process Instance Migration', () => {
     /**
      * Expect that the correlation key has been updated if source and target message event have the same message id
      */
-    await processInstancePage.diagram.clickEvent('Message intermediate catch');
+    await processInstancePage.diagram.clickEvent('Message intermediate catch2');
     await processInstancePage.diagram.showMetaData();
     await expect(
       processInstancePage.metadataModal.getByText(
@@ -710,6 +787,58 @@ test.describe.serial('Process Instance Migration', () => {
     await processInstancePage.metadataModal
       .getByRole('button', {name: /close/i})
       .click();
+  });
+
+  test('Migrated gateways', async ({
+    processesPage,
+    processInstancePage,
+    page,
+  }) => {
+    const {processV3} = initialData;
+
+    await processesPage.navigateToProcesses({
+      searchParams: {
+        active: 'true',
+        incidents: 'true',
+        process: processV3.bpmnProcessId,
+
+        version: processV3.version.toString(),
+      },
+    });
+
+    await processesPage.getNthProcessInstanceLink(0).click();
+
+    await processInstancePage.diagram.resetDiagramZoomButton.click();
+
+    /**
+     * Expect that the correlation key on the event based gateway has been updated
+     */
+    await processInstancePage.diagram.clickGateway('Event based gateway 2');
+    await processInstancePage.diagram.showMetaData();
+    await expect(
+      processInstancePage.metadataModal.getByText(
+        '"correlationKey": "myFirstCorrelationKey"',
+      ),
+    ).toBeVisible();
+    await expect(
+      processInstancePage.metadataModal.getByText(
+        '"messageName": "Message_3",',
+      ),
+    ).toBeVisible();
+    await page.waitForTimeout(500); // wait until metadata modal is fully rendered
+    await processInstancePage.metadataModal
+      .getByRole('button', {name: /close/i})
+      .click();
+
+    /**
+     * Expect that the incident on exclusive gateway has been migrated
+     */
+    await processInstancePage.diagram.clickGateway('Exclusive gateway 2');
+    await expect(
+      processInstancePage.diagram.popover.getByRole('heading', {
+        name: 'Incident',
+      }),
+    ).toBeVisible();
   });
 
   test('Migrated date tag', async ({processesPage, processInstancePage}) => {
@@ -732,5 +861,72 @@ test.describe.serial('Process Instance Migration', () => {
     await expect(
       processInstancePage.instanceHistory.getByText(/^migrated/i),
     ).toBeVisible();
+  });
+
+  test('Migrated signal elements', async ({
+    processesPage,
+    processInstancePage,
+    request,
+  }) => {
+    const targetBpmnProcessId = initialData.processV3.bpmnProcessId;
+    const targetVersion = initialData.processV3.version.toString();
+
+    await zeebeGrpcApi.broadcastSignal('Signal_2');
+
+    // Wait until all signals have been received
+    await expect
+      .poll(
+        async () => {
+          const response = await request.post(
+            `${config.endpoint}/v1/flownode-instances/search`,
+            {
+              data: {
+                filter: {
+                  flowNodeId: 'SignalIntermediateCatch2',
+                  state: 'COMPLETED',
+                  processDefinitionKey:
+                    initialData.processV3.processDefinitionKey,
+                },
+              },
+            },
+          );
+
+          return await response.json();
+        },
+        {timeout: SETUP_WAITING_TIME},
+      )
+      .toHaveProperty('total', 3);
+
+    await processesPage.navigateToProcesses({
+      searchParams: {
+        active: 'true',
+        incidents: 'true',
+        process: targetBpmnProcessId,
+        version: targetVersion,
+      },
+    });
+
+    // Navigate to the first process instance in the list, that has been migrated
+    await processesPage.getNthProcessInstanceLink(0).click();
+
+    await processInstancePage.diagram.resetDiagramZoomButton.click();
+
+    /**
+    /* Expect that signal intermediate catch event has received Signal_2,
+    /* which has been migrated from orderProcessMigration version 1 to version 3
+     */
+    await processInstancePage.diagram.clickEvent('Signal intermediate catch2');
+    await processInstancePage.diagram.showMetaData();
+
+    await expect(
+      processInstancePage.metadataModal.getByText('endDate'),
+    ).toBeVisible();
+    await expect(
+      processInstancePage.metadataModal.getByText('"endDate": "null"'),
+    ).not.toBeVisible();
+
+    await processInstancePage.metadataModal
+      .getByRole('button', {name: /close/i})
+      .click();
   });
 });

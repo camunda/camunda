@@ -195,7 +195,8 @@ public final class EngineProcessors {
         bpmnStreamProcessor,
         typedRecordProcessors,
         writers,
-        bpmnBehaviors.jobActivationBehavior());
+        bpmnBehaviors.jobActivationBehavior(),
+        authCheckBehavior);
     addResourceDeletionProcessors(
         typedRecordProcessors,
         writers,
@@ -369,13 +370,15 @@ public final class EngineProcessors {
       final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
-      final BpmnJobActivationBehavior jobActivationBehavior) {
+      final BpmnJobActivationBehavior jobActivationBehavior,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     IncidentEventProcessors.addProcessors(
         typedRecordProcessors,
         processingState,
         bpmnStreamProcessor,
         writers,
-        jobActivationBehavior);
+        jobActivationBehavior,
+        authCheckBehavior);
   }
 
   private static void addMessageProcessors(
