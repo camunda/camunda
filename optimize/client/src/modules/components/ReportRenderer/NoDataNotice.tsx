@@ -15,7 +15,7 @@ import {t} from 'translation';
 import './NoDataNotice.scss';
 
 interface NoDataNoticeProps {
-  type?: 'error' | 'warning' | 'info'
+  type?: 'error' | 'warning' | 'info';
   title?: ReactNode;
   children?: ReactNode;
 }

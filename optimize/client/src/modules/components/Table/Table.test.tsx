@@ -7,7 +7,7 @@
  */
 
 import {runAllEffects} from '__mocks__/react';
-import {shallow} from 'enzyme';
+import {shallow, ShallowWrapper} from 'enzyme';
 import {Pagination} from '@carbon/react';
 
 import {Select} from 'components';
@@ -22,15 +22,15 @@ function generateData(amount: number) {
   return arr;
 }
 
-function getDataTable(node: any) {
+function getDataTable(node: ShallowWrapper) {
   return node.find('DataTable').dive();
 }
 
-function getTableHeader(node: any) {
+function getTableHeader(node: ShallowWrapper) {
   return node.find('DataTable').dive().find('TableHeader').dive();
 }
 
-function getTablePagination(node: any) {
+function getTablePagination(node: ShallowWrapper) {
   return getDataTable(node).find(Pagination);
 }
 
@@ -194,7 +194,9 @@ it('should go to the last page if data changes in a way that current page is emp
 
   runAllEffects();
 
-  while (!getTablePagination(node).dive().find('.cds--pagination__button--forward').prop('disabled')) {
+  while (
+    !getTablePagination(node).dive().find('.cds--pagination__button--forward').prop('disabled')
+  ) {
     getTablePagination(node).dive().find('.cds--pagination__button--forward').simulate('click');
     runAllEffects();
   }

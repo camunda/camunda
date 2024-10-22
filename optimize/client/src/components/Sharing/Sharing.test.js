@@ -73,7 +73,7 @@ it('should display an error message if evaluation was unsuccessful', () => {
 it('should pass the error to reportRenderer if evaluation fails', async () => {
   useParams.mockReturnValueOnce({type: 'report'});
   const testError = {status: 400, message: 'testError', reportDefinition: {}};
-  const mightFail = (promise, cb, err, final) => {
+  const mightFail = (_promise, _cb, err, final) => {
     err(testError);
     final();
   };

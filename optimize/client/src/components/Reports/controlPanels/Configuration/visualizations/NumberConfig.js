@@ -52,7 +52,7 @@ export default function NumberConfig({report, onChange}) {
             labelText={t('report.config.goal.setKpi')}
             disabled={!targetValue.active}
             checked={!targetValue.active || targetValue.isKpi}
-            onChange={(evt, {checked}) => {
+            onChange={(_evt, {checked}) => {
               onChange({targetValue: {isKpi: {$set: checked}}});
               trackKpiState(checked, report.id);
             }}

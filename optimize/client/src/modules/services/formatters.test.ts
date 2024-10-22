@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {GenericReport, SingleProcessReport, SingleProcessReportData} from 'modules/types';
+import {GenericReport, SingleProcessReport, SingleProcessReportData} from 'types';
 import {
   getHighlightedText,
   duration as durationFormatter,

@@ -24,11 +24,11 @@ jest.mock('bpmn-js/lib/NavigatedViewer', () => {
   const attachSpy = jest.fn();
   return class NavigatedViewer {
     canvas: {
-      resized: jest.Mock<any, any, any>;
-      zoom: jest.Mock<any, any, any>;
-      viewbox: jest.Mock<any, any, any>;
+      resized: jest.Mock;
+      zoom: jest.Mock;
+      viewbox: jest.Mock;
     };
-    zoomScroll: {stepZoom: jest.Mock<any, any, any>};
+    zoomScroll: {stepZoom: jest.Mock};
     constructor() {
       this.canvas = {
         resized: jest.fn(),
@@ -69,9 +69,9 @@ jest.mock('bpmn-js/lib/Viewer', () => {
   const attachSpy = jest.fn();
   return class Viewer {
     canvas: {
-      resized: jest.Mock<any, any, any>;
-      zoom: jest.Mock<any, any, any>;
-      viewbox: jest.Mock<any, any, any>;
+      resized: jest.Mock<unknown, unknown[], unknown>;
+      zoom: jest.Mock<unknown, unknown[], unknown>;
+      viewbox: jest.Mock<unknown, unknown[], unknown>;
     };
     constructor() {
       this.canvas = {
@@ -299,7 +299,9 @@ it('should trigger diagram zoom when zoom function is called', async () => {
   });
   node.instance().zoom(5);
 
-  expect(node.instance().viewer?.get<any>('zoomScroll').stepZoom).toHaveBeenCalledWith(5);
+  expect(
+    node.instance().viewer?.get<{stepZoom: (n: number) => void}>('zoomScroll').stepZoom
+  ).toHaveBeenCalledWith(5);
 });
 
 it('should reset the canvas zoom to viewport when fit diagram function is called', async () => {
@@ -314,8 +316,7 @@ it('should reset the canvas zoom to viewport when fit diagram function is called
 
   node.instance().fitDiagram();
 
-  expect(node.instance().viewer?.get<any>('canvas').zoom).toHaveBeenCalledWith(
-    'fit-viewport',
-    'auto'
-  );
+  expect(
+    node.instance().viewer?.get<{zoom: (a: string, b: string) => void}>('canvas').zoom
+  ).toHaveBeenCalledWith('fit-viewport', 'auto');
 });

@@ -141,7 +141,7 @@ it('should hide edit and tenants in source items if there are not tenants availa
 
 it('should pass conflict to confirmation modal if update failed', async () => {
   const conflictedItems = [{id: 'reportId', type: 'report', name: 'Report Name'}];
-  const mightFail = (promise, cb, err) => {
+  const mightFail = (_promise, _cb, err) => {
     if (err) {
       err({status: 409, conflictedItems});
     }

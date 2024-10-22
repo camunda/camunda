@@ -34,7 +34,7 @@ jest.mock('services', () => ({
 }));
 
 const props = {
-  mightFail: jest.fn().mockImplementation((data, cb, err, final) => {
+  mightFail: jest.fn().mockImplementation((data, cb, _err, final) => {
     cb(data);
     final?.();
   }),
@@ -88,7 +88,7 @@ it('should pass loading state to entitylist', async () => {
     <Home
       {...props}
       user={{name: 'John Doe', authorizations: []}}
-      mightFail={async (data, cb, err, final) => {
+      mightFail={async (data, cb, _err, final) => {
         cb(await data);
         final();
       }}

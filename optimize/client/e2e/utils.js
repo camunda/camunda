@@ -173,7 +173,9 @@ export async function bulkDeleteAllItems(t) {
 
 export async function toggleReportAutoPreviewUpdate(t) {
   const isToggleOn = await Selector('.updatePreview button')['aria-checked'];
-  !isToggleOn && (await t.click('.updatePreview'));
+  if (!isToggleOn) {
+    await t.click('.updatePreview');
+  }
 }
 
 export async function addEditEntityDescription(t, description, screenshotPath) {

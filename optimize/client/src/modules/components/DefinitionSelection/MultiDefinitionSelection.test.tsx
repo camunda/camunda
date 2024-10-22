@@ -143,6 +143,6 @@ it('should display key of definition if name is null', () => {
     />
   );
 
-  const option = node.find(FilterableMultiSelect).prop<{id: String; label: string}[]>('items')[0];
+  const option = node.find(FilterableMultiSelect).prop<{id: string; label: string}[]>('items')[0];
   expect(option?.label).toBe('foo');
 });

@@ -14,8 +14,10 @@ import {loadDateTranslation} from 'dates';
 
 import {loadTranslation} from './service';
 
+type PrimitiveValue = string | number | boolean;
+
 interface TranslationObject {
-  [key: string]: string | TranslationObject;
+  [key: string]: PrimitiveValue | TranslationObject;
 }
 
 let translationObject: TranslationObject = {};
@@ -44,7 +46,7 @@ export function TranslationProvider({children}: {children: ReactNode}): JSX.Elem
   return <>{children}</>;
 }
 
-export function t(key: string, data?: Record<string, unknown>): string | JSX.Element[] {
+export function t(key: string, data?: TranslationObject): string | JSX.Element[] {
   const translatedString = injectData(findValue(key, translationObject), data);
 
   if (containsHTML(translatedString)) {
@@ -63,16 +65,16 @@ export function getLanguage(): string {
   return browserLang[0].toLowerCase();
 }
 
-function injectData(template: string, data: Record<string, unknown> = {}): string {
-  return template.replace(/\{([\w.]*)\}/g, (str, key) => findValue(key, data));
+function injectData(template: string, data: TranslationObject = {}): string {
+  return template.replace(/\{([\w.]*)\}/g, (_str, key) => findValue(key, data));
 }
 
-function findValue(key: string, data: Record<string, unknown> = {}): string {
+function findValue(key: string, data: TranslationObject = {}): string {
   const keys = key.split('.');
-  let v: any = data;
+  let v: TranslationObject | PrimitiveValue | undefined = data;
   for (let i = 0; i < keys.length; i++) {
     const currKey = keys[i];
-    v = currKey ? v[currKey] : undefined;
+    v = currKey && typeof v === 'object' ? v[currKey] : undefined;
     if (typeof v === 'undefined') {
       throw new Error(`"${keys[i]}" key of "${key}" not found in translation object`);
     }

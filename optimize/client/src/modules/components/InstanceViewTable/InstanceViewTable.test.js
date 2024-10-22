@@ -111,7 +111,7 @@ it('should evaluate the raw data of the report on report prop change', () => {
 it('should pass the error to reportRenderer if evaluation fails', async () => {
   const testError = {message: 'testError', reportDefinition: {}, status: 400};
   useErrorHandling.mockImplementationOnce(() => ({
-    mightFail: (promise, cb, err) => err(testError),
+    mightFail: (_promise, _cb, err) => err(testError),
   }));
 
   const node = shallow(<InstanceViewTable {...props} />);

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-// @ts-ignore
+// @ts-expect-error
 export * from 'react';
 export {default} from 'react';
 

@@ -106,7 +106,7 @@ export default function Checklist<
     return onChange(itemsToRemove);
   };
 
-  let head: TableHead[] = [
+  const head: TableHead[] = [
     {
       label:
         formattedData.length > 1 && !customHeader && !headerHidden ? (
@@ -119,7 +119,11 @@ export default function Checklist<
             checked={isAllSelected}
             onSelect={({target}) => {
               const {checked} = target as HTMLInputElement;
-              !checked ? deselectAllItems() : selectAllItems();
+              if (checked) {
+                selectAllItems();
+              } else {
+                deselectAllItems();
+              }
             }}
           />
         ) : (
@@ -132,7 +136,7 @@ export default function Checklist<
     {label: customHeader || columnLabel || '', id: 'name', sortable: false},
   ];
 
-  let body: TableBody[] = searchFilteredData.map(({id, label, checked, disabled}) => {
+  const body: TableBody[] = searchFilteredData.map(({id, label, checked, disabled}) => {
     const rowId = `${checklistId}-${id}`;
     const onSelect = () => updateItems(id, !checked);
     const rowLabel = (label || id || '').toString();

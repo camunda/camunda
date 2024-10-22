@@ -37,7 +37,7 @@ export async function isAuthorizedToShareDashboard(dashboardId) {
   try {
     const response = await get(`api/share/dashboard/${dashboardId}/isAuthorizedToShare`);
     return response.status === 200;
-  } catch (error) {
+  } catch (_error) {
     return false;
   }
 }

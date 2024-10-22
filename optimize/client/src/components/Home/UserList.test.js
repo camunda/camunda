@@ -10,7 +10,6 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import {Deleter, EntityList} from 'components';
-import {getOptimizeProfile} from 'config';
 
 import {editUser, removeUser} from './service';
 import AddUserModal from './modals/AddUserModal';

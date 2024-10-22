@@ -8,7 +8,7 @@
 
 import React from 'react';
 
-// @ts-expect-error
+// @ts-expect-error no types yet
 import {OptimizeReportTile} from './OptimizeReportTile';
 import {ExternalUrlTile} from './ExternalUrlTile';
 import {TextTile} from './TextTile';
@@ -28,7 +28,7 @@ export default function DashboardTile({
   onTileUpdate,
   onTileDelete,
 }: DashboardTileProps) {
-  let TileComponent = getTileComponent(tile);
+  const TileComponent = getTileComponent(tile);
 
   return (
     <TileComponent

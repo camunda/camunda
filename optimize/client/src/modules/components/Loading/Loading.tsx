@@ -11,9 +11,7 @@ import {Loading as CarbonLoading} from '@carbon/react';
 
 import './Loading.scss';
 
-interface LoadingProps extends Omit<ComponentProps<typeof CarbonLoading>, 'withOverlay'> {}
-
-export function Loading(props: LoadingProps) {
+export function Loading(props: Omit<ComponentProps<typeof CarbonLoading>, 'withOverlay'>) {
   return (
     <div className="Loading">
       <CarbonLoading withOverlay={false} {...props} />

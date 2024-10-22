@@ -40,7 +40,7 @@ export default function FiltersView({availableFilters, filter = [], setFilter, r
             case 'state':
               return <InstanceStateFilter key={type} filter={filter} setFilter={setFilter} />;
             case 'instanceStartDate':
-            case 'instanceEndDate':
+            case 'instanceEndDate': {
               const dateFilter = filter.find((filter) => filter.type === type);
               return (
                 <DateFilter
@@ -59,7 +59,8 @@ export default function FiltersView({availableFilters, filter = [], setFilter, r
                   }}
                 />
               );
-            case 'variable':
+            }
+            case 'variable': {
               const variableFilter = filter.find(
                 (filter) =>
                   filter.type === 'variable' &&
@@ -90,7 +91,8 @@ export default function FiltersView({availableFilters, filter = [], setFilter, r
                   }}
                 />
               );
-            case 'assignee':
+            }
+            case 'assignee': {
               const identityFilter = filter.find((filter) => filter.type === type);
               return (
                 <AssigneeFilter
@@ -110,6 +112,7 @@ export default function FiltersView({availableFilters, filter = [], setFilter, r
                   }}
                 />
               );
+            }
             default:
               return null;
           }
