@@ -68,17 +68,6 @@ public abstract class TasklistEntity<T extends TasklistEntity<T>> extends Abstra
     return (T) this;
   }
 
-  /*  @Override
-  public String getId() {
-    return id;
-  }
-
-  @Override
-  public T setId(final String id) {
-    this.id = id;
-    return (T) this;
-  }*/
-
   @Override
   public int hashCode() {
     return Objects.hash(super.hashCode(), key, tenantId, partitionId);
