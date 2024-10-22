@@ -2445,7 +2445,7 @@ paths:
                   type: string
                   description: The tenant to deploy the resources to.
               required:
-                - resource
+                - resources
       responses:
         "200":
           description: The resources are deployed.
@@ -2955,7 +2955,6 @@ components:
           format: date-time
         state:
           $ref: "#/components/schemas/ProcessInstanceStateEnum"
-          description: The state, one of ACTIVE, COMPLETED, CANCELED.
         hasIncident:
           type: boolean
           description: Whether this process instance has a related incident or not.
@@ -3030,7 +3029,6 @@ components:
           format: date-time
         state:
           $ref: "#/components/schemas/ProcessInstanceStateEnum"
-          description: The state, one of ACTIVE, COMPLETED, CANCELED.
         hasIncident:
           type: boolean
           description: Whether this process instance has a related incident or not.
@@ -3038,6 +3036,7 @@ components:
           type: string
           description: The tenant ID.
     ProcessInstanceStateEnum:
+      description: The state, one of ACTIVE, COMPLETED, CANCELED.
       enum:
         - ACTIVE
         - COMPLETED
@@ -4309,7 +4308,6 @@ components:
           description: The key of the decision instance.
         state:
           $ref: "#/components/schemas/DecisionInstanceStateEnum"
-          description: The state of the decision instance.
         evaluationFailure:
           type: string
           description: The evaluation failure of the decision instance.
@@ -4337,7 +4335,6 @@ components:
           description: The version of the decision.
         decisionDefinitionType:
           $ref: "#/components/schemas/DecisionDefinitionTypeEnum"
-          description: The type of the decision.
         tenantId:
           type: string
           description: The tenant ID of the decision instance.
@@ -4360,7 +4357,6 @@ components:
           description: The key of the decision instance.
         state:
           $ref: "#/components/schemas/DecisionInstanceStateEnum"
-          description: The state of the decision instance.
         evaluationDate:
           type: string
           format: date-time
@@ -4392,7 +4388,6 @@ components:
           description: The version of the decision.
         decisionDefinitionType:
           $ref: "#/components/schemas/DecisionDefinitionTypeEnum"
-          description: The type of the decision.
         result:
           type: string
           description: The result of the decision instance.
@@ -4419,12 +4414,14 @@ components:
                 The matched rules of the decision instance.
 
     DecisionDefinitionTypeEnum:
+      description: The type of the decision.
       enum:
         - DECISION_TABLE
         - LITERAL_EXPRESSION
         - UNSPECIFIED
         - UNKNOWN
     DecisionInstanceStateEnum:
+      description: The state of the decision instance.
       enum:
         - EVALUATED
         - FAILED
