@@ -23,7 +23,10 @@ import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceRelatedIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
 import io.camunda.zeebe.stream.api.ProcessingResult;
@@ -120,10 +123,17 @@ public class Engine implements RecordProcessor {
 
       // There is no ban check needed if the intent is not instance related
       // nor if the intent is to create new instances, which can't be banned yet
+      final Intent intent = record.getIntent();
       final boolean noBanCheckNeeded =
-          !(record.getIntent() instanceof ProcessInstanceRelatedIntent)
-              || record.getIntent() instanceof ProcessInstanceCreationIntent;
-      if (noBanCheckNeeded || !processingState.getBannedInstanceState().isBanned(typedCommand)) {
+          !(intent instanceof ProcessInstanceRelatedIntent)
+              || intent instanceof ProcessInstanceCreationIntent;
+      final boolean banned = processingState.getBannedInstanceState().isBanned(typedCommand);
+      final boolean commandAllowedForBanned =
+          intent == ProcessInstanceIntent.CANCEL
+              || intent == ProcessInstanceIntent.TERMINATE_ELEMENT
+              || intent == ProcessInstanceBatchIntent.TERMINATE;
+
+      if (noBanCheckNeeded || (banned && commandAllowedForBanned) || !banned) {
         currentProcessor.processRecord(record);
       }
     }
