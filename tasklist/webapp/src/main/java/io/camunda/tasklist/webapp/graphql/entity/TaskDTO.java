@@ -395,7 +395,6 @@ public final class TaskDTO {
               .setImplementation(taskDTO.getImplementation())
               .setPriority(taskDTO.getPriority())
               .setExternalFormReference(taskDTO.getExternalFormReference());
-      ;
 
       if (taskDTO.getCompletionTime() != null) {
         taskEntity.setCompletionTime(
