@@ -305,23 +305,15 @@ public class RoleTest {
 
   @Test
   public void shouldRejectIfRoleIsNotPresentOnDeletion() {
-    // given
-    final var name = UUID.randomUUID().toString();
-    final var roleRecord = ENGINE.role().newRole(name).create();
-
     // when
     final var notPresentRoleKey = 1L;
     final var notPresentUpdateRecord =
         ENGINE.role().deleteRole(notPresentRoleKey).expectRejection().delete();
 
-    final var createdRole = roleRecord.getValue();
-    Assertions.assertThat(createdRole).isNotNull().hasFieldOrPropertyWithValue("name", name);
-
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to delete role with key '"
-                + notPresentRoleKey
-                + "', but a role with this key doesn't exist.");
+            "Expected to delete role with key '%s', but a role with this key doesn't exist."
+                .formatted(notPresentRoleKey));
   }
 }

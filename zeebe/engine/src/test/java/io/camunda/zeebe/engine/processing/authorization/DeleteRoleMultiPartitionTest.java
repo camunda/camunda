@@ -15,13 +15,9 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
-import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
-import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
@@ -45,21 +41,13 @@ public class DeleteRoleMultiPartitionTest {
     // when
     final var name = UUID.randomUUID().toString();
     final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
-    engine
-        .authorization()
-        .permission()
-        .withOwnerKey(roleKey)
-        .withOwnerType(AuthorizationOwnerType.ROLE)
-        .withResourceType(AuthorizationResourceType.ROLE)
-        .withAction(PermissionAction.REMOVE)
-        .add();
     engine.role().deleteRole(roleKey).withName(name).delete();
 
     assertThat(
             RecordingExporter.records()
                 .withPartitionId(1)
                 .limitByCount(
-                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 3))
+                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 2))
         .extracting(
             Record::getIntent,
             Record::getRecordType,
@@ -100,20 +88,12 @@ public class DeleteRoleMultiPartitionTest {
     // when
     final var name = UUID.randomUUID().toString();
     final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
-    engine
-        .authorization()
-        .permission()
-        .withOwnerKey(roleKey)
-        .withOwnerType(AuthorizationOwnerType.ROLE)
-        .withResourceType(AuthorizationResourceType.ROLE)
-        .withAction(PermissionAction.REMOVE)
-        .add();
     engine.role().deleteRole(roleKey).withName(name).delete();
 
     // then
     assertThat(
             RecordingExporter.commandDistributionRecords()
-                .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 3)
+                .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 2)
                 .withIntent(CommandDistributionIntent.ENQUEUED))
         .extracting(r -> r.getValue().getQueueId())
         .containsOnly(DistributionQueue.IDENTITY.getQueueId());
@@ -123,19 +103,10 @@ public class DeleteRoleMultiPartitionTest {
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // when
     final var name = UUID.randomUUID().toString();
-    final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
       interceptRoleCreateForPartition(partitionId);
     }
-
-    engine
-        .authorization()
-        .permission()
-        .withOwnerKey(roleKey)
-        .withOwnerType(AuthorizationOwnerType.ROLE)
-        .withResourceType(AuthorizationResourceType.ROLE)
-        .withAction(PermissionAction.REMOVE)
-        .add();
+    final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
     engine.role().deleteRole(roleKey).withName(name).delete();
 
     // Increase time to trigger a redistribution
@@ -144,12 +115,10 @@ public class DeleteRoleMultiPartitionTest {
     // then
     assertThat(
             RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
-                .limit(3))
+                .limit(2))
         .extracting(r -> r.getValue().getValueType(), r -> r.getValue().getIntent())
         .containsExactly(
-            tuple(ValueType.ROLE, RoleIntent.CREATE),
-            tuple(ValueType.AUTHORIZATION, AuthorizationIntent.ADD_PERMISSION),
-            tuple(ValueType.ROLE, RoleIntent.DELETE));
+            tuple(ValueType.ROLE, RoleIntent.CREATE), tuple(ValueType.ROLE, RoleIntent.DELETE));
   }
 
   private void interceptRoleCreateForPartition(final int partitionId) {
