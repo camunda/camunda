@@ -57,6 +57,7 @@ public final class TaskDTO {
   private String tenantId;
   @GraphQLField private OffsetDateTime dueDate;
   @GraphQLField private OffsetDateTime followUpDate;
+  private String externalFormReference;
 
   @GraphQLField
   @GraphQLDataFetcher(TaskVariablesFetcher.class)
@@ -286,6 +287,15 @@ public final class TaskDTO {
     return this;
   }
 
+  public String getExternalFormReference() {
+    return externalFormReference;
+  }
+
+  public TaskDTO setExternalFormReference(final String externalFormReference) {
+    this.externalFormReference = externalFormReference;
+    return this;
+  }
+
   public static TaskDTO createFrom(final TaskEntity taskEntity, final ObjectMapper objectMapper) {
     return createFrom(taskEntity, null, objectMapper);
   }
@@ -315,6 +325,7 @@ public final class TaskDTO {
             .setCandidateGroups(taskEntity.getCandidateGroups())
             .setCandidateUsers(taskEntity.getCandidateUsers())
             .setImplementation(taskEntity.getImplementation())
+            .setExternalFormReference(taskEntity.getExternalFormReference())
             .setPriority(taskEntity.getPriority() == null ? 50 : taskEntity.getPriority());
     if (sortValues != null) {
       taskDTO.setSortValues(toArrayOfStrings(sortValues));
@@ -351,7 +362,8 @@ public final class TaskDTO {
         .setIsFirst(taskSearchView.isFirst())
         .setVariables(variables)
         .setImplementation(taskSearchView.getImplementation())
-        .setPriority(taskSearchView.getPriority() == null ? 50 : taskSearchView.getPriority());
+        .setPriority(taskSearchView.getPriority() == null ? 50 : taskSearchView.getPriority())
+        .setExternalFormReference(taskSearchView.getExternalFormReference());
   }
 
   public static TaskEntity toTaskEntity(final TaskDTO taskDTO) {
@@ -381,7 +393,9 @@ public final class TaskDTO {
               .setCandidateGroups(taskDTO.getCandidateGroups())
               .setCandidateUsers(taskDTO.getCandidateUsers())
               .setImplementation(taskDTO.getImplementation())
-              .setPriority(taskDTO.getPriority());
+              .setPriority(taskDTO.getPriority())
+              .setExternalFormReference(taskDTO.getExternalFormReference());
+      ;
 
       if (taskDTO.getCompletionTime() != null) {
         taskEntity.setCompletionTime(
@@ -418,7 +432,8 @@ public final class TaskDTO {
             dueDate,
             followUpDate,
             implementation,
-            priority);
+            priority,
+            externalFormReference);
     result = 31 * result + Arrays.hashCode(candidateGroups);
     result = 31 * result + Arrays.hashCode(candidateUsers);
     result = 31 * result + Arrays.hashCode(sortValues);
@@ -458,7 +473,8 @@ public final class TaskDTO {
         && Objects.equals(dueDate, taskDTO.dueDate)
         && Objects.equals(followUpDate, taskDTO.followUpDate)
         && priority == taskDTO.priority
-        && Arrays.equals(variables, taskDTO.variables);
+        && Arrays.equals(variables, taskDTO.variables)
+        && Objects.equals(externalFormReference, taskDTO.externalFormReference);
   }
 
   @Override
@@ -488,6 +504,7 @@ public final class TaskDTO {
         .add("variables=" + Arrays.toString(variables))
         .add("implementation=" + implementation)
         .add("priority=" + priority)
+        .add("externalFormReference=" + externalFormReference + "'")
         .toString();
   }
 }
