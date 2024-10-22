@@ -145,10 +145,7 @@ public class VariableAssertTest {
                   CamundaAssert.assertThat(processInstanceEvent)
                       .hasVariableNames("a", "b", "c", "d"))
           .hasMessage(
-              "Process instance [key: %d] should have the variables ['a', 'b', 'c', 'd'] but ['c', 'd'] don't exist. "
-                  + "All process instance variables:\n"
-                  + "\t- 'a': 1\n"
-                  + "\t- 'b': 2",
+              "Process instance [key: %d] should have the variables ['a', 'b', 'c', 'd'] but ['c', 'd'] don't exist.",
               PROCESS_INSTANCE_KEY);
     }
   }
@@ -227,10 +224,7 @@ public class VariableAssertTest {
       Assertions.assertThatThrownBy(
               () -> CamundaAssert.assertThat(processInstanceEvent).hasVariable("c", 3))
           .hasMessage(
-              "Process instance [key: %d] should have a variable 'c' with value '3' but the variable doesn't exist. "
-                  + "All process instance variables:\n"
-                  + "\t- 'a': 1\n"
-                  + "\t- 'b': 2",
+              "Process instance [key: %d] should have a variable 'c' with value '3' but the variable doesn't exist.",
               PROCESS_INSTANCE_KEY);
     }
 
@@ -250,10 +244,7 @@ public class VariableAssertTest {
       Assertions.assertThatThrownBy(
               () -> CamundaAssert.assertThat(processInstanceEvent).hasVariable("a", 2))
           .hasMessage(
-              "Process instance [key: %d] should have a variable 'a' with value '2' but was '1'. "
-                  + "All process instance variables:\n"
-                  + "\t- 'a': 1\n"
-                  + "\t- 'b': 2",
+              "Process instance [key: %d] should have a variable 'a' with value '2' but was '1'.",
               PROCESS_INSTANCE_KEY);
     }
 
@@ -273,9 +264,7 @@ public class VariableAssertTest {
       Assertions.assertThatThrownBy(
               () -> CamundaAssert.assertThat(processInstanceEvent).hasVariable("a", -1))
           .hasMessage(
-              "Process instance [key: %d] should have a variable 'a' with value '-1' but was '%s'. "
-                  + "All process instance variables:\n"
-                  + "\t- 'a': %s",
+              "Process instance [key: %d] should have a variable 'a' with value '-1' but was '%s'.",
               PROCESS_INSTANCE_KEY, variableValue, variableValue);
     }
   }
@@ -369,10 +358,7 @@ public class VariableAssertTest {
       Assertions.assertThatThrownBy(
               () -> CamundaAssert.assertThat(processInstanceEvent).hasVariables(expectedVariables))
           .hasMessage(
-              "Process instance [key: %d] should have the variables {\"a\":1,\"c\":3} but ['c'] don't match. "
-                  + "All process instance variables:\n"
-                  + "\t- 'a': 1\n"
-                  + "\t- 'b': 2",
+              "Process instance [key: %d] should have the variables {\"a\":1,\"c\":3} but was {\"a\":1}. The variables ['c'] don't exist.",
               PROCESS_INSTANCE_KEY);
     }
 
@@ -397,11 +383,7 @@ public class VariableAssertTest {
       Assertions.assertThatThrownBy(
               () -> CamundaAssert.assertThat(processInstanceEvent).hasVariables(expectedVariables))
           .hasMessage(
-              "Process instance [key: %d] should have the variables {\"a\":1,\"b\":1} but ['b'] don't match. "
-                  + "All process instance variables:\n"
-                  + "\t- 'a': 1\n"
-                  + "\t- 'b': 2\n"
-                  + "\t- 'c': 3",
+              "Process instance [key: %d] should have the variables {\"a\":1,\"b\":1} but was {\"a\":1,\"b\":2}.",
               PROCESS_INSTANCE_KEY);
     }
 
@@ -424,9 +406,7 @@ public class VariableAssertTest {
       Assertions.assertThatThrownBy(
               () -> CamundaAssert.assertThat(processInstanceEvent).hasVariables(expectedVariables))
           .hasMessage(
-              "Process instance [key: %d] should have the variables {\"a\":-1} but ['a'] don't match. "
-                  + "All process instance variables:\n"
-                  + "\t- 'a': %s",
+              "Process instance [key: %d] should have the variables {\"a\":-1} but was {\"a\":%s}.",
               PROCESS_INSTANCE_KEY, variableValue);
     }
   }
