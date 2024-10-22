@@ -96,7 +96,7 @@ class UserTaskQueryTest {
 
     final var resultVariableQuery =
         camundaClient.newUserTaskVariablesRequest(userTaskKey).send().join();
-    assertThat(resultVariableQuery.items().size()).isEqualTo(1);
+    assertThat(resultVariableQuery.items().size()).isEqualTo(2);
   }
 
   @Test
@@ -110,7 +110,7 @@ class UserTaskQueryTest {
             .filter(f -> f.variables(List.of(variableValueFilter)))
             .send()
             .join();
-    assertThat(result.items().size()).isEqualTo(2);
+    assertThat(result.items().size()).isEqualTo(1);
   }
 
   @Test
