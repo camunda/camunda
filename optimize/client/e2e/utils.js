@@ -165,7 +165,7 @@ export async function addReportToDashboard(t, name) {
 }
 
 export async function bulkDeleteAllItems(t) {
-  await t.click(Homepage.homepageLink);
+  await t.click(Common.collectionsPage);
   await t.click(Common.selectAllCheckbox);
   await t.click(Common.bulkDelete);
   await t.click(Common.modalConfirmButton);

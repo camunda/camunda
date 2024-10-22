@@ -37,7 +37,8 @@ test('create, edit, copy and remove an alert', async (t) => {
 
   await u.save(t);
 
-  await t.click(Collection.collectionBreadcrumb);
+  await t.click(Common.collectionsPage);
+  await t.click(Common.listItemLink('collection'));
   await t.click(Collection.alertTab);
 
   // CREATE
