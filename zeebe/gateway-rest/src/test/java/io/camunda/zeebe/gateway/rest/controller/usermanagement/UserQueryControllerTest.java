@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.rest.controller;
+package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -20,7 +20,6 @@ import io.camunda.search.sort.UserSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
-import io.camunda.zeebe.gateway.rest.controller.usermanagement.UserQueryController;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -112,7 +111,7 @@ public class UserQueryControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldSearchUserTasksWithSorting() {
+  void shouldSearchUsersWithSorting() {
     // given
     when(userServices.search(any(UserQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
     final var request =
@@ -146,7 +145,7 @@ public class UserQueryControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @MethodSource("invalidUserSearchQueries")
-  void shouldInvalidateUserTasksSearchQueryWithBadQueries(
+  void shouldInvalidateUsersSearchQueryWithBadQueries(
       final String request, final String expectedResponse) {
     // when / then
     webClient
