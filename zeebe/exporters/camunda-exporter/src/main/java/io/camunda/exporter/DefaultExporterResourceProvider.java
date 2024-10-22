@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter;
 
+import static java.util.Map.entry;
+
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.handlers.AuthorizationHandler;
@@ -55,8 +57,11 @@ import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * This is the class where teams should make their components such as handlers, and index/index
@@ -78,45 +83,49 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
         ConnectionTypes.from(configuration.getConnect().getType())
             .equals(ConnectionTypes.ELASTICSEARCH);
 
+    final var templateDescriptors =
+        List.of(
+            entry(ListViewTemplate.class, new ListViewTemplate(globalPrefix, isElasticsearch)),
+            entry(VariableTemplate.class, new VariableTemplate(globalPrefix, isElasticsearch)),
+            entry(
+                PostImporterQueueTemplate.class,
+                new PostImporterQueueTemplate(globalPrefix, isElasticsearch)),
+            entry(
+                FlowNodeInstanceTemplate.class,
+                new FlowNodeInstanceTemplate(globalPrefix, isElasticsearch)),
+            entry(IncidentTemplate.class, new IncidentTemplate(globalPrefix, isElasticsearch)),
+            entry(
+                SequenceFlowTemplate.class,
+                new SequenceFlowTemplate(globalPrefix, isElasticsearch)),
+            entry(
+                DecisionInstanceTemplate.class,
+                new DecisionInstanceTemplate(globalPrefix, isElasticsearch)),
+            entry(EventTemplate.class, new EventTemplate(globalPrefix, isElasticsearch)),
+            entry(TaskTemplate.class, new TaskTemplate(globalPrefix, isElasticsearch)));
+
+    templateDescriptors.forEach(entry -> entry.getValue().setIsGlobalPrefix(true));
+
     templateDescriptorsMap =
-        Map.of(
-            ListViewTemplate.class,
-            new ListViewTemplate(globalPrefix, isElasticsearch),
-            VariableTemplate.class,
-            new VariableTemplate(globalPrefix, isElasticsearch),
-            PostImporterQueueTemplate.class,
-            new PostImporterQueueTemplate(globalPrefix, isElasticsearch),
-            FlowNodeInstanceTemplate.class,
-            new FlowNodeInstanceTemplate(globalPrefix, isElasticsearch),
-            IncidentTemplate.class,
-            new IncidentTemplate(globalPrefix, isElasticsearch),
-            SequenceFlowTemplate.class,
-            new SequenceFlowTemplate(globalPrefix, isElasticsearch),
-            DecisionInstanceTemplate.class,
-            new DecisionInstanceTemplate(globalPrefix, isElasticsearch),
-            EventTemplate.class,
-            new EventTemplate(globalPrefix, isElasticsearch),
-            TaskTemplate.class,
-            new TaskTemplate(globalPrefix, isElasticsearch));
+        templateDescriptors.stream().collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+
+    final var indexDescriptors =
+        List.of(
+            entry(DecisionIndex.class, new DecisionIndex(globalPrefix, isElasticsearch)),
+            entry(
+                DecisionRequirementsIndex.class,
+                new DecisionRequirementsIndex(globalPrefix, isElasticsearch)),
+            entry(MetricIndex.class, new MetricIndex(globalPrefix, isElasticsearch)),
+            entry(ProcessIndex.class, new ProcessIndex(globalPrefix, isElasticsearch)),
+            entry(FormIndex.class, new FormIndex(globalPrefix, isElasticsearch)),
+            entry(
+                TasklistMetricIndex.class, new TasklistMetricIndex(globalPrefix, isElasticsearch)),
+            entry(UserIndex.class, new UserIndex(globalPrefix, isElasticsearch)),
+            entry(AuthorizationIndex.class, new AuthorizationIndex(globalPrefix, isElasticsearch)));
+
+    indexDescriptors.forEach(entry -> entry.getValue().setIsGlobalPrefix(true));
 
     indexDescriptorsMap =
-        Map.of(
-            DecisionIndex.class,
-            new DecisionIndex(globalPrefix, isElasticsearch),
-            DecisionRequirementsIndex.class,
-            new DecisionRequirementsIndex(globalPrefix, isElasticsearch),
-            MetricIndex.class,
-            new MetricIndex(globalPrefix, isElasticsearch),
-            ProcessIndex.class,
-            new ProcessIndex(globalPrefix, isElasticsearch),
-            FormIndex.class,
-            new FormIndex(globalPrefix, isElasticsearch),
-            TasklistMetricIndex.class,
-            new TasklistMetricIndex(globalPrefix, isElasticsearch),
-            UserIndex.class,
-            new UserIndex(globalPrefix, isElasticsearch),
-            AuthorizationIndex.class,
-            new AuthorizationIndex(globalPrefix, isElasticsearch));
+        indexDescriptors.stream().collect(Collectors.toMap(Entry::getKey, Entry::getValue));
 
     exportHandlers =
         Set.of(
