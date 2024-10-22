@@ -89,8 +89,8 @@ public class FlowNodeInstanceProcessInstanceHandler
     entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
     // Parent tree path is intentionally not calculated here
-    entity.setTreePath(null);
-    entity.setLevel(0);
+    entity.setTreePath(recordValue.getProcessInstanceKey() + "/" + record.getKey());
+    entity.setLevel(1);
 
     final OffsetDateTime recordTime =
         OffsetDateTime.ofInstant(Instant.ofEpochMilli(record.getTimestamp()), ZoneOffset.UTC);

@@ -31,19 +31,20 @@
       "versionTag": {
         "type": "keyword"
       },
-			"flowNodes": {
-              "properties": {
-                "id": {
-                  "type": "keyword"
-                },
-                "name": {
-                  "type": "keyword"
-                }
-              }
-            },
-            "tenantId": {
-              "type": "keyword"
-            }
+      "flowNodes": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "name": {
+            "type": "keyword"
+          }
         }
+      },
+      "tenantId": {
+        "type": "keyword"
+      }
     }
+  }
 }
