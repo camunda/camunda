@@ -87,7 +87,7 @@ jobs:
           max_length: '50'
 
       - name: Upload failed test results
-        uses: actions/upload-artifact@v4
+        uses: ./.github/actions/collect-test-artifacts
         if: failure()
         with:
           name: tasklist-test-results-${{ matrix.database }}

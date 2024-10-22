@@ -102,7 +102,7 @@ jobs:
       # Reports: publish test metrics results
       - name: Upload Test Report
         if: ${{ (success() || failure()) }}
-        uses: ./.github/actions/collect-operate-test-artifacts
+        uses: ./.github/actions/collect-test-artifacts
         with:
           name: "Operate ${{ inputs.test-type }}"
       - name: Send Slack notification on failure
