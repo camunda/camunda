@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {ComponentType, ReactNode} from 'react';
 import update from 'immutability-helper';
 import {DropdownSkeleton} from '@carbon/react';
 
@@ -13,20 +14,38 @@ import {t} from 'translation';
 import {showError} from 'notifications';
 import {useErrorHandling} from 'hooks';
 
-import MultiUserInput, {MultiUserInputProps} from './MultiUserInput';
-import {getUser, User, getUserId} from './service';
+import {getUser, User, getUserId, Identity} from './service';
+import MultiUserInput from './MultiUserInput';
+import SingleUserInput from './SingleUserInput';
+
+export interface UserInputProps {
+  titleText?: ReactNode;
+  users: User[];
+  collectionUsers?: User[];
+  onAdd: (value: {id: string} | Identity) => void;
+  fetchUsers?: (
+    query: string,
+    excludeGroups?: boolean
+  ) => Promise<{total: number; result: Identity[]}>;
+  optionsOnly?: boolean;
+  onRemove: (id: string) => void;
+  onClear: () => void;
+  excludeGroups?: boolean;
+}
 
 interface UserTypeaheadProps
-  extends Partial<Omit<MultiUserInputProps, 'users' | 'collectionUsers' | 'onChange'>> {
+  extends Partial<Omit<UserInputProps, 'users' | 'collectionUsers' | 'onChange'>> {
   collectionUsers?: User[] | null;
   users: User[] | null;
   onChange: (users: User[]) => void;
+  singleUser?: boolean;
 }
 
 export default function UserTypeahead({
   users = [],
   collectionUsers = [],
   onChange,
+  singleUser = false,
   ...props
 }: UserTypeaheadProps) {
   const {mightFail} = useErrorHandling();
@@ -35,10 +54,7 @@ export default function UserTypeahead({
     return <DropdownSkeleton />;
   }
 
-  const getSelectedUser = (
-    user: {id: string} | User['identity'],
-    cb: (user: User['identity']) => void
-  ) => {
+  const getSelectedUser = (user: {id: string} | Identity, cb: (user: Identity) => void) => {
     if (!('name' in user)) {
       return mightFail(
         getUser(user.id),
@@ -65,7 +81,7 @@ export default function UserTypeahead({
     cb(user);
   };
 
-  const addUser = (user: {id: string} | User['identity']) => {
+  const addUser = (user: {id: string} | Identity) => {
     getSelectedUser(user, ({id, name, email}) => {
       const newId = getUserId(id);
       const newIdentity: User = {id: newId, identity: {id, name, email}};
@@ -75,8 +91,10 @@ export default function UserTypeahead({
 
   const removeUser = (id: string) => onChange(users.filter((user) => user.id !== id));
 
+  const Component: ComponentType<UserInputProps> = singleUser ? SingleUserInput : MultiUserInput;
+
   return (
-    <MultiUserInput
+    <Component
       {...props}
       users={users}
       collectionUsers={collectionUsers}

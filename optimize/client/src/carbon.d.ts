@@ -113,31 +113,6 @@ declare module '@carbon/react' {
 
   declare const OverflowMenu: ForwardRefReturn<HTMLButtonElement, OverflowMenuProps>;
 
-  interface FilterableMultiSelectProps<T> {
-    id: string;
-    items: T[];
-    className?: string;
-    placeholder?: ReactNode;
-    initialSelectedItems?: T[];
-    itemToElement?: (item: T) => ReactNode;
-    itemToString?: (item: T) => string;
-    sortItems?: (items: T[]) => T[];
-    downshiftProps?: {
-      onSelect: (el: T) => void;
-    };
-    onChange?: ({selectedItems}: {selectedItems: T[]}) => void;
-    titleText?: ReactNode;
-    disabled?: boolean;
-    selectionFeedback?: 'top' | 'top-after-reopen' | 'fixed';
-    size?: 'sm' | 'md' | 'lg';
-    invalid?: boolean;
-    invalidText?: ReactNode;
-  }
-
-  declare function FilterableMultiSelect<T>(
-    props: ForwardRefProps<HTMLElement, FilterableMultiSelectProps<T>>
-  ): JSX.Element;
-
   interface PasswordInputProps extends InputHTMLAttributes<HTMLInputElement> {
     defaultValue?: string | number;
     helperText?: ReactNode;

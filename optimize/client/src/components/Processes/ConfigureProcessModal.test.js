@@ -9,15 +9,10 @@
 import {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 
-import {isEmailEnabled} from 'config';
+import {useUiConfig} from 'hooks';
 import {UserTypeahead} from 'components';
 
-import {ConfigureProcessModal} from './ConfigureProcessModal';
-
-jest.mock('config', () => ({
-  isEmailEnabled: jest.fn().mockReturnValue(true),
-  getOptimizeProfile: jest.fn().mockReturnValue('ccsm'),
-}));
+import ConfigureProcessModal from './ConfigureProcessModal';
 
 jest.mock('services', () => ({
   ...jest.requireActual('services'),
@@ -27,6 +22,10 @@ jest.mock('services', () => ({
 jest.mock('hooks', () => ({
   useDocs: jest.fn(() => ({
     generateDocsLink: (url) => url,
+  })),
+  useUiConfig: jest.fn(() => ({
+    optimizeProfile: 'ccsm',
+    emailEnabled: true,
   })),
 }));
 
@@ -103,7 +102,7 @@ it('should disable the confirm button if no changes to the modal were applied', 
 });
 
 it('should show warning that email is not configured', async () => {
-  isEmailEnabled.mockReturnValueOnce(false);
+  useUiConfig.mockReturnValueOnce({emailEnabled: false, optimizeProfile: 'ccsm'});
   const node = shallow(<ConfigureProcessModal {...props} />);
 
   expect(node.find('ActionableNotification').exists()).toBe(true);
