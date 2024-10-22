@@ -53,6 +53,8 @@ const {
   SignalBoundaryEvent,
   SignalEventSubProcess,
   SignalStartEvent,
+  ErrorEventSubProcess,
+  ErrorStartEvent,
 } = elements;
 
 /**
@@ -95,9 +97,11 @@ describe('MigrationView/BottomPanel', () => {
     expect(screen.getByText(SignalBoundaryEvent.name)).toBeInTheDocument();
     expect(screen.getByText(SignalEventSubProcess.name)).toBeInTheDocument();
     expect(screen.getByText(SignalStartEvent.name)).toBeInTheDocument();
+    expect(screen.getByText(ErrorEventSubProcess.name)).toBeInTheDocument();
+    expect(screen.getByText(ErrorStartEvent.name)).toBeInTheDocument();
 
-    // expect table to have 1 header + 27 content rows
-    expect(screen.getAllByRole('row')).toHaveLength(28);
+    // expect table to have 1 header + 29 content rows
+    expect(screen.getAllByRole('row')).toHaveLength(30);
   });
 
   it.each([
@@ -117,6 +121,7 @@ describe('MigrationView/BottomPanel', () => {
     {source: SendTask, target: SendTask},
     {source: TimerStartEvent, target: TimerStartEvent},
     {source: SignalIntermediateCatch, target: SignalIntermediateCatch},
+    {source: ErrorEventSubProcess, target: ErrorEventSubProcess},
   ])(
     'should allow $source.type -> $target.type mapping',
     async ({source, target}) => {
@@ -261,21 +266,23 @@ describe('MigrationView/BottomPanel', () => {
     const comboboxSendTask = await screen.findByLabelText(
       new RegExp(`target flow node for ${SendTask.name}`, 'i'),
     );
-
     const comboboxSignalIntermediateCatch = await screen.findByLabelText(
       new RegExp(`target flow node for ${SignalIntermediateCatch.name}`, 'i'),
     );
-
     const comboboxSignalBoundaryEvent = await screen.findByLabelText(
       new RegExp(`target flow node for ${SignalBoundaryEvent.name}`, 'i'),
     );
-
     const comboboxSignalEventSubProcess = await screen.findByLabelText(
       new RegExp(`target flow node for ${SignalEventSubProcess.name}`, 'i'),
     );
-
     const comboboxSignalStartEvent = await screen.findByLabelText(
       new RegExp(`target flow node for ${SignalStartEvent.name}`, 'i'),
+    );
+    const comboboxErrorEventSubProcess = await screen.findByLabelText(
+      new RegExp(`target flow node for ${ErrorEventSubProcess.name}`, 'i'),
+    );
+    const comboboxErrorStartEvent = await screen.findByLabelText(
+      new RegExp(`target flow node for ${ErrorStartEvent.name}`, 'i'),
     );
 
     screen.getByRole('button', {name: /fetch target process/i}).click();
@@ -296,6 +303,7 @@ describe('MigrationView/BottomPanel', () => {
     // Expect auto-mapping (same id, start event, same event type)
     expect(comboboxTimerStartEvent).toHaveValue(TimerStartEvent.id);
     expect(comboboxSignalStartEvent).toHaveValue(SignalStartEvent.id);
+    expect(comboboxErrorStartEvent).toHaveValue(comboboxErrorStartEvent.id);
 
     // Expect auto-mapping (same id, boundary event, same event type)
     expect(comboboxMessageInterrupting).toHaveValue(MessageInterrupting.id);
@@ -318,6 +326,7 @@ describe('MigrationView/BottomPanel', () => {
     );
     expect(comboboxTimerEventSubProcess).toHaveValue(TimerEventSubProcess.id);
     expect(comboboxSignalEventSubProcess).toHaveValue(SignalEventSubProcess.id);
+    expect(comboboxErrorEventSubProcess).toHaveValue(ErrorEventSubProcess.id);
 
     // Expect no auto-mapping (flow node does not exist in target)
     expect(comboboxShippingSubProcess).toHaveValue('');
@@ -413,6 +422,12 @@ describe('MigrationView/BottomPanel', () => {
     const rowSignalStartEvent = screen
       .getByText(getMatcherFunction(SignalStartEvent.name))
       .closest('tr');
+    const rowErrorEventSubProcess = screen
+      .getByText(getMatcherFunction(ErrorEventSubProcess.name))
+      .closest('tr');
+    const rowErrorStartEvent = screen
+      .getByText(getMatcherFunction(ErrorEventSubProcess.name))
+      .closest('tr');
 
     await waitFor(() => {
       expect(comboboxRequestForPayment).toBeEnabled();
@@ -467,6 +482,12 @@ describe('MigrationView/BottomPanel', () => {
     expect(
       within(rowSignalStartEvent!).queryByText(/not mapped/i),
     ).not.toBeInTheDocument();
+    expect(
+      within(rowErrorEventSubProcess!).queryByText(/not mapped/i),
+    ).not.toBeInTheDocument();
+    expect(
+      within(rowErrorStartEvent!).queryByText(/not mapped/i),
+    ).not.toBeInTheDocument();
 
     // expect to have "not mapped" tag (not auto-mapped)
     expect(
@@ -510,8 +531,8 @@ describe('MigrationView/BottomPanel', () => {
       }),
     ).toBeVisible();
 
-    // Expect all 27 rows to be visible (+1 header row)
-    expect(await screen.findAllByRole('row')).toHaveLength(28);
+    // Expect all 29 rows to be visible (+1 header row)
+    expect(await screen.findAllByRole('row')).toHaveLength(30);
 
     // Toggle on unmapped flow nodes
     await user.click(screen.getByLabelText(/show only not mapped/i));
@@ -568,17 +589,17 @@ describe('MigrationView/BottomPanel', () => {
     expect(
       screen.queryByText(getMatcherFunction(SignalIntermediateCatch.name)),
     ).not.toBeInTheDocument();
-
     expect(
       screen.queryByText(getMatcherFunction(SignalBoundaryEvent.name)),
     ).not.toBeInTheDocument();
-
     expect(
       screen.queryByText(getMatcherFunction(SignalEventSubProcess.name)),
     ).not.toBeInTheDocument();
-
     expect(
       screen.queryByText(getMatcherFunction(SignalStartEvent.name)),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(getMatcherFunction(ErrorEventSubProcess.name)),
     ).not.toBeInTheDocument();
 
     // Expect 6 not mapped rows (+1 header row)
@@ -612,6 +633,6 @@ describe('MigrationView/BottomPanel', () => {
     await user.click(screen.getByLabelText(/show only not mapped/i));
 
     // Expect all rows to be visible again
-    expect(await screen.findAllByRole('row')).toHaveLength(28);
+    expect(await screen.findAllByRole('row')).toHaveLength(30);
   });
 });
