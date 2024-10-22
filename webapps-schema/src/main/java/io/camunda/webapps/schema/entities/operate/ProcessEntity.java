@@ -179,7 +179,7 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
     return this;
   }
 
-  public String getFormKey() {
+  public String getFormId() {
     return formId;
   }
 
