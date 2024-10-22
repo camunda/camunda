@@ -63,7 +63,7 @@ public interface SchemaManager {
   Map<String, IndexMapping> getIndexMappings(String indexNamePattern);
 
   /**
-   * @deprecated schema manager is happening in Zeebe exporter now
+   * @deprecated schema manager is happening in Camunda exporter now
    */
   void updateSchema(Map<IndexDescriptor, Set<IndexMappingProperty>> newFields);
 

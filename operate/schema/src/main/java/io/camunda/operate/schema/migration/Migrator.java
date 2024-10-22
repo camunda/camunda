@@ -43,7 +43,7 @@ import org.springframework.stereotype.Component;
  * schema provided by a schema manager. Tries to detect source/previous schema if not provided.
  *
  * @deprecated Old-style migration that is not supported anymore. Moreover, schema manager is *
- *     happening in Zeebe exporter now.
+ *     happening in Camunda exporter now.
  */
 @Component
 @Configuration

@@ -43,9 +43,6 @@ public class SchemaStartup {
       LOGGER.info("SchemaStartup started.");
       LOGGER.info("SchemaStartup: validate index versions.");
       schemaValidator.validateIndexVersions();
-      //      LOGGER.info("SchemaStartup: validate index mappings.");
-      //      final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields =
-      //          schemaValidator.validateIndexMappings();
       final boolean createSchema =
           DatabaseInfo.isOpensearch()
               ? operateProperties.getOpensearch().isCreateSchema()
@@ -58,20 +55,6 @@ public class SchemaStartup {
         LOGGER.info(
             "SchemaStartup: schema won't be created, it either already exist, or schema creation is disabled in configuration.");
       }
-
-      //      if (!newFields.isEmpty()) {
-      //        if (createSchema) {
-      //          schemaManager.updateSchema(newFields);
-      //        } else {
-      //          LOGGER.info(
-      //              "SchemaStartup: schema won't be updated as schema creation is disabled in
-      // configuration.");
-      //        }
-      //      }
-      //      if (migrationProperties.isMigrationEnabled()) {
-      //        LOGGER.info("SchemaStartup: migrate schema.");
-      //        migrator.migrateData();
-      //      }
       LOGGER.info("SchemaStartup finished.");
     } catch (final Exception ex) {
       LOGGER.error("Schema startup failed: " + ex.getMessage(), ex);
