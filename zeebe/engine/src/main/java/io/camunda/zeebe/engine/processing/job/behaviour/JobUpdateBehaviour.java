@@ -8,9 +8,13 @@
 package io.camunda.zeebe.engine.processing.job.behaviour;
 
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.time.InstantSource;
@@ -28,10 +32,15 @@ public class JobUpdateBehaviour {
 
   private final JobState jobState;
   private final InstantSource clock;
+  private final AuthorizationCheckBehavior authCheckBehavior;
 
-  public JobUpdateBehaviour(final JobState jobState, final InstantSource clock) {
+  public JobUpdateBehaviour(
+      final JobState jobState,
+      final InstantSource clock,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     this.jobState = jobState;
     this.clock = clock;
+    this.authCheckBehavior = authCheckBehavior;
   }
 
   public Either<Rejection, JobRecord> getJob(
@@ -43,6 +52,23 @@ public class JobUpdateBehaviour {
     }
     return Either.left(
         new Rejection(RejectionType.NOT_FOUND, NO_JOB_FOUND_MESSAGE.formatted(jobKey)));
+  }
+
+  public Either<Rejection, JobRecord> isAuthorized(
+      final TypedRecord<JobRecord> command, final JobRecord job) {
+    final var authRequest =
+        new AuthorizationRequest(
+                command, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.UPDATE)
+            .addResourceId(job.getBpmnProcessId());
+
+    if (!authCheckBehavior.isAuthorized(authRequest)) {
+      return Either.left(
+          new Rejection(
+              RejectionType.UNAUTHORIZED,
+              AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE.formatted(
+                  authRequest.getPermissionType(), authRequest.getResourceType())));
+    }
+    return Either.right(job);
   }
 
   public Optional<String> updateJobRetries(

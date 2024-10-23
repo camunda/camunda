@@ -42,6 +42,7 @@ public class JobUpdateProcessor implements TypedRecordProcessor<JobRecord> {
     final long jobKey = command.getKey();
     jobUpdateBehaviour
         .getJob(jobKey, command)
+        .flatMap(job -> jobUpdateBehaviour.isAuthorized(command, job))
         .ifRightOrLeft(
             job -> {
               final List<String> errors = new ArrayList<>();
@@ -68,8 +69,7 @@ public class JobUpdateProcessor implements TypedRecordProcessor<JobRecord> {
             },
             rejection -> {
               rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-              responseWriter.writeRejectionOnCommand(
-                  command, RejectionType.NOT_FOUND, rejection.reason());
+              responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
             });
   }
 
