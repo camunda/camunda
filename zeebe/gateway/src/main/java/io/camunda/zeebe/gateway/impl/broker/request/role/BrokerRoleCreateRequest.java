@@ -11,7 +11,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import org.agrona.DirectBuffer;
 
 public class BrokerRoleCreateRequest extends BrokerExecuteCommand<RoleRecord> {
@@ -19,7 +19,7 @@ public class BrokerRoleCreateRequest extends BrokerExecuteCommand<RoleRecord> {
   private final RoleRecord requestDto = new RoleRecord();
 
   public BrokerRoleCreateRequest() {
-    super(ValueType.ROLE, UserIntent.CREATE);
+    super(ValueType.ROLE, RoleIntent.CREATE);
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
   }
 

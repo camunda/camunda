@@ -20,6 +20,7 @@ import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.role.BrokerRoleCreateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, RoleEntity> {
@@ -60,5 +61,5 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
     }
   }
 
-  public record RoleDTO(long roleKey, String name, long entityKey) {}
+  public record RoleDTO(long roleKey, String name, Set<Long> assignedMemberKeys) {}
 }
