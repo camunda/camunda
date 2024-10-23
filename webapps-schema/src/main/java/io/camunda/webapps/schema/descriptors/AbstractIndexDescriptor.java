@@ -57,12 +57,12 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
   private String getPrefixAndComponentName() {
     // Cannot start index with "-" so must not append "-" for empty prefix
-    final var prefix = getIndexPrefix().isBlank() ? getIndexPrefix() : getIndexPrefix() + "-";
-
+    String prefix = "";
+    if (getIndexPrefix() != null && !getIndexPrefix().isBlank()) {
+      prefix = getIndexPrefix() + "-";
+    }
     // Legacy descriptors have the same index prefix as component name this avoids duplication.
-    return getIndexPrefix().contains(getComponentName())
-        ? getIndexPrefix()
-        : prefix + getComponentName();
+    return prefix.contains(getComponentName()) ? prefix : prefix + getComponentName();
   }
 
   public abstract String getComponentName();
