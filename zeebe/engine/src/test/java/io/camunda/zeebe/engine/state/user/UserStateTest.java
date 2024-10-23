@@ -56,7 +56,7 @@ public class UserStateTest {
     // then
     final var persistedUser = userState.getUser(user.getUsername());
     assertThat(persistedUser).isPresent();
-    assertThat(persistedUser.get()).isEqualTo(user);
+    assertThat(persistedUser.get().getUser()).isEqualTo(user);
   }
 
   @DisplayName("should throw an exception when creating a user with a username that already exists")
