@@ -73,10 +73,12 @@ jobs:
 
       #########################################################################
       # Docker login and image tagging
-      - name: Login to Harbor registry
-        uses: ./.github/actions/login-registry
+      - name: Login to Harbor docker registry
+        uses: docker/login-action@v3
         with:
-          secrets: ${{ toJSON(secrets) }}
+          registry: registry.camunda.cloud
+          username: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
+          password: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
 
       #########################################################################
       # Setup and configure Maven
