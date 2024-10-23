@@ -25,11 +25,6 @@ public record RoleFilter(Long roleKey, String name, Long entityKey) implements F
       return this;
     }
 
-    public Builder entityKey(final Long value) {
-      entityKey = value;
-      return this;
-    }
-
     @Override
     public RoleFilter build() {
       return new RoleFilter(roleKey, name, entityKey);

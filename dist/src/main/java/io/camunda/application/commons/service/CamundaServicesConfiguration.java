@@ -131,8 +131,10 @@ public class CamundaServicesConfiguration {
 
   @Bean
   public RoleServices roleServices(
-      final BrokerClient brokerClient, final RoleSearchClient roleSearchClient) {
-    return new RoleServices(brokerClient, roleSearchClient, null);
+      final BrokerClient brokerClient,
+      final ServiceSecurityProperties securityConfiguration,
+      final RoleSearchClient roleSearchClient) {
+    return new RoleServices(brokerClient, securityConfiguration, roleSearchClient, null);
   }
 
   @Bean

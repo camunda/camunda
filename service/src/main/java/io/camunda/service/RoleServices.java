@@ -9,13 +9,13 @@ package io.camunda.service;
 
 import io.camunda.search.clients.RoleSearchClient;
 import io.camunda.search.entities.RoleEntity;
-import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.role.BrokerRoleCreateRequest;
@@ -28,9 +28,10 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
 
   public RoleServices(
       final BrokerClient brokerClient,
+      final SecurityConfiguration securityConfiguration,
       final RoleSearchClient roleSearchClient,
       final Authentication authentication) {
-    super(brokerClient, authentication);
+    super(brokerClient, securityConfiguration, authentication);
     this.roleSearchClient = roleSearchClient;
   }
 
@@ -42,7 +43,7 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
 
   @Override
   public RoleServices withAuthentication(final Authentication authentication) {
-    return new RoleServices(brokerClient, roleSearchClient, authentication);
+    return new RoleServices(brokerClient, securityConfiguration, roleSearchClient, authentication);
   }
 
   public CompletableFuture<RoleRecord> createRole(final RoleDTO request) {
@@ -54,9 +55,6 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
         search(SearchQueryBuilders.roleSearchQuery().filter(f -> f.roleKey(roleKey)).build());
     if (result.total() < 1) {
       throw new NotFoundException(String.format("Role with roleKey %d not found", roleKey));
-    } else if (result.total() > 1) {
-      throw new CamundaSearchException(
-          String.format("Found role with roleKey %d more than once", roleKey));
     } else {
       return result.items().stream().findFirst().orElseThrow();
     }

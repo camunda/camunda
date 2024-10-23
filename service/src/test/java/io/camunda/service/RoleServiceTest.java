@@ -20,6 +20,7 @@ import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.filter.RoleFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.List;
 import org.assertj.core.util.Arrays;
@@ -34,7 +35,8 @@ public class RoleServiceTest {
   @BeforeEach
   public void before() {
     client = mock(RoleSearchClient.class);
-    services = new RoleServices(mock(BrokerClient.class), client, null);
+    services =
+        new RoleServices(mock(BrokerClient.class), new SecurityConfiguration(), client, null);
   }
 
   @Test

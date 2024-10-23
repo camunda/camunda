@@ -35,11 +35,6 @@ public record RoleSort(List<FieldSorting> orderings) implements SortOption {
       return this;
     }
 
-    public Builder entityKey() {
-      currentOrdering = new FieldSorting("entityKey", null);
-      return this;
-    }
-
     @Override
     protected Builder self() {
       return this;
