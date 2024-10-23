@@ -29,6 +29,9 @@ import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResponse;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResponse.OwnerTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResponse.PermissionsEnum;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResponse.ResourceTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResponse;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionItem;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryResponse;
@@ -569,11 +572,14 @@ public final class SearchQueryResponseMapper {
       final AuthorizationEntity authorization) {
     return Either.right(
         new AuthorizationResponse()
-            .ownerType(authorization.value().ownerType())
+            .ownerType(OwnerTypeEnum.fromValue(authorization.value().ownerType()))
             .ownerKey(authorization.value().ownerKey())
             .resourceKey(authorization.value().resourceKey())
-            .resourceType(authorization.value().resourceType())
-            .permissions(authorization.value().permissions().stream().toList()));
+            .resourceType(ResourceTypeEnum.valueOf(authorization.value().resourceType()))
+            .permissions(
+                authorization.value().permissions().stream()
+                    .map(PermissionsEnum::valueOf)
+                    .toList()));
   }
 
   private record RuleIdentifier(String ruleId, int ruleIndex) {}
