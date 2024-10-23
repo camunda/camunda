@@ -868,7 +868,12 @@ public final class SearchQueryRequestMapper {
   private static AuthorizationFilter toAuthorizationFilter(
       final AuthorizationFilterRequest filter) {
     return Optional.ofNullable(filter)
-        .map(f -> FilterBuilders.authorization().ownerType(f.getOwnerType()).build())
+        .map(
+            f ->
+                FilterBuilders.authorization()
+                    .ownerType(f.getOwnerType() == null ? null : f.getOwnerType().getValue())
+                    .ownerKey(f.getOwnerKey())
+                    .build())
         .orElse(null);
   }
 }
