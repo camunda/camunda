@@ -28,9 +28,10 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequestPermissionsInner;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequestPermissionsInner.PermissionTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResponse.OwnerTypeEnum;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResponse.PermissionsEnum;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResponse.ResourceTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResponse;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionItem;
@@ -572,13 +573,16 @@ public final class SearchQueryResponseMapper {
       final AuthorizationEntity authorization) {
     return Either.right(
         new AuthorizationResponse()
-            .ownerType(OwnerTypeEnum.fromValue(authorization.value().ownerType()))
-            .ownerKey(authorization.value().ownerKey())
-            .resourceKey(authorization.value().resourceKey())
-            .resourceType(ResourceTypeEnum.valueOf(authorization.value().resourceType()))
+            .ownerType(OwnerTypeEnum.fromValue(authorization.ownerType()))
+            .ownerKey(Long.valueOf(authorization.ownerKey()))
+            .resourceType(ResourceTypeEnum.valueOf(authorization.resourceType()))
             .permissions(
-                authorization.value().permissions().stream()
-                    .map(PermissionsEnum::valueOf)
+                authorization.permissions().stream()
+                    .map(
+                        p ->
+                            new AuthorizationPatchRequestPermissionsInner()
+                                .permissionType(PermissionTypeEnum.fromValue(p.type().name()))
+                                .resourceIds(p.resourceIds()))
                     .toList()));
   }
 
