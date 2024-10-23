@@ -13,9 +13,11 @@ import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.health.CriticalComponentsHealthMonitor;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.health.HealthMonitorable;
+import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
 import java.util.Collection;
 import java.util.Map;
@@ -82,6 +84,10 @@ import org.slf4j.Logger;
  *                                 |upwards   +------------------+
  *                                 |----------| SnapshotDirector |
  *                                            +------------------+
+ *                                 |informs
+ *                                 |upwards   +---------------------+
+ *                                 |----------| ZeebePartitionHealth|
+ *                                            +---------------------+
  *
  * https://textik.com/#cb084adedb02d970
  */
@@ -190,5 +196,11 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
 
   public boolean isBrokerStarted() {
     return brokerStarted;
+  }
+
+  public ActorFuture<HealthReport> getHealthReport() {
+    final var future = new CompletableActorFuture<HealthReport>();
+    actor.run(() -> future.complete(healthMonitor.getHealthReport()));
+    return future;
   }
 }
