@@ -22,8 +22,8 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProces
 import io.camunda.optimize.dto.optimize.query.report.single.result.MeasureDto;
 import io.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
-import io.camunda.optimize.service.db.es.report.result.MapCommandResult;
-import io.camunda.optimize.service.db.es.report.result.NumberCommandResult;
+import io.camunda.optimize.service.db.report.result.MapCommandResult;
+import io.camunda.optimize.service.db.report.result.NumberCommandResult;
 import io.camunda.optimize.service.export.CSVUtils;
 import io.camunda.optimize.service.util.ProcessReportDataType;
 import io.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;

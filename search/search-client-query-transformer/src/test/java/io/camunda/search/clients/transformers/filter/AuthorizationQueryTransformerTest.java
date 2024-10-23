@@ -14,6 +14,7 @@ import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.AuthorizationFilter.Builder;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.util.ObjectBuilder;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -27,7 +28,7 @@ public class AuthorizationQueryTransformerTest extends AbstractTransformerTest {
   public void shouldQueryByField(
       final Function<Builder, ObjectBuilder<AuthorizationFilter>> fn,
       final String column,
-      final String value) {
+      final Object value) {
     // given
     final var filter = FilterBuilders.authorization(fn);
 
@@ -41,28 +42,33 @@ public class AuthorizationQueryTransformerTest extends AbstractTransformerTest {
             SearchTermQuery.class,
             t -> {
               assertThat(t.field()).isEqualTo(column);
-              assertThat(t.value().stringValue()).isEqualTo(value);
+              assertThat(t.value().value()).isEqualTo(value);
             });
   }
 
   public static Stream<Arguments> queryFilterParameters() {
     return Stream.of(
         Arguments.of(
-            (Function<Builder, ObjectBuilder<AuthorizationFilter>>) f -> f.ownerKey("username1"),
+            (Function<Builder, ObjectBuilder<AuthorizationFilter>>) f -> f.ownerKey(1234L),
             "ownerKey",
-            "username1"),
+            1234L),
         Arguments.of(
             (Function<Builder, ObjectBuilder<AuthorizationFilter>>) f -> f.ownerType("user"),
             "ownerType",
             "user"),
         Arguments.of(
             (Function<Builder, ObjectBuilder<AuthorizationFilter>>) f -> f.resourceKey("456"),
-            "resourceKey",
+            "permissions.resourceIds",
             "456"),
         Arguments.of(
             (Function<Builder, ObjectBuilder<AuthorizationFilter>>)
                 f -> f.resourceType("process-definition"),
             "resourceType",
-            "process-definition"));
+            "process-definition"),
+        Arguments.of(
+            (Function<Builder, ObjectBuilder<AuthorizationFilter>>)
+                f -> f.permissionType(PermissionType.READ),
+            "permissions.type",
+            PermissionType.READ.name()));
   }
 }

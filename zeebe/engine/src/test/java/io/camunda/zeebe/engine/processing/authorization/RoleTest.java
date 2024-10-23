@@ -10,11 +10,15 @@ package io.camunda.zeebe.engine.processing.authorization;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.RoleState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
@@ -31,6 +35,8 @@ public class RoleTest {
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
   private final RoleState roleState = ENGINE.getProcessingState().getRoleState();
   private final UserState userState = ENGINE.getProcessingState().getUserState();
+  private final AuthorizationState authorizationState =
+      ENGINE.getProcessingState().getAuthorizationState();
 
   @BeforeClass
   public static void setUp() {
@@ -52,6 +58,8 @@ public class RoleTest {
 
     final var createdRole = roleRecord.getValue();
     Assertions.assertThat(createdRole).isNotNull().hasFieldOrPropertyWithValue("name", name);
+    final var ownerType = authorizationState.getOwnerType(createdRole.getRoleKey());
+    Assertions.assertThat(ownerType).isPresent().hasValue(AuthorizationOwnerType.ROLE);
   }
 
   @Test
@@ -272,5 +280,40 @@ public class RoleTest {
         .hasRejectionReason(
             "Expected to remove an entity with key '%s' and type '%s' from role with key '%s', but the entity doesn't exist."
                 .formatted(1L, EntityType.USER, roleKey));
+  }
+
+  @Test
+  public void shouldDeleteRole() {
+    // given
+    final var name = UUID.randomUUID().toString();
+    final var roleKey = ENGINE.role().newRole(name).create().getValue().getRoleKey();
+    ENGINE
+        .authorization()
+        .permission()
+        .withOwnerKey(roleKey)
+        .withOwnerType(AuthorizationOwnerType.ROLE)
+        .withResourceType(AuthorizationResourceType.ROLE)
+        .withAction(PermissionAction.REMOVE)
+        .add();
+
+    // when
+    ENGINE.role().deleteRole(roleKey).delete();
+
+    final var deletedRecord = roleState.getRole(roleKey);
+    assertTrue(deletedRecord.isEmpty());
+  }
+
+  @Test
+  public void shouldRejectIfRoleIsNotPresentOnDeletion() {
+    // when
+    final var notPresentRoleKey = 1L;
+    final var notPresentUpdateRecord =
+        ENGINE.role().deleteRole(notPresentRoleKey).expectRejection().delete();
+
+    assertThat(notPresentUpdateRecord)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to delete role with key '%s', but a role with this key doesn't exist."
+                .formatted(notPresentRoleKey));
   }
 }

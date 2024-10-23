@@ -24,7 +24,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.
 import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataCountDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
-import io.camunda.optimize.service.db.es.report.result.RawDataCommandResult;
+import io.camunda.optimize.service.db.report.result.RawDataCommandResult;
 import java.time.ZoneId;
 import java.util.Collections;
 import java.util.HashMap;

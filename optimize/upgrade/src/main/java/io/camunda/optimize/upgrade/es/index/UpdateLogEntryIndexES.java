@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class UpdateLogEntryIndexES
-    extends io.camunda.optimize.upgrade.es.index.UpdateLogEntryIndex<IndexSettings.Builder> {
+    extends io.camunda.optimize.upgrade.db.index.UpdateLogEntryIndex<IndexSettings.Builder> {
 
   @Override
   public IndexSettings.Builder addStaticSetting(

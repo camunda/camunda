@@ -20,9 +20,9 @@ import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRep
 import io.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.OutputVariableEntry;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
-import io.camunda.optimize.service.db.es.report.command.decision.mapping.RawDecisionDataResultDtoMapper;
 import io.camunda.optimize.service.db.reader.DecisionVariableReader;
 import io.camunda.optimize.service.db.report.ExecutionContext;
+import io.camunda.optimize.service.db.report.interpreter.util.RawDecisionDataResultDtoMapper;
 import io.camunda.optimize.service.db.report.plan.decision.DecisionExecutionPlan;
 import io.camunda.optimize.service.db.report.plan.decision.DecisionView;
 import java.util.Collections;
