@@ -76,6 +76,7 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
       responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, errorMessage);
       return;
     }
+    record.setName(persistedRecord.get().getName());
 
     stateWriter.appendFollowUpEvent(roleKey, RoleIntent.DELETED, record);
     responseWriter.writeEventOnCommand(roleKey, RoleIntent.DELETED, record, command);

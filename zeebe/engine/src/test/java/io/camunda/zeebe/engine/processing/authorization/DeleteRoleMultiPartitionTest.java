@@ -41,7 +41,7 @@ public class DeleteRoleMultiPartitionTest {
     // when
     final var name = UUID.randomUUID().toString();
     final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
-    engine.role().deleteRole(roleKey).withName(name).delete();
+    engine.role().deleteRole(roleKey).delete();
 
     assertThat(
             RecordingExporter.records()
@@ -88,7 +88,7 @@ public class DeleteRoleMultiPartitionTest {
     // when
     final var name = UUID.randomUUID().toString();
     final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
-    engine.role().deleteRole(roleKey).withName(name).delete();
+    engine.role().deleteRole(roleKey).delete();
 
     // then
     assertThat(
@@ -107,7 +107,7 @@ public class DeleteRoleMultiPartitionTest {
       interceptRoleCreateForPartition(partitionId);
     }
     final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
-    engine.role().deleteRole(roleKey).withName(name).delete();
+    engine.role().deleteRole(roleKey).delete();
 
     // Increase time to trigger a redistribution
     engine.increaseTime(Duration.ofMinutes(1));

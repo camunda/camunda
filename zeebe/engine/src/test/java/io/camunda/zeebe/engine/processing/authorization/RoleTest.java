@@ -297,7 +297,7 @@ public class RoleTest {
         .add();
 
     // when
-    ENGINE.role().deleteRole(roleKey).withName(name).delete();
+    ENGINE.role().deleteRole(roleKey).delete();
 
     final var deletedRecord = roleState.getRole(roleKey);
     assertTrue(deletedRecord.isEmpty());

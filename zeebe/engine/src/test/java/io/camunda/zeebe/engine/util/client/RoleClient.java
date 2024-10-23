@@ -242,11 +242,6 @@ public class RoleClient {
       roleRecord.setRoleKey(key);
     }
 
-    public RoleDeleteClient withName(final String name) {
-      roleRecord.setName(name);
-      return this;
-    }
-
     public Record<RoleRecordValue> delete() {
       final long position = writer.writeCommand(RoleIntent.DELETE, roleRecord);
       return expectation.apply(position);
