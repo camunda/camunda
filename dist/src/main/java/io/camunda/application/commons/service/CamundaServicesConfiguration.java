@@ -86,9 +86,10 @@ public class CamundaServicesConfiguration {
   public ProcessDefinitionServices processDefinitionServices(
       final BrokerClient brokerClient,
       final ServiceSecurityProperties securityConfiguration,
-      final ProcessDefinitionSearchClient processDefinitionSearchClient) {
+      final ProcessDefinitionSearchClient processDefinitionSearchClient,
+      final FormServices formServices) {
     return new ProcessDefinitionServices(
-        brokerClient, securityConfiguration, processDefinitionSearchClient, null);
+        brokerClient, securityConfiguration, processDefinitionSearchClient, formServices, null);
   }
 
   @Bean

@@ -33,10 +33,26 @@ public final class FormServiceTest {
   }
 
   @Test
-  public void shouldReturnForm() {
+  public void shouldReturnFormByKey() {
     // given
     final var searchQuery =
         SearchQueryBuilders.formSearchQuery().filter(f -> f.formKeys(1L)).build();
+
+    final var result = mock(SearchQueryResult.class);
+    when(client.searchForms(any(), any())).thenReturn(result);
+
+    // when
+    final var searchQueryResult = services.search(searchQuery);
+
+    // then
+    assertThat(searchQueryResult).isEqualTo(result);
+  }
+
+  @Test
+  public void shouldReturnByFormId() {
+    // given
+    final var searchQuery =
+        SearchQueryBuilders.formSearchQuery().filter(f -> f.formIds("formId")).build();
 
     final var result = mock(SearchQueryResult.class);
     when(client.searchForms(any(), any())).thenReturn(result);

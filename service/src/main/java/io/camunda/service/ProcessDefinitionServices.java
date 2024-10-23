@@ -26,14 +26,17 @@ public class ProcessDefinitionServices
         ProcessDefinitionServices, ProcessDefinitionQuery, ProcessDefinitionEntity> {
 
   private final ProcessDefinitionSearchClient processDefinitionSearchClient;
+  private final FormServices formServices;
 
   public ProcessDefinitionServices(
       final BrokerClient brokerClient,
       final SecurityConfiguration securityConfiguration,
       final ProcessDefinitionSearchClient processDefinitionSearchClient,
+      final FormServices formServices,
       final Authentication authentication) {
     super(brokerClient, securityConfiguration, authentication);
     this.processDefinitionSearchClient = processDefinitionSearchClient;
+    this.formServices = formServices;
   }
 
   @Override
@@ -45,7 +48,11 @@ public class ProcessDefinitionServices
   @Override
   public ProcessDefinitionServices withAuthentication(final Authentication authentication) {
     return new ProcessDefinitionServices(
-        brokerClient, securityConfiguration, processDefinitionSearchClient, authentication);
+        brokerClient,
+        securityConfiguration,
+        processDefinitionSearchClient,
+        formServices,
+        authentication);
   }
 
   public ProcessDefinitionEntity getByKey(final Long processDefinitionKey) {
