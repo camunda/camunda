@@ -41,6 +41,7 @@ import org.testcontainers.utility.DockerImageName;
 @AutoCloseResources
 @Testcontainers
 @TestInstance(Lifecycle.PER_CLASS)
+@ZeebeIntegration
 public class MessagePublishAuthorizationIT {
   public static final String INTERMEDIATE_MSG_NAME = "intermediateMsg";
   public static final String START_MSG_NAME = "startMsg";

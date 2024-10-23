@@ -39,6 +39,7 @@ import org.testcontainers.utility.DockerImageName;
 @AutoCloseResources
 @Testcontainers
 @TestInstance(Lifecycle.PER_CLASS)
+@ZeebeIntegration
 public class DecisionEvaluationEvaluateAuthorizationIT {
 
   private static final DockerImageName ELASTIC_IMAGE =

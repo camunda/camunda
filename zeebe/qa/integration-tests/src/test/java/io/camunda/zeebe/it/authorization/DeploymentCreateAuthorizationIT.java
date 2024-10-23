@@ -40,6 +40,7 @@ import org.testcontainers.utility.DockerImageName;
 @AutoCloseResources
 @Testcontainers
 @TestInstance(Lifecycle.PER_CLASS)
+@ZeebeIntegration
 final class DeploymentCreateAuthorizationIT {
   private static final DockerImageName ELASTIC_IMAGE =
       DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")

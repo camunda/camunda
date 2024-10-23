@@ -41,6 +41,7 @@ import org.testcontainers.utility.DockerImageName;
 @AutoCloseResources
 @Testcontainers
 @TestInstance(Lifecycle.PER_CLASS)
+@ZeebeIntegration
 public class ProcessInstanceModificationModifyAuthorizationIT {
   public static final String DEFAULT_USERNAME = "demo";
   public static final String AUTHENTICATED_USERNAME = "foo";

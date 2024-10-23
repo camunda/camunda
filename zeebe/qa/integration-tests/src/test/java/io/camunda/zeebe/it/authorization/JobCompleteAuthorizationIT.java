@@ -41,6 +41,7 @@ import org.testcontainers.utility.DockerImageName;
 @AutoCloseResources
 @Testcontainers
 @TestInstance(Lifecycle.PER_CLASS)
+@ZeebeIntegration
 public class JobCompleteAuthorizationIT {
 
   public static final String DEFAULT_USERNAME = "demo";
