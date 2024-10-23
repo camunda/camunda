@@ -1930,7 +1930,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-  /authoeizations/search:
+  /authorizations/search:
     post:
       tags:
         - Authorization
@@ -2348,18 +2348,6 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "401":
           description: "Unauthorized"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: "Forbidden"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: "Not found"
           content:
             application/problem+json:
               schema:
@@ -3587,6 +3575,74 @@ components:
                 description: A list of resource IDs the permission relates to.
                 items:
                   type: string
+    AuthorizationSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      type: object
+      properties:
+        filter:
+          allOf:
+            - $ref: "#/components/schemas/AuthorizationFilterRequest"
+    AuthorizationFilterRequest:
+      type: object
+      properties:
+        ownerType:
+          enum:
+            - USER
+            - ROLE
+            - GROUP
+            - MAPPING
+            - UNSPECIFIED
+        ownerKey:
+          type: "string"
+    AuthorizationResponse:
+      type: "object"
+      properties:
+        ownerKey:
+          type: "string"
+        ownerType:
+          enum:
+            - USER
+            - ROLE
+            - GROUP
+            - MAPPING
+            - UNSPECIFIED
+        resourceKey:
+          type: "string"
+        resourceType:
+          description: The type of resource to add/remove perissions to/from.
+          enum:
+            - AUTHORIZATION
+            - MAPPING_RULE
+            - MESSAGE
+            - BATCH
+            - APPLICATION
+            - SYSTEM
+            - TENANT
+            - DEPLOYMENT
+            - PROCESS_DEFINITION
+            - DECISION_REQUIREMENTS_DEFINITION
+            - DECISION_DEFINITION
+            - GROUP
+            - USER
+            - ROLE
+        permissions:
+          type: array
+          items:
+            enum:
+              - CREATE
+              - READ
+              - UPDATE
+              - DELETE
+    AuthorizationSearchResponse:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuthorizationResponse"
     UserRequest:
       type: "object"
       properties:
@@ -5053,43 +5109,6 @@ components:
           description: The version of the form.
           type: integer
           format: int64
-    AuthorizationSearchQueryRequest:
-      allOf:
-        - $ref: "#/components/schemas/SearchQueryRequest"
-      type: object
-      properties:
-        filter:
-          allOf:
-            - $ref: "#/components/schemas/AuthorizationFilterRequest"
-    AuthorizationFilterRequest:
-      type: object
-      properties:
-        ownerType:
-          type: "string"
-    AuthorizationResponse:
-      type: "object"
-      properties:
-        ownerKey:
-          type: "string"
-        ownerType:
-          type: "string"
-        resourceKey:
-          type: "string"
-        resourceType:
-          type: "string"
-        permissions:
-          type: array
-          items:
-            type: string
-    AuthorizationSearchResponse:
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/SearchQueryResponse"
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/AuthorizationResponse"
 
   securitySchemes:
     bearerAuth:
