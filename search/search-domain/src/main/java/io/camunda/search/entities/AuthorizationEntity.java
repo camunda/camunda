@@ -8,14 +8,9 @@
 package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import java.util.Set;
+import io.camunda.security.entity.Permission;
+import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record AuthorizationEntity(Authorization value) {
-  public record Authorization(
-      String ownerKey,
-      String ownerType,
-      String resourceKey,
-      String resourceType,
-      Set<String> permissions) {}
-}
+public record AuthorizationEntity(
+    String ownerKey, String ownerType, String resourceType, List<Permission> permissions) {}
