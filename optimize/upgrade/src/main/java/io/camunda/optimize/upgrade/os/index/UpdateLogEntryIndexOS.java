@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.upgrade.os.index;
 
-import io.camunda.optimize.upgrade.es.index.UpdateLogEntryIndex;
+import io.camunda.optimize.upgrade.db.index.UpdateLogEntryIndex;
 import org.opensearch.client.opensearch.indices.IndexSettings;
 import org.opensearch.client.opensearch.indices.IndexSettings.Builder;
 import org.springframework.stereotype.Component;
