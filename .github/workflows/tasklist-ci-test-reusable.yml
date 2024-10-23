@@ -75,12 +75,14 @@ jobs:
             secret/data/github.com/organizations/camunda NEXUS_PSW;
 
       # Setup: configure Java, Maven, settings.xml
-      - uses: ./.github/actions/build-tasklist-setup
+      - uses: ./.github/actions/setup-build
         name: Build setup
         with:
+          camunda-nexus-username: ${{ steps.secrets.outputs.NEXUS_USR }}
+          camunda-nexus-password: ${{ steps.secrets.outputs.NEXUS_PSW }}
+          java-distribution: adopt
           maven-cache-key-modifier: tasklist-tests
-          nexusUsername: ${{ steps.secrets.outputs.NEXUS_USR }}
-          nexusPassword: ${{ steps.secrets.outputs.NEXUS_PSW }}
+          maven-version: 3.8.6
 
       - name: Build backend
         run: ./mvnw -B -T1C -DskipChecks -DskipTests -P skipFrontendBuild clean install

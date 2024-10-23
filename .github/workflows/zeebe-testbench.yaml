@@ -28,6 +28,21 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch }}
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
+            secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
+            secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW_READ_ONLY;
+            secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR;
+            secret/data/products/zeebe/ci/zeebe TESTBENCH_PROD_CLIENT_SECRET;
+            secret/data/products/zeebe/ci/zeebe TESTBENCH_PROD_CONTACT_POINT;
       - uses: google-github-actions/auth@v2
         id: auth
         with:
@@ -42,11 +57,17 @@ jobs:
           registry: gcr.io
           username: oauth2accesstoken
           password: ${{ steps.auth.outputs.access_token }}
-      - uses: ./.github/actions/setup-zeebe
+      # Logging to DockerHub to to avoid being rate-limited when using an anonymous account from GitHub-managed runners.
+      # jib-maven-plugin uses eclipse-temurin:xx image from DockerHub as base.
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
         with:
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
+          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW_READ_ONLY }}
+      - uses: ./.github/actions/setup-build
+        with:
+          camunda-nexus-username: ${{ steps.secrets.outputs.ARTIFACTS_USR }}
+          camunda-nexus-password: ${{ steps.secrets.outputs.ARTIFACTS_PSW }}
       - id: image-tag
         name: Calculate image tag
         shell: bash
@@ -70,17 +91,6 @@ jobs:
         run: ./mvnw -pl zeebe/benchmarks/project jib:build -P starter -D image="gcr.io/zeebe-io/starter:${{ steps.image-tag.outputs.image-tag }}"
       - name: Build and Push Worker Image
         run: ./mvnw -pl zeebe/benchmarks/project jib:build -P worker -D image="gcr.io/zeebe-io/worker:${{ steps.image-tag.outputs.image-tag }}"
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@v3.0.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/zeebe/ci/zeebe TESTBENCH_PROD_CLIENT_SECRET;
-            secret/data/products/zeebe/ci/zeebe TESTBENCH_PROD_CONTACT_POINT;
       - name: Start Test
         shell: bash
         run: |
