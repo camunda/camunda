@@ -134,5 +134,46 @@ public class ProcessHandlerTest {
     assertThat(processEntity.getBpmnXml())
         .isEqualTo(new String(processRecordValue.getResource(), StandardCharsets.UTF_8));
     assertThat(processEntity.getTenantId()).isEqualTo(processRecordValue.getTenantId());
+    assertThat(processEntity.getIsPublic()).isFalse();
+    assertThat(processEntity.getFormId()).isNull();
+  }
+
+  @Test
+  void shouldUpdateEntityFromRecordWithForm() throws IOException {
+    // given
+
+    final long expectedId = 123;
+    final var resource = getClass().getClassLoader().getResource("process/form-process.bpmn");
+    assertThat(resource).isNotNull();
+    final ImmutableProcess processRecordValue =
+        ImmutableProcess.builder()
+            .from(factory.generateObject(ImmutableProcess.class))
+            .withProcessDefinitionKey(expectedId)
+            .withBpmnProcessId("testProcessId")
+            .withResource(Files.readAllBytes(Path.of(resource.getPath())))
+            .build();
+
+    final Record<Process> processRecord =
+        factory.generateRecord(
+            ValueType.DECISION,
+            r -> r.withIntent(ProcessIntent.CREATED).withValue(processRecordValue));
+
+    // when
+    final ProcessEntity processEntity = new ProcessEntity();
+    underTest.updateEntity(processRecord, processEntity);
+
+    // then
+    assertThat(processEntity.getId()).isEqualTo(String.valueOf(expectedId));
+    assertThat(processEntity.getKey()).isEqualTo(expectedId);
+    assertThat(processEntity.getName()).isEqualTo("testProcessName");
+    assertThat(processEntity.getBpmnProcessId()).isEqualTo("testProcessId");
+    assertThat(processEntity.getVersionTag()).isEqualTo("processTag");
+    assertThat(processEntity.getVersion()).isEqualTo(processRecordValue.getVersion());
+    assertThat(processEntity.getResourceName()).isEqualTo(processRecordValue.getResourceName());
+    assertThat(processEntity.getBpmnXml())
+        .isEqualTo(new String(processRecordValue.getResource(), StandardCharsets.UTF_8));
+    assertThat(processEntity.getTenantId()).isEqualTo(processRecordValue.getTenantId());
+    assertThat(processEntity.getIsPublic()).isTrue();
+    assertThat(processEntity.getFormId()).isNotNull();
   }
 }
