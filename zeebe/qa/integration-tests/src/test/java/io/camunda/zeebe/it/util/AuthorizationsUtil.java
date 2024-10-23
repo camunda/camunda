@@ -15,6 +15,7 @@ import io.camunda.zeebe.client.protocol.rest.AuthorizationPatchRequest.ResourceT
 import io.camunda.zeebe.client.protocol.rest.AuthorizationPatchRequestPermissionsInner.PermissionTypeEnum;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
@@ -28,15 +29,23 @@ public class AuthorizationsUtil {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
+  private final TestStandaloneBroker broker;
+  private final ZeebeClient client;
+  private final String elasticsearchUrl;
 
-  public static ZeebeClient createUserWithPermissions(
-      final TestStandaloneBroker broker,
-      final ZeebeClient client,
-      final String elasticsearchUrl,
-      final String username,
-      final String password,
-      final Permissions... permissions)
-      throws Exception {
+  public AuthorizationsUtil(
+      final TestStandaloneBroker broker, final ZeebeClient client, final String elasticsearchUrl) {
+    this.broker = broker;
+    this.client = client;
+    this.elasticsearchUrl = elasticsearchUrl;
+  }
+
+  public long createUser(final String username, final String password) {
+    return createUserWithPermissions(username, password);
+  }
+
+  public long createUserWithPermissions(
+      final String username, final String password, final Permissions... permissions) {
     final var userCreateResponse =
         client
             .newUserCreateCommand()
@@ -57,11 +66,15 @@ public class AuthorizationsUtil {
           .join();
     }
 
-    awaitUserExistsInElasticsearch(elasticsearchUrl, username);
-    return createClientWithAuthorization(broker, username, password);
+    awaitUserExistsInElasticsearch(username);
+    return userCreateResponse.getUserKey();
   }
 
-  public static ZeebeClient createClientWithAuthorization(
+  public ZeebeClient createClient(final String username, final String password) {
+    return createClient(broker, username, password);
+  }
+
+  public static ZeebeClient createClient(
       final TestStandaloneBroker broker, final String username, final String password) {
     return broker
         .newClientBuilder()
@@ -87,24 +100,28 @@ public class AuthorizationsUtil {
         .build();
   }
 
-  public static void awaitUserExistsInElasticsearch(
-      final String elasticsearchUrl, final String username) throws Exception {
-    final var request =
-        HttpRequest.newBuilder()
-            .POST(
-                BodyPublishers.ofString(
-                    """
-                    {
-                      "query": {
-                        "match": {
-                          "username": "%s"
-                        }
+  public void awaitUserExistsInElasticsearch(final String username) {
+    final HttpRequest request;
+    try {
+      request =
+          HttpRequest.newBuilder()
+              .POST(
+                  BodyPublishers.ofString(
+                      """
+                  {
+                    "query": {
+                      "match": {
+                        "username": "%s"
                       }
-                    }"""
-                        .formatted(username)))
-            .uri(new URI("http://%s/identity-users-8.7.0_/_count/".formatted(elasticsearchUrl)))
-            .header("Content-Type", "application/json")
-            .build();
+                    }
+                  }"""
+                          .formatted(username)))
+              .uri(new URI("http://%s/identity-users-8.7.0_/_count/".formatted(elasticsearchUrl)))
+              .header("Content-Type", "application/json")
+              .build();
+    } catch (final URISyntaxException e) {
+      throw new RuntimeException(e);
+    }
 
     Awaitility.await()
         .atMost(Duration.ofSeconds(10))
