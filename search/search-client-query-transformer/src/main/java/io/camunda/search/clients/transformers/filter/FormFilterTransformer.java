@@ -27,8 +27,9 @@ public class FormFilterTransformer implements FilterTransformer<FormFilter> {
   @Override
   public SearchQuery toSearchQuery(final FormFilter filter) {
     final var formKeyQuery = getFormByKeysQuery(filter.formKey());
+    final var formIdQuery = getFormByIdQuery(filter.formId());
 
-    return and(formKeyQuery);
+    return and(formKeyQuery, formIdQuery);
   }
 
   @Override
@@ -40,5 +41,11 @@ public class FormFilterTransformer implements FilterTransformer<FormFilter> {
     final List<String> formKeyAsString = formKey.stream().map(String::valueOf).toList();
 
     return stringTerms("id", formKeyAsString);
+  }
+
+  private SearchQuery getFormByIdQuery(final List<String> formId) {
+    final List<String> formKeyAsString = formId.stream().map(String::valueOf).toList();
+
+    return stringTerms("bpmnId", formKeyAsString);
   }
 }
