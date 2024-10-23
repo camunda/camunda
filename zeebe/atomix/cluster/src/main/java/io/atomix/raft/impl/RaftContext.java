@@ -152,7 +152,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       MissedSnapshotReplicationEvents.NONE;
 
   @SuppressWarnings("java:S3077") // allow volatile here, health is immutable
-  private volatile HealthReport health = HealthReport.healthy(this);
+  private volatile HealthReport health;
 
   private long lastHeartbeat;
   private final RaftPartitionConfig partitionConfig;
@@ -178,6 +178,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     this.storage = checkNotNull(storage, "storage cannot be null");
     random = randomFactory.get();
     this.partitionId = partitionId;
+    health = HealthReport.healthy(this);
 
     raftRoleMetrics = new RaftRoleMetrics(name);
 
@@ -710,7 +711,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
     if (!this.role.role().active() && role.active()) {
       health = HealthReport.healthy(this);
-      failureListeners.forEach(FailureListener::onRecovered);
+      failureListeners.forEach(l -> l.onRecovered(health));
     }
 
     if (this.role.role() == role) {

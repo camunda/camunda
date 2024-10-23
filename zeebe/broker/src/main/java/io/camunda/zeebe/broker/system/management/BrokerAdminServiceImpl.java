@@ -21,6 +21,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
+import io.camunda.zeebe.util.health.HealthReport;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -115,6 +116,12 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
       LOG.warn("Error when querying partition status", e);
       return Map.of();
     }
+  }
+
+  @Override
+  public Map<Integer, HealthReport> getPartitionHealth() {
+    return partitionManager.getZeebePartitions().stream()
+        .collect(Collectors.toMap(ZeebePartition::getPartitionId, ZeebePartition::getHealthReport));
   }
 
   private CompletableFuture<PartitionStatus> getPartitionStatus(final ZeebePartition partition) {
