@@ -11,26 +11,40 @@ import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValues;
 
 import io.camunda.util.ObjectBuilder;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
-public record FormFilter(List<Long> formKey) implements FilterBase {
+public record FormFilter(List<Long> formKey, List<String> formId) implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<FormFilter> {
 
-    private List<Long> keys;
+    private List<Long> formKeys;
+    private List<String> formIds;
 
     public Builder formKeys(final Long value, final Long... values) {
       return formKeys(collectValues(value, values));
     }
 
     public Builder formKeys(final List<Long> values) {
-      keys = addValuesToList(keys, values);
+      formKeys = addValuesToList(formKeys, values);
+      return this;
+    }
+
+    public Builder formIds(final String value, final String... values) {
+      return formIds(collectValues(value, values));
+    }
+
+    public Builder formIds(final List<String> values) {
+      formIds = addValuesToList(formIds, values);
       return this;
     }
 
     @Override
     public FormFilter build() {
-      return new FormFilter(keys);
+      return new FormFilter(
+          Objects.requireNonNullElse(formKeys, Collections.emptyList()),
+          Objects.requireNonNullElse(formIds, Collections.emptyList()));
     }
   }
 }
