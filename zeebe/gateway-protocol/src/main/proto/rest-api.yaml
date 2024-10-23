@@ -3645,12 +3645,14 @@ components:
             - MAPPING
             - UNSPECIFIED
         ownerKey:
-          type: "string"
+          type: integer
+          format: int64
     AuthorizationResponse:
       type: "object"
       properties:
         ownerKey:
-          type: "string"
+            type: integer
+            format: int64
         ownerType:
           enum:
             - USER
@@ -3658,8 +3660,6 @@ components:
             - GROUP
             - MAPPING
             - UNSPECIFIED
-        resourceKey:
-          type: "string"
         resourceType:
           description: The type of resource to add/remove perissions to/from.
           enum:
@@ -3679,12 +3679,21 @@ components:
             - ROLE
         permissions:
           type: array
+          description: The permissions to add/remove.
           items:
-            enum:
-              - CREATE
-              - READ
-              - UPDATE
-              - DELETE
+            properties:
+              permissionType:
+                description: Specifies the type of permissions.
+                enum:
+                  - CREATE
+                  - READ
+                  - UPDATE
+                  - DELETE
+              resourceIds:
+                type: array
+                description: A list of resource IDs the permission relates to.
+                items:
+                  type: string
     AuthorizationSearchResponse:
       type: object
       allOf:
