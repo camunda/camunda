@@ -640,8 +640,38 @@ test.describe.serial('Process Instance Migration', () => {
     await commonPage.collapseOperationsPanel();
   });
 
-  test('Migrated tasks', async ({processesPage, processInstancePage, page}) => {
+  test('Migrated tasks', async ({
+    processesPage,
+    processInstancePage,
+    page,
+    request,
+  }) => {
     const {processV3} = initialData;
+
+    // Wait until all script tasks are in incident state.
+    // This is needed to ensure that the UI is in the expected state on time.
+    await expect
+      .poll(
+        async () => {
+          const response = await request.post(
+            `${config.endpoint}/v1/flownode-instances/search`,
+            {
+              data: {
+                filter: {
+                  flowNodeId: 'ScriptTask2',
+                  state: 'ACTIVE',
+                  incident: true,
+                  processDefinitionKey: processV3.processDefinitionKey,
+                },
+              },
+            },
+          );
+
+          return await response.json();
+        },
+        {timeout: SETUP_WAITING_TIME},
+      )
+      .toHaveProperty('total', 3);
 
     await processesPage.navigateToProcesses({
       searchParams: {
