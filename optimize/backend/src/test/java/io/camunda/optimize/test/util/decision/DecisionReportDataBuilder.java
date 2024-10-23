@@ -7,12 +7,12 @@
  */
 package io.camunda.optimize.test.util.decision;
 
-import static io.camunda.optimize.service.db.es.report.command.decision.util.DecisionGroupByDtoCreator.createGroupDecisionByEvaluationDateTime;
-import static io.camunda.optimize.service.db.es.report.command.decision.util.DecisionGroupByDtoCreator.createGroupDecisionByInputVariable;
-import static io.camunda.optimize.service.db.es.report.command.decision.util.DecisionGroupByDtoCreator.createGroupDecisionByNone;
-import static io.camunda.optimize.service.db.es.report.command.decision.util.DecisionGroupByDtoCreator.createGroupDecisionByOutputVariable;
-import static io.camunda.optimize.service.db.es.report.command.decision.util.DecisionViewDtoCreator.createCountFrequencyView;
-import static io.camunda.optimize.service.db.es.report.command.decision.util.DecisionViewDtoCreator.createDecisionRawDataView;
+import static io.camunda.optimize.service.db.report.interpreter.util.DecisionGroupByDtoCreator.createGroupDecisionByEvaluationDateTime;
+import static io.camunda.optimize.service.db.report.interpreter.util.DecisionGroupByDtoCreator.createGroupDecisionByInputVariable;
+import static io.camunda.optimize.service.db.report.interpreter.util.DecisionGroupByDtoCreator.createGroupDecisionByNone;
+import static io.camunda.optimize.service.db.report.interpreter.util.DecisionGroupByDtoCreator.createGroupDecisionByOutputVariable;
+import static io.camunda.optimize.service.db.report.interpreter.util.DecisionViewDtoCreator.createCountFrequencyView;
+import static io.camunda.optimize.service.db.report.interpreter.util.DecisionViewDtoCreator.createDecisionRawDataView;
 
 import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;

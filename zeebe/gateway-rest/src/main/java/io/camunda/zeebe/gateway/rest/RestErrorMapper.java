@@ -193,6 +193,11 @@ public class RestErrorMapper {
             "Target broker was not the leader of the partition: {}", error, rootError);
         yield createProblemDetail(HttpStatus.SERVICE_UNAVAILABLE, message, title);
       }
+      case PARTITION_UNAVAILABLE -> {
+        REST_GATEWAY_LOGGER.debug(
+            "Partition in target broker is currently unavailable: {}", error, rootError);
+        yield createProblemDetail(HttpStatus.SERVICE_UNAVAILABLE, message, title);
+      }
       default -> {
         // all the following are for cases where retrying (with the same gateway) is not
         // expected

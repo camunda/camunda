@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
+import io.camunda.optimize.service.db.report.interpreter.util.RawProcessDataResultDtoMapper;
 import io.camunda.optimize.service.util.IdGenerator;
 import java.util.Arrays;
 import java.util.Collections;

@@ -64,12 +64,12 @@ public class CustomMethodSecurityExpressionRoot extends SecurityExpressionRoot
         .orElse(false);
   }
 
-  private Optional<String> extractOwner() {
+  private Optional<Long> extractOwner() {
     final var authentication = getAuthentication();
 
     if (authentication != null) {
       if (authentication.getPrincipal() instanceof final CamundaUser authenticatedPrincipal) {
-        return Optional.of(authenticatedPrincipal.getUserKey().toString());
+        return Optional.of(authenticatedPrincipal.getUserKey());
       }
       if (authentication instanceof final JwtAuthenticationToken token) {
         // TODO extract mapping rule id

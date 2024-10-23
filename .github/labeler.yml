@@ -77,3 +77,8 @@ component/build-pipeline:
           - '.github/workflows/**'
           - '.github/actionlint*'
           - 'maven-settings.xml'
+component/c8-api:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'zeebe/gateway-protocol/src/main/proto/rest-api.yaml'
+          - 'zeebe/gateway-rest/**'
