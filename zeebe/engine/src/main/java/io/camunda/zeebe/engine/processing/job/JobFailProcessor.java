@@ -30,7 +30,6 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
@@ -81,7 +80,8 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
     jobActivationBehavior = bpmnBehaviors.jobActivationBehavior();
     this.authCheckBehavior = authCheckBehavior;
     preconditionChecker =
-        new JobCommandPreconditionChecker("fail", List.of(State.ACTIVATABLE, State.ACTIVATED));
+        new JobCommandPreconditionChecker(
+            jobState, "fail", List.of(State.ACTIVATABLE, State.ACTIVATED));
     this.keyGenerator = keyGenerator;
     this.jobBackoffChecker = jobBackoffChecker;
     this.jobMetrics = jobMetrics;
@@ -93,28 +93,20 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
     final JobState.State state = jobState.getState(jobKey);
 
     preconditionChecker
-        .check(state, jobKey)
+        .check(state, record)
         .ifRightOrLeft(
-            ok -> failJob(record),
+            failedJob -> failJob(record, failedJob),
             rejection -> {
               rejectionWriter.appendRejection(record, rejection.type(), rejection.reason());
               responseWriter.writeRejectionOnCommand(record, rejection.type(), rejection.reason());
             });
   }
 
-  private void failJob(final TypedRecord<JobRecord> record) {
+  private void failJob(final TypedRecord<JobRecord> record, final JobRecord failedJob) {
     final long jobKey = record.getKey();
     final JobRecord failJobCommandRecord = record.getValue();
     final var retries = failJobCommandRecord.getRetries();
     final var retryBackOff = failJobCommandRecord.getRetryBackoff();
-
-    final JobRecord failedJob = jobState.getJob(jobKey, record.getAuthorizations());
-    if (failedJob == null) {
-      final String errorMessage = String.format(NO_JOB_FOUND_MESSAGE, jobKey);
-      rejectionWriter.appendRejection(record, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectionOnCommand(record, RejectionType.NOT_FOUND, errorMessage);
-      return;
-    }
 
     failedJob.setRetries(retries);
     failedJob.setErrorMessage(

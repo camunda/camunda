@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
-import static io.camunda.zeebe.engine.processing.job.JobCommandPreconditionChecker.NO_JOB_FOUND_MESSAGE;
 
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
@@ -45,7 +44,8 @@ final class DefaultJobCommandPreconditionGuard {
     this.state = state;
     this.acceptCommand = acceptCommand;
     preconditionChecker =
-        new JobCommandPreconditionChecker(intent, List.of(State.ACTIVATABLE, State.ACTIVATED));
+        new JobCommandPreconditionChecker(
+            state, intent, List.of(State.ACTIVATABLE, State.ACTIVATED));
     this.authCheckBehavior = authCheckBehavior;
   }
 
@@ -55,8 +55,8 @@ final class DefaultJobCommandPreconditionGuard {
     final State jobState = state.getState(jobKey);
 
     preconditionChecker
-        .check(jobState, jobKey)
-        .flatMap(unused -> checkAuthorization(command))
+        .check(jobState, command)
+        .flatMap(job -> checkAuthorization(command, job))
         .ifRightOrLeft(
             job -> acceptCommand.accept(command, commandControl, job),
             rejection -> commandControl.reject(rejection.type(), rejection.reason()));
@@ -64,16 +64,8 @@ final class DefaultJobCommandPreconditionGuard {
     return true;
   }
 
-  private Either<Rejection, JobRecord> checkAuthorization(final TypedRecord<JobRecord> command) {
-    final var jobKey = command.getKey();
-    final var job = state.getJob(jobKey, command.getAuthorizations());
-
-    if (job == null) {
-      return Either.left(
-          new Rejection(
-              RejectionType.NOT_FOUND, String.format(NO_JOB_FOUND_MESSAGE, intent, jobKey)));
-    }
-
+  private Either<Rejection, JobRecord> checkAuthorization(
+      final TypedRecord<JobRecord> command, final JobRecord job) {
     final var request =
         new AuthorizationRequest(
                 command, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.UPDATE)
