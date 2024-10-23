@@ -426,6 +426,10 @@ public class OpenSearchConnector {
 
   public boolean checkHealth(final OpenSearchClient osClient) {
     final OpenSearchProperties osConfig = tasklistProperties.getOpenSearch();
+    if (!osConfig.isHealthCheckEnabled()) {
+      LOGGER.debug("Opensearch health check is disabled");
+      return true;
+    }
     final RetryPolicy<Boolean> retryPolicy = getConnectionRetryPolicy(osConfig);
     return Failsafe.with(retryPolicy)
         .get(
@@ -438,6 +442,10 @@ public class OpenSearchConnector {
 
   public boolean checkHealth(final OpenSearchAsyncClient osAsyncClient) {
     final OpenSearchProperties osConfig = tasklistProperties.getOpenSearch();
+    if (!osConfig.isHealthCheckEnabled()) {
+      LOGGER.debug("Opensearch health check is disabled");
+      return true;
+    }
     final RetryPolicy<Boolean> retryPolicy = getConnectionRetryPolicy(osConfig);
     return Failsafe.with(retryPolicy)
         .get(

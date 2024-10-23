@@ -56,6 +56,11 @@ public class IndexSchemaValidatorOpenSearch extends IndexSchemaValidatorUtil
   }
 
   @Override
+  public boolean isHealthCheckEnabled() {
+    return tasklistProperties.getOpenSearch().isHealthCheckEnabled();
+  }
+
+  @Override
   public boolean hasAnyTasklistIndices() {
     final Set<String> indices =
         retryOpenSearchClient.getIndexNames(
