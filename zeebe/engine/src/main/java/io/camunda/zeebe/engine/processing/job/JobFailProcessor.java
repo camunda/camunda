@@ -8,14 +8,17 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MAX_ERROR_MESSAGE_SIZE;
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
 import static io.camunda.zeebe.util.StringUtil.limitString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.engine.metrics.JobMetrics;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -30,12 +33,16 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.Either;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
@@ -94,6 +101,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
 
     preconditionChecker
         .check(state, record)
+        .flatMap(job -> checkAuthorization(record, job))
         .ifRightOrLeft(
             failedJob -> failJob(record, failedJob),
             rejection -> {
@@ -189,5 +197,23 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
         .setCallingElementPath(treePathProperties.callingElementPath());
 
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
+  }
+
+  private Either<Rejection, JobRecord> checkAuthorization(
+      final TypedRecord<JobRecord> command, final JobRecord job) {
+    final var request =
+        new AuthorizationRequest(
+                command, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.UPDATE)
+            .addResourceId(job.getBpmnProcessId());
+
+    if (authCheckBehavior.isAuthorized(request)) {
+      return Either.right(job);
+    }
+
+    return Either.left(
+        new Rejection(
+            RejectionType.UNAUTHORIZED,
+            UNAUTHORIZED_ERROR_MESSAGE.formatted(
+                request.getPermissionType(), request.getResourceType())));
   }
 }
