@@ -62,7 +62,7 @@ public class IncidentResolveAuthorizationIT {
   private static final String PROCESS_ID = "processId";
 
   @TestZeebe(autoStart = false)
-  private static final TestStandaloneBroker broker =
+  private static final TestStandaloneBroker BROKER =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
           .withBrokerConfig(
@@ -74,12 +74,12 @@ public class IncidentResolveAuthorizationIT {
 
   @BeforeAll
   static void beforeAll() {
-    broker.withCamundaExporter("http://" + CONTAINER.getHttpHostAddress());
-    broker.start();
+    BROKER.withCamundaExporter("http://" + CONTAINER.getHttpHostAddress());
+    BROKER.start();
 
     final var defaultUsername = "demo";
-    defaultUserClient = createClient(broker, defaultUsername, "demo");
-    authUtil = new AuthorizationsUtil(broker, defaultUserClient, CONTAINER.getHttpHostAddress());
+    defaultUserClient = createClient(BROKER, defaultUsername, "demo");
+    authUtil = new AuthorizationsUtil(BROKER, defaultUserClient, CONTAINER.getHttpHostAddress());
 
     authUtil.awaitUserExistsInElasticsearch(defaultUsername);
     defaultUserClient

@@ -66,7 +66,7 @@ public class ProcessInstanceMigrationMigrateAuthorizationIT {
   private static final String TARGET_PROCESS_ID = "targetProcessId";
 
   @TestZeebe(autoStart = false)
-  private static final TestStandaloneBroker broker =
+  private static final TestStandaloneBroker BROKER =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
           .withBrokerConfig(
@@ -79,12 +79,12 @@ public class ProcessInstanceMigrationMigrateAuthorizationIT {
 
   @BeforeAll
   static void beforeAll() {
-    broker.withCamundaExporter("http://" + CONTAINER.getHttpHostAddress());
-    broker.start();
+    BROKER.withCamundaExporter("http://" + CONTAINER.getHttpHostAddress());
+    BROKER.start();
 
     final var defaultUsername = "demo";
-    defaultUserClient = createClient(broker, defaultUsername, "demo");
-    authUtil = new AuthorizationsUtil(broker, defaultUserClient, CONTAINER.getHttpHostAddress());
+    defaultUserClient = createClient(BROKER, defaultUsername, "demo");
+    authUtil = new AuthorizationsUtil(BROKER, defaultUserClient, CONTAINER.getHttpHostAddress());
 
     authUtil.awaitUserExistsInElasticsearch(defaultUsername);
     final var deploymentEvent =
