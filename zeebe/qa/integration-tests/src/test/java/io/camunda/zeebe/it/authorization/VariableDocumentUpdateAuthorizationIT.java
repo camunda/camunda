@@ -7,9 +7,7 @@
  */
 package io.camunda.zeebe.it.authorization;
 
-import static io.camunda.zeebe.it.util.AuthorizationsUtil.awaitUserExistsInElasticsearch;
-import static io.camunda.zeebe.it.util.AuthorizationsUtil.createClientWithAuthorization;
-import static io.camunda.zeebe.it.util.AuthorizationsUtil.createUserWithPermissions;
+import static io.camunda.zeebe.it.util.AuthorizationsUtil.createClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -18,14 +16,17 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.protocol.rest.AuthorizationPatchRequest.ResourceTypeEnum;
 import io.camunda.zeebe.client.protocol.rest.AuthorizationPatchRequestPermissionsInner.PermissionTypeEnum;
+import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -42,8 +43,6 @@ import org.testcontainers.utility.DockerImageName;
 @TestInstance(Lifecycle.PER_CLASS)
 @ZeebeIntegration
 public class VariableDocumentUpdateAuthorizationIT {
-  public static final String DEFAULT_USERNAME = "demo";
-  public static final String AUTHENTICATED_USERNAME = "foo";
   private static final DockerImageName ELASTIC_IMAGE =
       DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
           .withTag(RestClient.class.getPackage().getImplementationVersion());
@@ -65,27 +64,28 @@ public class VariableDocumentUpdateAuthorizationIT {
           .withEnv("action.destructive_requires_name", "false");
 
   private static final String PROCESS_ID = "processId";
-  @TestZeebe private TestStandaloneBroker zeebe;
+
+  @TestZeebe(autoStart = false)
+  private static final TestStandaloneBroker broker =
+      new TestStandaloneBroker()
+          .withRecordingExporter(true)
+          .withBrokerConfig(
+              b -> b.getExperimental().getEngine().getAuthorizations().setEnableAuthorization(true))
+          .withAdditionalProfile(Profile.AUTH_BASIC);
+
+  private static AuthorizationsUtil authUtil;
   private ZeebeClient defaultUserClient;
-  private ZeebeClient authorizedUserClient;
-  private ZeebeClient unauthorizedUserClient;
 
   @BeforeAll
-  void beforeAll() throws Exception {
-    zeebe =
-        new TestStandaloneBroker()
-            .withRecordingExporter(true)
-            .withBrokerConfig(
-                b ->
-                    b.getExperimental()
-                        .getEngine()
-                        .getAuthorizations()
-                        .setEnableAuthorization(true))
-            .withCamundaExporter("http://" + CONTAINER.getHttpHostAddress())
-            .withAdditionalProfile(Profile.AUTH_BASIC);
-    zeebe.start();
-    defaultUserClient = createClientWithAuthorization(zeebe, DEFAULT_USERNAME, "demo");
-    awaitUserExistsInElasticsearch(CONTAINER.getHttpHostAddress(), DEFAULT_USERNAME);
+  void beforeAll() {
+    broker.withCamundaExporter("http://" + CONTAINER.getHttpHostAddress());
+    broker.start();
+
+    final var defaultUsername = "demo";
+    defaultUserClient = createClient(broker, defaultUsername, "demo");
+    authUtil = new AuthorizationsUtil(broker, defaultUserClient, CONTAINER.getHttpHostAddress());
+
+    authUtil.awaitUserExistsInElasticsearch(defaultUsername);
     defaultUserClient
         .newDeployResourceCommand()
         .addProcessModel(
@@ -97,21 +97,6 @@ public class VariableDocumentUpdateAuthorizationIT {
             "process.xml")
         .send()
         .join();
-
-    authorizedUserClient =
-        createUserWithPermissions(
-            zeebe,
-            defaultUserClient,
-            CONTAINER.getHttpHostAddress(),
-            AUTHENTICATED_USERNAME,
-            "password",
-            new Permissions(
-                ResourceTypeEnum.PROCESS_DEFINITION,
-                PermissionTypeEnum.UPDATE,
-                List.of(PROCESS_ID)));
-    unauthorizedUserClient =
-        createUserWithPermissions(
-            zeebe, defaultUserClient, CONTAINER.getHttpHostAddress(), "bar", "password");
   }
 
   @Test
@@ -136,40 +121,51 @@ public class VariableDocumentUpdateAuthorizationIT {
   void shouldBeAuthorizedToUpdateVariablesWithUser() {
     // given
     final var processInstanceKey = createProcessInstance();
+    final var username = UUID.randomUUID().toString();
+    final var password = "password";
+    authUtil.createUserWithPermissions(
+        username,
+        password,
+        new Permissions(
+            ResourceTypeEnum.PROCESS_DEFINITION, PermissionTypeEnum.UPDATE, List.of(PROCESS_ID)));
 
-    // when then
-    final var response =
-        authorizedUserClient
-            .newSetVariablesCommand(processInstanceKey)
-            .variables(Map.of("foo", "bar"))
-            .send()
-            .join();
+    try (final var client = authUtil.createClient(username, password)) {
+      // when then
+      final var response =
+          client
+              .newSetVariablesCommand(processInstanceKey)
+              .variables(Map.of("foo", "bar"))
+              .send()
+              .join();
 
-    // The Rest API returns a null future for an empty response
-    // We can verify for null, as if we'd be unauthenticated we'd get an exception
-    assertThat(response).isNull();
+      // The Rest API returns a null future for an empty response
+      // We can verify for null, as if we'd be unauthenticated we'd get an exception
+      assertThat(response).isNull();
+    }
   }
 
   @Test
   void shouldBeUnauthorizedToUpdateVariablesIfNoPermissions() {
     // given
     final var processInstanceKey = createProcessInstance();
+    final var username = UUID.randomUUID().toString();
+    final var password = "password";
+    authUtil.createUser(username, password);
 
-    // given we use the unauthorizedUserClient
     // when
-    final var response =
-        unauthorizedUserClient
-            .newSetVariablesCommand(processInstanceKey)
-            .variables(Map.of("foo", "bar"))
-            .send();
+    try (final var client = authUtil.createClient(username, password)) {
+      // when
+      final var response =
+          client.newSetVariablesCommand(processInstanceKey).variables(Map.of("foo", "bar")).send();
 
-    // then
-    assertThatThrownBy(response::join)
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("title: UNAUTHORIZED")
-        .hasMessageContaining("status: 401")
-        .hasMessageContaining(
-            "Unauthorized to perform operation 'UPDATE' on resource 'PROCESS_DEFINITION'");
+      // then
+      assertThatThrownBy(response::join)
+          .isInstanceOf(ProblemException.class)
+          .hasMessageContaining("title: UNAUTHORIZED")
+          .hasMessageContaining("status: 401")
+          .hasMessageContaining(
+              "Unauthorized to perform operation 'UPDATE' on resource 'PROCESS_DEFINITION'");
+    }
   }
 
   private long createProcessInstance() {
