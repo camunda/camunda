@@ -33,9 +33,7 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
       return String.format(
           "%s%s-%s-%s_", formattedIndexPrefix(), getComponentName(), getIndexName(), getVersion());
     } else {
-      return getIndexPrefix() != null && !getIndexPrefix().isBlank()
-          ? String.format("%s-%s-%s_", getIndexPrefix(), getIndexName(), getVersion())
-          : String.format("%s-%s_", getIndexName(), getVersion());
+      return String.format("%s%s-%s_", formattedIndexPrefix(), getIndexName(), getVersion());
     }
   }
 
@@ -57,9 +55,7 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
       return String.format(
           "%s%s-%s-\\d.*", formattedIndexPrefix(), getComponentName(), getIndexName());
     } else {
-      return getIndexPrefix() != null && !getIndexPrefix().isBlank()
-          ? String.format("%s-%s-\\d.*", getIndexPrefix(), getIndexName())
-          : String.format("%s-\\d.*", getIndexName());
+      return String.format("%s%s-\\d.*", formattedIndexPrefix(), getIndexName());
     }
   }
 
