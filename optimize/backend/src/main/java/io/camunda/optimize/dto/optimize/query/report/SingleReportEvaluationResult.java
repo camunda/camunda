@@ -9,7 +9,7 @@ package io.camunda.optimize.dto.optimize.query.report;
 
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginatedDataExportDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableDto;
-import io.camunda.optimize.service.db.es.report.result.RawDataCommandResult;
+import io.camunda.optimize.service.db.report.result.RawDataCommandResult;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;

@@ -32,6 +32,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
@@ -71,6 +72,7 @@ import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageCorrelationRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
@@ -251,6 +253,7 @@ public final class ValueTypeMapping {
     mapping.put(ValueType.TENANT, new Mapping<>(TenantRecordValue.class, TenantIntent.class));
     mapping.put(ValueType.SCALE, new Mapping<>(ScaleRecordValue.class, ScaleIntent.class));
     mapping.put(ValueType.GROUP, new Mapping<>(GroupRecordValue.class, GroupIntent.class));
+    mapping.put(ValueType.MAPPING, new Mapping<>(MappingRecordValue.class, MappingIntent.class));
     return mapping;
   }
 

@@ -43,7 +43,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.testcontainers.Testcontainers;
-import org.testcontainers.containers.*;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.Network;
+import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
@@ -453,6 +455,7 @@ public class TestContainerUtil {
     // Spring from loading the default "application.properties" file which by default
     // configures the matching strategy
     properties.setProperty("spring.mvc.pathmatch.matching-strategy", "ANT_PATH_MATCHER");
+    properties.setProperty("spring.liquibase.enabled", "false");
 
     return properties;
   }

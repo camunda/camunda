@@ -9,8 +9,8 @@ package io.camunda.optimize.upgrade.service;
 
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
+import io.camunda.optimize.upgrade.db.index.UpdateLogEntryIndex;
 import io.camunda.optimize.upgrade.es.SchemaUpgradeClientES;
-import io.camunda.optimize.upgrade.es.index.UpdateLogEntryIndex;
 import io.camunda.optimize.upgrade.es.index.UpdateLogEntryIndexES;
 import io.camunda.optimize.upgrade.os.SchemaUpgradeClientOS;
 import io.camunda.optimize.upgrade.os.index.UpdateLogEntryIndexOS;
