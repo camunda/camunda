@@ -23,8 +23,8 @@ public class RoleClient {
     this.writer = writer;
   }
 
-  public RoleCreationClient newRole(final String name) {
-    return new RoleCreationClient(writer, name);
+  public RoleCreateClient newRole(final String name) {
+    return new RoleCreateClient(writer, name);
   }
 
   public RoleUpdateClient updateRole(final long roleKey) {
@@ -39,7 +39,11 @@ public class RoleClient {
     return new RoleRemoveEntityClient(writer, key);
   }
 
-  public static class RoleCreationClient {
+  public RoleDeleteClient deleteRole(final long key) {
+    return new RoleDeleteClient(writer, key);
+  }
+
+  public static class RoleCreateClient {
 
     private static final Function<Long, Record<RoleRecordValue>> SUCCESS_SUPPLIER =
         (position) ->
@@ -59,7 +63,7 @@ public class RoleClient {
     private final RoleRecord roleRecord;
     private Function<Long, Record<RoleRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public RoleCreationClient(final CommandWriter writer, final String name) {
+    public RoleCreateClient(final CommandWriter writer, final String name) {
       this.writer = writer;
       roleRecord = new RoleRecord();
       roleRecord.setName(name);
@@ -70,7 +74,7 @@ public class RoleClient {
       return expectation.apply(position);
     }
 
-    public RoleCreationClient expectRejection() {
+    public RoleCreateClient expectRejection() {
       expectation = REJECTION_SUPPLIER;
       return this;
     }
@@ -207,6 +211,43 @@ public class RoleClient {
     }
 
     public RoleRemoveEntityClient expectRejection() {
+      expectation = REJECTION_SUPPLIER;
+      return this;
+    }
+  }
+
+  public static class RoleDeleteClient {
+
+    private static final Function<Long, Record<RoleRecordValue>> SUCCESS_SUPPLIER =
+        (position) ->
+            RecordingExporter.roleRecords()
+                .withIntent(RoleIntent.DELETED)
+                .withSourceRecordPosition(position)
+                .getFirst();
+
+    private static final Function<Long, Record<RoleRecordValue>> REJECTION_SUPPLIER =
+        (position) ->
+            RecordingExporter.roleRecords()
+                .onlyCommandRejections()
+                .withIntent(RoleIntent.DELETE)
+                .withSourceRecordPosition(position)
+                .getFirst();
+    private final CommandWriter writer;
+    private final RoleRecord roleRecord;
+    private Function<Long, Record<RoleRecordValue>> expectation = SUCCESS_SUPPLIER;
+
+    public RoleDeleteClient(final CommandWriter writer, final long key) {
+      this.writer = writer;
+      roleRecord = new RoleRecord();
+      roleRecord.setRoleKey(key);
+    }
+
+    public Record<RoleRecordValue> delete() {
+      final long position = writer.writeCommand(RoleIntent.DELETE, roleRecord);
+      return expectation.apply(position);
+    }
+
+    public RoleDeleteClient expectRejection() {
       expectation = REJECTION_SUPPLIER;
       return this;
     }

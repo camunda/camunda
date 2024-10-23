@@ -15,6 +15,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.entity.Permission;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerAuthorizationPatchRequest;
@@ -55,7 +56,7 @@ public class AuthorizationServices
   }
 
   public Set<String> fetchAssignedPermissions(
-      final String ownerId, final AuthorizationResourceType resourceType, final String resourceId) {
+      final Long ownerId, final AuthorizationResourceType resourceType, final String resourceId) {
     final SearchQueryResult<AuthorizationEntity> result =
         search(
             SearchQueryBuilders.authorizationSearchQuery(
@@ -71,7 +72,9 @@ public class AuthorizationServices
                         .page(p -> p.size(1))));
     // TODO logic to fetch indirect authorizations via roles/groups should be added later
     return result.items().stream()
-        .flatMap(a -> a.value().permissions().stream())
+        .flatMap(authorization -> authorization.permissions().stream())
+        .filter(permission -> permission.resourceIds().contains(resourceId))
+        .map(Permission -> Permission.type().name())
         .collect(Collectors.toSet());
   }
 

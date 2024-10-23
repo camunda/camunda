@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.service;
 
+import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.application.commons.service.ServiceSecurityConfiguration.ServiceSecurityProperties;
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
@@ -45,6 +46,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -205,7 +207,16 @@ public class CamundaServicesConfiguration {
   }
 
   @Bean
-  public SearchClients searchClients(final DocumentBasedSearchClient searchClient) {
-    return new SearchClients(searchClient);
+  public SearchClients searchClients(
+      final DocumentBasedSearchClient searchClient,
+      // TODO: Temporary solution to change index reference for tasklist-task
+      @Autowired(required = false) final BrokerBasedProperties brokerProperties) {
+    if (brokerProperties == null) {
+      return new SearchClients(searchClient, false);
+    }
+    final boolean isCamundaExporterEnabled =
+        brokerProperties.getExporters().values().stream()
+            .anyMatch(v -> "io.camunda.exporter.CamundaExporter".equals(v.getClassName()));
+    return new SearchClients(searchClient, isCamundaExporterEnabled);
   }
 }

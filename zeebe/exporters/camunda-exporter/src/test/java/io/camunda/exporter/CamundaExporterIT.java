@@ -31,6 +31,7 @@ import io.camunda.exporter.schema.SchemaTestUtil;
 import io.camunda.exporter.utils.TestSupport;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
+import io.camunda.security.entity.Permission;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity;
@@ -178,7 +179,7 @@ final class CamundaExporterIT {
         .map(
             permissionValue ->
                 new Permission(
-                    permissionValue.getPermissionType().name(), permissionValue.getResourceIds()))
+                    permissionValue.getPermissionType(), permissionValue.getResourceIds()))
         .collect(Collectors.toList());
   }
 
