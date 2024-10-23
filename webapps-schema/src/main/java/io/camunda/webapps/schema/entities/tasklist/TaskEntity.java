@@ -9,6 +9,7 @@ package io.camunda.webapps.schema.entities.tasklist;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
 
 public class TaskEntity extends TasklistEntity<TaskEntity> {
@@ -69,6 +70,12 @@ public class TaskEntity extends TasklistEntity<TaskEntity> {
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Integer priority;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private String action;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private List<String> changedAttributes;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private TaskJoinRelationship join;
@@ -295,6 +302,24 @@ public class TaskEntity extends TasklistEntity<TaskEntity> {
     return this;
   }
 
+  public String getAction() {
+    return action;
+  }
+
+  public TaskEntity setAction(final String action) {
+    this.action = action;
+    return this;
+  }
+
+  public List<String> getChangedAttributes() {
+    return changedAttributes;
+  }
+
+  public TaskEntity setChangedAttributes(final List<String> changedAttributes) {
+    this.changedAttributes = changedAttributes;
+    return this;
+  }
+
   public TaskJoinRelationship getJoin() {
     return join;
   }
@@ -302,5 +327,9 @@ public class TaskEntity extends TasklistEntity<TaskEntity> {
   public TaskEntity setJoin(final TaskJoinRelationship join) {
     this.join = join;
     return this;
+  }
+
+  public String getImplementation() {
+    return "ZEEBE_USER_TASK";
   }
 }
