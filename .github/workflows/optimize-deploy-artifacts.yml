@@ -53,8 +53,10 @@ jobs:
         roleId: ${{ secrets.VAULT_ROLE_ID }}
         secretId: ${{ secrets.VAULT_SECRET_ID }}
         secrets: |
-          secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_USR;
           secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_PSW;
+          secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_USR;
+          secret/data/products/optimize/ci/optimize NEXUS_PASSWORD;
+          secret/data/products/optimize/ci/optimize NEXUS_USERNAME;
     - name: Login to Docker Hub
       uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3
       with:
@@ -62,9 +64,13 @@ jobs:
         password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
     # Generating a production build
     - name: Setup Maven
-      uses: ./.github/actions/setup-maven
+      uses: ./.github/actions/setup-build
       with:
-        secrets: ${{ toJSON(secrets) }}
+        camunda-nexus-username: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
+        camunda-nexus-password: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
+        maven-cache-key-modifier: optimize
+        maven-version: 3.8.6
+        time-zone: Europe/Berlin
     - name: Generate production .tar.gz
       uses: ./.github/actions/run-maven
       with:

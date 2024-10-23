@@ -45,6 +45,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4
 
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/optimize/ci/optimize NEXUS_USERNAME;
+            secret/data/products/optimize/ci/optimize NEXUS_PASSWORD;
+
       - name: Login to Harbor registry
         uses: ./.github/actions/login-registry
         with:
@@ -57,10 +69,13 @@ jobs:
           work-dir: ./optimize
 
       - name: Setup Maven
-        uses: ./.github/actions/setup-maven
+        uses: ./.github/actions/setup-build
         with:
+          camunda-nexus-username: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
+          camunda-nexus-password: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
           maven-cache-key-modifier: optimize-tests
-          secrets: ${{ toJSON(secrets) }}
+          maven-version: 3.8.6
+          time-zone: Europe/Berlin
 
       - name: Install firefox deps
         run: |

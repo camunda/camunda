@@ -29,6 +29,17 @@ jobs:
         id: checkout
         with:
           ref: ${{ inputs.targetBranch }}
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
+            secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
       - name: Git User Setup
         id: git-setup
         run: |
@@ -41,13 +52,11 @@ jobs:
           xml-file: './parent/pom.xml'
           xpath: '//*[local-name()="version.identity"]'
       - name: Setup Zeebe Build Tooling
-        id: build-setup
-        uses: ./.github/actions/setup-zeebe
+        uses: ./.github/actions/setup-build
         if: ${{ steps.get-current-identity-version.outputs.info != inputs.identityVersion }}
         with:
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          camunda-nexus-username: ${{ steps.secrets.outputs.ARTIFACTS_USR }}
+          camunda-nexus-password: ${{ steps.secrets.outputs.ARTIFACTS_PSW }}
           maven-cache-key-modifier: identity-update
       - name: Update identity version in ./parent/pom.xml
         id: update-identity-version

@@ -35,16 +35,34 @@ jobs:
             arch: arm64
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-zeebe
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.0.0
         with:
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          docker: ${{ matrix.os != 'macos' && matrix.os != 'windows' }}
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
+            secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
+            secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW_READ_ONLY;
+            secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR;
+      - uses: ./.github/actions/setup-build
+        with:
+          camunda-nexus-username: ${{ steps.secrets.outputs.ARTIFACTS_USR }}
+          camunda-nexus-password: ${{ steps.secrets.outputs.ARTIFACTS_PSW }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
+      # Logging to DockerHub to to avoid being rate-limited when using an anonymous account from GitHub-managed runners.
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        if: ${{ matrix.os != 'macos' && matrix.os != 'windows' }}
+        with:
+          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
+          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW_READ_ONLY }}
       - uses: ./.github/actions/build-platform-docker
         id: build-zeebe-docker
         # Currently only Linux runners support building docker images without further ado
@@ -87,11 +105,21 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-zeebe
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.0.0
         with:
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
+            secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
+      - uses: ./.github/actions/setup-build
+        with:
+          camunda-nexus-username: ${{ steps.secrets.outputs.ARTIFACTS_USR }}
+          camunda-nexus-password: ${{ steps.secrets.outputs.ARTIFACTS_PSW }}
       - uses: ./.github/actions/build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
@@ -135,11 +163,21 @@ jobs:
       ZEEBE_PERFORMANCE_TEST_RESULTS_DIR: "/tmp/jmh"
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-zeebe
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.0.0
         with:
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
+            secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
+      - uses: ./.github/actions/setup-build
+        with:
+          camunda-nexus-username: ${{ steps.secrets.outputs.ARTIFACTS_USR }}
+          camunda-nexus-password: ${{ steps.secrets.outputs.ARTIFACTS_PSW }}
       - uses: ./.github/actions/build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
@@ -197,11 +235,21 @@ jobs:
         run: |
           sudo apt-get -qq update && sudo apt-get install -y strace
           sudo sysctl -w kernel.yama.ptrace_scope=0
-      - uses: ./.github/actions/setup-zeebe
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.0.0
         with:
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
+            secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
+      - uses: ./.github/actions/setup-build
+        with:
+          camunda-nexus-username: ${{ steps.secrets.outputs.ARTIFACTS_USR }}
+          camunda-nexus-password: ${{ steps.secrets.outputs.ARTIFACTS_PSW }}
       - uses: ./.github/actions/build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
@@ -263,15 +311,33 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: ./hadolint.sarif
-      - uses: ./.github/actions/setup-zeebe
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.0.0
         with:
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
+            secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
+            secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW_READ_ONLY;
+            secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR;
+      - uses: ./.github/actions/setup-build
+        with:
+          camunda-nexus-username: ${{ steps.secrets.outputs.ARTIFACTS_USR }}
+          camunda-nexus-password: ${{ steps.secrets.outputs.ARTIFACTS_PSW }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
+      # Logging to DockerHub to to avoid being rate-limited when using an anonymous account from GitHub-managed runners.
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
+          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW_READ_ONLY }}
       - uses: ./.github/actions/build-platform-docker
         id: build-zeebe-docker
         with:
@@ -326,16 +392,32 @@ jobs:
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-zeebe
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.0.0
         with:
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          docker-token: REGISTRY_HUB_DOCKER_COM_PSW
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
+            secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
+            secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW;
+            secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR;
+      - uses: ./.github/actions/setup-build
+        with:
+          camunda-nexus-username: ${{ steps.secrets.outputs.ARTIFACTS_USR }}
+          camunda-nexus-password: ${{ steps.secrets.outputs.ARTIFACTS_PSW }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
+          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
       - uses: ./.github/actions/build-platform-docker
         id: build-zeebe-docker
         with:
@@ -366,6 +448,19 @@ jobs:
       id-token: 'write'
     steps:
       - uses: actions/checkout@v4
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
+            secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
+            secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW_READ_ONLY;
+            secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR;
       - uses: google-github-actions/auth@v2
         id: auth
         with:
@@ -378,12 +473,18 @@ jobs:
           registry: gcr.io
           username: oauth2accesstoken
           password: ${{ steps.auth.outputs.access_token }}
-      - uses: ./.github/actions/setup-zeebe
+      - uses: ./.github/actions/setup-build
         with:
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          camunda-nexus-username: ${{ steps.secrets.outputs.ARTIFACTS_USR }}
+          camunda-nexus-password: ${{ steps.secrets.outputs.ARTIFACTS_PSW }}
       - run: ./mvnw -B -D skipTests -D skipChecks -pl zeebe/benchmarks/project -am package
+      # Logging to DockerHub to to avoid being rate-limited when using an anonymous account from GitHub-managed runners.
+      # jib-maven-plugin uses eclipse-temurin:xx image from DockerHub as base.
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
+          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW_READ_ONLY }}
       - name: Build Starter Image
         run: ./mvnw -pl zeebe/benchmarks/project jib:build -P starter
       - name: Build Worker Image

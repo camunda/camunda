@@ -18,6 +18,17 @@ jobs:
         zeebe-version: [8.3.0, 8.4.0, 8.5.0, 8.6.0, latest, snapshot]
     steps:
       - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/optimize/ci/optimize NEXUS_USERNAME;
+            secret/data/products/optimize/ci/optimize NEXUS_PASSWORD;
       # Parses the pom within less than second and exposes every value as an output of the step
       # That's why we need the id `pom-info`, so we can reference it in follow-up steps
       - name: "Read Java Info"
@@ -26,11 +37,14 @@ jobs:
         with:
           work-dir: ./optimize
       - name: Setup Maven
-        uses: ./.github/actions/setup-maven
+        uses: ./.github/actions/setup-build
         with:
-          maven-cache-key-modifier: optimize-tests
-          secrets: ${{ toJSON(secrets) }}
+          camunda-nexus-username: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
+          camunda-nexus-password: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
           java-version: ${{ steps.pom-info.outputs.java_version }}
+          maven-cache-key-modifier: optimize-tests
+          maven-version: 3.8.6
+          time-zone: Europe/Berlin
       - name: Login to Harbor registry
         uses: ./.github/actions/login-registry
         with:
