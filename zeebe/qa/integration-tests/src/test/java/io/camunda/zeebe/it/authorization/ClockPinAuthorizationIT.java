@@ -29,8 +29,6 @@ import java.util.UUID;
 import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -39,7 +37,6 @@ import org.testcontainers.utility.DockerImageName;
 
 @AutoCloseResources
 @Testcontainers
-@TestInstance(Lifecycle.PER_CLASS)
 @ZeebeIntegration
 public class ClockPinAuthorizationIT {
   private static final DockerImageName ELASTIC_IMAGE =
@@ -71,10 +68,10 @@ public class ClockPinAuthorizationIT {
           .withAdditionalProfile(Profile.AUTH_BASIC);
 
   private static AuthorizationsUtil authUtil;
-  private ZeebeClient defaultUserClient;
+  private static ZeebeClient defaultUserClient;
 
   @BeforeAll
-  void beforeAll() throws Exception {
+  static void beforeAll() {
     broker.withCamundaExporter("http://" + CONTAINER.getHttpHostAddress());
     broker.start();
 
@@ -97,7 +94,7 @@ public class ClockPinAuthorizationIT {
   }
 
   @Test
-  void shouldBeAuthorizedToPinClockWithPermissions() throws Exception {
+  void shouldBeAuthorizedToPinClockWithPermissions() {
     // given
     final var username = UUID.randomUUID().toString();
     final var password = "password";
@@ -117,7 +114,7 @@ public class ClockPinAuthorizationIT {
   }
 
   @Test
-  void shouldBeUnAuthorizedToPinClockWithPermissions() throws Exception {
+  void shouldBeUnAuthorizedToPinClockWithPermissions() {
     // given
     final var username = UUID.randomUUID().toString();
     final var password = "password";

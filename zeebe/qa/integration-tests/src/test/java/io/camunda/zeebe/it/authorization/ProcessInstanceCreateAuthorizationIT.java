@@ -29,8 +29,6 @@ import java.util.UUID;
 import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -39,7 +37,6 @@ import org.testcontainers.utility.DockerImageName;
 
 @AutoCloseResources
 @Testcontainers
-@TestInstance(Lifecycle.PER_CLASS)
 @ZeebeIntegration
 public class ProcessInstanceCreateAuthorizationIT {
   private static final DockerImageName ELASTIC_IMAGE =
@@ -73,10 +70,10 @@ public class ProcessInstanceCreateAuthorizationIT {
           .withAdditionalProfile(Profile.AUTH_BASIC);
 
   private static AuthorizationsUtil authUtil;
-  private ZeebeClient defaultUserClient;
+  private static ZeebeClient defaultUserClient;
 
   @BeforeAll
-  void beforeAll() {
+  static void beforeAll() {
     broker.withCamundaExporter("http://" + CONTAINER.getHttpHostAddress());
     broker.start();
 
