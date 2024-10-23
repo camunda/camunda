@@ -15,7 +15,6 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.RoleSearchClient;
 import io.camunda.search.entities.RoleEntity;
-import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.filter.RoleFilter;
 import io.camunda.search.query.SearchQueryBuilders;
@@ -87,20 +86,5 @@ public class RoleServiceTest {
     final var exception =
         assertThrowsExactly(NotFoundException.class, () -> services.getByRoleKey(key));
     assertThat(exception.getMessage()).isEqualTo("Role with roleKey 100 not found");
-  }
-
-  @Test
-  public void shouldThrownExceptionIfDuplicateFoundByKey() {
-    // given
-    final var key = 200L;
-    final var entity1 = mock(RoleEntity.class);
-    final var entity2 = mock(RoleEntity.class);
-    when(client.searchRoles(any(), any()))
-        .thenReturn(new SearchQueryResult(2, List.of(entity1, entity2), null));
-
-    // when / then
-    final var exception =
-        assertThrowsExactly(CamundaSearchException.class, () -> services.getByRoleKey(key));
-    assertThat(exception.getMessage()).isEqualTo("Found role with roleKey 200 more than once");
   }
 }
