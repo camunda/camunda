@@ -7,6 +7,7 @@
  */
 package io.camunda.security.entity;
 
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
 
-public record Permission(String type, List<String> resourceIds) {}
+public record Permission(PermissionType type, List<String> resourceIds) {}

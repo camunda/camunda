@@ -11,20 +11,20 @@ import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 
 public record AuthorizationFilter(
-    String ownerKey,
+    Long ownerKey,
     String ownerType,
     String resourceKey,
     String resourceType,
     PermissionType permissionType)
     implements FilterBase {
   public static final class Builder implements ObjectBuilder<AuthorizationFilter> {
-    private String ownerKey;
+    private Long ownerKey;
     private String ownerType;
     private String resourceKey;
     private String resourceType;
     private PermissionType permissionType;
 
-    public Builder ownerKey(final String value) {
+    public Builder ownerKey(final Long value) {
       ownerKey = value;
       return this;
     }
