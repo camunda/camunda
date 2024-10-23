@@ -42,12 +42,13 @@ public class TaskSearchView {
   private String[] sortValues;
   private TaskImplementation implementation;
   private Integer priority;
+  private String externalFormReference;
 
   public String getId() {
     return id;
   }
 
-  public TaskSearchView setId(String id) {
+  public TaskSearchView setId(final String id) {
     this.id = id;
     return this;
   }
@@ -56,7 +57,7 @@ public class TaskSearchView {
     return bpmnProcessId;
   }
 
-  public TaskSearchView setBpmnProcessId(String bpmnProcessId) {
+  public TaskSearchView setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
     return this;
   }
@@ -65,7 +66,7 @@ public class TaskSearchView {
     return processDefinitionId;
   }
 
-  public TaskSearchView setProcessDefinitionId(String processDefinitionId) {
+  public TaskSearchView setProcessDefinitionId(final String processDefinitionId) {
     this.processDefinitionId = processDefinitionId;
     return this;
   }
@@ -74,7 +75,7 @@ public class TaskSearchView {
     return flowNodeBpmnId;
   }
 
-  public TaskSearchView setFlowNodeBpmnId(String flowNodeBpmnId) {
+  public TaskSearchView setFlowNodeBpmnId(final String flowNodeBpmnId) {
     this.flowNodeBpmnId = flowNodeBpmnId;
     return this;
   }
@@ -83,7 +84,7 @@ public class TaskSearchView {
     return flowNodeInstanceId;
   }
 
-  public TaskSearchView setFlowNodeInstanceId(String flowNodeInstanceId) {
+  public TaskSearchView setFlowNodeInstanceId(final String flowNodeInstanceId) {
     this.flowNodeInstanceId = flowNodeInstanceId;
     return this;
   }
@@ -92,7 +93,7 @@ public class TaskSearchView {
     return processInstanceId;
   }
 
-  public TaskSearchView setProcessInstanceId(String processInstanceId) {
+  public TaskSearchView setProcessInstanceId(final String processInstanceId) {
     this.processInstanceId = processInstanceId;
     return this;
   }
@@ -101,7 +102,7 @@ public class TaskSearchView {
     return creationTime;
   }
 
-  public TaskSearchView setCreationTime(OffsetDateTime creationTime) {
+  public TaskSearchView setCreationTime(final OffsetDateTime creationTime) {
     this.creationTime = creationTime;
     return this;
   }
@@ -110,7 +111,7 @@ public class TaskSearchView {
     return completionTime;
   }
 
-  public TaskSearchView setCompletionTime(OffsetDateTime completionTime) {
+  public TaskSearchView setCompletionTime(final OffsetDateTime completionTime) {
     this.completionTime = completionTime;
     return this;
   }
@@ -119,7 +120,7 @@ public class TaskSearchView {
     return state;
   }
 
-  public TaskSearchView setState(TaskState state) {
+  public TaskSearchView setState(final TaskState state) {
     this.state = state;
     return this;
   }
@@ -128,7 +129,7 @@ public class TaskSearchView {
     return assignee;
   }
 
-  public TaskSearchView setAssignee(String assignee) {
+  public TaskSearchView setAssignee(final String assignee) {
     this.assignee = assignee;
     return this;
   }
@@ -137,7 +138,7 @@ public class TaskSearchView {
     return candidateGroups;
   }
 
-  public TaskSearchView setCandidateGroups(String[] candidateGroups) {
+  public TaskSearchView setCandidateGroups(final String[] candidateGroups) {
     this.candidateGroups = candidateGroups;
     return this;
   }
@@ -146,7 +147,7 @@ public class TaskSearchView {
     return candidateUsers;
   }
 
-  public TaskSearchView setCandidateUsers(String[] candidateUsers) {
+  public TaskSearchView setCandidateUsers(final String[] candidateUsers) {
     this.candidateUsers = candidateUsers;
     return this;
   }
@@ -155,7 +156,7 @@ public class TaskSearchView {
     return formKey;
   }
 
-  public TaskSearchView setFormKey(String formKey) {
+  public TaskSearchView setFormKey(final String formKey) {
     this.formKey = formKey;
     return this;
   }
@@ -164,7 +165,7 @@ public class TaskSearchView {
     return formId;
   }
 
-  public TaskSearchView setFormId(String formId) {
+  public TaskSearchView setFormId(final String formId) {
     this.formId = formId;
     return this;
   }
@@ -173,7 +174,7 @@ public class TaskSearchView {
     return formVersion;
   }
 
-  public TaskSearchView setFormVersion(Long formVersion) {
+  public TaskSearchView setFormVersion(final Long formVersion) {
     this.formVersion = formVersion;
     return this;
   }
@@ -182,7 +183,7 @@ public class TaskSearchView {
     return isFormEmbedded;
   }
 
-  public TaskSearchView setIsFormEmbedded(Boolean isFormEmbedded) {
+  public TaskSearchView setIsFormEmbedded(final Boolean isFormEmbedded) {
     this.isFormEmbedded = isFormEmbedded;
     return this;
   }
@@ -191,7 +192,7 @@ public class TaskSearchView {
     return tenantId;
   }
 
-  public TaskSearchView setTenantId(String tenantId) {
+  public TaskSearchView setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
@@ -200,7 +201,7 @@ public class TaskSearchView {
     return followUpDate;
   }
 
-  public TaskSearchView setFollowUpDate(OffsetDateTime followUpDate) {
+  public TaskSearchView setFollowUpDate(final OffsetDateTime followUpDate) {
     this.followUpDate = followUpDate;
     return this;
   }
@@ -209,7 +210,7 @@ public class TaskSearchView {
     return dueDate;
   }
 
-  public TaskSearchView setDueDate(OffsetDateTime dueDate) {
+  public TaskSearchView setDueDate(final OffsetDateTime dueDate) {
     this.dueDate = dueDate;
     return this;
   }
@@ -218,7 +219,7 @@ public class TaskSearchView {
     return first;
   }
 
-  public TaskSearchView setFirst(boolean first) {
+  public TaskSearchView setFirst(final boolean first) {
     this.first = first;
     return this;
   }
@@ -227,7 +228,7 @@ public class TaskSearchView {
     return sortValues;
   }
 
-  public TaskSearchView setSortValues(String[] sortValues) {
+  public TaskSearchView setSortValues(final String[] sortValues) {
     this.sortValues = sortValues;
     return this;
   }
@@ -236,8 +237,17 @@ public class TaskSearchView {
     return implementation;
   }
 
-  public TaskSearchView setImplementation(TaskImplementation implementation) {
+  public TaskSearchView setImplementation(final TaskImplementation implementation) {
     this.implementation = implementation;
+    return this;
+  }
+
+  public String getExternalFormReference() {
+    return externalFormReference;
+  }
+
+  public TaskSearchView setExternalFormReference(final String externalFormReference) {
+    this.externalFormReference = externalFormReference;
     return this;
   }
 
@@ -245,7 +255,7 @@ public class TaskSearchView {
     return priority;
   }
 
-  public TaskSearchView setPriority(Integer priority) {
+  public TaskSearchView setPriority(final Integer priority) {
     this.priority = priority;
     return this;
   }
@@ -274,7 +284,8 @@ public class TaskSearchView {
             dueDate,
             first,
             implementation,
-            priority);
+            priority,
+            externalFormReference);
     result = 31 * result + Arrays.hashCode(candidateGroups);
     result = 31 * result + Arrays.hashCode(candidateUsers);
     result = 31 * result + Arrays.hashCode(sortValues);
@@ -282,7 +293,7 @@ public class TaskSearchView {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -315,7 +326,8 @@ public class TaskSearchView {
         && Objects.equals(followUpDate, that.followUpDate)
         && Objects.equals(dueDate, that.dueDate)
         && Objects.equals(priority, that.priority)
-        && Arrays.equals(sortValues, that.sortValues);
+        && Arrays.equals(sortValues, that.sortValues)
+        && Objects.equals(externalFormReference, that.externalFormReference);
   }
 
   @Override
@@ -347,7 +359,7 @@ public class TaskSearchView {
         .toString();
   }
 
-  public static TaskSearchView createFrom(TaskEntity taskEntity, Object[] sortValues) {
+  public static TaskSearchView createFrom(final TaskEntity taskEntity, final Object[] sortValues) {
     final TaskSearchView taskSearchView =
         new TaskSearchView()
             .setId(taskEntity.getId())
@@ -370,7 +382,8 @@ public class TaskSearchView {
             .setCandidateGroups(taskEntity.getCandidateGroups())
             .setCandidateUsers(taskEntity.getCandidateUsers())
             .setImplementation(taskEntity.getImplementation())
-            .setPriority(taskEntity.getPriority());
+            .setPriority(taskEntity.getPriority())
+            .setExternalFormReference(taskEntity.getExternalFormReference());
     if (sortValues != null) {
       taskSearchView.setSortValues(toArrayOfStrings(sortValues));
     }

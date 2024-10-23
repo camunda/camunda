@@ -52,7 +52,7 @@ public class UserTaskRecordToTaskEntityMapper {
     this.formStore = formStore;
   }
 
-  public Optional<TaskEntity> map(Record<UserTaskRecordValue> record) {
+  public Optional<TaskEntity> map(final Record<UserTaskRecordValue> record) {
     final Intent intent = (Intent) record.getIntent();
     LOGGER.debug("Intent {}", intent);
     if (intent == null || !SUPPORTED_INTENTS.contains(intent)) {
@@ -73,7 +73,12 @@ public class UserTaskRecordToTaskEntityMapper {
             .setProcessInstanceId(String.valueOf(recordValue.getProcessInstanceKey()))
             .setBpmnProcessId(recordValue.getBpmnProcessId())
             .setProcessDefinitionId(processDefinitionId)
-            .setTenantId(recordValue.getTenantId());
+            .setTenantId(recordValue.getTenantId())
+            .setExternalFormReference(
+                (recordValue.getExternalFormReference() == null
+                        || recordValue.getExternalFormReference().isBlank())
+                    ? null
+                    : recordValue.getExternalFormReference());
 
     switch (intent) {
       case CANCELED ->
@@ -149,7 +154,7 @@ public class UserTaskRecordToTaskEntityMapper {
   }
 
   public Map<String, Object> getUpdateFieldsMap(
-      TaskEntity entity, Record<UserTaskRecordValue> record) {
+      final TaskEntity entity, final Record<UserTaskRecordValue> record) {
     final Map<String, Object> updateFields = new HashMap<>();
     final Intent intent = (Intent) record.getIntent();
     if (entity.getState() != null) {
@@ -171,7 +176,7 @@ public class UserTaskRecordToTaskEntityMapper {
       case UPDATED -> {
         final UserTaskRecordValue recordValue = record.getValue();
         final List<String> changedAttributes = recordValue.getChangedAttributes();
-        for (String attribute : changedAttributes) {
+        for (final String attribute : changedAttributes) {
           switch (attribute) {
             case "candidateGroupsList" ->
                 updateFields.put(TaskTemplate.CANDIDATE_GROUPS, entity.getCandidateGroups());
