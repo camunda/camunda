@@ -7,8 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.job.behaviour;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -28,25 +27,22 @@ public class JobUpdateBehaviour {
           + "but the amount given was '%d'";
 
   private final JobState jobState;
-  private final TypedRejectionWriter rejectionWriter;
   private final InstantSource clock;
 
-  public JobUpdateBehaviour(
-      final JobState jobState, final Writers writers, final InstantSource clock) {
+  public JobUpdateBehaviour(final JobState jobState, final InstantSource clock) {
     this.jobState = jobState;
-    rejectionWriter = writers.rejection();
     this.clock = clock;
   }
 
-  public Either<String, JobRecord> getJob(final long jobKey, final TypedRecord<JobRecord> command) {
+  public Either<Rejection, JobRecord> getJob(
+      final long jobKey, final TypedRecord<JobRecord> command) {
     final var job = jobState.getJob(jobKey, command.getAuthorizations());
 
     if (job != null) {
       return Either.right(job);
     }
-    rejectionWriter.appendRejection(
-        command, RejectionType.NOT_FOUND, NO_JOB_FOUND_MESSAGE.formatted(jobKey));
-    return Either.left(NO_JOB_FOUND_MESSAGE.formatted(jobKey));
+    return Either.left(
+        new Rejection(RejectionType.NOT_FOUND, NO_JOB_FOUND_MESSAGE.formatted(jobKey)));
   }
 
   public Optional<String> updateJobRetries(

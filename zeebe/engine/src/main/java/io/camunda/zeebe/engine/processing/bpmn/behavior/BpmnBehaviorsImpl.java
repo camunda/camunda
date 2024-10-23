@@ -184,7 +184,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
         new BpmnCompensationSubscriptionBehaviour(
             processingState.getKeyGenerator(), processingState, writers, stateBehavior);
 
-    jobUpdateBehaviour = new JobUpdateBehaviour(processingState.getJobState(), writers, clock);
+    jobUpdateBehaviour = new JobUpdateBehaviour(processingState.getJobState(), clock);
   }
 
   @Override

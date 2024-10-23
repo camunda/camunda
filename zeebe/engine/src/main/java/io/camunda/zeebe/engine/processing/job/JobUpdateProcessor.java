@@ -66,9 +66,10 @@ public class JobUpdateProcessor implements TypedRecordProcessor<JobRecord> {
                 handleRejection(errors, command);
               }
             },
-            errorMessage -> {
+            rejection -> {
+              rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
               responseWriter.writeRejectionOnCommand(
-                  command, RejectionType.NOT_FOUND, errorMessage);
+                  command, RejectionType.NOT_FOUND, rejection.reason());
             });
   }
 
