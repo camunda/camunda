@@ -13,16 +13,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.TextNode;
 import io.camunda.zeebe.gateway.protocol.rest.AdvancedStringFilter;
 import io.camunda.zeebe.gateway.protocol.rest.StringFilter;
-import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import java.io.IOException;
-import org.springframework.boot.jackson.JsonComponent;
-import org.springframework.context.annotation.Lazy;
 
-@ConditionalOnRestGatewayEnabled
-@JsonComponent
 public class StringFilterDeserializer extends FilterDeserializer<StringFilter> {
 
-  public StringFilterDeserializer(@Lazy final ObjectMapper objectMapper) {
+  public StringFilterDeserializer(final ObjectMapper objectMapper) {
     super(objectMapper);
   }
 

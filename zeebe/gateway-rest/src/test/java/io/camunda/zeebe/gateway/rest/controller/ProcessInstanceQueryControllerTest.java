@@ -12,6 +12,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.filter.Operation;
@@ -22,7 +24,13 @@ import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.ProcessInstanceServices;
+import io.camunda.zeebe.gateway.protocol.rest.IntegerFilter;
+import io.camunda.zeebe.gateway.protocol.rest.LongFilter;
+import io.camunda.zeebe.gateway.protocol.rest.StringFilter;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.deserializer.IntegerFilterDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.LongFilterDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.StringFilterDeserializer;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,8 +39,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 @WebMvcTest(
     value = ProcessInstanceQueryController.class,
@@ -115,7 +126,6 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           .items(List.of(PROCESS_INSTANCE_ENTITY))
           .sortValues(new Object[] {"v"})
           .build();
-
   @MockBean ProcessInstanceServices processInstanceServices;
 
   @BeforeEach
@@ -539,5 +549,23 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
 
     verify(processInstanceServices)
         .search(new ProcessInstanceQuery.Builder().filter(filter).build());
+  }
+
+  @TestConfiguration
+  public static class TestConfig {
+
+    @Bean
+    public ObjectMapper objectMapper() {
+      final var objectMapper = Jackson2ObjectMapperBuilder.json().build();
+
+      final var deserializers = new SimpleModule();
+      deserializers.addDeserializer(StringFilter.class, new StringFilterDeserializer(objectMapper));
+      deserializers.addDeserializer(LongFilter.class, new LongFilterDeserializer(objectMapper));
+      deserializers.addDeserializer(
+          IntegerFilter.class, new IntegerFilterDeserializer(objectMapper));
+      objectMapper.registerModule(deserializers);
+
+      return objectMapper;
+    }
   }
 }

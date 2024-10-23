@@ -308,6 +308,33 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   }
 
   @Test
+  void shouldRetrieveProcessInstancesByProcessDefinitionIdFilterLikeMultiple() {
+    // given
+    final String bpmnProcessId = "service_tasks";
+    final List<Long> processInstanceKeys =
+        PROCESS_INSTANCES.stream()
+            .filter(p -> p.getBpmnProcessId().startsWith(bpmnProcessId))
+            .map(ProcessInstanceEvent::getProcessInstanceKey)
+            .toList();
+    final var stringFilter = new StringFilter();
+    stringFilter.$like(bpmnProcessId.replace("_", "?") + "*");
+
+    // when
+    final var result =
+        zeebeClient
+            .newProcessInstanceQuery()
+            .filter(f -> f.processDefinitionId(stringFilter))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(2);
+    assertThat(result.items())
+        .extracting("processInstanceKey")
+        .containsExactlyInAnyOrder(processInstanceKeys.toArray());
+  }
+
+  @Test
   void shouldQueryProcessInstancesByProcessDefinitionKey() {
     // given
     final String bpmnProcessId = "service_tasks_v1";
