@@ -43,7 +43,7 @@ import io.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
-import io.camunda.optimize.service.db.es.report.command.process.mapping.RawProcessDataResultDtoMapper;
+import io.camunda.optimize.service.db.report.interpreter.util.RawProcessDataResultDtoMapper;
 import io.camunda.optimize.service.db.reader.ProcessVariableReader;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.interpreter.view.process.AbstractProcessViewRawDataInterpreter;

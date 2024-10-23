@@ -32,7 +32,7 @@ import io.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import io.camunda.optimize.service.DefinitionService;
-import io.camunda.optimize.service.db.es.report.command.process.mapping.RawProcessDataResultDtoMapper;
+import io.camunda.optimize.service.db.report.interpreter.util.RawProcessDataResultDtoMapper;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
 import io.camunda.optimize.service.db.os.report.interpreter.RawResult;
