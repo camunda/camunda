@@ -9,7 +9,6 @@ package io.camunda.exporter;
 
 import static io.camunda.exporter.schema.SchemaTestUtil.mappingsMatch;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
@@ -22,8 +21,10 @@ import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.fasterxml.jackson.databind.JsonNode;
+import io.camunda.exporter.config.ConfigValidator;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.schema.SchemaTestUtil;
+import io.camunda.exporter.utils.CamundaExporterITInvocationProvider;
 import io.camunda.exporter.utils.SearchClientAdapter;
 import io.camunda.exporter.utils.TestSupport;
 import io.camunda.search.connect.es.ElasticsearchConnector;
@@ -59,8 +60,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.testcontainers.OpensearchContainer;
 import org.testcontainers.containers.GenericContainer;
@@ -73,6 +74,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * export records using the configured handlers.
  */
 @TestInstance(Lifecycle.PER_CLASS)
+@ExtendWith(CamundaExporterITInvocationProvider.class)
 final class CamundaExporterIT {
 
   private static final ExporterConfiguration CONFIG = new ExporterConfiguration();
@@ -366,6 +368,21 @@ final class CamundaExporterIT {
     container.setPortBindings(List.of());
   }
 
+  @Test
+  void shouldValidateConfigWhenExporterConfigures() {
+    final var exporter = new CamundaExporter();
+    final var context =
+        new ExporterTestContext()
+            .setConfiguration(new ExporterTestConfiguration<>("elastic", CONFIG));
+
+    try (final var mockedStatic = Mockito.mockStatic(ConfigValidator.class)) {
+      exporter.configure(context);
+
+      mockedStatic.verify(
+          () -> ConfigValidator.validate(any(ExporterConfiguration.class)), times(1));
+    }
+  }
+
   @Nested
   @Testcontainers
   class ElasticsearchBackedExporter {
@@ -552,82 +569,6 @@ final class CamundaExporterIT {
     @Test
     void shouldUpdateExporterPositionAfterFlushing() {
       CamundaExporterIT.this.shouldUpdateExporterPositionAfterFlushing();
-    }
-  }
-
-  @Nested
-  final class ConfigValidationTest {
-    @Test
-    void shouldRejectWrongConnectionType() {
-      // given
-      final var exporter = new CamundaExporter();
-      final var context =
-          new ExporterTestContext()
-              .setConfiguration(new ExporterTestConfiguration<>("elastic", CONFIG));
-
-      CONFIG.getConnect().setType("mysql");
-
-      // when - then
-      assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
-    }
-
-    @Test
-    void shouldNotAllowUnderscoreInIndexPrefix() {
-      // given
-      final var exporter = new CamundaExporter();
-      final var context =
-          new ExporterTestContext()
-              .setConfiguration(new ExporterTestConfiguration<>("elastic", CONFIG));
-
-      CONFIG.getIndex().setPrefix("i_am_invalid");
-
-      // when - then
-      assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
-    }
-
-    @ParameterizedTest(name = "{0}")
-    @ValueSource(ints = {-1, 0})
-    void shouldForbidNonPositiveNumberOfShards(final int invalidNumberOfShards) {
-      // given
-      final var exporter = new CamundaExporter();
-      final var context =
-          new ExporterTestContext()
-              .setConfiguration(new ExporterTestConfiguration<>("elastic", CONFIG));
-
-      CONFIG.getIndex().setNumberOfShards(invalidNumberOfShards);
-
-      // when - then
-      assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
-    }
-
-    @ParameterizedTest(name = "{0}")
-    @ValueSource(strings = {"1", "-1", "1ms"})
-    void shouldNotAllowInvalidMinimumAge(final String invalidMinAge) {
-      // given
-      final var exporter = new CamundaExporter();
-      final var context =
-          new ExporterTestContext()
-              .setConfiguration(new ExporterTestConfiguration<>("elastic", CONFIG));
-      CONFIG.getRetention().setMinimumAge(invalidMinAge);
-
-      // when - then
-      assertThatCode(() -> exporter.configure(context))
-          .isInstanceOf(ExporterException.class)
-          .hasMessageContaining("must match pattern '^[0-9]+[dhms]$'")
-          .hasMessageContaining("minimumAge '" + invalidMinAge + "'");
-    }
-
-    @Test
-    void shouldForbidNegativeNumberOfReplicas() {
-      // given
-      final var exporter = new CamundaExporter();
-      final var context =
-          new ExporterTestContext()
-              .setConfiguration(new ExporterTestConfiguration<>("elastic", CONFIG));
-      CONFIG.getIndex().setNumberOfReplicas(-1);
-
-      // when - then
-      assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
     }
   }
 }
