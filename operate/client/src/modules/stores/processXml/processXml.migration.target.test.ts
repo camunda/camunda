@@ -72,6 +72,8 @@ describe('stores/processXml/processXml.migration.target', () => {
       'SignalBoundaryEvent',
       'SignalEventSubProcess',
       'SignalStartEvent',
+      'MultiInstanceSubProcess',
+      'MultiInstanceTask',
     ]);
   });
 
@@ -153,6 +155,8 @@ describe('stores/processXml/processXml.migration.target', () => {
       'SignalBoundaryEvent',
       'SignalEventSubProcess',
       'SignalStartEvent',
+      'MultiInstanceSubProcess',
+      'MultiInstanceTask',
     ]);
   });
 });
