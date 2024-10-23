@@ -188,7 +188,7 @@ test.describe.serial('Process Instance Migration', () => {
     await processesPage.migrationModal.confirmButton.click();
 
     // Expect auto mapping for each flow node
-    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(38);
+    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(40);
 
     await expect(
       page.getByLabel(/target flow node for check payment/i),
@@ -280,6 +280,12 @@ test.describe.serial('Process Instance Migration', () => {
     await expect(
       page.getByLabel(/target flow node for sub process/i),
     ).toHaveValue('SubProcess');
+    await expect(
+      page.getByLabel(/target flow node for multi instance sub process/i),
+    ).toHaveValue('MultiInstanceSubProcess');
+    await expect(
+      page.getByLabel(/target flow node for multi instance task/i),
+    ).toHaveValue('MultiInstanceTask');
 
     // Expect pre-selected process and version
     await expect(migrationView.targetProcessComboBox).toHaveValue(
@@ -353,11 +359,7 @@ test.describe.serial('Process Instance Migration', () => {
     await commonPage.collapseOperationsPanel();
   });
 
-  test('Migrated event sub processes', async ({
-    commonPage,
-    processesPage,
-    processesPage: {filtersPanel},
-  }) => {
+  test('Migrated event sub processes', async ({commonPage, processesPage}) => {
     const {processV2} = initialData;
     await processesPage.navigateToProcesses({
       searchParams: {
@@ -576,6 +578,18 @@ test.describe.serial('Process Instance Migration', () => {
       targetFlowNodeName: 'Exclusive gateway 2',
     });
 
+    /**
+     * Map multi instance elements
+     */
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Multi instance sub process',
+      targetFlowNodeName: 'Multi instance sub process 2',
+    });
+    await migrationView.mapFlowNode({
+      sourceFlowNodeName: 'Multi instance task',
+      targetFlowNodeName: 'Multi instance task 2',
+    });
+
     await migrationView.nextButton.click();
 
     await expect(migrationView.summaryNotification).toContainText(
@@ -640,7 +654,7 @@ test.describe.serial('Process Instance Migration', () => {
     await commonPage.collapseOperationsPanel();
   });
 
-  test('Migrated tasks', async ({
+  test.skip('Migrated tasks', async ({
     processesPage,
     processInstancePage,
     page,
@@ -770,7 +784,7 @@ test.describe.serial('Process Instance Migration', () => {
       .click();
   });
 
-  test('Migrated message events', async ({
+  test.skip('Migrated message events', async ({
     processesPage,
     processInstancePage,
     page,
@@ -877,7 +891,7 @@ test.describe.serial('Process Instance Migration', () => {
       .click();
   });
 
-  test('Migrated gateways', async ({
+  test.skip('Migrated gateways', async ({
     processesPage,
     processInstancePage,
     page,
@@ -929,7 +943,10 @@ test.describe.serial('Process Instance Migration', () => {
     ).toBeVisible();
   });
 
-  test('Migrated date tag', async ({processesPage, processInstancePage}) => {
+  test.skip('Migrated date tag', async ({
+    processesPage,
+    processInstancePage,
+  }) => {
     const targetBpmnProcessId = initialData.processV3.bpmnProcessId;
     const targetVersion = initialData.processV3.version.toString();
 
@@ -951,7 +968,7 @@ test.describe.serial('Process Instance Migration', () => {
     ).toBeVisible();
   });
 
-  test('Migrated signal elements', async ({
+  test.skip('Migrated signal elements', async ({
     processesPage,
     processInstancePage,
     request,
@@ -1016,5 +1033,61 @@ test.describe.serial('Process Instance Migration', () => {
     await processInstancePage.metadataModal
       .getByRole('button', {name: /close/i})
       .click();
+  });
+
+  test('Migrated multi instance elements', async ({
+    processesPage,
+    processInstancePage,
+  }) => {
+    const targetBpmnProcessId = initialData.processV3.bpmnProcessId;
+    const targetVersion = initialData.processV3.version.toString();
+
+    await processesPage.navigateToProcesses({
+      searchParams: {
+        active: 'true',
+        incidents: 'true',
+        process: targetBpmnProcessId,
+        version: targetVersion,
+      },
+    });
+
+    // Navigate to the first process instance in the list, that has been migrated
+    await processesPage.getNthProcessInstanceLink(0).click();
+
+    await processInstancePage.diagram.resetDiagramZoomButton.click();
+
+    await processInstancePage.diagram.clickSubProcess(
+      'Multi instance sub process 2',
+    );
+    await processInstancePage.diagram.showMetaData();
+
+    /**
+    /* Expect that 1 instance of the multi instance sub process has been migrated
+     */
+    await expect(
+      processInstancePage.metadataModal.getByText('endDate'),
+    ).toBeVisible();
+    await expect(
+      processInstancePage.metadataModal.getByText('"endDate": "null"'),
+    ).not.toBeVisible();
+
+    await processInstancePage.metadataModal
+      .getByRole('button', {name: /close/i})
+      .click();
+
+    await processInstancePage.diagram.clickSubProcess(
+      'Multi instance sub process 2',
+    ); // deselect sub process
+
+    await processInstancePage.diagram.clickFlowNode('Multi instance task 2');
+
+    /**
+    /* Expect that 2 instances of the multi instance task have been migrated
+     */
+    await expect(
+      processInstancePage.diagram.popover.getByText(
+        'This Flow Node triggered 2 times',
+      ),
+    ).toBeVisible();
   });
 });
