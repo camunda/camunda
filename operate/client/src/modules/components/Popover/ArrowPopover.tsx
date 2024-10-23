@@ -13,6 +13,7 @@ import {
   Placement,
   autoUpdate,
   Middleware,
+  shift,
 } from '@floating-ui/react-dom';
 
 import {useEffect, useLayoutEffect, useRef, useState} from 'react';
@@ -63,7 +64,11 @@ const ArrowPopover: React.FC<Props> = ({
     refs: {floating, setFloating},
   } = useFloating({
     placement,
-    middleware: [...middlewareOptions, arrow({element: arrowElementRef})],
+    middleware: [
+      ...middlewareOptions,
+      shift({padding: {top: 47}}), // 47px = Operate app header height
+      arrow({element: arrowElementRef}),
+    ],
     whileElementsMounted: autoUpdatePosition ? autoUpdate : undefined,
     elements: {
       reference: referenceElement,
