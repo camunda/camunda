@@ -56,7 +56,7 @@ public class AuthorizationServices
   }
 
   public Set<String> fetchAssignedPermissions(
-      final String ownerId, final AuthorizationResourceType resourceType, final String resourceId) {
+      final Long ownerId, final AuthorizationResourceType resourceType, final String resourceId) {
     final SearchQueryResult<AuthorizationEntity> result =
         search(
             SearchQueryBuilders.authorizationSearchQuery(
@@ -74,7 +74,7 @@ public class AuthorizationServices
     return result.items().stream()
         .flatMap(authorization -> authorization.permissions().stream())
         .filter(permission -> permission.resourceIds().contains(resourceId))
-        .map(Permission::type)
+        .map(Permission -> Permission.type().name())
         .collect(Collectors.toSet());
   }
 

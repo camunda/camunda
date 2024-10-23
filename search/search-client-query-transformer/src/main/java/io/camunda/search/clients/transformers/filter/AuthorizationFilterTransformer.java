@@ -25,7 +25,7 @@ public class AuthorizationFilterTransformer implements FilterTransformer<Authori
         filter.resourceType() == null ? null : term("resourceType", filter.resourceType()),
         filter.permissionType() == null
             ? null
-            : term("permissions.permissionType", filter.permissionType().name()));
+            : term("permissions.type", filter.permissionType().name()));
   }
 
   @Override

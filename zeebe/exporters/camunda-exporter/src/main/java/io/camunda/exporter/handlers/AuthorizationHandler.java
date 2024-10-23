@@ -73,7 +73,7 @@ public class AuthorizationHandler
         .map(
             permissionValue ->
                 new Permission(
-                    permissionValue.getPermissionType().name(), permissionValue.getResourceIds()))
+                    permissionValue.getPermissionType(), permissionValue.getResourceIds()))
         .collect(Collectors.toList());
   }
 }
