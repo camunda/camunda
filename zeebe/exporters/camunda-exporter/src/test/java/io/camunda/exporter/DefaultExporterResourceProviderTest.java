@@ -59,13 +59,7 @@ public class DefaultExporterResourceProviderTest {
       final IndexDescriptor descriptor, final String prefix) {
 
     return Arrays.stream(ComponentNames.values())
-        .map(
-            componentName -> {
-              final String expectedName =
-                  expectedName(descriptor, componentName.toString(), prefix);
-
-              return expectedName + "_";
-            })
+        .map(componentName -> expectedName(descriptor, componentName.toString(), prefix) + "_")
         .anyMatch(
             possibleFullQualifiedName ->
                 possibleFullQualifiedName.equals(descriptor.getFullQualifiedName()));
@@ -75,11 +69,8 @@ public class DefaultExporterResourceProviderTest {
       final IndexTemplateDescriptor descriptor, final String prefix) {
     return Arrays.stream(ComponentNames.values())
         .map(
-            componentName -> {
-              final String expectedName =
-                  expectedName(descriptor, componentName.toString(), prefix);
-              return expectedName + "_template";
-            })
+            componentName ->
+                expectedName(descriptor, componentName.toString(), prefix) + "_template")
         .anyMatch(
             possibleTemplateName -> possibleTemplateName.equals(descriptor.getTemplateName()));
   }
