@@ -96,18 +96,18 @@ public class CustomMethodSecurityExpressionRootTest {
     return Stream.of(
         Arguments.of(jwtAuthentication(), AuthorizationResourceType.PROCESS_DEFINITION, "*", false),
         Arguments.of(
-            basicAuthentication(1), AuthorizationResourceType.PROCESS_DEFINITION, "*", true),
+            basicAuthentication(1234L), AuthorizationResourceType.PROCESS_DEFINITION, "*", true),
         Arguments.of(
-            basicAuthentication(2), AuthorizationResourceType.PROCESS_DEFINITION, "*", true),
+            basicAuthentication(4321L), AuthorizationResourceType.PROCESS_DEFINITION, "*", true),
         Arguments.of(
-            basicAuthentication(2),
+            basicAuthentication(4321L),
             AuthorizationResourceType.PROCESS_DEFINITION,
             "process1",
             false),
         Arguments.of(
-            basicAuthentication(3), AuthorizationResourceType.PROCESS_DEFINITION, "*", false),
+            basicAuthentication(6789L), AuthorizationResourceType.PROCESS_DEFINITION, "*", false),
         Arguments.of(
-            basicAuthentication(3),
+            basicAuthentication(6789L),
             AuthorizationResourceType.PROCESS_DEFINITION,
             "process1",
             true));
@@ -117,15 +117,18 @@ public class CustomMethodSecurityExpressionRootTest {
     return Stream.of(
         Arguments.of(jwtAuthentication(), AuthorizationResourceType.PROCESS_DEFINITION, "*", false),
         Arguments.of(
-            basicAuthentication(1), AuthorizationResourceType.PROCESS_DEFINITION, "*", true),
+            basicAuthentication(1234L), AuthorizationResourceType.PROCESS_DEFINITION, "*", true),
         Arguments.of(
-            basicAuthentication(2), AuthorizationResourceType.PROCESS_DEFINITION, "*", false),
+            basicAuthentication(4321L), AuthorizationResourceType.PROCESS_DEFINITION, "*", false),
         Arguments.of(
-            basicAuthentication(2), AuthorizationResourceType.PROCESS_DEFINITION, "process1", true),
+            basicAuthentication(4321L),
+            AuthorizationResourceType.PROCESS_DEFINITION,
+            "process1",
+            true),
         Arguments.of(
-            basicAuthentication(3), AuthorizationResourceType.PROCESS_DEFINITION, "*", false),
+            basicAuthentication(6789L), AuthorizationResourceType.PROCESS_DEFINITION, "*", false),
         Arguments.of(
-            basicAuthentication(3),
+            basicAuthentication(6789L),
             AuthorizationResourceType.PROCESS_DEFINITION,
             "process1",
             false));
