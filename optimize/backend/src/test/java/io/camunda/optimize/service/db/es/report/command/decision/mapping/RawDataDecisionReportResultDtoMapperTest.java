@@ -17,6 +17,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.
 import io.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.VariableEntry;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
+import io.camunda.optimize.service.db.report.interpreter.util.RawDecisionDataResultDtoMapper;
 import io.camunda.optimize.service.util.IdGenerator;
 import java.util.Arrays;
 import java.util.Collections;

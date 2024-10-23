@@ -12,7 +12,7 @@ import static io.camunda.optimize.dto.optimize.query.report.single.configuration
 import static io.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.INPUT_PREFIX;
 import static io.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.OUTPUT_PREFIX;
 import static io.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.VARIABLE_PREFIX;
-import static io.camunda.optimize.service.db.es.report.command.process.mapping.RawProcessDataResultDtoMapper.OBJECT_VARIABLE_VALUE_PLACEHOLDER;
+import static io.camunda.optimize.service.db.report.interpreter.util.RawProcessDataResultDtoMapper.OBJECT_VARIABLE_VALUE_PLACEHOLDER;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
