@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.service.db.es.report.result;
+package io.camunda.optimize.service.db.report.result;
 
 import com.google.common.collect.Streams;
 import io.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
