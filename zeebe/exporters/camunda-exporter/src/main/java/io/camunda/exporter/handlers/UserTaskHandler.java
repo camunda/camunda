@@ -70,7 +70,6 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
     return new TaskEntity().setId(id).setChangedAttributes(new ArrayList<>());
   }
 
-  // TODO Check what happens with update/create on ES/OS with nulls
   @Override
   public void updateEntity(final Record<UserTaskRecordValue> record, final TaskEntity entity) {
     entity.setProcessInstanceId(String.valueOf(record.getValue().getProcessInstanceKey()));
