@@ -28,6 +28,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
+import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderService;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -71,6 +72,7 @@ public class PartitionStartupAndTransitionContextImpl
   private final TypedRecordProcessorsFactory typedRecordProcessorsFactory;
   private final Supplier<CommandResponseWriter> commandResponseWriterSupplier;
   private final Supplier<Consumer<TypedRecord<?>>> onProcessedListenerSupplier;
+  private final CommandApiService commandApiService;
   private final PersistedSnapshotStore persistedSnapshotStore;
   private final Integer partitionId;
   private final int maxFragmentSize;
@@ -111,6 +113,7 @@ public class PartitionStartupAndTransitionContextImpl
       final PartitionMessagingService partitionCommunicationService,
       final ActorSchedulingService actorSchedulingService,
       final BrokerCfg brokerCfg,
+      final CommandApiService commandApiService,
       final Supplier<CommandResponseWriter> commandResponseWriterSupplier,
       final Supplier<Consumer<TypedRecord<?>>> onProcessedListenerSupplier,
       final PersistedSnapshotStore persistedSnapshotStore,
@@ -128,6 +131,7 @@ public class PartitionStartupAndTransitionContextImpl
     this.brokerCfg = brokerCfg;
     this.stateController = stateController;
     this.typedRecordProcessorsFactory = typedRecordProcessorsFactory;
+    this.commandApiService = commandApiService;
     this.onProcessedListenerSupplier = onProcessedListenerSupplier;
     this.commandResponseWriterSupplier = commandResponseWriterSupplier;
     this.persistedSnapshotStore = persistedSnapshotStore;
@@ -494,6 +498,11 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public Consumer<TypedRecord<?>> getOnProcessedListener() {
     return onProcessedListenerSupplier.get();
+  }
+
+  @Override
+  public CommandApiService getCommandApiService() {
+    return commandApiService;
   }
 
   @Override
