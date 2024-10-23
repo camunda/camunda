@@ -157,6 +157,32 @@ public class ActorControl implements ConcurrencyControl {
   }
 
   /**
+   * Invoke the callback when the given futures are completed (successfully or exceptionally). This
+   * call does not block the actor.
+   *
+   * <p>The callback is executed while the actor is in the following actor lifecycle phases: {@link
+   * ActorLifecyclePhase#STARTED}
+   *
+   * @param futures the futures to wait on
+   * @param callback The throwable is <code>null</code> when all futures are completed successfully.
+   *     Otherwise, it holds the exception of the last completed future.
+   */
+  @Override
+  public <T> void runOnCompletion(
+      final Collection<ActorFuture<T>> futures, final Consumer<Throwable> callback) {
+    if (!futures.isEmpty()) {
+      final BiConsumer<T, Throwable> futureConsumer =
+          new AllCompletedFutureConsumer<>(futures.size(), callback);
+
+      for (final ActorFuture<T> future : futures) {
+        runOnCompletion(future, futureConsumer);
+      }
+    } else {
+      callback.accept(null);
+    }
+  }
+
+  /**
    * Runnables submitted by the actor itself are executed while the actor is in any of its lifecycle
    * phases.
    *
@@ -220,6 +246,7 @@ public class ActorControl implements ConcurrencyControl {
    *
    * @param action the action to run.
    */
+  @Override
   public void submit(final Runnable action) {
     final ActorThread currentThread = ActorThread.current();
     final ActorTask currentTask = currentThread == null ? null : currentThread.getCurrentTask();
@@ -238,6 +265,36 @@ public class ActorControl implements ConcurrencyControl {
     if (currentTask != null && currentTask == task) {
       yieldThread();
     }
+  }
+
+  /**
+   * Similar to submit, but instead it submits a callable, returning an {@link ActorFuture} when the
+   * callable terminates
+   *
+   * @param callable to execute
+   * @return an {@link ActorFuture} completing linked to the callable execution
+   */
+  @Override
+  @SuppressWarnings("unchecked")
+  public <T> ActorFuture<T> submitCallable(final Callable<T> callable) {
+    final ActorThread currentThread = ActorThread.current();
+    final ActorTask currentTask = currentThread == null ? null : currentThread.getCurrentTask();
+    final ActorJob job;
+
+    if (currentThread != null && currentTask == task) {
+      job = currentThread.newJob();
+    } else {
+      job = new ActorJob();
+    }
+
+    final ActorFuture<T> future = job.setCallable(callable);
+    job.onJobAddedToTask(task);
+    task.submit(job);
+
+    if (currentTask != null && currentTask == task) {
+      yieldThread();
+    }
+    return future;
   }
 
   /**
@@ -282,32 +339,6 @@ public class ActorControl implements ConcurrencyControl {
     continuationJob.setSubscription(subscription);
 
     future.block(task);
-  }
-
-  /**
-   * Invoke the callback when the given futures are completed (successfully or exceptionally). This
-   * call does not block the actor.
-   *
-   * <p>The callback is executed while the actor is in the following actor lifecycle phases: {@link
-   * ActorLifecyclePhase#STARTED}
-   *
-   * @param futures the futures to wait on
-   * @param callback The throwable is <code>null</code> when all futures are completed successfully.
-   *     Otherwise, it holds the exception of the last completed future.
-   */
-  @Override
-  public <T> void runOnCompletion(
-      final Collection<ActorFuture<T>> futures, final Consumer<Throwable> callback) {
-    if (!futures.isEmpty()) {
-      final BiConsumer<T, Throwable> futureConsumer =
-          new AllCompletedFutureConsumer<>(futures.size(), callback);
-
-      for (final ActorFuture<T> future : futures) {
-        runOnCompletion(future, futureConsumer);
-      }
-    } else {
-      callback.accept(null);
-    }
   }
 
   /** can be called by the actor to yield the thread */

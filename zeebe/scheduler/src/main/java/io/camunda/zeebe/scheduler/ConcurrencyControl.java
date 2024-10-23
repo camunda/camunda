@@ -67,6 +67,13 @@ public interface ConcurrencyControl extends Executor {
   ScheduledTimer schedule(final Duration delay, final Runnable runnable);
 
   /**
+   * @param action
+   */
+  void submit(final Runnable action);
+
+  <T> ActorFuture<T> submitCallable(final Callable<T> callable);
+
+  /**
    * Create a new future object
    *
    * @param <V> value type of future

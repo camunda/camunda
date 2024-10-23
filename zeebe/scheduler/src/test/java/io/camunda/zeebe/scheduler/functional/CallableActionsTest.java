@@ -11,8 +11,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.functional.CallableExecutionTest.CloseableActor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerRule;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -79,6 +81,40 @@ public final class CallableActionsTest {
     assertThatThrownBy(() -> future.get())
         .isInstanceOf(ExecutionException.class)
         .hasMessage("Actor is closed");
+  }
+
+  @Test
+  public void shouldCompleteFutureWhenCallableCompletes() {
+    final CloseableActor actor = new CloseableActor();
+    schedulerRule.submitActor(actor);
+    final var latch = new CountDownLatch(1);
+    final var future =
+        actor.submitCallable(
+            () -> {
+              latch.await();
+              return 1;
+            });
+    assertThat(future.isDone()).isFalse();
+    latch.countDown();
+    schedulerRule.workUntilDone();
+    assertThat(future.isDone()).isTrue();
+  }
+
+  @Test
+  public void shouldCompleteFutureWithException() {
+    final CloseableActor actor = new CloseableActor();
+    schedulerRule.submitActor(actor);
+    final var latch = new CountDownLatch(1);
+    final var future =
+        actor.submitCallable(
+            () -> {
+              latch.await();
+              throw new Exception("Test exception");
+            });
+    assertThat(future.isDone()).isFalse();
+    latch.countDown();
+    schedulerRule.workUntilDone();
+    assertThat(future.isCompletedExceptionally()).isTrue();
   }
 
   protected static class ExceptionActor extends Actor {

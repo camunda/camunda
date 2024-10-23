@@ -150,6 +150,7 @@ public final class RunnableActionsTest {
   }
 
   private static final class Submitter extends Actor {
+    @Override
     public void submit(final Runnable r) {
       actor.submit(r);
     }
