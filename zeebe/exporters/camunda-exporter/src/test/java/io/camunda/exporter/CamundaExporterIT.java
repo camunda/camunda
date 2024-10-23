@@ -7,10 +7,6 @@
  */
 package io.camunda.exporter;
 
-import static io.camunda.exporter.schema.SchemaTestUtil.getElsIndexAsNode;
-import static io.camunda.exporter.schema.SchemaTestUtil.getElsIndexTemplateAsNode;
-import static io.camunda.exporter.schema.SchemaTestUtil.getOpensearchIndexAsNode;
-import static io.camunda.exporter.schema.SchemaTestUtil.getOpensearchIndexTemplateAsNode;
 import static io.camunda.exporter.schema.SchemaTestUtil.mappingsMatch;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -28,6 +24,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.schema.SchemaTestUtil;
+import io.camunda.exporter.utils.SearchClientAdapter;
 import io.camunda.exporter.utils.TestSupport;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
@@ -377,6 +374,7 @@ final class CamundaExporterIT {
         TestSupport.createDefeaultElasticsearchContainer();
 
     private static ElasticsearchClient client;
+    private static final SearchClientAdapter elsClientAdapter = new SearchClientAdapter(client);
     private final ProtocolFactory factory = new ProtocolFactory();
 
     @BeforeEach
@@ -395,15 +393,15 @@ final class CamundaExporterIT {
     @Test
     void shouldHaveCorrectSchemaUpdatesWithMultipleExporters() throws Exception {
       CamundaExporterIT.this.shouldHaveCorrectSchemaUpdatesWithMultipleExporters(
-          () -> getElsIndexAsNode(index.getFullQualifiedName(), client),
-          () -> getElsIndexTemplateAsNode(indexTemplate.getTemplateName(), client));
+          () -> elsClientAdapter.getIndexAsNode(index.getFullQualifiedName()),
+          () -> elsClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName()));
     }
 
     @Test
     void shouldNotErrorIfOldExporterRestartsWhileNewExporterHasAlreadyStarted() throws Exception {
       CamundaExporterIT.this.shouldNotErrorIfOldExporterRestartsWhileNewExporterHasAlreadyStarted(
-          () -> getElsIndexAsNode(index.getFullQualifiedName(), client),
-          () -> getElsIndexTemplateAsNode(indexTemplate.getTemplateName(), client));
+          () -> elsClientAdapter.getIndexAsNode(index.getFullQualifiedName()),
+          () -> elsClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName()));
     }
 
     @Test
@@ -471,6 +469,7 @@ final class CamundaExporterIT {
         TestSupport.createDefaultOpensearchContainer();
 
     private static OpenSearchClient client;
+    private static final SearchClientAdapter osClientAdapter = new SearchClientAdapter(client);
     private final ProtocolFactory factory = new ProtocolFactory();
 
     @BeforeEach
@@ -489,15 +488,15 @@ final class CamundaExporterIT {
     @Test
     void shouldHaveCorrectSchemaUpdatesWithMultipleExporters() throws Exception {
       CamundaExporterIT.this.shouldHaveCorrectSchemaUpdatesWithMultipleExporters(
-          () -> getOpensearchIndexAsNode(index.getFullQualifiedName(), client),
-          () -> getOpensearchIndexTemplateAsNode(indexTemplate.getTemplateName(), client));
+          () -> osClientAdapter.getIndexAsNode(index.getFullQualifiedName()),
+          () -> osClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName()));
     }
 
     @Test
     void shouldNotErrorIfOldExporterRestartsWhileNewExporterHasAlreadyStarted() throws Exception {
       CamundaExporterIT.this.shouldNotErrorIfOldExporterRestartsWhileNewExporterHasAlreadyStarted(
-          () -> getOpensearchIndexAsNode(index.getFullQualifiedName(), client),
-          () -> getOpensearchIndexTemplateAsNode(indexTemplate.getTemplateName(), client));
+          () -> osClientAdapter.getIndexAsNode(index.getFullQualifiedName()),
+          () -> osClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName()));
     }
 
     @Test
