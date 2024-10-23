@@ -9,7 +9,6 @@
 import {SerializedEditorState} from 'lexical';
 
 export type GenericEntity<D extends object = Record<string, unknown>> = {
-  id: string | null;
   name: string;
   lastModified: string;
   created: string;
@@ -19,7 +18,19 @@ export type GenericEntity<D extends object = Record<string, unknown>> = {
   data: D;
 };
 
-export type EntityListEntity<D extends object = Record<string, unknown>> = GenericEntity<D> & {
+export type EntityListData = {
+  subEntityCounts: {
+    dashboard?: number;
+    report?: number;
+  };
+  roleCounts: {
+    group?: number;
+    user?: number;
+  };
+};
+
+export type EntityListEntity<D extends object = EntityListData> = GenericEntity<D> & {
+  id: string;
   entityType: string;
 };
 
