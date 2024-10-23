@@ -7,24 +7,24 @@
  */
 package io.camunda.optimize.service.util;
 
-import static io.camunda.optimize.service.db.es.report.command.process.util.ProcessDistributedByCreator.createDistributedByAssignee;
-import static io.camunda.optimize.service.db.es.report.command.process.util.ProcessDistributedByCreator.createDistributedByCandidateGroup;
-import static io.camunda.optimize.service.db.es.report.command.process.util.ProcessDistributedByCreator.createDistributedByEndDateDto;
-import static io.camunda.optimize.service.db.es.report.command.process.util.ProcessDistributedByCreator.createDistributedByFlowNode;
-import static io.camunda.optimize.service.db.es.report.command.process.util.ProcessDistributedByCreator.createDistributedByNone;
-import static io.camunda.optimize.service.db.es.report.command.process.util.ProcessDistributedByCreator.createDistributedByStartDateDto;
-import static io.camunda.optimize.service.db.es.report.command.process.util.ProcessDistributedByCreator.createDistributedByUserTasks;
-import static io.camunda.optimize.service.db.es.report.command.process.util.ProcessDistributedByCreator.createDistributedByVariable;
-import static io.camunda.optimize.service.db.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByAssignee;
-import static io.camunda.optimize.service.db.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByCandidateGroup;
-import static io.camunda.optimize.service.db.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByDuration;
-import static io.camunda.optimize.service.db.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByEndDateDto;
-import static io.camunda.optimize.service.db.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByFlowNode;
-import static io.camunda.optimize.service.db.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByNone;
-import static io.camunda.optimize.service.db.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByRunningDateDto;
-import static io.camunda.optimize.service.db.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByStartDateDto;
-import static io.camunda.optimize.service.db.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByUserTasks;
-import static io.camunda.optimize.service.db.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByVariable;
+import static io.camunda.optimize.service.db.report.interpreter.util.ProcessDistributedByCreator.createDistributedByAssignee;
+import static io.camunda.optimize.service.db.report.interpreter.util.ProcessDistributedByCreator.createDistributedByCandidateGroup;
+import static io.camunda.optimize.service.db.report.interpreter.util.ProcessDistributedByCreator.createDistributedByEndDateDto;
+import static io.camunda.optimize.service.db.report.interpreter.util.ProcessDistributedByCreator.createDistributedByFlowNode;
+import static io.camunda.optimize.service.db.report.interpreter.util.ProcessDistributedByCreator.createDistributedByNone;
+import static io.camunda.optimize.service.db.report.interpreter.util.ProcessDistributedByCreator.createDistributedByStartDateDto;
+import static io.camunda.optimize.service.db.report.interpreter.util.ProcessDistributedByCreator.createDistributedByUserTasks;
+import static io.camunda.optimize.service.db.report.interpreter.util.ProcessDistributedByCreator.createDistributedByVariable;
+import static io.camunda.optimize.service.db.report.interpreter.util.ProcessGroupByDtoCreator.createGroupByAssignee;
+import static io.camunda.optimize.service.db.report.interpreter.util.ProcessGroupByDtoCreator.createGroupByCandidateGroup;
+import static io.camunda.optimize.service.db.report.interpreter.util.ProcessGroupByDtoCreator.createGroupByDuration;
+import static io.camunda.optimize.service.db.report.interpreter.util.ProcessGroupByDtoCreator.createGroupByEndDateDto;
+import static io.camunda.optimize.service.db.report.interpreter.util.ProcessGroupByDtoCreator.createGroupByFlowNode;
+import static io.camunda.optimize.service.db.report.interpreter.util.ProcessGroupByDtoCreator.createGroupByNone;
+import static io.camunda.optimize.service.db.report.interpreter.util.ProcessGroupByDtoCreator.createGroupByRunningDateDto;
+import static io.camunda.optimize.service.db.report.interpreter.util.ProcessGroupByDtoCreator.createGroupByStartDateDto;
+import static io.camunda.optimize.service.db.report.interpreter.util.ProcessGroupByDtoCreator.createGroupByUserTasks;
+import static io.camunda.optimize.service.db.report.interpreter.util.ProcessGroupByDtoCreator.createGroupByVariable;
 
 import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;

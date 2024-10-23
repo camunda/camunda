@@ -23,7 +23,7 @@ export async function loadProcessDefinitionXml(
     const response = await get('api/definition/process/xml', payload);
 
     return await response.text();
-  } catch (e) {
+  } catch (_e) {
     return null;
   }
 }

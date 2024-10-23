@@ -50,8 +50,8 @@ it('should inject data into translations that contain variables', async () => {
 it('return an error message if key does not exist', async () => {
   try {
     t('entity.nonExistent');
-  } catch (err: any) {
-    expect(err.message).toBe(
+  } catch (err: unknown) {
+    expect((err as Error).message).toBe(
       '"nonExistent" key of "entity.nonExistent" not found in translation object'
     );
   }

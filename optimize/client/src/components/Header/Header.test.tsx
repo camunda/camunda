@@ -7,7 +7,7 @@
  */
 
 import {runLastEffect} from '__mocks__/react';
-import {ShallowWrapper, shallow} from 'enzyme';
+import {shallow} from 'enzyme';
 import {C3Navigation, C3NavigationProps} from '@camunda/camunda-composite-components';
 
 import {track} from 'tracking';
@@ -54,11 +54,6 @@ jest.mock('react-router', () => ({
 }));
 
 jest.mock('tracking', () => ({track: jest.fn()}));
-
-function getNavItem(node: ShallowWrapper, key: string) {
-  const navItems = node.find(C3Navigation).prop<C3NavigationProps['navbar']>('navbar').elements;
-  return navItems.find((item) => item.key === key);
-}
 
 beforeEach(() => {
   jest.clearAllMocks();

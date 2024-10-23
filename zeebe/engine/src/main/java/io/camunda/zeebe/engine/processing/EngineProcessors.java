@@ -228,7 +228,12 @@ public final class EngineProcessors {
         config);
 
     ClockProcessors.addClockProcessors(
-        typedRecordProcessors, writers, keyGenerator, clock, commandDistributionBehavior);
+        typedRecordProcessors,
+        writers,
+        keyGenerator,
+        clock,
+        commandDistributionBehavior,
+        authCheckBehavior);
 
     AuthorizationProcessors.addAuthorizationProcessors(
         keyGenerator,
@@ -251,7 +256,7 @@ public final class EngineProcessors {
 
     TenantProcessors.addTenantProcessors(
         typedRecordProcessors,
-        processingState.getTenantState(),
+        processingState,
         authCheckBehavior,
         keyGenerator,
         writers,

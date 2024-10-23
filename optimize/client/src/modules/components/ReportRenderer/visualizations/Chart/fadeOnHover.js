@@ -17,7 +17,7 @@ export default function fadeOnHover({visualization, isStacked}) {
   let isHoverDelayElapsed = false;
   let lastUpdater;
 
-  function onHover(evt, datasets, chart) {
+  function onHover(_evt, datasets, chart) {
     if (deepEqual(prevDatasets, datasets)) {
       return;
     }
@@ -56,7 +56,7 @@ export default function fadeOnHover({visualization, isStacked}) {
       const dataIndexes = datasets.map((el) => el.index);
       chart.data.datasets.forEach((dataset, datasetIdx) => {
         dataset.hovered = false;
-        dataset.backgroundColor = dataset.backgroundColor.map((color, dataIdx) => {
+        dataset.backgroundColor = dataset.backgroundColor.map((_color, dataIdx) => {
           if (
             datasets.length === 0 ||
             (datasetIndexes.includes(datasetIdx) && dataIndexes.includes(dataIdx))

@@ -218,7 +218,7 @@ export function createBarOptions({
     ticks: {
       color: getColorFor('label', isDark),
       autoSkip,
-      callback: function (value, idx, allLabels) {
+      callback: function (value, _idx, allLabels) {
         const label = this.getLabelForValue(value);
         const width = this.maxWidth / allLabels.length;
         const widthPerCharacter = 7;
@@ -357,7 +357,7 @@ export function createDatasetOptions({
   }
 
   switch (type) {
-    case 'pie':
+    case 'pie': {
       const pieColors = ColorPicker.getGeneratedColors(data.length);
       return {
         borderColor: getColorFor('border', isDark),
@@ -365,6 +365,7 @@ export function createDatasetOptions({
         hoverBackgroundColor: pieColors,
         borderWidth: undefined,
       };
+    }
     case 'line':
       return {
         borderColor: color,

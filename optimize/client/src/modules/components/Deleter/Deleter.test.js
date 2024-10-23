@@ -73,7 +73,7 @@ it('should show an error message if conflict checking goes wrong', () => {
     <Deleter
       {...props}
       checkConflicts={conflictChecker}
-      mightFail={(promise, cb, error) => error('Everything broke')}
+      mightFail={(_promise, _cb, error) => error('Everything broke')}
     />
   );
   setupRef(node);
@@ -111,7 +111,7 @@ it('should accept a custom delete executor', () => {
 
 it('should show an error message if deletion goes wrong', () => {
   const node = shallow(
-    <Deleter {...props} mightFail={(promise, cb, error) => error('Deleting failed')} />
+    <Deleter {...props} mightFail={(_promise, _cb, error) => error('Deleting failed')} />
   );
   setupRef(node);
 

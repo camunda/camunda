@@ -18,7 +18,7 @@ jest.mock('services', () => {
 
   return {
     ...rest,
-    createReportUpdate: jest.fn((b, type, value) => ({[type]: value})),
+    createReportUpdate: jest.fn((_b, type, value) => ({[type]: value})),
   };
 });
 

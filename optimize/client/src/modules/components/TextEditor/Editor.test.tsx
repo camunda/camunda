@@ -15,9 +15,12 @@ jest.mock('@lexical/react/LexicalOnChangePlugin', () => ({
 }));
 
 jest.mock('./plugins', () => {
-  const plugins = [] as any;
-  plugins.ToolbarPlugin = () => <div />;
-  return plugins;
+  const plugins: unknown[] = [];
+  return {
+    __esModule: true,
+    default: plugins,
+    ToolbarPlugin: () => <div />,
+  };
 });
 
 const props = {

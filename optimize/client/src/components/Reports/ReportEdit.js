@@ -90,7 +90,7 @@ export function ReportEdit({report: initialReport, isNew, error, updateOverview}
 
   const save = useCallback(
     function save() {
-      return new Promise(async (resolve, reject) => {
+      return new Promise((resolve, reject) => {
         const {id, name, description, data} = report;
         const endpoint = `report/process/single`;
 
@@ -106,7 +106,7 @@ export function ReportEdit({report: initialReport, isNew, error, updateOverview}
             }
           );
         } else {
-          resolve(await saveUpdatedReport({endpoint, id, name, description, data}));
+          saveUpdatedReport({endpoint, id, name, description, data}).then(resolve);
         }
       });
     },

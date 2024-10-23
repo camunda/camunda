@@ -33,7 +33,7 @@ const props = {
 };
 
 jest.mock('prompt', () => ({
-  showPrompt: jest.fn().mockImplementation(async (config, cb) => await cb()),
+  showPrompt: jest.fn().mockImplementation(async (_config, cb) => await cb()),
 }));
 
 jest.mock('./service', () => ({

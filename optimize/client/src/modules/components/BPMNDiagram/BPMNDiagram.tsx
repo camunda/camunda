@@ -96,7 +96,10 @@ export class BPMNDiagram extends Component<BPMNDiagramProps, BPMNDiagramState> {
           children &&
           Children.map(
             children,
-            (child) => child && isReactElement(child) && cloneElement(child, {viewer: this.viewer})
+            (child) =>
+              child &&
+              isReactElement<{viewer: BaseViewer | null}>(child) &&
+              cloneElement(child, {viewer: this.viewer})
           )}
         {loaded && xml && <ZoomControls zoom={this.zoom} fit={this.fitDiagram} />}
         {(!loaded || loading) && <Loading />}
@@ -119,9 +122,9 @@ export class BPMNDiagram extends Component<BPMNDiagramProps, BPMNDiagramState> {
     }
 
     // The diagram will not be mounted at the beggining when refreshing the page
-    // because we hide the the content of the privateRoute untill the page is loaded
+    // because we hide the content of the privateRoute untill the page is loaded
     // Therefore, we need to try to fit the diagram again after the component updates
-    if (isNaN(this.viewer?.get<Canvas>('canvas').viewbox().width!)) {
+    if (!this.viewer || isNaN(this.viewer.get<Canvas>('canvas').viewbox().width)) {
       this.fitDiagram();
     }
   }
@@ -176,7 +179,7 @@ export class BPMNDiagram extends Component<BPMNDiagramProps, BPMNDiagramState> {
     });
 
     await viewer.importXML(xml);
-    // @ts-ignore
+    // @ts-expect-error bpmn-js types are not correct
     const defs = viewer._container.querySelector('defs');
     if (defs) {
       const highlightMarker = defs.querySelector('marker').cloneNode(true);
@@ -204,7 +207,9 @@ export class BPMNDiagram extends Component<BPMNDiagramProps, BPMNDiagramState> {
           }
 
           this.viewer = viewer;
-          this.container && this.viewer.attachTo(this.container);
+          if (this.container) {
+            this.viewer.attachTo(this.container);
+          }
 
           this.fitDiagram();
 
@@ -218,7 +223,9 @@ export class BPMNDiagram extends Component<BPMNDiagramProps, BPMNDiagramState> {
 
   componentDidMount() {
     this.importXML(this.props.xml);
-    this.container && this.resizeObserver.observe(this.container);
+    if (this.container) {
+      this.resizeObserver.observe(this.container);
+    }
   }
 
   componentWillUnmount() {

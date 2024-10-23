@@ -14,6 +14,7 @@ import io.camunda.application.commons.configuration.BrokerBasedConfiguration.Bro
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.application.sources.DefaultObjectMapperConfiguration;
+import io.camunda.exporter.CamundaExporter;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.tasklist.TasklistModuleConfiguration;
@@ -22,6 +23,7 @@ import io.camunda.webapps.WebappsModuleConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
+import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
@@ -34,6 +36,7 @@ import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.elasticsearch.client.RestClient;
@@ -55,6 +58,8 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
       DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
           .withTag(RestClient.class.getPackage().getImplementationVersion());
   private static final String RECORDING_EXPORTER_ID = "recordingExporter";
+  private static final String ELASTICSEARCH_EXPORTER_ID = "elasticsearchExporter";
+  private static final String CAMUNDA_EXPORTER_ID = "camundaExporter";
   private final ElasticsearchContainer esContainer =
       new ElasticsearchContainer(ELASTIC_IMAGE)
           // use JVM option files to avoid overwriting default options set by the ES container class
@@ -72,6 +77,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   private final BrokerBasedProperties brokerProperties;
   private final OperateProperties operateProperties;
   private final TasklistProperties tasklistProperties;
+  private final Map<String, Consumer<ExporterCfg>> registeredExporters = new HashMap<>();
 
   public TestStandaloneCamunda() {
     super(
@@ -115,6 +121,9 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
         .withAdditionalProfile(Profile.OPERATE)
         .withAdditionalProfile(Profile.TASKLIST)
         .withAdditionalInitializer(new WebappsConfigurationInitializer());
+
+    // default exporters
+    withRecordingExporter(true).withElasticsearchExporter(true);
   }
 
   @Override
@@ -123,16 +132,13 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
 
     final String esURL = String.format("http://%s", esContainer.getHttpHostAddress());
 
-    final ExporterCfg exporterCfg = new ExporterCfg();
-    exporterCfg.setClassName("io.camunda.zeebe.exporter.ElasticsearchExporter");
-    exporterCfg.setArgs(Map.of("url", esURL)); // new ElasticsearchExporterConfiguration();
-    brokerProperties.getExporters().put("elasticsearch", exporterCfg);
-
     operateProperties.getElasticsearch().setUrl(esURL);
     operateProperties.getZeebeElasticsearch().setUrl(esURL);
     tasklistProperties.getElasticsearch().setUrl(esURL);
     tasklistProperties.getZeebeElasticsearch().setUrl(esURL);
-    return super.start().withRecordingExporter(true);
+
+    setExportersConfig();
+    return super.start();
   }
 
   @Override
@@ -255,28 +261,74 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
    */
   public TestStandaloneCamunda withRecordingExporter(final boolean useRecordingExporter) {
     if (!useRecordingExporter) {
-      brokerProperties.getExporters().remove(RECORDING_EXPORTER_ID);
+      registeredExporters.remove(RECORDING_EXPORTER_ID);
       return this;
     }
-
     return withExporter(
         RECORDING_EXPORTER_ID, cfg -> cfg.setClassName(RecordingExporter.class.getName()));
   }
 
   /**
-   * Adds or replaces a new exporter with the given ID. If it was already existing, the existing
-   * configuration is passed to the modifier. If it's new, a blank configuration is passed.
+   * Enables/disables usage of the elasticsearch exporter using {@link #ELASTICSEARCH_EXPORTER_ID}
+   * as its unique ID.
+   *
+   * @param useElasticsearchExporter if true, will enable the exporter; if false, will remove it
+   *     from the config
+   * @return itself for chaining
+   */
+  public TestStandaloneCamunda withElasticsearchExporter(final boolean useElasticsearchExporter) {
+    if (!useElasticsearchExporter) {
+      registeredExporters.remove(ELASTICSEARCH_EXPORTER_ID);
+      return this;
+    }
+    return withExporter(
+        ELASTICSEARCH_EXPORTER_ID,
+        cfg -> {
+          cfg.setClassName(ElasticsearchExporter.class.getName());
+          cfg.setArgs(Map.of("url", "http://" + esContainer.getHttpHostAddress()));
+        });
+  }
+
+  /**
+   * Enables usage of the camunda exporter using {@link #CAMUNDA_EXPORTER_ID} as its unique ID.
+   *
+   * @return itself for chaining
+   */
+  public TestStandaloneCamunda withCamundaExporter() {
+    withExporter(
+        CAMUNDA_EXPORTER_ID,
+        cfg -> {
+          cfg.setClassName(CamundaExporter.class.getName());
+          cfg.setArgs(
+              Map.of(
+                  "connect",
+                  Map.of("url", "http://" + esContainer.getHttpHostAddress()),
+                  "bulk",
+                  Map.of("size", 1)));
+        });
+    return this;
+  }
+
+  /**
+   * Registers or replaces a new exporter with the given ID. If it was already registered, the
+   * existing configuration is passed to the modifier.
    *
    * @param id the ID of the exporter
    * @param modifier a configuration function
    * @return itself for chaining
    */
   public TestStandaloneCamunda withExporter(final String id, final Consumer<ExporterCfg> modifier) {
-    final var exporterConfig =
-        brokerProperties.getExporters().computeIfAbsent(id, ignored -> new ExporterCfg());
-    modifier.accept(exporterConfig);
-
+    registeredExporters.merge(id, modifier, (key, cfg) -> cfg.andThen(modifier));
     return this;
+  }
+
+  private void setExportersConfig() {
+    registeredExporters.forEach(
+        (id, exporterModifier) -> {
+          final var cfg = new ExporterCfg();
+          exporterModifier.accept(cfg);
+          brokerProperties.getExporters().put(id, cfg);
+        });
   }
 
   /**

@@ -14,7 +14,7 @@ import {searchIdentities} from './service';
 
 import {FilterableMultiSelect} from '@carbon/react';
 
-jest.mock('debouncePromise', () => () => (fn: any) => fn());
+jest.mock('debouncePromise', () => () => (fn: (...args: unknown[]) => unknown) => fn());
 
 jest.mock('./service', () => ({
   ...jest.requireActual('./service'),
