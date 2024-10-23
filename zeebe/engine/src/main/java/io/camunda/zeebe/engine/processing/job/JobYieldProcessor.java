@@ -51,7 +51,7 @@ public final class JobYieldProcessor implements TypedRecordProcessor<JobRecord> 
               stateWriter.appendFollowUpEvent(jobKey, JobIntent.YIELDED, yieldedJob);
               jobActivationBehavior.notifyJobAvailableAsSideEffect(yieldedJob);
             },
-            violation ->
-                rejectionWriter.appendRejection(record, violation.getLeft(), violation.getRight()));
+            rejection ->
+                rejectionWriter.appendRejection(record, rejection.type(), rejection.reason()));
   }
 }

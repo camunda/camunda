@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -55,6 +56,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
   private final JobBackoffChecker jobBackoffChecker;
   private final VariableBehavior variableBehavior;
   private final BpmnJobActivationBehavior jobActivationBehavior;
+  private final AuthorizationCheckBehavior authCheckBehavior;
   private final SideEffectWriter sideEffectWriter;
   private final JobCommandPreconditionChecker preconditionChecker;
   private final ElementInstanceState elementInstanceState;
@@ -66,7 +68,8 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
       final KeyGenerator keyGenerator,
       final JobMetrics jobMetrics,
       final JobBackoffChecker jobBackoffChecker,
-      final BpmnBehaviors bpmnBehaviors) {
+      final BpmnBehaviors bpmnBehaviors,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
     processState = state.getProcessState();
@@ -76,6 +79,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
     sideEffectWriter = writers.sideEffect();
     variableBehavior = bpmnBehaviors.variableBehavior();
     jobActivationBehavior = bpmnBehaviors.jobActivationBehavior();
+    this.authCheckBehavior = authCheckBehavior;
     preconditionChecker =
         new JobCommandPreconditionChecker("fail", List.of(State.ACTIVATABLE, State.ACTIVATED));
     this.keyGenerator = keyGenerator;
@@ -92,10 +96,9 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
         .check(state, jobKey)
         .ifRightOrLeft(
             ok -> failJob(record),
-            violation -> {
-              rejectionWriter.appendRejection(record, violation.getLeft(), violation.getRight());
-              responseWriter.writeRejectionOnCommand(
-                  record, violation.getLeft(), violation.getRight());
+            rejection -> {
+              rejectionWriter.appendRejection(record, rejection.type(), rejection.reason());
+              responseWriter.writeRejectionOnCommand(record, rejection.type(), rejection.reason());
             });
   }
 

@@ -7,11 +7,11 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
 
 public class JobCommandPreconditionChecker {
@@ -30,18 +30,19 @@ public class JobCommandPreconditionChecker {
     this.validStates = validStates;
   }
 
-  protected Either<Tuple<RejectionType, String>, Void> check(final State state, final long jobKey) {
+  protected Either<Rejection, Void> check(final State state, final long jobKey) {
     if (validStates.contains(state)) {
       return Either.right(null);
     }
 
     if (state == State.NOT_FOUND) {
       return Either.left(
-          Tuple.of(RejectionType.NOT_FOUND, String.format(NO_JOB_FOUND_MESSAGE, intent, jobKey)));
+          new Rejection(
+              RejectionType.NOT_FOUND, String.format(NO_JOB_FOUND_MESSAGE, intent, jobKey)));
     }
 
     return Either.left(
-        Tuple.of(
+        new Rejection(
             RejectionType.INVALID_STATE,
             String.format(INVALID_JOB_STATE_MESSAGE, intent, jobKey, state)));
   }
