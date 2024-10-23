@@ -3661,7 +3661,7 @@ components:
             - MAPPING
             - UNSPECIFIED
         resourceType:
-          description: The type of resource to add/remove perissions to/from.
+          description: The type of resource to add/remove permissions to/from.
           enum:
             - AUTHORIZATION
             - MAPPING_RULE
