@@ -55,6 +55,8 @@ const {
   SignalStartEvent,
   ErrorEventSubProcess,
   ErrorStartEvent,
+  MultiInstanceSubProcess,
+  MultiInstanceTask,
 } = elements;
 
 /**
@@ -100,8 +102,8 @@ describe('MigrationView/BottomPanel', () => {
     expect(screen.getByText(ErrorEventSubProcess.name)).toBeInTheDocument();
     expect(screen.getByText(ErrorStartEvent.name)).toBeInTheDocument();
 
-    // expect table to have 1 header + 29 content rows
-    expect(screen.getAllByRole('row')).toHaveLength(30);
+    // expect table to have 1 header + 31 content rows
+    expect(screen.getAllByRole('row')).toHaveLength(32);
   });
 
   it.each([
@@ -176,6 +178,7 @@ describe('MigrationView/BottomPanel', () => {
     {source: TimerStartEvent, target: TimerIntermediateCatch},
     {source: SignalIntermediateCatch, target: SignalBoundaryEvent},
     {source: MessageIntermediateCatch, target: SignalIntermediateCatch},
+    {source: MultiInstanceTask, target: SendTask},
   ])(
     'should not allow $source.type -> $target.type mapping',
     async ({source, target}) => {
@@ -284,6 +287,9 @@ describe('MigrationView/BottomPanel', () => {
     const comboboxErrorStartEvent = await screen.findByLabelText(
       new RegExp(`target flow node for ${ErrorStartEvent.name}`, 'i'),
     );
+    const comboboxMultiInstanceSubProcess = await screen.findByLabelText(
+      new RegExp(`target flow node for ${MultiInstanceSubProcess.name}`, 'i'),
+    );
 
     screen.getByRole('button', {name: /fetch target process/i}).click();
 
@@ -328,9 +334,13 @@ describe('MigrationView/BottomPanel', () => {
     expect(comboboxSignalEventSubProcess).toHaveValue(SignalEventSubProcess.id);
     expect(comboboxErrorEventSubProcess).toHaveValue(ErrorEventSubProcess.id);
 
+    // Expect auto-mapping (same multi instance type)
+    expect(comboboxMultiInstanceSubProcess).toHaveValue(
+      MultiInstanceSubProcess.id,
+    );
+
     // Expect no auto-mapping (flow node does not exist in target)
     expect(comboboxShippingSubProcess).toHaveValue('');
-    expect(comboboxShippingSubProcess).toBeDisabled();
 
     expect(comboboxMessageNonInterrupting).toHaveValue('');
     expect(comboboxMessageNonInterrupting).toBeEnabled();
@@ -531,8 +541,8 @@ describe('MigrationView/BottomPanel', () => {
       }),
     ).toBeVisible();
 
-    // Expect all 29 rows to be visible (+1 header row)
-    expect(await screen.findAllByRole('row')).toHaveLength(30);
+    // Expect all 31 rows to be visible (+1 header row)
+    expect(await screen.findAllByRole('row')).toHaveLength(32);
 
     // Toggle on unmapped flow nodes
     await user.click(screen.getByLabelText(/show only not mapped/i));
@@ -601,9 +611,12 @@ describe('MigrationView/BottomPanel', () => {
     expect(
       screen.queryByText(getMatcherFunction(ErrorEventSubProcess.name)),
     ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(getMatcherFunction(MultiInstanceSubProcess.name)),
+    ).not.toBeInTheDocument();
 
-    // Expect 6 not mapped rows (+1 header row)
-    expect(await screen.findAllByRole('row')).toHaveLength(8);
+    // Expect 8 not mapped rows (+1 header row)
+    expect(await screen.findAllByRole('row')).toHaveLength(9);
 
     // Expect the following rows to be visible (because they're not mapped)
     expect(
@@ -621,7 +634,9 @@ describe('MigrationView/BottomPanel', () => {
     expect(
       screen.getByText(getMatcherFunction(TimerInterrupting.name)),
     ).toBeInTheDocument();
-
+    expect(
+      screen.getByText(getMatcherFunction(MultiInstanceTask.name)),
+    ).toBeInTheDocument();
     expect(
       screen.getByText(getMatcherFunction(TaskY.name)),
     ).toBeInTheDocument();
@@ -633,6 +648,6 @@ describe('MigrationView/BottomPanel', () => {
     await user.click(screen.getByLabelText(/show only not mapped/i));
 
     // Expect all rows to be visible again
-    expect(await screen.findAllByRole('row')).toHaveLength(30);
+    expect(await screen.findAllByRole('row')).toHaveLength(32);
   });
 });
