@@ -62,7 +62,7 @@ public final class AsyncSnapshotDirector extends Actor
   private CompletableActorFuture<PersistedSnapshot> ongoingSnapshotFuture;
 
   @SuppressWarnings("java:S3077") // allow volatile here, health is immutable
-  private volatile HealthReport healthReport = HealthReport.healthy(this);
+  private volatile HealthReport healthReport;
 
   private long commitPosition;
 
@@ -81,6 +81,7 @@ public final class AsyncSnapshotDirector extends Actor
     actorName = buildActorName("SnapshotDirector", this.partitionId);
     this.streamProcessorMode = streamProcessorMode;
     this.flushLog = flushLog;
+    healthReport = HealthReport.healthy(this);
   }
 
   @Override
@@ -401,7 +402,7 @@ public final class AsyncSnapshotDirector extends Actor
   private void onRecovered() {
     if (!healthReport.isHealthy()) {
       healthReport = HealthReport.healthy(this);
-      listeners.forEach(FailureListener::onRecovered);
+      listeners.forEach(l -> l.onRecovered(healthReport));
     }
   }
 

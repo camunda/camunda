@@ -326,11 +326,11 @@ public final class ZeebePartition extends Actor
 
   @Override
   @Deprecated // will be removed from public API of ZeebePartition
-  public void onRecovered() {
+  public void onRecovered(final HealthReport report) {
     actor.run(
         () -> {
           healthMetrics.setHealthy();
-          failureListeners.forEach(FailureListener::onRecovered);
+          failureListeners.forEach(l -> l.onRecovered(report));
         });
   }
 
@@ -422,7 +422,7 @@ public final class ZeebePartition extends Actor
         () -> {
           failureListeners.add(failureListener);
           if (getHealthReport().getStatus() == HealthStatus.HEALTHY) {
-            failureListener.onRecovered();
+            failureListener.onRecovered(getHealthReport());
           } else {
             failureListener.onFailure(getHealthReport());
           }

@@ -58,12 +58,7 @@ class ZeebePartitionHealth implements HealthMonitorable {
     }
 
     if (!Objects.equals(previousStatus, healthReport)) {
-      switch (healthReport.getStatus()) {
-        case HEALTHY -> failureListeners.forEach(FailureListener::onRecovered);
-        case UNHEALTHY -> failureListeners.forEach((l) -> l.onFailure(healthReport));
-        case DEAD -> failureListeners.forEach((l) -> l.onUnrecoverableFailure(healthReport));
-        default -> {}
-      }
+      failureListeners.forEach(l -> l.onHealthReport(healthReport));
     }
   }
 
