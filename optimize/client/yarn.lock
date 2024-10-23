@@ -3226,10 +3226,10 @@
   dependencies:
     "@types/istanbul-lib-report" "*"
 
-"@types/jest@29.5.13":
-  version "29.5.13"
-  resolved "https://registry.yarnpkg.com/@types/jest/-/jest-29.5.13.tgz#8bc571659f401e6a719a7bf0dbcb8b78c71a8adc"
-  integrity sha512-wd+MVEZCHt23V0/L642O5APvspWply/rGY5BcW4SUETo2UzPU3Z26qr8jC2qxpimI2jjx9h7+2cj2FwIr01bXg==
+"@types/jest@29.5.14":
+  version "29.5.14"
+  resolved "https://registry.yarnpkg.com/@types/jest/-/jest-29.5.14.tgz#2b910912fa1d6856cadcd0c1f95af7df1d6049e5"
+  integrity sha512-ZN+4sdnLUbo8EVvVc2ao0GFW6oVrQRPn4K2lglySj7APvSrgzxHiNNK99us4WDMi57xxA2yggblIAMNhXOotLQ==
   dependencies:
     expect "^29.0.0"
     pretty-format "^29.0.0"
@@ -3283,10 +3283,10 @@
   dependencies:
     undici-types "~6.19.2"
 
-"@types/node@20.16.14":
-  version "20.16.14"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.16.14.tgz#67eeca19cd821f516ee7da2f2e72d319f47e6a4d"
-  integrity sha512-vtgGzjxLF7QT88qRHtXMzCWpAAmwonE7fwgVjFtXosUva2oSpnIEc3gNO9P7uIfOxKnii2f79/xtOnfreYtDaA==
+"@types/node@20.16.15":
+  version "20.16.15"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.16.15.tgz#826f97ca53a213d190124ca6a972206f06a88b69"
+  integrity sha512-DV58qQz9dBMqVVn+qnKwGa51QzCD4YM/tQM16qLKxdf5tqz5W4QwtrMzjSTbabN1cFTSuyxVYBy+QWHjWW8X/g==
   dependencies:
     undici-types "~6.19.2"
 
@@ -11908,10 +11908,15 @@ picocolors@^0.2.1:
   resolved "https://registry.yarnpkg.com/picocolors/-/picocolors-0.2.1.tgz#570670f793646851d1ba135996962abad587859f"
   integrity sha512-cMlDqaLEqfSaW8Z7N5Jw+lyIW869EzT73/F5lhtY9cLGoVxSXznfgfXMO0Z5K0o0Q2TkTXq+0KFsdnSe3jDViA==
 
-picocolors@^1.0.0, picocolors@^1.0.1, picocolors@^1.1.0:
+picocolors@^1.0.0, picocolors@^1.0.1:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/picocolors/-/picocolors-1.1.0.tgz#5358b76a78cde483ba5cef6a9dc9671440b27d59"
   integrity sha512-TQ92mBOW0l3LeMeyLV6mzy/kWr8lkd/hp3mTg7wYK7zJhuBStmGMBG0BdeDZS/dZx1IukaX6Bk11zcln25o1Aw==
+
+picocolors@^1.1.0:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/picocolors/-/picocolors-1.1.1.tgz#3d321af3eab939b083c8f929a1d12cda81c26b6b"
+  integrity sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==
 
 picomatch@^2.0.4, picomatch@^2.2.1, picomatch@^2.2.2, picomatch@^2.2.3, picomatch@^2.3.1:
   version "2.3.1"
@@ -15832,9 +15837,9 @@ vite-plugin-svgr@^4.2.0:
     "@svgr/plugin-jsx" "^8.1.0"
 
 vite@^5.4.2:
-  version "5.4.9"
-  resolved "https://registry.yarnpkg.com/vite/-/vite-5.4.9.tgz#215c80cbebfd09ccbb9ceb8c0621391c9abdc19c"
-  integrity sha512-20OVpJHh0PAM0oSOELa5GaZNWeDjcAvQjGXy2Uyr+Tp+/D2/Hdz6NLgpJLsarPTA2QJ6v8mX2P1ZfbsSKvdMkg==
+  version "5.4.10"
+  resolved "https://registry.yarnpkg.com/vite/-/vite-5.4.10.tgz#d358a7bd8beda6cf0f3b7a450a8c7693a4f80c18"
+  integrity sha512-1hvaPshuPUtxeQ0hsVH3Mud0ZanOLwVTneA1EgbAM5LhaZEqyPWGRQ7BtaMvUrTDeEaC8pxtj6a6jku3x4z6SQ==
   dependencies:
     esbuild "^0.21.3"
     postcss "^8.4.43"

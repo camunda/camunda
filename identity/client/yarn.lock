@@ -1240,12 +1240,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:20.16.14":
-  version: 20.16.14
-  resolution: "@types/node@npm:20.16.14"
+"@types/node@npm:20.16.15":
+  version: 20.16.15
+  resolution: "@types/node@npm:20.16.15"
   dependencies:
     undici-types: "npm:~6.19.2"
-  checksum: 10c0/297da38ff6668ecd672b17a100b715166cab33bc8d586521fa28b2d2fb47b04475e1ad9f55e8a436c31d72c1fefa7bd4485a8ad66d2adc9b4515d8a28937e8b9
+  checksum: 10c0/a739efea59a62efd1232210e2323a2fd8935a4e7370d453fcc235181b599116f8c74a8dc8a9fac53b9f1fbab32f58db9517ed9576e313fed531244862f12ac07
   languageName: node
   linkType: hard
 
@@ -1284,13 +1284,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react@npm:18.3.11":
-  version: 18.3.11
-  resolution: "@types/react@npm:18.3.11"
+"@types/react@npm:18.3.12":
+  version: 18.3.12
+  resolution: "@types/react@npm:18.3.12"
   dependencies:
     "@types/prop-types": "npm:*"
     csstype: "npm:^3.0.2"
-  checksum: 10c0/ce80512246ca5bda69db85b9f4f1835189334acfb6b2c4f3eda8cabff1ff1a3ea9ce4f3b895bdbc18c94140aa45592331aa3fdeb557f525c1b048de7ce84fc0e
+  checksum: 10c0/8bae8d9a41619804561574792e29112b413044eb0d53746dde2b9720c1f9a59f71c895bbd7987cd8ce9500b00786e53bc032dced38cddf42910458e145675290
   languageName: node
   linkType: hard
 
@@ -2617,8 +2617,8 @@ __metadata:
     "@camunda/camunda-composite-components": "npm:0.9.0"
     "@carbon/react": "npm:1.66.0"
     "@types/event-source-polyfill": "npm:1.0.5"
-    "@types/node": "npm:20.16.14"
-    "@types/react": "npm:18.3.11"
+    "@types/node": "npm:20.16.15"
+    "@types/react": "npm:18.3.12"
     "@types/react-dom": "npm:18.3.1"
     "@types/react-transition-group": "npm:4.4.11"
     "@typescript-eslint/eslint-plugin": "npm:8.6.0"
@@ -2642,7 +2642,7 @@ __metadata:
     sass: "npm:1.79.6"
     styled-components: "npm:6.1.13"
     typescript: "npm:5.6.3"
-    vite: "npm:5.4.9"
+    vite: "npm:5.4.10"
   languageName: unknown
   linkType: soft
 
@@ -4955,9 +4955,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vite@npm:5.4.9":
-  version: 5.4.9
-  resolution: "vite@npm:5.4.9"
+"vite@npm:5.4.10":
+  version: 5.4.10
+  resolution: "vite@npm:5.4.10"
   dependencies:
     esbuild: "npm:^0.21.3"
     fsevents: "npm:~2.3.3"
@@ -4994,7 +4994,7 @@ __metadata:
       optional: true
   bin:
     vite: bin/vite.js
-  checksum: 10c0/e9c59f2c639047e37c79bbbb151c7a55a3dc27932957cf4cf0447ee0bdcc1ddfd9b1fb3ba0465371c01ba3616d62561327855794c2d652213c3a10a32e6d369d
+  checksum: 10c0/4ef4807d2fd166a920de244dbcec791ba8a903b017a7d8e9f9b4ac40d23f8152c1100610583d08f542b47ca617a0505cfc5f8407377d610599d58296996691ed
   languageName: node
   linkType: hard
 
