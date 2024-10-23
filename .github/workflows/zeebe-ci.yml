@@ -475,9 +475,11 @@ jobs:
     name: Go Backward Compatibility
     runs-on: ubuntu-latest
     env:
-      # bors-ng fails to set ${GITHUB_BASE_REF} to the target PR branch which breaks go-apidiff
-      # so we use this fixed value as a workaround
-      GO_CLIENT_BASE_REF: stable/8.4
+      # set the comparison based on the type of workflow trigger:
+      #   - for PRs, we use the last commit of the base
+      #   - for merge queues, we use the last commit of the target merge queue
+      #   - for a push, we use the last commit before the push
+      BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-zeebe
@@ -486,13 +488,11 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      # Fetching a shallow copy of the ${GITHUB_BASE_REF} branch to check the compatibility against
-      - name: Fetching Base Branch
-        run: |
-          git fetch --depth=1 origin ${{ env.GO_CLIENT_BASE_REF }}
+      - run: |
+          git fetch origin --depth=1 ${{ env.BASE_SHA }}
       - uses: joelanford/go-apidiff@main
         with:
-          base-ref:  origin/${{ env.GO_CLIENT_BASE_REF }}
+          base-ref: ${{ env.BASE_SHA }}
       - name: Observe build status
         if: always()
         continue-on-error: true
