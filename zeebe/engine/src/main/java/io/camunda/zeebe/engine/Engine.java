@@ -182,12 +182,10 @@ public class Engine implements RecordProcessor {
       return true;
     }
 
-    final boolean commandAllowedForBanned =
-        intent == ProcessInstanceIntent.CANCEL
-            || intent == ProcessInstanceIntent.TERMINATE_ELEMENT
-            || intent == ProcessInstanceBatchIntent.TERMINATE;
-
-    return commandAllowedForBanned;
+    // Commands allowed to be processed on banned instances
+    return intent == ProcessInstanceIntent.CANCEL
+        || intent == ProcessInstanceIntent.TERMINATE_ELEMENT
+        || intent == ProcessInstanceBatchIntent.TERMINATE;
   }
 
   private void handleUnexpectedError(
