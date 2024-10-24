@@ -30,11 +30,9 @@ import org.junit.jupiter.api.Test;
 
 public class UserTaskVariableHandlerTest {
 
-  private static final int VARIABLE_SIZE_THRESHOLD = 100;
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-tasklist-task";
-  private final UserTaskVariableHandler underTest =
-      new UserTaskVariableHandler(indexName, VARIABLE_SIZE_THRESHOLD);
+  private final UserTaskVariableHandler underTest = new UserTaskVariableHandler(indexName, 100);
 
   @Test
   void testGetHandledValueType() {
@@ -76,7 +74,7 @@ public class UserTaskVariableHandlerTest {
     final String name = "name";
     final Record<VariableRecordValue> processInstanceRecord =
         factory.generateRecord(
-            ValueType.PROCESS_INSTANCE,
+            ValueType.VARIABLE,
             r ->
                 r.withIntent(VariableIntent.CREATED)
                     .withValue(
@@ -139,7 +137,7 @@ public class UserTaskVariableHandlerTest {
     final VariableRecordValue variableRecordValue =
         ImmutableVariableRecordValue.builder()
             .from(factory.generateObject(VariableRecordValue.class))
-            .withValue("v".repeat(VARIABLE_SIZE_THRESHOLD))
+            .withValue("v".repeat(underTest.variableSizeThreshold))
             .withProcessInstanceKey(processInstanceKey)
             .withScopeKey(variableScopeKey)
             .build();
@@ -165,6 +163,7 @@ public class UserTaskVariableHandlerTest {
     assertThat(variableEntity.getProcessInstanceId()).isEqualTo(processInstanceKey);
     assertThat(variableEntity.getIsTruncated()).isFalse();
     assertThat(variableEntity.getFullValue()).isNull();
+    assertThat(variableEntity.getPosition()).isEqualTo(variableRecord.getPosition());
     assertThat(variableEntity.getJoin()).isNotNull();
     assertThat(variableEntity.getJoin().getParent()).isEqualTo(variableRecordValue.getScopeKey());
     assertThat(variableEntity.getJoin().getName())
@@ -178,7 +177,7 @@ public class UserTaskVariableHandlerTest {
     final VariableRecordValue variableRecordValue =
         ImmutableVariableRecordValue.builder()
             .from(factory.generateObject(VariableRecordValue.class))
-            .withValue("v".repeat(VARIABLE_SIZE_THRESHOLD))
+            .withValue("v".repeat(underTest.variableSizeThreshold))
             .withProcessInstanceKey(processInstanceKey)
             .withScopeKey(processInstanceKey)
             .build();
@@ -204,6 +203,7 @@ public class UserTaskVariableHandlerTest {
     assertThat(variableEntity.getProcessInstanceId()).isEqualTo(processInstanceKey);
     assertThat(variableEntity.getIsTruncated()).isFalse();
     assertThat(variableEntity.getFullValue()).isNull();
+    assertThat(variableEntity.getPosition()).isEqualTo(variableRecord.getPosition());
     assertThat(variableEntity.getJoin()).isNotNull();
     assertThat(variableEntity.getJoin().getParent()).isEqualTo(variableRecordValue.getScopeKey());
     assertThat(variableEntity.getJoin().getName())
@@ -216,7 +216,7 @@ public class UserTaskVariableHandlerTest {
     final VariableRecordValue variableRecordValue =
         ImmutableVariableRecordValue.builder()
             .from(factory.generateObject(VariableRecordValue.class))
-            .withValue("v".repeat(VARIABLE_SIZE_THRESHOLD + 1))
+            .withValue("v".repeat(underTest.variableSizeThreshold + 1))
             .build();
 
     final Record<VariableRecordValue> variableRecord =
@@ -229,8 +229,9 @@ public class UserTaskVariableHandlerTest {
     underTest.updateEntity(variableRecord, variableEntity);
 
     // then
-    assertThat(variableEntity.getValue()).isEqualTo("v".repeat(VARIABLE_SIZE_THRESHOLD));
-    assertThat(variableEntity.getFullValue()).isEqualTo("v".repeat(VARIABLE_SIZE_THRESHOLD + 1));
+    assertThat(variableEntity.getValue()).isEqualTo("v".repeat(underTest.variableSizeThreshold));
+    assertThat(variableEntity.getFullValue())
+        .isEqualTo("v".repeat(underTest.variableSizeThreshold + 1));
     assertThat(variableEntity.getIsTruncated()).isTrue();
   }
 }

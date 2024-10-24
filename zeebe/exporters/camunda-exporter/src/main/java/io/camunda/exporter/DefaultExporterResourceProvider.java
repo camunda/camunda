@@ -33,6 +33,7 @@ import io.camunda.exporter.handlers.ProcessHandler;
 import io.camunda.exporter.handlers.SequenceFlowHandler;
 import io.camunda.exporter.handlers.TaskCompletedMetricHandler;
 import io.camunda.exporter.handlers.UserHandler;
+import io.camunda.exporter.handlers.UserTaskCompletionVariableHandler;
 import io.camunda.exporter.handlers.UserTaskHandler;
 import io.camunda.exporter.handlers.UserTaskProcessInstanceHandler;
 import io.camunda.exporter.handlers.UserTaskVariableHandler;
@@ -176,6 +177,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new UserTaskProcessInstanceHandler(
                 templateDescriptorsMap.get(TaskTemplate.class).getFullQualifiedName()),
             new UserTaskVariableHandler(
+                templateDescriptorsMap.get(TaskTemplate.class).getFullQualifiedName(),
+                configuration.getIndex().getVariableSizeThreshold()),
+            new UserTaskCompletionVariableHandler(
                 templateDescriptorsMap.get(TaskTemplate.class).getFullQualifiedName(),
                 configuration.getIndex().getVariableSizeThreshold()));
   }
