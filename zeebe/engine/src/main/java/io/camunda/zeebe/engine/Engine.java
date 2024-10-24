@@ -125,8 +125,7 @@ public class Engine implements RecordProcessor {
         return processingResultBuilder.build();
       }
 
-      final var shouldProcess = shouldProcessCommand(typedCommand);
-      if (shouldProcess) {
+      if (shouldProcessCommand(typedCommand)) {
         currentProcessor.processRecord(record);
       }
     }
@@ -178,8 +177,7 @@ public class Engine implements RecordProcessor {
             || intent == ProcessInstanceIntent.TERMINATE_ELEMENT
             || intent == ProcessInstanceBatchIntent.TERMINATE;
 
-    final var shouldProcess = noBanCheckNeeded || !banned || commandAllowedForBanned;
-    return shouldProcess;
+    return noBanCheckNeeded || !banned || commandAllowedForBanned;
   }
 
   private void handleUnexpectedError(
