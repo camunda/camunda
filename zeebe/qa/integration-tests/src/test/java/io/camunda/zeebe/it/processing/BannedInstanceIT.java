@@ -47,7 +47,7 @@ final class BannedInstanceIT {
   }
 
   @Test
-  public void shouldCancelProcessInstanceWhenInstanceIsBanned() {
+  public void shouldAllowCancelProcessInstanceWhenInstanceIsBanned() {
     // given
     final var processId = helper.getBpmnProcessId();
     client
@@ -155,7 +155,7 @@ final class BannedInstanceIT {
   }
 
   @Test
-  public void shouldCancelBannedInstanceWithIncident() {
+  public void shouldAllowCancelBannedInstanceWithIncident() {
     // given
     final var processId = helper.getBpmnProcessId();
     client
