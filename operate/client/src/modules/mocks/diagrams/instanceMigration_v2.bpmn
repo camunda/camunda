@@ -129,8 +129,8 @@
       <bpmn:sequenceFlow id="Flow_1rrwh6x" sourceRef="TaskYY" targetRef="Event_0lk89tk" />
       <bpmn:sequenceFlow id="Flow_0eemr1n" sourceRef="TimerStartEvent" targetRef="TaskYY" />
     </bpmn:subProcess>
-    <bpmn:subProcess id="Activity_08wf7gf" name="Error event sub process" triggeredByEvent="true">
-      <bpmn:startEvent id="Event_1ngtou5" name="Error start event">
+    <bpmn:subProcess id="ErrorEventSubProcess" name="Error event sub process" triggeredByEvent="true">
+      <bpmn:startEvent id="ErrorStartEvent" name="Error start event">
         <bpmn:outgoing>Flow_0vpdnw8</bpmn:outgoing>
         <bpmn:errorEventDefinition id="ErrorEventDefinition_189rgdh" />
       </bpmn:startEvent>
@@ -141,7 +141,7 @@
       <bpmn:endEvent id="Event_1mvw93n">
         <bpmn:incoming>Flow_08cj9mr</bpmn:incoming>
       </bpmn:endEvent>
-      <bpmn:sequenceFlow id="Flow_0vpdnw8" sourceRef="Event_1ngtou5" targetRef="TaskZ" />
+      <bpmn:sequenceFlow id="Flow_0vpdnw8" sourceRef="ErrorStartEvent" targetRef="TaskZ" />
       <bpmn:sequenceFlow id="Flow_08cj9mr" sourceRef="TaskZ" targetRef="Event_1mvw93n" />
     </bpmn:subProcess>
     <bpmn:receiveTask id="MessageReceiveTask" name="Message receive task" messageRef="Message_0so1os3">
@@ -351,11 +351,11 @@
         <di:waypoint x="395" y="730" />
         <di:waypoint x="439" y="730" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="Activity_1aznn99_di" bpmnElement="Activity_08wf7gf" isExpanded="true">
+      <bpmndi:BPMNShape id="Activity_1aznn99_di" bpmnElement="ErrorEventSubProcess" isExpanded="true">
         <dc:Bounds x="319" y="880" width="350" height="200" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_03dewb3_di" bpmnElement="Event_1ngtou5">
+      <bpmndi:BPMNShape id="Event_03dewb3_di" bpmnElement="ErrorStartEvent">
         <dc:Bounds x="359" y="962" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="338" y="1005" width="79" height="14" />

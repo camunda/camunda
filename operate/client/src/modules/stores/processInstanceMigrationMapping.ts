@@ -90,7 +90,7 @@ class ProcessInstanceMigrationMappingStore {
               }
 
               /**
-               * For event sub processes allow only mapping with the same event type (message or timer)
+               * For event sub processes allow only mapping with the same event type (message, timer or error)
                */
               if (isEventSubProcess({businessObject: sourceFlowNode})) {
                 return (

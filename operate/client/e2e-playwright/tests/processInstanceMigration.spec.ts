@@ -119,6 +119,30 @@ test.beforeAll(async ({request}) => {
       {timeout: SETUP_WAITING_TIME},
     )
     .toHaveProperty('total', 10);
+
+  // Wait until all error event were caught
+  await expect
+    .poll(
+      async () => {
+        const response = await request.post(
+          `${config.endpoint}/v1/flownode-instances/search`,
+          {
+            data: {
+              filter: {
+                flowNodeId: 'TaskG',
+                state: 'ACTIVE',
+                processDefinitionKey:
+                  initialData.processV1.processDefinitionKey,
+              },
+            },
+          },
+        );
+
+        return await response.json();
+      },
+      {timeout: SETUP_WAITING_TIME},
+    )
+    .toHaveProperty('total', 10);
 });
 
 test.describe.serial('Process Instance Migration', () => {
@@ -164,7 +188,7 @@ test.describe.serial('Process Instance Migration', () => {
     await processesPage.migrationModal.confirmButton.click();
 
     // Expect auto mapping for each flow node
-    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(34);
+    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(38);
 
     await expect(
       page.getByLabel(/target flow node for check payment/i),
@@ -244,6 +268,18 @@ test.describe.serial('Process Instance Migration', () => {
     await expect(
       page.getByLabel(/target flow node for signal event sub process/i),
     ).toHaveValue('SignalEventSubProcess');
+    await expect(
+      page.getByLabel(/target flow node for error event sub process/i),
+    ).toHaveValue('ErrorEventSubProcess');
+    await expect(
+      page.getByLabel(/target flow node for error start event/i),
+    ).toHaveValue('ErrorStartEvent');
+    await expect(page.getByLabel(/target flow node for task g/i)).toHaveValue(
+      'TaskG',
+    );
+    await expect(
+      page.getByLabel(/target flow node for sub process/i),
+    ).toHaveValue('SubProcess');
 
     // Expect pre-selected process and version
     await expect(migrationView.targetProcessComboBox).toHaveValue(
@@ -604,50 +640,57 @@ test.describe.serial('Process Instance Migration', () => {
     await commonPage.collapseOperationsPanel();
   });
 
-  test('Migrated tasks', async ({processesPage, processInstancePage, page}) => {
+  test('Migrated tasks', async ({
+    processesPage,
+    processInstancePage,
+    page,
+    request,
+  }) => {
     const {processV3} = initialData;
+
+    // Wait until all script tasks are in incident state.
+    // This is needed to ensure that the UI is in the expected state on time.
+    await expect
+      .poll(
+        async () => {
+          const response = await request.post(
+            `${config.endpoint}/v1/flownode-instances/search`,
+            {
+              data: {
+                filter: {
+                  flowNodeId: 'ScriptTask2',
+                  state: 'ACTIVE',
+                  incident: true,
+                  processDefinitionKey: processV3.processDefinitionKey,
+                },
+              },
+            },
+          );
+
+          return await response.json();
+        },
+        {timeout: SETUP_WAITING_TIME},
+      )
+      .toHaveProperty('total', 3);
 
     await processesPage.navigateToProcesses({
       searchParams: {
         active: 'true',
         incidents: 'true',
         process: processV3.bpmnProcessId,
-
         version: processV3.version.toString(),
       },
     });
 
     await processesPage.getNthProcessInstanceLink(0).click();
-
     await processInstancePage.diagram.resetDiagramZoomButton.click();
-
-    /**
-     * Business rule task
-     */
-    await processInstancePage.diagram.clickFlowNode('Business rule task 2');
-    await processInstancePage.diagram.showMetaData();
-    await page.waitForSelector('.monaco-aria-container'); // wait until monaco is fully loaded
-
-    /**
-     * Expect that the incident for the business rule task has been migrated.
-     * The target task "Business rule task 2" has a different called decision "invalid2"
-     * which is expected to be overwritten with the decision key "invalid".
-     */
-    await expect(
-      processInstancePage.metadataModal.getByText(
-        "Expected to evaluate decision 'invalid', but no decision found for id 'invalid'",
-      ),
-    ).toBeVisible();
-
-    await processInstancePage.metadataModal
-      .getByRole('button', {name: /close/i})
-      .click();
 
     /**
      * Script task
      */
     await processInstancePage.diagram.clickFlowNode('Script task 2');
     await processInstancePage.diagram.showMetaData();
+    await page.waitForSelector('.monaco-aria-container'); // wait until monaco is fully loaded
 
     /**
      * Expect that the script task incident has been migrated.
@@ -661,6 +704,7 @@ test.describe.serial('Process Instance Migration', () => {
     await processInstancePage.metadataModal
       .getByRole('button', {name: /close/i})
       .click();
+    await processInstancePage.diagram.clickFlowNode('Script task 2'); // deselect Script task 2
 
     /**
      * Send task
@@ -676,6 +720,50 @@ test.describe.serial('Process Instance Migration', () => {
     await expect(
       processInstancePage.metadataModal.getByText('expected worker failure'),
     ).not.toBeVisible();
+
+    await processInstancePage.metadataModal
+      .getByRole('button', {name: /close/i})
+      .click();
+    await processInstancePage.diagram.clickFlowNode('Send task 2'); // deselect Script task 2
+
+    /**
+     * Task G
+     */
+    await processInstancePage.diagram.clickFlowNode('Task G');
+    await processInstancePage.diagram.showMetaData();
+
+    /**
+     * Expect that Task G has been migrated. The target Task G is following an error event "error2"
+     * which is never thrown. Without a successful migration Task G would not be active.
+     */
+    await expect(
+      processInstancePage.metadataModal.getByText('endDate'),
+    ).toBeVisible();
+    await expect(
+      processInstancePage.metadataModal.getByText('"endDate": "null"'),
+    ).not.toBeVisible();
+
+    await processInstancePage.metadataModal
+      .getByRole('button', {name: /close/i})
+      .click();
+    await processInstancePage.diagram.clickFlowNode('Task G'); // deselect Script task 2
+
+    /**
+     * Business rule task
+     */
+    await processInstancePage.diagram.clickFlowNode('Business rule task 2');
+    await processInstancePage.diagram.showMetaData();
+
+    /**
+     * Expect that the incident for the business rule task has been migrated.
+     * The target task "Business rule task 2" has a different called decision "invalid2"
+     * which is expected to be overwritten with the decision key "invalid".
+     */
+    await expect(
+      processInstancePage.metadataModal.getByText(
+        "Expected to evaluate decision 'invalid', but no decision found for id 'invalid'",
+      ),
+    ).toBeVisible();
 
     await processInstancePage.metadataModal
       .getByRole('button', {name: /close/i})

@@ -143,6 +143,14 @@ describe('processInstanceMigrationMappingStore', () => {
         type: 'bpmn:StartEvent',
       },
       {
+        id: 'ErrorEventSubProcess',
+        type: 'bpmn:SubProcess',
+      },
+      {
+        id: 'ErrorStartEvent',
+        type: 'bpmn:StartEvent',
+      },
+      {
         id: 'MessageReceiveTask',
         type: 'bpmn:ReceiveTask',
       },
@@ -202,12 +210,13 @@ describe('processInstanceMigrationMappingStore', () => {
     expect(isAutoMappable('SignalBoundaryEvent')).toBe(true);
     expect(isAutoMappable('SignalEventSubProcess')).toBe(true);
     expect(isAutoMappable('SignalStartEvent')).toBe(true);
+    expect(isAutoMappable('ErrorEventSubProcess')).toBe(true);
+    expect(isAutoMappable('ErrorStartEvent')).toBe(true);
 
     expect(isAutoMappable('requestForPayment')).toBe(false);
     expect(isAutoMappable('TimerInterrupting')).toBe(false);
     expect(isAutoMappable('MessageNonInterrupting')).toBe(false);
     expect(isAutoMappable('TimerIntermediateCatch')).toBe(false);
-    expect(isAutoMappable('ErrorEventSubProcess')).toBe(false);
     expect(isAutoMappable('TaskY')).toBe(false);
     expect(isAutoMappable('TaskZ')).toBe(false);
 
@@ -458,6 +467,30 @@ describe('processInstanceMigrationMappingStore', () => {
           {
             id: 'TimerStartEvent',
             name: 'Timer start event',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'ErrorEventSubProcess',
+          name: 'Error event sub process',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'ErrorEventSubProcess',
+            name: 'Error event sub process',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'ErrorStartEvent',
+          name: 'Error start event',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'ErrorStartEvent',
+            name: 'Error start event',
           },
         ],
       },
