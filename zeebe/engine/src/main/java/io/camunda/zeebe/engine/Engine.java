@@ -137,7 +137,7 @@ public class Engine implements RecordProcessor {
               || intent == ProcessInstanceIntent.TERMINATE_ELEMENT
               || intent == ProcessInstanceBatchIntent.TERMINATE;
 
-      if (noBanCheckNeeded || (banned && commandAllowedForBanned) || !banned) {
+      if (noBanCheckNeeded || !banned || commandAllowedForBanned) {
         currentProcessor.processRecord(record);
       }
     }
