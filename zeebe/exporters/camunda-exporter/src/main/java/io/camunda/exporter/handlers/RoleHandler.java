@@ -14,6 +14,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import java.util.List;
+import java.util.Set;
 
 public class RoleHandler implements ExportHandler<RoleEntity, RoleRecordValue> {
   private final String indexName;
@@ -50,14 +51,17 @@ public class RoleHandler implements ExportHandler<RoleEntity, RoleRecordValue> {
   @Override
   public void updateEntity(final Record<RoleRecordValue> record, final RoleEntity entity) {
     final RoleRecordValue value = record.getValue();
-    entity.setRoleKey(value.getRoleKey()).setName(value.getName());
+
+    // TODO - only handle updates for now
+    final Set<Long> storedEntityKeys = entity.getEntityKey();
+    storedEntityKeys.add(record.getValue().getEntityKey());
+
+    entity.setRoleKey(value.getRoleKey()).setName(value.getName()).setEntityKey(storedEntityKeys);
   }
 
   @Override
   public void flush(final RoleEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    // TODO - Update the entityKey. Need to update the entityKey set,
-    //  its not a clear setter like the other values
     batchRequest.add(indexName, entity);
   }
 }
