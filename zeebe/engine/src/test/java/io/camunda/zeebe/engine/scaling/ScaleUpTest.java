@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.Set;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -155,6 +156,28 @@ public class ScaleUpTest {
               assertThat(rejection.getRejectionReason())
                   .isEqualTo(
                       "The desired partition count is smaller than the currently active partitions");
+            });
+  }
+
+  @Test
+  public void shouldRejectRedundantScaleUp() {
+    // given - a scale up from 1 to 3 was already requested
+    ((MutableRoutingState) engine.getProcessingState().getRoutingState()).initializeRoutingInfo(1);
+    ((MutableRoutingState) engine.getProcessingState().getRoutingState())
+        .setDesiredPartitions(Set.of(1, 2, 3));
+
+    // when
+    engine.writeRecords(
+        RecordToWrite.command()
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(3)));
+
+    // then
+    assertThat(RecordingExporter.scaleRecords().onlyCommandRejections().findFirst())
+        .hasValueSatisfying(
+            rejection -> {
+              assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.ALREADY_EXISTS);
+              assertThat(rejection.getRejectionReason())
+                  .isEqualTo("The desired partition count was already requested");
             });
   }
 
