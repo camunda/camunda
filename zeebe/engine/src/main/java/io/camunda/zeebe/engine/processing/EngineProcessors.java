@@ -478,6 +478,7 @@ public final class EngineProcessors {
     final var userTaskProcessor =
         new UserTaskProcessor(
             processingState,
+            processingState.getUserTaskState(),
             processingState.getKeyGenerator(),
             bpmnBehaviors,
             writers,

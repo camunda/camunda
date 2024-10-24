@@ -15,10 +15,12 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -31,6 +33,7 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
   private static final String DEFAULT_ACTION = "complete";
 
   private final ElementInstanceState elementInstanceState;
+  private final UserTaskState userTaskState;
   private final EventHandle eventHandle;
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
@@ -43,6 +46,7 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
       final Writers writers,
       final AuthorizationCheckBehavior authCheckBehavior) {
     elementInstanceState = state.getElementInstanceState();
+    userTaskState = state.getUserTaskState();
     this.eventHandle = eventHandle;
     stateWriter = writers.state();
     commandWriter = writers.command();
@@ -80,10 +84,29 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
     userTaskRecord.setVariables(command.getValue().getVariablesBuffer());
     userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));
 
+    // It's important to retrieve the user task record request metadata before appending the
+    // "COMPLETED" event, as it will be cleared by the "COMPLETED" event applier
+    final var recordRequestMetadata = userTaskState.getRecordRequestMetadata(userTaskKey);
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord);
     completeElementInstance(userTaskRecord);
-    responseWriter.writeEventOnCommand(
-        userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord, command);
+
+    // If the record request metadata is present, it indicates that "complete" task listeners were
+    // configured, and that the normal flow of the "COMPLETE" command was interrupted by the
+    // "COMPLETE_TASK_LISTENER" command. In this case, we need to use the `requestId` and
+    // `requestStreamId` from the persisted metadata, which refers to the original "COMPLETE"
+    // command to write the response back.
+    recordRequestMetadata.ifPresentOrElse(
+        metadata ->
+            responseWriter.writeResponse(
+                userTaskKey,
+                UserTaskIntent.COMPLETED,
+                userTaskRecord,
+                ValueType.USER_TASK,
+                metadata.getRequestId(),
+                metadata.getRequestStreamId()),
+        () ->
+            responseWriter.writeEventOnCommand(
+                userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord, command));
   }
 
   private void completeElementInstance(final UserTaskRecord userTaskRecord) {
