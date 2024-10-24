@@ -190,7 +190,7 @@ public class UserTaskCompletionVariableHandlerTest {
     final long scopeKey = 456;
     final var taskRecord =
         generateRecordWithVariables(
-            scopeKey, Map.of("var1", "v".repeat(underTest.variableSizeThreshold) + 1));
+            scopeKey, Map.of("var1", "v".repeat(underTest.variableSizeThreshold + 1)));
 
     // when
     final TaskVariableEntity variableEntity =
