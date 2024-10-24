@@ -140,7 +140,8 @@ final class BannedInstanceIT {
 
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
         .withProcessInstanceKey(processInstanceKey)
-        .withElementType(BpmnElementType.PROCESS);
+        .withElementType(BpmnElementType.PROCESS)
+        .await();
 
     clock.addTime(new AddTimeRequest(Duration.ofMinutes(15).toMillis()));
 
