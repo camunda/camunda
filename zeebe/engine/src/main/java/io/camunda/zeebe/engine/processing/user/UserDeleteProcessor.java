@@ -14,7 +14,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
-import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
@@ -25,7 +24,6 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class UserDeleteProcessor implements DistributedTypedRecordProcessor<UserRecord> {
   private final UserState userState;
-  private final AuthorizationState authorizationState;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
@@ -39,7 +37,6 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
       final CommandDistributionBehavior distributionBehavior) {
     this.keyGenerator = keyGenerator;
     userState = state.getUserState();
-    authorizationState = state.getAuthorizationState();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
