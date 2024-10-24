@@ -50,13 +50,16 @@ final class StartPartitionScaleUpApplierTest {
                       PartitionState.active(1, DynamicPartitionConfig.init()))));
 
   @Test
-  void shouldFailOnInvalidPartitionCounts() {
+  void shouldFailOnPartitionCountTooLow() {
     EitherAssert.assertThat(
             new StartPartitionScaleUpApplier(executor, 0).init(initialConfiguration))
         .left()
         .asInstanceOf(InstanceOfAssertFactories.throwable(IllegalArgumentException.class))
         .hasMessageContaining("Desired partition count must be greater than 1");
+  }
 
+  @Test
+  void shouldFailOnPartitionCountTooHigh() {
     EitherAssert.assertThat(
             new StartPartitionScaleUpApplier(executor, 100000).init(initialConfiguration))
         .left()
