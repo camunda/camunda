@@ -27,6 +27,8 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerEvaluateDecisionRequest;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -62,7 +64,15 @@ public final class DecisionDefinitionServices
   @Override
   public SearchQueryResult<DecisionDefinitionEntity> search(final DecisionDefinitionQuery query) {
     return decisionDefinitionSearchClient.searchDecisionDefinitions(
-        query, SecurityContext.of(s -> s.withAuthentication(authentication)));
+        query,
+        SecurityContext.of(
+            s ->
+                s.withAuthentication(authentication)
+                    .withAuthorizationIfEnabled(
+                        securityConfiguration.getAuthorizations().isEnabled(),
+                        a ->
+                            a.resourceType(AuthorizationResourceType.DECISION_DEFINITION)
+                                .permissionType(PermissionType.READ))));
   }
 
   public SearchQueryResult<DecisionDefinitionEntity> search(
