@@ -56,7 +56,7 @@ jobs:
           buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
-        if: ${{ failure() || cancelled() }}
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
           name: "[IT] RDBMS"
       - name: Observe build status
