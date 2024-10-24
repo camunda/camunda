@@ -65,7 +65,10 @@ final class ClusterEndpointResponseIT {
             ],
             "routing": {
               "version": 1,
-              "activePartitions": [1],
+              "requestHandling": {
+                "strategy": "AllPartitions",
+                "partitionCount": 1
+              },
               "messageCorrelation": {
                 "strategy": "HashMod",
                 "partitionCount": 1

@@ -18,6 +18,7 @@
       <validValue name="INVALID_DEPLOYMENT_PARTITION">6</validValue>
       <validValue name="PROCESS_NOT_FOUND">7</validValue>
       <validValue name="RESOURCE_EXHAUSTED">8</validValue>
+      <validValue name="PARTITION_UNAVAILABLE">9</validValue>
     </enum>
 
     <enum name="ValueType" encodingType="uint8" description="The type of a record value">
@@ -61,6 +62,7 @@
       <validValue name="ROLE">44</validValue>
       <validValue name="TENANT">45</validValue>
       <validValue name="GROUP">46</validValue>
+      <validValue name="MAPPING">47</validValue>
 
       <!-- Management records / record not related to process automation -->
       <validValue name="SCALE">253</validValue>

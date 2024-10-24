@@ -118,12 +118,12 @@ public class StatefulRestTemplate extends RestTemplate {
   public <T> RequestCallback httpEntityCallback(final Object requestBody, final Type responseType) {
     final HttpEntity httpEntity;
     if (requestBody != null) {
-      if (!(requestBody instanceof HttpEntity<?>)) {
-        final HttpHeaders headers = new HttpHeaders();
-        headers.add(CSRF_TOKEN_HEADER_NAME, csrfToken);
-        httpEntity = new HttpEntity(requestBody, headers);
+      final HttpHeaders headers = new HttpHeaders();
+      headers.add(CSRF_TOKEN_HEADER_NAME, csrfToken);
+      if (requestBody instanceof HttpEntity<?>) {
+        httpEntity = new HttpEntity(((HttpEntity<?>) requestBody).getBody(), headers);
       } else {
-        httpEntity = (HttpEntity) requestBody;
+        httpEntity = new HttpEntity(requestBody, headers);
       }
     } else {
       httpEntity = null;

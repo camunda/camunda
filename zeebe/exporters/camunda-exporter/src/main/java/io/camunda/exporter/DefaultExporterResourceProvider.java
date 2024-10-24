@@ -31,7 +31,11 @@ import io.camunda.exporter.handlers.MetricFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
 import io.camunda.exporter.handlers.ProcessHandler;
 import io.camunda.exporter.handlers.SequenceFlowHandler;
+import io.camunda.exporter.handlers.TaskCompletedMetricHandler;
 import io.camunda.exporter.handlers.UserHandler;
+import io.camunda.exporter.handlers.UserTaskHandler;
+import io.camunda.exporter.handlers.UserTaskProcessInstanceHandler;
+import io.camunda.exporter.handlers.UserTaskVariableHandler;
 import io.camunda.exporter.handlers.VariableHandler;
 import io.camunda.exporter.utils.XMLUtil;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
@@ -156,6 +160,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptorsMap.get(ProcessIndex.class).getFullQualifiedName(), new XMLUtil()),
             new MetricFromProcessInstanceHandler(
                 indexDescriptorsMap.get(MetricIndex.class).getFullQualifiedName()),
+            new TaskCompletedMetricHandler(
+                indexDescriptorsMap.get(TasklistMetricIndex.class).getFullQualifiedName()),
             new FormHandler(indexDescriptorsMap.get(FormIndex.class).getFullQualifiedName()),
             new EventFromIncidentHandler(
                 templateDescriptorsMap.get(EventTemplate.class).getFullQualifiedName(), false),
@@ -164,7 +170,14 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new EventFromProcessInstanceHandler(
                 templateDescriptorsMap.get(EventTemplate.class).getFullQualifiedName(), false),
             new EventFromProcessMessageSubscriptionHandler(
-                templateDescriptorsMap.get(EventTemplate.class).getFullQualifiedName(), false));
+                templateDescriptorsMap.get(EventTemplate.class).getFullQualifiedName(), false),
+            new UserTaskHandler(
+                templateDescriptorsMap.get(TaskTemplate.class).getFullQualifiedName()),
+            new UserTaskProcessInstanceHandler(
+                templateDescriptorsMap.get(TaskTemplate.class).getFullQualifiedName()),
+            new UserTaskVariableHandler(
+                templateDescriptorsMap.get(TaskTemplate.class).getFullQualifiedName(),
+                configuration.getIndex().getVariableSizeThreshold()));
   }
 
   @Override

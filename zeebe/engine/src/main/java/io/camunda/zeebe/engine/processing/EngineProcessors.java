@@ -107,6 +107,10 @@ public final class EngineProcessors {
     final var decisionBehavior =
         new DecisionBehavior(
             DecisionEngineFactory.createDecisionEngine(), processingState, processEngineMetrics);
+    final var authCheckBehavior =
+        new AuthorizationCheckBehavior(
+            processingState.getAuthorizationState(), processingState.getUserState(), config);
+
     final BpmnBehaviorsImpl bpmnBehaviors =
         createBehaviors(
             processingState,
@@ -117,7 +121,8 @@ public final class EngineProcessors {
             jobStreamer,
             jobMetrics,
             decisionBehavior,
-            clock);
+            clock,
+            authCheckBehavior);
 
     final var commandDistributionBehavior =
         new CommandDistributionBehavior(
@@ -126,10 +131,6 @@ public final class EngineProcessors {
             typedRecordProcessorContext.getPartitionId(),
             routingInfo,
             interPartitionCommandSender);
-
-    final var authCheckBehavior =
-        new AuthorizationCheckBehavior(
-            processingState.getAuthorizationState(), processingState.getUserState(), config);
 
     final var deploymentDistributionCommandSender =
         new DeploymentDistributionCommandSender(
@@ -208,7 +209,8 @@ public final class EngineProcessors {
         bpmnBehaviors,
         writers,
         processingState,
-        commandDistributionBehavior);
+        commandDistributionBehavior,
+        authCheckBehavior);
     addCommandDistributionProcessors(
         commandDistributionBehavior,
         typedRecordProcessors,
@@ -228,7 +230,12 @@ public final class EngineProcessors {
         config);
 
     ClockProcessors.addClockProcessors(
-        typedRecordProcessors, writers, keyGenerator, clock, commandDistributionBehavior);
+        typedRecordProcessors,
+        writers,
+        keyGenerator,
+        clock,
+        commandDistributionBehavior,
+        authCheckBehavior);
 
     AuthorizationProcessors.addAuthorizationProcessors(
         keyGenerator,
@@ -269,7 +276,8 @@ public final class EngineProcessors {
       final JobStreamer jobStreamer,
       final JobMetrics jobMetrics,
       final DecisionBehavior decisionBehavior,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     return new BpmnBehaviorsImpl(
         processingState,
         writers,
@@ -279,7 +287,8 @@ public final class EngineProcessors {
         routingInfo,
         timerChecker,
         jobStreamer,
-        clock);
+        clock,
+        authCheckBehavior);
   }
 
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
@@ -445,7 +454,8 @@ public final class EngineProcessors {
       final BpmnBehaviorsImpl bpmnBehaviors,
       final Writers writers,
       final MutableProcessingState processingState,
-      final CommandDistributionBehavior commandDistributionBehavior) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     final var signalBroadcastProcessor =
         new SignalBroadcastProcessor(
             writers,
@@ -453,7 +463,8 @@ public final class EngineProcessors {
             processingState,
             bpmnBehaviors.stateBehavior(),
             bpmnBehaviors.eventTriggerBehavior(),
-            commandDistributionBehavior);
+            commandDistributionBehavior,
+            authCheckBehavior);
     typedRecordProcessors.onCommand(
         ValueType.SIGNAL, SignalIntent.BROADCAST, signalBroadcastProcessor);
   }

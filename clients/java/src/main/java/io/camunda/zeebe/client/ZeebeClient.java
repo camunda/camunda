@@ -24,8 +24,11 @@ import io.camunda.zeebe.client.api.command.ClockPinCommandStep1;
 import io.camunda.zeebe.client.api.command.ClockResetCommandStep1;
 import io.camunda.zeebe.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.CorrelateMessageCommandStep1;
+import io.camunda.zeebe.client.api.command.CreateDocumentCommandStep1;
+import io.camunda.zeebe.client.api.command.CreateDocumentLinkCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateUserCommandStep1;
+import io.camunda.zeebe.client.api.command.DeleteDocumentCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
@@ -46,6 +49,7 @@ import io.camunda.zeebe.client.api.fetch.DecisionDefinitionGetXmlRequest;
 import io.camunda.zeebe.client.api.fetch.DecisionInstanceGetRequest;
 import io.camunda.zeebe.client.api.fetch.DecisionRequirementsGetRequest;
 import io.camunda.zeebe.client.api.fetch.DecisionRequirementsGetXmlRequest;
+import io.camunda.zeebe.client.api.fetch.DocumentContentGetRequest;
 import io.camunda.zeebe.client.api.fetch.FlowNodeInstanceGetRequest;
 import io.camunda.zeebe.client.api.fetch.IncidentGetRequest;
 import io.camunda.zeebe.client.api.fetch.ProcessDefinitionGetRequest;
@@ -55,6 +59,7 @@ import io.camunda.zeebe.client.api.fetch.UserTaskGetFormRequest;
 import io.camunda.zeebe.client.api.fetch.UserTaskGetRequest;
 import io.camunda.zeebe.client.api.fetch.VariableGetRequest;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.api.response.DocumentReferenceResponse;
 import io.camunda.zeebe.client.api.search.query.DecisionDefinitionQuery;
 import io.camunda.zeebe.client.api.search.query.DecisionInstanceQuery;
 import io.camunda.zeebe.client.api.search.query.DecisionRequirementsQuery;
@@ -1276,4 +1281,149 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   UserTaskVariableQuery newUserTaskVariableRequest(long userTaskKey);
+
+  /**
+   * <p>Command to create a document.
+   *
+   * <pre>
+   *   zeebeClient
+   *   .newCreateDocumentCommand()
+   *   .content(inputStream)
+   *   .fileName("file.txt")
+   *   .timeToLive(Duration.ofDays(1))
+   *   .send();
+   *   </pre>
+   *
+   * @return a builder for the command
+   */
+  @ExperimentalApi("https://github.com/camunda/issues/issues/841")
+  CreateDocumentCommandStep1 newCreateDocumentCommand();
+
+  /**
+   * <strong>Experimental: This method is under development. The respective API on compatible
+   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
+   * with all clusters. Until this warning is removed, anything described below may not yet have
+   * taken effect, and the interface and its description are subject to change.</strong>
+   *
+   * <p>Command to get a document.
+   *
+   * <pre>
+   *   zeebeClient
+   *   .newDocumentContentGetRequest(documentId)
+   *   .storeId(storeId)
+   *   .send();
+   *   </pre>
+   *
+   * @param documentId the id of the document
+   * @return a builder for the request
+   */
+  @ExperimentalApi("https://github.com/camunda/issues/issues/841")
+  DocumentContentGetRequest newDocumentContentGetRequest(String documentId);
+
+  /**
+   * <strong>Experimental: This method is under development. The respective API on compatible
+   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
+   * with all clusters. Until this warning is removed, anything described below may not yet have
+   * taken effect, and the interface and its description are subject to change.</strong>
+   *
+   * <p>Command to get a document.
+   *
+   * <pre>
+   *   zeebeClient
+   *   .newDocumentContentGetRequest(documentReferenceResponse)
+   *   .send();
+   *   </pre>
+   *
+   * @param documentReferenceResponse the reference of the document
+   * @return a builder for the request
+   */
+  @ExperimentalApi("https://github.com/camunda/issues/issues/841")
+  DocumentContentGetRequest newDocumentContentGetRequest(
+      DocumentReferenceResponse documentReferenceResponse);
+
+  /**
+   * <strong>Experimental: This method is under development. The respective API on compatible
+   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
+   * with all clusters. Until this warning is removed, anything described below may not yet have
+   * taken effect, and the interface and its description are subject to change.</strong>
+   *
+   * <p>Command to update a document.
+   *
+   * <pre>
+   *   zeebeClient
+   *   .newCreateDocumentLinkCommand(documentId)
+   *   .storeId(storeId)
+   *   .timeToLive(Duration.ofHours(1))
+   *   .send();
+   *   </pre>
+   *
+   * @param documentId the id of the document
+   * @return a builder for the command
+   */
+  @ExperimentalApi("https://github.com/camunda/issues/issues/841")
+  CreateDocumentLinkCommandStep1 newCreateDocumentLinkCommand(String documentId);
+
+  /**
+   * <strong>Experimental: This method is under development. The respective API on compatible
+   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
+   * with all clusters. Until this warning is removed, anything described below may not yet have
+   * taken effect, and the interface and its description are subject to change.</strong>
+   *
+   * <p>Command to update a document.
+   *
+   * <pre>
+   *   zeebeClient
+   *   .newCreateDocumentLinkCommand(documentReferenceResponse)
+   *   .timeToLive(Duration.ofHours(1))
+   *   .send();
+   *   </pre>
+   *
+   * @param documentReferenceResponse the reference of the document
+   * @return a builder for the command
+   */
+  @ExperimentalApi("https://github.com/camunda/issues/issues/841")
+  CreateDocumentLinkCommandStep1 newCreateDocumentLinkCommand(
+      DocumentReferenceResponse documentReferenceResponse);
+
+  /**
+   * <strong>Experimental: This method is under development. The respective API on compatible
+   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
+   * with all clusters. Until this warning is removed, anything described below may not yet have
+   * taken effect, and the interface and its description are subject to change.</strong>
+   *
+   * <p>Command to update a document.
+   *
+   * <pre>
+   *   zeebeClient
+   *   .newDeleteDocumentCommand(documentId)
+   *   .storeId(storeId)
+   *   .send();
+   *   </pre>
+   *
+   * @param documentId the id of the document
+   * @return a builder for the command
+   */
+  @ExperimentalApi("https://github.com/camunda/issues/issues/841")
+  DeleteDocumentCommandStep1 newDeleteDocumentCommand(String documentId);
+
+  /**
+   * <strong>Experimental: This method is under development. The respective API on compatible
+   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
+   * with all clusters. Until this warning is removed, anything described below may not yet have
+   * taken effect, and the interface and its description are subject to change.</strong>
+   *
+   * <p>Command to update a document.
+   *
+   * <pre>
+   *   zeebeClient
+   *   .newDeleteDocumentCommand(documentReferenceResponse)
+   *   .send();
+   *   </pre>
+   *
+   * @param documentReferenceResponse the reference of the document
+   * @return a builder for the command
+   */
+  @ExperimentalApi("https://github.com/camunda/issues/issues/841")
+  DeleteDocumentCommandStep1 newDeleteDocumentCommand(
+      DocumentReferenceResponse documentReferenceResponse);
 }

@@ -17,6 +17,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.JOB;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.ValueType.USER;
+import static io.camunda.zeebe.protocol.record.ValueType.USER_TASK;
 import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
 
 import co.elastic.clients.util.VisibleForTesting;
@@ -190,7 +191,8 @@ public class CamundaExporter implements Exporter {
             INCIDENT,
             DECISION_EVALUATION,
             PROCESS,
-            FORM);
+            FORM,
+            USER_TASK);
 
     @Override
     public boolean acceptType(final RecordType recordType) {

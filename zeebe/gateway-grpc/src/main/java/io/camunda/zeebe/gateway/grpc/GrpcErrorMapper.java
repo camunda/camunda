@@ -16,13 +16,13 @@ import io.atomix.cluster.messaging.MessagingException;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.NoTopologyAvailableException;
+import io.camunda.zeebe.broker.client.api.PartitionInactiveException;
 import io.camunda.zeebe.broker.client.api.PartitionNotFoundException;
 import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.Loggers;
 import io.camunda.zeebe.gateway.cmd.IllegalTenantRequestException;
-import io.camunda.zeebe.gateway.cmd.InvalidBrokerRequestArgumentException;
 import io.camunda.zeebe.gateway.cmd.InvalidTenantRequestException;
 import io.camunda.zeebe.msgpack.MsgpackPropertyException;
 import io.grpc.StatusRuntimeException;
@@ -73,10 +73,6 @@ public final class GrpcErrorMapper {
             "Expected to handle gRPC request, but request timed out between gateway and broker",
             rootError);
       }
-      case final InvalidBrokerRequestArgumentException ignored -> {
-        builder.setCode(Code.INVALID_ARGUMENT_VALUE).setMessage(error.getMessage());
-        logger.debug("Expected to handle gRPC request, but broker argument was invalid", rootError);
-      }
       case final MsgpackPropertyException ignored -> {
         builder.setCode(Code.INVALID_ARGUMENT_VALUE).setMessage(error.getMessage());
         logger.debug(
@@ -119,6 +115,12 @@ public final class GrpcErrorMapper {
         // of error logs that is, in fact, expected
         logger.trace(
             "Expected to handle gRPC request, but all retries have been exhausted", rootError);
+      }
+      case final PartitionInactiveException ignored -> {
+        builder.setCode(Code.UNAVAILABLE_VALUE).setMessage(error.getMessage());
+        logger.trace(
+            "Expected to handle gRPC request, but the target partition is currently inactive",
+            rootError);
       }
       case final NoTopologyAvailableException ignored -> {
         builder.setCode(Code.UNAVAILABLE_VALUE).setMessage(error.getMessage());
@@ -176,6 +178,10 @@ public final class GrpcErrorMapper {
         builder.setCode(Code.UNAVAILABLE_VALUE);
       }
       case MALFORMED_REQUEST -> builder.setCode(Code.INVALID_ARGUMENT_VALUE);
+      case PARTITION_UNAVAILABLE -> {
+        logger.debug("Partition is currently unavailable: {}", error, rootError);
+        builder.setCode(Code.UNAVAILABLE_VALUE);
+      }
       default -> {
         // all the following are for cases where retrying (with the same gateway) is not expected
         // to solve anything

@@ -134,6 +134,10 @@ public class AddPermissionAuthorizationMultiPartitionTest {
   @Test
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // given the user creation distribution is intercepted
+    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
+      interceptUserCreateForPartition(partitionId);
+    }
+
     final var ownerKey =
         engine
             .user()
@@ -143,9 +147,6 @@ public class AddPermissionAuthorizationMultiPartitionTest {
             .withPassword("zabraboof")
             .create()
             .getKey();
-    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
-      interceptUserCreateForPartition(partitionId);
-    }
 
     // when
     engine

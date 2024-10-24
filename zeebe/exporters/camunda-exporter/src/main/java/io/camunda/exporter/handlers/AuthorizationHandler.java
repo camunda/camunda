@@ -9,8 +9,8 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.security.entity.Permission;
 import io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity;
-import io.camunda.webapps.schema.entities.usermanagement.Permission;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
@@ -73,7 +73,7 @@ public class AuthorizationHandler
         .map(
             permissionValue ->
                 new Permission(
-                    permissionValue.getPermissionType().name(), permissionValue.getResourceIds()))
+                    permissionValue.getPermissionType(), permissionValue.getResourceIds()))
         .collect(Collectors.toList());
   }
 }

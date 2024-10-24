@@ -9,15 +9,19 @@ package io.camunda.zeebe.gateway.rest;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import io.atomix.cluster.messaging.MessagingException;
+import io.camunda.document.api.DocumentError.DocumentAlreadyExists;
 import io.camunda.document.api.DocumentError.DocumentNotFound;
 import io.camunda.document.api.DocumentError.InvalidInput;
 import io.camunda.document.api.DocumentError.OperationNotSupported;
+import io.camunda.document.api.DocumentError.StoreDoesNotExist;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.NotFoundException;
 import io.camunda.service.DocumentServices.DocumentException;
 import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.broker.client.api.NoTopologyAvailableException;
+import io.camunda.zeebe.broker.client.api.PartitionInactiveException;
 import io.camunda.zeebe.broker.client.api.PartitionNotFoundException;
 import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
@@ -149,6 +153,17 @@ public class RestErrorMapper {
         REST_GATEWAY_LOGGER.debug(pnfeMsg, pnfe);
         yield createProblemDetail(
             HttpStatus.SERVICE_UNAVAILABLE, pnfeMsg, pnfe.getClass().getName());
+      case final PartitionInactiveException pie:
+        final var pieMsg =
+            "Expected to handle gRPC request, but the target partition is currently inactive";
+        REST_GATEWAY_LOGGER.debug(pieMsg, pie);
+        yield createProblemDetail(HttpStatus.SERVICE_UNAVAILABLE, pieMsg, pie.getClass().getName());
+      case final NoTopologyAvailableException ntae:
+        final var ntaeMsg =
+            "Expected to handle gRPC request, but the gateway does not know any partitions yet";
+        REST_GATEWAY_LOGGER.debug(ntaeMsg, ntae);
+        yield createProblemDetail(
+            HttpStatus.SERVICE_UNAVAILABLE, ntaeMsg, ntae.getClass().getName());
       default:
         REST_GATEWAY_LOGGER.error(
             "Expected to handle REST request, but an unexpected error occurred", error);
@@ -191,6 +206,11 @@ public class RestErrorMapper {
         // is usually a transient issue
         REST_GATEWAY_LOGGER.trace(
             "Target broker was not the leader of the partition: {}", error, rootError);
+        yield createProblemDetail(HttpStatus.SERVICE_UNAVAILABLE, message, title);
+      }
+      case PARTITION_UNAVAILABLE -> {
+        REST_GATEWAY_LOGGER.debug(
+            "Partition in target broker is currently unavailable: {}", error, rootError);
         yield createProblemDetail(HttpStatus.SERVICE_UNAVAILABLE, message, title);
       }
       default -> {
@@ -250,14 +270,39 @@ public class RestErrorMapper {
   }
 
   public static ProblemDetail mapDocumentHandlingExceptionToProblem(final DocumentException e) {
-    final var status =
-        switch (e.getDocumentError()) {
-          case final DocumentNotFound ignored -> HttpStatus.NOT_FOUND;
-          case final InvalidInput ignored -> HttpStatus.BAD_REQUEST;
-          case final OperationNotSupported ignored -> HttpStatus.NOT_IMPLEMENTED;
-          default -> HttpStatus.INTERNAL_SERVER_ERROR;
-        };
-    return createProblemDetail(status, e.getMessage(), e.getDocumentError().getClass().getName());
+    final String detail;
+    final HttpStatusCode status;
+    switch (e.getDocumentError()) {
+      case final DocumentNotFound notFound -> {
+        detail = String.format("Document with id '%s' not found", notFound.documentId());
+        status = HttpStatus.NOT_FOUND;
+      }
+      case final InvalidInput invalidInput -> {
+        detail = invalidInput.message();
+        status = HttpStatus.BAD_REQUEST;
+      }
+      case final DocumentAlreadyExists documentAlreadyExists -> {
+        detail =
+            String.format(
+                "Document with id '%s' already exists", documentAlreadyExists.documentId());
+        status = HttpStatus.CONFLICT;
+      }
+      case final StoreDoesNotExist storeDoesNotExist -> {
+        detail =
+            String.format(
+                "Document store with id '%s' does not exist", storeDoesNotExist.storeId());
+        status = HttpStatus.BAD_REQUEST;
+      }
+      case final OperationNotSupported operationNotSupported -> {
+        detail = operationNotSupported.message();
+        status = HttpStatus.METHOD_NOT_ALLOWED;
+      }
+      default -> {
+        detail = null;
+        status = HttpStatus.INTERNAL_SERVER_ERROR;
+      }
+    }
+    return createProblemDetail(status, detail, e.getDocumentError().getClass().getName());
   }
 
   public static ResponseEntity<Object> mapDocumentHandlingExceptionToResponse(

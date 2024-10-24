@@ -29,7 +29,7 @@
     <!-- DATABASE -->
     <!-- Elasticsearch-->
     <elasticsearch.client.version>8.13.0</elasticsearch.client.version>
-    <elasticsearch.client.test.version>7.17.24</elasticsearch.client.test.version>
+    <elasticsearch.client.test.version>7.17.25</elasticsearch.client.test.version>
 
     <!--The least supported opensearch version we should test against-->
     <opensearch.test.version>2.10.0</opensearch.test.version>
@@ -47,16 +47,16 @@
     <opensearch.test.version>2.10.0</opensearch.test.version>
     <!-- the opensearch version of the previous Optimize version -->
     <previous.optimize.opensearch.version>2.9.0</previous.optimize.opensearch.version>
-    <awssdk.version>2.28.22</awssdk.version>
+    <awssdk.version>2.28.29</awssdk.version>
 
     <jetty.version>12.0.13</jetty.version>
     <jackson.version>2.18.0</jackson.version>
     <jsonpath.version>2.9.0</jsonpath.version>
     <apache.http5-client.version>5.4</apache.http5-client.version>
-    <apache.http5-core.version>5.3</apache.http5-core.version>
+    <apache.http5-core.version>5.3.1</apache.http5-core.version>
     <guava.version>33.3.1-jre</guava.version>
     <spring.boot.version>3.3.4</spring.boot.version>
-    <spring.version>6.1.13</spring.version>
+    <spring.version>6.1.14</spring.version>
     <httpclient.version>4.5.14</httpclient.version>
     <quartz.version>2.3.2</quartz.version>
     <jakarta.rs-api.version>4.0.0</jakarta.rs-api.version>
@@ -74,8 +74,8 @@
     <!-- testing config -->
     <mockito.version>5.14.1</mockito.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
-    <junit.jupiter.version>5.11.2</junit.jupiter.version>
-    <junit.platform.version>1.11.2</junit.platform.version>
+    <junit.jupiter.version>5.11.3</junit.jupiter.version>
+    <junit.platform.version>1.11.3</junit.platform.version>
     <mockserver.version>5.15.0</mockserver.version>
     <assertj.version>3.26.3</assertj.version>
     <google-java-format.plugin.version>1.23.0</google-java-format.plugin.version>
