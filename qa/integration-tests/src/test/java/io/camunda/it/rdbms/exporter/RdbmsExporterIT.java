@@ -42,7 +42,7 @@ class RdbmsExporterIT {
 
   private final ExporterTestController controller = new ExporterTestController();
 
-  private final ProtocolFactory factory = new ProtocolFactory();
+  private final ProtocolFactory factory = new ProtocolFactory(System.nanoTime());
 
   @Autowired private RdbmsService rdbmsService;
 
@@ -110,6 +110,7 @@ class RdbmsExporterIT {
   private ImmutableRecord<RecordValue> getProcessInstanceStartedRecord(final Long position) {
     final Record<RecordValue> recordValueRecord =
         factory.generateRecord(ValueType.PROCESS_INSTANCE);
+    System.out.println(recordValueRecord.getValue());
     return ImmutableRecord.builder()
         .from(recordValueRecord)
         .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)

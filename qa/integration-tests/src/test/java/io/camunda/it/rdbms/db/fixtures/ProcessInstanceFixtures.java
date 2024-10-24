@@ -53,17 +53,17 @@ public final class ProcessInstanceFixtures {
   }
 
   public static void createAndSaveRandomProcessInstances(final RdbmsWriter rdbmsWriter) {
-    createAndSaveRandomProcessInstances(rdbmsWriter, nextStringId());
+    createAndSaveRandomProcessInstances(rdbmsWriter, b -> b);
   }
 
   public static void createAndSaveRandomProcessInstances(
-      final RdbmsWriter rdbmsWriter, final String processDefinitionId) {
+      final RdbmsWriter rdbmsWriter,
+      final Function<ProcessInstanceDbModelBuilder, ProcessInstanceDbModelBuilder>
+          builderFunction) {
     for (int i = 0; i < 20; i++) {
       rdbmsWriter
           .getProcessInstanceWriter()
-          .create(
-              ProcessInstanceFixtures.createRandomized(
-                  b -> b.processDefinitionId(processDefinitionId)));
+          .create(ProcessInstanceFixtures.createRandomized(builderFunction));
     }
 
     rdbmsWriter.flush();

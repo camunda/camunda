@@ -22,7 +22,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 public class RdbmsTestConfiguration {
 
   @Bean
-  public PlatformTransactionManager platformTransactionManager(DataSource dataSource) {
+  public PlatformTransactionManager platformTransactionManager(final DataSource dataSource) {
     return new DataSourceTransactionManager(dataSource);
   }
 }

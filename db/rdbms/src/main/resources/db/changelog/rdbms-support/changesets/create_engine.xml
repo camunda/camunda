@@ -70,4 +70,31 @@
     </createIndex>
   </changeSet>
 
+
+  <changeSet id="create_flow_node_table" author="cthiel">
+    <createTable tableName="FLOW_NODE_INSTANCE">
+      <column name="FLOW_NODE_INSTANCE_KEY" type="BIGINT">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="FLOW_NODE_ID" type="VARCHAR(400)" />
+      <column name="PROCESS_INSTANCE_KEY" type="BIGINT" />
+      <column name="PROCESS_DEFINITION_ID" type="VARCHAR(200)" />
+      <column name="PROCESS_DEFINITION_KEY" type="BIGINT" />
+      <column name="TYPE" type="VARCHAR(100)" />
+      <column name="STATE" type="VARCHAR(20)" />
+      <column name="START_DATE" type="TIMESTAMP WITH TIME ZONE(3)" />
+      <column name="END_DATE" type="TIMESTAMP WITH TIME ZONE(3)" />
+      <column name="TREE_PATH" type="VARCHAR(4000)" />
+      <column name="TENANT_ID" type="VARCHAR(200)" />
+      <column name="INCIDENT_KEY" type="BIGINT" />
+      <column name="SCOPE_KEY" type="BIGINT" />
+    </createTable>
+
+    <modifySql dbms="mariadb">
+      <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
+      <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
+    </modifySql>
+  </changeSet>
+
+
 </databaseChangeLog>

@@ -125,7 +125,8 @@ public class ProcessInstanceIT {
     final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
 
     final String processDefinitionId = ProcessInstanceFixtures.nextStringId();
-    createAndSaveRandomProcessInstances(rdbmsWriter, processDefinitionId);
+    createAndSaveRandomProcessInstances(
+        rdbmsWriter, b -> b.processDefinitionId(processDefinitionId));
 
     final var searchResult =
         processInstanceReader.search(
@@ -148,12 +149,16 @@ public class ProcessInstanceIT {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
 
-    createAndSaveRandomProcessInstances(rdbmsWriter);
+    final String processDefinitionId = ProcessInstanceFixtures.nextStringId();
+    createAndSaveRandomProcessInstances(
+        rdbmsWriter, b -> b.processDefinitionId(processDefinitionId));
 
     final var searchResult =
         processInstanceReader.search(
             new ProcessInstanceDbQuery(
-                new ProcessInstanceFilter.Builder().build(),
+                new ProcessInstanceFilter.Builder()
+                    .processDefinitionIds(processDefinitionId)
+                    .build(),
                 ProcessInstanceSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(null).size(null))));
 

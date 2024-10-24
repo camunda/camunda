@@ -7,10 +7,9 @@
  */
 package io.camunda.db.rdbms.write.queue;
 
-public enum ContextType {
-  EXPORTER_POSITION,
-  PROCESS_DEFINITION,
-  PROCESS_INSTANCE,
-  FLOW_NODE,
-  VARIABLE,
+public interface QueueItemMerger {
+
+  boolean canBeMerged(QueueItem queueItem);
+
+  QueueItem merge(QueueItem originalItem);
 }

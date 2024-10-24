@@ -7,10 +7,11 @@
  */
 package io.camunda.db.rdbms.write.queue;
 
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import org.apache.ibatis.session.ExecutorType;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.TransactionIsolationLevel;
@@ -25,7 +26,8 @@ public class ExecutionQueue {
   private final List<PreFlushListener> preFlushListeners = new ArrayList<>();
   private final List<PostFlushListener> postFlushListeners = new ArrayList<>();
 
-  private final Queue<QueueItem> queue = new ConcurrentLinkedQueue<>();
+  // TODO solve concurrency
+  private final LinkedList<QueueItem> queue = new LinkedList<>();
 
   private final long partitionId; // for addressing the logger
   private final Integer queueFlushLimit;
@@ -53,12 +55,17 @@ public class ExecutionQueue {
     postFlushListeners.add(listener);
   }
 
-  public void flush() {
+  /**
+   * Performs flush on the queue.
+   *
+   * @return number of flushed items
+   */
+  public int flush() {
     if (queue.isEmpty()) {
       LOG.trace(
           "[RDBMS ExecutionQueue, Partition {}] Skip Flushing because execution queue is empty",
           partitionId);
-      return;
+      return 0;
     }
     LOG.debug(
         "[RDBMS ExecutionQueue, Partition {}] Flushing execution queue with {} items",
@@ -95,12 +102,46 @@ public class ExecutionQueue {
           partitionId,
           flushedElements,
           System.currentTimeMillis() - startMillis);
+
+      return flushedElements;
     } catch (final Exception e) {
       LOG.error("[RDBMS ExecutionQueue, Partition {}] Error while executing queue", partitionId, e);
       session.rollback();
+
+      throw e;
     } finally {
       session.close();
     }
+  }
+
+  /**
+   * Iterate from end over the queue and try to find a last added compatible queueItem. The
+   * queueItem will be replaced with a new, combined queueItem.
+   */
+  public boolean tryMergeWithExistingQueueItem(final QueueItemMerger... combiners) {
+    int index = queue.size() - 1;
+    for (final Iterator<QueueItem> it = queue.descendingIterator(); it.hasNext(); ) {
+      final QueueItem item = it.next();
+
+      for (final QueueItemMerger combiner : combiners) {
+        if (combiner.canBeMerged(item)) {
+          LOG.debug("Combining new item with item {}, {}", item.contextType(), item.id());
+          final var newItem = combiner.merge(item);
+
+          queue.set(index, newItem);
+          return true;
+        }
+      }
+
+      index--;
+    }
+
+    return false;
+  }
+
+  @VisibleForTesting
+  LinkedList<QueueItem> getQueue() {
+    return queue;
   }
 
   private void checkQueueForFlush() {

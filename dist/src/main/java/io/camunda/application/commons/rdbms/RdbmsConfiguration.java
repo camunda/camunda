@@ -8,10 +8,12 @@
 package io.camunda.application.commons.rdbms;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.read.service.FlowNodeInstanceReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceReader;
 import io.camunda.db.rdbms.read.service.VariableReader;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
+import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
@@ -30,6 +32,12 @@ public class RdbmsConfiguration {
   @Bean
   public VariableReader variableRdbmsReader(final VariableMapper variableMapper) {
     return new VariableReader(variableMapper);
+  }
+
+  @Bean
+  public FlowNodeInstanceReader flowNodeInstanceReader(
+      final FlowNodeInstanceMapper flowNodeInstanceMapper) {
+    return new FlowNodeInstanceReader(flowNodeInstanceMapper);
   }
 
   @Bean
@@ -55,9 +63,14 @@ public class RdbmsConfiguration {
   public RdbmsService rdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
       final VariableReader variableReader,
+      final FlowNodeInstanceReader flowNodeInstanceReader,
       final ProcessDefinitionReader processDefinitionReader,
       final ProcessInstanceReader processInstanceReader) {
     return new RdbmsService(
-        rdbmsWriterFactory, processDefinitionReader, processInstanceReader, variableReader);
+        rdbmsWriterFactory,
+        flowNodeInstanceReader,
+        processDefinitionReader,
+        processInstanceReader,
+        variableReader);
   }
 }

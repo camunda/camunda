@@ -123,7 +123,8 @@ public class RdbmsExporter implements Exporter {
     }
     registeredHandlers.put(
         ValueType.PROCESS_INSTANCE,
-        new ProcessInstanceExportHandler(rdbmsWriter.getProcessInstanceWriter()));
+        new ProcessInstanceExportHandler(
+            rdbmsWriter.getFlowNodeInstanceWriter(), rdbmsWriter.getProcessInstanceWriter()));
     registeredHandlers.put(
         ValueType.VARIABLE, new VariableExportHandler(rdbmsWriter.getVariableWriter()));
   }
