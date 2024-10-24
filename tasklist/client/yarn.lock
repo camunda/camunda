@@ -237,29 +237,29 @@
     "@codemirror/language" "^6.10.0"
     lezer-feel "^1.2.3"
 
-"@bpmn-io/form-js-carbon-styles@1.11.0-alpha.0":
-  version "1.11.0-alpha.0"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.11.0-alpha.0.tgz#5800b6ecdb7ae0412beccd463819ec6cb286015b"
-  integrity sha512-EO8kQAxQdyYGNLdnmPnTJAlQXtPUGawIHckt85aEr+xWLjx/glEkSwpyyUicV57My2KfW4ik/V2xkqxKPQ+FfA==
+"@bpmn-io/form-js-carbon-styles@1.11.1":
+  version "1.11.1"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.11.1.tgz#be97a1ecfef209cc241e11d93469e14a8aca88b8"
+  integrity sha512-ljDttTrrtJzJ6RCT4kaZftDN5Ew7g3TJ5MViwMFDYjK39nTNKELbdOyubSxOPJOX1n23xyk3xdd9zSqhi1ex7A==
 
-"@bpmn-io/form-js-viewer@1.11.0-alpha.0":
-  version "1.11.0-alpha.0"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.11.0-alpha.0.tgz#83e5bbc508d3c4cbf4eceb0c6fb2508af3a53834"
-  integrity sha512-S07rLJ740qGcVJ6zLnaZaKEEs7Ed4jcRsezh5O6u0r9Q55rHVpkm1xIPu7XPxNdEdQPgcDA6fzG7xg7rbt5pxQ==
+"@bpmn-io/form-js-viewer@1.11.1":
+  version "1.11.1"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.11.1.tgz#9122d613409dd36b4bdc2d5cb3ffc14c3444488b"
+  integrity sha512-mU2pqF/J8YIMMMyBSaIB9Zv0mOo856nNi8Zyr5QS3LmrRAWRsVbwVuXMbdFzuv61tWLYC3srZ1J8IgvrqcJk7Q==
   dependencies:
-    "@carbon/grid" "^11.22.0"
-    big.js "^6.2.1"
+    "@carbon/grid" "^11.27.0"
+    big.js "^6.2.2"
     classnames "^2.5.1"
     didi "^10.2.2"
-    dompurify "^3.1.2"
-    feelers "^1.3.1"
+    dompurify "^3.1.6"
+    feelers "^1.4.0"
     feelin "^3.1.2"
     flatpickr "^4.6.13"
     ids "^1.0.5"
     lodash "^4.17.21"
     luxon "^3.5.0"
-    marked "^14.0.0"
-    min-dash "^4.2.1"
+    marked "^14.1.2"
+    min-dash "^4.2.2"
     preact "^10.5.14"
 
 "@bundled-es-modules/cookie@^2.0.0":
@@ -328,7 +328,7 @@
   dependencies:
     "@ibm/telemetry-js" "^1.5.0"
 
-"@carbon/grid@^11.22.0", "@carbon/grid@^11.28.0", "@carbon/grid@^11.29.0":
+"@carbon/grid@^11.27.0", "@carbon/grid@^11.28.0", "@carbon/grid@^11.29.0":
   version "11.29.0"
   resolved "https://registry.yarnpkg.com/@carbon/grid/-/grid-11.29.0.tgz#783bec6503f8a0812d4951a49d93677558969226"
   integrity sha512-SAJhTexN6TjbItcUczOqhzgHBGXLhvUhlTdyqj+wzUH0tqEN8g6gLp+1sn9+rL+kV4obSb/7bdSESZtwQr/tQg==
@@ -2191,7 +2191,7 @@ base64-arraybuffer@^1.0.1:
   resolved "https://registry.yarnpkg.com/base64-arraybuffer/-/base64-arraybuffer-1.0.2.tgz#1c37589a7c4b0746e34bd1feb951da2df01c1bdc"
   integrity sha512-I3yl4r9QB5ZRY3XuJVEPfc2XhZO6YweFPI+UovAzn+8/hb3oJ6lnysaFcjVpkCPfVWFUDvoZ8kmVDP7WyRtYtQ==
 
-big.js@^6.2.1:
+big.js@^6.2.2:
   version "6.2.2"
   resolved "https://registry.yarnpkg.com/big.js/-/big.js-6.2.2.tgz#be3bb9ac834558b53b099deef2a1d06ac6368e1a"
   integrity sha512-y/ie+Faknx7sZA5MfGA2xKlu0GDv8RWrXGsmlteyJQ2lvoKv9GBK/fpRMc2qlSoBAgNxrixICFCBefIq8WCQpQ==
@@ -2884,7 +2884,7 @@ domify@^2.0.0:
   resolved "https://registry.yarnpkg.com/domify/-/domify-2.0.0.tgz#951f0c36ff960b1cc527444f41819c765336dca8"
   integrity sha512-rmvrrmWQPD/X1A/nPBfIVg4r05792QdG9Z4Prk6oQG0F9zBMDkr0GKAdds1wjb2dq1rTz/ywc4ZxpZbgz0tttg==
 
-dompurify@^3.1.2:
+dompurify@^3.1.6:
   version "3.1.7"
   resolved "https://registry.yarnpkg.com/dompurify/-/dompurify-3.1.7.tgz#711a8c96479fb6ced93453732c160c3c72418a6a"
   integrity sha512-VaTstWtsneJY8xzy7DekmYWEOZcmzIe3Qb3zPd4STve1OBTa+e+WmS1ITQec1fZYXI3HCsOZZiSMpG6oxoWMWQ==
@@ -3277,7 +3277,7 @@ fdir@^6.4.2:
   resolved "https://registry.yarnpkg.com/fdir/-/fdir-6.4.2.tgz#ddaa7ce1831b161bc3657bb99cb36e1622702689"
   integrity sha512-KnhMXsKSPZlAhp7+IjUkRZKPb4fUyccpDrdFXbi4QL1qkmFh9kVY09Yox+n4MaOb3lHZ1Tv829C3oaaXoMYPDQ==
 
-feelers@^1.3.1:
+feelers@^1.4.0:
   version "1.4.0"
   resolved "https://registry.yarnpkg.com/feelers/-/feelers-1.4.0.tgz#b0fc2c5e387f27ba171f044d229d4755771bb8a5"
   integrity sha512-CGa/7ILuqoqTaeYeoKsg/4tzu2es9sEEJTmSjdu0lousZBw4V9gcYhHYFNmbrSrKmbAVfOzj6/DsymGJWFIOeg==
@@ -4284,7 +4284,7 @@ make-dir@^4.0.0:
   dependencies:
     semver "^7.5.3"
 
-marked@^14.0.0:
+marked@^14.1.2:
   version "14.1.3"
   resolved "https://registry.yarnpkg.com/marked/-/marked-14.1.3.tgz#42372cffd22e76e0f1d7f3627ebc116d291abbed"
   integrity sha512-ZibJqTULGlt9g5k4VMARAktMAjXoVnnr+Y3aCqW1oDftcV4BA3UmrBifzXoZyenHRk75csiPu9iwsTj4VNBT0g==
@@ -4613,7 +4613,7 @@ mimic-response@^3.1.0:
   resolved "https://registry.yarnpkg.com/mimic-response/-/mimic-response-3.1.0.tgz#2d1d59af9c1b129815accc2c46a022a5ce1fa3c9"
   integrity sha512-z0yWI+4FDrrweS8Zmt4Ej5HdJmky15+L2e6Wgn3+iK5fWzb6T3fhNFq2+MeTRb064c6Wr4N/wv0DzQTjNzHNGQ==
 
-min-dash@^4.0.0, min-dash@^4.1.0, min-dash@^4.1.1, min-dash@^4.2.1:
+min-dash@^4.0.0, min-dash@^4.1.0, min-dash@^4.1.1, min-dash@^4.2.1, min-dash@^4.2.2:
   version "4.2.2"
   resolved "https://registry.yarnpkg.com/min-dash/-/min-dash-4.2.2.tgz#f9d3b6d5901e3a627f926013bcfd9efb2cad93a3"
   integrity sha512-qbhSYUxk6mBaF096B3JOQSumXbKWHenmT97cSpdNzgkWwGjhjhE/KZODCoDNhI2I4C9Cb6R/Q13S4BYkUSXoXQ==
