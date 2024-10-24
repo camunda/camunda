@@ -209,7 +209,9 @@ public enum ZbColumnFamilies implements EnumValue {
   USER_TASK_INTERMEDIATE_STATES(106),
 
   MAPPINGS(107),
-  CLAIM_BY_KEY(108);
+  CLAIM_BY_KEY(108),
+
+  USER_TASK_RECORD_REQUEST_METADATA(109);
 
   private final int value;
 

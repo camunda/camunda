@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class DbUserTaskState implements MutableUserTaskState {
 
@@ -49,6 +50,11 @@ public class DbUserTaskState implements MutableUserTaskState {
   private final ColumnFamily<DbLong, UserTaskIntermediateStateValue>
       userTasksIntermediateStatesColumnFamily;
 
+  private final UserTaskRecordRequestMetadata userTaskRecordRequestMetadata =
+      new UserTaskRecordRequestMetadata();
+  private final ColumnFamily<DbLong, UserTaskRecordRequestMetadata>
+      userTasksRecordRequestMetadataColumnFamily;
+
   public DbUserTaskState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     userTaskKey = new DbLong();
@@ -69,6 +75,13 @@ public class DbUserTaskState implements MutableUserTaskState {
             transactionContext,
             userTaskIntermediateStateKey,
             userTaskIntermediateStateToRead);
+
+    userTasksRecordRequestMetadataColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.USER_TASK_RECORD_REQUEST_METADATA,
+            transactionContext,
+            userTaskKey,
+            userTaskRecordRequestMetadata);
   }
 
   @Override
@@ -151,6 +164,25 @@ public class DbUserTaskState implements MutableUserTaskState {
   public void deleteIntermediateState(final long key) {
     userTaskIntermediateStateKey.wrapLong(key);
     userTasksIntermediateStatesColumnFamily.deleteExisting(userTaskIntermediateStateKey);
+  }
+
+  @Override
+  public Optional<UserTaskRecordRequestMetadata> getRecordRequestMetadata(final long key) {
+    userTaskKey.wrapLong(key);
+    return Optional.ofNullable(userTasksRecordRequestMetadataColumnFamily.get(userTaskKey));
+  }
+
+  @Override
+  public void storeRecordRequestMetadata(
+      final long key, final UserTaskRecordRequestMetadata recordRequestMetadata) {
+    userTaskKey.wrapLong(key);
+    userTasksRecordRequestMetadataColumnFamily.insert(userTaskKey, recordRequestMetadata);
+  }
+
+  @Override
+  public void deleteRecordRequestMetadata(final long key) {
+    userTaskKey.wrapLong(key);
+    userTasksRecordRequestMetadataColumnFamily.deleteIfExists(userTaskKey);
   }
 
   private List<String> getAuthorizedTenantIds(final Map<String, Object> authorizations) {

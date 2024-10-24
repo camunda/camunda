@@ -26,9 +26,10 @@ import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.instance.UserTaskRecordRequestMetadata;
+import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -41,7 +42,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
   private final UserTaskCommandProcessors commandProcessors;
   private final ProcessState processState;
-  private final UserTaskState userTaskState;
+  private final MutableUserTaskState userTaskState;
   private final ElementInstanceState elementInstanceState;
   private final EventScopeInstanceState eventScopeInstanceState;
 
@@ -55,6 +56,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
   public UserTaskProcessor(
       final ProcessingState state,
+      final MutableUserTaskState userTaskState,
       final KeyGenerator keyGenerator,
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers,
@@ -63,7 +65,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
         new UserTaskCommandProcessors(
             state, keyGenerator, bpmnBehaviors, writers, authCheckBehavior);
     this.processState = state.getProcessState();
-    this.userTaskState = state.getUserTaskState();
+    this.userTaskState = userTaskState;
     this.elementInstanceState = state.getElementInstanceState();
     this.eventScopeInstanceState = state.getEventScopeInstanceState();
 
@@ -127,6 +129,20 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     final var eventType = mapIntentToEventType(intent);
 
     if (userTaskElement.hasTaskListeners(eventType)) {
+      /*
+       * Store the original command's metadata (requestId, requestStreamId) before creating
+       * the first task listener job. This metadata will be used later to finalize the original
+       * command after all task listeners have been processed, ensuring that the engine can respond
+       * appropriately to the original command request.
+       *
+       * Note:
+       * Typically, persistence logic should be handled via `*Applier` classes. However, since
+       * this involves request-related data, so in the case of command reconstruction,
+       * we will have new request values anyway, so persisting these data here is acceptable.
+       * A similar approach has been used in `ProcessInstanceCreationCreateWithResultProcessor`.
+       */
+      storeUserTaskRecordRequestMetadata(command);
+
       final var listener = userTaskElement.getTaskListeners(eventType).getFirst();
       final var userTaskElementInstance = getUserTaskElementInstance(persistedRecord);
       final var context = buildContext(userTaskElementInstance);
@@ -134,6 +150,15 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     } else {
       processor.onFinalizeCommand(command, persistedRecord);
     }
+  }
+
+  void storeUserTaskRecordRequestMetadata(final TypedRecord<UserTaskRecord> command) {
+    final var metadata =
+        new UserTaskRecordRequestMetadata()
+            .setIntent((UserTaskIntent) command.getIntent())
+            .setRequestId(command.getRequestId())
+            .setRequestStreamId(command.getRequestStreamId());
+    userTaskState.storeRecordRequestMetadata(command.getValue().getUserTaskKey(), metadata);
   }
 
   private void handleCommandRejection(

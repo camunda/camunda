@@ -17,6 +17,7 @@ import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.ServiceTaskBuilder;
+import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.util.CloseableSilently;
 import java.time.Duration;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
@@ -189,12 +191,21 @@ public class ZeebeResourcesHelper implements CloseableSilently {
         .getProcessInstanceKey();
   }
 
+  public long createSingleUserTask(final UnaryOperator<UserTaskBuilder> userTaskBuilderFunction) {
+    return createSingleUserTask("", userTaskBuilderFunction);
+  }
+
   public long createSingleUserTask() {
     return createSingleUserTask("");
   }
 
   public long createSingleUserTask(final String tenantId) {
-    final var modelInstance = createSingleUserTaskModelInstance();
+    return createSingleUserTask(tenantId, UnaryOperator.identity());
+  }
+
+  public long createSingleUserTask(
+      final String tenantId, final UnaryOperator<UserTaskBuilder> userTaskBuilderFunction) {
+    final var modelInstance = createSingleUserTaskModelInstance(userTaskBuilderFunction);
     final var processDefinitionKey = deployProcess(modelInstance, tenantId);
     final var processInstanceKey = createProcessInstance(processDefinitionKey, "{}", tenantId);
     final var userTaskKey =
@@ -209,10 +220,11 @@ public class ZeebeResourcesHelper implements CloseableSilently {
     return userTaskKey;
   }
 
-  public BpmnModelInstance createSingleUserTaskModelInstance() {
+  public BpmnModelInstance createSingleUserTaskModelInstance(
+      final UnaryOperator<UserTaskBuilder> userTaskBuilderFunction) {
     return Bpmn.createExecutableProcess("process")
         .startEvent("start")
-        .userTask("task")
+        .userTask("task", t -> userTaskBuilderFunction.apply(t.zeebeUserTask()))
         .zeebeUserTask()
         .endEvent("end")
         .done();
