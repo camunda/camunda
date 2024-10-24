@@ -10,7 +10,6 @@ package io.camunda.it.rdbms.exporter;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.write.domain.VariableDbModel;
 import io.camunda.exporter.rdbms.RdbmsExporter;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
@@ -95,7 +94,31 @@ class RdbmsExporterIT {
   }
 
   @Test
-  public void shouldExportProcessInstanceAndVariables() {
+  public void shouldExportVariables() {
+    // given
+    final Record<RecordValue> variableCreatedRecord =
+        ImmutableRecord.builder()
+            .from(factory.generateRecord(ValueType.VARIABLE))
+            .withIntent(VariableIntent.CREATED)
+            .withPosition(2L)
+            .withTimestamp(System.currentTimeMillis())
+            .build();
+
+    // when
+    exporter.export(variableCreatedRecord);
+    // and we do a manual flush
+    exporter.flushExecutionQueue();
+
+    // then
+    final var variable = rdbmsService.getVariableReader().findOne(variableCreatedRecord.getKey());
+    final VariableRecordValue variableRecordValue =
+        (VariableRecordValue) variableCreatedRecord.getValue();
+    assertThat(variable).isNotNull();
+    assertThat(variable.value()).isEqualTo(variableRecordValue.getValue());
+  }
+
+  @Test
+  public void shouldExportAll() {
     // given
     final var processInstanceRecord = getProcessInstanceStartedRecord(1L);
 
@@ -119,8 +142,7 @@ class RdbmsExporterIT {
     final var processInstance = rdbmsService.getProcessInstanceReader().findOne(key);
     assertThat(processInstance).isNotNull();
 
-    final VariableDbModel variable =
-        rdbmsService.getVariableReader().findOne(variableCreated.getKey());
+    final var variable = rdbmsService.getVariableReader().findOne(variableCreated.getKey());
     final VariableRecordValue variableRecordValue =
         (VariableRecordValue) variableCreated.getValue();
     assertThat(variable).isNotNull();

@@ -9,12 +9,8 @@
 <databaseChangeLog
   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
-  xmlns:pro="http://www.liquibase.org/xml/ns/pro"
   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
-        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd
-        http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd
-        http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-latest.xsd">
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
   <changeSet id="create_process_deployment_table" author="cthiel">
     <createTable tableName="PROCESS_DEFINITION">
@@ -66,14 +62,21 @@
       </column>
       <column name="PROCESS_INSTANCE_KEY" type="BIGINT" />
       <column name="SCOPE_KEY" type="BIGINT" />
+      <column name="TYPE" type="VARCHAR(255)"/>
       <column name="VAR_NAME" type="VARCHAR(255)" />
-      <column name="VAR_VALUE" type="VARCHAR(4000)" />
-      <column name="TRUNCATED" type="BOOLEAN" />
+      <column name="DOUBLE_VALUE" type="DOUBLE"/>
+      <column name="LONG_VALUE" type="BIGINT"/>
+      <column name="VAR_VALUE" type="CLOB"/> <!-- max length of 8191 -->
+      <column name="VAR_FULL_VALUE" type="CLOB"/>
       <column name="TENANT_ID" type="VARCHAR(255)" />
+      <column name="IS_PREVIEW" type="BOOLEAN"/>
     </createTable>
 
     <createIndex tableName="VARIABLE" indexName="IDX_VARIABLE_PROCESS_INSTANCE_KEY">
       <column name="PROCESS_INSTANCE_KEY" />
+    </createIndex>
+    <createIndex tableName="VARIABLE" indexName="IDX_VARIABLE_TENANT_ID">
+      <column name="TENANT_ID" />
     </createIndex>
   </changeSet>
 
