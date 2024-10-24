@@ -27,8 +27,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
   private final SimpleDocumentStoreRegistry registry;
 
   public DocumentServices(
-      final BrokerClient brokerClient,
-      final SecurityConfiguration securityConfiguration) {
+      final BrokerClient brokerClient, final SecurityConfiguration securityConfiguration) {
     this(brokerClient, securityConfiguration, null, new SimpleDocumentStoreRegistry());
   }
 

@@ -184,7 +184,10 @@ public class CreateDocumentCommandImpl
   @Override
   public CreateDocumentCommandStep2 customMetadata(final Map<String, Object> customMetadata) {
     ensureNotNull("customMetadata", customMetadata);
-    metadata.setCustomProperties(customMetadata);
+    if (metadata.getCustomProperties() == null) {
+      metadata.setCustomProperties(new HashMap<>());
+    }
+    metadata.getCustomProperties().putAll(customMetadata);
     return this;
   }
 }

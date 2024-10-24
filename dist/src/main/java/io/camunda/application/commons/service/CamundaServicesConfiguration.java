@@ -163,7 +163,8 @@ public class CamundaServicesConfiguration {
   @Bean
   public DocumentServices documentServices(
       final BrokerClient brokerClient, final ServiceSecurityProperties securityConfiguration) {
-    return new DocumentServices(brokerClient, securityConfiguration, null, new SimpleDocumentStoreRegistry());
+    return new DocumentServices(
+        brokerClient, securityConfiguration, null, new SimpleDocumentStoreRegistry());
   }
 
   @Bean
