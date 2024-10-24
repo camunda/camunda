@@ -73,13 +73,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.http.HttpEntity;
 import org.apache.http.nio.entity.NStringEntity;
 import org.jetbrains.annotations.NotNull;
@@ -284,18 +282,6 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  public Integer getCountOfCompletedInstancesWithIdsIn(final Set<Object> processInstanceIds) {
-    final Set<String> stringProcessInstanceIds =
-        processInstanceIds.stream().map(Object::toString).collect(Collectors.toSet());
-
-    return getInstanceCountWithQuery(
-        QueryDSL.and(
-            QueryDSL.exists(ProcessInstanceIndex.END_DATE),
-            QueryDSL.stringTerms(
-                ProcessInstanceIndex.PROCESS_INSTANCE_ID, stringProcessInstanceIds)));
-  }
-
-  @Override
   public void deleteAllOptimizeData() {
     try {
       getOptimizeOpenSearchClient()
@@ -448,19 +434,6 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
                     .getOptimizeIndexAliasForIndex(new ExternalProcessVariableIndexOS()))
             .toArray(String[]::new);
     deleteIndices(indexNames);
-  }
-
-  @Override
-  public void deleteIndicesStartingWithPrefix(final String term) {
-    final String[] indicesToDelete =
-        getOptimizeOpenSearchClient()
-            .getRichOpenSearchClient()
-            .index()
-            .getIndexNamesWithRetries(getIndexNameService().getIndexPrefix() + "-" + term + "*")
-            .toArray(String[]::new);
-    if (indicesToDelete.length > 0) {
-      deleteIndices(indicesToDelete);
-    }
   }
 
   @Override
@@ -1005,24 +978,6 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     final SearchResponse<T> searchResponse =
         getOptimizeOpenSearchClient().search(searchReqBuilder, type, errorMessage);
     return searchResponse.hits().hits().stream().map(Hit::source).collect(Collectors.toList());
-  }
-
-  private int getInstanceCountWithQuery(final Query query) {
-    try {
-      return Long.valueOf(
-              getOptimizeOpenSearchClient()
-                  .count(new String[] {PROCESS_INSTANCE_MULTI_ALIAS}, query))
-          .intValue();
-    } catch (final IOException e) {
-      throw new OptimizeIntegrationTestException(
-          "Cannot evaluate document count for index " + PROCESS_INSTANCE_MULTI_ALIAS, e);
-    }
-  }
-
-  private Integer getVariableInstanceCountForAllProcessInstances(final Query processInstanceQuery) {
-    // TODO implement with #11121
-    throw new NotImplementedException(
-        "Not yet implemented for OpenSearch, will be implemented with issue #11121");
   }
 
   private void deleteIndexOfMapping(final IndexMappingCreator<IndexSettings.Builder> indexMapping) {
