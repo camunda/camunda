@@ -42,6 +42,6 @@ export {Loading} from './Loading';
 export {EntityList} from './EntityList';
 export {EmptyState} from './EmptyState';
 
-export type {User} from './UserTypeahead';
+export type {User, Identity} from './UserTypeahead';
 export type {Canvas, ModdleElement, RegistryElement} from './BPMNDiagram';
 export type {TableBody, TableHead} from './Table';

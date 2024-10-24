@@ -6,40 +6,22 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ReactNode, useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {FilterableMultiSelect} from '@carbon/react';
 
 import {t} from 'translation';
-import debouncePromise from 'debouncePromise';
-import {formatters, getRandomId} from 'services';
+import {getRandomId} from 'services';
 
-import {searchIdentities, User, getUserId} from './service';
-
-import './MultiUserInput.scss';
-
-const debounceRequest = debouncePromise();
-
-export interface MultiUserInputProps {
-  titleText?: ReactNode;
-  users: User[];
-  collectionUsers?: User[];
-  onAdd: (value: {id: string} | User['identity']) => void;
-  fetchUsers?: (
-    query: string,
-    excludeGroups?: boolean
-  ) => Promise<{total: number; result: User['identity'][]}>;
-  optionsOnly?: boolean;
-  onRemove: (id: string) => void;
-  onClear: () => void;
-  excludeGroups?: boolean;
-}
-
-type Item = {
-  id: string;
-  label: string;
-  subText?: string | null;
-  disabled?: boolean;
-};
+import {
+  itemToString,
+  itemToElement,
+  identityToItem,
+  getItems,
+  getSelectedIdentity,
+  Item,
+} from './service';
+import useLoadIdentities from './useLoadIdentities';
+import {UserInputProps} from './UserTypeahead';
 
 export default function MultiUserInput({
   users = [],
@@ -51,25 +33,25 @@ export default function MultiUserInput({
   onClear,
   excludeGroups = false,
   titleText,
-}: MultiUserInputProps): JSX.Element {
-  const [loading, setLoading] = useState(true);
-  const [identities, setIdentities] = useState<User['identity'][]>([]);
+}: UserInputProps): JSX.Element {
+  const {loading, setLoading, identities, loadNewValues} = useLoadIdentities({
+    fetchUsers,
+    excludeGroups,
+  });
   const [textValue, setTextValue] = useState('');
   const multiSelectRef = useRef<HTMLElement>(null);
-  const selectedUsers = useMemo(() => users.map((user) => formatIdentity(user.identity)), [users]);
-
-  const loadNewValues = useCallback(
-    async (query: string, delay = 0) => {
-      setLoading(true);
-
-      const {result} = await debounceRequest(async () => {
-        return await (fetchUsers || searchIdentities)(query, excludeGroups);
-      }, delay);
-
-      setIdentities(result);
-      setLoading(false);
-    },
-    [fetchUsers, excludeGroups]
+  const selectedUserItems = useMemo(
+    () => users.map((user) => identityToItem(user.identity)),
+    [users]
+  );
+  const items = getItems(
+    loading,
+    textValue,
+    identities,
+    selectedUserItems,
+    users,
+    collectionUsers,
+    optionsOnly
   );
 
   useEffect(() => {
@@ -104,40 +86,27 @@ export default function MultiUserInput({
         input.removeEventListener('blur', handleBlur);
       }
     };
-  }, [loadNewValues]);
+  }, [loadNewValues, setLoading]);
 
-  function addIdentity(id: string | null) {
-    if (id || id === null) {
-      const selectedIdentity = identities
-        .filter(filterSelected)
-        .find((identity) => getUserId(identity.id) === id);
-      if (selectedIdentity) {
-        onAdd(selectedIdentity);
-      } else if (id) {
-        onAdd({id});
-      }
+  function handleSelect(item: Item | null) {
+    if (!item) {
+      return;
+    }
+
+    const userToRemove = users.find((user) => user.id === item.id);
+
+    if (userToRemove) {
+      onRemove(userToRemove.id);
+    } else {
+      addIdentity(item.id);
     }
   }
 
-  const filterSelected = ({id}: User['identity']) => {
-    const exists = (users: User[]) => users.some((user) => user.id === getUserId(id));
-
-    return !exists(users) && !exists(collectionUsers);
-  };
-
-  function getItems(): Item[] {
-    if (loading) {
-      return [{id: 'loading', label: textValue, disabled: true}];
+  function addIdentity(id: string | null) {
+    const selectedIdentity = getSelectedIdentity(id, identities, users, collectionUsers);
+    if (selectedIdentity) {
+      onAdd(selectedIdentity);
     }
-
-    const items = identities.filter(filterSelected).map(formatIdentity);
-    items.unshift(...selectedUsers);
-
-    if (!optionsOnly && textValue && !identities.some((item) => item.id === textValue)) {
-      items.unshift({id: textValue, label: textValue});
-    }
-
-    return items;
   }
 
   return (
@@ -149,74 +118,25 @@ export default function MultiUserInput({
       ref={multiSelectRef}
       // disable the internal sorting since we have the data sorted by default
       sortItems={(items) => items}
-      initialSelectedItems={selectedUsers}
+      initialSelectedItems={selectedUserItems}
       downshiftProps={{
-        onSelect: (item) => {
-          if (!item) {
-            return;
-          }
-
-          const userToRemove = users.find((user) => user.id === item.id);
-
-          if (userToRemove) {
-            onRemove(userToRemove.id);
-          } else {
-            addIdentity(item.id);
-          }
-        },
+        onSelect: handleSelect,
       }}
       onChange={({selectedItems}) => {
         if (selectedItems.length === 0) {
           onClear();
         }
       }}
-      items={getItems()}
+      items={items}
       itemToString={(item) => {
-        const {label, subText, id} = item;
-        return label + subText + (id || '');
-      }}
-      itemToElement={(item) => {
-        if (item.id === 'loading') {
-          return <p className="cds--checkbox-label-text cds--skeleton" />;
+        // This is a workaround to prevent the itemToString from being called with an array
+        // This happens on initial render
+        if (Array.isArray(item)) {
+          return '';
         }
-
-        const {label, subText, id} = item;
-        return (
-          <span id={id}>
-            {formatters.getHighlightedText(label, textValue)}
-            {subText && (
-              <span className="subText">
-                {formatters.getHighlightedText(subText, textValue, true)}
-              </span>
-            )}
-          </span>
-        );
+        return itemToString(item);
       }}
+      itemToElement={(item) => itemToElement(item, textValue)}
     />
   );
-}
-
-function formatTypeaheadOption({name, email, id}: User['identity']): {
-  label: string;
-  subText: string | null;
-} {
-  let subText: string | null = null;
-  if (name && email) {
-    subText = email;
-  }
-
-  return {
-    label: name || email || id || '',
-    subText,
-  };
-}
-
-function formatIdentity(identity: User['identity']): Item {
-  const {label, subText} = formatTypeaheadOption(identity);
-
-  return {
-    id: getUserId(identity.id),
-    label,
-    subText,
-  };
 }
