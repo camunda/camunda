@@ -485,6 +485,9 @@ public final class EventAppliers implements EventApplier {
     register(
         TenantIntent.ENTITY_ADDED,
         new TenantEntityAddedApplier(state.getTenantState(), state.getUserState()));
+    register(
+        TenantIntent.ENTITY_REMOVED,
+        new TenantEntityRemovedApplier(state.getTenantState(), state.getUserState()));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {
