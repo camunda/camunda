@@ -164,7 +164,7 @@ jobs:
           name: zeebe-build-ubuntu-latest
 
       - name: Extract zip file on Windows
-        run: Expand-Archive -Path ./zeebe-build-ubuntu-latest.zip -DestinationPath ./
+        run: tar -xf ./zeebe-build-ubuntu-latest.zip
 
       - name: Delete zip file
         run: del .\zeebe-build-ubuntu-latest.zip
