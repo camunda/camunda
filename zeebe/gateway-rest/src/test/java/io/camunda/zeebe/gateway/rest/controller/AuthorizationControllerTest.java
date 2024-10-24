@@ -230,6 +230,36 @@ public class AuthorizationControllerTest extends RestControllerTest {
                         new AuthorizationPatchRequestPermissionsInner()
                             .permissionType(PermissionTypeEnum.CREATE)
                             .resourceIds(List.of()))),
-            "No resourceIds provided in 'CREATE'."));
+            "No resourceIds provided in 'CREATE'."),
+        Arguments.of(
+            new AuthorizationPatchRequest()
+                .action(ActionEnum.ADD)
+                .resourceType(ResourceTypeEnum.USER)
+                .permissions(
+                    List.of(
+                        new AuthorizationPatchRequestPermissionsInner()
+                            .permissionType(PermissionTypeEnum.DELETE_PROCESS)
+                            .resourceIds(List.of("resourceId")))),
+            "Permission type 'DELETE_PROCESS' is allowed for resource type 'USER'."),
+        Arguments.of(
+            new AuthorizationPatchRequest()
+                .action(ActionEnum.ADD)
+                .resourceType(ResourceTypeEnum.USER)
+                .permissions(
+                    List.of(
+                        new AuthorizationPatchRequestPermissionsInner()
+                            .permissionType(PermissionTypeEnum.DELETE_DRD)
+                            .resourceIds(List.of("resourceId")))),
+            "Permission type 'DELETE_DRD' is allowed for resource type 'USER'."),
+        Arguments.of(
+            new AuthorizationPatchRequest()
+                .action(ActionEnum.ADD)
+                .resourceType(ResourceTypeEnum.USER)
+                .permissions(
+                    List.of(
+                        new AuthorizationPatchRequestPermissionsInner()
+                            .permissionType(PermissionTypeEnum.DELETE_FORM)
+                            .resourceIds(List.of("resourceId")))),
+            "Permission type 'DELETE_FORM' is allowed for resource type 'USER'."));
   }
 }

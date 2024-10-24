@@ -3575,6 +3575,9 @@ components:
                   - READ
                   - UPDATE
                   - DELETE
+                  - DELETE_PROCESS
+                  - DELETE_DRD
+                  - DELETE_FORM
               resourceIds:
                 type: array
                 description: A list of resource IDs the permission relates to.
