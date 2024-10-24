@@ -9,30 +9,123 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="io.camunda.db.rdbms.sql.VariableMapper">
 
-  <select id="findOne"
-    statementType="PREPARED"
-    parameterType="java.lang.Long"
-    resultType="io.camunda.db.rdbms.write.domain.VariableDbModel">
-      SELECT
-        VAR_KEY,
-        PROCESS_INSTANCE_KEY,
-        SCOPE_KEY,
-        VAR_NAME,
-        VAR_VALUE,
-        TRUNCATED,
-        TENANT_ID
-      FROM
-        VARIABLE
-      WHERE VAR_KEY = #{key}
+  <select id="count" resultType="java.lang.Long">
+    SELECT COUNT(*)
+    FROM VARIABLE
+    <include refid="io.camunda.db.rdbms.sql.VariableMapper.searchFilter"/>
   </select>
+
+  <!-- default search statement for databases supporting LIMIT/OFFSET-->
+  <select id="search" parameterType="io.camunda.db.rdbms.read.domain.VariableDbQuery" resultMap="io.camunda.db.rdbms.sql.VariableMapper.searchResultMap">
+    SELECT
+      VAR_KEY,
+      PROCESS_INSTANCE_KEY,
+      SCOPE_KEY,
+      VAR_NAME,
+      VAR_VALUE,
+      TENANT_ID,
+      false as IS_PREVIEW
+    FROM VARIABLE
+    <include refid="io.camunda.db.rdbms.sql.VariableMapper.searchFilter"/>
+    <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
+      <foreach collection="sort.orderings" open="ORDER BY " separator=", " item="item">
+        <include refid="io.camunda.db.rdbms.sql.VariableMapper.variableSortMapper"/>
+        ${item.order}
+      </foreach>
+    </if>
+    ${paging.after}
+  </select>
+
+  <sql id="searchFilter">
+    WHERE 1 = 1
+    <!-- basic filters -->
+    <if test="filter.processInstanceKeys != null and !filter.processInstanceKeys.isEmpty()">
+      AND PROCESS_INSTANCE_KEY IN
+      <foreach collection="filter.processInstanceKeys" item="value" open="(" separator=", " close=")">#{value}</foreach>
+    </if>
+    <if test="filter.scopeKeys != null and !filter.scopeKeys.isEmpty()">
+      AND SCOPE_KEY IN
+      <foreach collection="filter.scopeKeys" item="value" open="(" separator=", " close=")">#{value}</foreach>
+    </if>
+    <if test="filter.variableKeys != null and !filter.variableKeys.isEmpty()">
+      AND VAR_KEY IN
+      <foreach collection="filter.variableKeys" item="value" open="(" separator=", " close=")">#{value}</foreach>
+    </if>
+    <if test="filter.tenantIds != null and !filter.tenantIds.isEmpty()">
+      AND TENANT_ID IN
+      <foreach collection="filter.tenantIds" item="value" open="(" separator=", " close=")">#{value}</foreach>
+    </if>
+
+    <!-- advanced filters on variable name / values -->
+    <if test="filter.variableFilters != null and !filter.variableFilters.isEmpty()">
+      AND (
+      <foreach collection="filter.variableFilters" item="variableFilter">
+        (VAR_NAME = #{variableFilter.name}
+        <if test="variableFilter.operator != null and variableFilter.value != null">
+            <if test="!variableFilter.numericNeeded">
+              AND VAR_VALUE ${variableFilter.operator} #{variableFilter.value}
+            </if>
+            <if test="variableFilter.numericNeeded">
+                <if test="_databaseId == 'mariadb'">
+                  <!-- mariadb don't need cast for numeric operations AND cast to BIGINT is not possible -->
+                  AND VAR_VALUE ${variableFilter.operator} #{variableFilter.value}
+                </if>
+                <if test="_databaseId != 'mariadb'">
+                  AND CAST(VAR_VALUE as BIGINT) ${variableFilter.operator} #{variableFilter.value}
+                </if>
+            </if>
+        </if>
+        )
+        OR
+      </foreach>
+      false )
+    </if>
+
+  </sql>
+
+  <sql id="variableSortMapper">
+    <choose>
+      <when test='item.field == "value"'>
+        VAR_VALUE
+      </when>
+      <when test='item.field == "name"'>
+        VAR_NAME
+      </when>
+      <when test='item.field == "tenantId"'>
+        TENANT_ID
+      </when>
+      <when test='item.field == "key"'>
+        VAR_KEY
+      </when>
+      <when test='item.field == "scopeKey"'>
+        SCOPE_KEY
+      </when>
+      <when test='item.field == "processInstanceKey"'>
+        PROCESS_INSTANCE_KEY
+      </when>
+    </choose>
+  </sql>
+
+  <resultMap id="searchResultMap" type="io.camunda.search.entities.VariableEntity">
+    <constructor>
+      <idArg column="VAR_KEY" javaType="java.lang.Long"/>
+      <arg column="VAR_NAME" javaType="java.lang.String"/>
+      <arg column="VAR_VALUE" javaType="java.lang.String"/>
+      <arg column="VAR_VALUE" javaType="java.lang.String"/>
+      <arg column="IS_PREVIEW" javaType="java.lang.Boolean"/>
+      <arg column="SCOPE_KEY" javaType="java.lang.Long"/>
+      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg column="TENANT_ID" javaType="java.lang.String"/>
+    </constructor>
+  </resultMap>
 
   <insert
     id="insert"
     statementType="PREPARED"
     parameterType="io.camunda.db.rdbms.write.domain.VariableDbModel"
     flushCache="true">
-      INSERT INTO VARIABLE (VAR_KEY, PROCESS_INSTANCE_KEY, SCOPE_KEY, VAR_NAME, VAR_VALUE, TRUNCATED, TENANT_ID)
-      VALUES (#{key}, #{processInstanceKey}, #{scopeKey}, #{name}, #{value}, #{truncated}, #{tenantId})
+      INSERT INTO VARIABLE (VAR_KEY, PROCESS_INSTANCE_KEY, SCOPE_KEY, VAR_NAME, VAR_VALUE, TENANT_ID)
+      VALUES (#{key}, #{processInstanceKey}, #{scopeKey}, #{name}, #{value}, #{tenantId})
   </insert>
 
   <update
@@ -41,7 +134,7 @@
     parameterType="io.camunda.db.rdbms.write.domain.VariableDbModel"
     flushCache="true">
       UPDATE VARIABLE
-      SET VAR_VALUE = #{value}, TRUNCATED = #{truncated}
+      SET VAR_VALUE = #{value}
       WHERE VAR_KEY = #{key}
   </update>
 </mapper>
