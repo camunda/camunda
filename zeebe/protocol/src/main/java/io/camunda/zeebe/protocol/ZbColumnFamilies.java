@@ -206,10 +206,10 @@ public enum ZbColumnFamilies implements EnumValue {
   ENTITY_BY_TENANT(104),
   TENANT_BY_ID(105),
 
-  MAPPINGS(106),
-  CLAIM_BY_KEY(107),
+  USER_TASK_INTERMEDIATE_STATES(106),
 
-  USER_TASK_INTERMEDIATE_STATES(106);
+  MAPPINGS(107),
+  CLAIM_BY_KEY(108);
 
   private final int value;
 
