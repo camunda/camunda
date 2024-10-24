@@ -30,14 +30,32 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
-      - uses: ./.github/actions/build-frontend
-        id: build-operate-fe
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          directory: ./operate/client
-      - uses: ./.github/actions/build-frontend
-        id: build-tasklist-fe
+          node-version: "20"
+
+      - name: Setup yarn
+        shell: bash
+        run: npm install -g yarn
+
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
         with:
           directory: ./tasklist/client
+
+      - name: Install node dependencies
+        working-directory: ./tasklist/client
+        shell: bash
+        run: yarn
+
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+        with:
+          directory: ./operate/client
+
+      - name: Install node dependencies
+        working-directory: ./operate/client
+        shell: bash
+        run: yarn
 
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
