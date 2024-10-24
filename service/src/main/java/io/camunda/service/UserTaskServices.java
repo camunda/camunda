@@ -26,6 +26,8 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskCompletionRequ
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -53,7 +55,15 @@ public final class UserTaskServices
   @Override
   public SearchQueryResult<UserTaskEntity> search(final UserTaskQuery query) {
     return userTaskSearchClient.searchUserTasks(
-        query, SecurityContext.of(s -> s.withAuthentication(authentication)));
+        query,
+        SecurityContext.of(
+            s ->
+                s.withAuthentication(authentication)
+                    .withAuthorizationIfEnabled(
+                        securityConfiguration.getAuthorizations().isEnabled(),
+                        a ->
+                            a.resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+                                .permissionType(PermissionType.READ_USER_TASK))));
   }
 
   public SearchQueryResult<UserTaskEntity> search(

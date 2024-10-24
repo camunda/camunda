@@ -8,18 +8,20 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.AuthorizationFilter;
 import java.util.List;
 
-public class AuthorizationFilterTransformer implements FilterTransformer<AuthorizationFilter> {
+public final class AuthorizationFilterTransformer
+    implements FilterTransformer<AuthorizationFilter> {
 
   @Override
   public SearchQuery toSearchQuery(final AuthorizationFilter filter) {
     return and(
-        filter.ownerKey() == null ? null : term("ownerKey", filter.ownerKey()),
+        longTerms("ownerKey", filter.ownerKeys()),
         filter.ownerType() == null ? null : term("ownerType", filter.ownerType()),
         filter.resourceKey() == null ? null : term("permissions.resourceIds", filter.resourceKey()),
         filter.resourceType() == null ? null : term("resourceType", filter.resourceType()),

@@ -14,8 +14,8 @@ import java.util.List;
 import java.util.function.Function;
 
 public record Authentication(
-    String authenticatedUserId,
-    List<String> authenticatedGroupIds,
+    Long authenticatedUserKey,
+    List<Long> authenticatedGroupKeys,
     List<String> authenticatedTenantIds,
     String token) {
 
@@ -25,23 +25,23 @@ public record Authentication(
 
   public static final class Builder {
 
-    private String user;
-    private final List<String> groups = new ArrayList<>();
+    private Long userKey;
+    private final List<Long> groupKeys = new ArrayList<>();
     private final List<String> tenants = new ArrayList<>();
     private String token;
 
-    public Builder user(final String value) {
-      user = value;
+    public Builder user(final Long value) {
+      userKey = value;
       return this;
     }
 
-    public Builder group(final String value) {
-      return groups(List.of(value));
+    public Builder group(final Long value) {
+      return groupKeys(List.of(value));
     }
 
-    public Builder groups(final List<String> values) {
+    public Builder groupKeys(final List<Long> values) {
       if (values != null) {
-        groups.addAll(values);
+        groupKeys.addAll(values);
       }
       return this;
     }
@@ -63,7 +63,8 @@ public record Authentication(
     }
 
     public Authentication build() {
-      return new Authentication(user, unmodifiableList(groups), unmodifiableList(tenants), token);
+      return new Authentication(
+          userKey, unmodifiableList(groupKeys), unmodifiableList(tenants), token);
     }
   }
 }

@@ -52,11 +52,19 @@ public class AuthorizationServices
   @Override
   public SearchQueryResult<AuthorizationEntity> search(final AuthorizationQuery query) {
     return authorizationSearchClient.searchAuthorizations(
-        query, SecurityContext.of(s -> s.withAuthentication(authentication)));
+        query,
+        SecurityContext.of(
+            s ->
+                s.withAuthentication(authentication)
+                    .withAuthorizationIfEnabled(
+                        securityConfiguration.getAuthorizations().isEnabled(),
+                        a ->
+                            a.resourceType(AuthorizationResourceType.AUTHORIZATION)
+                                .permissionType(PermissionType.READ))));
   }
 
   public Set<String> fetchAssignedPermissions(
-      final Long ownerId, final AuthorizationResourceType resourceType, final String resourceId) {
+      final Long ownerKey, final AuthorizationResourceType resourceType, final String resourceId) {
     final SearchQueryResult<AuthorizationEntity> result =
         search(
             SearchQueryBuilders.authorizationSearchQuery(
@@ -68,7 +76,7 @@ public class AuthorizationServices
                                         resourceId != null && !resourceId.isEmpty()
                                             ? resourceId
                                             : null)
-                                    .ownerKey(ownerId))
+                                    .ownerKeys(ownerKey))
                         .page(p -> p.size(1))));
     // TODO logic to fetch indirect authorizations via roles/groups should be added later
     return result.items().stream()

@@ -12,6 +12,9 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.function.Function;
 
 public record Authorization(AuthorizationResourceType resourceType, PermissionType permissionType) {
+
+  public static final String WILDCARD = "*";
+
   public static Authorization of(final Function<Builder, Builder> builderFunction) {
     return builderFunction.apply(new Builder()).build();
   }

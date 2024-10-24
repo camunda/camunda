@@ -19,6 +19,10 @@ import java.util.function.Function;
  */
 public record SecurityContext(Authentication authentication, Authorization authorization) {
 
+  public boolean requiresAuthorizationChecks() {
+    return authentication != null && authorization != null;
+  }
+
   public static SecurityContext of(final Function<Builder, Builder> builderFunction) {
     return builderFunction.apply(new Builder()).build();
   }

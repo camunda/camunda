@@ -7,6 +7,8 @@
  */
 package io.camunda.search.clients;
 
+import io.camunda.search.clients.auth.AuthorizationQueryStrategy;
+import io.camunda.search.clients.auth.DocumentAuthorizationQueryStrategy;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.clients.transformers.filter.AuthenticationTransformer;
@@ -24,6 +26,7 @@ public final class SearchClientBasedQueryExecutor {
   private final DocumentBasedSearchClient searchClient;
   private final ServiceTransformers transformers;
   private final SecurityContext securityContext;
+  private final AuthorizationQueryStrategy authorizationQueryStrategy;
 
   public SearchClientBasedQueryExecutor(
       final DocumentBasedSearchClient searchClient,
@@ -32,16 +35,19 @@ public final class SearchClientBasedQueryExecutor {
     this.searchClient = searchClient;
     this.transformers = transformers;
     this.securityContext = securityContext;
+    authorizationQueryStrategy = new DocumentAuthorizationQueryStrategy(searchClient, transformers);
   }
 
   public <T extends FilterBase, S extends SortOption, R> SearchQueryResult<R> search(
       final TypedSearchQuery<T, S> query, final Class<R> documentClass) {
-    final var authCheck = getAuthenticationCheckIfPresent();
+    final var authenticationCheck = getAuthenticationCheckIfPresent();
     final var transformer = getSearchQueryRequestTransformer(query);
-    final var searchRequest = transformer.applyWithAuthentication(query, authCheck);
-
+    final var searchRequest = transformer.applyWithAuthentication(query, authenticationCheck);
+    final var authorizedSearchRequest =
+        authorizationQueryStrategy.applyAuthorizationToQuery(
+            searchRequest, securityContext, query.getClass());
     final SearchQueryResultTransformer<R> responseTransformer = getSearchResultTransformer();
-    return responseTransformer.apply(searchClient.search(searchRequest, documentClass));
+    return responseTransformer.apply(searchClient.search(authorizedSearchRequest, documentClass));
   }
 
   private SearchQuery getAuthenticationCheckIfPresent() {
