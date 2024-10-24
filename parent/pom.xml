@@ -141,7 +141,7 @@
     <version.reactive-streams>1.0.4</version.reactive-streams>
     <version.postgresql>42.7.4</version.postgresql>
     <version.h2>2.3.232</version.h2>
-    <version.aws-signing>2.3.1</version.aws-signing>
+    <version.aws-signing>3.0.0</version.aws-signing>
     <version.reactor-netty>1.1.23</version.reactor-netty>
     <version.tc-keycloak>3.3.1</version.tc-keycloak>
     <version.jakarta-activation>2.1.3</version.jakarta-activation>
