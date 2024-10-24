@@ -171,13 +171,23 @@ public class Engine implements RecordProcessor {
     final boolean noBanCheckNeeded =
         !(intent instanceof ProcessInstanceRelatedIntent)
             || intent instanceof ProcessInstanceCreationIntent;
+
+    if (noBanCheckNeeded) {
+      return true;
+    }
+
     final boolean banned = processingState.getBannedInstanceState().isBanned(typedCommand);
+
+    if (!banned) {
+      return true;
+    }
+
     final boolean commandAllowedForBanned =
         intent == ProcessInstanceIntent.CANCEL
             || intent == ProcessInstanceIntent.TERMINATE_ELEMENT
             || intent == ProcessInstanceBatchIntent.TERMINATE;
 
-    return noBanCheckNeeded || !banned || commandAllowedForBanned;
+    return commandAllowedForBanned;
   }
 
   private void handleUnexpectedError(
