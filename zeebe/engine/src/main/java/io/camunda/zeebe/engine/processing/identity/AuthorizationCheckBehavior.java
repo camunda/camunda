@@ -57,6 +57,11 @@ public final class AuthorizationCheckBehavior {
       return true;
     }
 
+    if (!request.getCommand().hasRequestMetadata()) {
+      // The command is written by Zeebe internally. Internal Zeebe commands are always authorized
+      return true;
+    }
+
     final var userKey =
         (Long) request.getCommand().getAuthorizations().get(Authorization.AUTHORIZED_USER_KEY);
     if (userKey == null) {

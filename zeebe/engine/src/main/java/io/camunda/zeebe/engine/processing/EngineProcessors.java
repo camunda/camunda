@@ -227,7 +227,8 @@ public final class EngineProcessors {
         processingState,
         writers,
         commandDistributionBehavior,
-        config);
+        config,
+        authCheckBehavior);
 
     ClockProcessors.addClockProcessors(
         typedRecordProcessors,
