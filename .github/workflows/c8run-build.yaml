@@ -3,6 +3,9 @@ name: "C8Run: build/test"
 on:
   workflow_call:
 
+env:
+  NODE_OPTIONS: "--max_old_space_size=4096"
+
 jobs:
   test_c8run:
     strategy:
