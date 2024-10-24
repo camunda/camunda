@@ -89,6 +89,7 @@ public class CamundaExporterITInvocationProvider
                       new TestStandaloneBroker()
                           .withCamundaExporter(
                               "http://" + elasticsearchContainer.getHttpHostAddress())
+                          .withRecordingExporter(true)
                           .withProperty("zeebe.broker.gateway.enable", true)
                           .withProperty("camunda.rest.query.enabled", true)
                           .withProperty(

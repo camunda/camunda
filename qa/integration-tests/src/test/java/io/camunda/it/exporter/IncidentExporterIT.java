@@ -13,7 +13,11 @@ import io.camunda.it.utils.CamundaExporterITInvocationProvider;
 import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.search.filter.IncidentFilter;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.test.util.record.RecordLogger;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -100,6 +104,58 @@ public class IncidentExporterIT {
     assertThat(incidents.getFirst().getErrorType())
         .isEqualTo(ErrorType.UNHANDLED_ERROR_EVENT.name());
     assertThat(incidents.getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
+  }
+
+  @TestTemplate
+  public void shouldExportIncidentsForCallActivities(final TestStandaloneBroker testBroker) {
+    RecordingExporter.reset();
+    final var client = testBroker.newClientBuilder().build();
+    // having process with call activity
+    final String parentProcessId = "parentProcess";
+    final String callActivityId = "callActivity1";
+    final String calledProcessId = "process";
+    final String lastCalledTaskId = "task";
+    final String errorMsg1 = "Error in called process task";
+    final String errorMsg2 = "Error in last called process task";
+
+    final BpmnModelInstance testProcess =
+        Bpmn.createExecutableProcess(parentProcessId)
+            .startEvent()
+            .callActivity(callActivityId)
+            .zeebeProcessId(calledProcessId)
+            .done();
+    final var calledProcessDefinitionKey =
+        client
+            .newDeployResourceCommand()
+            .addResourceFromClasspath("process/single-task.bpmn")
+            .send()
+            .join()
+            .getProcesses()
+            .get(0)
+            .getProcessDefinitionKey();
+    final var callingProcess1DefKey =
+        client
+            .newDeployResourceCommand()
+            .addProcessModel(testProcess, "testProcess.bpmn")
+            .send()
+            .join()
+            .getProcesses()
+            .get(0)
+            .getProcessDefinitionKey();
+    final long parentProcessInstanceKey =
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId(parentProcessId)
+            .latestVersion()
+            .send()
+            .join()
+            .getProcessInstanceKey();
+
+    throwIncident(client, "task", "this-errorcode-does-not-exists", "Process error");
+
+    waitForIncident(client, f -> f.processDefinitionKey(calledProcessDefinitionKey));
+
+    RecordLogger.logRecords();
   }
 
   private void waitForIncident(final ZeebeClient client, final Consumer<IncidentFilter> filterFn) {

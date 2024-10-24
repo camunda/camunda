@@ -51,7 +51,7 @@ public class IncidentHandlerTest {
   void shouldHandleRecord() {
     // given
     final Record<IncidentRecordValue> incidentRecord =
-        factory.generateRecord(ValueType.INCIDENT, r -> r.withIntent(ProcessIntent.CREATED));
+        factory.generateRecord(ValueType.INCIDENT, r -> r.withIntent(IncidentIntent.CREATED));
 
     // when - then
     assertThat(underTest.handlesRecord(incidentRecord)).isTrue();

@@ -125,25 +125,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
       piEntity
           .setParentProcessInstanceKey(recordValue.getParentProcessInstanceKey())
           .setParentFlowNodeInstanceKey(recordValue.getParentElementInstanceKey());
-      //      if (piEntity.getTreePath() == null) {
-      //        final String treePath = getTreePathForCalledProcess(recordValue);
-      //        piEntity.setTreePath(treePath);
-      //      }
     }
-
-    // TODO: Implement properly treePath https://github.com/camunda/camunda/issues/18378
-    final String treePath = getTreePathForCalledProcess(recordValue);
-    piEntity.setTreePath(treePath);
-    //
-    //    if (piEntity.getTreePath() == null) {
-    //      final String treePath =
-    //          new TreePath()
-    //
-    // .startTreePath(ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()))
-    //              .toString();
-    //      piEntity.setTreePath(treePath);
-    //    }
-
     completeOperation(record);
   }
 
@@ -247,50 +229,6 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
 
     importBatch.incrementFinishedWiCount();
     */
-  }
-
-  /// TODO - because it depends on listViewStore and flowNodeStore
-  private String getTreePathForCalledProcess(final ProcessInstanceRecordValue recordValue) {
-    // DEFAULT for now
-    return String.format("PI_%s", recordValue.getProcessInstanceKey());
-    //   TODO: TreePath  https://github.com/camunda/camunda/issues/18378
-    //
-    //    final ListViewStore listViewStore = null;
-    //    final FlowNodeStore flowNodeStore = null;
-    //    if (listViewStore == null || flowNodeStore == null) {
-    //      return null;
-    //    }
-    //
-    //    final String parentTreePath =
-    //
-    // listViewStore.findProcessInstanceTreePathFor(recordValue.getParentProcessInstanceKey());
-    //
-    //    if (parentTreePath != null) {
-    //      final String flowNodeInstanceId =
-    //          ConversionUtils.toStringOrNull(recordValue.getParentElementInstanceKey());
-    //      final String callActivityId =
-    //          flowNodeStore.getFlowNodeIdByFlowNodeInstanceId(flowNodeInstanceId);
-    //      final String treePath =
-    //          new TreePath(parentTreePath)
-    //              .appendEntries(
-    //                  callActivityId,
-    //                  flowNodeInstanceId,
-    //                  ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()))
-    //              .toString();
-    //
-    //      return treePath;
-    //    } else {
-    //      LOGGER.warn(
-    //          "Unable to find parent tree path for parent instance id "
-    //              + recordValue.getParentProcessInstanceKey());
-    //      final String treePath =
-    //          new TreePath()
-    //
-    // .startTreePath(ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()))
-    //              .toString();
-    //
-    //      return treePath;
-    //    }
   }
 
   /// TODO - because it depends on operationsManager and batchRequest
