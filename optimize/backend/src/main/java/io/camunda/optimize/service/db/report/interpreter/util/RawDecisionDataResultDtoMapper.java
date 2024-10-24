@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.service.db.es.report.command.decision.mapping;
+package io.camunda.optimize.service.db.report.interpreter.util;
 
 import static java.util.stream.Collectors.toMap;
 

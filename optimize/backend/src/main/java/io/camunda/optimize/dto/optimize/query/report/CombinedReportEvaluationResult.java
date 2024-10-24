@@ -15,7 +15,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 import io.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginatedDataExportDto;
-import io.camunda.optimize.service.db.es.report.result.MapCommandResult;
+import io.camunda.optimize.service.db.report.result.MapCommandResult;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.exceptions.OptimizeValidationException;
 import io.camunda.optimize.service.export.CSVUtils;

@@ -13,19 +13,18 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.AuthorizationEntity;
-import io.camunda.search.entities.AuthorizationEntity.Authorization;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.AuthorizationSort;
 import io.camunda.security.auth.Authentication;
+import io.camunda.security.entity.Permission;
 import io.camunda.service.AuthorizationServices;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResponse.OwnerTypeEnum;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResponse.PermissionsEnum;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResponse.ResourceTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,22 +43,29 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
   static final String EXPECTED_SEARCH_RESPONSE =
       """
           {
-              "items": [
-                 { "ownerKey": "1",
-                   "ownerType": "USER",
-                   "resourceType": "PROCESS_DEFINITION",
-                   "resourceKey": "2",
-                   "permissions": ["CREATE"]
-                 }
-              ],
-              "page": {
-                  "totalItems": 1,
-                  "firstSortValues": [],
-                  "lastSortValues": [
-                      "v"
-                  ]
-              }
-          }""";
+             "items": [
+               {
+                 "ownerKey": 1,
+                 "ownerType": "USER",
+                 "resourceType": "PROCESS_DEFINITION",
+                 "permissions": [
+                   {
+                     "permissionType": "CREATE",
+                     "resourceIds": [
+                       "2"
+                     ]
+                   }
+                 ]
+               }
+             ],
+             "page": {
+               "totalItems": 1,
+               "firstSortValues": [],
+               "lastSortValues": [
+                 "v"
+               ]
+             }
+           }""";
   private static final String AUTHORIZATION_SEARCH_URL = "/v2/authorizations/search";
 
   private static final SearchQueryResult<AuthorizationEntity> SEARCH_QUERY_RESULT =
@@ -68,12 +74,10 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
           .items(
               List.of(
                   new AuthorizationEntity(
-                      new Authorization(
-                          "1",
-                          OwnerTypeEnum.USER.getValue(),
-                          "2",
-                          ResourceTypeEnum.PROCESS_DEFINITION.getValue(),
-                          Set.of(PermissionsEnum.CREATE.getValue())))))
+                      "1",
+                      OwnerTypeEnum.USER.getValue(),
+                      ResourceTypeEnum.PROCESS_DEFINITION.getValue(),
+                      List.of(new Permission(PermissionType.CREATE, List.of("2"))))))
           .sortValues(new Object[] {"v"})
           .build();
 
@@ -91,6 +95,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
     when(authorizationServices.search(any(AuthorizationQuery.class)))
         .thenReturn(SEARCH_QUERY_RESULT);
     // when / then
+
     webClient
         .post()
         .uri(AUTHORIZATION_SEARCH_URL)

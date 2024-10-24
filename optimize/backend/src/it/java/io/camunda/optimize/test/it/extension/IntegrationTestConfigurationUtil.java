@@ -25,19 +25,6 @@ public class IntegrationTestConfigurationUtil {
 
   private IntegrationTestConfigurationUtil() {}
 
-  private static String getDefaultEngineName() {
-    return PROPERTIES.getProperty("camunda.optimize.engine.default.name");
-  }
-
-  public static String resolveFullDefaultEngineName() {
-    return System.getProperty(
-        "prefixedDefaultEngineName", resolveFullEngineName(getDefaultEngineName()));
-  }
-
-  public static String resolveFullEngineName(final String engineName) {
-    return System.getProperty("enginePrefix", "") + engineName;
-  }
-
   public static String getZeebeDockerVersion() {
     return PROPERTIES.getProperty("zeebe.docker.version");
   }
@@ -54,15 +41,6 @@ public class IntegrationTestConfigurationUtil {
         + applicationContext.getBean(JettyConfig.class).getContextPath().orElse("");
   }
 
-  public static String getSecuredEmbeddedOptimizeEndpoint(
-      final ApplicationContext applicationContext) {
-    return "https://localhost:"
-        + applicationContext
-            .getBean(JettyConfig.class)
-            .getPort(EnvironmentPropertiesConstants.HTTPS_PORT_KEY)
-        + applicationContext.getBean(JettyConfig.class).getContextPath().orElse("");
-  }
-
   public static String getEmbeddedOptimizeRestApiEndpoint(
       final ApplicationContext applicationContext) {
     return getEmbeddedOptimizeEndpoint(applicationContext) + REST_API_PATH;
@@ -70,12 +48,8 @@ public class IntegrationTestConfigurationUtil {
 
   public static ConfigurationService createItConfigurationService() {
     return ConfigurationServiceBuilder.createConfiguration()
-        .loadConfigurationFrom("service-config.yaml", "it/it-config.yaml")
+        .loadConfigurationFrom("service-config.yaml", "it/it-config-ccsm.yaml")
         .build();
-  }
-
-  public static int getSmtpPort() {
-    return Integer.parseInt(System.getProperty("smtpTestPort", "6666"));
   }
 
   public static int getHttpTimeoutMillis() {
@@ -84,9 +58,5 @@ public class IntegrationTestConfigurationUtil {
 
   public static int getDatabaseMockServerPort() {
     return Integer.parseInt(System.getProperty("databaseMockServerPort", "1080"));
-  }
-
-  public static int getEngineMockServerPort() {
-    return Integer.parseInt(System.getProperty("engineMockServerPort", "1090"));
   }
 }

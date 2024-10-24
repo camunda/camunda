@@ -7,6 +7,7 @@
  */
 package io.camunda.webapps.schema.entities.usermanagement;
 
+import io.camunda.security.entity.Permission;
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import java.util.List;
 

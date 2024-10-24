@@ -7,29 +7,28 @@
  */
 package io.camunda.zeebe.it.authorization;
 
-import static io.camunda.zeebe.it.util.AuthorizationsUtil.awaitUserExistsInElasticsearch;
-import static io.camunda.zeebe.it.util.AuthorizationsUtil.createClientWithAuthorization;
-import static io.camunda.zeebe.it.util.AuthorizationsUtil.createUserWithPermissions;
+import static io.camunda.zeebe.it.util.AuthorizationsUtil.createClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.application.Profile;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ProblemException;
-import io.camunda.zeebe.client.protocol.rest.AuthorizationPatchRequest.ResourceTypeEnum;
-import io.camunda.zeebe.client.protocol.rest.AuthorizationPatchRequestPermissionsInner.PermissionTypeEnum;
+import io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum;
+import io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum;
+import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import java.time.Duration;
 import java.util.List;
+import java.util.UUID;
 import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -38,10 +37,8 @@ import org.testcontainers.utility.DockerImageName;
 
 @AutoCloseResources
 @Testcontainers
-@TestInstance(Lifecycle.PER_CLASS)
+@ZeebeIntegration
 public class ProcessInstanceMigrationMigrateAuthorizationIT {
-  public static final String DEFAULT_USERNAME = "demo";
-  public static final String AUTHENTICATED_USERNAME = "foo";
   public static final String JOB_TYPE = "jobType";
   public static final String SOURCE_TASK = "sourceTask";
   public static final String TARGET_TASK = "targetTask";
@@ -67,28 +64,29 @@ public class ProcessInstanceMigrationMigrateAuthorizationIT {
 
   private static final String PROCESS_ID = "processId";
   private static final String TARGET_PROCESS_ID = "targetProcessId";
-  @TestZeebe private TestStandaloneBroker zeebe;
-  private ZeebeClient defaultUserClient;
-  private ZeebeClient authorizedUserClient;
-  private ZeebeClient unauthorizedUserClient;
-  private long targetProcDefKey;
+
+  @TestZeebe(autoStart = false)
+  private static final TestStandaloneBroker BROKER =
+      new TestStandaloneBroker()
+          .withRecordingExporter(true)
+          .withBrokerConfig(
+              b -> b.getExperimental().getEngine().getAuthorizations().setEnableAuthorization(true))
+          .withAdditionalProfile(Profile.AUTH_BASIC);
+
+  private static AuthorizationsUtil authUtil;
+  private static ZeebeClient defaultUserClient;
+  private static long targetProcDefKey;
 
   @BeforeAll
-  void beforeAll() throws Exception {
-    zeebe =
-        new TestStandaloneBroker()
-            .withRecordingExporter(true)
-            .withBrokerConfig(
-                b ->
-                    b.getExperimental()
-                        .getEngine()
-                        .getAuthorizations()
-                        .setEnableAuthorization(true))
-            .withCamundaExporter("http://" + CONTAINER.getHttpHostAddress())
-            .withAdditionalProfile(Profile.AUTH_BASIC);
-    zeebe.start();
-    defaultUserClient = createClientWithAuthorization(zeebe, DEFAULT_USERNAME, "demo");
-    awaitUserExistsInElasticsearch(CONTAINER.getHttpHostAddress(), DEFAULT_USERNAME);
+  static void beforeAll() {
+    BROKER.withCamundaExporter("http://" + CONTAINER.getHttpHostAddress());
+    BROKER.start();
+
+    final var defaultUsername = "demo";
+    defaultUserClient = createClient(BROKER, defaultUsername, "demo");
+    authUtil = new AuthorizationsUtil(BROKER, defaultUserClient, CONTAINER.getHttpHostAddress());
+
+    authUtil.awaitUserExistsInElasticsearch(defaultUsername);
     final var deploymentEvent =
         defaultUserClient
             .newDeployResourceCommand()
@@ -114,21 +112,6 @@ public class ProcessInstanceMigrationMigrateAuthorizationIT {
             .findFirst()
             .orElseThrow()
             .getProcessDefinitionKey();
-
-    authorizedUserClient =
-        createUserWithPermissions(
-            zeebe,
-            defaultUserClient,
-            CONTAINER.getHttpHostAddress(),
-            AUTHENTICATED_USERNAME,
-            "password",
-            new Permissions(
-                ResourceTypeEnum.PROCESS_DEFINITION,
-                PermissionTypeEnum.UPDATE,
-                List.of(PROCESS_ID)));
-    unauthorizedUserClient =
-        createUserWithPermissions(
-            zeebe, defaultUserClient, CONTAINER.getHttpHostAddress(), "bar", "password");
   }
 
   @Test
@@ -169,20 +152,29 @@ public class ProcessInstanceMigrationMigrateAuthorizationIT {
             .send()
             .join()
             .getProcessInstanceKey();
+    final var username = UUID.randomUUID().toString();
+    final var password = "password";
+    authUtil.createUserWithPermissions(
+        username,
+        password,
+        new Permissions(
+            ResourceTypeEnum.PROCESS_DEFINITION, PermissionTypeEnum.UPDATE, List.of(PROCESS_ID)));
 
-    // when migrate to a non-existing process as authorization checks should fail first
-    // then
-    final var response =
-        authorizedUserClient
-            .newMigrateProcessInstanceCommand(processInstanceKey)
-            .migrationPlan(targetProcDefKey)
-            .addMappingInstruction(SOURCE_TASK, TARGET_TASK)
-            .send()
-            .join();
+    try (final var client = authUtil.createClient(username, password)) {
+      // when migrate to a non-existing process as authorization checks should fail first
+      // then
+      final var response =
+          client
+              .newMigrateProcessInstanceCommand(processInstanceKey)
+              .migrationPlan(targetProcDefKey)
+              .addMappingInstruction(SOURCE_TASK, TARGET_TASK)
+              .send()
+              .join();
 
-    // The Rest API returns a null future for an empty response
-    // We can verify for null, as if we'd be unauthenticated we'd get an exception
-    assertThat(response).isNull();
+      // The Rest API returns a null future for an empty response
+      // We can verify for null, as if we'd be unauthenticated we'd get an exception
+      assertThat(response).isNull();
+    }
   }
 
   @Test
@@ -196,22 +188,27 @@ public class ProcessInstanceMigrationMigrateAuthorizationIT {
             .send()
             .join()
             .getProcessInstanceKey();
+    final var username = UUID.randomUUID().toString();
+    final var password = "password";
+    authUtil.createUser(username, password);
 
-    // when migrate to a non-existing process as authorization checks should fail first
-    // then
-    final var response =
-        unauthorizedUserClient
-            .newMigrateProcessInstanceCommand(processInstanceKey)
-            .migrationPlan(targetProcDefKey)
-            .addMappingInstruction(SOURCE_TASK, TARGET_TASK)
-            .send();
+    try (final var client = authUtil.createClient(username, password)) {
+      // when migrate to a non-existing process as authorization checks should fail first
+      // then
+      final var response =
+          client
+              .newMigrateProcessInstanceCommand(processInstanceKey)
+              .migrationPlan(targetProcDefKey)
+              .addMappingInstruction(SOURCE_TASK, TARGET_TASK)
+              .send();
 
-    // then
-    assertThatThrownBy(response::join)
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("title: UNAUTHORIZED")
-        .hasMessageContaining("status: 401")
-        .hasMessageContaining(
-            "Unauthorized to perform operation 'UPDATE' on resource 'PROCESS_DEFINITION'");
+      // then
+      assertThatThrownBy(response::join)
+          .isInstanceOf(ProblemException.class)
+          .hasMessageContaining("title: UNAUTHORIZED")
+          .hasMessageContaining("status: 401")
+          .hasMessageContaining(
+              "Unauthorized to perform operation 'UPDATE' on resource 'PROCESS_DEFINITION'");
+    }
   }
 }

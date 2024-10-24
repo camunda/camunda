@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.VersionInfo;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
@@ -2812,6 +2813,39 @@ final class JsonSerializableToJsonTest {
         "name": "",
         "entityKey": -1,
         "entityType": "UNSPECIFIED"
+      }
+      """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////// MappingRecord //////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Mapping record",
+        (Supplier<MappingRecord>)
+            () ->
+                new MappingRecord()
+                    .setMappingKey(1L)
+                    .setClaimName("claimName")
+                    .setClaimValue("claimValue"),
+        """
+      {
+        "mappingKey": 1,
+        "claimName": "claimName",
+        "claimValue": "claimValue"
+      }
+      """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// Empty MappingRecord ///////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty MappingRecord",
+        (Supplier<MappingRecord>) MappingRecord::new,
+        """
+      {
+        "mappingKey": -1,
+        "claimName": "",
+        "claimValue": ""
       }
       """
       },

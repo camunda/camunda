@@ -32,6 +32,7 @@ import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageCorrelationRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
@@ -104,7 +105,8 @@ public class CompactRecordLogger {
           entry("COMMAND_DISTRIBUTION", "DSTR"),
           entry("USER_TASK", "UT"),
           entry("ROLE", "RL"),
-          entry("GROUP", "GR"));
+          entry("GROUP", "GR"),
+          entry("MAPPING", "MAP"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
       ofEntries(
@@ -157,6 +159,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.ROLE, this::summarizeRole);
     valueLoggers.put(ValueType.TENANT, this::summarizeTenant);
     valueLoggers.put(ValueType.GROUP, this::summarizeGroup);
+    valueLoggers.put(ValueType.MAPPING, this::summarizeMapping);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -924,6 +927,22 @@ public class CompactRecordLogger {
         .append(shortenKey(value.getEntityKey()))
         .append(", EntityType=")
         .append(value.getEntityType())
+        .append("]");
+
+    return builder.toString();
+  }
+
+  private String summarizeMapping(final Record<?> record) {
+    final var value = (MappingRecordValue) record.getValue();
+
+    final StringBuilder builder = new StringBuilder("Mapping[");
+    builder
+        .append("Key=")
+        .append(shortenKey(value.getMappingKey()))
+        .append(", claimName=")
+        .append(value.getClaimName())
+        .append(", claimValue=")
+        .append(value.getClaimValue())
         .append("]");
 
     return builder.toString();

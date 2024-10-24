@@ -20,8 +20,8 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
-import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import java.util.Arrays;
@@ -171,10 +171,10 @@ public class EventAppliersTest {
             .filter(Intent::isEvent)
             // CheckpointIntent is not handled by the engine
             .filter(intent -> !(intent instanceof CheckpointIntent))
-            // todo delete this filter after all the appliers are implemented
-            .filter(intent -> !(intent instanceof RoleIntent))
             .filter(intent -> !(intent instanceof TenantIntent))
-            .filter(intent -> !(intent instanceof GroupIntent));
+            .filter(intent -> !(intent instanceof GroupIntent))
+            // todo delete this filter after all the appliers are implemented
+            .filter(intent -> !(intent instanceof MappingIntent));
 
     // when
     eventAppliers.registerEventAppliers(mock(MutableProcessingState.class));

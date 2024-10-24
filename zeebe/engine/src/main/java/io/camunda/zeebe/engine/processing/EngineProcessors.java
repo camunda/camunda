@@ -208,7 +208,8 @@ public final class EngineProcessors {
         bpmnBehaviors,
         writers,
         processingState,
-        commandDistributionBehavior);
+        commandDistributionBehavior,
+        authCheckBehavior);
     addCommandDistributionProcessors(
         commandDistributionBehavior,
         typedRecordProcessors,
@@ -228,7 +229,12 @@ public final class EngineProcessors {
         config);
 
     ClockProcessors.addClockProcessors(
-        typedRecordProcessors, writers, keyGenerator, clock, commandDistributionBehavior);
+        typedRecordProcessors,
+        writers,
+        keyGenerator,
+        clock,
+        commandDistributionBehavior,
+        authCheckBehavior);
 
     AuthorizationProcessors.addAuthorizationProcessors(
         keyGenerator,
@@ -445,7 +451,8 @@ public final class EngineProcessors {
       final BpmnBehaviorsImpl bpmnBehaviors,
       final Writers writers,
       final MutableProcessingState processingState,
-      final CommandDistributionBehavior commandDistributionBehavior) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     final var signalBroadcastProcessor =
         new SignalBroadcastProcessor(
             writers,
@@ -453,7 +460,8 @@ public final class EngineProcessors {
             processingState,
             bpmnBehaviors.stateBehavior(),
             bpmnBehaviors.eventTriggerBehavior(),
-            commandDistributionBehavior);
+            commandDistributionBehavior,
+            authCheckBehavior);
     typedRecordProcessors.onCommand(
         ValueType.SIGNAL, SignalIntent.BROADCAST, signalBroadcastProcessor);
   }

@@ -36,6 +36,11 @@
       <artifactId>zeebe-protocol</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-core</artifactId>
+    </dependency>
+
   </dependencies>
 
 </project>

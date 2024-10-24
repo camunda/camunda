@@ -125,7 +125,8 @@ final class TestSupport {
             // these are not yet supported
             ValueType.ROLE,
             ValueType.TENANT,
-            ValueType.GROUP);
+            ValueType.GROUP,
+            ValueType.MAPPING);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 }

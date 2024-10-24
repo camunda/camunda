@@ -50,6 +50,7 @@ paths:
     get:
       tags:
         - Cluster
+      operationId: getTopology
       summary: Get cluster topology
       description: Obtains the current topology of the cluster the gateway is part of.
       responses:
@@ -63,6 +64,7 @@ paths:
     get:
       tags:
         - License
+      operationId: getLicense
       summary: Get status of Camunda license
       description: Obtains the status of the current Camunda license
       responses:
@@ -76,6 +78,7 @@ paths:
     post:
       tags:
         - Job
+      operationId: activateJobs
       summary: Activate jobs
       description: |
         Iterate through all known partitions and activate jobs up to the requested maximum.
@@ -110,6 +113,7 @@ paths:
     post:
       tags:
         - Job
+      operationId: failJob
       summary: Fail job
       description: |
         Mark the job as failed
@@ -163,6 +167,7 @@ paths:
     post:
       tags:
         - Job
+      operationId: reportJobError
       summary: Report error for job
       description: |
         Reports a business error (i.e. non-technical) that occurs while processing a job.
@@ -216,6 +221,7 @@ paths:
     post:
       tags:
         - Job
+      operationId: completeJob
       summary: Complete job
       description: |
         Complete a job with the given payload, which allows completing the associated service task.
@@ -269,6 +275,7 @@ paths:
     patch:
       tags:
         - Job
+      operationId: updateJob
       summary: Update a job
       description: Update a job with the given key.
       parameters:
@@ -321,6 +328,7 @@ paths:
     post:
       tags:
         - Incident
+      operationId: resolveIncident
       summary: Resolve incident
       description: >
         Marks the incident as resolved; most likely a call to Update job will be necessary
@@ -359,6 +367,7 @@ paths:
     post:
       tags:
         - User task
+      operationId: completeUserTask
       summary: Complete user task
       description: Completes a user task with the given key.
       parameters:
@@ -412,6 +421,7 @@ paths:
     post:
       tags:
         - User task
+      operationId: assignUserTask
       summary: Assign user task
       description: Assigns a user task with the given key to the given assignee.
       parameters:
@@ -464,6 +474,7 @@ paths:
     get:
       tags:
         - User task
+      operationId: getUserTask
       summary: Return user task by a user task key
       description: |
         Get the user task by the user task key.
@@ -516,6 +527,7 @@ paths:
     patch:
       tags:
         - User task
+      operationId: updateUserTask
       summary: Update user task
       description: Update a user task with the given key.
       parameters:
@@ -568,6 +580,7 @@ paths:
     get:
       tags:
         - User task
+      operationId: getUserTaskForm
       summary: Return user task form
       description: |
         Get the form of a user task.
@@ -628,6 +641,7 @@ paths:
     delete:
       tags:
         - User task
+      operationId: unassignUserTask
       summary: Unassign user task
       description: Removes the assignee of a task with the given key.
       parameters:
@@ -674,6 +688,7 @@ paths:
     post:
       tags:
         - User task
+      operationId: findUserTasks
       summary: Query user tasks (alpha)
       description: |
         Search for user tasks based on given criteria.
@@ -716,6 +731,7 @@ paths:
     post:
       tags:
         - User task
+      operationId: findUserTaskVariables
       summary: Query user tasks variables (alpha)
       description: |
         Search for user tasks based on given criteria.
@@ -767,6 +783,7 @@ paths:
     post:
       tags:
         - Variable
+      operationId: findVariables
       summary: Query process and local variables (alpha)
       description: |
         Search for variables based on given criteria.
@@ -809,6 +826,7 @@ paths:
     get:
       tags:
         - Variable
+      operationId: getVariable
       summary: Return variable by a variable key
       description: |
         Get the variable by the variable key.
@@ -861,6 +879,7 @@ paths:
     put:
       tags:
         - Clock
+      operationId: pinClock
       summary: Pin internal clock (alpha)
       description: |
         Set a precise, static time for the Zeebe engine’s internal clock.
@@ -897,6 +916,7 @@ paths:
     post:
       tags:
         - Clock
+      operationId: resetClock
       summary: Reset internal clock (alpha)
       description: |
         Resets the Zeebe engine’s internal clock to the current system time, enabling it to tick in real-time.
@@ -919,6 +939,7 @@ paths:
     post:
       tags:
         - Process definition
+      operationId: findProcessDefinitions
       summary: Search process definitions (alpha)
       description: |
         Search for process definitions based on given criteria.
@@ -960,6 +981,7 @@ paths:
     get:
       tags:
         - Process definition
+      operationId: getProcessDefinition
       summary: Get process definition by key (alpha)
       description: |
         Returns process definition as JSON.
@@ -1011,6 +1033,7 @@ paths:
     get:
       tags:
         - Process definition
+      operationId: getProcessDefinitionXML
       summary: Get process definition XML (alpha)
       description: |
         Returns process definition as XML.
@@ -1070,6 +1093,7 @@ paths:
     post:
       tags:
         - Process instance
+      operationId: createProcessInstance
       summary: Create process instance
       description: |
         Creates and starts an instance of the specified process.
@@ -1115,6 +1139,7 @@ paths:
     get:
       tags:
         - Process instance
+      operationId: getProcessInstance
       summary: Get process instance (alpha)
       description: |
         Get the process instance by the process instance key.
@@ -1167,6 +1192,7 @@ paths:
     post:
       tags:
         - Process instance
+      operationId: findProcessInstances
       summary: Query process instances (alpha)
       description: |
         Search for process instances based on given criteria.
@@ -1207,6 +1233,7 @@ paths:
     post:
       tags:
         - Process instance
+      operationId: cancelProcessInstance
       summary: Cancel process instance
       description: Cancels a running process instance.
       parameters:
@@ -1248,6 +1275,7 @@ paths:
     post:
       tags:
         - Process instance
+      operationId: migrateProcessInstance
       summary: Migrate process instance
       description: |
         Migrates a process instance to a new process definition.
@@ -1296,6 +1324,7 @@ paths:
     post:
       tags:
         - Process instance
+      operationId: modifyProcessInstance
       summary: Modify process instance
       description: |
         Modifies a running process instance.
@@ -1344,6 +1373,7 @@ paths:
     post:
       tags:
         - Flow node instance
+      operationId: findFlowNodeInstances
       summary: Query flow node instances (alpha)
       description: |
         Search for flow node instances based on given criteria.
@@ -1386,6 +1416,7 @@ paths:
     get:
       tags:
         - Flow node instance
+      operationId: getFlowNodeInstance
       summary: Get flow node instance by key (alpha)
       description: |
         Returns flow node instance as JSON.
@@ -1437,6 +1468,7 @@ paths:
     post:
       tags:
         - Decision definition
+      operationId: findDecisionDefinitions
       summary: Query decision definitions (alpha)
       description: |
         Search for decision definitions based on given criteria.
@@ -1479,6 +1511,7 @@ paths:
     get:
       tags:
         - Decision definition
+      operationId: getDecisionDefinition
       summary: Get decision definition by key (alpha)
       description: |
         Returns a decision definition.
@@ -1531,6 +1564,7 @@ paths:
     get:
       tags:
         - Decision definition
+      operationId: getDecisionDefinitionXML
       summary: Get decision definition XML (alpha)
       description: |
         Returns decision definition as XML.
@@ -1583,6 +1617,7 @@ paths:
     post:
       tags:
         - Decision requirements
+      operationId: findDecisionRequirements
       summary: Query decision requirements (alpha)
       description: |
         Search for decision requirements based on given criteria.
@@ -1614,6 +1649,7 @@ paths:
     get:
       tags:
         - Decision requirements
+      operationId: getDecisionRequirements
       summary: Get decision requirements by key (alpha)
       description: |
         Returns Decision Requirements as JSON.
@@ -1666,6 +1702,7 @@ paths:
     get:
       tags:
         - Decision requirements
+      operationId: getDecisionRequirementsXML
       summary: Get decision requirements XML (alpha)
       description: |
         Returns decision requirements as XML.
@@ -1719,6 +1756,7 @@ paths:
     post:
       tags:
         - Decision instance
+      operationId: findDecisionInstances
       summary: Query decision instances (alpha)
       description: |
         Search for decision instances based on given criteria.
@@ -1762,6 +1800,7 @@ paths:
     get:
       tags:
         - Decision instance
+      operationId: getDecisionInstance
       summary: Get decision instance by key (alpha)
       description: |
         Returns a decision instance.
@@ -1815,6 +1854,7 @@ paths:
     post:
       tags:
         - Decision definition
+      operationId: evaluateDecision
       summary: Evaluate decision
       description: |
         Evaluates a decision.
@@ -1868,9 +1908,9 @@ paths:
     patch:
       tags:
         - Authorization
+      operationId: updateAuthorization
       summary: Patch authorization
       description: Manage the permissions assigned to the authorization.
-      operationId: patchAuthorization
       parameters:
         - name: ownerKey
           in: path
@@ -1943,7 +1983,7 @@ paths:
         See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
         for further details.
         :::
-      operationId: "findAllAuthorizations"
+      operationId: "findAuthorizations"
       requestBody:
         content:
           application/json:
@@ -1993,8 +2033,8 @@ paths:
     post:
       tags:
         - User
-      summary: "Create a user"
-      operationId: "createUser"
+      operationId: createUser
+      summary: Create a user
       requestBody:
         content:
           application/json:
@@ -2044,6 +2084,7 @@ paths:
     post:
       tags:
         - Message
+      operationId: publishMessage
       summary: Publish a message
       description: |
         Publishes a single message.
@@ -2079,6 +2120,7 @@ paths:
     post:
       tags:
         - Message
+      operationId: correlateMessage
       summary: Correlate a message
       description: |
         Publishes a message and correlates it to a subscription.
@@ -2125,6 +2167,7 @@ paths:
     post:
       tags:
         - Document
+      operationId: createDocument
       summary: Upload document (alpha)
       description: |
         Upload a document to the Camunda 8 cluster.
@@ -2183,6 +2226,7 @@ paths:
     get:
       tags:
         - Document
+      operationId: getDocument
       summary: Download document (alpha)
       description: |
         Download a document from the Camunda 8 cluster.
@@ -2229,6 +2273,7 @@ paths:
     delete:
       tags:
         - Document
+      operationId: deleteDocument
       summary: Delete document (alpha)
       description: |
         Delete a document from the Camunda 8 cluster.
@@ -2271,6 +2316,7 @@ paths:
     post:
       tags:
         - Document
+      operationId: createDocumentLink
       summary: Create document link (alpha)
       description: |
         Create a link to a document in the Camunda 8 cluster.
@@ -2317,6 +2363,7 @@ paths:
     post:
       tags:
         - User
+      operationId: findUsers
       summary: "Query users (alpha)"
       description: |
         Search for users based on given criteria.
@@ -2326,7 +2373,6 @@ paths:
         See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
         for further details.
         :::
-      operationId: "findAllUsers"
       requestBody:
         content:
           application/json:
@@ -2363,6 +2409,7 @@ paths:
     post:
       tags:
         - Incident
+      operationId: findIncidents
       summary: Query incidents (alpha)
       description: |
         Search for incidents based on given criteria.
@@ -2418,6 +2465,7 @@ paths:
     get:
       tags:
         - Incident
+      operationId: getIncident
       summary: Get incident by key (alpha)
       description: |
         Returns incident as JSON.
@@ -2469,6 +2517,7 @@ paths:
     post:
       tags:
         - Resource
+      operationId: createDeployment
       summary: Deploy resources
       description: |
         Deploys one or more resources (e.g. processes, decision models, or forms).
@@ -2491,7 +2540,7 @@ paths:
                   type: string
                   description: The tenant to deploy the resources to.
               required:
-                - resource
+                - resources
       responses:
         "200":
           description: The resources are deployed.
@@ -2510,6 +2559,7 @@ paths:
     post:
       tags:
         - Resource
+      operationId: deleteResource
       summary: Delete resource
       description: |
         Deletes a deployed resource.
@@ -2558,6 +2608,7 @@ paths:
     post:
       tags:
         - Element instance
+      operationId: createElementInstanceVariables
       summary: Update element instance variables
       description: |
         Updates all the variables of a particular scope (for example, process instance, flow element instance) with the given variable data.
@@ -2599,6 +2650,7 @@ paths:
     post:
       tags:
         - Signal
+      operationId: broadcastSignal
       summary: Broadcast signal
       description: Broadcasts a signal.
       requestBody:
@@ -3001,7 +3053,6 @@ components:
           format: date-time
         state:
           $ref: "#/components/schemas/ProcessInstanceStateEnum"
-          description: The state, one of ACTIVE, COMPLETED, CANCELED.
         hasIncident:
           type: boolean
           description: Whether this process instance has a related incident or not.
@@ -3076,7 +3127,6 @@ components:
           format: date-time
         state:
           $ref: "#/components/schemas/ProcessInstanceStateEnum"
-          description: The state, one of ACTIVE, COMPLETED, CANCELED.
         hasIncident:
           type: boolean
           description: Whether this process instance has a related incident or not.
@@ -3084,6 +3134,7 @@ components:
           type: string
           description: The tenant ID.
     ProcessInstanceStateEnum:
+      description: The state, one of ACTIVE, COMPLETED, CANCELED.
       enum:
         - ACTIVE
         - COMPLETED
@@ -3532,6 +3583,51 @@ components:
         tenantId:
           type: string
           description: The tenant ID of the decision definition.
+    PermissionTypeEnum:
+        description: Specifies the type of permissions.
+        enum:
+          - CREATE
+          - READ
+          - UPDATE
+          - DELETE
+    ResourceTypeEnum:
+      description: The type of resource to add/remove permissions to/from.
+      enum:
+        - AUTHORIZATION
+        - MAPPING_RULE
+        - MESSAGE
+        - BATCH
+        - APPLICATION
+        - SYSTEM
+        - TENANT
+        - DEPLOYMENT
+        - PROCESS_DEFINITION
+        - DECISION_REQUIREMENTS_DEFINITION
+        - DECISION_DEFINITION
+        - GROUP
+        - USER
+        - ROLE
+    OwnerTypeEnum:
+      description: The type of the owner of permissions.
+      enum:
+        - USER
+        - ROLE
+        - GROUP
+        - MAPPING
+        - UNSPECIFIED
+    PermissionDTO:
+      type: object
+      properties:
+        permissionType:
+          description: Specifies the type of permissions.
+          type: object
+          allOf:
+              - $ref: "#/components/schemas/PermissionTypeEnum"
+        resourceIds:
+          type: array
+          description: A list of resource IDs the permission relates to.
+          items:
+            type: string
     AuthorizationPatchRequest:
       type: object
       properties:
@@ -3542,39 +3638,15 @@ components:
             - ADD
             - REMOVE
         resourceType:
-          description: The type of resource to add/remove perissions to/from.
-          enum:
-            - AUTHORIZATION
-            - MAPPING_RULE
-            - MESSAGE
-            - BATCH
-            - APPLICATION
-            - SYSTEM
-            - TENANT
-            - DEPLOYMENT
-            - PROCESS_DEFINITION
-            - DECISION_REQUIREMENTS_DEFINITION
-            - DECISION_DEFINITION
-            - GROUP
-            - USER
-            - ROLE
+          description: The type of resource to add/remove permissions to/from.
+          type: object
+          allOf:
+             - $ref: "#/components/schemas/ResourceTypeEnum"
         permissions:
           type: array
           description: The permissions to add/remove.
           items:
-            properties:
-              permissionType:
-                description: Specifies the type of permissions.
-                enum:
-                  - CREATE
-                  - READ
-                  - UPDATE
-                  - DELETE
-              resourceIds:
-                type: array
-                description: A list of resource IDs the permission relates to.
-                items:
-                  type: string
+             $ref: "#/components/schemas/PermissionDTO"
     AuthorizationSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
@@ -3587,53 +3659,36 @@ components:
       type: object
       properties:
         ownerType:
-          enum:
-            - USER
-            - ROLE
-            - GROUP
-            - MAPPING
-            - UNSPECIFIED
+          description: The type of the owner of permissions.
+          type: object
+          allOf:
+            - $ref: "#/components/schemas/OwnerTypeEnum"
         ownerKey:
-          type: "string"
+          description: The id of the owner of permissions.
+          type: integer
+          format: int64
     AuthorizationResponse:
       type: "object"
       properties:
         ownerKey:
-          type: "string"
+            description: The id of the owner of permissions.
+            type: integer
+            format: int64
         ownerType:
-          enum:
-            - USER
-            - ROLE
-            - GROUP
-            - MAPPING
-            - UNSPECIFIED
-        resourceKey:
-          type: "string"
+          description: The type of the owner of permissions.
+          type: object
+          allOf:
+              - $ref: "#/components/schemas/OwnerTypeEnum"
         resourceType:
-          description: The type of resource to add/remove perissions to/from.
-          enum:
-            - AUTHORIZATION
-            - MAPPING_RULE
-            - MESSAGE
-            - BATCH
-            - APPLICATION
-            - SYSTEM
-            - TENANT
-            - DEPLOYMENT
-            - PROCESS_DEFINITION
-            - DECISION_REQUIREMENTS_DEFINITION
-            - DECISION_DEFINITION
-            - GROUP
-            - USER
-            - ROLE
+          description: The type of resource that owner have permissions.
+          type: object
+          allOf:
+             - $ref: "#/components/schemas/ResourceTypeEnum"
         permissions:
           type: array
+          description: The permissions.
           items:
-            enum:
-              - CREATE
-              - READ
-              - UPDATE
-              - DELETE
+            $ref: "#/components/schemas/PermissionDTO"
     AuthorizationSearchResponse:
       type: object
       allOf:
@@ -4423,7 +4478,6 @@ components:
           description: The key of the decision instance.
         state:
           $ref: "#/components/schemas/DecisionInstanceStateEnum"
-          description: The state of the decision instance.
         evaluationFailure:
           type: string
           description: The evaluation failure of the decision instance.
@@ -4451,7 +4505,6 @@ components:
           description: The version of the decision.
         decisionDefinitionType:
           $ref: "#/components/schemas/DecisionDefinitionTypeEnum"
-          description: The type of the decision.
         tenantId:
           type: string
           description: The tenant ID of the decision instance.
@@ -4474,7 +4527,6 @@ components:
           description: The key of the decision instance.
         state:
           $ref: "#/components/schemas/DecisionInstanceStateEnum"
-          description: The state of the decision instance.
         evaluationDate:
           type: string
           format: date-time
@@ -4506,7 +4558,6 @@ components:
           description: The version of the decision.
         decisionDefinitionType:
           $ref: "#/components/schemas/DecisionDefinitionTypeEnum"
-          description: The type of the decision.
         result:
           type: string
           description: The result of the decision instance.
@@ -4533,12 +4584,14 @@ components:
                 The matched rules of the decision instance.
 
     DecisionDefinitionTypeEnum:
+      description: The type of the decision.
       enum:
         - DECISION_TABLE
         - LITERAL_EXPRESSION
         - UNSPECIFIED
         - UNKNOWN
     DecisionInstanceStateEnum:
+      description: The state of the decision instance.
       enum:
         - EVALUATED
         - FAILED

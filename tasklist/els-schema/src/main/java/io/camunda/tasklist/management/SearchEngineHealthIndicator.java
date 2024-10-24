@@ -30,7 +30,7 @@ public class SearchEngineHealthIndicator implements HealthIndicator {
   @Override
   public Health health() {
     LOGGER.debug("Search engine check is called");
-    if (indexSchemaValidator.schemaExists()) {
+    if (!indexSchemaValidator.isHealthCheckEnabled() || indexSchemaValidator.schemaExists()) {
       return Health.up().build();
     } else {
       return Health.down().build();

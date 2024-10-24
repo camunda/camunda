@@ -135,4 +135,13 @@ public final class AuthorizationCheckBehavior {
       return resourceIds;
     }
   }
+
+  public static class UnauthorizedException extends RuntimeException {
+
+    public UnauthorizedException(final AuthorizationRequest authRequest) {
+      super(
+          UNAUTHORIZED_ERROR_MESSAGE.formatted(
+              authRequest.getPermissionType(), authRequest.getResourceType()));
+    }
+  }
 }

@@ -124,9 +124,6 @@ public abstract class DatabaseTestService {
 
   public abstract Integer getDocumentCountOf(final String indexName);
 
-  public abstract Integer getCountOfCompletedInstancesWithIdsIn(
-      final Set<Object> processInstanceIds);
-
   public abstract void deleteAllOptimizeData();
 
   public abstract void deleteAllIndicesContainingTerm(final String indexTerm);
@@ -138,8 +135,6 @@ public abstract class DatabaseTestService {
   public abstract void deleteAllVariableUpdateInstanceIndices();
 
   public abstract void deleteAllExternalVariableIndices();
-
-  public abstract void deleteIndicesStartingWithPrefix(final String term);
 
   public abstract void deleteAllZeebeRecordsForPrefix(final String zeebeRecordPrefix);
 
@@ -325,8 +320,4 @@ public abstract class DatabaseTestService {
   public abstract boolean isAliasReadOnly(String readOnlyAliasForIndex) throws IOException;
 
   public abstract List<String> getAllIndicesWithReadOnlyAlias(String aliasNameWithPrefix);
-
-  public TestIndexRepository getTestIndexRepository() {
-    return this.testIndexRepository;
-  }
 }
