@@ -8,20 +8,24 @@ import EntityList, {
 } from "src/components/entityList";
 import useTranslate from "src/utility/localization";
 import { useEntityModal } from "src/components/modal";
-import { User } from "src/utility/api/users";
-import { getUserRoles } from "src/utility/api/users/roles";
-import AddModal from "./AddModal";
-import DeleteModal from "./DeleteModal";
 import { DocumentationLink } from "src/components/documentation";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import { useApi } from "src/utility/api";
+import { Group } from "src/utility/api/groups";
+import {
+  assignGroupRole,
+  getGroupRoles,
+  removeGroupRole,
+} from "src/utility/api/groups/roles";
+import AssignRoleModal from "src/pages/roles/modals/AssignRoleModal";
+import UnassignRoleModal from "src/pages/roles/modals/UnassignRoleModal";
 
 type RolesListProps = {
-  user: User;
-  loadingUser: boolean;
+  group: Group;
+  loadingGroup: boolean;
 };
 
-const List: FC<RolesListProps> = ({ user, loadingUser }) => {
+const Roles: FC<RolesListProps> = ({ group, loadingGroup }) => {
   const { t, Translate } = useTranslate();
 
   const {
@@ -29,14 +33,17 @@ const List: FC<RolesListProps> = ({ user, loadingUser }) => {
     loading: loadingRoles,
     success,
     reload,
-  } = useApi(getUserRoles, { id: user.id });
+  } = useApi(getGroupRoles, { id: group.id });
 
-  const loading = loadingUser || loadingRoles;
+  const loading = loadingGroup || loadingRoles;
 
-  const [assignRole, addModal] = useEntityModal(AddModal, reload, {
-    userRoles: roles || [],
+  const [assignRole, addModal] = useEntityModal(AssignRoleModal, reload, {
+    assignedRoles: roles || [],
+    assignRole: assignGroupRole,
   });
-  const [removeRole, deleteModal] = useEntityModal(DeleteModal, reload);
+  const [removeRole, deleteModal] = useEntityModal(UnassignRoleModal, reload, {
+    unassignRole: removeGroupRole,
+  });
 
   const areRolesEmpty = !roles || roles.length === 0;
 
@@ -51,14 +58,14 @@ const List: FC<RolesListProps> = ({ user, loadingUser }) => {
   return (
     <>
       <EntityList
-        title={t("Roles assigned to user")}
+        title={t("Roles assigned to group")}
         data={roles}
         headers={[
           { header: t("Name"), key: "name" },
           { header: t("Description"), key: "description" },
         ]}
         addEntityLabel="Assign roles"
-        onAddEntity={() => assignRole(user)}
+        onAddEntity={() => assignRole(group.id)}
         menuItems={[
           {
             label: t("Delete"),
@@ -98,4 +105,4 @@ const List: FC<RolesListProps> = ({ user, loadingUser }) => {
   );
 };
 
-export default List;
+export default Roles;
