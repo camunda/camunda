@@ -7,11 +7,14 @@
  */
 package io.camunda.zeebe.engine.processing.job.behaviour;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.time.InstantSource;
@@ -28,25 +31,44 @@ public class JobUpdateBehaviour {
           + "but the amount given was '%d'";
 
   private final JobState jobState;
-  private final TypedRejectionWriter rejectionWriter;
   private final InstantSource clock;
+  private final AuthorizationCheckBehavior authCheckBehavior;
 
   public JobUpdateBehaviour(
-      final JobState jobState, final Writers writers, final InstantSource clock) {
+      final JobState jobState,
+      final InstantSource clock,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     this.jobState = jobState;
-    rejectionWriter = writers.rejection();
     this.clock = clock;
+    this.authCheckBehavior = authCheckBehavior;
   }
 
-  public Either<String, JobRecord> getJob(final long jobKey, final TypedRecord<JobRecord> command) {
+  public Either<Rejection, JobRecord> getJob(
+      final long jobKey, final TypedRecord<JobRecord> command) {
     final var job = jobState.getJob(jobKey, command.getAuthorizations());
 
     if (job != null) {
       return Either.right(job);
     }
-    rejectionWriter.appendRejection(
-        command, RejectionType.NOT_FOUND, NO_JOB_FOUND_MESSAGE.formatted(jobKey));
-    return Either.left(NO_JOB_FOUND_MESSAGE.formatted(jobKey));
+    return Either.left(
+        new Rejection(RejectionType.NOT_FOUND, NO_JOB_FOUND_MESSAGE.formatted(jobKey)));
+  }
+
+  public Either<Rejection, JobRecord> isAuthorized(
+      final TypedRecord<JobRecord> command, final JobRecord job) {
+    final var authRequest =
+        new AuthorizationRequest(
+                command, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.UPDATE)
+            .addResourceId(job.getBpmnProcessId());
+
+    if (!authCheckBehavior.isAuthorized(authRequest)) {
+      return Either.left(
+          new Rejection(
+              RejectionType.UNAUTHORIZED,
+              AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE.formatted(
+                  authRequest.getPermissionType(), authRequest.getResourceType())));
+    }
+    return Either.right(job);
   }
 
   public Optional<String> updateJobRetries(
