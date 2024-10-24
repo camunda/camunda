@@ -29,6 +29,7 @@ import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -322,11 +323,11 @@ public final class ZeebePartition extends Actor
 
   @Override
   @Deprecated // will be removed from public API of ZeebePartition
-  public void onRecovered() {
+  public void onRecovered(final HealthReport report) {
     actor.run(
         () -> {
           healthMetrics.setHealthy();
-          failureListeners.forEach(FailureListener::onRecovered);
+          failureListeners.forEach(l -> l.onRecovered(report));
         });
   }
 
@@ -383,7 +384,9 @@ public final class ZeebePartition extends Actor
   }
 
   private void handleUnrecoverableFailure(final Throwable error) {
-    final var report = HealthReport.dead(this).withIssue(error);
+    final var instant =
+        context.getStreamClock() != null ? context.getStreamClock().instant() : Instant.now();
+    final var report = HealthReport.dead(this).withIssue(error, instant);
     healthMetrics.setDead();
     zeebePartitionHealth.onUnrecoverableFailure(error);
     stopPartitionOnError();
@@ -418,7 +421,7 @@ public final class ZeebePartition extends Actor
         () -> {
           failureListeners.add(failureListener);
           if (getHealthReport().getStatus() == HealthStatus.HEALTHY) {
-            failureListener.onRecovered();
+            failureListener.onRecovered(getHealthReport());
           } else {
             failureListener.onFailure(getHealthReport());
           }

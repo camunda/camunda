@@ -7,49 +7,62 @@
  */
 package io.camunda.zeebe.util.health;
 
-import java.util.Objects;
-import java.util.StringJoiner;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
+import java.time.Instant;
+import java.util.Comparator;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * A health report of a {@link #getComponentName() component}. If the status is not healthy, the
  * report also contains a {@link #getIssue() issue}.
  */
-public final class HealthReport {
-  private final HealthMonitorable component;
-  private final String componentName;
-  private final HealthStatus status;
-  private final HealthIssue issue;
+public record HealthReport(
+    String componentName,
+    HealthStatus status,
+    HealthIssue issue,
+    ImmutableMap<String, HealthReport> children) {
+  public static final Comparator<HealthReport> COMPARATOR =
+      (a, b) -> HealthStatus.COMPARATOR.compare(a.status, b.status);
 
-  private HealthReport(
-      final HealthMonitorable component, final HealthStatus status, final HealthIssue issue) {
-    this(component, component.getName(), status, issue);
+  public HealthReport {
+    Preconditions.checkArgument(componentName != null);
+    Preconditions.checkArgument(status != null);
+    Preconditions.checkArgument(children != null);
   }
 
   private HealthReport(
       final HealthMonitorable component,
-      final String componentName,
       final HealthStatus status,
-      final HealthIssue issue) {
-    this.component = component;
-    this.componentName = componentName;
-    this.status = status;
-    this.issue = issue;
+      final HealthIssue issue,
+      final ImmutableMap<String, HealthReport> children) {
+    this(component.getName(), status, issue, children);
+  }
+
+  public static Optional<HealthReport> fromChildrenStatus(
+      final String componentName, final Map<String, HealthReport> children) {
+    final var worstReport = children.values().stream().max(COMPARATOR);
+    return worstReport.map(
+        report ->
+            new HealthReport(
+                componentName, report.getStatus(), report.issue(), ImmutableMap.copyOf(children)));
   }
 
   public static HealthReport unknown(final String componentName) {
-    return new HealthReport(null, componentName, HealthStatus.UNHEALTHY, null);
+    return new HealthReport(componentName, HealthStatus.UNHEALTHY, null, ImmutableMap.of());
   }
 
   public static HealthReport healthy(final HealthMonitorable component) {
-    return new HealthReport(component, HealthStatus.HEALTHY, null);
+    return new HealthReport(component, HealthStatus.HEALTHY, null, ImmutableMap.of());
   }
 
-  public static HealthReportBuilder unhealthy(final HealthMonitorable component) {
-    return new HealthReportBuilder(component, HealthStatus.UNHEALTHY);
+  public static HealthReport unhealthy(final HealthMonitorable component) {
+    return new HealthReport(component, HealthStatus.UNHEALTHY, null, ImmutableMap.of());
   }
 
-  public static HealthReportBuilder dead(final HealthMonitorable component) {
-    return new HealthReportBuilder(component, HealthStatus.DEAD);
+  public static HealthReport dead(final HealthMonitorable component) {
+    return new HealthReport(component, HealthStatus.DEAD, null, ImmutableMap.of());
   }
 
   public boolean isHealthy() {
@@ -80,71 +93,19 @@ public final class HealthReport {
     return issue;
   }
 
-  @Override
-  public int hashCode() {
-    int result = component != null ? component.hashCode() : 0;
-    result = 31 * result + (componentName != null ? componentName.hashCode() : 0);
-    result = 31 * result + (status != null ? status.hashCode() : 0);
-    result = 31 * result + (issue != null ? issue.hashCode() : 0);
-    return result;
+  public HealthReport withIssue(final HealthIssue issue) {
+    return new HealthReport(componentName, status, issue, children);
   }
 
-  @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-
-    final HealthReport that = (HealthReport) o;
-
-    if (!Objects.equals(component, that.component)) {
-      return false;
-    }
-    if (!Objects.equals(componentName, that.componentName)) {
-      return false;
-    }
-    if (status != that.status) {
-      return false;
-    }
-    return Objects.equals(issue, that.issue);
+  public HealthReport withMessage(final String message, final Instant since) {
+    return new HealthReport(componentName, status, HealthIssue.of(message, since), children);
   }
 
-  @Override
-  public String toString() {
-    final var name = componentName == null ? component.getName() : componentName;
-    final var joiner = new StringJoiner(", ", name + "{", "}").add("status=" + status);
-    if (issue != null) {
-      joiner.add("issue=" + issue);
-    }
-    return joiner.toString();
+  public HealthReport withIssue(final Throwable e, final Instant since) {
+    return new HealthReport(componentName, status, HealthIssue.of(e, since), children);
   }
 
-  public static final class HealthReportBuilder {
-    private final HealthMonitorable component;
-    private final HealthStatus status;
-
-    private HealthReportBuilder(final HealthMonitorable component, final HealthStatus status) {
-      this.component = component;
-      this.status = status;
-    }
-
-    public HealthReport withIssue(final HealthIssue issue) {
-      return new HealthReport(component, status, issue);
-    }
-
-    public HealthReport withMessage(final String message) {
-      return new HealthReport(component, status, HealthIssue.of(message));
-    }
-
-    public HealthReport withIssue(final Throwable e) {
-      return new HealthReport(component, status, HealthIssue.of(e));
-    }
-
-    public HealthReport withIssue(final HealthReport cause) {
-      return new HealthReport(component, status, HealthIssue.of(cause));
-    }
+  public HealthReport withChildren(final Map<String, HealthReport> children) {
+    return new HealthReport(componentName, status, issue, ImmutableMap.copyOf(children));
   }
 }

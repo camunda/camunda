@@ -7,8 +7,17 @@
  */
 package io.camunda.zeebe.util.health;
 
+import java.util.Comparator;
+
 public enum HealthStatus {
-  UNHEALTHY,
   HEALTHY,
-  DEAD
+  UNHEALTHY,
+  DEAD;
+
+  public static final Comparator<HealthStatus> COMPARATOR =
+      Comparator.comparingInt(HealthStatus::ordinal);
+
+  public HealthStatus combine(final HealthStatus other) {
+    return compareTo(other) > 0 ? this : other;
+  }
 }
