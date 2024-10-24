@@ -13,6 +13,7 @@ import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -48,7 +49,9 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
     this.actor = actor;
     this.log = log;
     this.monitoringInterval = monitoringInterval;
-    healthReport = HealthReport.unhealthy(this).withMessage("Components are not yet initialized");
+    healthReport =
+        HealthReport.unhealthy(this)
+            .withMessage("Components are not yet initialized", Instant.now());
   }
 
   @Override
