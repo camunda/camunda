@@ -12,14 +12,14 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.usermanagement.RoleEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import java.util.List;
-import java.util.Set;
 
-public class RoleHandler implements ExportHandler<RoleEntity, RoleRecordValue> {
+public class RoleCreateUpdateHandler implements ExportHandler<RoleEntity, RoleRecordValue> {
   private final String indexName;
 
-  public RoleHandler(final String indexName) {
+  public RoleCreateUpdateHandler(final String indexName) {
     this.indexName = indexName;
   }
 
@@ -35,7 +35,9 @@ public class RoleHandler implements ExportHandler<RoleEntity, RoleRecordValue> {
 
   @Override
   public boolean handlesRecord(final Record<RoleRecordValue> record) {
-    return getHandledValueType().equals(record.getValueType());
+    return getHandledValueType().equals(record.getValueType())
+        && (record.getIntent().equals(RoleIntent.CREATE)
+            || record.getIntent().equals(RoleIntent.UPDATE));
   }
 
   @Override
@@ -51,12 +53,7 @@ public class RoleHandler implements ExportHandler<RoleEntity, RoleRecordValue> {
   @Override
   public void updateEntity(final Record<RoleRecordValue> record, final RoleEntity entity) {
     final RoleRecordValue value = record.getValue();
-
-    // TODO - only handle updates for now
-    final Set<Long> storedEntityKeys = entity.getEntityKey();
-    storedEntityKeys.add(record.getValue().getEntityKey());
-
-    entity.setRoleKey(value.getRoleKey()).setName(value.getName()).setEntityKey(storedEntityKeys);
+    entity.setRoleKey(value.getRoleKey()).setName(value.getName());
   }
 
   @Override

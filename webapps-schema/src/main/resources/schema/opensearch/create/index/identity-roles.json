@@ -8,7 +8,7 @@
       "name": {
         "type": "keyword"
       },
-      "entityKey": {
+      "assignedMemberKeys": {
         "type": "long"
       }
     }

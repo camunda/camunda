@@ -15,7 +15,7 @@ public class RoleIndex extends RoleManagementIndexDescriptor {
 
   public static final String ROLEKEY = "roleKey";
   public static final String NAME = "name";
-  public static final String ENTITYKEY = "entityKey";
+  public static final String ASSIGNEDMEMBERKEYS = "assignedMemberKeys";
 
   public RoleIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);

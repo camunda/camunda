@@ -15,7 +15,7 @@ public class RoleEntity extends AbstractExporterEntity<RoleEntity> {
   public static final String DEFAULT_TENANT_IDENTIFIER = "<default>";
   private Long roleKey;
   private String name;
-  private Set<Long> entityKey;
+  private Set<Long> assignedMemberKeys;
 
   public Long getRoleKey() {
     return roleKey;
@@ -35,12 +35,13 @@ public class RoleEntity extends AbstractExporterEntity<RoleEntity> {
     return this;
   }
 
-  public Set<Long> getEntityKey() {
-    return entityKey;
+  // TODO - goes to assignedMemberKeys
+  public Set<Long> getAssignMemberKeys() {
+    return assignedMemberKeys;
   }
 
-  public RoleEntity setEntityKey(final Set<Long> entityKey) {
-    this.entityKey = entityKey;
+  public RoleEntity setAssignMemberKeys(final Set<Long> entityKey) {
+    assignedMemberKeys = entityKey;
     return this;
   }
 }

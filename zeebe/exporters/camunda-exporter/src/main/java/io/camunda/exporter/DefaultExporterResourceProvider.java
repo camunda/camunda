@@ -30,7 +30,7 @@ import io.camunda.exporter.handlers.ListViewVariableFromVariableHandler;
 import io.camunda.exporter.handlers.MetricFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
 import io.camunda.exporter.handlers.ProcessHandler;
-import io.camunda.exporter.handlers.RoleHandler;
+import io.camunda.exporter.handlers.RoleCreateUpdateHandler;
 import io.camunda.exporter.handlers.SequenceFlowHandler;
 import io.camunda.exporter.handlers.UserHandler;
 import io.camunda.exporter.handlers.UserTaskHandler;
@@ -127,7 +127,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
 
     exportHandlers =
         Set.of(
-            new RoleHandler(indexDescriptorsMap.get(RoleIndex.class).getFullQualifiedName()),
+            new RoleCreateUpdateHandler(
+                indexDescriptorsMap.get(RoleIndex.class).getFullQualifiedName()),
             new UserHandler(indexDescriptorsMap.get(UserIndex.class).getFullQualifiedName()),
             new AuthorizationHandler(
                 indexDescriptorsMap.get(AuthorizationIndex.class).getFullQualifiedName()),
