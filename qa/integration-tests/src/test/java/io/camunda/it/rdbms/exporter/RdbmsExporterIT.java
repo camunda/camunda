@@ -20,11 +20,14 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.ImmutableProcess;
+import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.Collections;
 import java.util.List;
@@ -53,7 +56,7 @@ class RdbmsExporterIT {
     exporter = new RdbmsExporter(rdbmsService);
     exporter.configure(
         new ExporterContext(
-            null, new ExporterConfiguration("foo", Collections.emptyMap()), 0, null, null));
+            null, new ExporterConfiguration("foo", Collections.emptyMap()), 1, null, null));
     exporter.open(controller);
   }
 
@@ -72,6 +75,22 @@ class RdbmsExporterIT {
         ((ProcessInstanceRecordValue) processInstanceRecord.getValue()).getProcessInstanceKey();
     final var processInstance = rdbmsService.getProcessInstanceReader().findOne(key);
     assertThat(processInstance).isNotNull();
+  }
+
+  @Test
+  public void shouldExportProcessDefinition() {
+    // given
+    final var processDefinitionRecord = getProcessDefinitionCreatedRecord(1L);
+
+    // when
+    exporter.export(processDefinitionRecord);
+    // and we do a manual flush
+    exporter.flushExecutionQueue();
+
+    // then
+    final var key = ((Process) processDefinitionRecord.getValue()).getProcessDefinitionKey();
+    final var processDefinition = rdbmsService.getProcessDefinitionReader().findOne(key);
+    assertThat(processDefinition).isNotEmpty();
   }
 
   @Test
@@ -119,6 +138,23 @@ class RdbmsExporterIT {
             ImmutableProcessInstanceRecordValue.builder()
                 .from((ProcessInstanceRecordValue) recordValueRecord.getValue())
                 .withBpmnElementType(BpmnElementType.PROCESS)
+                .withVersion(1)
+                .build())
+        .build();
+  }
+
+  private ImmutableRecord<RecordValue> getProcessDefinitionCreatedRecord(final Long position) {
+    final Record<RecordValue> recordValueRecord = factory.generateRecord(ValueType.PROCESS);
+
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withIntent(ProcessIntent.CREATED)
+        .withPosition(position)
+        .withTimestamp(System.currentTimeMillis())
+        .withPartitionId(1)
+        .withValue(
+            ImmutableProcess.builder()
+                .from((Process) recordValueRecord.getValue())
                 .withVersion(1)
                 .build())
         .build();
