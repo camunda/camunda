@@ -5,11 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.util;
+package io.camunda.webapps.operate;
 
-import static io.camunda.operate.util.TreePath.TreePathEntryType.FN;
-import static io.camunda.operate.util.TreePath.TreePathEntryType.FNI;
-import static io.camunda.operate.util.TreePath.TreePathEntryType.PI;
+import static io.camunda.webapps.operate.TreePath.TreePathEntryType.FN;
+import static io.camunda.webapps.operate.TreePath.TreePathEntryType.FNI;
+import static io.camunda.webapps.operate.TreePath.TreePathEntryType.PI;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -31,14 +31,15 @@ public class TreePath {
   private StringBuffer treePath;
 
   public TreePath() {
-    this.treePath = new StringBuffer();
+    treePath = new StringBuffer();
   }
 
   public TreePath(final String treePath) {
     this.treePath = new StringBuffer(treePath);
   }
 
-  public static String extractFlowNodeInstanceId(final String treePath, String currentTreePath) {
+  public static String extractFlowNodeInstanceId(
+      final String treePath, final String currentTreePath) {
     final Pattern fniPattern =
         Pattern.compile(String.format("%s/FN_[^/]*/FNI_(\\d*)/.*", currentTreePath));
     final Matcher matcher = fniPattern.matcher(treePath);
@@ -46,34 +47,56 @@ public class TreePath {
     return matcher.group(1);
   }
 
-  public TreePath startTreePath(String processInstanceId) {
+  public TreePath startTreePath(final String processInstanceId) {
     treePath = new StringBuffer(String.format("%s_%s", PI, processInstanceId));
     return this;
   }
 
-  public TreePath appendFlowNode(String newEntry) {
+  public TreePath startTreePath(final long processInstanceKey) {
+    return startTreePath(String.valueOf(processInstanceKey));
+  }
+
+  public TreePath appendFlowNode(final String newEntry) {
     if (newEntry != null) {
       treePath.append(String.format("/%s_%s", FN, newEntry));
     }
     return this;
   }
 
-  public TreePath appendFlowNodeInstance(String newEntry) {
+  public TreePath appendFlowNode(final int newEntry) {
+    return appendFlowNode(String.valueOf(newEntry));
+  }
+
+  public TreePath appendFlowNodeInstance(final String newEntry) {
     if (newEntry != null) {
       treePath.append(String.format("/%s_%s", FNI, newEntry));
     }
     return this;
   }
 
-  public TreePath appendProcessInstance(String newEntry) {
+  public TreePath appendFlowNodeInstance(final long newEntry) {
+    return appendFlowNodeInstance(String.valueOf(newEntry));
+  }
+
+  public TreePath appendProcessInstance(final String newEntry) {
     if (newEntry != null) {
       treePath.append(String.format("/%s_%s", PI, newEntry));
     }
     return this;
   }
 
+  public TreePath appendProcessInstance(final long newEntry) {
+    return appendProcessInstance(String.valueOf(newEntry));
+  }
+
+  public boolean isEmpty() {
+    return treePath == null || treePath.isEmpty();
+  }
+
   public TreePath appendEntries(
-      String callActivityId, String flowNodeInstanceId, String processInstanceId) {
+      final String callActivityId,
+      final String flowNodeInstanceId,
+      final String processInstanceId) {
     return appendFlowNode(callActivityId)
         .appendFlowNodeInstance(flowNodeInstanceId)
         .appendProcessInstance(processInstanceId);
@@ -120,7 +143,7 @@ public class TreePath {
     return treePath.toString();
   }
 
-  public TreePath removeProcessInstance(String processInstanceKey) {
+  public TreePath removeProcessInstance(final String processInstanceKey) {
     final List<String> treePathEntries = new ArrayList<>();
     Collections.addAll(treePathEntries, treePath.toString().split("/"));
     final int piIndex = treePathEntries.indexOf("PI_" + processInstanceKey);

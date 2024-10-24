@@ -41,7 +41,6 @@ import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations;
-import io.camunda.operate.util.TreePath;
 import io.camunda.operate.webapp.data.IncidentDataHolder;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
@@ -58,6 +57,7 @@ import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceBreadcrumbEnt
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceMetadata;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
+import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
