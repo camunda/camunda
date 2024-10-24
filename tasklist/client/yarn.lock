@@ -1371,29 +1371,29 @@
   dependencies:
     "@typescript-eslint/utils" "^8.3.0"
 
-"@tanstack/query-core@5.59.13":
-  version "5.59.13"
-  resolved "https://registry.yarnpkg.com/@tanstack/query-core/-/query-core-5.59.13.tgz#8c962980af174bbd446b7e9b9999f7432897df80"
-  integrity sha512-Oou0bBu/P8+oYjXsJQ11j+gcpLAMpqW42UlokQYEz4dE7+hOtVO9rVuolJKgEccqzvyFzqX4/zZWY+R/v1wVsQ==
+"@tanstack/query-core@5.59.16":
+  version "5.59.16"
+  resolved "https://registry.yarnpkg.com/@tanstack/query-core/-/query-core-5.59.16.tgz#aa4616e8a9c12afeef4cfbf3ed0f55f404d66e67"
+  integrity sha512-crHn+G3ltqb5JG0oUv6q+PMz1m1YkjpASrXTU+sYWW9pLk0t2GybUHNRqYPZWhxgjPaVGC4yp92gSFEJgYEsPw==
 
 "@tanstack/query-devtools@5.58.0":
   version "5.58.0"
   resolved "https://registry.yarnpkg.com/@tanstack/query-devtools/-/query-devtools-5.58.0.tgz#5c68ce90562e154004de4372bc0a28fcd94cdf31"
   integrity sha512-iFdQEFXaYYxqgrv63ots+65FGI+tNp5ZS5PdMU1DWisxk3fez5HG3FyVlbUva+RdYS5hSLbxZ9aw3yEs97GNTw==
 
-"@tanstack/react-query-devtools@5.59.15":
-  version "5.59.15"
-  resolved "https://registry.yarnpkg.com/@tanstack/react-query-devtools/-/react-query-devtools-5.59.15.tgz#bfec8a2615ac99153b53e92887403e5c57d267e5"
-  integrity sha512-rX28KTivkA2XEn3Fj9ckDtnTPY8giWYgssySSAperpVol4+th+NCij/MhLylfB+Mfg2JfCxOcwnM/fwzS8iSog==
+"@tanstack/react-query-devtools@5.59.16":
+  version "5.59.16"
+  resolved "https://registry.yarnpkg.com/@tanstack/react-query-devtools/-/react-query-devtools-5.59.16.tgz#f058e3ba146b97a4763b886074581d66cc1e5cf7"
+  integrity sha512-Dejo39QBXmDqXZ3vdrk7vHDvs7TvL573/AX2NveMBmRAufAPYuE3oWSKP/gGqkDfEqyr4CmldOj+v9cKskUchQ==
   dependencies:
     "@tanstack/query-devtools" "5.58.0"
 
-"@tanstack/react-query@5.59.15":
-  version "5.59.15"
-  resolved "https://registry.yarnpkg.com/@tanstack/react-query/-/react-query-5.59.15.tgz#fa1c5b4d96e6a148ec761f214304bbf5ac1906be"
-  integrity sha512-QbVlAkTI78wB4Mqgf2RDmgC0AOiJqer2c5k9STOOSXGv1S6ZkY37r/6UpE8DbQ2Du0ohsdoXgFNEyv+4eDoPEw==
+"@tanstack/react-query@5.59.16":
+  version "5.59.16"
+  resolved "https://registry.yarnpkg.com/@tanstack/react-query/-/react-query-5.59.16.tgz#1e701c6e6681965c04aa426df9da54b8edc6db1b"
+  integrity sha512-MuyWheG47h6ERd4PKQ6V8gDyBu3ThNG22e1fRVwvq6ap3EqsFhyuxCAwhNP/03m/mLg+DAb0upgbPaX6VB+CkQ==
   dependencies:
-    "@tanstack/query-core" "5.59.13"
+    "@tanstack/query-core" "5.59.16"
 
 "@testing-library/dom@10.4.0":
   version "10.4.0"
@@ -1528,10 +1528,10 @@
   dependencies:
     "@types/node" "*"
 
-"@types/lodash@4.17.10":
-  version "4.17.10"
-  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.17.10.tgz#64f3edf656af2fe59e7278b73d3e62404144a6e6"
-  integrity sha512-YpS0zzoduEhuOWjAotS6A5AVCva7X4lVlYLF0FYHAY9sdraBfnatttHItlWeZdGhuEkf+OzMNg2ZYAx8t+52uQ==
+"@types/lodash@4.17.12":
+  version "4.17.12"
+  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.17.12.tgz#25d71312bf66512105d71e55d42e22c36bcfc689"
+  integrity sha512-sviUmCE8AYdaF/KIHLDJBQgeYzPBI0vf/17NaYehBJfYD1j6/L95Slh07NlyK2iNyBNaEkb3En2jRt+a8y3xZQ==
 
 "@types/mdast@^3.0.0":
   version "3.0.15"
@@ -1612,10 +1612,10 @@
     "@types/prop-types" "*"
     csstype "^3.0.2"
 
-"@types/react@18.3.11":
-  version "18.3.11"
-  resolved "https://registry.yarnpkg.com/@types/react/-/react-18.3.11.tgz#9d530601ff843ee0d7030d4227ea4360236bd537"
-  integrity sha512-r6QZ069rFTjrEYgFdOck1gK7FLVsgJE7tTz0pQBczlBNUhBNk0MQH4UbnFSwjpQLMkLzgqvBBa+qGpLje16eTQ==
+"@types/react@18.3.12":
+  version "18.3.12"
+  resolved "https://registry.yarnpkg.com/@types/react/-/react-18.3.12.tgz#99419f182ccd69151813b7ee24b792fe08774f60"
+  integrity sha512-D2wOSq/d6Agt28q7rSI3jhU7G6aiuzljDGZ2hTZHIkrTLUI+AF3WMeKkEZ9nN2fkBAlcktT6vcZjDFiIhMYEQw==
   dependencies:
     "@types/prop-types" "*"
     csstype "^3.0.2"
@@ -1841,10 +1841,10 @@
   resolved "https://registry.yarnpkg.com/@ungap/structured-clone/-/structured-clone-1.2.0.tgz#756641adb587851b5ccb3e095daf27ae581c8406"
   integrity sha512-zuVdFrMJiuCDQUMCzQaD6KL28MjnqqN8XnAqiEq9PNm/hCPTSGfrXCOfwj1ow4LFb/tNymJPwsNbVePc1xFqrQ==
 
-"@vitejs/plugin-react@4.3.2":
-  version "4.3.2"
-  resolved "https://registry.yarnpkg.com/@vitejs/plugin-react/-/plugin-react-4.3.2.tgz#1e13f666fe3135b477220d3c13b783704636b6e4"
-  integrity sha512-hieu+o05v4glEBucTcKMK3dlES0OeJlD9YVOAPraVMOInBCwzumaIFiUjr4bHK7NPgnAHgiskUoceKercrN8vg==
+"@vitejs/plugin-react@4.3.3":
+  version "4.3.3"
+  resolved "https://registry.yarnpkg.com/@vitejs/plugin-react/-/plugin-react-4.3.3.tgz#28301ac6d7aaf20b73a418ee5c65b05519b4836c"
+  integrity sha512-NooDe9GpHGqNns1i8XDERg0Vsg5SSYRhRxxyTGogUdkdNt47jal+fbuYi+Yfq6pzRCKXyoPcWisfxE6RIM3GKA==
   dependencies:
     "@babel/core" "^7.25.2"
     "@babel/plugin-transform-react-jsx-self" "^7.24.7"
@@ -2162,10 +2162,10 @@ asynckit@^0.4.0:
   resolved "https://registry.yarnpkg.com/asynckit/-/asynckit-0.4.0.tgz#c79ed97f7f34cb8f2ba1bc9790bcc366474b4b79"
   integrity sha512-Oei9OH4tRh0YqU3GxhX79dM/mwVgvbZJaSNaRk+bshkj0S5cfHcgYakreBjrHwatXKbz+IoIdYLxrKim2MjW0Q==
 
-axe-core@4.10.1:
-  version "4.10.1"
-  resolved "https://registry.yarnpkg.com/axe-core/-/axe-core-4.10.1.tgz#7d2589b0183f05b0f23e55c2f4cdf97b5bdc66d9"
-  integrity sha512-qPC9o+kD8Tir0lzNGLeghbOrWMr3ZJpaRlCIb6Uobt/7N4FiEDvqUMnxzCHRHmg8vOg14kr5gVNyScRmbMaJ9g==
+axe-core@4.10.2:
+  version "4.10.2"
+  resolved "https://registry.yarnpkg.com/axe-core/-/axe-core-4.10.2.tgz#85228e3e1d8b8532a27659b332e39b7fa0e022df"
+  integrity sha512-RE3mdQ7P3FRSe7eqCWoeQ/Z9QXrtniSjp1wUjt5nRC3WIpz5rSCve6o3fsZ2aCpJtrZjSZgjwXAoTO5k4tEI0w==
 
 axe-core@~4.10.0:
   version "4.10.0"
@@ -2270,7 +2270,17 @@ browserslist-to-esbuild@2.1.1:
   dependencies:
     meow "^13.0.0"
 
-browserslist@4.24.0, browserslist@^4.23.1:
+browserslist@4.24.2:
+  version "4.24.2"
+  resolved "https://registry.yarnpkg.com/browserslist/-/browserslist-4.24.2.tgz#f5845bc91069dbd55ee89faf9822e1d885d16580"
+  integrity sha512-ZIc+Q62revdMcqC6aChtW4jz3My3klmCO1fEmINZY/8J3EpBg5/A/D0AKmBveUh6pgoeycoMkVMko84tuYS+Gg==
+  dependencies:
+    caniuse-lite "^1.0.30001669"
+    electron-to-chromium "^1.5.41"
+    node-releases "^2.0.18"
+    update-browserslist-db "^1.1.1"
+
+browserslist@^4.23.1:
   version "4.24.0"
   resolved "https://registry.yarnpkg.com/browserslist/-/browserslist-4.24.0.tgz#a1325fe4bc80b64fda169629fc01b3d6cecd38d4"
   integrity sha512-Rmb62sR1Zpjql25eSanFGEhAxcFwfA1K0GuQcLoaJBAcENegrQut3hYdhXFF1obQfiDyqIW/cLM5HSJ/9k884A==
@@ -2337,6 +2347,11 @@ caniuse-lite@^1.0.30001663:
   version "1.0.30001663"
   resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001663.tgz#1529a723505e429fdfd49532e9fc42273ba7fed7"
   integrity sha512-o9C3X27GLKbLeTYZ6HBOLU1tsAcBZsLis28wrVzddShCS16RujjHp9GDHKZqrB3meE0YjhawvMFsGb/igqiPzA==
+
+caniuse-lite@^1.0.30001669:
+  version "1.0.30001669"
+  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001669.tgz#fda8f1d29a8bfdc42de0c170d7f34a9cf19ed7a3"
+  integrity sha512-DlWzFDJqstqtIVx1zeSpIMLjunf5SmwOw0N2Ck/QSQdS8PLS4+9HrLaYei4w8BIAL7IB/UEDu889d8vhCTPA0w==
 
 chai@^5.1.1:
   version "5.1.1"
@@ -2941,6 +2956,11 @@ electron-to-chromium@^1.5.28:
   resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.5.28.tgz#aee074e202c6ee8a0030a9c2ef0b3fe9f967d576"
   integrity sha512-VufdJl+rzaKZoYVUijN13QcXVF5dWPZANeFTLNy+OSpHdDL5ynXTF35+60RSBbaQYB1ae723lQXHCrf4pyLsMw==
 
+electron-to-chromium@^1.5.41:
+  version "1.5.43"
+  resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.5.43.tgz#d9e69fc709ddebd521416de9d17cdef81d2d4718"
+  integrity sha512-NxnmFBHDl5Sachd2P46O7UJiMaMHMLSofoIWVJq3mj8NJgG0umiSeljAVP9lGzjI0UDLJJ5jjoGjcrB8RSbjLQ==
+
 emoji-regex@^8.0.0:
   version "8.0.0"
   resolved "https://registry.yarnpkg.com/emoji-regex/-/emoji-regex-8.0.0.tgz#e818fd69ce5ccfcb404594f842963bf53164cc37"
@@ -3021,6 +3041,11 @@ escalade@^3.1.1, escalade@^3.1.2:
   resolved "https://registry.yarnpkg.com/escalade/-/escalade-3.1.2.tgz#54076e9ab29ea5bf3d8f1ed62acffbb88272df27"
   integrity sha512-ErCHMCae19vR8vQGe50xIsVomy19rg6gFu3+r3jkEO46suLMWBksvVyoGgQV+jOfl84ZSOSlmv6Gxa89PmTGmA==
 
+escalade@^3.2.0:
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/escalade/-/escalade-3.2.0.tgz#011a3f69856ba189dffa7dc8fcce99d2a87903e5"
+  integrity sha512-WUj2qlxaQtO4g6Pq5c29GTcWGDyd8itL8zTlipgECz3JesAiiOKotd8JU6otB3PACgG6xkJUyVhboMS+bje/jA==
+
 escape-html@^1.0.3:
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/escape-html/-/escape-html-1.0.3.tgz#0258eae4d3d0c0974de1c169188ef0051d1d1988"
@@ -3061,10 +3086,10 @@ eslint-plugin-react-hooks@4.6.2:
   resolved "https://registry.yarnpkg.com/eslint-plugin-react-hooks/-/eslint-plugin-react-hooks-4.6.2.tgz#c829eb06c0e6f484b3fbb85a97e57784f328c596"
   integrity sha512-QzliNJq4GinDBcD8gPB5v0wh6g8q3SUi6EFF0x8N/BL9PoVs0atuGc47ozMRyOWAKdwaZ5OnbOEa3WR+dSGKuQ==
 
-eslint-plugin-react-refresh@0.4.12:
-  version "0.4.12"
-  resolved "https://registry.yarnpkg.com/eslint-plugin-react-refresh/-/eslint-plugin-react-refresh-0.4.12.tgz#73d61c7fcbe3f7280edb6579380b4350d2f547ed"
-  integrity sha512-9neVjoGv20FwYtCP6CB1dzR1vr57ZDNOXst21wd2xJ/cTlM2xLq0GWVlSNTdMn/4BtP6cHYBMCSp1wFBJ9jBsg==
+eslint-plugin-react-refresh@0.4.13:
+  version "0.4.13"
+  resolved "https://registry.yarnpkg.com/eslint-plugin-react-refresh/-/eslint-plugin-react-refresh-0.4.13.tgz#ed7330da09b6192e6fa9b1b217ad979afbc898bf"
+  integrity sha512-f1EppwrpJRWmqDTyvAyomFVDYRtrS7iTEqv3nokETnMiMzs2SSTmKRTACce4O2p4jYyowiSMvpdwC/RLcMFhuQ==
 
 eslint-plugin-testing-library@6.3.0:
   version "6.3.0"
@@ -5100,6 +5125,11 @@ picocolors@^1.0.0, picocolors@^1.0.1:
   resolved "https://registry.yarnpkg.com/picocolors/-/picocolors-1.0.1.tgz#a8ad579b571952f0e5d25892de5445bcfe25aaa1"
   integrity sha512-anP1Z8qwhkbmu7MFP5iTt+wQKXgwzf7zTyGlcdzabySa9vd0Xt392U0rVmz9poOaBj0uHJKyyo9/upk0HrEQew==
 
+picocolors@^1.1.0:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/picocolors/-/picocolors-1.1.1.tgz#3d321af3eab939b083c8f929a1d12cda81c26b6b"
+  integrity sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==
+
 picomatch@^2.3.1:
   version "2.3.1"
   resolved "https://registry.yarnpkg.com/picomatch/-/picomatch-2.3.1.tgz#3ba3833733646d9d3e4995946c1365a67fb07a42"
@@ -6573,6 +6603,14 @@ update-browserslist-db@^1.1.0:
     escalade "^3.1.2"
     picocolors "^1.0.1"
 
+update-browserslist-db@^1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/update-browserslist-db/-/update-browserslist-db-1.1.1.tgz#80846fba1d79e82547fb661f8d141e0945755fe5"
+  integrity sha512-R8UzCaa9Az+38REPiJ1tXlImTJXlVfgHZsglwBD/k6nj76ctsH1E3q4doGrukiLQd3sGQYu56r5+lo5r94l29A==
+  dependencies:
+    escalade "^3.2.0"
+    picocolors "^1.1.0"
+
 update-check@1.5.4:
   version "1.5.4"
   resolved "https://registry.yarnpkg.com/update-check/-/update-check-1.5.4.tgz#5b508e259558f1ad7dbc8b4b0457d4c9d28c8743"
@@ -6687,10 +6725,10 @@ vite-tsconfig-paths@5.0.1:
     globrex "^0.1.2"
     tsconfck "^3.0.3"
 
-vite@5.4.9:
-  version "5.4.9"
-  resolved "https://registry.yarnpkg.com/vite/-/vite-5.4.9.tgz#215c80cbebfd09ccbb9ceb8c0621391c9abdc19c"
-  integrity sha512-20OVpJHh0PAM0oSOELa5GaZNWeDjcAvQjGXy2Uyr+Tp+/D2/Hdz6NLgpJLsarPTA2QJ6v8mX2P1ZfbsSKvdMkg==
+vite@5.4.10:
+  version "5.4.10"
+  resolved "https://registry.yarnpkg.com/vite/-/vite-5.4.10.tgz#d358a7bd8beda6cf0f3b7a450a8c7693a4f80c18"
+  integrity sha512-1hvaPshuPUtxeQ0hsVH3Mud0ZanOLwVTneA1EgbAM5LhaZEqyPWGRQ7BtaMvUrTDeEaC8pxtj6a6jku3x4z6SQ==
   dependencies:
     esbuild "^0.21.3"
     postcss "^8.4.43"

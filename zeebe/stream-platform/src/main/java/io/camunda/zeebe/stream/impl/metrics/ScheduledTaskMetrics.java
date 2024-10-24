@@ -19,7 +19,9 @@ public interface ScheduledTaskMetrics {
 
   void decrementScheduledTasks();
 
-  void observeScheduledTaskExecution(final long delay);
+  void observeScheduledTaskDelay(final long delay);
+
+  void observeScheduledTaskDuration(long l);
 
   static ScheduledTaskMetrics noop() {
     return new ScheduledTaskMetrics() {
@@ -30,7 +32,10 @@ public interface ScheduledTaskMetrics {
       public void decrementScheduledTasks() {}
 
       @Override
-      public void observeScheduledTaskExecution(final long delay) {}
+      public void observeScheduledTaskDelay(final long delay) {}
+
+      @Override
+      public void observeScheduledTaskDuration(final long duration) {}
     };
   }
 
@@ -41,6 +46,7 @@ public interface ScheduledTaskMetrics {
   final class ScheduledTaskMetricsImpl implements ScheduledTaskMetrics {
     private final LongAdder scheduledTasksCounter = new LongAdder();
     private final Timer scheduledTaskDelay;
+    private final Timer scheduledTaskDuration;
 
     private ScheduledTaskMetricsImpl(final MeterRegistry registry) {
       Gauge.builder("zeebe.processing.scheduling.tasks", scheduledTasksCounter, LongAdder::sum)
@@ -49,6 +55,11 @@ public interface ScheduledTaskMetrics {
       scheduledTaskDelay =
           Timer.builder("zeebe.processing.scheduling.delay")
               .description("The delay of scheduled tasks")
+              .publishPercentileHistogram()
+              .register(registry);
+      scheduledTaskDuration =
+          Timer.builder("zeebe.processing.scheduling.duration")
+              .description("The duration of scheduled tasks")
               .publishPercentileHistogram()
               .register(registry);
     }
@@ -64,8 +75,13 @@ public interface ScheduledTaskMetrics {
     }
 
     @Override
-    public void observeScheduledTaskExecution(final long delay) {
+    public void observeScheduledTaskDelay(final long delay) {
       scheduledTaskDelay.record(delay, TimeUnit.MILLISECONDS);
+    }
+
+    @Override
+    public void observeScheduledTaskDuration(final long duration) {
+      scheduledTaskDuration.record(duration, TimeUnit.MILLISECONDS);
     }
   }
 }

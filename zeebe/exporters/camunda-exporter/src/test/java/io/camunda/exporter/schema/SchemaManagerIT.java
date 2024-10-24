@@ -134,8 +134,8 @@ public class SchemaManagerIT {
     final var properties = new ExporterConfiguration();
     properties.getIndex().setNumberOfReplicas(10);
     properties.getIndex().setNumberOfShards(10);
-    properties.setReplicasByIndexName(Map.of("index_name", 5));
-    properties.setShardsByIndexName(Map.of("index_name", 5));
+    properties.getIndex().setReplicasByIndexName(Map.of("index_name", 5));
+    properties.getIndex().setShardsByIndexName(Map.of("index_name", 5));
 
     final var schemaManager =
         new SchemaManager(searchEngineClient, Set.of(index), Set.of(indexTemplate), properties);

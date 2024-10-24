@@ -67,7 +67,8 @@ public interface Intent {
           RoleIntent.class,
           TenantIntent.class,
           ScaleIntent.class,
-          GroupIntent.class);
+          GroupIntent.class,
+          MappingIntent.class);
   short NULL_VAL = 255;
   Intent UNKNOWN = UnknownIntent.UNKNOWN;
 
@@ -167,6 +168,8 @@ public interface Intent {
         return ScaleIntent.from(intent);
       case GROUP:
         return GroupIntent.from(intent);
+      case MAPPING:
+        return MappingIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
@@ -258,6 +261,8 @@ public interface Intent {
         return ScaleIntent.valueOf(intent);
       case GROUP:
         return GroupIntent.valueOf(intent);
+      case MAPPING:
+        return MappingIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;

@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.ValueTypeMapping;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.ImmutableCommandDistributionRecordValue;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
@@ -169,6 +170,25 @@ public final class ProtocolFactory {
   }
 
   /**
+   * Generates a record with the given {@code valueType} and {@code intent}. The value will be
+   * picked from the appropriate types based on the given {@code valueType}. This means, if you pass
+   * {@link ValueType#ERROR}, the value will be of type {@link
+   * io.camunda.zeebe.protocol.record.value.ErrorRecordValue}, and the intent of type {@link
+   * io.camunda.zeebe.protocol.record.intent.ErrorIntent}. Each of these will, of course, be
+   * randomly generated as well.
+   *
+   * @param valueType the expected value type of the record
+   * @param intent the expected intent of the record (if it is null, a random intent will be chosen)
+   * @return a randomized record with the given value type, with the value being of the expected
+   *     types
+   * @throws NullPointerException if {@code valueType} is null
+   */
+  public <T extends RecordValue> Record<T> generateRecordWithIntent(
+      final ValueType valueType, final Intent intent) {
+    return generateRecord(valueType, UnaryOperator.identity(), intent);
+  }
+
+  /**
    * Generates a record with the given {@code valueType}. The value and intent properties will be
    * picked from the appropriate types based on the given {@code valueType}. This means, if you pass
    * {@link ValueType#ERROR}, the value will be of type {@link
@@ -187,7 +207,30 @@ public final class ProtocolFactory {
    */
   public <T extends RecordValue> Record<T> generateRecord(
       final ValueType valueType, final UnaryOperator<Builder<T>> modifier) {
-    return generateImmutableRecord(valueType, modifier);
+    return generateImmutableRecord(valueType, modifier, null);
+  }
+
+  /**
+   * Generates a record with the given {@code valueType}. The value property will be picked from the
+   * appropriate types based on the given {@code valueType}. This means, if you pass {@link
+   * ValueType#ERROR}, the value will be of type {@link
+   * io.camunda.zeebe.protocol.record.value.ErrorRecordValue}, and the intent of type {@link
+   * io.camunda.zeebe.protocol.record.intent.ErrorIntent}. Each of these will, of course, be
+   * randomly generated as well.
+   *
+   * <p>The given modifier is applied to the final builder as the last step of the generation.
+   *
+   * @param valueType the expected value type of the record
+   * @param modifier applied to the builder after all the properties have been filled as the last *
+   *     step; cannot be null
+   * @param intent the expected intent of the record (if it is null, a random intent will be chosen)
+   * @return a randomized record with the given value type, with the value and intent being of the
+   *     expected types
+   * @throws NullPointerException if {@code modifier} is null or if {@code valueType} is null
+   */
+  public <T extends RecordValue> Record<T> generateRecord(
+      final ValueType valueType, final UnaryOperator<Builder<T>> modifier, final Intent intent) {
+    return generateImmutableRecord(valueType, modifier, intent);
   }
 
   /**
@@ -299,12 +342,20 @@ public final class ProtocolFactory {
   }
 
   private <T extends RecordValue> Record<T> generateImmutableRecord(
-      final ValueType valueType, final UnaryOperator<Builder<T>> modifier) {
+      final ValueType valueType,
+      final UnaryOperator<Builder<T>> modifier,
+      final Intent fixedIntent) {
     Objects.requireNonNull(valueType, "must specify a value type");
     Objects.requireNonNull(modifier, "must specify a builder modifier");
 
     final var typeInfo = ValueTypeMapping.get(valueType);
-    final var intent = random.nextObject(typeInfo.getIntentClass());
+    final Intent intent;
+    if (fixedIntent == null) {
+      intent = random.nextObject(typeInfo.getIntentClass());
+    } else {
+      intent = fixedIntent;
+    }
+
     final var value = generateObject(typeInfo.getValueClass());
     final var seedRecord = random.nextObject(Record.class);
 
@@ -346,6 +397,7 @@ public final class ProtocolFactory {
    * at the moment.
    */
   private final class RawObjectRandomizer implements Randomizer<Object> {
+
     private final Class<?>[] variableTypes = new Class[] {Boolean.class, Long.class, String.class};
 
     @Override

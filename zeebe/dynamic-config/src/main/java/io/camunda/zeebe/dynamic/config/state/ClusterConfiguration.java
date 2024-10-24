@@ -262,6 +262,10 @@ public record ClusterConfiguration(
             .count();
   }
 
+  public boolean hasPartition(final int partitionId) {
+    return members.values().stream().anyMatch(member -> member.hasPartition(partitionId));
+  }
+
   public int partitionCount() {
     return (int)
         members.values().stream().flatMap(m -> m.partitions().keySet().stream()).distinct().count();

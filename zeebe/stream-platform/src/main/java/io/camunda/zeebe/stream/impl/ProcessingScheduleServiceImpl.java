@@ -245,8 +245,10 @@ public class ProcessingScheduleServiceImpl
 
     @Override
     public void run() {
-      metrics.observeScheduledTaskExecution(clock.millis() - scheduledTime);
+      final long taskStart = clock.millis();
+      metrics.observeScheduledTaskDelay(taskStart - scheduledTime);
       runnable.run();
+      metrics.observeScheduledTaskDuration(clock.millis() - taskStart);
     }
   }
 }

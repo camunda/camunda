@@ -146,6 +146,17 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     this.restClient = restClient;
   }
 
+  public OptimizeOpenSearchClient(
+      final ExtendedOpenSearchClient openSearchClient,
+      final OpenSearchAsyncClient openSearchAsyncClient,
+      final OptimizeIndexNameService indexNameService) {
+    this.openSearchClient = openSearchClient;
+    this.indexNameService = indexNameService;
+    this.openSearchAsyncClient = openSearchAsyncClient;
+    richOpenSearchClient =
+        new RichOpenSearchClient(openSearchClient, openSearchAsyncClient, indexNameService);
+  }
+
   public RestClient getRestClient() {
     if (restClient != null) {
       return restClient;
@@ -156,17 +167,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       // duplicate the entire logic for building the transport
       throw new NotSupportedException("RestClient is only available for testing");
     }
-  }
-
-  public OptimizeOpenSearchClient(
-      final ExtendedOpenSearchClient openSearchClient,
-      final OpenSearchAsyncClient openSearchAsyncClient,
-      final OptimizeIndexNameService indexNameService) {
-    this.openSearchClient = openSearchClient;
-    this.indexNameService = indexNameService;
-    this.openSearchAsyncClient = openSearchAsyncClient;
-    richOpenSearchClient =
-        new RichOpenSearchClient(openSearchClient, openSearchAsyncClient, indexNameService);
   }
 
   private static String getHintForErrorMsg(final boolean containsNestedDocumentLimitErrorMessage) {
@@ -234,18 +234,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   public final void close() {
     Optional.of(openSearchClient).ifPresent(OpenSearchClient::shutdown);
     Optional.of(openSearchAsyncClient).ifPresent(OpenSearchAsyncClient::shutdown);
-  }
-
-  @Override
-  public long countWithoutPrefix(final String unprefixedIndex) {
-    final CountRequest.Builder builder = new CountRequest.Builder().index(unprefixedIndex);
-
-    try {
-      return getOpenSearchClient().count(builder.build()).count();
-    } catch (final Exception e) {
-      throw new OptimizeRuntimeException(
-          String.format("Could not determine count from index: %s", unprefixedIndex));
-    }
   }
 
   @Override
@@ -380,10 +368,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     return exists(ExistsRequest.of(b -> b.index(List.of(convertToPrefixedAliasName(indexName)))));
   }
 
-  private boolean exists(final ExistsRequest existsRequest) throws IOException {
-    return openSearchClient.indices().exists(existsRequest).value();
-  }
-
   @Override
   public boolean triggerRollover(final String indexAliasName, final int maxIndexSizeGB) {
     final RolloverRequest rolloverRequest =
@@ -424,7 +408,19 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   }
 
   @Override
-  public void refresh(String indexPattern) {
+  public long countWithoutPrefix(final String unprefixedIndex) {
+    final CountRequest.Builder builder = new CountRequest.Builder().index(unprefixedIndex);
+
+    try {
+      return getOpenSearchClient().count(builder.build()).count();
+    } catch (final Exception e) {
+      throw new OptimizeRuntimeException(
+          String.format("Could not determine count from index: %s", unprefixedIndex));
+    }
+  }
+
+  @Override
+  public void refresh(final String indexPattern) {
     getRichOpenSearchClient().index().refresh(indexPattern);
   }
 
@@ -434,28 +430,14 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
         indexNames, query, "Could not execute count request for " + Arrays.toString(indexNames));
   }
 
-  public <R> ScrollResponse<R> scroll(final ScrollRequest scrollRequest, Class<R> entityClass)
-      throws IOException {
-    return richOpenSearchClient.doc().scroll(scrollRequest, entityClass);
+  @Override
+  public List<String> getAllIndexNames() throws IOException {
+    return new ArrayList<>(getRichOpenSearchClient().index().getIndexNamesWithRetries("*"));
   }
 
-  public <R> Map<String, Aggregate> scrollWith(
-      final SearchResponse<R> response,
-      final Consumer<List<Hit<R>>> hitsConsumer,
-      final Class<R> clazz,
-      final int limit) {
-    return safe(
-        () ->
-            richOpenSearchClient.doc().scrollWith(null, response, hitsConsumer, null, clazz, limit),
-        e -> format("Could not scroll through entries for class [%s].", clazz.getSimpleName()),
-        log);
-  }
-
-  public <T> MgetResponse<T> mget(
-      final Class<T> responseType,
-      final String errorMessage,
-      final List<MultiGetOperation> operations) {
-    return richOpenSearchClient.doc().mget(responseType, e -> errorMessage, operations);
+  @Override
+  public List<String> addPrefixesToIndices(final String... indexes) {
+    return List.of();
   }
 
   @Override
@@ -553,6 +535,63 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     return DatabaseType.OPENSEARCH;
   }
 
+  @Override
+  public void deleteIndexByRawIndexNames(final String... indexNames) {
+    final String indexNamesString = Arrays.toString(indexNames);
+    log.debug("Deleting indices [{}].", indexNamesString);
+    dbClientSnapshotFailsafe("DeleteIndex: " + indexNamesString)
+        .get(
+            () ->
+                getOpenSearchClient()
+                    .indices()
+                    .delete(DeleteIndexRequest.of(b -> b.index(List.of(indexNames)))));
+    log.debug("Successfully deleted index [{}].", indexNamesString);
+  }
+
+  @Override
+  public void deleteAllIndexes() {
+    log.debug("Deleting all indexes.");
+    try {
+      final DeleteIndexResponse response =
+          openSearchClient.indices().delete(new Builder().index("*").build());
+      if (response.acknowledged()) {
+        log.debug("Successfully deleted all indexes.");
+      } else {
+        log.warn("There was an error deleting all indexes.");
+      }
+    } catch (final IOException e) {
+      log.warn("There was an error deleting all indexes.", e);
+    }
+  }
+
+  private boolean exists(final ExistsRequest existsRequest) throws IOException {
+    return openSearchClient.indices().exists(existsRequest).value();
+  }
+
+  public <R> ScrollResponse<R> scroll(final ScrollRequest scrollRequest, final Class<R> entityClass)
+      throws IOException {
+    return richOpenSearchClient.doc().scroll(scrollRequest, entityClass);
+  }
+
+  public <R> Map<String, Aggregate> scrollWith(
+      final SearchResponse<R> response,
+      final Consumer<List<Hit<R>>> hitsConsumer,
+      final Class<R> clazz,
+      final int limit) {
+    return safe(
+        () ->
+            richOpenSearchClient.doc().scrollWith(null, response, hitsConsumer, null, clazz, limit),
+        e -> format("Could not scroll through entries for class [%s].", clazz.getSimpleName()),
+        log);
+  }
+
+  public <T> MgetResponse<T> mget(
+      final Class<T> responseType,
+      final String errorMessage,
+      final List<MultiGetOperation> operations) {
+    return richOpenSearchClient.doc().mget(responseType, e -> errorMessage, operations);
+  }
+
   public final GetAliasResponse getAlias(final String indexNamePattern) throws IOException {
     final GetAliasRequest getAliasesRequest =
         new GetAliasRequest.Builder().index(convertToPrefixedAliasName(indexNamePattern)).build();
@@ -562,11 +601,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   public final GetAliasResponse getAlias(final GetAliasRequest getAliasesRequest)
       throws IOException {
     return openSearchClient.indices().getAlias(getAliasesRequest);
-  }
-
-  @Override
-  public List<String> getAllIndexNames() throws IOException {
-    return new ArrayList<>(getRichOpenSearchClient().index().getIndexNamesWithRetries("*"));
   }
 
   public <T> long count(final String[] indexNames, final T query, final String errorMessage) {
@@ -630,7 +664,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     return getOpenSearchClient().tasks().list(request);
   }
 
-  // todo rename it in scope of OPT-7469
   public <T> OpenSearchDocumentOperations.AggregatedResult<Hit<T>> retrieveAllScrollResults(
       final SearchRequest.Builder requestBuilder, final Class<T> responseType) throws IOException {
     return richOpenSearchClient.doc().scrollHits(requestBuilder, responseType);
@@ -651,11 +684,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       final String errorMessage,
       final Map<String, String> indexesToEntitiesId) {
     return richOpenSearchClient.doc().mget(responseType, e -> errorMessage, indexesToEntitiesId);
-  }
-
-  @Override
-  public List<String> addPrefixesToIndices(String... indexes) {
-    return List.of();
   }
 
   public <T> SearchResponse<T> search(
@@ -861,7 +889,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
         .build();
   }
 
-  public final RolloverResponse rollover(RolloverRequest rolloverRequest) throws IOException {
+  public final RolloverResponse rollover(final RolloverRequest rolloverRequest) throws IOException {
     return openSearchClient.indices().rollover(rolloverRequest);
   }
 
@@ -965,35 +993,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     return taskStatus.updated() > 0L;
   }
 
-  @Override
-  public void deleteIndexByRawIndexNames(final String... indexNames) {
-    final String indexNamesString = Arrays.toString(indexNames);
-    log.debug("Deleting indices [{}].", indexNamesString);
-    dbClientSnapshotFailsafe("DeleteIndex: " + indexNamesString)
-        .get(
-            () ->
-                getOpenSearchClient()
-                    .indices()
-                    .delete(DeleteIndexRequest.of(b -> b.index(List.of(indexNames)))));
-    log.debug("Successfully deleted index [{}].", indexNamesString);
-  }
-
-  @Override
-  public void deleteAllIndexes() {
-    log.debug("Deleting all indexes.");
-    try {
-      final DeleteIndexResponse response =
-          openSearchClient.indices().delete(new Builder().index("*").build());
-      if (response.acknowledged()) {
-        log.debug("Successfully deleted all indexes.");
-      } else {
-        log.warn("There was an error deleting all indexes.");
-      }
-    } catch (IOException e) {
-      log.warn("There was an error deleting all indexes.", e);
-    }
-  }
-
   public void waitUntilTaskIsFinished(final String taskId, final String taskItemIdentifier) {
     final BackoffCalculator backoffCalculator = new BackoffCalculator(1000, 10);
     boolean finished = false;
@@ -1052,14 +1051,14 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   }
 
   public ExtendedOpenSearchClient getOpenSearchClient() {
-    return this.openSearchClient;
+    return openSearchClient;
   }
 
   public OpenSearchAsyncClient getOpenSearchAsyncClient() {
-    return this.openSearchAsyncClient;
+    return openSearchAsyncClient;
   }
 
   public RichOpenSearchClient getRichOpenSearchClient() {
-    return this.richOpenSearchClient;
+    return richOpenSearchClient;
   }
 }

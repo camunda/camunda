@@ -68,7 +68,7 @@
     <version.surefire>3.5.1</version.surefire>
     <version.jackson>2.18.0</version.jackson>
     <version.java-grpc-prometheus>0.6.0</version.java-grpc-prometheus>
-    <version.junit>5.11.2</version.junit>
+    <version.junit>5.11.3</version.junit>
     <version.junit4>4.13.2</version.junit4>
     <version.log4j>2.24.1</version.log4j>
     <version.minlog>1.3.1</version.minlog>
@@ -93,13 +93,16 @@
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.3</version.asm>
     <version.testcontainers>1.20.2</version.testcontainers>
+    <version.mariadb-java-client>3.4.1</version.mariadb-java-client>
+    <version.testcontainer-mariadb>1.20.0</version.testcontainer-mariadb>
+    <version.postgressql-testcontainer>1.20.1</version.postgressql-testcontainer>
     <version.netflix.concurrency>0.5.2</version.netflix.concurrency>
     <version.zeebe-test-container>3.6.5</version.zeebe-test-container>
     <version.feel-scala>1.18.1</version.feel-scala>
     <version.dmn-scala>1.10.0</version.dmn-scala>
     <version.rest-assured>5.5.0</version.rest-assured>
     <version.spring>6.1.13</version.spring>
-    <version.spring-security>6.3.3</version.spring-security>
+    <version.spring-security>6.3.4</version.spring-security>
     <version.spring-boot>3.3.4</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.6.2</version.kryo>
@@ -108,7 +111,7 @@
     <version.jqwik>1.9.1</version.jqwik>
     <version.jmock>2.13.1</version.jmock>
     <version.jmh>1.37</version.jmh>
-    <version.byte-buddy>1.15.3</version.byte-buddy>
+    <version.byte-buddy>1.15.7</version.byte-buddy>
     <version.revapi>0.28.1</version.revapi>
     <version.resilience4j>2.2.0</version.resilience4j>
     <version.immutables>2.10.1</version.immutables>
@@ -126,7 +129,7 @@
     <version.feign>13.4</version.feign>
     <version.google-sdk>26.47.0</version.google-sdk>
     <version.azure-sdk>1.2.28</version.azure-sdk>
-    <version.awssdk>2.28.22</version.awssdk>
+    <version.awssdk>2.28.29</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.1.0</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
@@ -145,6 +148,7 @@
     <version.jakarta.json-api>2.1.3</version.jakarta.json-api>
     <version.jakarta-annotation>3.0.0</version.jakarta-annotation>
     <version.jna-platform>5.15.0</version.jna-platform>
+    <version.liquibase>4.29.2</version.liquibase>
 
     <version.commons-io>2.17.0</version.commons-io>
     <version.thymeleaf>3.1.2.RELEASE</version.thymeleaf>
@@ -156,7 +160,7 @@
     <version.node>v20.12.2</version.node>
     <version.yarn>v1.22.21</version.yarn>
 
-    <version.aws-java-sdk>1.12.773</version.aws-java-sdk>
+    <version.aws-java-sdk>1.12.777</version.aws-java-sdk>
     <version.elasticsearch-test-container>1.20.2</version.elasticsearch-test-container>
     <version.postgres-test-container>1.20.2</version.postgres-test-container>
     <version.elasticsearch7>7.17.24</version.elasticsearch7>
@@ -193,6 +197,10 @@
 
     <version.javassist>3.30.2-GA</version.javassist>
 
+    <version.mybatis-spring>3.0.4</version.mybatis-spring>
+    <version.mybatis>3.5.16</version.mybatis>
+    <version.mybatis-spring-boot-starter>3.0.3</version.mybatis-spring-boot-starter>
+
     <!--    VERIFY WHETHER OPERATE WORKS WITH MOCKITO 5.11 -->
     <!--    <mockito.version>5.5.0</mockito.version>-->
 
@@ -217,8 +225,8 @@
     <plugin.version.revapi>0.15.0</plugin.version.revapi>
     <plugin.version.shade>3.6.0</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
-    <plugin.version.spotbugs>4.8.6.4</plugin.version.spotbugs>
-    <plugin.version.surefire>3.5.0</plugin.version.surefire>
+    <plugin.version.spotbugs>4.8.6.5</plugin.version.spotbugs>
+    <plugin.version.surefire>3.5.1</plugin.version.surefire>
     <plugin.version.versions>2.17.1</plugin.version.versions>
     <plugin.version.frontend-maven>1.15.1</plugin.version.frontend-maven>
     <plugin.version.maven-source>3.3.1</plugin.version.maven-source>
@@ -432,6 +440,12 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-opensearch-exporter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>rdbms-exporter</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -825,6 +839,19 @@
         <version>${project.version}</version>
       </dependency>
 
+      <!-- camunda secondary db -->
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-db</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-db-rdbms</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
       <!-- camunda search client -->
 
       <dependency>
@@ -860,6 +887,12 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-search-client-opensearch</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-search-client-rdbms</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -1118,6 +1151,30 @@
         <version>${project.version}</version>
         <classifier>tests</classifier>
         <type>test-jar</type>
+      </dependency>
+
+      <dependency>
+        <groupId>org.liquibase</groupId>
+        <artifactId>liquibase-core</artifactId>
+        <version>${version.liquibase}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.mybatis.spring.boot</groupId>
+        <artifactId>mybatis-spring-boot-starter</artifactId>
+        <version>${version.mybatis-spring-boot-starter}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.mybatis</groupId>
+        <artifactId>mybatis-spring</artifactId>
+        <version>${version.mybatis-spring}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.mybatis</groupId>
+        <artifactId>mybatis</artifactId>
+        <version>${version.mybatis}</version>
       </dependency>
 
       <dependency>
@@ -2684,13 +2741,22 @@
                   <dep>org.openjdk.jmh:jmh-generator-annprocess</dep>
                   <dep>com.h2database:h2</dep>
                   <dep>org.postgresql:postgresql</dep>
+                  <dep>org.mariadb.jdbc:mariadb-java-client</dep>
+                  <dep>com.oracle.database.jdbc:ojdbc8</dep>
                   <dep>io.camunda:camunda-authentication</dep>
                   <dep>org.skyscreamer:jsonassert</dep>
                   <dep>org.springframework:spring-webflux</dep>
+                  <dep>org.springframework:spring-tx</dep>
+                  <dep>org.springframework.boot:spring-boot-starter-data-jdbc</dep>
+                  <dep>org.mockito:mockito-core</dep>
+                  <dep>org.assertj:assertj-core</dep>
+                  <dep>io.camunda:rdbms-exporter</dep>
                 </ignoredUnusedDeclaredDependencies>
                 <ignoredNonTestScopedDependencies>
                   <dep>io.camunda:zeebe-cluster-config</dep>
+                  <dep>io.camunda:zeebe-scheduler</dep>
                   <dep>org.springframework:spring-core</dep>
+                  <dep>org.springframework:spring-beans</dep>
                 </ignoredNonTestScopedDependencies>
               </configuration>
             </execution>

@@ -33,7 +33,7 @@ final class ConfigurationChangeAppliersImplTest {
   void shouldReturnExpectedApplier(
       final ClusterConfigurationChangeOperation operation, final Class<?> expectedClass) {
     // given
-    final var topologyChangeAppliers = new ConfigurationChangeAppliersImpl(null, null);
+    final var topologyChangeAppliers = new ConfigurationChangeAppliersImpl(null, null, null);
 
     // when
     final var applier = topologyChangeAppliers.getApplier(operation);

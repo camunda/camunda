@@ -17,7 +17,6 @@ import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_PROCESS_INS
 import static io.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil.mapHits;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
-import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX;
 import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
@@ -67,7 +66,6 @@ import co.elastic.clients.elasticsearch.snapshot.CreateSnapshotRequest;
 import co.elastic.clients.elasticsearch.snapshot.DeleteRepositoryRequest;
 import co.elastic.clients.elasticsearch.snapshot.DeleteSnapshotRequest;
 import co.elastic.clients.json.JsonData;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.Iterables;
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import io.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
@@ -115,7 +113,6 @@ import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import jakarta.ws.rs.NotFoundException;
 import java.io.IOException;
-import java.lang.module.ModuleDescriptor;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -123,12 +120,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
@@ -286,27 +281,6 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  public Integer getCountOfCompletedInstancesWithIdsIn(final Set<Object> processInstanceIds) {
-    return getInstanceCountWithQuery(
-        Query.of(
-            q ->
-                q.bool(
-                    b ->
-                        b.filter(
-                                f ->
-                                    f.terms(
-                                        t ->
-                                            t.field(ProcessInstanceIndex.PROCESS_INSTANCE_ID)
-                                                .terms(
-                                                    tt ->
-                                                        tt.value(
-                                                            processInstanceIds.stream()
-                                                                .map(FieldValue::of)
-                                                                .toList()))))
-                            .filter(f -> f.exists(e -> e.field(ProcessInstanceIndex.END_DATE))))));
-  }
-
-  @Override
   public void deleteAllOptimizeData() {
     try {
       getOptimizeElasticClient()
@@ -412,24 +386,6 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                     .getOptimizeIndexAliasForIndex(new ExternalProcessVariableIndexES()))
             .toArray(String[]::new);
     getOptimizeElasticClient().deleteIndexByRawIndexNames(indexNames);
-  }
-
-  @Override
-  public void deleteIndicesStartingWithPrefix(final String term) {
-    final String[] indicesToDelete;
-    try {
-      indicesToDelete =
-          getOptimizeElasticClient().getAllIndexNames().stream()
-              .filter(
-                  indexName ->
-                      indexName.startsWith(getIndexNameService().getIndexPrefix() + "-" + term))
-              .toArray(String[]::new);
-    } catch (IOException e) {
-      throw new OptimizeRuntimeException(e);
-    }
-    if (indicesToDelete.length > 0) {
-      getOptimizeElasticClient().deleteIndexByRawIndexNames(indicesToDelete);
-    }
   }
 
   @Override
@@ -1190,15 +1146,6 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
     }
   }
 
-  private boolean isDatabaseVersionGreaterThanOrEqualTo(final String dbVersion) {
-    return Stream.of(dbVersion, getDatabaseVersion())
-        .map(ModuleDescriptor.Version::parse)
-        .sorted()
-        .findFirst()
-        .map(firstVersion -> firstVersion.toString().equals(dbVersion))
-        .orElseThrow(() -> new OptimizeIntegrationTestException("Could not determine ES version"));
-  }
-
   private void initEsClient() {
     if (CLIENT_CACHE.containsKey(customIndexPrefix)) {
       optimizeElasticsearchClient = CLIENT_CACHE.get(customIndexPrefix);
@@ -1256,14 +1203,6 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
           .putSettings(clusterUpdateSettingsRequest);
     } catch (final IOException e) {
       throw new OptimizeRuntimeException("Could not update cluster settings!", e);
-    }
-  }
-
-  private String writeJsonString(final Map.Entry<String, Object> idAndObject) {
-    try {
-      return OBJECT_MAPPER.writeValueAsString(idAndObject.getValue());
-    } catch (JsonProcessingException e) {
-      throw new OptimizeRuntimeException(e);
     }
   }
 
@@ -1339,63 +1278,6 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
     }
 
     return results;
-  }
-
-  private int getInstanceCountWithQuery(final Query query) {
-    try {
-      final CountResponse countResponse =
-          getOptimizeElasticClient()
-              .count(
-                  OptimizeCountRequestBuilderES.of(
-                      c ->
-                          c.optimizeIndex(getOptimizeElasticClient(), PROCESS_INSTANCE_MULTI_ALIAS)
-                              .query(query)));
-      return Long.valueOf(countResponse.count()).intValue();
-    } catch (final IOException | ElasticsearchException e) {
-      throw new OptimizeIntegrationTestException(
-          "Cannot evaluate document count for index " + PROCESS_INSTANCE_MULTI_ALIAS, e);
-    }
-  }
-
-  private Integer getVariableInstanceCountForAllProcessInstances(final Query processInstanceQuery) {
-    final SearchResponse<?> searchResponse;
-    try {
-      searchResponse =
-          getOptimizeElasticClient()
-              .search(
-                  OptimizeSearchRequestBuilderES.of(
-                      s ->
-                          s.optimizeIndex(getOptimizeElasticClient(), PROCESS_INSTANCE_MULTI_ALIAS)
-                              .query(Query.of(q -> q.matchAll(m -> m)))
-                              .size(0)
-                              .source(ss -> ss.fetch(false))
-                              .aggregations(
-                                  FLOW_NODE_INSTANCES,
-                                  Aggregation.of(
-                                      a ->
-                                          a.nested(n -> n.path(FLOW_NODE_INSTANCES))
-                                              .aggregations(
-                                                  FLOW_NODE_INSTANCES + FREQUENCY_AGGREGATION,
-                                                  Aggregation.of(
-                                                      aa ->
-                                                          aa.valueCount(
-                                                              v ->
-                                                                  v.field(
-                                                                      FLOW_NODE_INSTANCES
-                                                                          + "."
-                                                                          + ProcessInstanceIndex
-                                                                              .FLOW_NODE_INSTANCE_ID))))))),
-                  Object.class);
-    } catch (final IOException | ElasticsearchException e) {
-      throw new OptimizeIntegrationTestException(
-          "Cannot evaluate variable instance count in process instance indices.", e);
-    }
-
-    final NestedAggregate nestedAgg = searchResponse.aggregations().get(VARIABLES).nested();
-    final ValueCountAggregate countAggregator = nestedAgg.aggregations().get("count").valueCount();
-    final double totalVariableCount = countAggregator.value();
-
-    return Double.valueOf(totalVariableCount).intValue();
   }
 
   private void deleteIndexOfMapping(final IndexMappingCreator<IndexSettings.Builder> indexMapping) {

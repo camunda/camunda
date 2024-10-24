@@ -51,14 +51,14 @@ public class PartitionBootstrapApplier implements MemberOperationApplier {
     if (partitionId > Protocol.MAXIMUM_PARTITIONS) {
       return Either.left(
           new IllegalArgumentException(
-              "Failed to bootstrap partition '{}'. Partition ID is greater than the maximum allowed partition ID '{}'"
+              "Failed to bootstrap partition '%s'. Partition ID is greater than the maximum allowed partition ID '%s'"
                   .formatted(partitionId, Protocol.MAXIMUM_PARTITIONS)));
     }
 
     if (!isLocalMemberIsActive(currentClusterConfiguration)) {
       return Either.left(
           new IllegalStateException(
-              "Expected to bootstrap partition, but the member '{}' is not active"
+              "Expected to bootstrap partition, but the member '%s' is not active"
                   .formatted(memberId)));
     }
 
@@ -69,14 +69,14 @@ public class PartitionBootstrapApplier implements MemberOperationApplier {
     if (partitionExists(currentClusterConfiguration)) {
       return Either.left(
           new IllegalStateException(
-              "Failed to bootstrap partition '{}'. Partition already exists in the cluster"
+              "Failed to bootstrap partition '%s'. Partition already exists in the cluster"
                   .formatted(partitionId)));
     }
 
     if (!isPartitionIdContiguous(currentClusterConfiguration, partitionId)) {
       return Either.left(
           new IllegalStateException(
-              "Failed to bootstrap partition '{}'. Partition ID is not contiguous"
+              "Failed to bootstrap partition '%s'. Partition ID is not contiguous"
                   .formatted(partitionId)));
     }
 

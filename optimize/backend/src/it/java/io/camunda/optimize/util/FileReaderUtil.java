@@ -29,12 +29,4 @@ public class FileReaderUtil {
   public static String readFileWithWindowsLineSeparator(final String path) {
     return readFile(path).replace("\n", "\r\n");
   }
-
-  public static String readValidTestLicense() {
-    return readFile("/license/ValidTestLicense.txt");
-  }
-
-  public static String readValidTestLegacyLicense() {
-    return readFile("/license/TestLegacyLicense_Valid.txt");
-  }
 }
