@@ -33,6 +33,7 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerPartitionScaleUpRequest;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -530,6 +531,13 @@ public final class PartitionManagerImpl
                     new RuntimeException(
                         "Request resulted in an error: %s".formatted(response.getError())));
                 return;
+              }
+
+              if (response.isRejection()
+                  && response.getRejection().type() == RejectionType.ALREADY_EXISTS) {
+                LOGGER.debug(
+                    "Scale up request already succeeded before: {}", response.getRejection());
+                result.complete(null);
               }
 
               if (response.isRejection()) {
