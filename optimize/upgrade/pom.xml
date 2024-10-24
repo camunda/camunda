@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -54,7 +52,6 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
-      <version>3.14.0</version>
       <scope>provided</scope>
     </dependency>
 
@@ -178,13 +175,10 @@
       <artifactId>opensearch-rest-client</artifactId>
       <scope>runtime</scope>
     </dependency>
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-    </dependency>
   </dependencies>
 
   <build>
+    <finalName>upgrade-optimize-from-${project.previousVersion}-to-${project.version}</finalName>
     <plugins>
 
       <plugin>
@@ -232,10 +226,10 @@
         <executions>
           <execution>
             <id>docker-start</id>
-            <phase>pre-integration-test</phase>
             <goals>
               <goal>exec</goal>
             </goals>
+            <phase>pre-integration-test</phase>
             <configuration>
               <skip>${skip.docker}</skip>
               <executable>docker</executable>
@@ -252,10 +246,10 @@
           </execution>
           <execution>
             <id>docker-stop</id>
-            <phase>post-integration-test</phase>
             <goals>
               <goal>exec</goal>
             </goals>
+            <phase>post-integration-test</phase>
             <configuration>
               <skip>${skip.docker}</skip>
               <executable>docker</executable>
@@ -275,24 +269,24 @@
         <executions>
           <execution>
             <id>check-es-is-up</id>
-            <phase>pre-integration-test</phase>
-            <configuration>
-              <skip>${skip.docker}</skip>
-              <target name="check-es-is-up" description="Check whether ES is running">
-                <echo message="Check ES is running..."/>
-                <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                  <socket server="localhost" port="9200"/>
-                </waitfor>
-                <echo message="ES http socket is open. Checking for ES cluster state..."/>
-                <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                  <http url="http://localhost:9200/_cluster/state"/>
-                </waitfor>
-                <echo message="ES is running."/>
-              </target>
-            </configuration>
             <goals>
               <goal>run</goal>
             </goals>
+            <phase>pre-integration-test</phase>
+            <configuration>
+              <skip>${skip.docker}</skip>
+              <target description="Check whether ES is running" name="check-es-is-up">
+                <echo message="Check ES is running..."></echo>
+                <waitfor checkevery="1" checkeveryunit="second" maxwait="30" maxwaitunit="second">
+                  <socket port="9200" server="localhost"></socket>
+                </waitfor>
+                <echo message="ES http socket is open. Checking for ES cluster state..."></echo>
+                <waitfor checkevery="1" checkeveryunit="second" maxwait="30" maxwaitunit="second">
+                  <http url="http://localhost:9200/_cluster/state"></http>
+                </waitfor>
+                <echo message="ES is running."></echo>
+              </target>
+            </configuration>
           </execution>
         </executions>
       </plugin>
@@ -309,7 +303,6 @@
         </executions>
       </plugin>
     </plugins>
-    <finalName>upgrade-optimize-from-${project.previousVersion}-to-${project.version}</finalName>
   </build>
 
 </project>
