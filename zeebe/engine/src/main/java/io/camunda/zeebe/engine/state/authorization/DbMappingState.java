@@ -16,6 +16,8 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
+import java.util.Optional;
 
 public class DbMappingState implements MutableMappingState {
 
@@ -45,5 +47,32 @@ public class DbMappingState implements MutableMappingState {
     claimByKeyColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.CLAIM_BY_KEY, transactionContext, mappingKey, fkClaim);
+  }
+
+  @Override
+  public void create(final MappingRecord mappingRecord) {
+    final var key = mappingRecord.getMappingKey();
+    final var name = mappingRecord.getClaimName();
+    final var value = mappingRecord.getClaimValue();
+
+    mappingKey.wrapLong(key);
+    claimName.wrapString(name);
+    claimValue.wrapString(value);
+    persistedMapping.setMappingKey(key);
+    persistedMapping.setClaimName(name);
+    persistedMapping.setClaimValue(value);
+
+    mappingColumnFamily.insert(claim, persistedMapping);
+    claimByKeyColumnFamily.insert(mappingKey, fkClaim);
+  }
+
+  @Override
+  public Optional<PersistedMapping> get(final long key) {
+    mappingKey.wrapLong(key);
+    final var fk = claimByKeyColumnFamily.get(mappingKey);
+    if (fk != null) {
+      return Optional.of(mappingColumnFamily.get(fk.inner()));
+    }
+    return Optional.empty();
   }
 }
