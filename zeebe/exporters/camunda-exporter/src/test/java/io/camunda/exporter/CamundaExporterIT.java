@@ -27,10 +27,10 @@ import io.camunda.exporter.schema.SchemaTestUtil;
 import io.camunda.exporter.utils.CamundaExporterITInvocationProvider;
 import io.camunda.exporter.utils.SearchClientAdapter;
 import io.camunda.exporter.utils.TestSupport;
+import io.camunda.security.entity.Permission;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity;
-import io.camunda.webapps.schema.entities.usermanagement.Permission;
 import io.camunda.webapps.schema.entities.usermanagement.UserEntity;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
@@ -349,7 +349,7 @@ final class CamundaExporterIT {
         .map(
             permissionValue ->
                 new Permission(
-                    permissionValue.getPermissionType().name(), permissionValue.getResourceIds()))
+                    permissionValue.getPermissionType(), permissionValue.getResourceIds()))
         .collect(Collectors.toList());
   }
 
