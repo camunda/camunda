@@ -16,49 +16,49 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 public class ConfigValidatorTest {
-  private static ExporterConfiguration CONFIG = new ExporterConfiguration();
+  private static ExporterConfiguration config = new ExporterConfiguration();
 
   @BeforeEach
   void reset() {
-    CONFIG = new ExporterConfiguration();
+    config = new ExporterConfiguration();
   }
 
   @Test
   void shouldRejectWrongConnectionType() {
     // given
-    CONFIG.getConnect().setType("mysql");
+    config.getConnect().setType("mysql");
 
     // when - then
-    assertThatCode(() -> ConfigValidator.validate(CONFIG)).isInstanceOf(ExporterException.class);
+    assertThatCode(() -> ConfigValidator.validate(config)).isInstanceOf(ExporterException.class);
   }
 
   @Test
   void shouldNotAllowUnderscoreInIndexPrefix() {
     // given
-    CONFIG.getIndex().setPrefix("i_am_invalid");
+    config.getIndex().setPrefix("i_am_invalid");
 
     // when - then
-    assertThatCode(() -> ConfigValidator.validate(CONFIG)).isInstanceOf(ExporterException.class);
+    assertThatCode(() -> ConfigValidator.validate(config)).isInstanceOf(ExporterException.class);
   }
 
   @ParameterizedTest(name = "{0}")
   @ValueSource(ints = {-1, 0})
   void shouldForbidNonPositiveNumberOfShards(final int invalidNumberOfShards) {
     // given
-    CONFIG.getIndex().setNumberOfShards(invalidNumberOfShards);
+    config.getIndex().setNumberOfShards(invalidNumberOfShards);
 
     // when - then
-    assertThatCode(() -> ConfigValidator.validate(CONFIG)).isInstanceOf(ExporterException.class);
+    assertThatCode(() -> ConfigValidator.validate(config)).isInstanceOf(ExporterException.class);
   }
 
   @ParameterizedTest(name = "{0}")
   @ValueSource(strings = {"1", "-1", "1ms"})
   void shouldNotAllowInvalidMinimumAge(final String invalidMinAge) {
     // given
-    CONFIG.getRetention().setMinimumAge(invalidMinAge);
+    config.getRetention().setMinimumAge(invalidMinAge);
 
     // when - then
-    assertThatCode(() -> ConfigValidator.validate(CONFIG))
+    assertThatCode(() -> ConfigValidator.validate(config))
         .isInstanceOf(ExporterException.class)
         .hasMessageContaining("must match pattern '^[0-9]+[dhms]$'")
         .hasMessageContaining("minimumAge '" + invalidMinAge + "'");
@@ -67,9 +67,9 @@ public class ConfigValidatorTest {
   @Test
   void shouldForbidNegativeNumberOfReplicas() {
     // given
-    CONFIG.getIndex().setNumberOfReplicas(-1);
+    config.getIndex().setNumberOfReplicas(-1);
 
     // when - then
-    assertThatCode(() -> ConfigValidator.validate(CONFIG)).isInstanceOf(ExporterException.class);
+    assertThatCode(() -> ConfigValidator.validate(config)).isInstanceOf(ExporterException.class);
   }
 }
