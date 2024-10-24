@@ -21,6 +21,7 @@ import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.sort.ProcessInstanceSort;
@@ -81,7 +82,7 @@ public class ProcessInstanceSortIT {
             .search(
                 new ProcessInstanceDbQuery(
                     new ProcessInstanceFilter.Builder()
-                        .processDefinitionKeys(processDefinitionKey)
+                        .processDefinitionKeys(Operation.eq(processDefinitionKey))
                         .build(),
                     ProcessInstanceSort.of(b -> b.processDefinitionId().asc()),
                     SearchQueryPage.of(b -> b)))
@@ -133,7 +134,9 @@ public class ProcessInstanceSortIT {
         processInstanceReader
             .search(
                 new ProcessInstanceDbQuery(
-                    new ProcessInstanceFilter.Builder().processDefinitionIds(bpmProcessId).build(),
+                    new ProcessInstanceFilter.Builder()
+                        .processDefinitionIds(Operation.eq(bpmProcessId))
+                        .build(),
                     ProcessInstanceSort.of(b -> b.processDefinitionVersion().asc()),
                     SearchQueryPage.of(b -> b)))
             .hits();
@@ -184,7 +187,9 @@ public class ProcessInstanceSortIT {
         processInstanceReader
             .search(
                 new ProcessInstanceDbQuery(
-                    new ProcessInstanceFilter.Builder().processDefinitionIds(bpmProcessId).build(),
+                    new ProcessInstanceFilter.Builder()
+                        .processDefinitionIds(Operation.eq(bpmProcessId))
+                        .build(),
                     ProcessInstanceSort.of(b -> b.processDefinitionKey().asc()),
                     SearchQueryPage.of(b -> b)))
             .hits();
@@ -263,7 +268,9 @@ public class ProcessInstanceSortIT {
         processInstanceReader
             .search(
                 new ProcessInstanceDbQuery(
-                    new ProcessInstanceFilter.Builder().processDefinitionIds(bpmProcessId).build(),
+                    new ProcessInstanceFilter.Builder()
+                        .processDefinitionIds(Operation.eq(bpmProcessId))
+                        .build(),
                     ProcessInstanceSort.of(b -> b.processDefinitionName().asc()),
                     SearchQueryPage.of(b -> b)))
             .hits();
@@ -342,7 +349,9 @@ public class ProcessInstanceSortIT {
         processInstanceReader
             .search(
                 new ProcessInstanceDbQuery(
-                    new ProcessInstanceFilter.Builder().processDefinitionIds(bpmProcessId).build(),
+                    new ProcessInstanceFilter.Builder()
+                        .processDefinitionIds(Operation.eq(bpmProcessId))
+                        .build(),
                     ProcessInstanceSort.of(b -> b.processDefinitionVersionTag().asc()),
                     SearchQueryPage.of(b -> b)))
             .hits();
@@ -393,7 +402,9 @@ public class ProcessInstanceSortIT {
         processInstanceReader
             .search(
                 new ProcessInstanceDbQuery(
-                    new ProcessInstanceFilter.Builder().processDefinitionIds(bpmProcessId).build(),
+                    new ProcessInstanceFilter.Builder()
+                        .processDefinitionIds(Operation.eq(bpmProcessId))
+                        .build(),
                     ProcessInstanceSort.of(b -> b.startDate().asc()),
                     SearchQueryPage.of(b -> b)))
             .hits();
@@ -444,7 +455,9 @@ public class ProcessInstanceSortIT {
         processInstanceReader
             .search(
                 new ProcessInstanceDbQuery(
-                    new ProcessInstanceFilter.Builder().processDefinitionIds(bpmProcessId).build(),
+                    new ProcessInstanceFilter.Builder()
+                        .processDefinitionIds(Operation.eq(bpmProcessId))
+                        .build(),
                     ProcessInstanceSort.of(b -> b.endDate().asc()),
                     SearchQueryPage.of(b -> b)))
             .hits();
@@ -495,7 +508,9 @@ public class ProcessInstanceSortIT {
         processInstanceReader
             .search(
                 new ProcessInstanceDbQuery(
-                    new ProcessInstanceFilter.Builder().processDefinitionIds(bpmProcessId).build(),
+                    new ProcessInstanceFilter.Builder()
+                        .processDefinitionIds(Operation.eq(bpmProcessId))
+                        .build(),
                     ProcessInstanceSort.of(b -> b.parentProcessInstanceKey().asc()),
                     SearchQueryPage.of(b -> b)))
             .hits();
@@ -546,7 +561,9 @@ public class ProcessInstanceSortIT {
         processInstanceReader
             .search(
                 new ProcessInstanceDbQuery(
-                    new ProcessInstanceFilter.Builder().processDefinitionIds(bpmProcessId).build(),
+                    new ProcessInstanceFilter.Builder()
+                        .processDefinitionIds(Operation.eq(bpmProcessId))
+                        .build(),
                     ProcessInstanceSort.of(b -> b.tenantId().asc()),
                     SearchQueryPage.of(b -> b)))
             .hits();
@@ -602,7 +619,7 @@ public class ProcessInstanceSortIT {
             .search(
                 new ProcessInstanceDbQuery(
                     new ProcessInstanceFilter.Builder()
-                        .processDefinitionKeys(processDefinitionKey)
+                        .processDefinitionKeys(Operation.eq(processDefinitionKey))
                         .build(),
                     ProcessInstanceSort.of(b -> b.processDefinitionId().asc().startDate().asc()),
                     SearchQueryPage.of(b -> b)))

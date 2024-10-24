@@ -309,6 +309,7 @@
             <openApiNullable>false</openApiNullable>
             <serializationLibrary>jackson</serializationLibrary>
             <useReflectionEqualsHashCode>false</useReflectionEqualsHashCode>
+            <useOneOfInterfaces>false</useOneOfInterfaces>
           </configOptions>
         </configuration>
         <executions>

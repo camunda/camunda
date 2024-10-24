@@ -12,21 +12,38 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.filter.Operation;
+import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.ProcessInstanceServices;
+import io.camunda.zeebe.gateway.protocol.rest.IntegerFilter;
+import io.camunda.zeebe.gateway.protocol.rest.LongFilter;
+import io.camunda.zeebe.gateway.protocol.rest.StringFilter;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.deserializer.IntegerFilterDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.LongFilterDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.StringFilterDeserializer;
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 @WebMvcTest(
     value = ProcessInstanceQueryController.class,
@@ -109,7 +126,6 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           .items(List.of(PROCESS_INSTANCE_ENTITY))
           .sortValues(new Object[] {"v"})
           .build();
-
   @MockBean ProcessInstanceServices processInstanceServices;
 
   @BeforeEach
@@ -425,5 +441,131 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
 
     // Verify that the service was called with the invalid key
     verify(processInstanceServices).getByKey(invalidProcesInstanceKey);
+  }
+
+  @SafeVarargs
+  private static Arguments processInstanceKeyArguments(
+      final String filterValue, final Operation<Long>... operations) {
+    final var filter = new ProcessInstanceFilter.Builder().processInstanceKeys(operations).build();
+    return Arguments.of("processInstanceKey", filterValue, filter);
+  }
+
+  @SafeVarargs
+  private static Arguments processDefinitionKeyArguments(
+      final String filterValue, final Operation<Long>... operations) {
+    final var filter =
+        new ProcessInstanceFilter.Builder().processDefinitionKeys(operations).build();
+    return Arguments.of("processDefinitionKey", filterValue, filter);
+  }
+
+  @SafeVarargs
+  private static Arguments processDefinitionVersions(
+      final String filterValue, final Operation<Integer>... operations) {
+    final var filter =
+        new ProcessInstanceFilter.Builder().processDefinitionVersions(operations).build();
+    return Arguments.of("processDefinitionVersion", filterValue, filter);
+  }
+
+  @SafeVarargs
+  private static Arguments processDefinitionIdArguments(
+      final String filterValue, final Operation<String>... operations) {
+    final var filter = new ProcessInstanceFilter.Builder().processDefinitionIds(operations).build();
+    return Arguments.of("processDefinitionId", filterValue, filter);
+  }
+
+  private static Stream<Arguments> provideAdvancedSearchParameters() {
+    final String inFilter = "\"$in\": [\"some\", \"thing\"]";
+    final String likeFilter = "\"$like\": \"some*\"";
+    final var inOperation = Operation.in("some", "thing");
+    final var likeOperation = Operation.like("some*");
+    return Stream.of(
+        // processInstanceKeys
+        processInstanceKeyArguments("10", Operation.eq(10L)),
+        processInstanceKeyArguments("{\"$eq\": 1}", Operation.eq(1L)),
+        processInstanceKeyArguments("{\"$neq\": 1}", Operation.neq(1L)),
+        processInstanceKeyArguments("{\"$gt\": 5}", Operation.gt(5L)),
+        processInstanceKeyArguments("{\"$gte\": 5}", Operation.gte(5L)),
+        processInstanceKeyArguments("{\"$lt\": 5}", Operation.lt(5L)),
+        processInstanceKeyArguments("{\"$lte\": 5}", Operation.lte(5L)),
+        processInstanceKeyArguments(
+            "{\"$gt\": 5, \"$lt\": 10}", Operation.gt(5L), Operation.lt(10L)),
+        // processDefinitionKeys
+        processDefinitionKeyArguments("10", Operation.eq(10L)),
+        processDefinitionKeyArguments("{\"$eq\": 1}", Operation.eq(1L)),
+        processDefinitionKeyArguments("{\"$neq\": 1}", Operation.neq(1L)),
+        processDefinitionKeyArguments("{\"$gt\": 5}", Operation.gt(5L)),
+        processDefinitionKeyArguments("{\"$gte\": 5}", Operation.gte(5L)),
+        processDefinitionKeyArguments("{\"$lt\": 5}", Operation.lt(5L)),
+        processDefinitionKeyArguments("{\"$lte\": 5}", Operation.lte(5L)),
+        processDefinitionKeyArguments(
+            "{\"$gt\": 5, \"$lt\": 10}", Operation.gt(5L), Operation.lt(10L)),
+        // processInstanceKeys
+        processDefinitionVersions("10", Operation.eq(10)),
+        processDefinitionVersions("{\"$eq\": 1}", Operation.eq(1)),
+        processDefinitionVersions("{\"$neq\": 1}", Operation.neq(1)),
+        processDefinitionVersions("{\"$gt\": 5}", Operation.gt(5)),
+        processDefinitionVersions("{\"$gte\": 5}", Operation.gte(5)),
+        processDefinitionVersions("{\"$lt\": 5}", Operation.lt(5)),
+        processDefinitionVersions("{\"$lte\": 5}", Operation.lte(5)),
+        processDefinitionVersions("{\"$gt\": 5, \"$lt\": 10}", Operation.gt(5), Operation.lt(10)),
+        // processDefinitionIds
+        processDefinitionIdArguments("\"something\"", Operation.eq("something")),
+        processDefinitionIdArguments("{\"$eq\": \"something\"}", Operation.eq("something")),
+        processDefinitionIdArguments("{%s}".formatted(likeFilter), likeOperation),
+        processDefinitionIdArguments("{%s}".formatted(inFilter), inOperation),
+        processDefinitionIdArguments(
+            "{%s, %s}".formatted(inFilter, likeFilter), inOperation, likeOperation));
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideAdvancedSearchParameters")
+  void shouldSearchProcessInstancesWithAdvancedFilter(
+      final String filterKey, final String filterValue, final ProcessInstanceFilter filter) {
+    // given
+    final var request =
+        """
+            {
+                "filter": { "%s": %s }
+            }"""
+            .formatted(filterKey, filterValue);
+    System.out.println("request = " + request);
+    when(processInstanceServices.search(any(ProcessInstanceQuery.class)))
+        .thenReturn(SEARCH_QUERY_RESULT);
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE);
+
+    verify(processInstanceServices)
+        .search(new ProcessInstanceQuery.Builder().filter(filter).build());
+  }
+
+  @TestConfiguration
+  public static class TestConfig {
+
+    @Bean
+    public ObjectMapper objectMapper() {
+      final var objectMapper = Jackson2ObjectMapperBuilder.json().build();
+
+      final var deserializers = new SimpleModule();
+      deserializers.addDeserializer(StringFilter.class, new StringFilterDeserializer(objectMapper));
+      deserializers.addDeserializer(LongFilter.class, new LongFilterDeserializer(objectMapper));
+      deserializers.addDeserializer(
+          IntegerFilter.class, new IntegerFilterDeserializer(objectMapper));
+      objectMapper.registerModule(deserializers);
+
+      return objectMapper;
+    }
   }
 }

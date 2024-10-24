@@ -7,7 +7,8 @@
  */
 package io.camunda.search.filter;
 
-import static io.camunda.util.CollectionUtil.*;
+import static io.camunda.util.CollectionUtil.addValuesToList;
+import static io.camunda.util.CollectionUtil.collectValuesAsList;
 
 import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
@@ -16,12 +17,12 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public record ProcessInstanceFilter(
-    List<Long> processInstanceKeys,
-    List<String> processDefinitionIds,
+    List<Operation<Long>> processInstanceKeys,
+    List<Operation<String>> processDefinitionIds,
     List<String> processDefinitionNames,
-    List<Integer> processDefinitionVersions,
+    List<Operation<Integer>> processDefinitionVersions,
     List<String> processDefinitionVersionTags,
-    List<Long> processDefinitionKeys,
+    List<Operation<Long>> processDefinitionKeys,
     List<Long> parentProcessInstanceKeys,
     List<Long> parentFlowNodeInstanceKeys,
     List<String> treePaths,
@@ -34,12 +35,12 @@ public record ProcessInstanceFilter(
 
   public static final class Builder implements ObjectBuilder<ProcessInstanceFilter> {
 
-    private List<Long> processInstanceKeys;
-    private List<String> processDefinitionIds;
+    private List<Operation<Long>> processInstanceKeys;
+    private List<Operation<String>> processDefinitionIds;
     private List<String> processDefinitionNames;
-    private List<Integer> processDefinitionVersions;
+    private List<Operation<Integer>> processDefinitionVersions;
     private List<String> processDefinitionVersionTags;
-    private List<Long> processDefinitionKeys;
+    private List<Operation<Long>> processDefinitionKeys;
     private List<Long> parentProcessInstanceKeys;
     private List<Long> parentFlowNodeInstanceKeys;
     private List<String> treePaths;
@@ -49,22 +50,26 @@ public record ProcessInstanceFilter(
     private Boolean hasIncident;
     private List<String> tenantIds;
 
-    public Builder processInstanceKeys(final List<Long> values) {
-      processInstanceKeys = addValuesToList(processInstanceKeys, values);
+    public Builder processInstanceKeys(final List<Operation<Long>> operations) {
+      processInstanceKeys = addValuesToList(processInstanceKeys, operations);
       return this;
     }
 
-    public Builder processInstanceKeys(final Long... values) {
-      return processInstanceKeys(collectValuesAsList(values));
-    }
-
-    public Builder processDefinitionIds(final List<String> values) {
-      processDefinitionIds = addValuesToList(processDefinitionIds, values);
+    @SafeVarargs
+    public final Builder processInstanceKeys(final Operation<Long>... operations) {
+      processInstanceKeys = addValuesToList(processInstanceKeys, List.of(operations));
       return this;
     }
 
-    public Builder processDefinitionIds(final String... values) {
-      return processDefinitionIds(collectValuesAsList(values));
+    public Builder processDefinitionIds(final List<Operation<String>> operations) {
+      processDefinitionIds = addValuesToList(processDefinitionIds, operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder processDefinitionIds(final Operation<String>... operations) {
+      processDefinitionIds = addValuesToList(processDefinitionIds, List.of(operations));
+      return this;
     }
 
     public Builder processDefinitionNames(final List<String> values) {
@@ -76,13 +81,15 @@ public record ProcessInstanceFilter(
       return processDefinitionNames(collectValuesAsList(values));
     }
 
-    public Builder processDefinitionVersions(final List<Integer> values) {
-      processDefinitionVersions = addValuesToList(processDefinitionVersions, values);
+    public Builder processDefinitionVersions(final List<Operation<Integer>> operations) {
+      processDefinitionVersions = addValuesToList(processDefinitionVersions, operations);
       return this;
     }
 
-    public Builder processDefinitionVersions(final Integer... values) {
-      return processDefinitionVersions(collectValuesAsList(values));
+    @SafeVarargs
+    public final Builder processDefinitionVersions(final Operation<Integer>... operations) {
+      processDefinitionVersions = addValuesToList(processDefinitionVersions, List.of(operations));
+      return this;
     }
 
     public Builder processDefinitionVersionTags(final List<String> values) {
@@ -94,13 +101,15 @@ public record ProcessInstanceFilter(
       return processDefinitionVersionTags(collectValuesAsList(values));
     }
 
-    public Builder processDefinitionKeys(final List<Long> values) {
-      processDefinitionKeys = addValuesToList(processDefinitionKeys, values);
+    public Builder processDefinitionKeys(final List<Operation<Long>> operations) {
+      processDefinitionKeys = addValuesToList(processDefinitionKeys, operations);
       return this;
     }
 
-    public Builder processDefinitionKeys(final Long... values) {
-      return processDefinitionKeys(collectValuesAsList(values));
+    @SafeVarargs
+    public final Builder processDefinitionKeys(final Operation<Long>... operations) {
+      processDefinitionKeys = addValuesToList(processDefinitionKeys, List.of(operations));
+      return this;
     }
 
     public Builder parentProcessInstanceKeys(final List<Long> values) {

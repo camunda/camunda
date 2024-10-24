@@ -22,11 +22,9 @@ import io.camunda.operate.connect.OperateDateTimeFormatter;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 
 @Configuration
 public class JacksonConfig {
@@ -69,9 +67,9 @@ public class JacksonConfig {
     return dateTimeFormatter.getGeneralDateTimeFormatter();
   }
 
-  @Bean
-  public MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter(
-      @Qualifier("operateObjectMapper") final ObjectMapper objectMapper) {
-    return new MappingJackson2HttpMessageConverter(objectMapper);
-  }
+  // @Bean
+  // public MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter(
+  //    @Qualifier("operateObjectMapper") final ObjectMapper objectMapper) {
+  //  return new MappingJackson2HttpMessageConverter(objectMapper);
+  // }
 }

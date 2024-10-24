@@ -69,20 +69,53 @@
     ${paging.after}
   </select>
 
+  <!-- TODO move to commons -->
+  <sql id="operationCondition">
+    <choose>
+      <when test="operation.operator.name().equals('EQUALS')">
+        = #{operation.value}
+      </when>
+      <when test="operation.operator.name().equals('NOT_EQUALS')">
+        != #{operation.value}
+      </when>
+      <when test="operation.operator.name().equals('GREATER_THAN')">
+        &gt; #{operation.value}
+      </when>
+      <when test="operation.operator.name().equals('GREATER_THAN_EQUALS')">
+        &gt;= #{operation.value}
+      </when>
+      <when test="operation.operator.name().equals('LOWER_THAN')">
+        &lt; #{operation.value}
+      </when>
+      <when test="operation.operator.name().equals('LOWER_THAN_EQUALS')">
+        &lt;= #{operation.value}
+      </when>
+      <when test="operation.operator.name().equals('IN')">
+        IN <foreach collection="operation.values" item="value" open="(" separator=", " close=")">#{value}</foreach>
+      </when>
+      <when test="operation.operator.name().equals('LIKE')">
+        LIKE #{operation.value}
+      </when>
+    </choose>
+  </sql>
+
   <sql id="searchFilter">
     WHERE 1 = 1
     <!-- basic filters -->
     <if test="filter.processInstanceKeys != null and !filter.processInstanceKeys.isEmpty()">
-      AND PROCESS_INSTANCE_KEY IN
-      <foreach collection="filter.processInstanceKeys" item="value" open="(" separator=", " close=")">#{value}</foreach>
+      <foreach collection="filter.processInstanceKeys" item="operation">
+        AND PROCESS_INSTANCE_KEY <include refid="operationCondition"/>
+      </foreach>
     </if>
     <if test="filter.processDefinitionIds != null and !filter.processDefinitionIds.isEmpty()">
-      AND pi.PROCESS_DEFINITION_ID IN
-      <foreach collection="filter.processDefinitionIds" item="value" open="(" separator=", " close=")">#{value}</foreach>
+      <foreach collection="filter.processDefinitionIds" item="operation">
+        AND pi.PROCESS_DEFINITION_ID <include refid="operationCondition"/>
+      </foreach>
     </if>
     <if test="filter.processDefinitionKeys != null and !filter.processDefinitionKeys.isEmpty()">
-      AND pi.PROCESS_DEFINITION_KEY IN
-      <foreach collection="filter.processDefinitionKeys" item="value" open="(" separator=", " close=")">#{value}</foreach>
+      <foreach collection="filter.processDefinitionKeys" item="operation">
+        AND pi.PROCESS_DEFINITION_KEY <include refid="operationCondition"/>
+      </foreach>
     </if>
     <if test="filter.parentProcessInstanceKeys != null and !filter.parentProcessInstanceKeys.isEmpty()">
       AND PARENT_PROCESS_INSTANCE_KEY IN
@@ -121,8 +154,9 @@
       <foreach collection="filter.processDefinitionNames" item="value" open="(" separator=", " close=")">#{value}</foreach>
     </if>
     <if test="filter.processDefinitionVersions != null and !filter.processDefinitionVersions.isEmpty()">
-      AND pd.VERSION IN
-      <foreach collection="filter.processDefinitionVersions" item="value" open="(" separator=", " close=")">#{value}</foreach>
+      <foreach collection="filter.processDefinitionVersions" item="operation">
+        AND pd.VERSION <include refid="operationCondition"/>
+      </foreach>
     </if>
     <if test="filter.processDefinitionVersionTags != null and !filter.processDefinitionVersionTags.isEmpty()">
       AND pd.VERSION_TAG IN
