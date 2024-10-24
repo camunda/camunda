@@ -34,7 +34,8 @@ public final class JobYieldProcessor implements TypedRecordProcessor<JobRecord> 
     jobActivationBehavior = bpmnBehaviors.jobActivationBehavior();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
-    preconditionChecker = new JobCommandPreconditionChecker("yield", List.of(State.ACTIVATED));
+    preconditionChecker =
+        new JobCommandPreconditionChecker(jobState, "yield", List.of(State.ACTIVATED));
   }
 
   @Override
@@ -43,15 +44,13 @@ public final class JobYieldProcessor implements TypedRecordProcessor<JobRecord> 
     final JobState.State state = jobState.getState(jobKey);
 
     preconditionChecker
-        .check(state, jobKey)
+        .check(state, record)
         .ifRightOrLeft(
-            ok -> {
-              final JobRecord yieldedJob = jobState.getJob(jobKey);
-
+            yieldedJob -> {
               stateWriter.appendFollowUpEvent(jobKey, JobIntent.YIELDED, yieldedJob);
               jobActivationBehavior.notifyJobAvailableAsSideEffect(yieldedJob);
             },
-            violation ->
-                rejectionWriter.appendRejection(record, violation.getLeft(), violation.getRight()));
+            rejection ->
+                rejectionWriter.appendRejection(record, rejection.type(), rejection.reason()));
   }
 }

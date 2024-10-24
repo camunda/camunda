@@ -62,7 +62,8 @@ public final class JobEventProcessors {
                 processingState.getKeyGenerator(),
                 jobMetrics,
                 jobBackoffChecker,
-                bpmnBehaviors))
+                bpmnBehaviors,
+                authCheckBehavior))
         .onCommand(
             ValueType.JOB,
             JobIntent.YIELD,
