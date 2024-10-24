@@ -40,7 +40,7 @@ public class CCSaaSOnboardingPanelNotificationService {
 
   public static final String INSTANT_DASHBOARD_LINK_TEMPLATE =
       "%s" + DASHBOARD_PATH + INSTANT_PREVIEW_PATH + "/%s";
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(CCSaaSOnboardingPanelNotificationService.class);
   private final CCSaaSNotificationClient notificationClient;
   private final ConfigurationService configurationService;
@@ -48,10 +48,10 @@ public class CCSaaSOnboardingPanelNotificationService {
   private final RootUrlGenerator rootUrlGenerator;
 
   public CCSaaSOnboardingPanelNotificationService(
-      CCSaaSNotificationClient notificationClient,
-      ConfigurationService configurationService,
-      DefinitionService definitionService,
-      RootUrlGenerator rootUrlGenerator) {
+      final CCSaaSNotificationClient notificationClient,
+      final ConfigurationService configurationService,
+      final DefinitionService definitionService,
+      final RootUrlGenerator rootUrlGenerator) {
     this.notificationClient = notificationClient;
     this.configurationService = configurationService;
     this.definitionService = definitionService;
@@ -108,7 +108,7 @@ public class CCSaaSOnboardingPanelNotificationService {
   }
 
   public String generateRootDashboardLink() {
-    String rootUrl = rootUrlGenerator.getRootUrl();
+    final String rootUrl = rootUrlGenerator.getRootUrl();
     return String.format("%s/#", rootUrl);
   }
 

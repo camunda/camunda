@@ -21,7 +21,7 @@ import org.springframework.scheduling.support.PeriodicTrigger;
 public abstract class AbstractImportScheduler<T extends SchedulerConfig>
     extends AbstractScheduledService {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(AbstractImportScheduler.class);
   protected final List<ImportMediator> importMediators;
   protected final T dataImportSourceDto;
@@ -36,11 +36,11 @@ public abstract class AbstractImportScheduler<T extends SchedulerConfig>
   @Override
   public void run() {
     if (isScheduledToRun()) {
-      log.debug("Next round!");
+      LOG.debug("Next round!");
       try {
         runImportRound();
       } catch (final Exception e) {
-        log.error("Could not schedule next import round!", e);
+        LOG.error("Could not schedule next import round!", e);
       }
     }
   }
@@ -51,19 +51,19 @@ public abstract class AbstractImportScheduler<T extends SchedulerConfig>
   }
 
   public synchronized void startImportScheduling() {
-    log.info("Start scheduling import from {}.", dataImportSourceDto);
+    LOG.info("Start scheduling import from {}.", dataImportSourceDto);
     isImporting = true;
     startScheduling();
   }
 
   public synchronized void stopImportScheduling() {
-    log.info("Stop scheduling import from {}.", dataImportSourceDto);
+    LOG.info("Stop scheduling import from {}.", dataImportSourceDto);
     isImporting = false;
     stopScheduling();
   }
 
   public void shutdown() {
-    log.debug("Scheduler for {} will shutdown.", dataImportSourceDto);
+    LOG.debug("Scheduler for {} will shutdown.", dataImportSourceDto);
     getImportMediators().forEach(ImportMediator::shutdown);
   }
 
@@ -89,8 +89,8 @@ public abstract class AbstractImportScheduler<T extends SchedulerConfig>
   }
 
   public Future<Void> executeImportRound(final List<ImportMediator> currentImportRound) {
-    if (log.isDebugEnabled()) {
-      log.debug(
+    if (LOG.isDebugEnabled()) {
+      LOG.debug(
           "Scheduling import round for {}",
           currentImportRound.stream()
               .map(mediator1 -> mediator1.getClass().getSimpleName())
@@ -104,10 +104,10 @@ public abstract class AbstractImportScheduler<T extends SchedulerConfig>
                   try {
                     return mediator.runImport();
                   } catch (final IllegalStateException e) {
-                    log.warn("Got into illegal state, will abort import round.", e);
+                    LOG.warn("Got into illegal state, will abort import round.", e);
                     throw e;
                   } catch (final Exception e) {
-                    log.error(
+                    LOG.error(
                         "Was not able to execute import of [{}]",
                         mediator.getClass().getSimpleName(),
                         e);
@@ -142,10 +142,10 @@ public abstract class AbstractImportScheduler<T extends SchedulerConfig>
             .min(Long::compare)
             .orElse(5000L);
     try {
-      log.debug("No imports to schedule. Scheduler is sleeping for [{}] ms.", timeToSleep);
+      LOG.debug("No imports to schedule. Scheduler is sleeping for [{}] ms.", timeToSleep);
       Thread.sleep(timeToSleep);
     } catch (final InterruptedException e) {
-      log.error("Scheduler was interrupted while sleeping.", e);
+      LOG.error("Scheduler was interrupted while sleeping.", e);
       Thread.currentThread().interrupt();
     }
   }

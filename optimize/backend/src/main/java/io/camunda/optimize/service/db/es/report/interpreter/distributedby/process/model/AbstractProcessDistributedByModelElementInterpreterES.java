@@ -53,8 +53,8 @@ public abstract class AbstractProcessDistributedByModelElementInterpreterES
   @Override
   public Map<String, Aggregation.Builder.ContainerBuilder> createAggregations(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
-      BoolQuery baseQueryBuilder) {
-    Aggregation.Builder.ContainerBuilder builder =
+      final BoolQuery baseQueryBuilder) {
+    final Aggregation.Builder.ContainerBuilder builder =
         new Aggregation.Builder()
             .terms(
                 t ->
@@ -82,12 +82,12 @@ public abstract class AbstractProcessDistributedByModelElementInterpreterES
         getModelElementData(context.getReportData());
     final List<CompositeCommandResult.DistributedByResult> distributedByModelElements =
         new ArrayList<>();
-    for (StringTermsBucket modelElementBucket : byModelElementAggregation.buckets().array()) {
+    for (final StringTermsBucket modelElementBucket : byModelElementAggregation.buckets().array()) {
       final CompositeCommandResult.ViewResult viewResult =
           getViewInterpreter().retrieveResult(response, modelElementBucket.aggregations(), context);
       final String modelElementKey = modelElementBucket.key().stringValue();
       if (modelElementData.containsKey(modelElementKey)) {
-        String label = modelElementData.get(modelElementKey).getName();
+        final String label = modelElementData.get(modelElementKey).getName();
         distributedByModelElements.add(
             createDistributedByResult(modelElementKey, label, viewResult));
         modelElementData.remove(modelElementKey);
@@ -146,7 +146,7 @@ public abstract class AbstractProcessDistributedByModelElementInterpreterES
 
   private Set<String> getExcludedFlowNodes(
       final ProcessReportDataDto reportData, final Map<String, FlowNodeDataDto> modelElementNames) {
-    Set<String> excludedFlowNodes =
+    final Set<String> excludedFlowNodes =
         reportData.getFilter().stream()
             .filter(
                 filter ->

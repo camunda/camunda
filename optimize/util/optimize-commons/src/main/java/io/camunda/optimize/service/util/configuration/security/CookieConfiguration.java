@@ -95,18 +95,17 @@ public class CookieConfiguration {
   public enum CookieSecureMode {
     AUTO,
     TRUE,
-    FALSE,
-    ;
+    FALSE;
 
     public boolean resolveSecureValue(final String requestScheme) {
       switch (this) {
-        default:
-        case AUTO:
-          return RestConstants.HTTPS_SCHEME.equalsIgnoreCase(requestScheme);
         case TRUE:
           return true;
         case FALSE:
           return false;
+        case AUTO:
+        default:
+          return RestConstants.HTTPS_SCHEME.equalsIgnoreCase(requestScheme);
       }
     }
 

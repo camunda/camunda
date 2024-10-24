@@ -16,7 +16,7 @@ import java.time.ZoneId;
 import java.util.Optional;
 import java.util.Set;
 
-public class ReportEvaluationInfo {
+public final class ReportEvaluationInfo {
 
   private ReportDefinitionDto<?> report;
   private String reportId;
@@ -49,6 +49,10 @@ public class ReportEvaluationInfo {
     return Optional.ofNullable(pagination);
   }
 
+  protected void setPagination(final PaginationDto pagination) {
+    this.pagination = pagination;
+  }
+
   public static ReportEvaluationInfoBuilder builder(final ReportDefinitionDto<?> report) {
     final ReportEvaluationInfo reportEvaluationInfo = new ReportEvaluationInfo();
     reportEvaluationInfo.setReport(report);
@@ -62,79 +66,75 @@ public class ReportEvaluationInfo {
   }
 
   public ReportDefinitionDto<?> getReport() {
-    return this.report;
+    return report;
   }
 
-  public String getReportId() {
-    return this.reportId;
-  }
-
-  public String getUserId() {
-    return this.userId;
-  }
-
-  public AdditionalProcessReportEvaluationFilterDto getAdditionalFilters() {
-    return this.additionalFilters;
-  }
-
-  public ZoneId getTimezone() {
-    return this.timezone;
-  }
-
-  public boolean isCsvExport() {
-    return this.isCsvExport;
-  }
-
-  public boolean isJsonExport() {
-    return this.isJsonExport;
-  }
-
-  public boolean isSharedReport() {
-    return this.isSharedReport;
-  }
-
-  public Set<String> getHiddenFlowNodeIds() {
-    return this.hiddenFlowNodeIds;
-  }
-
-  protected void setReport(ReportDefinitionDto<?> report) {
+  protected void setReport(final ReportDefinitionDto<?> report) {
     this.report = report;
   }
 
-  protected void setReportId(String reportId) {
+  public String getReportId() {
+    return reportId;
+  }
+
+  protected void setReportId(final String reportId) {
     this.reportId = reportId;
   }
 
-  protected void setUserId(String userId) {
+  public String getUserId() {
+    return userId;
+  }
+
+  protected void setUserId(final String userId) {
     this.userId = userId;
   }
 
+  public AdditionalProcessReportEvaluationFilterDto getAdditionalFilters() {
+    return additionalFilters;
+  }
+
   protected void setAdditionalFilters(
-      AdditionalProcessReportEvaluationFilterDto additionalFilters) {
+      final AdditionalProcessReportEvaluationFilterDto additionalFilters) {
     this.additionalFilters = additionalFilters;
   }
 
-  protected void setTimezone(ZoneId timezone) {
+  public ZoneId getTimezone() {
+    return timezone;
+  }
+
+  protected void setTimezone(final ZoneId timezone) {
     this.timezone = timezone;
   }
 
-  protected void setPagination(PaginationDto pagination) {
-    this.pagination = pagination;
+  public boolean isCsvExport() {
+    return isCsvExport;
   }
 
-  protected void setCsvExport(boolean isCsvExport) {
+  protected void setCsvExport(final boolean isCsvExport) {
     this.isCsvExport = isCsvExport;
   }
 
-  protected void setJsonExport(boolean isJsonExport) {
+  public boolean isJsonExport() {
+    return isJsonExport;
+  }
+
+  protected void setJsonExport(final boolean isJsonExport) {
     this.isJsonExport = isJsonExport;
   }
 
-  protected void setSharedReport(boolean isSharedReport) {
+  public boolean isSharedReport() {
+    return isSharedReport;
+  }
+
+  protected void setSharedReport(final boolean isSharedReport) {
     this.isSharedReport = isSharedReport;
   }
 
-  protected void setHiddenFlowNodeIds(Set<String> hiddenFlowNodeIds) {
+  public Set<String> getHiddenFlowNodeIds() {
+    return hiddenFlowNodeIds;
+  }
+
+  protected void setHiddenFlowNodeIds(final Set<String> hiddenFlowNodeIds) {
     this.hiddenFlowNodeIds = hiddenFlowNodeIds;
   }
 
@@ -142,7 +142,7 @@ public class ReportEvaluationInfo {
 
     private final ReportEvaluationInfo reportEvaluationInfo;
 
-    public ReportEvaluationInfoBuilder(ReportEvaluationInfo reportEvaluationInfo) {
+    public ReportEvaluationInfoBuilder(final ReportEvaluationInfo reportEvaluationInfo) {
       this.reportEvaluationInfo = reportEvaluationInfo;
     }
 

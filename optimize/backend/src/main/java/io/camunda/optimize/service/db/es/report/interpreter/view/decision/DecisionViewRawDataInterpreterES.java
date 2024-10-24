@@ -53,7 +53,7 @@ import org.springframework.stereotype.Component;
 public class DecisionViewRawDataInterpreterES extends AbstractDecisionViewRawDataInterpreter
     implements DecisionViewInterpreterES {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(DecisionViewRawDataInterpreterES.class);
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
@@ -61,10 +61,10 @@ public class DecisionViewRawDataInterpreterES extends AbstractDecisionViewRawDat
   private final DecisionVariableReader decisionVariableReader;
 
   public DecisionViewRawDataInterpreterES(
-      ConfigurationService configurationService,
-      ObjectMapper objectMapper,
-      OptimizeElasticsearchClient esClient,
-      DecisionVariableReader decisionVariableReader) {
+      final ConfigurationService configurationService,
+      final ObjectMapper objectMapper,
+      final OptimizeElasticsearchClient esClient,
+      final DecisionVariableReader decisionVariableReader) {
     this.configurationService = configurationService;
     this.objectMapper = objectMapper;
     this.esClient = esClient;

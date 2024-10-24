@@ -7,7 +7,8 @@
  */
 package io.camunda.optimize.service.db;
 
-public class DatabaseConstants {
+public final class DatabaseConstants {
+
   public static final String AGGREGATION_CONTAINS_NULL = "isNull";
 
   // Note: we cap listings to 1000 as a generous practical limit, no paging

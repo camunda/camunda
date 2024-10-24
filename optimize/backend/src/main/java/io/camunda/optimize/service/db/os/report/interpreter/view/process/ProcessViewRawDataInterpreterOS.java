@@ -76,7 +76,7 @@ import org.springframework.stereotype.Component;
 public class ProcessViewRawDataInterpreterOS extends AbstractProcessViewRawDataInterpreter
     implements ProcessViewInterpreterOS {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ProcessViewRawDataInterpreterOS.class);
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
@@ -85,11 +85,11 @@ public class ProcessViewRawDataInterpreterOS extends AbstractProcessViewRawDataI
   private final VariableRepositoryOS variableRepository;
 
   public ProcessViewRawDataInterpreterOS(
-      ConfigurationService configurationService,
-      ObjectMapper objectMapper,
-      OptimizeOpenSearchClient osClient,
-      DefinitionService definitionService,
-      VariableRepositoryOS variableRepository) {
+      final ConfigurationService configurationService,
+      final ObjectMapper objectMapper,
+      final OptimizeOpenSearchClient osClient,
+      final DefinitionService definitionService,
+      final VariableRepositoryOS variableRepository) {
     this.configurationService = configurationService;
     this.objectMapper = objectMapper;
     this.osClient = osClient;
@@ -130,7 +130,7 @@ public class ProcessViewRawDataInterpreterOS extends AbstractProcessViewRawDataI
               });
     }
 
-    Map<String, JsonData> params = new HashMap<>();
+    final Map<String, JsonData> params = new HashMap<>();
     params.put(CURRENT_TIME, json(LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli()));
     params.put(DATE_FORMAT, json(OPTIMIZE_DATE_FORMAT));
     searchRequestBuilder.scriptFields(
@@ -177,9 +177,9 @@ public class ProcessViewRawDataInterpreterOS extends AbstractProcessViewRawDataI
               .toList();
     }
 
-    RawProcessDataResultDtoMapper rawDataSingleReportResultDtoMapper =
+    final RawProcessDataResultDtoMapper rawDataSingleReportResultDtoMapper =
         new RawProcessDataResultDtoMapper();
-    Map<String, String> flowNodeIdsToFlowNodeNames =
+    final Map<String, String> flowNodeIdsToFlowNodeNames =
         definitionService.fetchDefinitionFlowNodeNamesAndIdsForProcessInstances(
             rawDataProcessInstanceDtos);
     final List<RawDataProcessInstanceDto> rawData =
@@ -195,12 +195,12 @@ public class ProcessViewRawDataInterpreterOS extends AbstractProcessViewRawDataI
     return ViewResult.builder().rawData(rawData).build();
   }
 
-  private <R> R getField(Hit<RawResult> hit, String field) {
+  private <R> R getField(final Hit<RawResult> hit, final String field) {
     try {
       final List<R> values =
           objectMapper.readValue(hit.fields().get(field).toJson().toString(), List.class);
       return values.get(0);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new OptimizeRuntimeException(format("Failed to extract %s from response!", field), e);
     }
   }
@@ -226,7 +226,7 @@ public class ProcessViewRawDataInterpreterOS extends AbstractProcessViewRawDataI
               && ProcessInstanceIndex.DURATION.equals(sorting.get().getBy().get())) {
             processInstance.setDuration(Math.round(Double.parseDouble(hit.sort().get(0))));
           } else {
-            long currentTime = this.<Long>getField(hit, CURRENT_TIME);
+            final long currentTime = this.<Long>getField(hit, CURRENT_TIME);
             processInstance.setDuration(
                 currentTime - processInstance.getStartDate().toInstant().toEpochMilli());
           }
@@ -279,14 +279,14 @@ public class ProcessViewRawDataInterpreterOS extends AbstractProcessViewRawDataI
                     + "it was not possible to deserialize a hit from OpenSearch!"
                     + " Hit response from OpenSearch: "
                     + hit.source()),
-        log);
+        LOG);
   }
 
   private void addSorting(
-      String sortByField,
-      SortOrder sortOrder,
-      SearchRequest.Builder searchRequestBuilder,
-      Map<String, JsonData> params) {
+      final String sortByField,
+      final SortOrder sortOrder,
+      final SearchRequest.Builder searchRequestBuilder,
+      final Map<String, JsonData> params) {
     if (sortByField.startsWith(VARIABLE_PREFIX)) {
       final String variableName = sortByField.substring(VARIABLE_PREFIX.length());
       searchRequestBuilder.sort(
@@ -304,7 +304,7 @@ public class ProcessViewRawDataInterpreterOS extends AbstractProcessViewRawDataI
     } else if (sortByField.equals(ProcessInstanceIndex.DURATION)) {
       params.put("duration", json(ProcessInstanceIndex.DURATION));
       params.put("startDate", json(ProcessInstanceIndex.START_DATE));
-      Script script = createDefaultScriptWithSpecificDtoParams(SORT_SCRIPT, params);
+      final Script script = createDefaultScriptWithSpecificDtoParams(SORT_SCRIPT, params);
       searchRequestBuilder.sort(
           SortOptions.of(
               so -> so.script(s -> s.script(script).type(ScriptSortType.Number).order(sortOrder))));

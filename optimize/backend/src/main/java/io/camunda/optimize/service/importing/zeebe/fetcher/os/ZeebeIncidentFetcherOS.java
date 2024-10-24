@@ -27,7 +27,7 @@ import org.springframework.stereotype.Component;
 public class ZeebeIncidentFetcherOS extends AbstractZeebeRecordFetcherOS<ZeebeIncidentRecordDto>
     implements ZeebeIncidentFetcher {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ZeebeIncidentFetcherOS.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ZeebeIncidentFetcherOS.class);
 
   public ZeebeIncidentFetcherOS(
       final int partitionId,

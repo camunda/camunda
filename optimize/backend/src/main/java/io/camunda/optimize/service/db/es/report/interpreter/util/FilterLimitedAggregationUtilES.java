@@ -13,7 +13,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import java.util.Map;
 import java.util.Optional;
 
-public class FilterLimitedAggregationUtilES {
+public final class FilterLimitedAggregationUtilES {
 
   public static final String FILTER_LIMITED_AGGREGATION = "filterLimitedAggregation";
 
@@ -32,7 +32,7 @@ public class FilterLimitedAggregationUtilES {
           final String filterParentAggregationName,
           final Query limitFilterQuery,
           final Map<String, Aggregation.Builder.ContainerBuilder> subAggregationsToLimit) {
-    Aggregation.Builder.ContainerBuilder builder =
+    final Aggregation.Builder.ContainerBuilder builder =
         new Aggregation.Builder().filter(limitFilterQuery);
     subAggregationsToLimit.forEach((k, v) -> builder.aggregations(k, a -> v));
     return Map.of(filterParentAggregationName, builder);

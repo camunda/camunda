@@ -29,7 +29,7 @@ public abstract class CombinedReportInstanceCounter<A> {
     return singleReportDefinitions.stream()
         .map(
             reportDefinition -> {
-              ReportEvaluationContext<SingleProcessReportDefinitionRequestDto>
+              final ReportEvaluationContext<SingleProcessReportDefinitionRequestDto>
                   reportEvaluationContext = new ReportEvaluationContext<>();
               reportEvaluationContext.setReportDefinition(reportDefinition);
               return reportEvaluationContext;
@@ -41,11 +41,11 @@ public abstract class CombinedReportInstanceCounter<A> {
     return getAllReportEvaluationContexts(singleReportDefinitions)
         .map(
             reportEvaluationContext -> {
-              ExecutionPlan plan =
+              final ExecutionPlan plan =
                   getExecutionPlanExtractor()
                       .extractExecutionPlans(reportEvaluationContext.getReportDefinition())
                       .get(0);
-              if (plan instanceof ProcessExecutionPlan processExecutionPlan) {
+              if (plan instanceof final ProcessExecutionPlan processExecutionPlan) {
                 return getBaseQuery(processExecutionPlan, reportEvaluationContext);
               } else {
                 throw new UnsupportedOperationException(

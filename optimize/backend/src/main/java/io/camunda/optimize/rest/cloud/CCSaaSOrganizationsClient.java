@@ -24,7 +24,7 @@ import org.springframework.stereotype.Component;
 @Conditional(CCSaaSCondition.class)
 public class CCSaaSOrganizationsClient extends AbstractCCSaaSClient {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(CCSaaSOrganizationsClient.class);
 
   public CCSaaSOrganizationsClient(
@@ -34,7 +34,7 @@ public class CCSaaSOrganizationsClient extends AbstractCCSaaSClient {
 
   public Optional<String> getSalesPlanType(final String accessToken) {
     try {
-      log.info("Fetching cloud organisation.");
+      LOG.info("Fetching cloud organisation.");
       final HttpGet request =
           new HttpGet(
               String.format(

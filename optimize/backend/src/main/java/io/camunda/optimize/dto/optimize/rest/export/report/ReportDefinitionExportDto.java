@@ -75,6 +75,7 @@ public abstract class ReportDefinitionExportDto extends OptimizeEntityExportDto 
     return "ReportDefinitionExportDto(collectionId=" + getCollectionId() + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String collectionId = "collectionId";

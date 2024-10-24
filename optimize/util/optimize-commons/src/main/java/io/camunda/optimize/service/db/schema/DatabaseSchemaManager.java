@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 @Component
 public abstract class DatabaseSchemaManager<CLIENT extends DatabaseClient, BUILDER> {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DatabaseSchemaManager.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(DatabaseSchemaManager.class);
   protected ConfigurationService configurationService;
   protected OptimizeIndexNameService indexNameService;
 
@@ -73,8 +73,8 @@ public abstract class DatabaseSchemaManager<CLIENT extends DatabaseClient, BUILD
     mappings.add(mapping);
   }
 
-  public void createOptimizeIndices(CLIENT dbClient) {
-    for (IndexMappingCreator<BUILDER> mapping : mappings) {
+  public void createOptimizeIndices(final CLIENT dbClient) {
+    for (final IndexMappingCreator<BUILDER> mapping : mappings) {
       createOrUpdateOptimizeIndex(dbClient, mapping);
     }
   }
@@ -84,15 +84,15 @@ public abstract class DatabaseSchemaManager<CLIENT extends DatabaseClient, BUILD
     createOrUpdateOptimizeIndex(dbClient, mapping, Collections.emptySet());
   }
 
-  public void setConfigurationService(ConfigurationService configurationService) {
+  public void setConfigurationService(final ConfigurationService configurationService) {
     this.configurationService = configurationService;
   }
 
-  public void setIndexNameService(OptimizeIndexNameService indexNameService) {
+  public void setIndexNameService(final OptimizeIndexNameService indexNameService) {
     this.indexNameService = indexNameService;
   }
 
   public List<IndexMappingCreator<BUILDER>> getMappings() {
-    return this.mappings;
+    return mappings;
   }
 }

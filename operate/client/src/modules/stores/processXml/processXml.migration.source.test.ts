@@ -51,6 +51,8 @@ describe('stores/processXml/processXml.migration.source', () => {
       'TimerEventSubProcess',
       'TaskY',
       'TimerStartEvent',
+      'ErrorEventSubProcess',
+      'ErrorStartEvent',
       'MessageReceiveTask',
       'BusinessRuleTask',
       'ScriptTask',
@@ -61,6 +63,8 @@ describe('stores/processXml/processXml.migration.source', () => {
       'SignalBoundaryEvent',
       'SignalEventSubProcess',
       'SignalStartEvent',
+      'MultiInstanceSubProcess',
+      'MultiInstanceTask',
     ]);
   });
 

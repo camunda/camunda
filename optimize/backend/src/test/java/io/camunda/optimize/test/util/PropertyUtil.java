@@ -14,14 +14,14 @@ import org.slf4j.LoggerFactory;
 
 public class PropertyUtil {
 
-  private static final Logger logger = LoggerFactory.getLogger(PropertyUtil.class);
+  private static final Logger LOG = LoggerFactory.getLogger(PropertyUtil.class);
 
-  public static Properties loadProperties(String resource) {
-    Properties properties = new Properties();
+  public static Properties loadProperties(final String resource) {
+    final Properties properties = new Properties();
     try {
       properties.load(PropertyUtil.class.getClassLoader().getResourceAsStream(resource));
-    } catch (IOException ex) {
-      logger.error("Unable to load test properties!", ex);
+    } catch (final IOException ex) {
+      LOG.error("Unable to load test properties!", ex);
     }
     return properties;
   }

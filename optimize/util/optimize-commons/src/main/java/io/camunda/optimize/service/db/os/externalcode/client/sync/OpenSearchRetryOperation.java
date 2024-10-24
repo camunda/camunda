@@ -30,7 +30,7 @@ public abstract class OpenSearchRetryOperation extends OpenSearchSyncOperation {
   public static final int DEFAULT_DELAY_INTERVAL_IN_SECONDS = 2;
 
   public static final int DEFAULT_NUMBER_OF_EXECUTIONS = 5; // 5 attempts * 2s backoff = 10s maximum
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(OpenSearchRetryOperation.class);
   private final int delayIntervalInSeconds = DEFAULT_DELAY_INTERVAL_IN_SECONDS;
 
@@ -69,14 +69,14 @@ public abstract class OpenSearchRetryOperation extends OpenSearchSyncOperation {
               .withMaxAttempts(retries)
               .onRetry(
                   e ->
-                      log.info(
+                      LOG.info(
                           "Retrying #{} {} due to {}",
                           e.getAttemptCount(),
                           operationName,
                           e.getLastFailure()))
-              .onAbort(e -> log.error("Abort {} by {}", operationName, e.getFailure()))
+              .onAbort(e -> LOG.error("Abort {} by {}", operationName, e.getFailure()))
               .onRetriesExceeded(
-                  e -> log.error("Retries {} exceeded for {}", e.getAttemptCount(), operationName));
+                  e -> LOG.error("Retries {} exceeded for {}", e.getAttemptCount(), operationName));
       if (predicate != null) {
         retryPolicy.handleResultIf(predicate);
       }

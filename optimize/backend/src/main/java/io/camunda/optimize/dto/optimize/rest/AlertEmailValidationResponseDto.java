@@ -46,6 +46,7 @@ public class AlertEmailValidationResponseDto extends ErrorResponseDto {
     return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String invalidAlertEmails = "invalidAlertEmails";

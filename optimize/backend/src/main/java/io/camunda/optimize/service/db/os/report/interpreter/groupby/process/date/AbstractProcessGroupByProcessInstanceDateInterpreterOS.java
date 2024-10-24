@@ -146,7 +146,7 @@ public abstract class AbstractProcessGroupByProcessInstanceDateInterpreterOS
     return unwrapFilterLimitedAggregations(aggregations)
         .map(
             unwrappedLimitedAggregations -> {
-              Map<String, Map<String, Aggregate>> keyToAggregationMap =
+              final Map<String, Map<String, Aggregate>> keyToAggregationMap =
                   getDateAggregationService()
                       .mapDateAggregationsToKeyAggregationMap(
                           unwrappedLimitedAggregations, context.getTimezone());
@@ -188,7 +188,7 @@ public abstract class AbstractProcessGroupByProcessInstanceDateInterpreterOS
     // add sibling distributedBy aggregation to enrich context with all distributed by keys,
     // required for variable distribution
     if (DistributedByType.VARIABLE.equals(getDistributedByType(context.getReportData()))) {
-      Map<String, Aggregation> subAggregations =
+      final Map<String, Aggregation> subAggregations =
           MapUtil.combineUniqueMaps(
               aggregation.getValue().aggregations(),
               getDistributedByInterpreter().createAggregations(context, baseQuery));

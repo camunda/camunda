@@ -51,7 +51,7 @@ public class ZeebeVariableImportService
 
   private static final Set<VariableIntent> INTENTS_TO_IMPORT =
       Set.of(VariableIntent.CREATED, VariableIntent.UPDATED);
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ZeebeVariableImportService.class);
 
   private final ObjectMapper objectMapper;
@@ -89,7 +89,7 @@ public class ZeebeVariableImportService
             .stream()
             .map(this::createProcessInstanceForData)
             .toList();
-    log.debug(
+    LOG.debug(
         "Processing {} fetched zeebe variable records, of which {} are relevant to Optimize and will be imported.",
         zeebeRecords.size(),
         optimizeDtos.size());
@@ -219,7 +219,7 @@ public class ZeebeVariableImportService
           return Optional.empty();
       }
     } catch (final JsonProcessingException e) {
-      log.debug("Could not process json node for variable record with key {}", recordKey);
+      LOG.debug("Could not process json node for variable record with key {}", recordKey);
       return Optional.empty();
     }
   }

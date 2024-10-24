@@ -11,11 +11,11 @@ import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.IndexOperation;
 
 public interface BulkDSL {
-  static <R> IndexOperation.Builder<R> indexOperationBuilder(String index) {
+  static <R> IndexOperation.Builder<R> indexOperationBuilder(final String index) {
     return new IndexOperation.Builder<R>().index(index);
   }
 
-  static BulkOperation bulkOperation(IndexOperation.Builder<?> indexOperationBuilder) {
+  static BulkOperation bulkOperation(final IndexOperation.Builder<?> indexOperationBuilder) {
     return BulkOperation.of(b -> b.index(indexOperationBuilder.build()));
   }
 }

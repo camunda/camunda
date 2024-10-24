@@ -33,7 +33,7 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class BusinessKeyReaderOS implements BusinessKeyReader {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(BusinessKeyReaderOS.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(BusinessKeyReaderOS.class);
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
 
@@ -46,7 +46,7 @@ public class BusinessKeyReaderOS implements BusinessKeyReader {
   @Override
   public List<BusinessKeyDto> getBusinessKeysForProcessInstanceIds(
       final Set<String> processInstanceIds) {
-    log.debug("Fetching business keys for [{}] process instances", processInstanceIds.size());
+    LOG.debug("Fetching business keys for [{}] process instances", processInstanceIds.size());
 
     if (processInstanceIds.isEmpty()) {
       return Collections.emptyList();
@@ -68,7 +68,7 @@ public class BusinessKeyReaderOS implements BusinessKeyReader {
       searchResponse = osClient.retrieveAllScrollResults(searchReqBuilder, BusinessKeyDto.class);
     } catch (final IOException e) {
       final String errorMessage = "Was not able to retrieve business keys!";
-      log.error(errorMessage, e);
+      LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
     return OpensearchReaderUtil.extractAggregatedResponseValues(searchResponse);

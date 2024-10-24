@@ -33,38 +33,38 @@ import org.springframework.stereotype.Component;
 public class CombinedReportInstanceCounterES
     extends CombinedReportInstanceCounter<BoolQuery.Builder> {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(CombinedReportInstanceCounterES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ExecutionPlanExtractor executionPlanExtractor;
   private final ProcessExecutionPlanInterpreterFacadeES interpreter;
 
   public CombinedReportInstanceCounterES(
-      OptimizeElasticsearchClient esClient,
-      ExecutionPlanExtractor executionPlanExtractor,
-      ProcessExecutionPlanInterpreterFacadeES interpreter) {
+      final OptimizeElasticsearchClient esClient,
+      final ExecutionPlanExtractor executionPlanExtractor,
+      final ProcessExecutionPlanInterpreterFacadeES interpreter) {
     this.esClient = esClient;
     this.executionPlanExtractor = executionPlanExtractor;
     this.interpreter = interpreter;
   }
 
   @Override
-  public long count(List<SingleProcessReportDefinitionRequestDto> singleReportDefinitions) {
+  public long count(final List<SingleProcessReportDefinitionRequestDto> singleReportDefinitions) {
     final List<BoolQuery.Builder> baseQueries = getAllBaseQueries(singleReportDefinitions);
     final BoolQuery.Builder instanceCountRequestQuery =
         createInstanceCountRequestQueries(baseQueries);
     try {
       return esClient.count(new String[] {PROCESS_INSTANCE_MULTI_ALIAS}, instanceCountRequestQuery);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format(
               "Could not count instances in combined report with single report IDs: [%s]",
               singleReportDefinitions.stream().map(ReportDefinitionDto::getId));
-      log.error(message, e);
+      LOG.error(message, e);
       throw new OptimizeRuntimeException(message, e);
-    } catch (RuntimeException e) {
+    } catch (final RuntimeException e) {
       if (isInstanceIndexNotFoundException(e)) {
-        log.info(
+        LOG.info(
             "Could not evaluate combined instance count because no instance indices exist. "
                 + "Returning a count of 0 instead.");
         return 0L;
@@ -81,8 +81,8 @@ public class CombinedReportInstanceCounterES
 
   @Override
   protected BoolQuery.Builder getBaseQuery(
-      ProcessExecutionPlan plan,
-      ReportEvaluationContext<SingleProcessReportDefinitionRequestDto> context) {
+      final ProcessExecutionPlan plan,
+      final ReportEvaluationContext<SingleProcessReportDefinitionRequestDto> context) {
     return interpreter.getBaseQueryBuilder(
         ExecutionContextFactory.buildExecutionContext(plan, context));
   }

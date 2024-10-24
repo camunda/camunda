@@ -30,7 +30,7 @@ public class VariableAggregationContext {
   private final MinMaxStatDto combinedRangeMinMaxStats;
   private final FilterContext filterContext;
 
-  protected VariableAggregationContext(VariableAggregationContextBuilder<?, ?> b) {
+  protected VariableAggregationContext(final VariableAggregationContextBuilder<?, ?> b) {
     this.variableName = b.variableName;
     this.variableType = b.variableType;
     this.variablePath = b.variablePath;
@@ -100,7 +100,7 @@ public class VariableAggregationContext {
     return this.filterContext;
   }
 
-  public void setVariableRangeMinMaxStats(MinMaxStatDto variableRangeMinMaxStats) {
+  public void setVariableRangeMinMaxStats(final MinMaxStatDto variableRangeMinMaxStats) {
     this.variableRangeMinMaxStats = variableRangeMinMaxStats;
   }
 
@@ -164,62 +164,62 @@ public class VariableAggregationContext {
     private MinMaxStatDto combinedRangeMinMaxStats;
     private FilterContext filterContext;
 
-    public B variableName(String variableName) {
+    public B variableName(final String variableName) {
       this.variableName = variableName;
       return self();
     }
 
-    public B variableType(VariableType variableType) {
+    public B variableType(final VariableType variableType) {
       this.variableType = variableType;
       return self();
     }
 
-    public B variablePath(String variablePath) {
+    public B variablePath(final String variablePath) {
       this.variablePath = variablePath;
       return self();
     }
 
-    public B nestedVariableNameField(String nestedVariableNameField) {
+    public B nestedVariableNameField(final String nestedVariableNameField) {
       this.nestedVariableNameField = nestedVariableNameField;
       return self();
     }
 
-    public B nestedVariableValueFieldLabel(String nestedVariableValueFieldLabel) {
+    public B nestedVariableValueFieldLabel(final String nestedVariableValueFieldLabel) {
       this.nestedVariableValueFieldLabel = nestedVariableValueFieldLabel;
       return self();
     }
 
-    public B timezone(ZoneId timezone) {
+    public B timezone(final ZoneId timezone) {
       this.timezone = timezone;
       return self();
     }
 
-    public B customBucketDto(CustomBucketDto customBucketDto) {
+    public B customBucketDto(final CustomBucketDto customBucketDto) {
       this.customBucketDto = customBucketDto;
       return self();
     }
 
-    public B dateUnit(AggregateByDateUnit dateUnit) {
+    public B dateUnit(final AggregateByDateUnit dateUnit) {
       this.dateUnit = dateUnit;
       return self();
     }
 
-    public B indexNames(String[] indexNames) {
+    public B indexNames(final String[] indexNames) {
       this.indexNames = indexNames;
       return self();
     }
 
-    public B variableRangeMinMaxStats(MinMaxStatDto variableRangeMinMaxStats) {
+    public B variableRangeMinMaxStats(final MinMaxStatDto variableRangeMinMaxStats) {
       this.variableRangeMinMaxStats = variableRangeMinMaxStats;
       return self();
     }
 
-    public B combinedRangeMinMaxStats(MinMaxStatDto combinedRangeMinMaxStats) {
+    public B combinedRangeMinMaxStats(final MinMaxStatDto combinedRangeMinMaxStats) {
       this.combinedRangeMinMaxStats = combinedRangeMinMaxStats;
       return self();
     }
 
-    public B filterContext(FilterContext filterContext) {
+    public B filterContext(final FilterContext filterContext) {
       if (filterContext == null) {
         throw new IllegalArgumentException("filterContext must not be null");
       }

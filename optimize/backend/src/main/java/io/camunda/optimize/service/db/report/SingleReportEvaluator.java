@@ -39,9 +39,9 @@ public class SingleReportEvaluator {
   private final ExecutionPlanInterpreterFacade interpreter;
 
   public SingleReportEvaluator(
-      ConfigurationService configurationService,
-      ExecutionPlanExtractor executionPlanExtractor,
-      ExecutionPlanInterpreterFacade interpreter) {
+      final ConfigurationService configurationService,
+      final ExecutionPlanExtractor executionPlanExtractor,
+      final ExecutionPlanInterpreterFacade interpreter) {
     this.configurationService = configurationService;
     this.executionPlanExtractor = executionPlanExtractor;
     this.interpreter = interpreter;
@@ -51,7 +51,7 @@ public class SingleReportEvaluator {
   public <D extends SingleReportDataDto> SingleReportEvaluationResult<Object> evaluate(
       final ReportEvaluationContext<? extends SingleReportDefinitionDto<D>> reportEvaluationContext)
       throws OptimizeException {
-    List<CommandEvaluationResult<Object>> results =
+    final List<CommandEvaluationResult<Object>> results =
         extractExecutionPlansWithValidation(reportEvaluationContext)
             .map(
                 plan ->
@@ -116,7 +116,7 @@ public class SingleReportEvaluator {
     }
     final PaginationDto pagData =
         reportEvaluationContext.getPagination().orElse(new PaginationDto());
-    if (pagData instanceof PaginationScrollableDto paginationFromRequest) {
+    if (pagData instanceof final PaginationScrollableDto paginationFromRequest) {
       scrollId = paginationFromRequest.getScrollId(); // Could be null, but it's ok
       scrollTimeout =
           Optional.of(paginationFromRequest)

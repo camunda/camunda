@@ -24,7 +24,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class CleanupScheduler extends AbstractScheduledService implements ConfigurationReloadable {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(CleanupScheduler.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(CleanupScheduler.class);
   private final ConfigurationService configurationService;
   private final List<CleanupService> cleanupServices;
 
@@ -36,7 +36,7 @@ public class CleanupScheduler extends AbstractScheduledService implements Config
 
   @PostConstruct
   public void init() {
-    log.info("Initializing OptimizeCleanupScheduler");
+    LOG.info("Initializing OptimizeCleanupScheduler");
     getCleanupConfiguration().validate();
     if (getCleanupConfiguration().isEnabled()) {
       startCleanupScheduling();
@@ -46,13 +46,13 @@ public class CleanupScheduler extends AbstractScheduledService implements Config
   }
 
   public synchronized void startCleanupScheduling() {
-    log.info("Starting cleanup scheduling");
+    LOG.info("Starting cleanup scheduling");
     startScheduling();
   }
 
   @PreDestroy
   public synchronized void stopCleanupScheduling() {
-    log.info("Stopping cleanup scheduling");
+    LOG.info("Stopping cleanup scheduling");
     stopScheduling();
   }
 
@@ -67,19 +67,19 @@ public class CleanupScheduler extends AbstractScheduledService implements Config
   }
 
   public void runCleanup() {
-    log.info("Running optimize history cleanup...");
+    LOG.info("Running optimize history cleanup...");
     final OffsetDateTime startTime = LocalDateUtil.getCurrentDateTime();
 
     cleanupServices.stream()
         .filter(CleanupService::isEnabled)
         .forEach(
             optimizeCleanupService -> {
-              log.info(
+              LOG.info(
                   "Running CleanupService {}", optimizeCleanupService.getClass().getSimpleName());
               try {
                 optimizeCleanupService.doCleanup(startTime);
               } catch (final Exception e) {
-                log.error(
+                LOG.error(
                     "Execution of cleanupService {} failed",
                     optimizeCleanupService.getClass().getSimpleName(),
                     e);
@@ -88,7 +88,7 @@ public class CleanupScheduler extends AbstractScheduledService implements Config
 
     final long durationSeconds =
         OffsetDateTime.now().minusSeconds(startTime.toEpochSecond()).toEpochSecond();
-    log.info("Finished optimize history cleanup in {}s", durationSeconds);
+    LOG.info("Finished optimize history cleanup in {}s", durationSeconds);
   }
 
   public List<CleanupService> getCleanupServices() {

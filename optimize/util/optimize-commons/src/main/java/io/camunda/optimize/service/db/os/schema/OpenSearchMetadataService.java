@@ -37,7 +37,7 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class OpenSearchMetadataService extends DatabaseMetadataService<OptimizeOpenSearchClient> {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(OpenSearchMetadataService.class);
 
   public OpenSearchMetadataService(final ObjectMapper objectMapper) {
@@ -49,11 +49,11 @@ public class OpenSearchMetadataService extends DatabaseMetadataService<OptimizeO
     final boolean metaDataIndexExists =
         osClient.getRichOpenSearchClient().index().indexExists(METADATA_INDEX_NAME);
     if (!metaDataIndexExists) {
-      log.info("Optimize Metadata index wasn't found, thus no metadata available.");
+      LOG.info("Optimize Metadata index wasn't found, thus no metadata available.");
       return Optional.empty();
     }
     try {
-      Optional<MetadataDto> metadata =
+      final Optional<MetadataDto> metadata =
           osClient
               .getRichOpenSearchClient()
               .doc()
@@ -61,12 +61,12 @@ public class OpenSearchMetadataService extends DatabaseMetadataService<OptimizeO
       // We need to do this in two steps instead of returning directly because the log message is
       // necessary
       if (metadata.isEmpty()) {
-        log.warn(
+        LOG.warn(
             "Optimize Metadata index exists but no metadata doc was found, thus no metadata available.");
       }
       return metadata;
     } catch (final OptimizeRuntimeException e) {
-      log.error(ERROR_MESSAGE_READING_METADATA_DOC, e);
+      LOG.error(ERROR_MESSAGE_READING_METADATA_DOC, e);
       throw new OptimizeRuntimeException(ERROR_MESSAGE_READING_METADATA_DOC, e);
     }
   }
@@ -103,13 +103,13 @@ public class OpenSearchMetadataService extends DatabaseMetadataService<OptimizeO
       final UpdateResponse<?> response =
           osClient.getOpenSearchClient().update(request, MetadataDto.class);
       if (!response.result().equals(Result.Created) && !response.result().equals(Result.Updated)) {
-        String errorMsg =
+        final String errorMsg =
             "Metadata information was neither created nor updated. " + ERROR_MESSAGE_REQUEST;
-        log.error(errorMsg);
+        LOG.error(errorMsg);
         throw new OptimizeRuntimeException(errorMsg);
       }
-    } catch (IOException e) {
-      log.error(ERROR_MESSAGE_REQUEST, e);
+    } catch (final IOException e) {
+      LOG.error(ERROR_MESSAGE_REQUEST, e);
       throw new OptimizeRuntimeException(ERROR_MESSAGE_REQUEST, e);
     }
   }

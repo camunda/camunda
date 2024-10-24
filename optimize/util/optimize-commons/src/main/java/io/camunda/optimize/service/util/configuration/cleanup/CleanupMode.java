@@ -13,6 +13,5 @@ public enum CleanupMode {
   @JsonProperty("all")
   ALL,
   @JsonProperty("variables")
-  VARIABLES,
-  ;
+  VARIABLES;
 }

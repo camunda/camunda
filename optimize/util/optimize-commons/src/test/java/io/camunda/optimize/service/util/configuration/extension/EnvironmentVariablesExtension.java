@@ -27,7 +27,7 @@ import org.slf4j.Logger;
  */
 public class EnvironmentVariablesExtension implements BeforeEachCallback, AfterEachCallback {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(EnvironmentVariablesExtension.class);
   private Map<String, String> originalVariables;
   private final Map<String, String> setVariables;

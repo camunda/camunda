@@ -20,7 +20,7 @@ import org.slf4j.Logger;
 @Provider
 public class OptimizeConflictExceptionMapper implements ExceptionMapper<OptimizeConflictException> {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(OptimizeConflictExceptionMapper.class);
   private final LocalizationService localizationService;
 
@@ -30,7 +30,7 @@ public class OptimizeConflictExceptionMapper implements ExceptionMapper<Optimize
 
   @Override
   public Response toResponse(final OptimizeConflictException conflictException) {
-    log.info("Mapping OptimizeConflictException");
+    LOG.info("Mapping OptimizeConflictException");
 
     return Response.status(Response.Status.CONFLICT)
         .type(MediaType.APPLICATION_JSON_TYPE)

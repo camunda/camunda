@@ -53,9 +53,9 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ValidationHelper {
+public final class ValidationHelper {
 
-  protected static final Logger logger = LoggerFactory.getLogger(ValidationHelper.class);
+  protected static final Logger LOG = LoggerFactory.getLogger(ValidationHelper.class);
 
   private ValidationHelper() {}
 
@@ -127,7 +127,7 @@ public class ValidationHelper {
       validate(dataDto);
       return true;
     } catch (final Exception e) {
-      logger.debug("Report Data Validation failed", e);
+      LOG.debug("Report Data Validation failed", e);
       return false;
     }
   }

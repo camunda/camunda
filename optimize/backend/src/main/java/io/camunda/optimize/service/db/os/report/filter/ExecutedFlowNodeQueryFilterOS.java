@@ -32,7 +32,7 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class ExecutedFlowNodeQueryFilterOS implements QueryFilterOS<ExecutedFlowNodeFilterDataDto> {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ExecutedFlowNodeQueryFilterOS.class);
 
   @Override
@@ -42,10 +42,10 @@ public class ExecutedFlowNodeQueryFilterOS implements QueryFilterOS<ExecutedFlow
     return flowNodeFilters.stream().map(this::createFilterQuery).toList();
   }
 
-  private Query createFilterQuery(ExecutedFlowNodeFilterDataDto flowNodeFilter) {
-    BoolQuery.Builder boolQueryBuilder = new BoolQuery.Builder();
+  private Query createFilterQuery(final ExecutedFlowNodeFilterDataDto flowNodeFilter) {
+    final BoolQuery.Builder boolQueryBuilder = new BoolQuery.Builder();
     if (MembershipFilterOperator.IN == flowNodeFilter.getOperator()) {
-      for (String value : flowNodeFilter.getValues()) {
+      for (final String value : flowNodeFilter.getValues()) {
         boolQueryBuilder.should(
             nested(
                 FLOW_NODE_INSTANCES,
@@ -53,7 +53,7 @@ public class ExecutedFlowNodeQueryFilterOS implements QueryFilterOS<ExecutedFlow
                 ChildScoreMode.None));
       }
     } else if (MembershipFilterOperator.NOT_IN == flowNodeFilter.getOperator()) {
-      for (String value : flowNodeFilter.getValues()) {
+      for (final String value : flowNodeFilter.getValues()) {
         boolQueryBuilder.mustNot(
             nested(
                 FLOW_NODE_INSTANCES,
@@ -61,7 +61,7 @@ public class ExecutedFlowNodeQueryFilterOS implements QueryFilterOS<ExecutedFlow
                 ChildScoreMode.None));
       }
     } else {
-      log.error(
+      LOG.error(
           "Could not filter for flow nodes. "
               + "Operator [{}] is not allowed! Use either [in] or [not in]",
           flowNodeFilter.getOperator());

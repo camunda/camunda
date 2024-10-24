@@ -58,6 +58,7 @@ public class CountProgressDto {
     this.isBelow = isBelow;
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String baseline = "baseline";

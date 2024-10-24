@@ -30,7 +30,7 @@ public class SnapshotUtil {
   private static final String COMPONENT_PREFIX_PLACEHOLDER = "{componentPrefix}";
   private static final String ID_PLACEHOLDER = "{backupId}";
   private static final String VERSION_PLACEHOLDER = "{version}";
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(SnapshotUtil.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(SnapshotUtil.class);
 
   public static String getSnapshotNameForImportIndices(final Long backupId) {
     return getSnapshotName(SNAPSHOT_1_NAME_TEMPLATE, backupId);
@@ -59,12 +59,12 @@ public class SnapshotUtil {
             String.format(
                 "Cannot retrieve backupID from snapshot [%s] because the found backupID is not a valid integer.",
                 snapshotName);
-        log.error(msg);
+        LOG.error(msg);
         throw new OptimizeRuntimeException(msg, e);
       }
     } else {
       final String msg = String.format("No backupID found in snapshot [%s].", snapshotName);
-      log.error(msg);
+      LOG.error(msg);
       throw new OptimizeRuntimeException(msg);
     }
   }

@@ -81,7 +81,7 @@ public class ElasticSearchIndexSettingsBuilder {
                                       .getNestedDocumentsLimit())));
           try {
             indexMappingCreator.getStaticSettings(i, configurationService);
-          } catch (IOException e) {
+          } catch (final IOException e) {
             throw new RuntimeException(e);
           }
           // this analyzer is supposed to be used for large text fields for which we only want to

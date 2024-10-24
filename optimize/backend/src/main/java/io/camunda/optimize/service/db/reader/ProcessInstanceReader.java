@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ProcessInstanceReader {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ProcessInstanceReader.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ProcessInstanceReader.class);
   private final ProcessInstanceRepository processInstanceRepository;
   private final DefinitionInstanceReader definitionInstanceReader;
 

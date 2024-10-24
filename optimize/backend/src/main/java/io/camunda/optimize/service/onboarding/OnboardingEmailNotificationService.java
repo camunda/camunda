@@ -28,7 +28,7 @@ public class OnboardingEmailNotificationService {
   public static final String EMAIL_SUBJECT =
       "You've got insights from Optimize for your new process";
   private static final String ONBOARDING_EMAIL_TEMPLATE = "onboardingEmailTemplate.ftl";
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(OnboardingEmailNotificationService.class);
 
   private final EmailService emailService;
@@ -79,14 +79,14 @@ public class OnboardingEmailNotificationService {
                 definitionName,
                 generateDashboardLinkForProcess(processKey)));
       } else {
-        log.warn(
+        LOG.warn(
             String.format(
                 "No user found for owner user ID %s of process %s, therefore no onboarding email will "
                     + "be sent.",
                 ownerId, processKey));
       }
     } else {
-      log.warn(
+      LOG.warn(
           String.format(
               "No overview for Process definition %s could be found, therefore not able to determine a valid"
                   + " owner. No onboarding email will be sent.",

@@ -14,7 +14,7 @@ public class OptimizeNonTenantScopeCompliantException extends OptimizeConflictEx
 
   public static final String ERROR_CODE = "nonTenantScopeCompliantConflict";
 
-  public OptimizeNonTenantScopeCompliantException(Set<ConflictedItemDto> conflictedItems) {
+  public OptimizeNonTenantScopeCompliantException(final Set<ConflictedItemDto> conflictedItems) {
     super(
         "Could not apply action due to conflicts with the collection data source. The definition for the report is "
             + "available in the data source yet at least one tenant defined in the report is not available in the data "

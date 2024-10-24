@@ -56,7 +56,7 @@ public class ManagementDashboardService {
       "instancesEndedInLastSixMonthsName";
   public static final String ENDED_IN_LAST_SIX_MONTHS_DESCRIPTION_LOCALIZATION_CODE =
       "instancesEndedInLastSixMonthsDescription";
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ManagementDashboardService.class);
 
   private final DashboardWriter dashboardWriter;
@@ -76,12 +76,12 @@ public class ManagementDashboardService {
   public void init() {
     if (configurationService.getEntityConfiguration().getCreateOnStartup()) {
       // First we delete all existing management entities
-      log.info("Deleting Management entities");
+      LOG.info("Deleting Management entities");
       reportWriter.deleteAllManagementReports();
       dashboardWriter.deleteManagementDashboard();
 
       // Then recreate the management reports and dashboard
-      log.info("Creating Management Reports and Management Dashboard");
+      LOG.info("Creating Management Reports and Management Dashboard");
       createManagementDashboardForReports(
           List.of(
               createProcessesCurrentlyInProgressReport(
@@ -90,7 +90,7 @@ public class ManagementDashboardService {
                   new PositionDto(4, 0), new DimensionDto(14, 4)),
               createProcessesEndedInLastSixMonthsReport(
                   new PositionDto(0, 2), new DimensionDto(4, 2))));
-      log.info("Finished creating Management entities");
+      LOG.info("Finished creating Management entities");
     }
   }
 

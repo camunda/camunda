@@ -32,6 +32,7 @@ import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
 import io.camunda.exporter.handlers.ProcessHandler;
 import io.camunda.exporter.handlers.RoleCreateUpdateHandler;
 import io.camunda.exporter.handlers.SequenceFlowHandler;
+import io.camunda.exporter.handlers.TaskCompletedMetricHandler;
 import io.camunda.exporter.handlers.UserHandler;
 import io.camunda.exporter.handlers.UserTaskHandler;
 import io.camunda.exporter.handlers.UserTaskProcessInstanceHandler;
@@ -165,6 +166,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptorsMap.get(ProcessIndex.class).getFullQualifiedName(), new XMLUtil()),
             new MetricFromProcessInstanceHandler(
                 indexDescriptorsMap.get(MetricIndex.class).getFullQualifiedName()),
+            new TaskCompletedMetricHandler(
+                indexDescriptorsMap.get(TasklistMetricIndex.class).getFullQualifiedName()),
             new FormHandler(indexDescriptorsMap.get(FormIndex.class).getFullQualifiedName()),
             new EventFromIncidentHandler(
                 templateDescriptorsMap.get(EventTemplate.class).getFullQualifiedName(), false),

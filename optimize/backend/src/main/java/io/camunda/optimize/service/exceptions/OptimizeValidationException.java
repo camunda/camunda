@@ -11,7 +11,7 @@ public class OptimizeValidationException extends OptimizeRuntimeException {
 
   public static final String ERROR_CODE = "badRequestError";
 
-  public OptimizeValidationException(String message) {
+  public OptimizeValidationException(final String message) {
     super(message);
   }
 

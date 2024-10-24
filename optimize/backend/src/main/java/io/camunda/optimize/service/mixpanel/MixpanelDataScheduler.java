@@ -28,7 +28,7 @@ import org.springframework.stereotype.Component;
 public class MixpanelDataScheduler extends AbstractScheduledService
     implements ConfigurationReloadable {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(MixpanelDataScheduler.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(MixpanelDataScheduler.class);
   private final ConfigurationService configurationService;
   private final MixpanelReportingService mixpanelReportingService;
 
@@ -41,23 +41,23 @@ public class MixpanelDataScheduler extends AbstractScheduledService
 
   @PostConstruct
   public void init() {
-    log.info("Initializing MixpanelDataScheduler");
+    LOG.info("Initializing MixpanelDataScheduler");
     getTelemetryConfiguration().validate();
     startMixpanelTelemetryScheduling();
   }
 
   @Override
   protected void run() {
-    log.info("Checking whether Mixpanel telemetry data can be sent.");
+    LOG.info("Checking whether Mixpanel telemetry data can be sent.");
     if (configurationService.getTelemetryConfiguration().isInitializeTelemetry()) {
       try {
         mixpanelReportingService.sendHeartbeatData();
-        log.info("Mixpanel telemetry data was sent.");
+        LOG.info("Mixpanel telemetry data was sent.");
       } catch (final OptimizeRuntimeException e) {
-        log.error("Failed to send Mixpanel telemetry.", e);
+        LOG.error("Failed to send Mixpanel telemetry.", e);
       }
     } else {
-      log.info("Mixpanel telemetry disabled.");
+      LOG.info("Mixpanel telemetry disabled.");
     }
   }
 
@@ -73,13 +73,13 @@ public class MixpanelDataScheduler extends AbstractScheduledService
   }
 
   public synchronized boolean startMixpanelTelemetryScheduling() {
-    log.info("Starting mixpanel scheduling");
+    LOG.info("Starting mixpanel scheduling");
     return startScheduling();
   }
 
   @PreDestroy
   public synchronized void stopMixpanelTelemetryScheduling() {
-    log.info("Stopping mixpanel scheduling");
+    LOG.info("Stopping mixpanel scheduling");
     stopScheduling();
   }
 

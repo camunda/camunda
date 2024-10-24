@@ -20,7 +20,8 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.filter.FlowN
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import java.util.List;
 
-public class RollingFlowNodeDateFilterBuilder {
+public final class RollingFlowNodeDateFilterBuilder {
+
   private final ProcessFilterBuilder filterBuilder;
   private List<String> flowNodeIds;
   private RollingDateFilterStartDto start;

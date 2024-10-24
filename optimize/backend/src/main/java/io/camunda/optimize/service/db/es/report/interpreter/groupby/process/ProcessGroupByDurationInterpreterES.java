@@ -47,10 +47,10 @@ public class ProcessGroupByDurationInterpreterES extends AbstractProcessGroupByI
   private final ProcessViewInterpreterFacadeES viewInterpreter;
 
   public ProcessGroupByDurationInterpreterES(
-      DurationAggregationServiceES durationAggregationService,
-      MinMaxStatsServiceES minMaxStatsService,
-      ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
-      ProcessViewInterpreterFacadeES viewInterpreter) {
+      final DurationAggregationServiceES durationAggregationService,
+      final MinMaxStatsServiceES minMaxStatsService,
+      final ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
+      final ProcessViewInterpreterFacadeES viewInterpreter) {
     this.durationAggregationService = durationAggregationService;
     this.minMaxStatsService = minMaxStatsService;
     this.distributedByInterpreter = distributedByInterpreter;

@@ -24,9 +24,9 @@ import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 
 @Conditional(OpenSearchCondition.class)
-public class OptimizeOpenSearchClientFactory {
+public final class OptimizeOpenSearchClientFactory {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(OptimizeOpenSearchClientFactory.class);
 
   private OptimizeOpenSearchClientFactory() {}
@@ -39,13 +39,13 @@ public class OptimizeOpenSearchClientFactory {
       final PluginRepository pluginRepository)
       throws IOException {
 
-    log.info("Creating OpenSearch connection...");
+    LOG.info("Creating OpenSearch connection...");
     final ExtendedOpenSearchClient openSearchClient =
         buildOpenSearchClientFromConfig(configurationService, pluginRepository);
     final OpenSearchAsyncClient openSearchAsyncClient =
         buildOpenSearchAsyncClientFromConfig(configurationService, pluginRepository);
     waitForOpenSearch(openSearchClient, backoffCalculator);
-    log.info("OpenSearch cluster successfully started");
+    LOG.info("OpenSearch cluster successfully started");
 
     final OptimizeOpenSearchClient osClient =
         new OptimizeOpenSearchClient(
@@ -69,18 +69,18 @@ public class OptimizeOpenSearchClientFactory {
         final String errorMessage =
             "Can't connect to any OpenSearch node {}. Please check the connection!";
         if (connectionAttempts < 10) {
-          log.warn(errorMessage, osClient.nodes());
+          LOG.warn(errorMessage, osClient.nodes());
         } else {
-          log.error(errorMessage, osClient.nodes(), e);
+          LOG.error(errorMessage, osClient.nodes(), e);
         }
       } finally {
         if (!isConnected) {
           final long sleepTime = backoffCalculator.calculateSleepTime();
-          log.info("No OpenSearch nodes available, waiting [{}] ms to retry connecting", sleepTime);
+          LOG.info("No OpenSearch nodes available, waiting [{}] ms to retry connecting", sleepTime);
           try {
             Thread.sleep(sleepTime);
           } catch (final InterruptedException e) {
-            log.warn("Got interrupted while waiting to retry connecting to OpenSearch.", e);
+            LOG.warn("Got interrupted while waiting to retry connecting to OpenSearch.", e);
             Thread.currentThread().interrupt();
           }
         }

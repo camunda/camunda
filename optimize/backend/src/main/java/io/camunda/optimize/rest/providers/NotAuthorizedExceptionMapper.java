@@ -21,7 +21,7 @@ import org.slf4j.Logger;
 @Provider
 public class NotAuthorizedExceptionMapper implements ExceptionMapper<NotAuthorizedException> {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(NotAuthorizedExceptionMapper.class);
   private static final String NOT_AUTHORIZED_ERROR_CODE = "notAuthorizedError";
   private final LocalizationService localizationService;
@@ -36,7 +36,7 @@ public class NotAuthorizedExceptionMapper implements ExceptionMapper<NotAuthoriz
 
   @Override
   public Response toResponse(final NotAuthorizedException notAuthorizedException) {
-    log.debug("Mapping NotAuthorizedException");
+    LOG.debug("Mapping NotAuthorizedException");
 
     return Response.status(Response.Status.UNAUTHORIZED)
         .type(MediaType.APPLICATION_JSON_TYPE)

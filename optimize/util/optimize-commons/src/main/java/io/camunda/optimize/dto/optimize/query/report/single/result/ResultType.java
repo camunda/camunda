@@ -22,6 +22,5 @@ public enum ResultType {
   @JsonProperty(NUMBER_RESULT_TYPE)
   NUMBER,
   @JsonProperty(RAW_RESULT_TYPE)
-  RAW,
-  ;
+  RAW;
 }

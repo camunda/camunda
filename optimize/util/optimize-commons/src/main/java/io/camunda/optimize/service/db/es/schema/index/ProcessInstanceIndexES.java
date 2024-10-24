@@ -16,7 +16,7 @@ import java.io.IOException;
 
 public class ProcessInstanceIndexES extends ProcessInstanceIndex<IndexSettings.Builder> {
 
-  public ProcessInstanceIndexES(String processInstanceIndexKey) {
+  public ProcessInstanceIndexES(final String processInstanceIndexKey) {
     super(processInstanceIndexKey);
   }
 

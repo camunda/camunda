@@ -31,10 +31,10 @@ public class ProcessDistributedByInstanceEndDateInterpreterOS
   private final MinMaxStatsServiceOS minMaxStatsService;
 
   public ProcessDistributedByInstanceEndDateInterpreterOS(
-      ProcessViewInterpreterFacadeOS viewInterpreter,
-      DateAggregationServiceOS dateAggregationService,
-      ProcessQueryFilterEnhancerOS queryFilterEnhancer,
-      MinMaxStatsServiceOS minMaxStatsService) {
+      final ProcessViewInterpreterFacadeOS viewInterpreter,
+      final DateAggregationServiceOS dateAggregationService,
+      final ProcessQueryFilterEnhancerOS queryFilterEnhancer,
+      final MinMaxStatsServiceOS minMaxStatsService) {
     this.viewInterpreter = viewInterpreter;
     this.dateAggregationService = dateAggregationService;
     this.queryFilterEnhancer = queryFilterEnhancer;

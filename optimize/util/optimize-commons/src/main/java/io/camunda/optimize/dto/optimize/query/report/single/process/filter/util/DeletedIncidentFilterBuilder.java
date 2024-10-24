@@ -12,16 +12,17 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.filter.Filte
 import java.util.List;
 import java.util.Optional;
 
-public class DeletedIncidentFilterBuilder {
+public final class DeletedIncidentFilterBuilder {
+
   private final ProcessFilterBuilder filterBuilder;
   private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
   private List<String> appliedTo;
 
-  private DeletedIncidentFilterBuilder(ProcessFilterBuilder filterBuilder) {
+  private DeletedIncidentFilterBuilder(final ProcessFilterBuilder filterBuilder) {
     this.filterBuilder = filterBuilder;
   }
 
-  static DeletedIncidentFilterBuilder construct(ProcessFilterBuilder filterBuilder) {
+  static DeletedIncidentFilterBuilder construct(final ProcessFilterBuilder filterBuilder) {
     return new DeletedIncidentFilterBuilder(filterBuilder);
   }
 

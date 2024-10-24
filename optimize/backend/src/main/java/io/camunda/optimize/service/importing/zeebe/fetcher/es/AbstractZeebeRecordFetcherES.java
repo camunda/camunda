@@ -32,7 +32,7 @@ import org.springframework.context.annotation.Conditional;
 @Conditional(ElasticSearchCondition.class)
 public abstract class AbstractZeebeRecordFetcherES<T> extends AbstractZeebeRecordFetcher<T> {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(AbstractZeebeRecordFetcherES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
@@ -113,13 +113,13 @@ public abstract class AbstractZeebeRecordFetcherES<T> extends AbstractZeebeRecor
                     .query(buildPositionQuery(positionBasedImportPage))
                     .routing(String.valueOf(partitionId)));
     try {
-      log.info(
+      LOG.info(
           "Using the position query to see if there are new records in the {} index on partition {}",
           getBaseIndexName(),
           partitionId);
       final long numberOfRecordsFound = esClient.countWithoutPrefix(countRequest);
       if (numberOfRecordsFound > 0) {
-        log.info(
+        LOG.info(
             "Found {} records in index {} on partition {} that can't be imported by the current sequence query. Will revert to "
                 + "position query for the next fetch attempt",
             numberOfRecordsFound,
@@ -127,14 +127,14 @@ public abstract class AbstractZeebeRecordFetcherES<T> extends AbstractZeebeRecor
             partitionId);
         return true;
       } else {
-        log.info(
+        LOG.info(
             "There are no newer records to process, so empty pages of records are currently expected");
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       if (isZeebeInstanceIndexNotFoundException(e)) {
-        log.warn("No Zeebe index of type {} found to count records from!", getIndexAlias());
+        LOG.warn("No Zeebe index of type {} found to count records from!", getIndexAlias());
       } else {
-        log.warn(
+        LOG.warn(
             "There was an error when looking for records to import beyond the boundaries of the sequence request"
                 + e);
       }
@@ -146,7 +146,7 @@ public abstract class AbstractZeebeRecordFetcherES<T> extends AbstractZeebeRecor
   }
 
   private Query buildPositionQuery(final PositionBasedImportPage positionBasedImportPage) {
-    log.trace(
+    LOG.trace(
         "using position query for records of {} on partition {}",
         getBaseIndexName(),
         getPartitionId());
@@ -171,7 +171,7 @@ public abstract class AbstractZeebeRecordFetcherES<T> extends AbstractZeebeRecor
   }
 
   private Query buildSequenceQuery(final PositionBasedImportPage positionBasedImportPage) {
-    log.trace(
+    LOG.trace(
         "using sequence query for records of {} on partition {}",
         getBaseIndexName(),
         getPartitionId());

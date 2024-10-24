@@ -30,7 +30,7 @@ public class ExternalVariableUpdateDatabaseImportJob extends DatabaseImportJob<P
   }
 
   @Override
-  protected void persistEntities(List<ProcessVariableDto> variableUpdates) {
+  protected void persistEntities(final List<ProcessVariableDto> variableUpdates) {
     databaseClient.executeImportRequestsAsBulk(
         "External variable updates",
         variableWriter.generateVariableUpdateImports(variableUpdates),

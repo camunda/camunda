@@ -51,6 +51,7 @@ public class ReportShareRestDto implements Serializable {
     return "ReportShareRestDto(id=" + getId() + ", reportId=" + getReportId() + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String id = "id";

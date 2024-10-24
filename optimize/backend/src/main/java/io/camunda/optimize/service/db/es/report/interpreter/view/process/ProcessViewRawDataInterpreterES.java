@@ -75,7 +75,7 @@ import org.springframework.stereotype.Component;
 public class ProcessViewRawDataInterpreterES extends AbstractProcessViewRawDataInterpreter
     implements ProcessViewInterpreterES {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ProcessViewRawDataInterpreterES.class);
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
@@ -84,11 +84,11 @@ public class ProcessViewRawDataInterpreterES extends AbstractProcessViewRawDataI
   private final ProcessVariableReader processVariableReader;
 
   public ProcessViewRawDataInterpreterES(
-      ConfigurationService configurationService,
-      ObjectMapper objectMapper,
-      OptimizeElasticsearchClient esClient,
-      DefinitionService definitionService,
-      ProcessVariableReader processVariableReader) {
+      final ConfigurationService configurationService,
+      final ObjectMapper objectMapper,
+      final OptimizeElasticsearchClient esClient,
+      final DefinitionService definitionService,
+      final ProcessVariableReader processVariableReader) {
     this.configurationService = configurationService;
     this.objectMapper = objectMapper;
     this.esClient = esClient;
@@ -107,14 +107,14 @@ public class ProcessViewRawDataInterpreterES extends AbstractProcessViewRawDataI
       final BoolQuery.Builder baseQueryBuilder,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
 
-    List<String> defKeysToTarget =
+    final List<String> defKeysToTarget =
         context.getReportData().getDefinitions().stream()
             .map(ReportDataDefinitionDto::getKey)
             .filter(Objects::nonNull)
             .collect(Collectors.toList());
-    Supplier<BoolQuery.Builder> builderSupplier =
+    final Supplier<BoolQuery.Builder> builderSupplier =
         () -> {
-          BoolQuery.Builder variableQuery = new BoolQuery.Builder();
+          final BoolQuery.Builder variableQuery = new BoolQuery.Builder();
           variableQuery.must(m -> m.bool(b -> baseQueryBuilder));
           // we do not fetch the variable labels as part of the /evaluate
           // endpoint, but the frontend will query the /variables endpoint
@@ -179,7 +179,7 @@ public class ProcessViewRawDataInterpreterES extends AbstractProcessViewRawDataI
               });
     }
 
-    Map<String, Object> params = new HashMap<>();
+    final Map<String, Object> params = new HashMap<>();
     params.put(CURRENT_TIME, LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli());
     params.put(DATE_FORMAT, OPTIMIZE_DATE_FORMAT);
     searchRequestBuilder.scriptFields(
@@ -210,9 +210,10 @@ public class ProcessViewRawDataInterpreterES extends AbstractProcessViewRawDataI
       final ResponseBody<?> response,
       final Map<String, Aggregate> aggs,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    Map<String, Map<String, Long>> processInstanceIdsToFlowNodeIdsAndDurations = new HashMap<>();
-    Map<String, Long> instanceIdsToUserTaskCount = new HashMap<>();
-    Function<Hit<?>, ProcessInstanceDto> mappingFunction =
+    final Map<String, Map<String, Long>> processInstanceIdsToFlowNodeIdsAndDurations =
+        new HashMap<>();
+    final Map<String, Long> instanceIdsToUserTaskCount = new HashMap<>();
+    final Function<Hit<?>, ProcessInstanceDto> mappingFunction =
         hit -> {
           try {
             // TODO Condition here we need for support low request deserialization.
@@ -246,7 +247,7 @@ public class ProcessViewRawDataInterpreterES extends AbstractProcessViewRawDataI
                   && ProcessInstanceIndex.DURATION.equals(sorting.get().getBy().get())) {
                 processInstance.setDuration(Math.round(hit.sort().get(0).doubleValue()));
               } else {
-                long currentTime =
+                final long currentTime =
                     Long.parseLong(hit.fields().get(CURRENT_TIME).to(List.class).get(0).toString());
                 processInstance.setDuration(
                     currentTime - processInstance.getStartDate().toInstant().toEpochMilli());
@@ -255,7 +256,7 @@ public class ProcessViewRawDataInterpreterES extends AbstractProcessViewRawDataI
             return processInstance;
           } catch (final NumberFormatException exception) {
             throw new OptimizeRuntimeException("Error while parsing fields to numbers");
-          } catch (JsonProcessingException e) {
+          } catch (final JsonProcessingException e) {
             throw new RuntimeException(e);
           }
         };
@@ -276,9 +277,9 @@ public class ProcessViewRawDataInterpreterES extends AbstractProcessViewRawDataI
               response.hits(), Integer.MAX_VALUE, ProcessInstanceDto.class, mappingFunction);
     }
 
-    RawProcessDataResultDtoMapper rawDataSingleReportResultDtoMapper =
+    final RawProcessDataResultDtoMapper rawDataSingleReportResultDtoMapper =
         new RawProcessDataResultDtoMapper();
-    Map<String, String> flowNodeIdsToFlowNodeNames =
+    final Map<String, String> flowNodeIdsToFlowNodeNames =
         definitionService.fetchDefinitionFlowNodeNamesAndIdsForProcessInstances(
             rawDataProcessInstanceDtos);
     final List<RawDataProcessInstanceDto> rawData =
@@ -301,10 +302,10 @@ public class ProcessViewRawDataInterpreterES extends AbstractProcessViewRawDataI
   }
 
   private void addSorting(
-      String sortByField,
-      SortOrder sortOrder,
-      SearchRequest.Builder searchRequestBuilder,
-      Map<String, Object> params) {
+      final String sortByField,
+      final SortOrder sortOrder,
+      final SearchRequest.Builder searchRequestBuilder,
+      final Map<String, Object> params) {
     if (sortByField.startsWith(VARIABLE_PREFIX)) {
       final String variableName = sortByField.substring(VARIABLE_PREFIX.length());
       searchRequestBuilder.sort(
@@ -331,7 +332,7 @@ public class ProcessViewRawDataInterpreterES extends AbstractProcessViewRawDataI
       // of a field with
       // doc['field'].value == null
       // and recommends using doc['field'].size() == 0
-      Script script = createDefaultScriptWithSpecificDtoParams(SORT_SCRIPT, params);
+      final Script script = createDefaultScriptWithSpecificDtoParams(SORT_SCRIPT, params);
       searchRequestBuilder.sort(
           s ->
               s.script(

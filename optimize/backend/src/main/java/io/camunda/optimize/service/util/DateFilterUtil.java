@@ -17,7 +17,7 @@ import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
 
-public class DateFilterUtil {
+public final class DateFilterUtil {
 
   private DateFilterUtil() {}
 

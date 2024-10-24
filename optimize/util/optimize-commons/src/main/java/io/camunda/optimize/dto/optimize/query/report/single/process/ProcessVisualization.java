@@ -26,8 +26,7 @@ public enum ProcessVisualization {
   LINE(LINE_VISUALIZATION),
   PIE(PIE_VISUALIZATION),
   BADGE(BADGE_VISUALIZATION),
-  HEAT(HEAT_VISUALIZATION),
-  ;
+  HEAT(HEAT_VISUALIZATION);
 
   private final String id;
 

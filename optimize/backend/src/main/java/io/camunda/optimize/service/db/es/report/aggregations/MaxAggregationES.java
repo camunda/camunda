@@ -32,7 +32,7 @@ public class MaxAggregationES extends AggregationStrategyES<Builder> {
 
   @Override
   public Pair<String, ContainerBuilder> createAggregationBuilderForAggregation(
-      final String customIdentifier, final Script script, String... field) {
+      final String customIdentifier, final Script script, final String... field) {
     final Aggregation.Builder builder = new Aggregation.Builder();
     return Pair.of(
         createAggregationName(customIdentifier, MAX_AGGREGATION),

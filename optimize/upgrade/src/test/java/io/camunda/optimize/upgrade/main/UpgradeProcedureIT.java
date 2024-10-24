@@ -146,12 +146,12 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
         UpgradePlanBuilder.createUpgradePlan()
             .fromVersion(PreviousVersion.PREVIOUS_VERSION)
             .toVersion(Version.VERSION)
-            .addUpgradeStep(applyLookupSkip(new CreateIndexStep(TEST_INDEX_V1)))
-            .addUpgradeStep(buildInsertTestIndexDataStep(UpgradeStepsIT.TEST_INDEX_V1))
+            .addUpgradeStep(applyLookupSkip(new CreateIndexStep(testIndexV1)))
+            .addUpgradeStep(buildInsertTestIndexDataStep(UpgradeStepsIT.testIndexV1))
             .addUpgradeStep(
                 applyLookupSkip(
                     new UpdateIndexStep(
-                        TEST_INDEX_V2,
+                        testIndexV2,
                         "params.get(ctx._source.someNonExistentField).values();",
                         Collections.emptyMap(),
                         Collections.emptySet())))

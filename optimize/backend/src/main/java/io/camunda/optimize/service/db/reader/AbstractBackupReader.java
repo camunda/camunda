@@ -13,14 +13,14 @@ import org.slf4j.Logger;
 
 public abstract class AbstractBackupReader implements BackupReader {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(AbstractBackupReader.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(AbstractBackupReader.class);
 
   @Override
   public void validateRepositoryExists() {
     if (StringUtils.isEmpty(getSnapshotRepositoryName())) {
       final String reason =
           "Cannot execute backup request because no snapshot repository name found in Optimize configuration.";
-      log.error(reason);
+      LOG.error(reason);
       throw new OptimizeConfigurationException(reason);
     } else {
       validateRepositoryExistsOrFail();

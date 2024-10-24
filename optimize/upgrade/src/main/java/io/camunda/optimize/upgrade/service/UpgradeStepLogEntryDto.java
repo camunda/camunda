@@ -144,6 +144,7 @@ public class UpgradeStepLogEntryDto {
     return new UpgradeStepLogEntryDtoBuilder();
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String indexName = "indexName";

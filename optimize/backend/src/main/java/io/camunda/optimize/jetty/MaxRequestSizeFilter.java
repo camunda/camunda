@@ -28,7 +28,7 @@ import org.slf4j.Logger;
 public class MaxRequestSizeFilter implements Filter {
 
   public static final String MESSAGE_NO_CONTENT_LENGTH = "No Content-Length header in request.";
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(MaxRequestSizeFilter.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(MaxRequestSizeFilter.class);
 
   private final Callable<ObjectMapper> objectMapperProvider;
   private final Callable<Long> maxSizeProvider;
@@ -102,7 +102,7 @@ public class MaxRequestSizeFilter implements Filter {
   }
 
   private void logWarnWithUrlPath(final HttpServletRequest httpRequest, final String errorMessage) {
-    log.warn(errorMessage + " Path [{}].", httpRequest.getRequestURL());
+    LOG.warn(errorMessage + " Path [{}].", httpRequest.getRequestURL());
   }
 
   private Optional<Long> getContentLength(final HttpServletRequest httpRequest) {

@@ -48,7 +48,7 @@ public class ObjectVariableService {
   private static final String LIST_SIZE_VARIABLE_SUFFIX = "_listSize";
   private static final DateTimeFormatter OPTIMIZE_DATE_TIME_FORMATTER =
       DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ObjectVariableService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ObjectVariableService.class);
 
   private final ObjectMapper objectMapper;
 
@@ -116,7 +116,7 @@ public class ObjectVariableService {
           Collections.singletonList(objectMapper.writeValueAsString(jsonObject)));
       resultList.add(processVariableDto);
     } catch (final JsonProcessingException e) {
-      log.error(
+      LOG.error(
           "Error while formatting json object variable with name '{}'.",
           variableUpdate.getName(),
           e);
@@ -148,7 +148,7 @@ public class ObjectVariableService {
               .map(e -> mapToFlattenedVariable(e.getKey(), e.getValue(), variable))
               .forEach(resultList::addAll);
     } catch (final Exception exception) {
-      log.error(
+      LOG.error(
           "Error while flattening json object variable with name '{}'.",
           variable.getName(),
           exception);
@@ -158,7 +158,7 @@ public class ObjectVariableService {
   private List<ProcessVariableDto> mapToFlattenedVariable(
       final String name, final Object value, final ProcessVariableUpdateDto origin) {
     if (value == null || String.valueOf(value).isEmpty() || isEmptyListVariable(value)) {
-      log.debug(
+      LOG.debug(
           "Variable attribute '{}' of '{}' is null or empty and won't be imported",
           name,
           origin.getName());
@@ -182,7 +182,7 @@ public class ObjectVariableService {
     } else if (value instanceof Number) {
       parseNumberVariableAndSet(Collections.singletonList(value), newVariable);
     } else {
-      log.debug(
+      LOG.debug(
           "Variable attribute '{}' of '{}' with type {} is not supported and won't be imported.",
           name,
           origin.getName(),
@@ -250,7 +250,7 @@ public class ObjectVariableService {
               } else if (nonNullItem instanceof Number) {
                 return DOUBLE;
               } else {
-                log.debug(
+                LOG.debug(
                     "List variable attribute '{}' of '{}' with type {} is not supported and won't be imported.",
                     name,
                     origin.getName(),
@@ -376,7 +376,7 @@ public class ObjectVariableService {
       if (serializationDataFormat.stream().anyMatch(APPLICATION_JSON::equals)) {
         return true;
       } else {
-        log.warn(
+        LOG.warn(
             "Object variable '{}' will not be imported due to unsupported serializationDataFormat: {}. "
                 + "Object variables must have serializationDataFormat application/json.",
             originVariable.getName(),

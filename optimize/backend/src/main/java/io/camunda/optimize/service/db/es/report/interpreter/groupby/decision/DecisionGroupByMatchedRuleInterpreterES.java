@@ -41,9 +41,9 @@ public class DecisionGroupByMatchedRuleInterpreterES extends AbstractDecisionGro
   private final DecisionViewInterpreterFacadeES viewInterpreter;
 
   public DecisionGroupByMatchedRuleInterpreterES(
-      ConfigurationService configurationService,
-      DecisionDistributedByNoneInterpreterES distributedByInterpreter,
-      DecisionViewInterpreterFacadeES viewInterpreter) {
+      final ConfigurationService configurationService,
+      final DecisionDistributedByNoneInterpreterES distributedByInterpreter,
+      final DecisionViewInterpreterFacadeES viewInterpreter) {
     this.configurationService = configurationService;
     this.distributedByInterpreter = distributedByInterpreter;
     this.viewInterpreter = viewInterpreter;
@@ -58,7 +58,7 @@ public class DecisionGroupByMatchedRuleInterpreterES extends AbstractDecisionGro
   public Map<String, Aggregation.Builder.ContainerBuilder> createAggregation(
       final BoolQuery boolQuery,
       final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
-    Aggregation.Builder.ContainerBuilder builder =
+    final Aggregation.Builder.ContainerBuilder builder =
         new Aggregation.Builder()
             .terms(
                 t ->
@@ -82,7 +82,7 @@ public class DecisionGroupByMatchedRuleInterpreterES extends AbstractDecisionGro
     final StringTermsAggregate matchedRuleTerms =
         response.aggregations().get(MATCHED_RULES_AGGREGATION).sterms();
     final List<CompositeCommandResult.GroupByResult> matchedRules = new ArrayList<>();
-    for (StringTermsBucket matchedRuleBucket : matchedRuleTerms.buckets().array()) {
+    for (final StringTermsBucket matchedRuleBucket : matchedRuleTerms.buckets().array()) {
       final List<CompositeCommandResult.DistributedByResult> distributions =
           getDistributedByInterpreter()
               .retrieveResult(response, matchedRuleBucket.aggregations(), context);

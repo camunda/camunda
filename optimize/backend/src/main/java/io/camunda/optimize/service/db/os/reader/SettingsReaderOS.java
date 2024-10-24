@@ -27,7 +27,7 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class SettingsReaderOS implements SettingsReader {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(SettingsReaderOS.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(SettingsReaderOS.class);
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
 
@@ -39,7 +39,7 @@ public class SettingsReaderOS implements SettingsReader {
 
   @Override
   public Optional<SettingsDto> getSettings() {
-    log.debug("Fetching Optimize Settings");
+    LOG.debug("Fetching Optimize Settings");
 
     final GetRequest.Builder getReqBuilder =
         new GetRequest.Builder().index(SETTINGS_INDEX_NAME).id(SettingsIndex.ID);
@@ -53,11 +53,11 @@ public class SettingsReaderOS implements SettingsReader {
         if (result.getSharingEnabled().isEmpty()) {
           result.setSharingEnabled(configurationService.getSharingEnabled());
         }
-        log.debug("Finished Fetching Optimize Settings");
+        LOG.debug("Finished Fetching Optimize Settings");
         return Optional.of(result);
       }
     } else {
-      log.debug("No Settings found");
+      LOG.debug("No Settings found");
     }
     return Optional.empty();
   }

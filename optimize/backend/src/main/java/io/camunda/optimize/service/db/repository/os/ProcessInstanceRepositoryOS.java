@@ -65,7 +65,7 @@ import org.springframework.stereotype.Component;
 class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
 
   public static final String INDEX_NOT_FOUND_ERROR_MESSAGE_KEYWORD = "index_not_found_exception";
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ProcessInstanceRepositoryOS.class);
   private final ConfigurationService configurationService;
   private final OptimizeIndexNameService indexNameService;
@@ -192,7 +192,7 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
     } catch (final IOException e) {
       final String reason =
           format("Could not close scroll for class [%s].", getClass().getSimpleName());
-      log.error(reason, e);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
   }
@@ -245,9 +245,9 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
                 processInstanceIds.subList(0, min(response.hits().hits().size(), resolvedLimit)));
       }
       result.setPagingState(response.scrollId());
-    } catch (OpenSearchException e) {
+    } catch (final OpenSearchException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
-        log.info(
+        LOG.info(
             "Was not able to obtain process instance IDs because instance index {} does not exist. Returning empty result.",
             getProcessInstanceIndexAliasName(processDefinitionKey));
         result.setPagingState(null);

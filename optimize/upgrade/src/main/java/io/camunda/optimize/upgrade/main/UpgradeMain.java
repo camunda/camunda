@@ -36,7 +36,7 @@ public class UpgradeMain {
 
   private static final Set<String> ANSWER_OPTIONS_NO =
       Collections.unmodifiableSet(new HashSet<>(Arrays.asList("n", "no")));
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(UpgradeMain.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(UpgradeMain.class);
 
   static {
     new LoggingConfigurationReader().defineLogbackLoggingConfiguration();
@@ -48,7 +48,7 @@ public class UpgradeMain {
           ConfigurationService.convertToDatabaseProperty(
               Optional.ofNullable(System.getenv(CAMUNDA_OPTIMIZE_DATABASE))
                   .orElse(ELASTICSEARCH_DATABASE_PROPERTY));
-      log.info("Identified {} Database configuration", databaseType.getId());
+      LOG.info("Identified {} Database configuration", databaseType.getId());
 
       final UpgradeExecutionDependencies upgradeDependencies =
           createUpgradeDependencies(databaseType);
@@ -77,18 +77,18 @@ public class UpgradeMain {
         printWarning(upgradePlans.get(upgradePlans.size() - 1).getToVersion().getValue());
       }
 
-      log.info("Executing update...");
+      LOG.info("Executing update...");
 
       for (final UpgradePlan upgradePlan : upgradePlans) {
         upgradeProcedure.performUpgrade(upgradePlan);
       }
       upgradeProcedure.schemaUpgradeClient.initializeSchema();
 
-      log.info("Update finished successfully.");
+      LOG.info("Update finished successfully.");
 
       System.exit(0);
     } catch (final Exception e) {
-      log.error(e.getMessage(), e);
+      LOG.error(e.getMessage(), e);
       System.exit(1);
     }
   }

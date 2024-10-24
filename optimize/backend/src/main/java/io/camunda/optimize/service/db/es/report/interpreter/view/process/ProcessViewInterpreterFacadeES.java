@@ -43,27 +43,27 @@ public class ProcessViewInterpreterFacadeES
 
   @Override
   public ViewProperty getViewProperty(
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     return interpreter(context.getPlan().getView()).getViewProperty(context);
   }
 
   @Override
   public ViewResult createEmptyResult(
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     return interpreter(context.getPlan().getView()).createEmptyResult(context);
   }
 
   @Override
   public Map<String, Aggregation.Builder.ContainerBuilder> createAggregations(
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     return interpreter(context.getPlan().getView()).createAggregations(context);
   }
 
   @Override
   public ViewResult retrieveResult(
-      ResponseBody<?> response,
-      Map<String, Aggregate> aggregations,
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+      final ResponseBody<?> response,
+      final Map<String, Aggregate> aggregations,
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     return interpreter(context.getPlan().getView()).retrieveResult(response, aggregations, context);
   }
 

@@ -16,7 +16,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-public class ExecutedFlowNodeFilterBuilder {
+public final class ExecutedFlowNodeFilterBuilder {
 
   private MembershipFilterOperator membershipFilterOperator = MembershipFilterOperator.IN;
   private final List<String> values = new ArrayList<>();
@@ -24,15 +24,16 @@ public class ExecutedFlowNodeFilterBuilder {
   private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
   private List<String> appliedTo;
 
-  private ExecutedFlowNodeFilterBuilder(ProcessFilterBuilder processFilterBuilder) {
+  private ExecutedFlowNodeFilterBuilder(final ProcessFilterBuilder processFilterBuilder) {
     filterBuilder = processFilterBuilder;
   }
 
-  public static ExecutedFlowNodeFilterBuilder construct(ProcessFilterBuilder processFilterBuilder) {
+  public static ExecutedFlowNodeFilterBuilder construct(
+      final ProcessFilterBuilder processFilterBuilder) {
     return new ExecutedFlowNodeFilterBuilder(processFilterBuilder);
   }
 
-  public ExecutedFlowNodeFilterBuilder id(String flowNodeId) {
+  public ExecutedFlowNodeFilterBuilder id(final String flowNodeId) {
     values.add(flowNodeId);
     return this;
   }
@@ -42,7 +43,8 @@ public class ExecutedFlowNodeFilterBuilder {
     return this;
   }
 
-  public ExecutedFlowNodeFilterBuilder operator(MembershipFilterOperator membershipFilterOperator) {
+  public ExecutedFlowNodeFilterBuilder operator(
+      final MembershipFilterOperator membershipFilterOperator) {
     this.membershipFilterOperator = membershipFilterOperator;
     return this;
   }
@@ -52,7 +54,7 @@ public class ExecutedFlowNodeFilterBuilder {
     return this;
   }
 
-  public ExecutedFlowNodeFilterBuilder ids(String... flowNodeIds) {
+  public ExecutedFlowNodeFilterBuilder ids(final String... flowNodeIds) {
     values.addAll(Arrays.asList(flowNodeIds));
     return this;
   }
@@ -72,10 +74,10 @@ public class ExecutedFlowNodeFilterBuilder {
   }
 
   public ProcessFilterBuilder add() {
-    ExecutedFlowNodeFilterDataDto dataDto = new ExecutedFlowNodeFilterDataDto();
+    final ExecutedFlowNodeFilterDataDto dataDto = new ExecutedFlowNodeFilterDataDto();
     dataDto.setOperator(membershipFilterOperator);
     dataDto.setValues(new ArrayList<>(values));
-    ExecutedFlowNodeFilterDto executedFlowNodeFilterDto = new ExecutedFlowNodeFilterDto();
+    final ExecutedFlowNodeFilterDto executedFlowNodeFilterDto = new ExecutedFlowNodeFilterDto();
     executedFlowNodeFilterDto.setData(dataDto);
     executedFlowNodeFilterDto.setFilterLevel(filterLevel);
     Optional.ofNullable(appliedTo)

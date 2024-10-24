@@ -19,7 +19,7 @@ import org.opensearch.client.opensearch.indices.PutTemplateRequest;
 
 public class OpenSearchTemplateOperations extends OpenSearchRetryOperation {
   public OpenSearchTemplateOperations(
-      OpenSearchClient openSearchClient, OptimizeIndexNameService indexNameService) {
+      final OpenSearchClient openSearchClient, final OptimizeIndexNameService indexNameService) {
     super(openSearchClient, indexNameService);
   }
 
@@ -27,7 +27,7 @@ public class OpenSearchTemplateOperations extends OpenSearchRetryOperation {
     return openSearchClient.indices().existsIndexTemplate(it -> it.name(templatePattern)).value();
   }
 
-  public boolean createTemplateWithRetries(PutTemplateRequest request) {
+  public boolean createTemplateWithRetries(final PutTemplateRequest request) {
     return executeWithRetries(
         "CreateTemplate " + request.name(),
         () -> {

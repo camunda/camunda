@@ -12,7 +12,7 @@ import static java.util.Comparator.naturalOrder;
 import java.util.Comparator;
 import java.util.List;
 
-public class TenantListHandlingUtil {
+public final class TenantListHandlingUtil {
 
   private static final Comparator<String> TENANT_LIST_COMPARATOR =
       Comparator.nullsFirst(naturalOrder());

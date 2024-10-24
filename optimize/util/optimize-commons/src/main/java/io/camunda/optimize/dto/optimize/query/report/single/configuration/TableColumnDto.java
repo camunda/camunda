@@ -23,7 +23,7 @@ public class TableColumnDto {
   public static final String OUTPUT_PREFIX = "output:";
   public static final String FLOWNODE_DURATION_PREFIX = "dur:";
   public static final String COUNT_PREFIX = "count:";
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(TableColumnDto.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(TableColumnDto.class);
 
   private boolean includeNewVariables = false;
   private List<String> excludedColumns = new ArrayList<>();
@@ -161,7 +161,7 @@ public class TableColumnDto {
     try {
       return digitsInString.isEmpty() ? 0 : Double.parseDouble(digitsInString);
     } catch (final NumberFormatException e) {
-      log.debug(
+      LOG.debug(
           "Cannot parse numbers in variable column names to double, ignoring and sorting by string.",
           e);
       return Double.MAX_VALUE;
@@ -219,19 +219,19 @@ public class TableColumnDto {
         + ")";
   }
 
-  private static boolean $default$includeNewVariables() {
+  private static boolean defaultIncludeNewVariables() {
     return false;
   }
 
-  private static List<String> $default$excludedColumns() {
+  private static List<String> defaultExcludedColumns() {
     return new ArrayList<>();
   }
 
-  private static List<String> $default$includedColumns() {
+  private static List<String> defaultIncludedColumns() {
     return new ArrayList<>();
   }
 
-  private static List<String> $default$columnOrder() {
+  private static List<String> defaultColumnOrder() {
     return new ArrayList<>();
   }
 
@@ -239,6 +239,7 @@ public class TableColumnDto {
     return new TableColumnDtoBuilder();
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String includeNewVariables = "includeNewVariables";
@@ -249,75 +250,72 @@ public class TableColumnDto {
 
   public static class TableColumnDtoBuilder {
 
-    private boolean includeNewVariables$value;
-    private boolean includeNewVariables$set;
-    private List<String> excludedColumns$value;
-    private boolean excludedColumns$set;
-    private List<String> includedColumns$value;
-    private boolean includedColumns$set;
-    private List<String> columnOrder$value;
-    private boolean columnOrder$set;
+    private boolean includeNewVariablesValue;
+    private boolean includeNewVariablesSet;
+    private List<String> excludedColumnsValue;
+    private boolean excludedColumnsSet;
+    private List<String> includedColumnsValue;
+    private boolean includedColumnsSet;
+    private List<String> columnOrderValue;
+    private boolean columnOrderSet;
 
     TableColumnDtoBuilder() {}
 
     public TableColumnDtoBuilder includeNewVariables(final boolean includeNewVariables) {
-      includeNewVariables$value = includeNewVariables;
-      includeNewVariables$set = true;
+      includeNewVariablesValue = includeNewVariables;
+      includeNewVariablesSet = true;
       return this;
     }
 
     public TableColumnDtoBuilder excludedColumns(final List<String> excludedColumns) {
-      excludedColumns$value = excludedColumns;
-      excludedColumns$set = true;
+      excludedColumnsValue = excludedColumns;
+      excludedColumnsSet = true;
       return this;
     }
 
     public TableColumnDtoBuilder includedColumns(final List<String> includedColumns) {
-      includedColumns$value = includedColumns;
-      includedColumns$set = true;
+      includedColumnsValue = includedColumns;
+      includedColumnsSet = true;
       return this;
     }
 
     public TableColumnDtoBuilder columnOrder(final List<String> columnOrder) {
-      columnOrder$value = columnOrder;
-      columnOrder$set = true;
+      columnOrderValue = columnOrder;
+      columnOrderSet = true;
       return this;
     }
 
     public TableColumnDto build() {
-      boolean includeNewVariables$value = this.includeNewVariables$value;
-      if (!includeNewVariables$set) {
-        includeNewVariables$value = TableColumnDto.$default$includeNewVariables();
+      boolean includeNewVariablesValue = this.includeNewVariablesValue;
+      if (!includeNewVariablesSet) {
+        includeNewVariablesValue = TableColumnDto.defaultIncludeNewVariables();
       }
-      List<String> excludedColumns$value = this.excludedColumns$value;
-      if (!excludedColumns$set) {
-        excludedColumns$value = TableColumnDto.$default$excludedColumns();
+      List<String> excludedColumnsValue = this.excludedColumnsValue;
+      if (!excludedColumnsSet) {
+        excludedColumnsValue = TableColumnDto.defaultExcludedColumns();
       }
-      List<String> includedColumns$value = this.includedColumns$value;
-      if (!includedColumns$set) {
-        includedColumns$value = TableColumnDto.$default$includedColumns();
+      List<String> includedColumnsValue = this.includedColumnsValue;
+      if (!includedColumnsSet) {
+        includedColumnsValue = TableColumnDto.defaultIncludedColumns();
       }
-      List<String> columnOrder$value = this.columnOrder$value;
-      if (!columnOrder$set) {
-        columnOrder$value = TableColumnDto.$default$columnOrder();
+      List<String> columnOrderValue = this.columnOrderValue;
+      if (!columnOrderSet) {
+        columnOrderValue = TableColumnDto.defaultColumnOrder();
       }
       return new TableColumnDto(
-          includeNewVariables$value,
-          excludedColumns$value,
-          includedColumns$value,
-          columnOrder$value);
+          includeNewVariablesValue, excludedColumnsValue, includedColumnsValue, columnOrderValue);
     }
 
     @Override
     public String toString() {
-      return "TableColumnDto.TableColumnDtoBuilder(includeNewVariables$value="
-          + includeNewVariables$value
-          + ", excludedColumns$value="
-          + excludedColumns$value
-          + ", includedColumns$value="
-          + includedColumns$value
-          + ", columnOrder$value="
-          + columnOrder$value
+      return "TableColumnDto.TableColumnDtoBuilder(includeNewVariablesValue="
+          + includeNewVariablesValue
+          + ", excludedColumnsValue="
+          + excludedColumnsValue
+          + ", includedColumnsValue="
+          + includedColumnsValue
+          + ", columnOrderValue="
+          + columnOrderValue
           + ")";
     }
   }

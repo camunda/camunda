@@ -18,28 +18,28 @@ import org.opensearch.client.opensearch.tasks.Info;
 
 public class OpenSearchTaskOperations extends OpenSearchRetryOperation {
   public OpenSearchTaskOperations(
-      OpenSearchClient openSearchClient, final OptimizeIndexNameService indexNameService) {
+      final OpenSearchClient openSearchClient, final OptimizeIndexNameService indexNameService) {
     super(openSearchClient, indexNameService);
   }
 
-  private static String defaultTaskErrorMessage(String id) {
+  private static String defaultTaskErrorMessage(final String id) {
     return String.format("Failed to fetch task %s", id);
   }
 
   @Override
-  public GetTasksResponse task(String id) {
+  public GetTasksResponse task(final String id) {
     return safe(() -> super.task(id), e -> defaultTaskErrorMessage(id));
   }
 
-  public GetTasksResponse taskWithRetries(String id) {
+  public GetTasksResponse taskWithRetries(final String id) {
     return executeWithGivenRetries(
         1,
         "Get task information for " + id,
         () -> {
           try {
-            GetTasksResponse response = super.task(id);
+            final GetTasksResponse response = super.task(id);
             return response;
-          } catch (ConnectionClosedException e) {
+          } catch (final ConnectionClosedException e) {
             System.out.println("Failed will retry for Task ID " + id);
             return null;
           }
@@ -48,7 +48,7 @@ public class OpenSearchTaskOperations extends OpenSearchRetryOperation {
   }
 
   @Override
-  public Map<String, Info> tasksWithActions(List<String> actions) {
+  public Map<String, Info> tasksWithActions(final List<String> actions) {
     return safe(
         () -> super.tasksWithActions(actions),
         e ->

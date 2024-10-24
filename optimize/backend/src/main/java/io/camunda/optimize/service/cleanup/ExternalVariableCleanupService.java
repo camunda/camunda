@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ExternalVariableCleanupService extends CleanupService {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ExternalVariableCleanupService.class);
   private final ConfigurationService configurationService;
   private final ExternalProcessVariableWriter externalProcessVariableWriter;
@@ -37,9 +37,9 @@ public class ExternalVariableCleanupService extends CleanupService {
   @Override
   public void doCleanup(final OffsetDateTime startTime) {
     final OffsetDateTime endDate = startTime.minus(getCleanupConfiguration().getTtl());
-    log.info("Performing cleanup on external variables with a timestamp older than {}", endDate);
+    LOG.info("Performing cleanup on external variables with a timestamp older than {}", endDate);
     externalProcessVariableWriter.deleteExternalVariablesIngestedBefore(endDate);
-    log.info("Finished cleanup on external variables with a timestamp older than {}", endDate);
+    LOG.info("Finished cleanup on external variables with a timestamp older than {}", endDate);
   }
 
   private CleanupConfiguration getCleanupConfiguration() {

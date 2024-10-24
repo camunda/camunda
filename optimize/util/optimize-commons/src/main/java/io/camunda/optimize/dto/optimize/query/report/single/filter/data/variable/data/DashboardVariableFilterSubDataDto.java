@@ -55,6 +55,7 @@ public class DashboardVariableFilterSubDataDto extends OperatorMultipleValuesFil
         + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String allowCustomValues = "allowCustomValues";

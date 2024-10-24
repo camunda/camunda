@@ -27,7 +27,7 @@ public class StoreTimestampBasedImportIndexDatabaseImportJob
   }
 
   @Override
-  protected void persistEntities(List<TimestampBasedImportIndexDto> newOptimizeEntities) {
+  protected void persistEntities(final List<TimestampBasedImportIndexDto> newOptimizeEntities) {
     importIndexWriter.importIndexes(newOptimizeEntities);
   }
 }

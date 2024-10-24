@@ -31,7 +31,7 @@ import org.slf4j.Logger;
 
 public class OpenSearchCompositeAggregationScroller {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(OpenSearchCompositeAggregationScroller.class);
   private OptimizeOpenSearchClient osClient;
   private SearchRequest.Builder searchRequestBuilder;
@@ -104,7 +104,7 @@ public class OpenSearchCompositeAggregationScroller {
       final CompositeAggregate compositeAggregationResult =
           extractCompositeAggregationResult(searchResponse);
 
-      Map<String, String> safeAfterKeyMap =
+      final Map<String, String> safeAfterKeyMap =
           compositeAggregationResult.afterKey().entrySet().stream()
               // Below is a workaround for a known java issue
               // https://bugs.openjdk.org/browse/JDK-8148463
@@ -116,9 +116,9 @@ public class OpenSearchCompositeAggregationScroller {
       aggregations = updateAfterKeyInCompositeAggregation(safeAfterKeyMap, aggregations);
 
       return compositeAggregationResult.buckets().array();
-    } catch (RuntimeException e) {
+    } catch (final RuntimeException e) {
       if (isInstanceIndexNotFoundException(e)) {
-        log.info(
+        LOG.info(
             "Was not able to get next page of {} aggregation because at least one instance from {} does not exist.",
             pathToAggregation.getLast(),
             indices);
@@ -129,48 +129,49 @@ public class OpenSearchCompositeAggregationScroller {
   }
 
   private HashMap<String, Aggregation> updateAfterKeyInCompositeAggregation(
-      Map<String, String> safeAfterKeyMap, Map<String, Aggregation> currentAgg) {
+      final Map<String, String> safeAfterKeyMap, final Map<String, Aggregation> currentAgg) {
     return updateAfterKeyInCompositeAggregation(safeAfterKeyMap, currentAgg, false);
   }
 
   private HashMap<String, Aggregation> updateAfterKeyInCompositeAggregation(
-      Map<String, String> safeAfterKeyMap,
-      Map<String, Aggregation> currentAgg,
-      boolean isFromNested) {
-    HashMap<String, Aggregation> newAggregations = new HashMap<>();
+      final Map<String, String> safeAfterKeyMap,
+      final Map<String, Aggregation> currentAgg,
+      final boolean isFromNested) {
+    final HashMap<String, Aggregation> newAggregations = new HashMap<>();
 
     if (safeAfterKeyMap.isEmpty()) {
       return new HashMap<>(currentAgg);
     }
 
-    for (String aggPath : pathToAggregation) {
-      Aggregation agg = currentAgg.get(aggPath);
-      if (agg != null) {
-        if (agg.isNested()) {
-          Aggregation newNestedAgg =
-              new Builder()
-                  .nested(new NestedAggregation.Builder().path(agg.nested().path()).build())
-                  .aggregations(
-                      updateAfterKeyInCompositeAggregation(
-                          safeAfterKeyMap, agg.aggregations(), true))
-                  .build();
-          newAggregations.put(aggPath, newNestedAgg);
-        } else if (agg.isComposite()) {
-          CompositeAggregation newAgg =
-              updateCompositeAggregation(agg.composite(), safeAfterKeyMap);
-          if (isFromNested) {
-            newAggregations.put(aggPath, newAgg._toAggregation());
-          } else {
-            Aggregation upgradeAgg =
-                Aggregation.of(
-                    a -> {
-                      if (agg.aggregations() != null) {
-                        a.aggregations(agg.aggregations());
-                      }
-                      return a.composite(newAgg);
-                    });
-            newAggregations.put(aggPath, upgradeAgg);
-          }
+    for (final String aggPath : pathToAggregation) {
+      final Aggregation agg = currentAgg.get(aggPath);
+      if (agg == null) {
+        continue;
+      }
+
+      if (agg.isNested()) {
+        final Aggregation newNestedAgg =
+            new Builder()
+                .nested(new NestedAggregation.Builder().path(agg.nested().path()).build())
+                .aggregations(
+                    updateAfterKeyInCompositeAggregation(safeAfterKeyMap, agg.aggregations(), true))
+                .build();
+        newAggregations.put(aggPath, newNestedAgg);
+      } else if (agg.isComposite()) {
+        final CompositeAggregation newAgg =
+            updateCompositeAggregation(agg.composite(), safeAfterKeyMap);
+        if (isFromNested) {
+          newAggregations.put(aggPath, newAgg._toAggregation());
+        } else {
+          final Aggregation upgradeAgg =
+              Aggregation.of(
+                  a -> {
+                    if (agg.aggregations() != null) {
+                      a.aggregations(agg.aggregations());
+                    }
+                    return a.composite(newAgg);
+                  });
+          newAggregations.put(aggPath, upgradeAgg);
         }
       }
     }
@@ -178,7 +179,8 @@ public class OpenSearchCompositeAggregationScroller {
   }
 
   private CompositeAggregation updateCompositeAggregation(
-      CompositeAggregation prevCompositeAggregation, Map<String, String> safeAfterKeyMap) {
+      final CompositeAggregation prevCompositeAggregation,
+      final Map<String, String> safeAfterKeyMap) {
     return new CompositeAggregation.Builder()
         .sources(prevCompositeAggregation.sources())
         .size(prevCompositeAggregation.size())
@@ -193,7 +195,7 @@ public class OpenSearchCompositeAggregationScroller {
     Map<String, Aggregate> aggregations = searchResponse.aggregations();
     // find aggregation response
     for (int i = 0; i < pathToAggregation.size() - 1; i++) {
-      Aggregate agg = aggregations.get(pathToAggregation.get(i));
+      final Aggregate agg = aggregations.get(pathToAggregation.get(i));
       if (agg.isNested()) {
         aggregations = agg.nested().aggregations();
       }
@@ -222,7 +224,8 @@ public class OpenSearchCompositeAggregationScroller {
    * @param pathToAggregation a path to where to find the composite aggregation
    * @return the scroller object
    */
-  public OpenSearchCompositeAggregationScroller setPathToAggregation(String... pathToAggregation) {
+  public OpenSearchCompositeAggregationScroller setPathToAggregation(
+      final String... pathToAggregation) {
     this.pathToAggregation = new LinkedList<>(Arrays.asList(pathToAggregation));
     return this;
   }

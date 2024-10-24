@@ -81,9 +81,9 @@ public class ProcessDistributedByVariableInterpreterOS
   private final VariableAggregationServiceOS variableAggregationService;
 
   public ProcessDistributedByVariableInterpreterOS(
-      ProcessViewInterpreterFacadeOS viewInterpreter,
-      DateAggregationServiceOS dateAggregationService,
-      VariableAggregationServiceOS variableAggregationService) {
+      final ProcessViewInterpreterFacadeOS viewInterpreter,
+      final DateAggregationServiceOS dateAggregationService,
+      final VariableAggregationServiceOS variableAggregationService) {
     this.viewInterpreter = viewInterpreter;
     this.dateAggregationService = dateAggregationService;
     this.variableAggregationService = variableAggregationService;
@@ -173,9 +173,9 @@ public class ProcessDistributedByVariableInterpreterOS
 
   @Override
   public List<DistributedByResult> retrieveResult(
-      SearchResponse<RawResult> response,
-      Map<String, Aggregate> aggregations,
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+      final SearchResponse<RawResult> response,
+      final Map<String, Aggregate> aggregations,
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     if (!aggregations.containsKey(PARENT_FILTER_AGGREGATION)) {
       // could not create aggregations, e.g. because baseline is invalid
       return Collections.emptyList();
@@ -199,9 +199,9 @@ public class ProcessDistributedByVariableInterpreterOS
         variableAggregationService.retrieveResultBucketMap(
             filteredParentAgg, bucketMap, getVariableType(context), context.getTimezone());
 
-    List<DistributedByResult> distributedByResults = new ArrayList<>();
+    final List<DistributedByResult> distributedByResults = new ArrayList<>();
 
-    for (Map.Entry<String, Map<String, Aggregate>> keyToAggregationEntry :
+    for (final Map.Entry<String, Map<String, Aggregate>> keyToAggregationEntry :
         bucketAggregations.entrySet()) {
       final CompositeCommandResult.ViewResult viewResult =
           viewInterpreter.retrieveResult(
@@ -280,7 +280,7 @@ public class ProcessDistributedByVariableInterpreterOS
   }
 
   private void addEmptyMissingDistributedByResults(
-      List<DistributedByResult> distributedByResults,
+      final List<DistributedByResult> distributedByResults,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     context.getAllDistributedByKeysAndLabels().entrySet().stream()
         .filter(

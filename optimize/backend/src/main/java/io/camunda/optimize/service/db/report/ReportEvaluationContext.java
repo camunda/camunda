@@ -73,31 +73,31 @@ public class ReportEvaluationContext<R extends ReportDefinitionDto<?>> {
     return this.timezone;
   }
 
-  public void setReportDefinition(R reportDefinition) {
+  public void setReportDefinition(final R reportDefinition) {
     this.reportDefinition = reportDefinition;
   }
 
-  public void setPagination(PaginationDto pagination) {
+  public void setPagination(final PaginationDto pagination) {
     this.pagination = pagination;
   }
 
-  public void setCsvExport(boolean isCsvExport) {
+  public void setCsvExport(final boolean isCsvExport) {
     this.isCsvExport = isCsvExport;
   }
 
-  public void setJsonExport(boolean isJsonExport) {
+  public void setJsonExport(final boolean isJsonExport) {
     this.isJsonExport = isJsonExport;
   }
 
-  public void setHiddenFlowNodeIds(Set<String> hiddenFlowNodeIds) {
+  public void setHiddenFlowNodeIds(final Set<String> hiddenFlowNodeIds) {
     this.hiddenFlowNodeIds = hiddenFlowNodeIds;
   }
 
-  public void setCombinedRangeMinMaxStats(MinMaxStatDto combinedRangeMinMaxStats) {
+  public void setCombinedRangeMinMaxStats(final MinMaxStatDto combinedRangeMinMaxStats) {
     this.combinedRangeMinMaxStats = combinedRangeMinMaxStats;
   }
 
-  public void setTimezone(ZoneId timezone) {
+  public void setTimezone(final ZoneId timezone) {
     this.timezone = timezone;
   }
 

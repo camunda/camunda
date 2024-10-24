@@ -29,13 +29,13 @@ public class CustomAuthorizedReportDefinitionDeserializer
     this.reportDefinitionDeserializer = new CustomReportDefinitionDeserializer(objectMapper);
   }
 
-  public CustomAuthorizedReportDefinitionDeserializer(Class<?> vc) {
+  public CustomAuthorizedReportDefinitionDeserializer(final Class<?> vc) {
     super(vc);
   }
 
   @Override
   public AuthorizedReportDefinitionResponseDto deserialize(
-      JsonParser jp, DeserializationContext ctxt) throws IOException {
+      final JsonParser jp, final DeserializationContext ctxt) throws IOException {
     final JsonNode node = jp.readValueAsTree();
     final ReportDefinitionDto reportDefinitionDto =
         reportDefinitionDeserializer.deserialize(jp, node);
