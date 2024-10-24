@@ -38,19 +38,19 @@ final class BannedInstanceIT {
   public static final String PROCESS_ID = "process";
 
   @TestZeebe
-  private final TestStandaloneBroker zeebe =
+  private static final TestStandaloneBroker ZEEBE =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
           .withProperty("zeebe.clock.controlled", true);
 
-  private final BanningActuator actuator = BanningActuator.of(zeebe);
-  private final ActorClockActuator clock = ActorClockActuator.of(zeebe);
+  private final BanningActuator actuator = BanningActuator.of(ZEEBE);
+  private final ActorClockActuator clock = ActorClockActuator.of(ZEEBE);
 
   @AutoCloseResource private ZeebeClient client;
 
   @BeforeEach
   void beforeEach() {
-    client = zeebe.newClientBuilder().build();
+    client = ZEEBE.newClientBuilder().build();
   }
 
   @Test
