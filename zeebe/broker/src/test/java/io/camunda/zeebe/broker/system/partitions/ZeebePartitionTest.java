@@ -39,6 +39,7 @@ import io.camunda.zeebe.util.health.HealthIssue;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -453,7 +454,8 @@ public class ZeebePartitionTest {
     final var zeebePartitionHealth = captor.getValue();
     zeebePartitionHealth.addFailureListener(failureListener);
 
-    when(transition.getHealthIssue()).thenReturn(HealthIssue.of("it's over"));
+    when(transition.getHealthIssue())
+        .thenReturn(HealthIssue.of("it's over", Instant.ofEpochMilli(1029381923L)));
 
     // when
     final HealthReport healthReport1 = zeebePartitionHealth.getHealthReport();
@@ -480,13 +482,15 @@ public class ZeebePartitionTest {
     final var zeebePartitionHealth = captor.getValue();
     zeebePartitionHealth.addFailureListener(failureListener);
 
-    when(transition.getHealthIssue()).thenReturn(HealthIssue.of("it's over"));
+    when(transition.getHealthIssue())
+        .thenReturn(HealthIssue.of("it's over", Instant.ofEpochMilli(1029381923L)));
 
     // when
     final HealthReport healthReport1 = zeebePartitionHealth.getHealthReport();
     assertThat(healthReport1.getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
 
-    when(transition.getHealthIssue()).thenReturn(HealthIssue.of("it's something else"));
+    when(transition.getHealthIssue())
+        .thenReturn(HealthIssue.of("it's something else", Instant.ofEpochMilli(1029381923L)));
     final HealthReport healthReport2 = zeebePartitionHealth.getHealthReport();
     assertThat(healthReport2.getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
 

@@ -24,6 +24,7 @@ import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -121,7 +122,7 @@ public final class AsyncSnapshotDirector extends Actor
         failure);
 
     resetStateOnFailure(failure);
-    healthReport = HealthReport.unhealthy(this).withIssue(failure);
+    healthReport = HealthReport.unhealthy(this).withIssue(failure, Instant.now());
 
     for (final var listener : listeners) {
       listener.onFailure(healthReport);

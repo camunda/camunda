@@ -17,6 +17,7 @@ import io.camunda.zeebe.util.health.HealthIssue;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 import org.awaitility.Awaitility;
@@ -232,7 +233,7 @@ public class CriticalComponentsHealthMonitorTest {
   @Test
   public void shouldTrackRootIssue() {
     // given
-    final var issue = HealthIssue.of(new IllegalStateException());
+    final var issue = HealthIssue.of(new IllegalStateException(), Instant.ofEpochMilli(19201293L));
     final ControllableComponent component = new ControllableComponent();
     monitor.registerComponent("component", component);
     waitUntilAllDone();
@@ -298,13 +299,15 @@ public class CriticalComponentsHealthMonitorTest {
 
     void setUnhealthy() {
       if (healthReport.getStatus() != HealthStatus.UNHEALTHY) {
-        healthReport = HealthReport.unhealthy(this).withMessage("manually set to status unhealthy");
+        healthReport =
+            HealthReport.unhealthy(this)
+                .withMessage("manually set to status unhealthy", Instant.ofEpochMilli(19201293L));
         failureListeners.forEach((l) -> l.onFailure(healthReport));
       }
     }
 
     void setDead() {
-      setDead(HealthIssue.of("manually set to status dead"));
+      setDead(HealthIssue.of("manually set to status dead", Instant.ofEpochMilli(192201293L)));
     }
 
     void setDead(final HealthIssue issue) {

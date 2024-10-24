@@ -108,11 +108,11 @@ public record HealthReport(
     return new HealthReport(componentName, status, issue, children);
   }
 
-  public HealthReport withMessage(final String message) {
-    return new HealthReport(componentName, status, HealthIssue.of(message), children);
+  public HealthReport withMessage(final String message, final Instant since) {
+    return new HealthReport(componentName, status, HealthIssue.of(message, since), children);
   }
 
-  public HealthReport withIssue(final Throwable e) {
-    return new HealthReport(componentName, status, HealthIssue.of(e), children);
+  public HealthReport withIssue(final Throwable e, final Instant since) {
+    return new HealthReport(componentName, status, HealthIssue.of(e, since), children);
   }
 }

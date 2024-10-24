@@ -9,6 +9,7 @@ package io.camunda.zeebe.util.health;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Instant;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -24,7 +25,7 @@ public class HealthReportTest {
             new HealthReport(
                 "b",
                 HealthStatus.UNHEALTHY,
-                new HealthIssue("storage is full", null, null),
+                new HealthIssue("storage is full", null, null, Instant.ofEpochMilli(19201223L)),
                 Map.of()));
     final var root = HealthReport.fromChildrenStatus("root", children);
 
@@ -32,7 +33,7 @@ public class HealthReportTest {
         new HealthReport(
             "root",
             HealthStatus.UNHEALTHY,
-            new HealthIssue("storage is full", null, null),
+            new HealthIssue("storage is full", null, null, Instant.ofEpochMilli(19201223L)),
             children);
 
     assertThat(root).isPresent();
