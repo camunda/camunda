@@ -26,7 +26,7 @@
     <dependencies>
       <dependency>
         <groupId>org.ow2.asm</groupId>
-        <artifactId>asm</artifactId>
+        <artifactId>asm-commons</artifactId>
         <version>9.7</version>
       </dependency>
     </dependencies>
@@ -208,7 +208,7 @@
           <!-- we're excluding this because it's version 9.6. In dependencyManagement
                we're forcing this to be the 9.7 imported by jetty -->
           <groupId>org.ow2.asm</groupId>
-          <artifactId>asm</artifactId>
+          <artifactId>asm-commons</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
