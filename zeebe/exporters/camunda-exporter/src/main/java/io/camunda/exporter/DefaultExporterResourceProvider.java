@@ -32,6 +32,7 @@ import io.camunda.exporter.handlers.IncidentHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromIncidentHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromJobHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromProcessInstanceHandler;
+import io.camunda.exporter.handlers.ListViewProcessInstanceFromIncidentHandler;
 import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.ListViewVariableFromVariableHandler;
 import io.camunda.exporter.handlers.MappingCreatedHandler;
@@ -235,6 +236,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 templateDescriptorsMap.get(OperationTemplate.class).getFullQualifiedName()),
             new OperationFromIncidentHandler(
                 templateDescriptorsMap.get(OperationTemplate.class).getFullQualifiedName()),
+            new ListViewProcessInstanceFromIncidentHandler(
+                templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName()),
             new MappingCreatedHandler(
                 indexDescriptorsMap.get(MappingIndex.class).getFullQualifiedName()));
   }

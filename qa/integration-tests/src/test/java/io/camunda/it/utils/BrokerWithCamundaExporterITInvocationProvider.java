@@ -116,6 +116,7 @@ public class BrokerWithCamundaExporterITInvocationProvider
                               "http://" + elasticsearchContainer.getHttpHostAddress())
                           .withBrokerConfig(cfg -> cfg.getGateway().setEnable(true))
                           .withBrokerConfig(additionalBrokerConfig)
+                          .withRecordingExporter(true)
                           .withProperty("camunda.rest.query.enabled", true)
                           .withProperty(
                               "camunda.database.url",
