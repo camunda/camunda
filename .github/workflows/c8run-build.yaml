@@ -164,10 +164,10 @@ jobs:
           name: zeebe-build-ubuntu-latest
 
       - name: Extract zip file on Windows
-        run: tar -xf ./zeebe-build-ubuntu-latest.zip
+        run: tar -xf ..\zeebe-build-ubuntu-latest.zip
 
       - name: Delete zip file
-        run: del .\zeebe-build-ubuntu-latest.zip
+        run: del ..\zeebe-build-ubuntu-latest.zip
 
       - name: List inner zip file
         id: list-inner-zip
