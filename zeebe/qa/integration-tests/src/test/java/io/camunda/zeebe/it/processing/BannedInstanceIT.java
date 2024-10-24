@@ -147,8 +147,10 @@ final class BannedInstanceIT {
 
     // then
     assertThat(
-            RecordingExporter.timerRecords(TimerIntent.TRIGGER)
-                .withProcessInstanceKey(processInstanceKey)
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .timerRecords()
+                .withIntent(TimerIntent.TRIGGER)
                 .exists())
         .describedAs(
             "Expected not to find trigger event for timer because the process instance is terminated")
