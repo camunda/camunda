@@ -23,7 +23,7 @@ public interface DecisionViewInterpreter
   @Override
   default ViewProperty getViewProperty(
       final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
-    List<ViewProperty> properties =
+    final List<ViewProperty> properties =
         context.getPlan().getView().getDecisionViewDto().getProperties();
     return properties != null && !properties.isEmpty() ? properties.get(0) : null;
   }

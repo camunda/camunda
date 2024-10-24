@@ -27,7 +27,7 @@ import io.camunda.optimize.upgrade.os.SchemaUpgradeClientOS;
 import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import jakarta.ws.rs.NotSupportedException;
 
-public class SchemaUpgradeClientFactory {
+public final class SchemaUpgradeClientFactory {
 
   private SchemaUpgradeClientFactory() {}
 
@@ -38,7 +38,7 @@ public class SchemaUpgradeClientFactory {
           (OptimizeElasticsearchClient) upgradeDependencies.databaseClient();
       final ElasticSearchMetadataService metadataService =
           (ElasticSearchMetadataService) upgradeDependencies.metadataService();
-      MappingMetadataUtilES mappingUtil = new MappingMetadataUtilES(esClient);
+      final MappingMetadataUtilES mappingUtil = new MappingMetadataUtilES(esClient);
       return new SchemaUpgradeClientES(
           new ElasticSearchSchemaManager(
               metadataService,
@@ -83,7 +83,7 @@ public class SchemaUpgradeClientFactory {
       final ConfigurationService configurationService,
       final DatabaseClient dbClient) {
 
-    if (dbClient instanceof OptimizeElasticsearchClient esClient) {
+    if (dbClient instanceof final OptimizeElasticsearchClient esClient) {
       return new SchemaUpgradeClientES(
           (ElasticSearchSchemaManager) schemaManager,
           (ElasticSearchMetadataService) metadataService,
@@ -91,7 +91,7 @@ public class SchemaUpgradeClientFactory {
           new ObjectMapperFactory(
                   new OptimizeDateTimeFormatterFactory().getObject(), configurationService)
               .createOptimizeMapper());
-    } else if (dbClient instanceof OptimizeOpenSearchClient osClient) {
+    } else if (dbClient instanceof final OptimizeOpenSearchClient osClient) {
       return new SchemaUpgradeClientOS(
           (OpenSearchSchemaManager) schemaManager,
           (OpenSearchMetadataService) metadataService,

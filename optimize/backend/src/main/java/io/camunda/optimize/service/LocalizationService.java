@@ -45,7 +45,7 @@ public class LocalizationService implements ConfigurationReloadable {
   private static final String REPORT_GROUPING_FIELD = "groupBy";
   private static final String REPORT_VIEW_FIELD = "view";
   private static final String MISSING_ASSIGNEE_FIELD = "missingAssignee";
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(LocalizationService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(LocalizationService.class);
 
   private final ObjectMapper objectMapper = new ObjectMapper();
   private final ConfigurationService configurationService;
@@ -139,7 +139,7 @@ public class LocalizationService implements ConfigurationReloadable {
       return locale;
     } else {
       final String fallbackLocale = configurationService.getFallbackLocale();
-      log.error(
+      LOG.error(
           "No valid localization files found for given locale [{}]. Defaulting to fallback locale [{}] instead.",
           locale,
           fallbackLocale);
@@ -225,13 +225,13 @@ public class LocalizationService implements ConfigurationReloadable {
                     try {
                       return Optional.of(ByteStreams.toByteArray(inputStream));
                     } catch (final IOException e) {
-                      log.error(
+                      LOG.error(
                           "Failed reading localization file {} from classpath", localeFileName, e);
                       return Optional.empty();
                     }
                   });
     } catch (final IOException e) {
-      log.debug("Failed closing stream of locale file {}.", localeFileName, e);
+      LOG.debug("Failed closing stream of locale file {}.", localeFileName, e);
     }
     return result.orElseThrow(
         () -> new OptimizeRuntimeException("Could not load localization file: " + localeFileName));

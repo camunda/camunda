@@ -56,7 +56,7 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ProcessInstanceRepositoryES.class);
   private final ConfigurationService configurationService;
   private final OptimizeElasticsearchClient esClient;
@@ -65,11 +65,11 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
   private final TaskRepositoryES taskRepositoryES;
 
   public ProcessInstanceRepositoryES(
-      ConfigurationService configurationService,
-      OptimizeElasticsearchClient esClient,
-      ObjectMapper objectMapper,
-      DateTimeFormatter dateTimeFormatter,
-      TaskRepositoryES taskRepositoryES) {
+      final ConfigurationService configurationService,
+      final OptimizeElasticsearchClient esClient,
+      final ObjectMapper objectMapper,
+      final DateTimeFormatter dateTimeFormatter,
+      final TaskRepositoryES taskRepositoryES) {
     this.configurationService = configurationService;
     this.esClient = esClient;
     this.objectMapper = objectMapper;
@@ -80,7 +80,7 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
   @Override
   public void deleteByIds(
       final String index, final String itemName, final List<String> processInstanceIds) {
-    BulkRequest bulkRequest =
+    final BulkRequest bulkRequest =
         BulkRequest.of(
             b ->
                 b.operations(
@@ -129,14 +129,14 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
     try {
       response = esClient.search(searchRequest, Object.class);
       return !response.hits().hits().isEmpty();
-    } catch (ElasticsearchException e) {
+    } catch (final ElasticsearchException e) {
       // If the index doesn't exist yet, then this exception is thrown. No need to worry, just
       // return false
       return false;
     } catch (final IOException e2) {
       // If this exception is thrown, sth went wrong with ElasticSearch, so returning false and
       // logging it
-      log.warn(
+      LOG.warn(
           "Error with ElasticSearch thrown while querying for started process instances, returning false! The "
               + "error was: "
               + e2.getMessage());
@@ -162,7 +162,7 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
           esClient,
           configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds(),
           previousPage.getLimit());
-    } catch (ElasticsearchException e) {
+    } catch (final ElasticsearchException e) {
       if (e.status() == NOT_FOUND.code()) {
         // this error occurs when the scroll id expired in the meantime, thus just restart it
         return firstPageFetchFunction.get();
@@ -254,7 +254,7 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
       throw new OptimizeRuntimeException("Could not obtain process instance ids.", e);
     } catch (final ElasticsearchException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
-        log.info(
+        LOG.info(
             "Was not able to obtain process instance IDs because instance index {} does not exist. Returning empty result.",
             getProcessInstanceIndexAliasName(processDefinitionKey));
         result.setPagingState(null);

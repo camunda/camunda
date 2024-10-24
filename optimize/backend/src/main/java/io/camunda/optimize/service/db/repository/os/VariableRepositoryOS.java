@@ -131,7 +131,7 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class VariableRepositoryOS implements VariableRepository {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(VariableRepositoryOS.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(VariableRepositoryOS.class);
   private final OptimizeOpenSearchClient osClient;
   private final OptimizeIndexNameService indexNameService;
   private final ConfigurationService configurationService;
@@ -141,13 +141,13 @@ public class VariableRepositoryOS implements VariableRepository {
   private final ProcessQueryFilterEnhancerOS processQueryFilterEnhancer;
 
   public VariableRepositoryOS(
-      OptimizeOpenSearchClient osClient,
-      OptimizeIndexNameService indexNameService,
-      ConfigurationService configurationService,
-      DateTimeFormatter dateTimeFormatter,
-      DecisionDefinitionReader decisionDefinitionReader,
-      ProcessDefinitionReader processDefinitionReader,
-      ProcessQueryFilterEnhancerOS processQueryFilterEnhancer) {
+      final OptimizeOpenSearchClient osClient,
+      final OptimizeIndexNameService indexNameService,
+      final ConfigurationService configurationService,
+      final DateTimeFormatter dateTimeFormatter,
+      final DecisionDefinitionReader decisionDefinitionReader,
+      final ProcessDefinitionReader processDefinitionReader,
+      final ProcessQueryFilterEnhancerOS processQueryFilterEnhancer) {
     this.osClient = osClient;
     this.indexNameService = indexNameService;
     this.configurationService = configurationService;
@@ -296,7 +296,7 @@ public class VariableRepositoryOS implements VariableRepository {
       scrollResp =
           osClient.retrieveAllScrollResults(searchRequest, VariableUpdateInstanceDto.class);
     } catch (final IOException e) {
-      log.error("Was not able to retrieve private entities!", e);
+      LOG.error("Was not able to retrieve private entities!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve private entities!", e);
     }
 
@@ -376,7 +376,7 @@ public class VariableRepositoryOS implements VariableRepository {
       return extractVariableValues(aggregations, requestDto, variablesPath);
     } catch (final RuntimeException e) {
       if (isInstanceIndexNotFoundException(DECISION, e)) {
-        log.info(
+        LOG.info(
             "Was not able to fetch variable values because no instance index with alias {} exists. "
                 + "Returning empty list.",
             getDecisionInstanceIndexAliasName(requestDto.getDecisionDefinitionKey()));
@@ -440,7 +440,7 @@ public class VariableRepositoryOS implements VariableRepository {
       final Supplier<co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery.Builder>
           baseQueryBuilderSupplier,
       final Map<String, DefinitionVariableLabelsDto> definitionLabelsDtos) {
-    log.debug(
+    LOG.debug(
         "getVariableNamesForInstancesMatchingQuery: Functionality not implemented for OpenSearch");
     return List.of();
   }
@@ -483,20 +483,20 @@ public class VariableRepositoryOS implements VariableRepository {
             .size(configurationService.getOpenSearchConfiguration().getAggregationBucketLimit())
             .build();
 
-    NestedAggregation nestedAgg = new NestedAggregation.Builder().path(VARIABLES).build();
+    final NestedAggregation nestedAgg = new NestedAggregation.Builder().path(VARIABLES).build();
 
-    Aggregation userTasksAgg =
+    final Aggregation userTasksAgg =
         AggregationDSL.withSubaggregations(
             nestedAgg,
             Collections.singletonMap(
                 VAR_NAME_AND_TYPE_COMPOSITE_AGG, varNameAndTypeAgg._toAggregation()));
 
-    List<String> indicesToTarget =
+    final List<String> indicesToTarget =
         processDefinitionKeysToTarget.stream()
             .map(InstanceIndexUtil::getProcessInstanceIndexAliasName)
             .toList();
 
-    List<ProcessVariableNameResponseDto> variableNames = new ArrayList<>();
+    final List<ProcessVariableNameResponseDto> variableNames = new ArrayList<>();
     final OpenSearchCompositeAggregationScroller compositeAggregationScroller =
         OpenSearchCompositeAggregationScroller.create()
             .setClient(osClient)
@@ -562,9 +562,9 @@ public class VariableRepositoryOS implements VariableRepository {
       final Map<String, Aggregate> aggregations = searchResponse.aggregations();
 
       return extractVariableValues(aggregations, requestDto);
-    } catch (RuntimeException e) {
+    } catch (final RuntimeException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
-        log.info(
+        LOG.info(
             "Was not able to fetch variable values because no instance indices exist. Returning empty list.");
         return Collections.emptyList();
       }
@@ -594,9 +594,9 @@ public class VariableRepositoryOS implements VariableRepository {
         allValues.add(String.valueOf(valueBucket.key()));
       }
     } else if (filteredVariables.aggregations().get(VALUE_AGGREGATION).isLterms()) {
-      LongTermsAggregate valueTerms =
+      final LongTermsAggregate valueTerms =
           filteredVariables.aggregations().get(VALUE_AGGREGATION).lterms();
-      for (LongTermsBucket valueBucket : valueTerms.buckets().array()) {
+      for (final LongTermsBucket valueBucket : valueTerms.buckets().array()) {
         // This is necessary because if this is e.g. a date, the keyAsString() will return the
         // timestamp, if it is just a number, keyAsString will be null
         if (valueBucket.keyAsString() != null) {
@@ -607,7 +607,7 @@ public class VariableRepositoryOS implements VariableRepository {
       }
     }
 
-    int lastIndex = Math.min(allValues.size(), resultOffset + numResults);
+    final int lastIndex = Math.min(allValues.size(), resultOffset + numResults);
     return allValues.subList(resultOffset, lastIndex);
   }
 
@@ -664,19 +664,20 @@ public class VariableRepositoryOS implements VariableRepository {
 
   private ContainerBuilder getVariableValueFilterAggregation(
       final String variableName, final VariableType type, final String valueFilter) {
-    Query filterQuery1 = QueryDSL.term(getNestedVariableNameField(), variableName);
-    Query filterQuery2 = QueryDSL.term(getNestedVariableTypeField(), type.getId());
-    Query filterQuery = addValueFilter(type, valueFilter, QueryDSL.and(filterQuery1, filterQuery2));
+    final Query filterQuery1 = QueryDSL.term(getNestedVariableNameField(), variableName);
+    final Query filterQuery2 = QueryDSL.term(getNestedVariableTypeField(), type.getId());
+    final Query filterQuery =
+        addValueFilter(type, valueFilter, QueryDSL.and(filterQuery1, filterQuery2));
     return new Aggregation.Builder().filter(filterQuery);
   }
 
   private Query addValueFilter(
       final VariableType variableType, final String valueFilter, final Query filterQuery) {
-    boolean isStringVariable = VariableType.STRING.equals(variableType);
-    boolean valueFilterIsConfigured = valueFilter != null && !valueFilter.isEmpty();
+    final boolean isStringVariable = VariableType.STRING.equals(variableType);
+    final boolean valueFilterIsConfigured = valueFilter != null && !valueFilter.isEmpty();
     if (isStringVariable && valueFilterIsConfigured) {
       final String lowerCaseValue = valueFilter.toLowerCase(Locale.ENGLISH);
-      Query filter =
+      final Query filter =
           // using the slow wildcard query for uncommonly large filter strings (>10 chars)
           (lowerCaseValue.length() > MAX_GRAM)
               ? QueryDSL.wildcardQuery(

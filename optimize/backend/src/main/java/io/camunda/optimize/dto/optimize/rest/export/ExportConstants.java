@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.dto.optimize.rest.export;
 
-public class ExportConstants {
+public final class ExportConstants {
 
   public static final String SINGLE_PROCESS_REPORT_STRING = "single_process_report";
   public static final String SINGLE_DECISION_REPORT_STRING = "single_decision_report";

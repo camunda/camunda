@@ -55,18 +55,19 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class CollectionWriterOS implements CollectionWriter {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(CollectionWriterOS.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(CollectionWriterOS.class);
   private final OptimizeOpenSearchClient osClient;
   private final DateTimeFormatter formatter;
 
-  public CollectionWriterOS(OptimizeOpenSearchClient osClient, DateTimeFormatter formatter) {
+  public CollectionWriterOS(
+      final OptimizeOpenSearchClient osClient, final DateTimeFormatter formatter) {
     this.osClient = osClient;
     this.formatter = formatter;
   }
 
   @Override
   public void updateCollection(final CollectionDefinitionUpdateDto collection, final String id) {
-    log.debug("Updating collection with id [{}] in OpenSearch", id);
+    LOG.debug("Updating collection with id [{}] in OpenSearch", id);
 
     final UpdateRequest.Builder request =
         new UpdateRequest.Builder<>()
@@ -83,7 +84,7 @@ public class CollectionWriterOS implements CollectionWriter {
     final UpdateResponse updateResponse = osClient.update(request, errorMessage);
 
     if (updateResponse.shards().failed().intValue() > 0) {
-      log.error(
+      LOG.error(
           "Was not able to update collection with id [{}] and name [{}].",
           id,
           collection.getName());
@@ -93,7 +94,7 @@ public class CollectionWriterOS implements CollectionWriter {
 
   @Override
   public void deleteCollection(final String collectionId) {
-    log.debug("Deleting collection with id [{}]", collectionId);
+    LOG.debug("Deleting collection with id [{}]", collectionId);
     final DeleteRequest.Builder request =
         new DeleteRequest.Builder()
             .index(COLLECTION_INDEX_NAME)
@@ -110,7 +111,7 @@ public class CollectionWriterOS implements CollectionWriter {
               "Could not delete collection with id [%s]. Collection does not exist. "
                   + "Maybe it was already deleted by someone else?",
               collectionId);
-      log.error(message);
+      LOG.error(message);
       throw new NotFoundException(message);
     }
   }
@@ -138,7 +139,7 @@ public class CollectionWriterOS implements CollectionWriter {
           String.format(
               "Was not able to add scope entries to collection with id [%s]. Collection does not exist!",
               collectionId);
-      log.error(message);
+      LOG.error(message);
       throw new NotFoundException(message);
     }
   }
@@ -146,7 +147,7 @@ public class CollectionWriterOS implements CollectionWriter {
   @Override
   public void deleteScopeEntryFromAllCollections(final String scopeEntryId) {
     final String updateItem = String.format("collection scope entry with ID [%s].", scopeEntryId);
-    log.info("Removing {} from all collections.", updateItem);
+    LOG.info("Removing {} from all collections.", updateItem);
 
     final Script removeScopeEntryFromCollectionsScript =
         OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams(
@@ -228,7 +229,7 @@ public class CollectionWriterOS implements CollectionWriter {
 
     if (updateResponse.result().equals(Result.NoOp)) {
       final String message = String.format("Scope entry for id [%s] doesn't exist.", scopeEntryId);
-      log.warn(message);
+      LOG.warn(message);
       throw new NotFoundException(message);
     }
   }
@@ -238,7 +239,7 @@ public class CollectionWriterOS implements CollectionWriter {
       final String collectionId,
       final List<CollectionRoleRequestDto> rolesToAdd,
       final String userId) {
-    log.debug(
+    LOG.debug(
         "Adding roles {} to collection with id [{}] in OpenSearch.", rolesToAdd, collectionId);
 
     final Map<String, JsonData> params = new HashMap<>();
@@ -258,7 +259,7 @@ public class CollectionWriterOS implements CollectionWriter {
       final String message =
           String.format(
               "One of the roles %s already exists in collection [%s].", rolesToAdd, collectionId);
-      log.warn(message);
+      LOG.warn(message);
       throw new OptimizeCollectionConflictException(message);
     }
   }
@@ -270,7 +271,7 @@ public class CollectionWriterOS implements CollectionWriter {
       final CollectionRoleUpdateRequestDto roleUpdateDto,
       final String userId)
       throws OptimizeConflictException {
-    log.debug(
+    LOG.debug(
         "Updating the role [{}] in collection with id [{}] in OpenSearch.",
         roleEntryId,
         collectionId);
@@ -291,7 +292,7 @@ public class CollectionWriterOS implements CollectionWriter {
           String.format(
               "Was not able to update role with id [%s] on collection with id [%s]. Collection or role does not exist!",
               roleEntryId, collectionId);
-      log.error(errorMessage, e);
+      LOG.error(errorMessage, e);
       throw new NotFoundException(errorMessage, e);
     }
 
@@ -300,7 +301,7 @@ public class CollectionWriterOS implements CollectionWriter {
           String.format(
               "Cannot assign lower privileged role to last [%s] of collection [%s].",
               RoleType.MANAGER, collectionId);
-      log.warn(message);
+      LOG.warn(message);
       throw new OptimizeCollectionConflictException(message);
     }
   }
@@ -327,10 +328,10 @@ public class CollectionWriterOS implements CollectionWriter {
 
     if (!indexResponse.result().equals(Result.Created)) {
       final String message = "Could not write collection to Opensearch. ";
-      log.error(message);
+      LOG.error(message);
       throw new OptimizeRuntimeException(message);
     }
-    log.debug("Collection with id [{}] has successfully been created.", id);
+    LOG.debug("Collection with id [{}] has successfully been created.", id);
   }
 
   private UpdateResponse executeUpdateRequest(
@@ -347,7 +348,7 @@ public class CollectionWriterOS implements CollectionWriter {
 
     if (updateResponse.shards().failed().intValue() > 0) {
       final String message = String.format(errorMessage, collectionId);
-      log.error(message, collectionId);
+      LOG.error(message, collectionId);
       throw new OptimizeRuntimeException(message);
     }
     return updateResponse;
@@ -356,7 +357,7 @@ public class CollectionWriterOS implements CollectionWriter {
   private void removeRoleFromCollectionUnlessIsLastManager(
       final String collectionId, final String roleEntryId, final Map<String, JsonData> params)
       throws OptimizeConflictException {
-    log.debug(
+    LOG.debug(
         "Deleting the role [{}] in collection with id [{}] in OpenSearch.",
         roleEntryId,
         collectionId);
@@ -376,7 +377,7 @@ public class CollectionWriterOS implements CollectionWriter {
           String.format(
               "Was not able to update role with id [%s] on collection with id [%s]. Collection or role does not exist!",
               roleEntryId, collectionId);
-      log.error(errorMessage, e);
+      LOG.error(errorMessage, e);
       throw new NotFoundException(errorMessage, e);
     }
 
@@ -384,7 +385,7 @@ public class CollectionWriterOS implements CollectionWriter {
       final String message =
           String.format(
               "Cannot delete last [%s] of collection [%s].", RoleType.MANAGER, collectionId);
-      log.warn(message);
+      LOG.warn(message);
       throw new OptimizeCollectionConflictException(message);
     }
   }

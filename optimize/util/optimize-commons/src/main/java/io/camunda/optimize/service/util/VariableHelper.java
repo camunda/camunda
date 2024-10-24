@@ -11,7 +11,7 @@ import io.camunda.optimize.dto.optimize.ReportConstants;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 import java.util.Optional;
 
-public class VariableHelper {
+public final class VariableHelper {
 
   private VariableHelper() {}
 

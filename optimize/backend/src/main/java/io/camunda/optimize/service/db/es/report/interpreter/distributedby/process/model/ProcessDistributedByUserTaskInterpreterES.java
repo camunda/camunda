@@ -36,9 +36,9 @@ public class ProcessDistributedByUserTaskInterpreterES
   private final ProcessViewInterpreterFacadeES viewInterpreter;
 
   public ProcessDistributedByUserTaskInterpreterES(
-      ConfigurationService configurationService,
-      DefinitionService definitionService,
-      ProcessViewInterpreterFacadeES viewInterpreter) {
+      final ConfigurationService configurationService,
+      final DefinitionService definitionService,
+      final ProcessViewInterpreterFacadeES viewInterpreter) {
     this.configurationService = configurationService;
     this.definitionService = definitionService;
     this.viewInterpreter = viewInterpreter;
@@ -56,7 +56,7 @@ public class ProcessDistributedByUserTaskInterpreterES
 
   @Override
   protected Map<String, FlowNodeDataDto> extractModelElementData(
-      DefinitionOptimizeResponseDto def) {
+      final DefinitionOptimizeResponseDto def) {
     return ((ProcessDefinitionOptimizeDto) def)
         .getUserTaskData().stream().collect(toMap(FlowNodeDataDto::getId, Function.identity()));
   }

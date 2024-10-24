@@ -31,7 +31,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class CollectionRoleService {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(CollectionRoleService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(CollectionRoleService.class);
   private final AuthorizedCollectionService authorizedCollectionService;
   private final CollectionWriter collectionWriter;
   private final CollectionReader collectionReader;
@@ -123,9 +123,9 @@ public class CollectionRoleService {
       try {
         collectionWriter.removeRoleFromCollectionUnlessIsLastManager(collectionId, roleId, userId);
       } catch (final NotFoundException e) {
-        log.debug("Could not delete role with id {}. The role is already deleted.", roleId);
+        LOG.debug("Could not delete role with id {}. The role is already deleted.", roleId);
       } catch (final OptimizeCollectionConflictException e) {
-        log.debug(
+        LOG.debug(
             "Could not delete role with id {}, because the user with that id is a manager.",
             roleId);
       }
@@ -136,7 +136,7 @@ public class CollectionRoleService {
     final Optional<CollectionDefinitionDto> collectionDefinition =
         collectionReader.getCollection(collectionId);
     if (collectionDefinition.isEmpty()) {
-      log.error(
+      LOG.error(
           "Was not able to retrieve collection with id [{}] from Elasticsearch.", collectionId);
       throw new NotFoundException(
           "Collection does not exist! Tried to retrieve collection with id " + collectionId);
@@ -158,7 +158,7 @@ public class CollectionRoleService {
                     .map(identity -> CollectionRoleResponseDto.from(roleDto, identity))
                     .orElseGet(
                         () -> {
-                          log.info(
+                          LOG.info(
                               "Identity with id {} is present in roles but does not exist anymore.",
                               roleDto.getId());
                           return CollectionRoleResponseDto.from(

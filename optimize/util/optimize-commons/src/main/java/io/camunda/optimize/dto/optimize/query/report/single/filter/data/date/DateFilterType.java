@@ -16,8 +16,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 public enum DateFilterType {
   FIXED(FIXED_DATE_FILTER),
   RELATIVE(RELATIVE_DATE_FILTER),
-  ROLLING(ROLLING_DATE_FILTER),
-  ;
+  ROLLING(ROLLING_DATE_FILTER);
 
   private final String id;
 

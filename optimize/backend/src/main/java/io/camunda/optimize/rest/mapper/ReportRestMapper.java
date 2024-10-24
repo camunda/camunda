@@ -39,7 +39,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ReportRestMapper {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ReportRestMapper.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ReportRestMapper.class);
   private final AbstractIdentityService identityService;
   private final LocalizationService localizationService;
 

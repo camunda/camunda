@@ -32,7 +32,7 @@ import org.springframework.stereotype.Component;
 public class CCSaaSM2MTokenProvider extends AbstractCCSaaSClient {
 
   private static final String TOKEN_REQUEST_GRANT_TYPE = "client_credentials";
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(CCSaaSM2MTokenProvider.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(CCSaaSM2MTokenProvider.class);
 
   protected CCSaaSM2MTokenProvider(
       final ObjectMapper objectMapper, final ConfigurationService configurationService) {
@@ -47,7 +47,7 @@ public class CCSaaSM2MTokenProvider extends AbstractCCSaaSClient {
             .clientId(getM2MClientId())
             .clientSecret(getM2MClientSecret())
             .build();
-    log.info("Requesting M2M token");
+    LOG.info("Requesting M2M token");
     try {
       final HttpPost request = new HttpPost(getTokenProviderUrl());
       final StringEntity notificationRequestBody =

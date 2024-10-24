@@ -33,13 +33,13 @@ import org.slf4j.Logger;
 
 public abstract class SchemaUpgradeClient<CLIENT extends DatabaseClient, BUILDER> {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(SchemaUpgradeClient.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(SchemaUpgradeClient.class);
+  public DatabaseType databaseType;
   // expected suffix: hyphen and numbers at end of index name
   protected final Pattern indexSuffixPattern = Pattern.compile("-\\d+$");
   protected final DatabaseSchemaManager<CLIENT, BUILDER> schemaManager;
   protected final DatabaseMetadataService<CLIENT> metadataService;
   protected final CLIENT databaseClient;
-  public DatabaseType databaseType;
   protected final TaskRepository taskRepository;
 
   public SchemaUpgradeClient(
@@ -111,7 +111,7 @@ public abstract class SchemaUpgradeClient<CLIENT extends DatabaseClient, BUILDER
     if (indexExists(indexName)) {
       try {
         databaseClient.deleteIndexByRawIndexNames(indexName);
-      } catch (Exception e) {
+      } catch (final Exception e) {
         throw new UpgradeRuntimeException(
             String.format("Could not delete index [%s]!", indexName), e);
       }
@@ -122,7 +122,7 @@ public abstract class SchemaUpgradeClient<CLIENT extends DatabaseClient, BUILDER
   public Set<String> getAliases(final String aliasName) {
     try {
       return databaseClient.getAllIndicesForAlias(aliasName);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
     }
   }
@@ -158,7 +158,7 @@ public abstract class SchemaUpgradeClient<CLIENT extends DatabaseClient, BUILDER
   }
 
   public void updateOptimizeVersion(final UpgradePlan upgradePlan) {
-    log.info(
+    LOG.info(
         "Updating Optimize data structure version tag from {} to {}.",
         upgradePlan.getFromVersion().toString(),
         upgradePlan.getToVersion().toString());
@@ -176,14 +176,14 @@ public abstract class SchemaUpgradeClient<CLIENT extends DatabaseClient, BUILDER
   }
 
   public boolean indexExists(final String indexName) {
-    log.debug("Checking if index exists [{}].", indexName);
+    LOG.debug("Checking if index exists [{}].", indexName);
     return schemaManager.indexExists(databaseClient, indexName);
   }
 
   public void waitUntilTaskIsFinished(final String taskId, final String taskIdentifier) {
     try {
       taskRepository.waitUntilTaskIsFinished(taskId, taskIdentifier);
-    } catch (OptimizeRuntimeException e) {
+    } catch (final OptimizeRuntimeException e) {
       throw new UpgradeRuntimeException(e.getCause().getMessage(), e);
     }
   }
@@ -193,11 +193,11 @@ public abstract class SchemaUpgradeClient<CLIENT extends DatabaseClient, BUILDER
       final long sourceIndexDocCount = databaseClient.countWithoutPrefix(sourceIndex);
       final long targetIndexDocCount = databaseClient.countWithoutPrefix(targetIndex);
       return sourceIndexDocCount == targetIndexDocCount;
-    } catch (Exception e) {
+    } catch (final Exception e) {
       final String errorMessage =
           String.format(
               "Could not compare doc counts of index [%s] and [%s].", sourceIndex, targetIndex);
-      log.warn(errorMessage, e);
+      LOG.warn(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
   }
@@ -228,7 +228,7 @@ public abstract class SchemaUpgradeClient<CLIENT extends DatabaseClient, BUILDER
 
   protected void applyAdditionalReadOnlyAliasesToIndex(
       final Set<String> additionalReadAliases, final String indexName) {
-    for (String alias : additionalReadAliases) {
+    for (final String alias : additionalReadAliases) {
       addAlias(getIndexNameService().getOptimizeIndexAliasForIndex(alias), indexName, false);
     }
   }
@@ -237,7 +237,7 @@ public abstract class SchemaUpgradeClient<CLIENT extends DatabaseClient, BUILDER
       throws UpgradeRuntimeException, IOException {
     try {
       taskRepository.validateTaskResponse(taskRepository.getTaskResponse(reindexTaskId));
-    } catch (OptimizeRuntimeException ex) {
+    } catch (final OptimizeRuntimeException ex) {
       throw new UpgradeRuntimeException(
           String.format(
               "Found pending task with id %s, but it is not in a completable state", reindexTaskId),
@@ -246,6 +246,6 @@ public abstract class SchemaUpgradeClient<CLIENT extends DatabaseClient, BUILDER
   }
 
   public DatabaseType getDatabaseType() {
-    return this.databaseType;
+    return databaseType;
   }
 }

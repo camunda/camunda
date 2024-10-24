@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class EntityExportService {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(EntityExportService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(EntityExportService.class);
   private final ReportExportService reportExportService;
   private final DashboardExportService dashboardExportService;
 

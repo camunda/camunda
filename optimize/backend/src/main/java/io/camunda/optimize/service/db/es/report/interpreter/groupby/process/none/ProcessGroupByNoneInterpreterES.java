@@ -37,8 +37,8 @@ public class ProcessGroupByNoneInterpreterES extends AbstractProcessGroupByInter
   private final ProcessViewInterpreterFacadeES viewInterpreter;
 
   public ProcessGroupByNoneInterpreterES(
-      ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
-      ProcessViewInterpreterFacadeES viewInterpreter) {
+      final ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
+      final ProcessViewInterpreterFacadeES viewInterpreter) {
     this.distributedByInterpreter = distributedByInterpreter;
     this.viewInterpreter = viewInterpreter;
   }
@@ -63,7 +63,7 @@ public class ProcessGroupByNoneInterpreterES extends AbstractProcessGroupByInter
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     final List<CompositeCommandResult.DistributedByResult> distributions =
         distributedByInterpreter.retrieveResult(response, response.aggregations(), context);
-    CompositeCommandResult.GroupByResult groupByResult =
+    final CompositeCommandResult.GroupByResult groupByResult =
         CompositeCommandResult.GroupByResult.createGroupByNone(distributions);
     compositeCommandResult.setGroup(groupByResult);
   }

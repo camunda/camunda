@@ -43,7 +43,7 @@ import org.opensearch.client.opensearch._types.aggregations.StringTermsAggregate
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
 import org.opensearch.client.opensearch._types.aggregations.SumAggregate;
 
-public class AggregateHelperOS {
+public final class AggregateHelperOS {
 
   private AggregateHelperOS() {}
 

@@ -24,7 +24,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.UnaryOperator;
 
-public class DefinitionQueryUtilES {
+public final class DefinitionQueryUtilES {
 
   private DefinitionQueryUtilES() {}
 

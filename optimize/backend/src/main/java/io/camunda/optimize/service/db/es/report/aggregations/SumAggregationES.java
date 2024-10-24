@@ -33,7 +33,7 @@ public class SumAggregationES extends AggregationStrategyES<Builder> {
   @Override
   public Pair<String, ContainerBuilder> createAggregationBuilderForAggregation(
       final String customIdentifier, final Script script, final String... field) {
-    Aggregation.Builder builder = new Aggregation.Builder();
+    final Aggregation.Builder builder = new Aggregation.Builder();
     return Pair.of(
         createAggregationName(customIdentifier, SUM_AGGREGATION),
         builder.sum(

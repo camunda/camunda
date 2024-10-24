@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.dto.optimize.query.report;
 
-public class FilterOperatorConstants {
+public final class FilterOperatorConstants {
 
   public static final String IN = "in";
   public static final String NOT_IN = "not in";

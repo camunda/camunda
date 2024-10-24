@@ -33,7 +33,7 @@ public abstract class AbstractGroupByFlowNodeInterpreterES
   protected Map<String, ContainerBuilder> createFilteredFlowNodeAggregation(
       final ExecutionContext<ProcessReportDataDto, ?> context,
       final Map<String, Aggregation.Builder.ContainerBuilder> subAggregations) {
-    Aggregation.Builder.ContainerBuilder builder =
+    final Aggregation.Builder.ContainerBuilder builder =
         new Aggregation.Builder()
             .nested(n -> n.path(FLOW_NODE_INSTANCES))
             .aggregations(

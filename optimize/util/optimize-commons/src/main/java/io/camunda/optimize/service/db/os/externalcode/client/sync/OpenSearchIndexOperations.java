@@ -39,7 +39,7 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
 
   public static final String NO_REPLICA = "0";
   public static final String NO_REFRESH = "-1";
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(OpenSearchIndexOperations.class);
 
   public OpenSearchIndexOperations(
@@ -105,10 +105,10 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
     try {
       final RefreshResponse refresh = openSearchClient.indices().refresh(refreshRequest);
       if (!refresh.shards().failures().isEmpty()) {
-        log.warn("Unable to refresh indices: {}", indexPattern);
+        LOG.warn("Unable to refresh indices: {}", indexPattern);
       }
     } catch (final Exception ex) {
-      log.warn(String.format("Unable to refresh indices: %s", indexPattern), ex);
+      LOG.warn(String.format("Unable to refresh indices: %s", indexPattern), ex);
     }
   }
 
@@ -118,10 +118,10 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
     try {
       final RefreshResponse refresh = openSearchClient.indices().refresh(refreshRequest);
       if (!refresh.shards().failures().isEmpty()) {
-        log.warn("Unable to refresh indices: {}", List.of(indexPatterns));
+        LOG.warn("Unable to refresh indices: {}", List.of(indexPatterns));
       }
     } catch (final Exception ex) {
-      log.warn(String.format("Unable to refresh indices: %s", List.of(indexPatterns)), ex);
+      LOG.warn(String.format("Unable to refresh indices: %s", List.of(indexPatterns)), ex);
     }
   }
 
@@ -242,7 +242,7 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
             final String dstIndex = reindexRequest.dest().index();
             final long dstCount = getNumberOfDocumentsWithRetries(dstIndex + "*");
             if (srcCount == dstCount) {
-              log.info("Reindex of {} -> {} is already done.", srcIndices, dstIndex);
+              LOG.info("Reindex of {} -> {} is already done.", srcIndices, dstIndex);
               return true;
             }
           }
@@ -273,7 +273,7 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
       logProgress(taskId, taskResponse.response().total(), srcCount);
 
       final long total = taskResponse.response().total();
-      log.info("Source docs: {}, Migrated docs: {}", srcCount, total);
+      LOG.info("Source docs: {}, Migrated docs: {}", srcCount, total);
       return total == srcCount;
     } else {
       // need to reindex again
@@ -283,7 +283,7 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
 
   private void logProgress(final String taskId, final long processed, final long srcCount) {
     final double progress = processed * 100.00 / srcCount;
-    log.info("TaskId: {}, Progress: {}%", taskId, String.format("%.2f", progress));
+    LOG.info("TaskId: {}, Progress: {}%", taskId, String.format("%.2f", progress));
   }
 
   public GetIndexResponse get(final GetIndexRequest.Builder requestBuilder) {

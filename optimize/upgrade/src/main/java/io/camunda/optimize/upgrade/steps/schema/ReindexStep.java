@@ -28,10 +28,10 @@ public class ReindexStep extends UpgradeStep {
   }
 
   public ReindexStep(
-      IndexMappingCreator sourceIndex,
-      IndexMappingCreator targetIndex,
-      DatabaseQueryWrapper queryWrapper,
-      String mappingScript) {
+      final IndexMappingCreator sourceIndex,
+      final IndexMappingCreator targetIndex,
+      final DatabaseQueryWrapper queryWrapper,
+      final String mappingScript) {
     this.sourceIndex = sourceIndex;
     this.targetIndex = targetIndex;
     this.queryWrapper = queryWrapper;
@@ -48,23 +48,26 @@ public class ReindexStep extends UpgradeStep {
     schemaUpgradeClient.reindex(sourceIndex, targetIndex, queryWrapper, mappingScript);
   }
 
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
-  }
-
+  @Override
   protected boolean canEqual(final Object other) {
     return other instanceof ReindexStep;
   }
 
+  @Override
   public int hashCode() {
     return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
+  @Override
+  public boolean equals(final Object o) {
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  }
+
   public IndexMappingCreator getSourceIndex() {
-    return this.sourceIndex;
+    return sourceIndex;
   }
 
   public IndexMappingCreator getTargetIndex() {
-    return this.targetIndex;
+    return targetIndex;
   }
 }

@@ -16,16 +16,17 @@ import org.springframework.stereotype.Component;
 @Component
 public class ImportIndexWriter {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ImportIndexWriter.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ImportIndexWriter.class);
   private final ImportRepository importRepository;
 
-  public ImportIndexWriter(ImportRepository importRepository) {
+  public ImportIndexWriter(final ImportRepository importRepository) {
     this.importRepository = importRepository;
   }
 
-  public void importIndexes(List<TimestampBasedImportIndexDto> timestampBasedImportIndexDtos) {
-    String importItemName = "import index information";
-    log.debug("Writing [{}] {} to database.", timestampBasedImportIndexDtos.size(), importItemName);
+  public void importIndexes(
+      final List<TimestampBasedImportIndexDto> timestampBasedImportIndexDtos) {
+    final String importItemName = "import index information";
+    LOG.debug("Writing [{}] {} to database.", timestampBasedImportIndexDtos.size(), importItemName);
     importRepository.importIndices(importItemName, timestampBasedImportIndexDtos);
   }
 }

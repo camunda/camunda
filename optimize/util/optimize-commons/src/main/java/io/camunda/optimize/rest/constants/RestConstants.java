@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.rest.constants;
 
-public class RestConstants {
+public final class RestConstants {
 
   public static final String BACKUP_ENDPOINT = "/backups";
 

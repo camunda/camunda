@@ -27,17 +27,17 @@ public enum IndexMappingCreatorBuilder {
   private final Function<String, IndexMappingCreator<IndexSettings.Builder>> opensearch;
 
   private IndexMappingCreatorBuilder(
-      Function<String, IndexMappingCreator<Builder>> elasticsearch,
-      Function<String, IndexMappingCreator<IndexSettings.Builder>> opensearch) {
+      final Function<String, IndexMappingCreator<Builder>> elasticsearch,
+      final Function<String, IndexMappingCreator<IndexSettings.Builder>> opensearch) {
     this.elasticsearch = elasticsearch;
     this.opensearch = opensearch;
   }
 
   public Function<String, IndexMappingCreator<Builder>> getElasticsearch() {
-    return this.elasticsearch;
+    return elasticsearch;
   }
 
   public Function<String, IndexMappingCreator<IndexSettings.Builder>> getOpensearch() {
-    return this.opensearch;
+    return opensearch;
   }
 }

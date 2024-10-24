@@ -48,7 +48,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class SharingService implements ReportReferencingService, DashboardReferencingService {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(SharingService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(SharingService.class);
   private final SharingWriter sharingWriter;
   private final SharingReader sharingReader;
   private final PlainReportEvaluationHandler reportEvaluationHandler;
@@ -268,7 +268,7 @@ public class SharingService implements ReportReferencingService, DashboardRefere
               + "] for shared dashboard id ["
               + dashboardShareId
               + "]. Given report is not contained in dashboard.";
-      log.error(reason);
+      LOG.error(reason);
       throw new OptimizeRuntimeException(reason);
     }
     return evaluateReport(

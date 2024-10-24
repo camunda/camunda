@@ -34,7 +34,7 @@ import org.slf4j.Logger;
 
 public class CombinedReportEvaluationResult extends ReportEvaluationResult {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(CombinedReportEvaluationResult.class);
   private List<SingleReportEvaluationResult<?>> reportEvaluationResults;
   private long instanceCount;
@@ -66,7 +66,7 @@ public class CombinedReportEvaluationResult extends ReportEvaluationResult {
         .map(r -> mapCombinedReportResultsToCsvList(limit, offset, r))
         .orElseGet(
             () -> {
-              log.debug(
+              LOG.debug(
                   "No reports to evaluate are available in the combined report. Returning empty csv instead.");
               return Collections.singletonList(new String[] {});
             });
@@ -116,7 +116,7 @@ public class CombinedReportEvaluationResult extends ReportEvaluationResult {
             String.format(
                 "Unsupported report type [%s] in combined report",
                 resultType.getClass().getSimpleName());
-        log.error(message);
+        LOG.error(message);
         throw new OptimizeRuntimeException(message);
     }
     return csvStrings;
@@ -235,7 +235,7 @@ public class CombinedReportEvaluationResult extends ReportEvaluationResult {
         .orElseThrow(
             () -> {
               final String message = "Was not able to merge single reports to combined report csv";
-              log.error(message);
+              LOG.error(message);
               return new OptimizeRuntimeException(message);
             });
   }

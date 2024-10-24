@@ -10,7 +10,7 @@ package io.camunda.optimize.service.db.os.report.interpreter.util;
 import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.opensearch.client.opensearch._types.aggregations.CalendarInterval;
 
-public class AggregateByDateUnitMapperOS {
+public final class AggregateByDateUnitMapperOS {
 
   private static final String UNSUPPORTED_UNIT_STRING = "Unsupported unit: ";
 

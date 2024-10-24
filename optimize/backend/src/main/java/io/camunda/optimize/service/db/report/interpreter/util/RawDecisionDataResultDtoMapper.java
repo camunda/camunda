@@ -26,7 +26,7 @@ public class RawDecisionDataResultDtoMapper {
 
   private static final List<Object> DEFAULT_OUTPUT_VARIABLE_VALUE = Collections.emptyList();
   private static final String DEFAULT_INPUT_VARIABLE_VALUE = "";
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(RawDecisionDataResultDtoMapper.class);
 
   public List<RawDataDecisionInstanceDto> mapFrom(

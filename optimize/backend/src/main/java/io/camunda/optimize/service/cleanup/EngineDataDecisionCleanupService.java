@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class EngineDataDecisionCleanupService extends CleanupService {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(EngineDataDecisionCleanupService.class);
   private final ConfigurationService configurationService;
   private final DecisionDefinitionReader decisionDefinitionReader;
@@ -54,7 +54,7 @@ public class EngineDataDecisionCleanupService extends CleanupService {
             .getAllDecisionSpecificConfigurationKeys());
     int i = 1;
     for (final String currentProcessDefinitionKey : allOptimizeProcessDefinitionKeys) {
-      log.info("Decision History Cleanup step {}/{}", i, allOptimizeProcessDefinitionKeys.size());
+      LOG.info("Decision History Cleanup step {}/{}", i, allOptimizeProcessDefinitionKeys.size());
       performCleanupForDecisionKey(startTime, currentProcessDefinitionKey);
       i++;
     }
@@ -66,7 +66,7 @@ public class EngineDataDecisionCleanupService extends CleanupService {
         getCleanupConfiguration()
             .getDecisionDefinitionCleanupConfigurationForKey(decisionDefinitionKey);
 
-    log.info(
+    LOG.info(
         "Performing cleanup on decision instances for decisionDefinitionKey: {}, with ttl: {}",
         decisionDefinitionKey,
         cleanupConfigurationForKey.getTtl());
@@ -76,7 +76,7 @@ public class EngineDataDecisionCleanupService extends CleanupService {
     decisionInstanceWriter.deleteDecisionInstancesByDefinitionKeyAndEvaluationDateOlderThan(
         decisionDefinitionKey, endDateFilter);
 
-    log.info(
+    LOG.info(
         "Finished cleanup on decision instances for decisionDefinitionKey: {}, with ttl: {}",
         decisionDefinitionKey,
         cleanupConfigurationForKey.getTtl());

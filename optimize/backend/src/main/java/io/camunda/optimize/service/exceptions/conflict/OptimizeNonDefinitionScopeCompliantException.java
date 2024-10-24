@@ -14,7 +14,8 @@ public class OptimizeNonDefinitionScopeCompliantException extends OptimizeConfli
 
   public static final String ERROR_CODE = "nonDefinitionScopeCompliantConflict";
 
-  public OptimizeNonDefinitionScopeCompliantException(Set<ConflictedItemDto> conflictedItems) {
+  public OptimizeNonDefinitionScopeCompliantException(
+      final Set<ConflictedItemDto> conflictedItems) {
     super(
         "Could not apply action due to conflicts with the collection data source. The report definition is not defined "
             + "in the data source.",

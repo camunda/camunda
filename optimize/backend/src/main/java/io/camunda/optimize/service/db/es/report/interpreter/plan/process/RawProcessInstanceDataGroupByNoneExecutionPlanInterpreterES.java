@@ -37,11 +37,11 @@ public class RawProcessInstanceDataGroupByNoneExecutionPlanInterpreterES
   private final ProcessQueryFilterEnhancerES queryFilterEnhancer;
 
   public RawProcessInstanceDataGroupByNoneExecutionPlanInterpreterES(
-      ProcessGroupByInterpreterFacadeES groupByInterpreter,
-      ProcessViewInterpreterFacadeES viewInterpreter,
-      OptimizeElasticsearchClient esClient,
-      ProcessDefinitionReader processDefinitionReader,
-      ProcessQueryFilterEnhancerES queryFilterEnhancer) {
+      final ProcessGroupByInterpreterFacadeES groupByInterpreter,
+      final ProcessViewInterpreterFacadeES viewInterpreter,
+      final OptimizeElasticsearchClient esClient,
+      final ProcessDefinitionReader processDefinitionReader,
+      final ProcessQueryFilterEnhancerES queryFilterEnhancer) {
     this.groupByInterpreter = groupByInterpreter;
     this.viewInterpreter = viewInterpreter;
     this.esClient = esClient;
@@ -56,7 +56,7 @@ public class RawProcessInstanceDataGroupByNoneExecutionPlanInterpreterES
 
   @Override
   public CommandEvaluationResult<Object> interpret(
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> executionContext) {
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> executionContext) {
     final CommandEvaluationResult<Object> commandResult = super.interpret(executionContext);
     addNewVariablesAndDtoFieldsToTableColumnConfig(executionContext, commandResult);
     return commandResult;

@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.util;
 
-public class SuppressionConstants {
+public final class SuppressionConstants {
 
   public static final String UNUSED = "unused";
   public static final String UNCHECKED_CAST = "unchecked";

@@ -40,7 +40,7 @@ import org.elasticsearch.repositories.fs.FsRepository;
 
 public class ElasticsearchSchemaTestClient extends AbstractDatabaseSchemaTestClient {
 
-  private static final org.slf4j.Logger log =
+  private static final org.slf4j.Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ElasticsearchSchemaTestClient.class);
   private final RestHighLevelClient client;
 
@@ -61,22 +61,22 @@ public class ElasticsearchSchemaTestClient extends AbstractDatabaseSchemaTestCli
 
   @Override
   public void refreshAll() throws IOException {
-    log.info("Refreshing all indices of {} Elasticsearch...", name);
+    LOG.info("Refreshing all indices of {} Elasticsearch...", name);
     client.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
-    log.info("Successfully refreshed all indices of {} Elasticsearch!", name);
+    LOG.info("Successfully refreshed all indices of {} Elasticsearch!", name);
   }
 
   @Override
   public void cleanIndicesAndTemplates() throws IOException {
-    log.info("Wiping all indices & templates from {} Elasticsearch...", name);
+    LOG.info("Wiping all indices & templates from {} Elasticsearch...", name);
     client.indices().delete(new DeleteIndexRequest("_all"), RequestOptions.DEFAULT);
     client.indices().deleteTemplate(new DeleteIndexTemplateRequest("*"), RequestOptions.DEFAULT);
-    log.info("Successfully wiped all indices & templates from {} Elasticsearch!", name);
+    LOG.info("Successfully wiped all indices & templates from {} Elasticsearch!", name);
   }
 
   @Override
   public void createSnapshotRepository() throws IOException {
-    log.info("Creating snapshot repository on {} Elasticsearch...", name);
+    LOG.info("Creating snapshot repository on {} Elasticsearch...", name);
     final Settings settings =
         Settings.builder()
             .put(FsRepository.LOCATION_SETTING.getKey(), "/var/tmp")
@@ -90,22 +90,22 @@ public class ElasticsearchSchemaTestClient extends AbstractDatabaseSchemaTestCli
                 .settings(settings)
                 .type(FsRepository.TYPE),
             RequestOptions.DEFAULT);
-    log.info("Done creating snapshot repository on {} Elasticsearch!", name);
+    LOG.info("Done creating snapshot repository on {} Elasticsearch!", name);
   }
 
   @Override
   public void deleteSnapshotRepository() throws IOException {
-    log.info("Removing snapshot repository on {} Elasticsearch...", name);
+    LOG.info("Removing snapshot repository on {} Elasticsearch...", name);
     client
         .snapshot()
         .deleteRepository(
             new DeleteRepositoryRequest().name(SNAPSHOT_REPOSITORY_NAME), RequestOptions.DEFAULT);
-    log.info("Done removing snapshot repository on {} Elasticsearch!", name);
+    LOG.info("Done removing snapshot repository on {} Elasticsearch!", name);
   }
 
   @Override
   public void createSnapshotOfOptimizeIndices() throws IOException {
-    log.info("Creating snapshot on {} Elasticsearch...", name);
+    LOG.info("Creating snapshot on {} Elasticsearch...", name);
     // using low level client for compatibility here, see
     // https://github.com/elastic/elasticsearch/pull/57661
     final Request createSnapshotRequest =
@@ -118,12 +118,12 @@ public class ElasticsearchSchemaTestClient extends AbstractDatabaseSchemaTestCli
       throw new RuntimeException(
           "Failed Creating Snapshot, statusCode: " + response.getStatusLine().getStatusCode());
     }
-    log.info("Done creating snapshot on {} Elasticsearch!", name);
+    LOG.info("Done creating snapshot on {} Elasticsearch!", name);
   }
 
   @Override
   public void createAsyncSnapshot() throws IOException {
-    log.info("Creating snapshot on {} Elasticsearch...", name);
+    LOG.info("Creating snapshot on {} Elasticsearch...", name);
     // using low level client for compatibility here, see
     // https://github.com/elastic/elasticsearch/pull/57661
     final Request createSnapshotRequest =
@@ -135,12 +135,12 @@ public class ElasticsearchSchemaTestClient extends AbstractDatabaseSchemaTestCli
       throw new RuntimeException(
           "Failed Creating Snapshot, statusCode: " + response.getStatusLine().getStatusCode());
     }
-    log.info("Done starting asynchronous snapshot operation on {} Elasticsearch!", name);
+    LOG.info("Done starting asynchronous snapshot operation on {} Elasticsearch!", name);
   }
 
   @Override
   public void restoreSnapshot() throws IOException {
-    log.info("Restoring snapshot on {} Elasticsearch...", name);
+    LOG.info("Restoring snapshot on {} Elasticsearch...", name);
     client
         .snapshot()
         .restore(
@@ -148,7 +148,7 @@ public class ElasticsearchSchemaTestClient extends AbstractDatabaseSchemaTestCli
                 .includeGlobalState(true)
                 .waitForCompletion(true),
             RequestOptions.DEFAULT);
-    log.info("Done restoring snapshot on {} Elasticsearch!", name);
+    LOG.info("Done restoring snapshot on {} Elasticsearch!", name);
   }
 
   @Override
@@ -163,13 +163,13 @@ public class ElasticsearchSchemaTestClient extends AbstractDatabaseSchemaTestCli
 
   @Override
   public void deleteSnapshot(final String snapshotName) throws IOException {
-    log.info("Deleting snapshot {} on {} Elasticsearch...", snapshotName, name);
+    LOG.info("Deleting snapshot {} on {} Elasticsearch...", snapshotName, name);
     client
         .snapshot()
         .delete(
             new DeleteSnapshotRequest(SNAPSHOT_REPOSITORY_NAME, snapshotName),
             RequestOptions.DEFAULT);
-    log.info("Done deleting {} snapshot on {} Elasticsearch!", snapshotName, name);
+    LOG.info("Done deleting {} snapshot on {} Elasticsearch!", snapshotName, name);
   }
 
   public Map<String, Map> getSettings() throws IOException {

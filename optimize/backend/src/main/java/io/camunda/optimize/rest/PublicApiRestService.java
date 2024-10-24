@@ -71,7 +71,7 @@ public class PublicApiRestService {
       REPORT_EXPORT_PATH + "/definition/json";
   public static final String DASHBOARD_EXPORT_DEFINITION_SUB_PATH =
       EXPORT_SUB_PATH + DASHBOARD_SUB_PATH + "/definition/json";
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(PublicApiRestService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(PublicApiRestService.class);
 
   private final JsonReportResultExportService jsonReportResultExportService;
   private final EntityExportService entityExportService;
@@ -82,13 +82,13 @@ public class PublicApiRestService {
   private final SettingsService settingsService;
 
   public PublicApiRestService(
-      JsonReportResultExportService jsonReportResultExportService,
-      EntityExportService entityExportService,
-      EntityImportService entityImportService,
-      ReportService reportService,
-      DashboardService dashboardService,
-      ProcessVariableLabelService processVariableLabelService,
-      SettingsService settingsService) {
+      final JsonReportResultExportService jsonReportResultExportService,
+      final EntityExportService entityExportService,
+      final EntityImportService entityImportService,
+      final ReportService reportService,
+      final DashboardService dashboardService,
+      final ProcessVariableLabelService processVariableLabelService,
+      final SettingsService settingsService) {
     this.jsonReportResultExportService = jsonReportResultExportService;
     this.entityExportService = entityExportService;
     this.entityImportService = entityImportService;
@@ -122,15 +122,15 @@ public class PublicApiRestService {
   @Path(REPORT_EXPORT_DATA_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
   public PaginatedDataExportDto exportReportData(
-      @Context ContainerRequestContext requestContext,
-      @SuppressWarnings("UnresolvedRestParam") @PathParam("reportId") String reportId,
+      @Context final ContainerRequestContext requestContext,
+      @SuppressWarnings("UnresolvedRestParam") @PathParam("reportId") final String reportId,
       @BeanParam @Valid final PaginationScrollableRequestDto paginationRequestDto) {
     final ZoneId timezone = ZoneId.of("UTC");
     try {
       return jsonReportResultExportService.getJsonForEvaluatedReportResult(
           reportId, timezone, PaginationScrollableDto.fromPaginationRequest(paginationRequestDto));
       // TODO this would be handled in the OPT-7236
-    } catch (ElasticsearchException e) {
+    } catch (final ElasticsearchException e) {
       // In case the user provides a parsable but invalid scroll id (e.g. scroll id was earlier
       // valid, but now
       // expired) the message from ElasticSearch is a bit cryptic. Therefore, we extract the useful
@@ -142,7 +142,7 @@ public class PublicApiRestService {
             .map(pag -> (Exception) new BadRequestException(pag.reason()))
             // In case the exception happened for another reason, just re-throw it as is
             .orElse(e);
-      } catch (Exception ex) {
+      } catch (final Exception ex) {
         throw new OptimizeRuntimeException(ex);
       }
     }
@@ -176,7 +176,7 @@ public class PublicApiRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public List<EntityIdResponseDto> importEntities(
       @Context final ContainerRequestContext requestContext,
-      @QueryParam("collectionId") String collectionId,
+      @QueryParam("collectionId") final String collectionId,
       final String exportedDtoJson) {
     validateCollectionIdNotNull(collectionId);
     final Set<OptimizeEntityExportDto> exportDtos =
@@ -206,8 +206,8 @@ public class PublicApiRestService {
   @Path(LABELS_SUB_PATH)
   @Consumes(MediaType.APPLICATION_JSON)
   public void modifyVariableLabels(
-      @Context ContainerRequestContext requestContext,
-      @Valid DefinitionVariableLabelsDto definitionVariableLabelsDto) {
+      @Context final ContainerRequestContext requestContext,
+      @Valid final DefinitionVariableLabelsDto definitionVariableLabelsDto) {
     processVariableLabelService.storeVariableLabels(definitionVariableLabelsDto);
   }
 
@@ -220,14 +220,14 @@ public class PublicApiRestService {
   @POST
   @Path(SHARE_PATH + "/enable")
   public void enableShare() {
-    SettingsDto settings = SettingsDto.builder().sharingEnabled(true).build();
+    final SettingsDto settings = SettingsDto.builder().sharingEnabled(true).build();
     settingsService.setSettings(settings);
   }
 
   @POST
   @Path(SHARE_PATH + "/disable")
   public void disableShare() {
-    SettingsDto settings = SettingsDto.builder().sharingEnabled(false).build();
+    final SettingsDto settings = SettingsDto.builder().sharingEnabled(false).build();
     settingsService.setSettings(settings);
   }
 }

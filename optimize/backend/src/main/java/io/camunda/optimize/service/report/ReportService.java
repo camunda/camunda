@@ -85,7 +85,7 @@ public class ReportService implements CollectionReferencingService {
   private static final String REPORT_NOT_IN_SAME_COLLECTION_ERROR_MESSAGE =
       "Either the report %s does not reside in "
           + "the same collection as the combined report or both are not private entities";
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ReportService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ReportService.class);
 
   private final ReportWriter reportWriter;
   private final ReportReader reportReader;
@@ -546,7 +546,7 @@ public class ReportService implements CollectionReferencingService {
                 "Can't create or update combined report. "
                     + "The following report ids are not combinable: [%s]",
                 data.getReportIds());
-        log.error(errorMessage);
+        LOG.error(errorMessage);
         throw new UncombinableReportsException(errorMessage);
       }
     }

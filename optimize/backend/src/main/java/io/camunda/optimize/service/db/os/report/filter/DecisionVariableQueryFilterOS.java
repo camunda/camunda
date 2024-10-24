@@ -56,7 +56,7 @@ import org.slf4j.LoggerFactory;
 public abstract class DecisionVariableQueryFilterOS extends AbstractVariableQueryFilterOS
     implements QueryFilterOS<VariableFilterDataDto<?>> {
 
-  private static final Logger log = LoggerFactory.getLogger(DecisionVariableQueryFilterOS.class);
+  private static final Logger LOG = LoggerFactory.getLogger(DecisionVariableQueryFilterOS.class);
   protected final Logger logger = LoggerFactory.getLogger(getClass());
 
   public DecisionVariableQueryFilterOS() {}
@@ -77,20 +77,20 @@ public abstract class DecisionVariableQueryFilterOS extends AbstractVariableQuer
     ValidationHelper.ensureNotNull("Variable filter data", dto.getData());
     switch (dto.getType()) {
       case BOOLEAN -> {
-        BooleanVariableFilterDataDto booleanVarDto = (BooleanVariableFilterDataDto) dto;
+        final BooleanVariableFilterDataDto booleanVarDto = (BooleanVariableFilterDataDto) dto;
         return createBooleanQuery(booleanVarDto);
       }
       case STRING -> {
-        StringVariableFilterDataDto stringVarDto = (StringVariableFilterDataDto) dto;
+        final StringVariableFilterDataDto stringVarDto = (StringVariableFilterDataDto) dto;
         return createStringQuery(stringVarDto);
       }
       case INTEGER, DOUBLE, SHORT, LONG -> {
-        OperatorMultipleValuesVariableFilterDataDto numericVarDto =
+        final OperatorMultipleValuesVariableFilterDataDto numericVarDto =
             (OperatorMultipleValuesVariableFilterDataDto) dto;
         return createNumericQuery(numericVarDto);
       }
       case DATE -> {
-        DateVariableFilterDataDto dateVarDto = (DateVariableFilterDataDto) dto;
+        final DateVariableFilterDataDto dateVarDto = (DateVariableFilterDataDto) dto;
         return createDateQuery(dateVarDto, timezone);
       }
       default ->
@@ -137,7 +137,7 @@ public abstract class DecisionVariableQueryFilterOS extends AbstractVariableQuer
   protected Query createContainsGivenStringQuery(
       final String variableId, final String valueToContain) {
     final String lowerCaseValue = valueToContain.toLowerCase();
-    Query filter =
+    final Query filter =
         (lowerCaseValue.length() > MAX_GRAM)
             /*
               using the slow wildcard query for uncommonly large filter strings (> 10 chars)
@@ -180,7 +180,7 @@ public abstract class DecisionVariableQueryFilterOS extends AbstractVariableQuer
       final String variableId,
       final VariableType variableType,
       final List<A> values,
-      BiFunction<String, List<A>, Query> termsQuery) {
+      final BiFunction<String, List<A>, Query> termsQuery) {
     final BoolQuery.Builder variableFilterBuilder = new BoolQuery.Builder().minimumShouldMatch("1");
     final String nestedVariableIdFieldLabel = getVariableIdField();
     final String nestedVariableValueFieldLabel = getVariableValueFieldForType(variableType);
@@ -203,10 +203,10 @@ public abstract class DecisionVariableQueryFilterOS extends AbstractVariableQuer
   }
 
   @Override
-  protected Query createNumericQuery(OperatorMultipleValuesVariableFilterDataDto dto) {
+  protected Query createNumericQuery(final OperatorMultipleValuesVariableFilterDataDto dto) {
     OperatorMultipleValuesVariableFilterDataDtoUtil.validateMultipleValuesFilterDataDto(dto);
 
-    String nestedVariableValueFieldLabel = getVariableValueFieldForType(dto.getType());
+    final String nestedVariableValueFieldLabel = getVariableValueFieldForType(dto.getType());
     final OperatorMultipleValuesFilterDataDto data = dto.getData();
     final Query basicQuery = term(getVariableIdField(), getVariableId(dto));
 
@@ -218,10 +218,10 @@ public abstract class DecisionVariableQueryFilterOS extends AbstractVariableQuer
       return basicQuery;
     }
 
-    Function<Query, Query> nestedAnd =
+    final Function<Query, Query> nestedAnd =
         (query) -> nested(getVariablePath(), and(query, basicQuery), ChildScoreMode.None);
 
-    Object value = retrieveValue(dto);
+    final Object value = retrieveValue(dto);
     return switch (data.getOperator()) {
       case IN, NOT_IN -> createEqualsOneOrMoreValuesQuery(dto);
       case LESS_THAN -> nestedAnd.apply(lt(nestedVariableValueFieldLabel, value));
@@ -248,13 +248,13 @@ public abstract class DecisionVariableQueryFilterOS extends AbstractVariableQuer
       dateFilterBuilder.should(createExcludeUndefinedOrNullQuery(getVariableId(dto)));
     }
 
-    List<Query> rangeQueries =
+    final List<Query> rangeQueries =
         DateFilterQueryUtilOS.createRangeQueries(
             Collections.singletonList(dto.getData()),
             getVariableValueFieldForType(dto.getType()),
             timezone);
     if (!rangeQueries.isEmpty()) {
-      Query dateValueFilterQuery =
+      final Query dateValueFilterQuery =
           new BoolQuery.Builder()
               .must(term(getVariableIdField(), getVariableId(dto)))
               .must(rangeQueries)

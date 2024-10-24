@@ -161,6 +161,7 @@ public abstract class DefinitionOptimizeResponseDto implements Serializable, Opt
         + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String id = "id";

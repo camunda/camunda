@@ -20,7 +20,7 @@ public class TimestampBasedImportPage implements ImportPage {
     return timestampOfLastEntity;
   }
 
-  public void setTimestampOfLastEntity(OffsetDateTime timestampOfLastEntity) {
+  public void setTimestampOfLastEntity(final OffsetDateTime timestampOfLastEntity) {
     this.timestampOfLastEntity = timestampOfLastEntity;
   }
 }

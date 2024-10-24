@@ -50,7 +50,7 @@ public class DurationAggregationUtil {
   }
 
   public static AggregationDto[] getSupportedAggregationTypes() {
-    List<AggregationDto> aggregationDtos =
+    final List<AggregationDto> aggregationDtos =
         Arrays.stream(values())
             .filter(aggType -> !aggType.equals(PERCENTILE))
             .map(AggregationDto::new)

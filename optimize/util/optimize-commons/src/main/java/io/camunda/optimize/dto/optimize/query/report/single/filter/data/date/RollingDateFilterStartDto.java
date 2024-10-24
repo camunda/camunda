@@ -49,6 +49,7 @@ public class RollingDateFilterStartDto {
     return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String value = "value";

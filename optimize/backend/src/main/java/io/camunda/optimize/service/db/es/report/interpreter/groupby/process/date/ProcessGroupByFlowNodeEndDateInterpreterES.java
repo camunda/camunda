@@ -34,11 +34,11 @@ public class ProcessGroupByFlowNodeEndDateInterpreterES
   private final ProcessViewInterpreterFacadeES viewInterpreter;
 
   public ProcessGroupByFlowNodeEndDateInterpreterES(
-      DateAggregationServiceES dateAggregationService,
-      MinMaxStatsServiceES minMaxStatsService,
-      DefinitionService definitionService,
-      ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
-      ProcessViewInterpreterFacadeES viewInterpreter) {
+      final DateAggregationServiceES dateAggregationService,
+      final MinMaxStatsServiceES minMaxStatsService,
+      final DefinitionService definitionService,
+      final ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
+      final ProcessViewInterpreterFacadeES viewInterpreter) {
     this.dateAggregationService = dateAggregationService;
     this.minMaxStatsService = minMaxStatsService;
     this.definitionService = definitionService;

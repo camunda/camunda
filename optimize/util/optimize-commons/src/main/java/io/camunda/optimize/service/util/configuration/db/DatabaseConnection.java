@@ -56,32 +56,32 @@ public class DatabaseConnection {
     return this.awsEnabled;
   }
 
-  public void setTimeout(Integer timeout) {
+  public void setTimeout(final Integer timeout) {
     this.timeout = timeout;
   }
 
-  public void setResponseConsumerBufferLimitInMb(Integer responseConsumerBufferLimitInMb) {
+  public void setResponseConsumerBufferLimitInMb(final Integer responseConsumerBufferLimitInMb) {
     this.responseConsumerBufferLimitInMb = responseConsumerBufferLimitInMb;
   }
 
-  public void setPathPrefix(String pathPrefix) {
+  public void setPathPrefix(final String pathPrefix) {
     this.pathPrefix = pathPrefix;
   }
 
-  public void setSkipHostnameVerification(Boolean skipHostnameVerification) {
+  public void setSkipHostnameVerification(final Boolean skipHostnameVerification) {
     this.skipHostnameVerification = skipHostnameVerification;
   }
 
   @JsonProperty("nodes")
-  public void setConnectionNodes(List<DatabaseConnectionNodeConfiguration> connectionNodes) {
+  public void setConnectionNodes(final List<DatabaseConnectionNodeConfiguration> connectionNodes) {
     this.connectionNodes = connectionNodes;
   }
 
-  public void setProxy(ProxyConfiguration proxy) {
+  public void setProxy(final ProxyConfiguration proxy) {
     this.proxy = proxy;
   }
 
-  public void setAwsEnabled(Boolean awsEnabled) {
+  public void setAwsEnabled(final Boolean awsEnabled) {
     this.awsEnabled = awsEnabled;
   }
 

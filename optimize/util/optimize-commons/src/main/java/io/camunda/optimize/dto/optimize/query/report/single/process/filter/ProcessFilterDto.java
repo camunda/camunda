@@ -120,6 +120,7 @@ public abstract class ProcessFilterDto<DATA extends FilterDataDto> {
     return "ProcessFilter=" + getClass().getSimpleName();
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String data = "data";

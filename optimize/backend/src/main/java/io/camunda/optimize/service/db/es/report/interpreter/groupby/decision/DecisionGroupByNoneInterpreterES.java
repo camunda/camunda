@@ -38,8 +38,8 @@ public class DecisionGroupByNoneInterpreterES extends AbstractDecisionGroupByInt
   private final DecisionViewInterpreterFacadeES viewInterpreter;
 
   public DecisionGroupByNoneInterpreterES(
-      DecisionDistributedByNoneInterpreterES distributedByInterpreter,
-      DecisionViewInterpreterFacadeES viewInterpreter) {
+      final DecisionDistributedByNoneInterpreterES distributedByInterpreter,
+      final DecisionViewInterpreterFacadeES viewInterpreter) {
     this.distributedByInterpreter = distributedByInterpreter;
     this.viewInterpreter = viewInterpreter;
   }
@@ -61,7 +61,7 @@ public class DecisionGroupByNoneInterpreterES extends AbstractDecisionGroupByInt
       final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
     final List<DistributedByResult> distributions =
         distributedByInterpreter.retrieveResult(response, response.aggregations(), context);
-    GroupByResult groupByResult = GroupByResult.createGroupByNone(distributions);
+    final GroupByResult groupByResult = GroupByResult.createGroupByNone(distributions);
     compositeCommandResult.setGroup(groupByResult);
   }
 

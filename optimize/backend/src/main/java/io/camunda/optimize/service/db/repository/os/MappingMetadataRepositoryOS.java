@@ -19,17 +19,17 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class MappingMetadataRepositoryOS implements MappingMetadataRepository {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(MappingMetadataRepositoryOS.class);
   private final OptimizeOpenSearchClient osClient;
 
-  public MappingMetadataRepositoryOS(OptimizeOpenSearchClient osClient) {
+  public MappingMetadataRepositoryOS(final OptimizeOpenSearchClient osClient) {
     this.osClient = osClient;
   }
 
   @Override
-  public String[] getIndexAliasesWithImportIndexFlag(boolean isImportIndex) {
-    MappingMetadataUtilOS mappingUtil = new MappingMetadataUtilOS(osClient);
+  public String[] getIndexAliasesWithImportIndexFlag(final boolean isImportIndex) {
+    final MappingMetadataUtilOS mappingUtil = new MappingMetadataUtilOS(osClient);
     return mappingUtil.getAllMappings(osClient.getIndexNameService().getIndexPrefix()).stream()
         .filter(mapping -> isImportIndex == mapping.isImportIndex())
         .map(osClient.getIndexNameService()::getOptimizeIndexAliasForIndex)

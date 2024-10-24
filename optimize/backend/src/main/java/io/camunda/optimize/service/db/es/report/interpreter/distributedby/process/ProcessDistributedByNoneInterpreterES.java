@@ -34,7 +34,8 @@ public class ProcessDistributedByNoneInterpreterES
 
   private final ProcessViewInterpreterFacadeES viewInterpreter;
 
-  public ProcessDistributedByNoneInterpreterES(ProcessViewInterpreterFacadeES viewInterpreter) {
+  public ProcessDistributedByNoneInterpreterES(
+      final ProcessViewInterpreterFacadeES viewInterpreter) {
     this.viewInterpreter = viewInterpreter;
   }
 
@@ -52,9 +53,9 @@ public class ProcessDistributedByNoneInterpreterES
 
   @Override
   public List<DistributedByResult> retrieveResult(
-      ResponseBody<?> response,
-      Map<String, Aggregate> aggregations,
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+      final ResponseBody<?> response,
+      final Map<String, Aggregate> aggregations,
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     final ViewResult viewResult = viewInterpreter.retrieveResult(response, aggregations, context);
     return List.of(DistributedByResult.createDistributedByNoneResult(viewResult));
   }

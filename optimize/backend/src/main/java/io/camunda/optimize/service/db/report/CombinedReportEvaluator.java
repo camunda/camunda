@@ -26,7 +26,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class CombinedReportEvaluator {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(CombinedReportEvaluator.class);
   private final ExecutionPlanExtractor executionPlanExtractor;
   private final ExecutionPlanInterpreterFacade interpreter;
@@ -34,10 +34,10 @@ public class CombinedReportEvaluator {
   private final CombinedReportInstanceCounter<?> combinedReportInstanceCounter;
 
   public CombinedReportEvaluator(
-      ExecutionPlanExtractor executionPlanExtractor,
-      ExecutionPlanInterpreterFacade interpreter,
-      SingleReportEvaluator singleReportEvaluator,
-      CombinedReportInstanceCounter<?> combinedReportInstanceCounter) {
+      final ExecutionPlanExtractor executionPlanExtractor,
+      final ExecutionPlanInterpreterFacade interpreter,
+      final SingleReportEvaluator singleReportEvaluator,
+      final CombinedReportInstanceCounter<?> combinedReportInstanceCounter) {
     this.executionPlanExtractor = executionPlanExtractor;
     this.interpreter = interpreter;
     this.singleReportEvaluator = singleReportEvaluator;
@@ -52,8 +52,8 @@ public class CombinedReportEvaluator {
     try {
       combinedRangeMinMaxStats =
           getGlobalMinMaxStats(singleReportDefinitions, timezone).orElse(null);
-    } catch (OptimizeValidationException e) {
-      log.error("Failed to evaluate combined report! Reason: ", e);
+    } catch (final OptimizeValidationException e) {
+      LOG.error("Failed to evaluate combined report! Reason: ", e);
       return List.of();
     }
 
@@ -72,8 +72,8 @@ public class CombinedReportEvaluator {
     }
     try {
       return combinedReportInstanceCounter.count(singleReportDefinitions);
-    } catch (OptimizeValidationException e) {
-      log.error("Failed to evaluate combined report instance count! Reason: ", e);
+    } catch (final OptimizeValidationException e) {
+      LOG.error("Failed to evaluate combined report instance count! Reason: ", e);
       return 0L;
     }
   }
@@ -92,10 +92,10 @@ public class CombinedReportEvaluator {
               reportEvaluationContext = new ReportEvaluationContext<>();
           reportEvaluationContext.setReportDefinition(reportDefinition);
           reportEvaluationContext.setTimezone(timezone);
-          ExecutionContext executionContext =
+          final ExecutionContext executionContext =
               ExecutionContextFactory.buildExecutionContext(plan, reportEvaluationContext);
 
-          Optional<MinMaxStatDto> minMaxStatDto =
+          final Optional<MinMaxStatDto> minMaxStatDto =
               interpreter.getGroupByMinMaxStats(executionContext);
           minMaxStatDto.ifPresent(combinedIntervalCalculator::addStat);
         });
@@ -108,17 +108,17 @@ public class CombinedReportEvaluator {
       final ZoneId timezone) {
     Optional<SingleReportEvaluationResult<?>> result = Optional.empty();
     try {
-      ReportEvaluationContext<SingleProcessReportDefinitionRequestDto> reportEvaluationContext =
-          new ReportEvaluationContext<>();
+      final ReportEvaluationContext<SingleProcessReportDefinitionRequestDto>
+          reportEvaluationContext = new ReportEvaluationContext<>();
       reportEvaluationContext.setReportDefinition(reportDefinition);
       reportEvaluationContext.setTimezone(timezone);
       reportEvaluationContext.setCombinedRangeMinMaxStats(combinedRangeMinMaxStats);
-      SingleReportEvaluationResult<?> singleResult =
+      final SingleReportEvaluationResult<?> singleResult =
           singleReportEvaluator.evaluate(reportEvaluationContext);
       result = Optional.of(singleResult);
-    } catch (OptimizeException | OptimizeValidationException onlyForLogging) {
+    } catch (final OptimizeException | OptimizeValidationException onlyForLogging) {
       // we just ignore reports that cannot be evaluated in a combined report
-      log.debug(
+      LOG.debug(
           "Single report with id [{}] could not be evaluated for a combined report.",
           reportDefinition.getId(),
           onlyForLogging);

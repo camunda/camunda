@@ -36,11 +36,11 @@ public class GenericDecisionExecutionPlanInterpreterOS
   private final OptimizeOpenSearchClient osClient;
 
   public GenericDecisionExecutionPlanInterpreterOS(
-      DecisionDefinitionReader decisionDefinitionReader,
-      DecisionQueryFilterEnhancerOS queryFilterEnhancer,
-      DecisionGroupByInterpreterFacadeOS groupByInterpreter,
-      DecisionViewInterpreterFacadeOS viewInterpreter,
-      OptimizeOpenSearchClient osClient) {
+      final DecisionDefinitionReader decisionDefinitionReader,
+      final DecisionQueryFilterEnhancerOS queryFilterEnhancer,
+      final DecisionGroupByInterpreterFacadeOS groupByInterpreter,
+      final DecisionViewInterpreterFacadeOS viewInterpreter,
+      final OptimizeOpenSearchClient osClient) {
     this.decisionDefinitionReader = decisionDefinitionReader;
     this.queryFilterEnhancer = queryFilterEnhancer;
     this.groupByInterpreter = groupByInterpreter;

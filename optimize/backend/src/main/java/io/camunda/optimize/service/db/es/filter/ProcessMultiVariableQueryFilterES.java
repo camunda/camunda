@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 public class ProcessMultiVariableQueryFilterES extends AbstractProcessVariableQueryFilterES
     implements QueryFilterES<MultipleVariableFilterDataDto> {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ProcessMultiVariableQueryFilterES.class);
 
   public ProcessMultiVariableQueryFilterES() {}
@@ -45,7 +45,7 @@ public class ProcessMultiVariableQueryFilterES extends AbstractProcessVariableQu
   private Query.Builder buildMultiVariableFilterQuery(
       final MultipleVariableFilterDataDto multipleVariableFilter,
       final FilterContext filterContext) {
-    Query.Builder variableFilterBuilder = new Query.Builder();
+    final Query.Builder variableFilterBuilder = new Query.Builder();
 
     variableFilterBuilder.bool(
         b -> {

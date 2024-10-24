@@ -61,7 +61,7 @@ public class CollectionScopeService {
   private static final String UNAUTHORIZED_TENANT_MASK_ID = "__unauthorizedTenantId__";
   public static final TenantDto UNAUTHORIZED_TENANT_MASK =
       new TenantDto(UNAUTHORIZED_TENANT_MASK_ID, UNAUTHORIZED_TENANT_MASK_NAME, "unknownEngine");
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(CollectionScopeService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(CollectionScopeService.class);
 
   private final TenantService tenantService;
   private final DefinitionService definitionService;
@@ -401,7 +401,7 @@ public class CollectionScopeService {
         deleteReports(userId, reportsAffectedByScopeDeletion);
         collectionScopesToDelete.add(collectionScopeId);
       } catch (final OptimizeRuntimeException e) {
-        log.debug(
+        LOG.debug(
             "There was an error while deleting reports associated to collection scope with id {}. The scope cannot be "
                 + "deleted.",
             collectionScopeId);

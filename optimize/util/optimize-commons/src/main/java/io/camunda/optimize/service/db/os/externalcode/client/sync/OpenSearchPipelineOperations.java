@@ -13,11 +13,11 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 
 public class OpenSearchPipelineOperations extends OpenSearchRetryOperation {
   public OpenSearchPipelineOperations(
-      OpenSearchClient openSearchClient, final OptimizeIndexNameService indexNameService) {
+      final OpenSearchClient openSearchClient, final OptimizeIndexNameService indexNameService) {
     super(openSearchClient, indexNameService);
   }
 
-  public boolean addPipelineWithRetries(String name, String definition) {
+  public boolean addPipelineWithRetries(final String name, final String definition) {
     return executeWithRetries(
         "AddPipeline " + name,
         () ->
@@ -27,7 +27,7 @@ public class OpenSearchPipelineOperations extends OpenSearchRetryOperation {
                 .acknowledged());
   }
 
-  public boolean removePipelineWithRetries(String name) {
+  public boolean removePipelineWithRetries(final String name) {
     return executeWithRetries(
         "RemovePipeline " + name,
         () -> openSearchClient.ingest().deletePipeline(dp -> dp.id(name)).acknowledged());

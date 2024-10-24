@@ -48,19 +48,6 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     this(null, haveToClean);
   }
 
-  public void cleanSnapshots(final String snapshotRepositoryName) {
-    databaseTestService.cleanSnapshots(snapshotRepositoryName);
-  }
-
-  public void createRepoSnapshot(final String snapshotRepositoryName) {
-    databaseTestService.createRepoSnapshot(snapshotRepositoryName);
-  }
-
-  public void createSnapshot(
-      final String snapshotRepositoryName, final String snapshotName, final String[] indexNames) {
-    databaseTestService.createSnapshot(snapshotRepositoryName, snapshotName, indexNames);
-  }
-
   private DatabaseIntegrationTestExtension(
       final String customIndexPrefix, final boolean haveToClean) {
     this(customIndexPrefix, haveToClean, IntegrationTestConfigurationUtil.getDatabaseType());
@@ -73,6 +60,19 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     } else {
       databaseTestService = new OpenSearchDatabaseTestService(customIndexPrefix, haveToClean);
     }
+  }
+
+  public void cleanSnapshots(final String snapshotRepositoryName) {
+    databaseTestService.cleanSnapshots(snapshotRepositoryName);
+  }
+
+  public void createRepoSnapshot(final String snapshotRepositoryName) {
+    databaseTestService.createRepoSnapshot(snapshotRepositoryName);
+  }
+
+  public void createSnapshot(
+      final String snapshotRepositoryName, final String snapshotName, final String[] indexNames) {
+    databaseTestService.createSnapshot(snapshotRepositoryName, snapshotName, indexNames);
   }
 
   @Override
@@ -189,7 +189,7 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
   public void createIndex(
       final String optimizeIndexNameWithVersion,
       final String optimizeIndexAliasForIndex,
-      DefaultIndexMappingCreator mapping)
+      final DefaultIndexMappingCreator mapping)
       throws IOException {
     createIndex(optimizeIndexNameWithVersion, optimizeIndexAliasForIndex, mapping, true);
   }
@@ -200,16 +200,18 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     return databaseTestService.getAllIndicesWithWriteAlias(aliasNameWithPrefix);
   }
 
-  public void deleteAllDocumentsInIndex(String optimizeIndexAliasForIndex) {
+  public void deleteAllDocumentsInIndex(final String optimizeIndexAliasForIndex) {
     databaseTestService.deleteAllDocumentsInIndex(optimizeIndexAliasForIndex);
   }
 
-  public void insertTestDocuments(int amount, String indexName, String documentContentAsJson)
+  public void insertTestDocuments(final int amount, final String indexName,
+      final String documentContentAsJson)
       throws IOException {
     databaseTestService.insertTestDocuments(amount, indexName, documentContentAsJson);
   }
 
-  public void performLowLevelBulkRequest(String methodName, String endpoint, String bulkPayload)
+  public void performLowLevelBulkRequest(final String methodName, final String endpoint,
+      final String bulkPayload)
       throws IOException {
     databaseTestService.performLowLevelBulkRequest(methodName, endpoint, bulkPayload);
   }
@@ -222,15 +224,15 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     return databaseTestService.getMappingFields(indexName);
   }
 
-  public boolean indexExists(String versionedIndexName, Boolean addMappingFeatures) {
+  public boolean indexExists(final String versionedIndexName, final Boolean addMappingFeatures) {
     return databaseTestService.indexExists(versionedIndexName, addMappingFeatures);
   }
 
   public void createIndex(
       final String optimizeIndexNameWithVersion,
       final String optimizeIndexAliasForIndex,
-      DefaultIndexMappingCreator mapping,
-      Boolean isWriteIndex)
+      final DefaultIndexMappingCreator mapping,
+      final Boolean isWriteIndex)
       throws IOException {
     createIndex(
         optimizeIndexNameWithVersion, Map.of(optimizeIndexAliasForIndex, isWriteIndex), mapping);
@@ -239,16 +241,18 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
   public void createIndex(
       final String optimizeIndexNameWithVersion,
       final Map<String, Boolean> aliases,
-      DefaultIndexMappingCreator mapping)
+      final DefaultIndexMappingCreator mapping)
       throws IOException {
     databaseTestService.createIndex(optimizeIndexNameWithVersion, aliases, mapping);
   }
 
-  public boolean templateExists(String optimizeIndexTemplateNameWithVersion) throws IOException {
+  public boolean templateExists(final String optimizeIndexTemplateNameWithVersion)
+      throws IOException {
     return databaseTestService.templateExists(optimizeIndexTemplateNameWithVersion);
   }
 
-  public boolean isAliasReadOnly(String readOnlyAliasForIndex) throws IOException {
+  public boolean isAliasReadOnly(final String readOnlyAliasForIndex) throws IOException {
     return databaseTestService.isAliasReadOnly(readOnlyAliasForIndex);
   }
 }
+

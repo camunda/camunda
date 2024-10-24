@@ -26,7 +26,7 @@ public interface ProcessGroupByProcessInstanceRunningDateInterpreter {
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
       final Supplier<MinMaxStatDto> minMaxDateRangeForCrossFieldSupplier) {
     if (context.getReportData().getGroupBy().getValue()
-        instanceof DateGroupByValueDto groupByDate) {
+        instanceof final DateGroupByValueDto groupByDate) {
       if (AggregateByDateUnit.AUTOMATIC.equals(groupByDate.getUnit())) {
         return Optional.of(minMaxDateRangeForCrossFieldSupplier.get());
       }

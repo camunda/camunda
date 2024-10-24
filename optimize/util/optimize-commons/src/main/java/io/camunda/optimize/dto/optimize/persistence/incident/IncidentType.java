@@ -25,7 +25,7 @@ public class IncidentType {
    https://docs.camunda.org/manual/latest/user-guide/process-engine/incidents/#incident-types
   */
   private static final IncidentType FAILED_JOB = new IncidentType(FAILED_JOB_INCIDENT_TYPE);
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(IncidentType.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(IncidentType.class);
   private final String id;
 
   protected IncidentType(final String id) {
@@ -43,7 +43,7 @@ public class IncidentType {
     }
     if (!FAILED_JOB.getId().equals(incidentTypeId)
         && !FAILED_EXTERNAL_TASK.getId().equals(incidentTypeId)) {
-      log.debug("Importing custom incident type [{}]", incidentTypeId);
+      LOG.debug("Importing custom incident type [{}]", incidentTypeId);
     }
     return new IncidentType(incidentTypeId);
   }

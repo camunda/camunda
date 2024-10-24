@@ -34,7 +34,7 @@ public class ConfigurationValidator {
   public static final String DOC_URL =
       "https://docs.camunda.io/optimize/next/self-managed/optimize-deployment/configuration/system-configuration/";
   private static final String[] DEFAULT_DELETED_CONFIG_LOCATIONS = {"deleted-config.yaml"};
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ConfigurationValidator.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ConfigurationValidator.class);
 
   private final Map<String, String> deletedConfigKeys;
 
@@ -92,7 +92,7 @@ public class ConfigurationValidator {
             .peek(keyAndUrl -> keyAndUrl.setValue(DOC_URL))
             .peek(
                 keyAndUrl ->
-                    log.error(
+                    LOG.error(
                         "Deleted setting used with key {}, please see the updated documentation {}",
                         keyAndUrl.getKey(),
                         DOC_URL))

@@ -617,19 +617,19 @@ public enum ProcessExecutionPlan implements ExecutionPlan {
   private final String commandKey;
 
   ProcessExecutionPlan(
-      ProcessView view,
-      ProcessGroupBy groupBy,
-      ProcessDistributedBy distributedBy,
-      ReportResultType resultType) {
+      final ProcessView view,
+      final ProcessGroupBy groupBy,
+      final ProcessDistributedBy distributedBy,
+      final ReportResultType resultType) {
     this(view, groupBy, distributedBy, resultType, false);
   }
 
   ProcessExecutionPlan(
-      ProcessView view,
-      ProcessGroupBy groupBy,
-      ProcessDistributedBy distributedBy,
-      ReportResultType resultType,
-      boolean assigneeReport) {
+      final ProcessView view,
+      final ProcessGroupBy groupBy,
+      final ProcessDistributedBy distributedBy,
+      final ReportResultType resultType,
+      final boolean assigneeReport) {
     this.view = view;
     this.groupBy = groupBy;
     this.distributedBy = distributedBy;
@@ -639,12 +639,12 @@ public enum ProcessExecutionPlan implements ExecutionPlan {
   }
 
   private ProcessExecutionPlan(
-      ProcessView view,
-      ProcessGroupBy groupBy,
-      ProcessDistributedBy distributedBy,
-      ReportResultType resultType,
-      boolean assigneeReport,
-      String commandKey) {
+      final ProcessView view,
+      final ProcessGroupBy groupBy,
+      final ProcessDistributedBy distributedBy,
+      final ReportResultType resultType,
+      final boolean assigneeReport,
+      final String commandKey) {
     this.view = view;
     this.groupBy = groupBy;
     this.distributedBy = distributedBy;
@@ -659,7 +659,7 @@ public enum ProcessExecutionPlan implements ExecutionPlan {
   }
 
   private String buildCommandKey() {
-    ProcessReportDataDto processReportDataDto =
+    final ProcessReportDataDto processReportDataDto =
         ProcessReportDataDto.builder()
             .groupBy(groupBy.getDto())
             .distributedBy(distributedBy.getDto())

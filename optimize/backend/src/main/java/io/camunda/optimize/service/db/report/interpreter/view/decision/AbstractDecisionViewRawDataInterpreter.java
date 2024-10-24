@@ -93,7 +93,7 @@ public abstract class AbstractDecisionViewRawDataInterpreter implements Decision
             .map(this::getPrefixedOutputVariableId)
             .toList());
 
-    TableColumnDto tableColumns = context.getReportConfiguration().getTableColumns();
+    final TableColumnDto tableColumns = context.getReportConfiguration().getTableColumns();
     tableColumns.addNewAndRemoveUnexpectedVariableColumns(variableNames);
     tableColumns.addDtoColumns(extractAllDecisionInstanceDtoFieldKeys());
   }

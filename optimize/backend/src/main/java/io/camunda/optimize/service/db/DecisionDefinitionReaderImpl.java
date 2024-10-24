@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class DecisionDefinitionReaderImpl implements DecisionDefinitionReader {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(DecisionDefinitionReaderImpl.class);
   private final DefinitionReader definitionReader;
 

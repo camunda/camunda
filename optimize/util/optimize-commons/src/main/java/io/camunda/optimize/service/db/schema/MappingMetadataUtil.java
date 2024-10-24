@@ -26,7 +26,7 @@ import org.slf4j.Logger;
 
 public abstract class MappingMetadataUtil<BUILDER> {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(MappingMetadataUtil.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(MappingMetadataUtil.class);
   private final DatabaseClient dbClient;
 
   public MappingMetadataUtil(final DatabaseClient dbClient) {
@@ -34,14 +34,14 @@ public abstract class MappingMetadataUtil<BUILDER> {
   }
 
   public List<IndexMappingCreator<BUILDER>> getAllMappings(final String indexPrefix) {
-    List<IndexMappingCreator<BUILDER>> allMappings = new ArrayList<>();
+    final List<IndexMappingCreator<BUILDER>> allMappings = new ArrayList<>();
     allMappings.addAll(getAllNonDynamicMappings());
     allMappings.addAll(getAllDynamicMappings(indexPrefix));
     return allMappings;
   }
 
   public List<IndexMappingCreator<BUILDER>> getAllDynamicMappings(final String indexPrefix) {
-    List<IndexMappingCreator<BUILDER>> dynamicMappings = new ArrayList<>();
+    final List<IndexMappingCreator<BUILDER>> dynamicMappings = new ArrayList<>();
     dynamicMappings.addAll(retrieveAllProcessInstanceIndices(indexPrefix));
     dynamicMappings.addAll(retrieveAllDecisionInstanceIndices());
     return dynamicMappings;

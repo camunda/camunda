@@ -79,6 +79,7 @@ public class PositionBasedImportIndexDto extends ImportIndexDto<ZeebeDataSourceD
     return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String positionOfLastEntity = "positionOfLastEntity";

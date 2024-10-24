@@ -27,7 +27,7 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class IndexRepositoryOS implements IndexRepository, ConfigurationReloadable {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(IndexRepositoryOS.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(IndexRepositoryOS.class);
   private final OptimizeOpenSearchClient osClient;
   private final OpenSearchSchemaManager openSearchSchemaManager;
   private final OptimizeIndexNameService indexNameService;
@@ -67,7 +67,7 @@ public class IndexRepositoryOS implements IndexRepository, ConfigurationReloadab
   private void createMissingIndex(
       final IndexMappingCreator<IndexSettings.Builder> indexMappingCreator,
       final Set<String> readOnlyAliases) {
-    log.debug("Creating index {}.", getIndexName(indexMappingCreator));
+    LOG.debug("Creating index {}.", getIndexName(indexMappingCreator));
     openSearchSchemaManager.createOrUpdateOptimizeIndex(
         osClient, indexMappingCreator, readOnlyAliases);
     indices.add(getIndexName(indexMappingCreator));

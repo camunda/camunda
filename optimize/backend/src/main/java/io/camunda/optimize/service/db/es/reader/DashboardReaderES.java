@@ -39,18 +39,19 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class DashboardReaderES implements DashboardReader {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DashboardReaderES.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(DashboardReaderES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-  public DashboardReaderES(OptimizeElasticsearchClient esClient, ObjectMapper objectMapper) {
+  public DashboardReaderES(
+      final OptimizeElasticsearchClient esClient, final ObjectMapper objectMapper) {
     this.esClient = esClient;
     this.objectMapper = objectMapper;
   }
 
   @Override
   public long getDashboardCount() {
-    CountRequest countRequest =
+    final CountRequest countRequest =
         OptimizeCountRequestBuilderES.of(
             b ->
                 b.optimizeIndex(esClient, DASHBOARD_INDEX_NAME)
@@ -60,46 +61,47 @@ public class DashboardReaderES implements DashboardReader {
                                 t -> t.field(DashboardIndex.MANAGEMENT_DASHBOARD).value(false))));
     try {
       return esClient.count(countRequest).count();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException("Was not able to retrieve dashboard count!", e);
     }
   }
 
   @Override
-  public Optional<DashboardDefinitionRestDto> getDashboard(String dashboardId) {
-    log.debug("Fetching dashboard with id [{}]", dashboardId);
-    GetRequest getRequest =
+  public Optional<DashboardDefinitionRestDto> getDashboard(final String dashboardId) {
+    LOG.debug("Fetching dashboard with id [{}]", dashboardId);
+    final GetRequest getRequest =
         OptimizeGetRequestBuilderES.of(
             b -> b.optimizeIndex(esClient, DASHBOARD_INDEX_NAME).id(dashboardId));
 
     try {
       return Optional.ofNullable(
           esClient.get(getRequest, DashboardDefinitionRestDto.class).source());
-    } catch (IOException e) {
-      String reason = String.format("Could not fetch dashboard with id [%s]", dashboardId);
-      log.error(reason, e);
+    } catch (final IOException e) {
+      final String reason = String.format("Could not fetch dashboard with id [%s]", dashboardId);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
   }
 
   @Override
-  public List<DashboardDefinitionRestDto> getDashboards(Set<String> dashboardIds) {
-    log.debug("Fetching dashboards with IDs {}", dashboardIds);
+  public List<DashboardDefinitionRestDto> getDashboards(final Set<String> dashboardIds) {
+    LOG.debug("Fetching dashboards with IDs {}", dashboardIds);
     final String[] dashboardIdsAsArray = dashboardIds.toArray(new String[0]);
 
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         OptimizeSearchRequestBuilderES.of(
             b ->
                 b.optimizeIndex(esClient, DASHBOARD_INDEX_NAME)
                     .size(LIST_FETCH_LIMIT)
                     .query(q -> q.ids(i -> i.values(Arrays.stream(dashboardIdsAsArray).toList()))));
 
-    SearchResponse<DashboardDefinitionRestDto> searchResponse;
+    final SearchResponse<DashboardDefinitionRestDto> searchResponse;
     try {
       searchResponse = esClient.search(searchRequest, DashboardDefinitionRestDto.class);
-    } catch (IOException e) {
-      String reason = String.format("Was not able to fetch dashboards for IDs [%s]", dashboardIds);
-      log.error(reason, e);
+    } catch (final IOException e) {
+      final String reason =
+          String.format("Was not able to fetch dashboards for IDs [%s]", dashboardIds);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
@@ -108,23 +110,23 @@ public class DashboardReaderES implements DashboardReader {
   }
 
   @Override
-  public List<DashboardDefinitionRestDto> getDashboardsForCollection(String collectionId) {
-    log.debug("Fetching dashboards using collection with id {}", collectionId);
-    SearchRequest searchRequest =
+  public List<DashboardDefinitionRestDto> getDashboardsForCollection(final String collectionId) {
+    LOG.debug("Fetching dashboards using collection with id {}", collectionId);
+    final SearchRequest searchRequest =
         OptimizeSearchRequestBuilderES.of(
             b ->
                 b.optimizeIndex(esClient, DASHBOARD_INDEX_NAME)
                     .query(q -> q.term(t -> t.field(COLLECTION_ID).value(collectionId)))
                     .size(LIST_FETCH_LIMIT));
 
-    SearchResponse<DashboardDefinitionRestDto> searchResponse;
+    final SearchResponse<DashboardDefinitionRestDto> searchResponse;
     try {
       searchResponse = esClient.search(searchRequest, DashboardDefinitionRestDto.class);
-    } catch (IOException e) {
-      String reason =
+    } catch (final IOException e) {
+      final String reason =
           String.format(
               "Was not able to fetch dashboards for collection with id [%s]", collectionId);
-      log.error(reason, e);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
@@ -133,10 +135,10 @@ public class DashboardReaderES implements DashboardReader {
   }
 
   @Override
-  public List<DashboardDefinitionRestDto> getDashboardsForReport(String reportId) {
-    log.debug("Fetching dashboards using report with id {}", reportId);
+  public List<DashboardDefinitionRestDto> getDashboardsForReport(final String reportId) {
+    LOG.debug("Fetching dashboards using report with id {}", reportId);
 
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         OptimizeSearchRequestBuilderES.of(
             b ->
                 b.optimizeIndex(esClient, DASHBOARD_INDEX_NAME)
@@ -162,13 +164,13 @@ public class DashboardReaderES implements DashboardReader {
                                                                                         .REPORT_ID)
                                                                             .value(reportId))))))));
 
-    SearchResponse<DashboardDefinitionRestDto> searchResponse;
+    final SearchResponse<DashboardDefinitionRestDto> searchResponse;
     try {
       searchResponse = esClient.search(searchRequest, DashboardDefinitionRestDto.class);
-    } catch (IOException e) {
-      String reason =
+    } catch (final IOException e) {
+      final String reason =
           String.format("Was not able to fetch dashboards for report with id [%s]", reportId);
-      log.error(reason, e);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
