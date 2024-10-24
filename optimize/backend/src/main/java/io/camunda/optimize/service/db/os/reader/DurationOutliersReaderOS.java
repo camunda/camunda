@@ -442,8 +442,8 @@ public class DurationOutliersReaderOS implements DurationOutliersReader {
                         s ->
                             s.time(
                                 configurationService
-                                    .getOpenSearchConfiguration()
-                                    .getScrollTimeoutInSeconds()
+                                        .getOpenSearchConfiguration()
+                                        .getScrollTimeoutInSeconds()
                                     + "s")));
 
     try {
@@ -843,7 +843,7 @@ public class DurationOutliersReaderOS implements DurationOutliersReader {
 
                   if (stats.stdDeviation() != 0.0D
                       && allFlowNodeFilterAggs.get(getFilteredFlowNodeAggregationName(flowNodeId))
-                      != null) {
+                          != null) {
                     final Aggregate flowNodeFilterAgg =
                         allFlowNodeFilterAggs.get(getFilteredFlowNodeAggregationName(flowNodeId));
                     final Aggregate lowerOutlierFilterAgg =

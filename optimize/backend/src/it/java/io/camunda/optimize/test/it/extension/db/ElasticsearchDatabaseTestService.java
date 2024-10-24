@@ -329,7 +329,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
       throw new OptimizeIntegrationTestException(
           "Could not delete data in index "
               + getIndexNameService()
-              .getOptimizeIndexAliasForIndex(new SingleProcessReportIndexES()),
+                  .getOptimizeIndexAliasForIndex(new SingleProcessReportIndexES()),
           e);
     }
   }
@@ -504,8 +504,8 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                                                                       ZeebeRecordDto.Fields.value
                                                                           + "."
                                                                           + ZeebeProcessInstanceDataDto
-                                                                          .Fields
-                                                                          .bpmnElementType)
+                                                                              .Fields
+                                                                              .bpmnElementType)
                                                                   .value(
                                                                       bpmnElementType
                                                                           .name()))))))));
@@ -950,7 +950,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                                                                       FLOW_NODE_INSTANCES
                                                                           + "."
                                                                           + ProcessInstanceIndex
-                                                                          .FLOW_NODE_INSTANCE_ID))))))),
+                                                                              .FLOW_NODE_INSTANCE_ID))))))),
                   Object.class);
     } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
@@ -1217,7 +1217,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   private <T> List<T> getAllDocumentsOfIndexAs(
       final String indexName, final Class<T> type, final Query query) {
     try {
-      return getAllDocumentsOfIndicesAs(new String[]{indexName}, type, query);
+      return getAllDocumentsOfIndicesAs(new String[] {indexName}, type, query);
     } catch (final ElasticsearchException e) {
       throw new OptimizeIntegrationTestException(
           "Cannot get all documents for index " + indexName, e);

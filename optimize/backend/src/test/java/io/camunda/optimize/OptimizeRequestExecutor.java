@@ -296,18 +296,18 @@ public class OptimizeRequestExecutor {
           .init(
               null,
               new TrustManager[] {
-                  new X509TrustManager() {
-                    @Override
-                    public void checkClientTrusted(final X509Certificate[] arg0, final String arg1) {}
+                new X509TrustManager() {
+                  @Override
+                  public void checkClientTrusted(final X509Certificate[] arg0, final String arg1) {}
 
-                    @Override
-                    public void checkServerTrusted(final X509Certificate[] arg0, final String arg1) {}
+                  @Override
+                  public void checkServerTrusted(final X509Certificate[] arg0, final String arg1) {}
 
-                    @Override
-                    public X509Certificate[] getAcceptedIssuers() {
-                      return new X509Certificate[0];
-                    }
+                  @Override
+                  public X509Certificate[] getAcceptedIssuers() {
+                    return new X509Certificate[0];
                   }
+                }
               },
               new java.security.SecureRandom());
       HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);

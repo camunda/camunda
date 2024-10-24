@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -33,12 +31,8 @@
   </modules>
 
   <scm>
-    <connection>
-      scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/camunda.git
-    </connection>
-    <developerConnection>
-      scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/camunda.git
-    </developerConnection>
+    <connection>scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/camunda.git</connection>
+    <developerConnection>scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/camunda.git</developerConnection>
     <tag>HEAD</tag>
     <url>https://github.com/camunda/camunda</url>
   </scm>
@@ -76,8 +70,7 @@
 
     <!-- maven dependency plugin -->
     <dependencyAnalyzeFailOnWarning>false</dependencyAnalyzeFailOnWarning>
-    <dependencyAnalyze.failOnWarning>${dependencyAnalyzeFailOnWarning}
-    </dependencyAnalyze.failOnWarning>
+    <dependencyAnalyze.failOnWarning>${dependencyAnalyzeFailOnWarning}</dependencyAnalyze.failOnWarning>
 
     <!-- DATABASE -->
     <!-- Elasticsearch-->
@@ -102,6 +95,7 @@
 
     <apache.http5-client.version>5.4</apache.http5-client.version>
     <apache.http5-core.version>5.3.1</apache.http5-core.version>
+    <jsonpath.version>2.9.0</jsonpath.version>
     <guava.version>33.3.1-jre</guava.version>
     <spring.version>6.1.13</spring.version>
     <httpclient.version>4.5.14</httpclient.version>
@@ -164,54 +158,54 @@
       <dependency>
         <groupId>com.fasterxml.jackson</groupId>
         <artifactId>jackson-bom</artifactId>
-        <version>${jackson.version}</version>
+        <version>${version.jackson}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-server</artifactId>
-        <version>${jetty.version}</version>
+        <version>${version.jetty}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.http2</groupId>
         <artifactId>jetty-http2-server</artifactId>
-        <version>${jetty.version}</version>
+        <version>${version.jetty}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-alpn-java-client</artifactId>
-        <version>${jetty.version}</version>
+        <version>${version.jetty}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-alpn-java-server</artifactId>
-        <version>${jetty.version}</version>
+        <version>${version.jetty}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-alpn-server</artifactId>
-        <version>${jetty.version}</version>
+        <version>${version.jetty}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10</groupId>
         <artifactId>jetty-ee10-servlet</artifactId>
-        <version>${jetty.version}</version>
+        <version>${version.jetty}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.ee10</groupId>
         <artifactId>jetty-ee10-servlets</artifactId>
-        <version>${jetty.version}</version>
+        <version>${version.jetty}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-rewrite</artifactId>
-        <version>${jetty.version}</version>
+        <version>${version.jetty}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-util</artifactId>
-        <version>${jetty.version}</version>
+        <version>${version.jetty}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.ws.rs</groupId>
@@ -452,8 +446,7 @@
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
             <useModulePath>false</useModulePath>
             <argLine>--add-opens java.base/java.lang=ALL-UNNAMED
-              --add-opens java.base/java.util=ALL-UNNAMED
-            </argLine>
+              --add-opens java.base/java.util=ALL-UNNAMED</argLine>
             <systemPropertyVariables>
               <database.type>${database.type}</database.type>
             </systemPropertyVariables>
