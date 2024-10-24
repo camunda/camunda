@@ -32,7 +32,7 @@ public class FlowNodeRestService {
 
   public static final String FLOW_NODE_PATH = "/flow-node";
   public static final String FLOW_NODE_NAMES_SUB_PATH = "/flowNodeNames";
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(FlowNodeRestService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(FlowNodeRestService.class);
 
   private final DefinitionService definitionService;
 
@@ -67,7 +67,7 @@ public class FlowNodeRestService {
         result.setFlowNodeNames(flowNodeIdsToNames);
       }
     } else {
-      log.debug(
+      LOG.debug(
           "No process definition found for key {} and version {}, returning empty result.",
           request.getProcessDefinitionKey(),
           request.getProcessDefinitionVersion());

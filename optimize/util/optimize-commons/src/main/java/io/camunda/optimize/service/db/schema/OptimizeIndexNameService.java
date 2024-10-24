@@ -37,7 +37,7 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
     this.indexPrefix = indexPrefix;
   }
 
-  public String getOptimizeIndexAliasForIndex(String index) {
+  public String getOptimizeIndexAliasForIndex(final String index) {
     return getOptimizeIndexAliasForIndexNameAndPrefix(index, indexPrefix);
   }
 
@@ -90,13 +90,13 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
 
   @Override
   public void reloadConfiguration(final ApplicationContext context) {
-    ConfigurationService configurationService = context.getBean(ConfigurationService.class);
+    final ConfigurationService configurationService = context.getBean(ConfigurationService.class);
     setIndexPrefix(
         configurationService, ConfigurationService.getDatabaseType(context.getEnvironment()));
   }
 
   private void setIndexPrefix(
-      ConfigurationService configurationService, DatabaseType databaseType) {
+      final ConfigurationService configurationService, final DatabaseType databaseType) {
     if (databaseType.equals(DatabaseType.OPENSEARCH)) {
       indexPrefix = configurationService.getOpenSearchConfiguration().getIndexPrefix();
     } else {
@@ -127,6 +127,6 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
   }
 
   public String getIndexPrefix() {
-    return this.indexPrefix;
+    return indexPrefix;
   }
 }

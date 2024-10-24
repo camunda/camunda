@@ -39,7 +39,7 @@ public class OptimizeJettyServerCustomizer
   private static final String SUB_PATH_PATTERN_TEMPLATE = "^%s(/?)(.*)$";
   private final ConfigurationService configurationService;
 
-  public OptimizeJettyServerCustomizer(ConfigurationService configurationService) {
+  public OptimizeJettyServerCustomizer(final ConfigurationService configurationService) {
     this.configurationService = configurationService;
   }
 

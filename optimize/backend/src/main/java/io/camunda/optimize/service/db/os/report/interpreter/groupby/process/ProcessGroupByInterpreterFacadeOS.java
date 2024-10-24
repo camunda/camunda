@@ -34,7 +34,7 @@ public class ProcessGroupByInterpreterFacadeOS
     extends AbstractInterpreterFacade<ProcessGroupBy, ProcessGroupByInterpreterOS>
     implements ProcessGroupByInterpreterOS {
 
-  public ProcessGroupByInterpreterFacadeOS(List<ProcessGroupByInterpreterOS> interpreters) {
+  public ProcessGroupByInterpreterFacadeOS(final List<ProcessGroupByInterpreterOS> interpreters) {
     super(interpreters, ProcessGroupByInterpreterOS::getSupportedGroupBys);
   }
 
@@ -52,23 +52,24 @@ public class ProcessGroupByInterpreterFacadeOS
 
   @Override
   public void adjustSearchRequest(
-      SearchRequest.Builder searchRequestBuilder,
-      Query baseQuery,
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+      final SearchRequest.Builder searchRequestBuilder,
+      final Query baseQuery,
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     interpreter(context.getPlan().getGroupBy())
         .adjustSearchRequest(searchRequestBuilder, baseQuery, context);
   }
 
   @Override
   public Map<String, Aggregation> createAggregation(
-      Query query, ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+      final Query query,
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     return interpreter(context.getPlan().getGroupBy()).createAggregation(query, context);
   }
 
   @Override
   public CompositeCommandResult retrieveQueryResult(
-      SearchResponse<RawResult> response,
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+      final SearchResponse<RawResult> response,
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     return interpreter(context.getPlan().getGroupBy()).retrieveQueryResult(response, context);
   }
 

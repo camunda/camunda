@@ -59,7 +59,7 @@ function useTasks(
     queryKey: getQueryKey(Object.values(payload)),
     queryFn: async ({pageParam}) => {
       const {response, error} = await request(
-        api.searchTasks({...payload, ...(pageParam as PageParam)}),
+        api.v1.searchTasks({...payload, ...(pageParam as PageParam)}),
       );
 
       if (response !== null) {

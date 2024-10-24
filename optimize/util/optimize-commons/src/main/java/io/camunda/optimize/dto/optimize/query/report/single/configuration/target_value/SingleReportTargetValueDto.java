@@ -97,6 +97,7 @@ public class SingleReportTargetValueDto {
         + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String countChart = "countChart";

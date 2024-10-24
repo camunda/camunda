@@ -21,7 +21,7 @@ import org.slf4j.Logger;
 
 public abstract class AbstractVariableQueryFilterES {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(AbstractVariableQueryFilterES.class);
 
   protected abstract Query.Builder createContainsOneOfTheGivenStringsQueryBuilder(
@@ -57,7 +57,7 @@ public abstract class AbstractVariableQueryFilterES {
           String.format(
               "String variable operator [%s] is not supported!",
               stringVarDto.getData().getOperator().getId());
-      log.debug(message);
+      LOG.debug(message);
       throw new OptimizeRuntimeException(message);
     }
   }

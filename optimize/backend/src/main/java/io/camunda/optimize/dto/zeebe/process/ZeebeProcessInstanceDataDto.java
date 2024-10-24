@@ -168,6 +168,7 @@ public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
         + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String version = "version";

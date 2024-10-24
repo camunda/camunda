@@ -76,6 +76,7 @@ public class DashboardIdentityFilterDataDto extends IdentityLinkFilterDataDto {
         + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String allowCustomValues = "allowCustomValues";

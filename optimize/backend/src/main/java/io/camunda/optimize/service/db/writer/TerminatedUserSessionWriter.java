@@ -15,28 +15,28 @@ import org.slf4j.Logger;
 
 public abstract class TerminatedUserSessionWriter {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(TerminatedUserSessionWriter.class);
 
   public void writeTerminatedUserSession(final TerminatedUserSessionDto sessionDto) {
-    log.debug("Writing terminated user session with id [{}] to database.", sessionDto.getId());
+    LOG.debug("Writing terminated user session with id [{}] to database.", sessionDto.getId());
     try {
       performWritingTerminatedUserSession(sessionDto);
     } catch (final IOException e) {
       final String message = "Could not write terminated user sessions to database.";
-      log.error(message, e);
+      LOG.error(message, e);
       throw new OptimizeRuntimeException(message, e);
     }
   }
 
   public void deleteTerminatedUserSessionsOlderThan(final OffsetDateTime timestamp) {
-    log.debug("Deleting terminated user session older than [{}] to database.", timestamp);
+    LOG.debug("Deleting terminated user session older than [{}] to database.", timestamp);
     try {
       performDeleteTerminatedUserSessionOlderThan(timestamp);
     } catch (final IOException e) {
       final String message =
           String.format("Could not delete user sessions older than [%s] from database", timestamp);
-      log.error(message, e);
+      LOG.error(message, e);
       throw new OptimizeRuntimeException(message, e);
     }
   }

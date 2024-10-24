@@ -20,62 +20,6 @@ jest.mock('modules/stores/processes/processes.migration', () => ({
   },
 }));
 
-/**
- * In these tests a migration mapping from orderProcess.bpmn to orderProcess_v2.bpmn is tested
- *
- * orderProcess.bpmn contains:
- * - checkPayment (service task)
- * - ExclusiveGateway
- * - requestForPayment (service task)
- * - shipArticles (user task)
- * - MessageInterrupting (event)
- * - TimerInterrupting (event)
- * - MessageNonInterrupting (event)
- * - TimerNonInterrupting (event)
- * - MessageIntermediateCatch (event)
- * - TimerIntermediateCatch (event)
- * - MessageEventSubProcess
- * - TimerEventSubProcess
- * - ErrorEventSubProcess
- * - MessageStartEvent
- * - TimerStartEvent
- * - ErrorStartEvent
- * - MessageReceiveTask
- * - BusinessRuleTask
- * - SendTask
- * - ScriptTask
- * - EventBasedGateway
- * - IntermediateTimerEvent
- * - SignalEventSubProcess
- * - SignalStartEvent
- * - SignalIntermediateCatch
- * - SignalBoundaryEvent
- *
- * orderProcess_v2.bpmn contains:
- * - checkPayment (service task)
- * - ExclusiveGateway
- * - requestForPayment (user task)
- * - shipArticles (user task)
- * - MessageInterrupting (event)
- * - TimerNonInterrupting (event)
- * - MessageIntermediateCatch (event)
- * - MessageEventSubProcess (sub process)
- * - TimerEventSubProcess (sub process)
- * - ErrorEventSubProcess (sub process)
- * - MessageStartEvent
- * - TimerStartEvent
- * - ErrorStartEvent
- * - MessageReceiveTask
- * - BusinessRuleTask
- * - SendTask
- * - ScriptTask
- * - EventBasedGateway
- * - IntermediateTimerEvent
- * - SignalEventSubProcess
- * - SignalStartEvent
- * - SignalIntermediateCatch
- * - SignalBoundaryEvent
- */
 describe('processInstanceMigrationMappingStore', () => {
   afterEach(() => {
     processInstanceMigrationMappingStore.reset();
@@ -143,6 +87,14 @@ describe('processInstanceMigrationMappingStore', () => {
         type: 'bpmn:StartEvent',
       },
       {
+        id: 'ErrorEventSubProcess',
+        type: 'bpmn:SubProcess',
+      },
+      {
+        id: 'ErrorStartEvent',
+        type: 'bpmn:StartEvent',
+      },
+      {
         id: 'MessageReceiveTask',
         type: 'bpmn:ReceiveTask',
       },
@@ -182,6 +134,10 @@ describe('processInstanceMigrationMappingStore', () => {
         id: 'SignalStartEvent',
         type: 'bpmn:StartEvent',
       },
+      {
+        id: 'MultiInstanceSubProcess',
+        type: 'bpmn:SubProcess',
+      },
     ]);
 
     expect(isAutoMappable('checkPayment')).toBe(true);
@@ -202,12 +158,14 @@ describe('processInstanceMigrationMappingStore', () => {
     expect(isAutoMappable('SignalBoundaryEvent')).toBe(true);
     expect(isAutoMappable('SignalEventSubProcess')).toBe(true);
     expect(isAutoMappable('SignalStartEvent')).toBe(true);
+    expect(isAutoMappable('ErrorEventSubProcess')).toBe(true);
+    expect(isAutoMappable('ErrorStartEvent')).toBe(true);
+    expect(isAutoMappable('MultiInstanceSubProcess')).toBe(true);
 
     expect(isAutoMappable('requestForPayment')).toBe(false);
     expect(isAutoMappable('TimerInterrupting')).toBe(false);
     expect(isAutoMappable('MessageNonInterrupting')).toBe(false);
     expect(isAutoMappable('TimerIntermediateCatch')).toBe(false);
-    expect(isAutoMappable('ErrorEventSubProcess')).toBe(false);
     expect(isAutoMappable('TaskY')).toBe(false);
     expect(isAutoMappable('TaskZ')).toBe(false);
 
@@ -288,7 +246,7 @@ describe('processInstanceMigrationMappingStore', () => {
           id: 'shippingSubProcess',
           name: 'Shipping Sub Process',
         },
-        selectableTargetFlowNodes: [],
+        selectableTargetFlowNodes: [{id: 'SubProcess', name: 'Sub Process'}],
       },
       {
         sourceFlowNode: {
@@ -463,6 +421,30 @@ describe('processInstanceMigrationMappingStore', () => {
       },
       {
         sourceFlowNode: {
+          id: 'ErrorEventSubProcess',
+          name: 'Error event sub process',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'ErrorEventSubProcess',
+            name: 'Error event sub process',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'ErrorStartEvent',
+          name: 'Error start event',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'ErrorStartEvent',
+            name: 'Error start event',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
           id: 'MessageReceiveTask',
           name: 'Message receive task',
         },
@@ -578,6 +560,30 @@ describe('processInstanceMigrationMappingStore', () => {
           {
             id: 'SignalStartEvent',
             name: 'Signal start event',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'MultiInstanceSubProcess',
+          name: 'Multi instance sub process',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'MultiInstanceSubProcess',
+            name: 'Multi instance sub process',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'MultiInstanceTask',
+          name: 'Multi instance task',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'ParallelTask',
+            name: 'Parallel task',
           },
         ],
       },

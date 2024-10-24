@@ -47,6 +47,7 @@ public class DashboardDateFilterDataDto implements FilterDataDto {
     return "DashboardDateFilterDataDto(defaultValues=" + getDefaultValues() + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String defaultValues = "defaultValues";

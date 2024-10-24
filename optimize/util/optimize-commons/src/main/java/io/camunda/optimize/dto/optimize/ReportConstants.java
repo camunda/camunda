@@ -12,7 +12,7 @@ import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 import java.util.Collections;
 import java.util.List;
 
-public class ReportConstants {
+public final class ReportConstants {
 
   public static final String VIEW_FLOW_NODE_ENTITY = "flowNode";
   public static final String VIEW_USER_TASK_ENTITY = "userTask";

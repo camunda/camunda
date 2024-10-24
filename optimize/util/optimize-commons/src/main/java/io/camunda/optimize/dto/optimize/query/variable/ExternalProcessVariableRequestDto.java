@@ -73,31 +73,31 @@ public class ExternalProcessVariableRequestDto implements OptimizeDto {
     return this.serializationDataFormat;
   }
 
-  public void setId(@NotBlank String id) {
+  public void setId(@NotBlank final String id) {
     this.id = id;
   }
 
-  public void setName(@NotBlank String name) {
+  public void setName(@NotBlank final String name) {
     this.name = name;
   }
 
-  public void setValue(String value) {
+  public void setValue(final String value) {
     this.value = value;
   }
 
-  public void setType(@NotNull VariableType type) {
+  public void setType(@NotNull final VariableType type) {
     this.type = type;
   }
 
-  public void setProcessInstanceId(@NotBlank String processInstanceId) {
+  public void setProcessInstanceId(@NotBlank final String processInstanceId) {
     this.processInstanceId = processInstanceId;
   }
 
-  public void setProcessDefinitionKey(@NotBlank String processDefinitionKey) {
+  public void setProcessDefinitionKey(@NotBlank final String processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
   }
 
-  public void setSerializationDataFormat(String serializationDataFormat) {
+  public void setSerializationDataFormat(final String serializationDataFormat) {
     this.serializationDataFormat = serializationDataFormat;
   }
 
@@ -131,6 +131,7 @@ public class ExternalProcessVariableRequestDto implements OptimizeDto {
         + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String id = "id";

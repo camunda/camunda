@@ -34,11 +34,11 @@ public class RawDecisionInstanceDataGroupByNoneExecutionPlanInterpreterOS
   private final OptimizeOpenSearchClient osClient;
 
   public RawDecisionInstanceDataGroupByNoneExecutionPlanInterpreterOS(
-      DecisionDefinitionReader decisionDefinitionReader,
-      DecisionQueryFilterEnhancerOS queryFilterEnhancer,
-      DecisionGroupByInterpreterFacadeOS groupByInterpreter,
-      DecisionViewInterpreterFacadeOS viewInterpreter,
-      OptimizeOpenSearchClient osClient) {
+      final DecisionDefinitionReader decisionDefinitionReader,
+      final DecisionQueryFilterEnhancerOS queryFilterEnhancer,
+      final DecisionGroupByInterpreterFacadeOS groupByInterpreter,
+      final DecisionViewInterpreterFacadeOS viewInterpreter,
+      final OptimizeOpenSearchClient osClient) {
     this.decisionDefinitionReader = decisionDefinitionReader;
     this.queryFilterEnhancer = queryFilterEnhancer;
     this.groupByInterpreter = groupByInterpreter;

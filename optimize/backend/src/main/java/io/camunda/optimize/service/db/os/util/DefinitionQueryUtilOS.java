@@ -24,7 +24,7 @@ import java.util.function.UnaryOperator;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 
-public class DefinitionQueryUtilOS {
+public final class DefinitionQueryUtilOS {
 
   private DefinitionQueryUtilOS() {}
 

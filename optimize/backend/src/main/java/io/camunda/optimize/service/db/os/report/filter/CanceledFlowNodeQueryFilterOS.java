@@ -30,7 +30,7 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class CanceledFlowNodeQueryFilterOS implements QueryFilterOS<CanceledFlowNodeFilterDataDto> {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(CanceledFlowNodeQueryFilterOS.class);
 
   @Override
@@ -40,10 +40,10 @@ public class CanceledFlowNodeQueryFilterOS implements QueryFilterOS<CanceledFlow
     return flowNodeFilters.stream().map(this::createFilterQuery).toList();
   }
 
-  private Query createFilterQuery(CanceledFlowNodeFilterDataDto flowNodeFilter) {
+  private Query createFilterQuery(final CanceledFlowNodeFilterDataDto flowNodeFilter) {
     final Query isCanceledQuery =
         and(exists(nestedCanceledFieldLabel()), term(nestedCanceledFieldLabel(), true));
-    List<Query> queries =
+    final List<Query> queries =
         flowNodeFilter.getValues().stream()
             .map(
                 value ->

@@ -31,7 +31,7 @@ import org.slf4j.Logger;
 
 public class UpgradeProcedure {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(UpgradeProcedure.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(UpgradeProcedure.class);
   protected final DatabaseClient dbClient;
   protected final UpgradeValidationService upgradeValidationService;
   protected final SchemaUpgradeClient schemaUpgradeClient;
@@ -59,8 +59,8 @@ public class UpgradeProcedure {
         try {
           upgradeStepLogService.initializeOrUpdate(schemaUpgradeClient);
           executeUpgradePlan(upgradePlan);
-        } catch (Exception e) {
-          log.error(
+        } catch (final Exception e) {
+          LOG.error(
               "Error while executing update from {} to {}",
               upgradePlan.getFromVersion(),
               targetVersion,
@@ -68,12 +68,12 @@ public class UpgradeProcedure {
           throw new UpgradeRuntimeException("Upgrade failed.", e);
         }
       } else {
-        log.info(
+        LOG.info(
             "Target schemaVersion or a newer version is already present, no update to perform to {}.",
             targetVersion);
       }
     } else {
-      log.info(
+      LOG.info(
           "No Connection to database or no Optimize Metadata index found, skipping update to {}.",
           targetVersion);
     }
@@ -82,10 +82,10 @@ public class UpgradeProcedure {
   private void executeUpgradePlan(final UpgradePlan upgradePlan) {
     int currentStepCount = 1;
     final List<UpgradeStep> upgradeSteps = upgradePlan.getUpgradeSteps();
-    Map<String, UpgradeStepLogEntryDto> appliedStepsById =
+    final Map<String, UpgradeStepLogEntryDto> appliedStepsById =
         upgradeStepLogService.getAllAppliedStepsForUpdateToById(
             schemaUpgradeClient, upgradePlan.getToVersion().toString());
-    for (UpgradeStep step : upgradeSteps) {
+    for (final UpgradeStep step : upgradeSteps) {
       final UpgradeStepLogEntryDto logEntryDto =
           UpgradeStepLogEntryDto.builder()
               .indexName(getIndexNameForStep(step))
@@ -97,7 +97,7 @@ public class UpgradeProcedure {
           Optional.ofNullable(appliedStepsById.get(logEntryDto.getId()))
               .map(UpgradeStepLogEntryDto::getAppliedDate);
       if (stepAppliedDate.isEmpty()) {
-        log.info(
+        LOG.info(
             "Starting step {}/{}: {} on index: {}",
             currentStepCount,
             upgradeSteps.size(),
@@ -106,18 +106,18 @@ public class UpgradeProcedure {
         try {
           step.execute(schemaUpgradeClient);
           upgradeStepLogService.recordAppliedStep(schemaUpgradeClient, logEntryDto);
-        } catch (UpgradeRuntimeException e) {
-          log.error("The upgrade will be aborted. Please investigate the cause and retry it..");
+        } catch (final UpgradeRuntimeException e) {
+          LOG.error("The upgrade will be aborted. Please investigate the cause and retry it..");
           throw e;
         }
-        log.info(
+        LOG.info(
             "Successfully finished step {}/{}: {} on index: {}",
             currentStepCount,
             upgradeSteps.size(),
             step.getClass().getSimpleName(),
             getIndexNameForStep(step));
       } else {
-        log.info(
+        LOG.info(
             "Skipping Step {}/{}: {} on index: {} as it was found to be previously completed already at: {}.",
             currentStepCount,
             upgradeSteps.size(),

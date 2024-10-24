@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.dto.optimize.cloud.panelnotifications;
 
-public class PanelNotificationMetaDataDto {
+public final class PanelNotificationMetaDataDto {
 
   private final String identifier;
   private final String[] permissions;

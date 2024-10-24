@@ -33,7 +33,7 @@ public class OptimizeAlertEmailValidationExceptionMapperTest {
 
     // when
     final Response response = underTest.toResponse(emailValidationException);
-    Map<String, Object> mappedResponse =
+    final Map<String, Object> mappedResponse =
         new ObjectMapper().convertValue(response.getEntity(), new TypeReference<>() {});
 
     // then

@@ -84,11 +84,11 @@ public interface AggregationDSL {
                 .keyed(keyed));
   }
 
-  static FieldDateMath fieldDateMath(double value) {
+  static FieldDateMath fieldDateMath(final double value) {
     return FieldDateMath.of(b -> b.value(value));
   }
 
-  static FieldDateMath fieldDateMath(String value) {
+  static FieldDateMath fieldDateMath(final String value) {
     return FieldDateMath.of(b -> b.expr(value));
   }
 

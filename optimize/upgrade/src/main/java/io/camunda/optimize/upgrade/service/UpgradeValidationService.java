@@ -20,7 +20,7 @@ import org.slf4j.Logger;
 public class UpgradeValidationService {
 
   private static final String ENVIRONMENT_CONFIG_FILE = "environment-config.yaml";
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(UpgradeValidationService.class);
 
   public UpgradeValidationService() {}
@@ -54,8 +54,8 @@ public class UpgradeValidationService {
   public void validateDatabaseVersion(final DatabaseClient dbClient, final String toVersion) {
     try {
       checkDatabaseVersionSupported(dbClient.getDatabaseVersion(), dbClient.getDatabaseVendor());
-    } catch (Exception e) {
-      String errorMessage =
+    } catch (final Exception e) {
+      final String errorMessage =
           "It was not possible to upgrade Optimize to version "
               + toVersion
               + ".\n"
@@ -66,13 +66,13 @@ public class UpgradeValidationService {
 
   public void validateEnvironmentConfigInClasspath() {
     boolean configAvailable = false;
-    try (InputStream resourceAsStream =
+    try (final InputStream resourceAsStream =
         UpgradeValidationService.class.getResourceAsStream("/" + ENVIRONMENT_CONFIG_FILE)) {
       if (resourceAsStream != null) {
         configAvailable = true;
       }
-    } catch (IOException e) {
-      log.error("Can't resolve " + ENVIRONMENT_CONFIG_FILE, e);
+    } catch (final IOException e) {
+      LOG.error("Can't resolve " + ENVIRONMENT_CONFIG_FILE, e);
     }
 
     if (!configAvailable) {

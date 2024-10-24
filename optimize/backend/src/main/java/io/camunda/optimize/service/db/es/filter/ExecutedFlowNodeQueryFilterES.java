@@ -30,7 +30,7 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class ExecutedFlowNodeQueryFilterES implements QueryFilterES<ExecutedFlowNodeFilterDataDto> {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ExecutedFlowNodeQueryFilterES.class);
 
   @Override
@@ -41,10 +41,10 @@ public class ExecutedFlowNodeQueryFilterES implements QueryFilterES<ExecutedFlow
     query.filter(flowNodeFilter.stream().map(this::createFilterQueryBuilder).toList());
   }
 
-  private Query createFilterQueryBuilder(ExecutedFlowNodeFilterDataDto flowNodeFilter) {
-    BoolQuery.Builder boolQueryBuilder = new BoolQuery.Builder();
+  private Query createFilterQueryBuilder(final ExecutedFlowNodeFilterDataDto flowNodeFilter) {
+    final BoolQuery.Builder boolQueryBuilder = new BoolQuery.Builder();
     if (MembershipFilterOperator.IN == flowNodeFilter.getOperator()) {
-      for (String value : flowNodeFilter.getValues()) {
+      for (final String value : flowNodeFilter.getValues()) {
         boolQueryBuilder.should(
             s ->
                 s.nested(
@@ -56,7 +56,7 @@ public class ExecutedFlowNodeQueryFilterES implements QueryFilterES<ExecutedFlow
                             .scoreMode(ChildScoreMode.None)));
       }
     } else if (MembershipFilterOperator.NOT_IN == flowNodeFilter.getOperator()) {
-      for (String value : flowNodeFilter.getValues()) {
+      for (final String value : flowNodeFilter.getValues()) {
         boolQueryBuilder.mustNot(
             s ->
                 s.nested(
@@ -68,7 +68,7 @@ public class ExecutedFlowNodeQueryFilterES implements QueryFilterES<ExecutedFlow
                             .scoreMode(ChildScoreMode.None)));
       }
     } else {
-      log.error(
+      LOG.error(
           "Could not filter for flow nodes. "
               + "Operator [{}] is not allowed! Use either [in] or [not in]",
           flowNodeFilter.getOperator());

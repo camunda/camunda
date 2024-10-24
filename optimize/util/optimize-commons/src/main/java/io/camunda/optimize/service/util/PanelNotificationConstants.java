@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.service.util;
 
-public class PanelNotificationConstants {
+public final class PanelNotificationConstants {
 
   // API constants
   public static final String SEND_NOTIFICATION_TO_ALL_ORG_USERS_ENDPOINT = "/notifications/org";

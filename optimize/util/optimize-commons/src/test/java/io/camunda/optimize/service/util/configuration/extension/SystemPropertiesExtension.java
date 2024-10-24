@@ -22,7 +22,7 @@ import org.slf4j.Logger;
  */
 public class SystemPropertiesExtension implements BeforeEachCallback, AfterEachCallback {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(SystemPropertiesExtension.class);
   private Properties originalProperties;
 

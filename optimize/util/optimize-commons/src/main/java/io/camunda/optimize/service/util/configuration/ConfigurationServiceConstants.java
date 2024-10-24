@@ -9,7 +9,7 @@ package io.camunda.optimize.service.util.configuration;
 
 import java.util.List;
 
-public class ConfigurationServiceConstants {
+public final class ConfigurationServiceConstants {
 
   public static final String SECURITY = "$.security";
   public static final String ELASTICSEARCH = "$.es";
@@ -199,7 +199,7 @@ public class ConfigurationServiceConstants {
   // configured
   public static final String CLOUD_PROFILE = "cloud";
   public static final String CCSM_PROFILE = "ccsm";
-  public static final List<String> optimizeModeProfiles = List.of(CLOUD_PROFILE, CCSM_PROFILE);
+  public static final List<String> OPTIMIZE_MODE_PROFILES = List.of(CLOUD_PROFILE, CCSM_PROFILE);
 
   public static final String CAMUNDA_OPTIMIZE_DATABASE = "CAMUNDA_OPTIMIZE_DATABASE";
   public static final String ELASTICSEARCH_DATABASE_PROPERTY = "elasticsearch";

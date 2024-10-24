@@ -16,8 +16,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 public enum DataImportSourceType {
   ENGINE(ENGINE_DATA_SOURCE),
   ZEEBE(ZEEBE_DATA_SOURCE),
-  INGESTED_DATA(INGESTED_DATA_SOURCE),
-  ;
+  INGESTED_DATA(INGESTED_DATA_SOURCE);
 
   private final String id;
 

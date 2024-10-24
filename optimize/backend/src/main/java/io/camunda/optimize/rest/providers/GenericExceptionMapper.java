@@ -25,7 +25,7 @@ public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
   public static final String GENERIC_ERROR_CODE = "serverError";
   public static final String NOT_FOUND_ERROR_CODE = "notFoundError";
   public static final String BAD_REQUEST_ERROR_CODE = "badRequestError";
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(GenericExceptionMapper.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(GenericExceptionMapper.class);
 
   private final LocalizationService localizationService;
 
@@ -75,7 +75,7 @@ public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
 
   @Override
   public Response toResponse(final Throwable throwable) {
-    log.error("Mapping generic REST error", throwable);
+    LOG.error("Mapping generic REST error", throwable);
     return buildGenericErrorResponse(throwable);
   }
 }

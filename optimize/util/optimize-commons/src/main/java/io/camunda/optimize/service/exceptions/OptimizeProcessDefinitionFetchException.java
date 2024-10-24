@@ -9,7 +9,7 @@ package io.camunda.optimize.service.exceptions;
 
 public class OptimizeProcessDefinitionFetchException extends OptimizeRuntimeException {
 
-  public OptimizeProcessDefinitionFetchException(String message) {
+  public OptimizeProcessDefinitionFetchException(final String message) {
     super(message);
   }
 }

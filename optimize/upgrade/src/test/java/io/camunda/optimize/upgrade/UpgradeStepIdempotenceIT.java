@@ -61,7 +61,7 @@ public class UpgradeStepIdempotenceIT extends AbstractUpgradeIT {
   }
 
   private static Stream<Arguments> getSingleIndexUpdateStepScenarios() {
-    return generateAllUpgradeStepScenarios(TEST_INDEX_V1, TEST_INDEX_V2);
+    return generateAllUpgradeStepScenarios(testIndexV1, testIndexV2);
   }
 
   @ParameterizedTest(name = "UpgradeStep of type {0} applied on templated index can be retried.")
@@ -75,12 +75,12 @@ public class UpgradeStepIdempotenceIT extends AbstractUpgradeIT {
 
   private static Stream<Arguments> getTemplatedIndexUpdateStepScenarios() {
     return generateAllUpgradeStepScenarios(
-        TEST_INDEX_WITH_TEMPLATE_V1, TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
+        testIndexWithTemplateV1, testIndexWithTemplateUpdatedMappingV2);
   }
 
   @Test
   public void rolledOverTemplatedIndexUpdateStepIsIdempotentAndCanBeRetried() {
-    final String indexName = TEST_INDEX_WITH_TEMPLATE_V1.getIndexName();
+    final String indexName = testIndexWithTemplateV1.getIndexName();
     updateStepIsIdempotentAndCanBeRetried(
         UpgradeStepType.SCHEMA_UPDATE_INDEX,
         () -> {
@@ -91,16 +91,16 @@ public class UpgradeStepIdempotenceIT extends AbstractUpgradeIT {
                   .toVersion(INTERMEDIATE_VERSION)
                   .addUpgradeSteps(
                       ImmutableList.of(
-                          applyLookupSkip(new CreateIndexStep(TEST_INDEX_WITH_TEMPLATE_V1)),
-                          buildInsertTestIndexDataStep(TEST_INDEX_WITH_TEMPLATE_V1)))
+                          applyLookupSkip(new CreateIndexStep(testIndexWithTemplateV1)),
+                          buildInsertTestIndexDataStep(testIndexWithTemplateV1)))
                   .build());
 
           getPrefixAwareClient().triggerRollover(indexName, 0);
         },
-        applyLookupSkip(new UpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2)));
+        applyLookupSkip(new UpdateIndexStep(testIndexWithTemplateUpdatedMappingV2)));
 
     // then it succeeds on resume
-    final Set<String> response = getIndicesForMapping(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
+    final Set<String> response = getIndicesForMapping(testIndexWithTemplateUpdatedMappingV2);
     assertThat(response)
         .hasSize(2)
         .allSatisfy(index -> assertThat(index).contains(getVersionedIndexName(indexName, 2)));
@@ -108,7 +108,7 @@ public class UpgradeStepIdempotenceIT extends AbstractUpgradeIT {
 
   @Test
   public void rolledOverTemplatedIndexUpdateStepThatIsInterruptedIsIdempotentAndCanBeRetried() {
-    final String indexName = TEST_INDEX_WITH_TEMPLATE_V1.getIndexName();
+    final String indexName = testIndexWithTemplateV1.getIndexName();
     updateStepIsIdempotentAndCanBeRetried(
         UpgradeStepType.SCHEMA_UPDATE_INDEX,
         () -> {
@@ -119,8 +119,8 @@ public class UpgradeStepIdempotenceIT extends AbstractUpgradeIT {
                   .toVersion(INTERMEDIATE_VERSION)
                   .addUpgradeSteps(
                       ImmutableList.of(
-                          applyLookupSkip(new CreateIndexStep(TEST_INDEX_WITH_TEMPLATE_V1)),
-                          buildInsertTestIndexDataStep(TEST_INDEX_WITH_TEMPLATE_V1)))
+                          applyLookupSkip(new CreateIndexStep(testIndexWithTemplateV1)),
+                          buildInsertTestIndexDataStep(testIndexWithTemplateV1)))
                   .build());
 
           getPrefixAwareClient().triggerRollover(indexName, 0);
@@ -135,10 +135,10 @@ public class UpgradeStepIdempotenceIT extends AbstractUpgradeIT {
               .error(HttpError.error().withDropConnection(true));
           return createRolledOverIndex2Request;
         },
-        applyLookupSkip(new UpdateIndexStep(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2)));
+        applyLookupSkip(new UpdateIndexStep(testIndexWithTemplateUpdatedMappingV2)));
 
     // then it succeeds on resume
-    final Set<String> response = getIndicesForMapping(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2);
+    final Set<String> response = getIndicesForMapping(testIndexWithTemplateUpdatedMappingV2);
     assertThat(response)
         .hasSize(2)
         .allSatisfy(index -> assertThat(index).contains(getVersionedIndexName(indexName, 2)));

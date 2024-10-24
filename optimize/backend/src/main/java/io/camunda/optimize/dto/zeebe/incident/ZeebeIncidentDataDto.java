@@ -94,43 +94,43 @@ public class ZeebeIncidentDataDto implements IncidentRecordValue {
     return this.variableScopeKey;
   }
 
-  public void setErrorMessage(String errorMessage) {
+  public void setErrorMessage(final String errorMessage) {
     this.errorMessage = errorMessage;
   }
 
-  public void setBpmnProcessId(String bpmnProcessId) {
+  public void setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
   }
 
-  public void setElementId(String elementId) {
+  public void setElementId(final String elementId) {
     this.elementId = elementId;
   }
 
-  public void setElementInstanceKey(long elementInstanceKey) {
+  public void setElementInstanceKey(final long elementInstanceKey) {
     this.elementInstanceKey = elementInstanceKey;
   }
 
-  public void setProcessInstanceKey(long processInstanceKey) {
+  public void setProcessInstanceKey(final long processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
   }
 
-  public void setProcessDefinitionKey(long processDefinitionKey) {
+  public void setProcessDefinitionKey(final long processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
   }
 
-  public void setJobKey(long jobKey) {
+  public void setJobKey(final long jobKey) {
     this.jobKey = jobKey;
   }
 
-  public void setErrorType(ErrorType errorType) {
+  public void setErrorType(final ErrorType errorType) {
     this.errorType = errorType;
   }
 
-  public void setVariableScopeKey(long variableScopeKey) {
+  public void setVariableScopeKey(final long variableScopeKey) {
     this.variableScopeKey = variableScopeKey;
   }
 
-  public void setTenantId(String tenantId) {
+  public void setTenantId(final String tenantId) {
     this.tenantId = tenantId;
   }
 
@@ -170,6 +170,7 @@ public class ZeebeIncidentDataDto implements IncidentRecordValue {
     return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String errorMessage = "errorMessage";

@@ -28,12 +28,13 @@ public class ConfigurationServiceBuilder {
     return createConfiguration().build();
   }
 
-  public static ConfigurationService createConfigurationFromLocations(String... configLocations) {
+  public static ConfigurationService createConfigurationFromLocations(
+      final String... configLocations) {
     return createConfiguration().loadConfigurationFrom(configLocations).build();
   }
 
   public static ConfigurationService createConfigurationWithDefaultAndAdditionalLocations(
-      String... additionalLocations) {
+      final String... additionalLocations) {
     return createConfiguration().addConfigurationLocations(additionalLocations).build();
   }
 
@@ -41,17 +42,18 @@ public class ConfigurationServiceBuilder {
     return new ConfigurationServiceBuilder();
   }
 
-  public ConfigurationServiceBuilder addConfigurationLocations(String... configLocations) {
+  public ConfigurationServiceBuilder addConfigurationLocations(final String... configLocations) {
     this.configLocations = ArrayUtils.addAll(this.configLocations, configLocations);
     return this;
   }
 
-  public ConfigurationServiceBuilder loadConfigurationFrom(String... configLocations) {
+  public ConfigurationServiceBuilder loadConfigurationFrom(final String... configLocations) {
     this.configLocations = configLocations;
     return this;
   }
 
-  public ConfigurationServiceBuilder useValidator(ConfigurationValidator configurationValidator) {
+  public ConfigurationServiceBuilder useValidator(
+      final ConfigurationValidator configurationValidator) {
     this.configurationValidator = configurationValidator;
     return this;
   }

@@ -26,7 +26,7 @@ public class VariableUpdateInstanceIndexOS
 
   @Override
   public IndexSettings.Builder getStaticSettings(
-      IndexSettings.Builder xContentBuilder, ConfigurationService configurationService)
+      final IndexSettings.Builder xContentBuilder, final ConfigurationService configurationService)
       throws IOException {
     final IndexSettings.Builder result =
         super.getStaticSettings(xContentBuilder, configurationService);

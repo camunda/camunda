@@ -24,7 +24,7 @@ public class PercentileAggregationOS extends AggregationStrategyOS {
   private static final String PERCENTILE_AGGREGATION = "percentileAggregation";
   private Double percentileValue;
 
-  public PercentileAggregationOS(Double percentileValue) {
+  public PercentileAggregationOS(final Double percentileValue) {
     this.percentileValue = percentileValue;
   }
 

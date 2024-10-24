@@ -14,7 +14,7 @@ import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 
-public class FilterLimitedAggregationUtilOS {
+public final class FilterLimitedAggregationUtilOS {
 
   public static final String FILTER_LIMITED_AGGREGATION = "filterLimitedAggregation";
 

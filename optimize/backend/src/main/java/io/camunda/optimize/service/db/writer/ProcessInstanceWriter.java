@@ -46,7 +46,7 @@ public class ProcessInstanceWriter {
   private static final String NEW_INSTANCE = "instance";
   private static final String FORMATTER = "dateFormatPattern";
   private static final String SOURCE_EXPORT_INDEX = "sourceExportIndex";
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ProcessInstanceWriter.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ProcessInstanceWriter.class);
   private final IndexRepository indexRepository;
   private final ObjectMapper objectMapper;
   private final ImportRequestDtoFactory importRequestDtoFactory;
@@ -66,7 +66,7 @@ public class ProcessInstanceWriter {
   public List<ImportRequestDto> generateProcessInstanceImports(
       final List<ProcessInstanceDto> processInstances, final String sourceExportIndex) {
     final String importItemName = "zeebe process instances";
-    log.debug("Creating imports for {} [{}].", processInstances.size(), importItemName);
+    LOG.debug("Creating imports for {} [{}].", processInstances.size(), importItemName);
     indexRepository.createMissingIndices(
         PROCESS_INSTANCE_INDEX,
         Set.of(PROCESS_INSTANCE_MULTI_ALIAS),
@@ -98,7 +98,7 @@ public class ProcessInstanceWriter {
   }
 
   public void deleteByIds(final String definitionKey, final List<String> processInstanceIds) {
-    log.debug(
+    LOG.debug(
         "Deleting [{}] process instance documents with bulk request.", processInstanceIds.size());
     final String index = getProcessInstanceIndexAliasName(definitionKey);
     processInstanceRepository.deleteByIds(index, index, processInstanceIds);
@@ -107,7 +107,7 @@ public class ProcessInstanceWriter {
   public List<ImportRequestDto> generateRunningProcessInstanceImports(
       final List<ProcessInstanceDto> processInstances) {
     final String importItemName = "running process instances";
-    log.debug("Creating imports for {} [{}].", processInstances.size(), importItemName);
+    LOG.debug("Creating imports for {} [{}].", processInstances.size(), importItemName);
     indexRepository.createMissingIndices(
         PROCESS_INSTANCE_INDEX,
         Set.of(PROCESS_INSTANCE_MULTI_ALIAS),
@@ -136,7 +136,7 @@ public class ProcessInstanceWriter {
   public List<ImportRequestDto> generateCompletedProcessInstanceImports(
       final List<ProcessInstanceDto> processInstances) {
     final String importItemName = "completed process instances";
-    log.debug("Creating imports for {} [{}].", processInstances.size(), importItemName);
+    LOG.debug("Creating imports for {} [{}].", processInstances.size(), importItemName);
     indexRepository.createMissingIndices(
         PROCESS_INSTANCE_INDEX,
         Set.of(PROCESS_INSTANCE_MULTI_ALIAS),

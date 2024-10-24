@@ -23,20 +23,20 @@ public class CustomCollectionEntityDeserializer extends StdDeserializer<Collecti
 
   private ObjectMapper objectMapper;
 
-  public CustomCollectionEntityDeserializer(ObjectMapper objectMapper) {
+  public CustomCollectionEntityDeserializer(final ObjectMapper objectMapper) {
     super(CollectionEntity.class);
     this.objectMapper = objectMapper;
   }
 
-  public CustomCollectionEntityDeserializer(Class<?> vc) {
+  public CustomCollectionEntityDeserializer(final Class<?> vc) {
     super(vc);
   }
 
   @Override
-  public CollectionEntity deserialize(JsonParser jp, DeserializationContext ctxt)
+  public CollectionEntity deserialize(final JsonParser jp, final DeserializationContext ctxt)
       throws IOException {
-    JsonNode node = jp.getCodec().readTree(jp);
-    String json = node.toString();
+    final JsonNode node = jp.getCodec().readTree(jp);
+    final String json = node.toString();
     if (isReport(node)) {
       return objectMapper.readValue(json, ReportDefinitionDto.class);
     } else {
@@ -44,7 +44,7 @@ public class CustomCollectionEntityDeserializer extends StdDeserializer<Collecti
     }
   }
 
-  private boolean isReport(JsonNode node) {
+  private boolean isReport(final JsonNode node) {
     return node.hasNonNull(REPORT_TYPE);
   }
 }

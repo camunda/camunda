@@ -11,7 +11,7 @@ import co.elastic.clients.elasticsearch._types.aggregations.CalendarInterval;
 import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import java.time.temporal.ChronoUnit;
 
-public class AggregateByDateUnitMapperES {
+public final class AggregateByDateUnitMapperES {
 
   private static final String UNSUPPORTED_UNIT_STRING = "Unsupported unit: ";
 

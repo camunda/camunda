@@ -12,7 +12,7 @@ import co.elastic.clients.elasticsearch._types.SortOrder;
 public class SortUtilsES {
 
   public static SortOrder getSortOrder(
-      io.camunda.optimize.dto.optimize.query.sorting.SortOrder sortOrder) {
+      final io.camunda.optimize.dto.optimize.query.sorting.SortOrder sortOrder) {
     return sortOrder == io.camunda.optimize.dto.optimize.query.sorting.SortOrder.ASC
         ? SortOrder.Asc
         : SortOrder.Desc;

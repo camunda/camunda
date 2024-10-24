@@ -14,39 +14,40 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class CanceledFlowNodeFilterBuilder {
+public final class CanceledFlowNodeFilterBuilder {
 
-  private List<String> values = new ArrayList<>();
-  private ProcessFilterBuilder filterBuilder;
+  private final List<String> values = new ArrayList<>();
+  private final ProcessFilterBuilder filterBuilder;
   private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
 
-  private CanceledFlowNodeFilterBuilder(ProcessFilterBuilder processFilterBuilder) {
+  private CanceledFlowNodeFilterBuilder(final ProcessFilterBuilder processFilterBuilder) {
     filterBuilder = processFilterBuilder;
   }
 
-  public static CanceledFlowNodeFilterBuilder construct(ProcessFilterBuilder processFilterBuilder) {
+  public static CanceledFlowNodeFilterBuilder construct(
+      final ProcessFilterBuilder processFilterBuilder) {
     return new CanceledFlowNodeFilterBuilder(processFilterBuilder);
   }
 
-  public CanceledFlowNodeFilterBuilder id(String flowNodeId) {
+  public CanceledFlowNodeFilterBuilder id(final String flowNodeId) {
     values.add(flowNodeId);
     return this;
   }
 
-  public CanceledFlowNodeFilterBuilder ids(String... flowNodeIds) {
+  public CanceledFlowNodeFilterBuilder ids(final String... flowNodeIds) {
     values.addAll(Arrays.asList(flowNodeIds));
     return this;
   }
 
-  public CanceledFlowNodeFilterBuilder filterLevel(FilterApplicationLevel filterLevel) {
+  public CanceledFlowNodeFilterBuilder filterLevel(final FilterApplicationLevel filterLevel) {
     this.filterLevel = filterLevel;
     return this;
   }
 
   public ProcessFilterBuilder add() {
-    CanceledFlowNodeFilterDataDto dataDto = new CanceledFlowNodeFilterDataDto();
+    final CanceledFlowNodeFilterDataDto dataDto = new CanceledFlowNodeFilterDataDto();
     dataDto.setValues(new ArrayList<>(values));
-    CanceledFlowNodeFilterDto canceledFlowNodeFilterDto = new CanceledFlowNodeFilterDto();
+    final CanceledFlowNodeFilterDto canceledFlowNodeFilterDto = new CanceledFlowNodeFilterDto();
     canceledFlowNodeFilterDto.setData(dataDto);
     canceledFlowNodeFilterDto.setFilterLevel(filterLevel);
     filterBuilder.addFilter(canceledFlowNodeFilterDto);

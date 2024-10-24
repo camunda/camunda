@@ -22,8 +22,7 @@ public enum DurationUnit {
   HOURS("hours"),
   MINUTES("minutes"),
   SECONDS("seconds"),
-  MILLIS("millis"),
-  ;
+  MILLIS("millis");
 
   private final String id;
 

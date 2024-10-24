@@ -57,26 +57,29 @@ public class UpdateDataStep extends UpgradeStep {
   }
 
   @Override
-  public void performUpgradeStep(SchemaUpgradeClient<?, ?> schemaUpgradeClient) {
+  public void performUpgradeStep(final SchemaUpgradeClient<?, ?> schemaUpgradeClient) {
     if (paramMapProvider != null) {
       try {
         parameters = paramMapProvider.call();
-      } catch (Exception e) {
+      } catch (final Exception e) {
         throw new OptimizeRuntimeException(e);
       }
     }
     schemaUpgradeClient.updateDataByIndexName(index, queryWrapper, updateScript, parameters);
   }
 
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
-  }
-
+  @Override
   protected boolean canEqual(final Object other) {
     return other instanceof UpdateDataStep;
   }
 
+  @Override
   public int hashCode() {
     return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 }

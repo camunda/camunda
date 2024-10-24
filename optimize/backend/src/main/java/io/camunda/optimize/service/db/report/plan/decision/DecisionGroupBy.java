@@ -23,7 +23,7 @@ public enum DecisionGroupBy {
 
   private final DecisionGroupByDto<?> dto;
 
-  private DecisionGroupBy(DecisionGroupByDto<?> dto) {
+  private DecisionGroupBy(final DecisionGroupByDto<?> dto) {
     this.dto = dto;
   }
 

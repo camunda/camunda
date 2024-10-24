@@ -10,7 +10,7 @@ package io.camunda.optimize.service.util;
 import io.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 
-public class DatabaseHelper {
+public final class DatabaseHelper {
 
   private DatabaseHelper() {}
 

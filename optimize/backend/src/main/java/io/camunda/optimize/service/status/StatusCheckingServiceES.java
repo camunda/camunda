@@ -37,7 +37,7 @@ public class StatusCheckingServiceES extends StatusCheckingService {
               HealthRequest.of(h -> h.index(optimizeIndexNameService.getIndexPrefix() + "*")));
 
       return healthResponse.status() != HealthStatus.Red;
-    } catch (Exception ignored) {
+    } catch (final Exception ignored) {
       return false;
     }
   }

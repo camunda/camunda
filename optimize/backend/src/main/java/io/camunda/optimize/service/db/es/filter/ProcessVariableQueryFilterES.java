@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
 public class ProcessVariableQueryFilterES extends AbstractProcessVariableQueryFilterES
     implements QueryFilterES<VariableFilterDataDto<?>> {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ProcessVariableQueryFilterES.class);
 
   public ProcessVariableQueryFilterES() {}

@@ -38,7 +38,7 @@ import org.springframework.util.CollectionUtils;
 @Conditional(OpenSearchCondition.class)
 public class DefinitionInstanceReaderOS extends DefinitionInstanceReader {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(DefinitionInstanceReaderOS.class);
   final OptimizeIndexNameService indexNameService;
   final OptimizeOpenSearchClient osClient;
@@ -86,7 +86,7 @@ public class DefinitionInstanceReaderOS extends DefinitionInstanceReader {
           e);
     } catch (final OpenSearchException e) {
       if (isInstanceIndexNotFoundException(type, e)) {
-        log.info(
+        LOG.info(
             "Was not able to retrieve definition keys for instances because no {} instance indices exist. "
                 + "Returning empty set.",
             type);

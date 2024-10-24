@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ProcessOverviewWriter {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ProcessOverviewWriter.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ProcessOverviewWriter.class);
   private final ProcessOverviewRepository processOverviewRepository;
 
   public ProcessOverviewWriter(final ProcessOverviewRepository processOverviewRepository) {
@@ -54,7 +54,7 @@ public class ProcessOverviewWriter {
 
   public void updateKpisForProcessDefinitions(
       final Map<String, LastKpiEvaluationResultsDto> definitionKeyToKpis) {
-    log.debug(
+    LOG.debug(
         "Updating KPI values for process definitions with keys: [{}]",
         definitionKeyToKpis.keySet());
     final List<ProcessOverviewDto> processOverviewDtos =
@@ -73,7 +73,7 @@ public class ProcessOverviewWriter {
   }
 
   public void deleteProcessOwnerEntry(final String processDefinitionKey) {
-    log.info("Removing pending entry " + processDefinitionKey);
+    LOG.info("Removing pending entry " + processDefinitionKey);
     processOverviewRepository.deleteProcessOwnerEntry(processDefinitionKey);
   }
 

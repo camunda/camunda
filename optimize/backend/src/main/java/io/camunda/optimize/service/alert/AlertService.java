@@ -72,7 +72,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class AlertService implements ReportReferencingService {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(AlertService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(AlertService.class);
   private final ApplicationContext applicationContext;
   private final AlertReader alertReader;
   private final AlertWriter alertWriter;
@@ -148,11 +148,11 @@ public class AlertService implements ReportReferencingService {
         schedulerFactoryBean.start();
       }
     } catch (final Exception e) {
-      log.error("Couldn't initialize alert scheduling.", e);
+      LOG.error("Couldn't initialize alert scheduling.", e);
       try {
         destroy();
       } catch (final Exception destroyException) {
-        log.error("Failed destroying alertService", destroyException);
+        LOG.error("Failed destroying alertService", destroyException);
       }
       throw new OptimizeRuntimeException(e);
     }
@@ -165,7 +165,7 @@ public class AlertService implements ReportReferencingService {
         schedulerFactoryBean.stop();
         schedulerFactoryBean.destroy();
       } catch (final Exception e) {
-        log.error("Can't destroy scheduler", e);
+        LOG.error("Can't destroy scheduler", e);
       }
       schedulerFactoryBean = null;
     }
@@ -285,7 +285,7 @@ public class AlertService implements ReportReferencingService {
         verifyUserAuthorizedToEditAlertOrFail(getAlert(alertId), userId);
         alertIdsToDelete.add(alertId);
       } catch (final NotFoundException e) {
-        log.debug("Cannot find alert with id [{}], it may have been deleted already", alertId);
+        LOG.debug("Cannot find alert with id [{}], it may have been deleted already", alertId);
       }
     }
     alertWriter.deleteAlerts(alertIdsToDelete);
@@ -297,7 +297,7 @@ public class AlertService implements ReportReferencingService {
       unscheduleCheckJob(toDelete);
       unscheduleReminderJob(toDelete);
     } catch (final SchedulerException e) {
-      log.error("can't adjust scheduler for alert [{}]", alertId, e);
+      LOG.error("can't adjust scheduler for alert [{}]", alertId, e);
     }
     toDelete.setTriggered(false);
   }
@@ -414,7 +414,7 @@ public class AlertService implements ReportReferencingService {
               + "]. Report id ["
               + toCreate.getReportId()
               + "] does not exist.";
-      log.error(errorMessage);
+      LOG.error(errorMessage);
       throw new BadRequestException(errorMessage, e);
     }
 
@@ -466,7 +466,7 @@ public class AlertService implements ReportReferencingService {
         getScheduler().scheduleJob(jobDetail, alertCheckJobFactory.createTrigger(alert, jobDetail));
       }
     } catch (final SchedulerException e) {
-      log.error("can't schedule new alert", e);
+      LOG.error("can't schedule new alert", e);
     }
   }
 
@@ -526,7 +526,7 @@ public class AlertService implements ReportReferencingService {
               "The following webhooks no longer exist in Optimize configuration, yet are associated with existing "
                   + "alerts:%n%s",
               missingWebhookSummary);
-      log.error(errorMsg);
+      LOG.error(errorMsg);
     }
   }
 }

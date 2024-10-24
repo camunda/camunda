@@ -56,7 +56,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class KpiService {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(KpiService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(KpiService.class);
   private final ReportService reportService;
   private final LocalizationService localizationService;
   private final PlainReportEvaluationHandler reportEvaluationHandler;

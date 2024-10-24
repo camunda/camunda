@@ -31,7 +31,7 @@ import org.springframework.stereotype.Component;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ExternalVariableUpdateImportMediator implements ImportMediator {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ExternalVariableUpdateImportMediator.class);
   private final ConfigurationService configurationService;
   private final BackoffCalculator idleBackoffCalculator;
@@ -79,7 +79,7 @@ public class ExternalVariableUpdateImportMediator implements ImportMediator {
   @Override
   public boolean canImport() {
     final boolean canImportNewPage = idleBackoffCalculator.isReadyForNextRetry();
-    log.debug("can import next page [{}]", canImportNewPage);
+    LOG.debug("can import next page [{}]", canImportNewPage);
     return canImportNewPage;
   }
 
@@ -178,13 +178,13 @@ public class ExternalVariableUpdateImportMediator implements ImportMediator {
           if (errorBackoffCalculator.isMaximumBackoffReached()) {
             // if max back-off is reached abort retrying and return true to indicate there is new
             // data
-            log.error(
+            LOG.error(
                 "Was not able to import next page and reached max backoff, aborting this run.", e);
             importCompleteCallback.complete(null);
             result = true;
           } else {
             final long timeToSleep = errorBackoffCalculator.calculateSleepTime();
-            log.error(
+            LOG.error(
                 "Was not able to import next page, retrying after sleeping for {}ms.",
                 timeToSleep,
                 e);
@@ -193,7 +193,7 @@ public class ExternalVariableUpdateImportMediator implements ImportMediator {
         }
       }
     } catch (final InterruptedException e) {
-      log.warn("Was interrupted while importing next page.", e);
+      LOG.warn("Was interrupted while importing next page.", e);
       Thread.currentThread().interrupt();
       return false;
     }
@@ -204,11 +204,11 @@ public class ExternalVariableUpdateImportMediator implements ImportMediator {
 
   private void calculateNewDateUntilIsBlocked() {
     if (idleBackoffCalculator.isMaximumBackoffReached()) {
-      log.debug(
+      LOG.debug(
           "Maximum idle backoff reached, this mediator will not backoff any further than {}ms.",
           idleBackoffCalculator.getMaximumBackoffMilliseconds());
     }
     final long sleepTime = idleBackoffCalculator.calculateSleepTime();
-    log.debug("Was not able to produce a new job, sleeping for [{}] ms", sleepTime);
+    LOG.debug("Was not able to produce a new job, sleeping for [{}] ms", sleepTime);
   }
 }

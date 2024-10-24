@@ -41,7 +41,7 @@ public class DecisionDefinitionWriterOS implements DecisionDefinitionWriter {
   private static final Script MARK_AS_DELETED_SCRIPT =
       OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams(
           "ctx._source.deleted = true", Collections.emptyMap());
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(DecisionDefinitionWriterOS.class);
   private final ObjectMapper objectMapper;
   private final OptimizeOpenSearchClient osClient;
@@ -59,14 +59,14 @@ public class DecisionDefinitionWriterOS implements DecisionDefinitionWriter {
   @Override
   public void importDecisionDefinitions(
       final List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos) {
-    log.debug(
+    LOG.debug(
         "Writing [{}] decision definitions to opensearch", decisionDefinitionOptimizeDtos.size());
     writeDecisionDefinitionInformation(decisionDefinitionOptimizeDtos);
   }
 
   @Override
   public void markDefinitionAsDeleted(final String definitionId) {
-    log.debug("Marking decision definition with ID {} as deleted", definitionId);
+    LOG.debug("Marking decision definition with ID {} as deleted", definitionId);
     final UpdateRequest.Builder updateRequest =
         new UpdateRequest.Builder<>()
             .index(DECISION_DEFINITION_INDEX_NAME)
@@ -121,7 +121,7 @@ public class DecisionDefinitionWriterOS implements DecisionDefinitionWriter {
               }
             });
     if (definitionsUpdated.get()) {
-      log.debug("Marked old decision definitions with new deployments as deleted");
+      LOG.debug("Marked old decision definitions with new deployments as deleted");
     }
     return definitionsUpdated.get();
   }
@@ -129,7 +129,7 @@ public class DecisionDefinitionWriterOS implements DecisionDefinitionWriter {
   private void writeDecisionDefinitionInformation(
       final List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos) {
     final String importItemName = "decision definition information";
-    log.debug("Writing [{}] {} to OS.", decisionDefinitionOptimizeDtos.size(), importItemName);
+    LOG.debug("Writing [{}] {} to OS.", decisionDefinitionOptimizeDtos.size(), importItemName);
     osClient.doImportBulkRequestWithList(
         importItemName,
         decisionDefinitionOptimizeDtos,

@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
 @Conditional(CCSaaSCondition.class)
 public class CloudSaasMetaInfoService {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(CloudSaasMetaInfoService.class);
   private final CCSaaSOrganizationsClient organizationsClient;
   private final AccountsUserAccessTokenProvider accessTokenProvider;
@@ -42,11 +42,11 @@ public class CloudSaasMetaInfoService {
       try {
         return organizationsClient.getSalesPlanType(accessToken.get());
       } catch (final OptimizeRuntimeException e) {
-        log.warn("Failed retrieving salesPlanType.", e);
+        LOG.warn("Failed retrieving salesPlanType.", e);
         return Optional.empty();
       }
     } else {
-      log.warn("No user access token found, will not retrieve salesPlanType");
+      LOG.warn("No user access token found, will not retrieve salesPlanType");
       return Optional.empty();
     }
   }
@@ -57,11 +57,11 @@ public class CloudSaasMetaInfoService {
       try {
         return clusterClient.getWebappLinks(accessToken.get());
       } catch (final OptimizeRuntimeException e) {
-        log.warn("Failed retrieving webapp links  .", e);
+        LOG.warn("Failed retrieving webapp links  .", e);
         return Collections.emptyMap();
       }
     } else {
-      log.warn("No user access token found, will not retrieve links to other webapps.");
+      LOG.warn("No user access token found, will not retrieve links to other webapps.");
       return Collections.emptyMap();
     }
   }

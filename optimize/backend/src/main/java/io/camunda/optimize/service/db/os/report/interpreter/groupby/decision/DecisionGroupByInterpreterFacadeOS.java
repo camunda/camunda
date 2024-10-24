@@ -32,7 +32,7 @@ public class DecisionGroupByInterpreterFacadeOS
     extends AbstractInterpreterFacade<DecisionGroupBy, DecisionGroupByInterpreterOS>
     implements DecisionGroupByInterpreterOS {
 
-  public DecisionGroupByInterpreterFacadeOS(List<DecisionGroupByInterpreterOS> interpreters) {
+  public DecisionGroupByInterpreterFacadeOS(final List<DecisionGroupByInterpreterOS> interpreters) {
     super(interpreters, DecisionGroupByInterpreterOS::getSupportedGroupBys);
   }
 
@@ -50,23 +50,24 @@ public class DecisionGroupByInterpreterFacadeOS
 
   @Override
   public void adjustSearchRequest(
-      SearchRequest.Builder searchRequestBuilder,
-      Query baseQuery,
-      ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
+      final SearchRequest.Builder searchRequestBuilder,
+      final Query baseQuery,
+      final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
     interpreter(context.getPlan().getGroupBy())
         .adjustSearchRequest(searchRequestBuilder, baseQuery, context);
   }
 
   @Override
   public Map<String, Aggregation> createAggregation(
-      Query query, ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
+      final Query query,
+      final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
     return interpreter(context.getPlan().getGroupBy()).createAggregation(query, context);
   }
 
   @Override
   public CompositeCommandResult retrieveQueryResult(
-      SearchResponse<RawResult> response,
-      ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
+      final SearchResponse<RawResult> response,
+      final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
     return interpreter(context.getPlan().getGroupBy()).retrieveQueryResult(response, context);
   }
 }

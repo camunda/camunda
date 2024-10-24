@@ -189,7 +189,7 @@ public class MixpanelClientTest {
         .thenReturn(new StringEntity("{\"error\":", ContentType.APPLICATION_JSON));
     try {
       when(httpClient.execute(any())).thenReturn(mockResponse);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
     }
 

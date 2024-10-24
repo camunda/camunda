@@ -23,9 +23,9 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class MappingMetadataUtilOS extends MappingMetadataUtil<Builder> {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(MappingMetadataUtilOS.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(MappingMetadataUtilOS.class);
 
-  public MappingMetadataUtilOS(OptimizeOpenSearchClient dbClient) {
+  public MappingMetadataUtilOS(final OptimizeOpenSearchClient dbClient) {
     super(dbClient);
   }
 

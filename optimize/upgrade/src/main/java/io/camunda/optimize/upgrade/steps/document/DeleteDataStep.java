@@ -32,14 +32,17 @@ public class DeleteDataStep extends UpgradeStep {
     schemaUpgradeClient.deleteDataByIndexName(index, queryWrapper);
   }
 
+  @Override
   public boolean equals(final Object o) {
     return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
+  @Override
   protected boolean canEqual(final Object other) {
     return other instanceof DeleteDataStep;
   }
 
+  @Override
   public int hashCode() {
     return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }

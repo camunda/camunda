@@ -57,11 +57,11 @@ public class DecisionGroupByEvaluationDateTimeInterpreterOS
   private final DecisionViewInterpreterFacadeOS viewInterpreter;
 
   public DecisionGroupByEvaluationDateTimeInterpreterOS(
-      DateAggregationServiceOS dateAggregationService,
-      MinMaxStatsServiceOS minMaxStatsService,
-      DecisionQueryFilterEnhancerOS queryFilterEnhancer,
-      DecisionDistributedByNoneInterpreterOS distributedByInterpreter,
-      DecisionViewInterpreterFacadeOS viewInterpreter) {
+      final DateAggregationServiceOS dateAggregationService,
+      final MinMaxStatsServiceOS minMaxStatsService,
+      final DecisionQueryFilterEnhancerOS queryFilterEnhancer,
+      final DecisionDistributedByNoneInterpreterOS distributedByInterpreter,
+      final DecisionViewInterpreterFacadeOS viewInterpreter) {
     this.dateAggregationService = dateAggregationService;
     this.minMaxStatsService = minMaxStatsService;
     this.queryFilterEnhancer = queryFilterEnhancer;
@@ -138,7 +138,7 @@ public class DecisionGroupByEvaluationDateTimeInterpreterOS
 
     final Optional<Map<String, Aggregate>> unwrappedLimitedAggregations =
         unwrapFilterLimitedAggregations(aggregations);
-    Map<String, Map<String, Aggregate>> keyToAggregationMap;
+    final Map<String, Map<String, Aggregate>> keyToAggregationMap;
     if (unwrappedLimitedAggregations.isPresent()) {
       keyToAggregationMap =
           dateAggregationService.mapDateAggregationsToKeyAggregationMap(

@@ -119,16 +119,13 @@ import org.springframework.context.ApplicationContext;
 
 public class OptimizeOpenSearchClient extends DatabaseClient {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(OptimizeOpenSearchClient.class);
+
   private ExtendedOpenSearchClient openSearchClient;
-
   private OpenSearchAsyncClient openSearchAsyncClient;
-
   private RichOpenSearchClient richOpenSearchClient;
-
   private RestClient restClient;
-
   private TransportOptionsProvider transportOptionsProvider;
 
   public OptimizeOpenSearchClient(
@@ -207,21 +204,21 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
                       / status.total());
       return Optional.of(progress);
     } catch (final Exception e) {
-      log.error(format("Failed to compute task (ID:%s) progress!", taskResponse.task().id()), e);
+      LOG.error(format("Failed to compute task (ID:%s) progress!", taskResponse.task().id()), e);
       return Optional.empty();
     }
   }
 
   public static void validateTaskResponse(final GetTasksResponse taskResponse) {
     if (taskResponse.error() != null) {
-      log.error("An Opensearch task failed with error: {}", taskResponse.error());
+      LOG.error("An Opensearch task failed with error: {}", taskResponse.error());
       throw new OptimizeRuntimeException(taskResponse.error().toString());
     }
 
     if (taskResponse.response() != null) {
       final List<String> failures = taskResponse.response().failures();
       if (failures != null && !failures.isEmpty()) {
-        log.error("Opensearch task contains failures: {}", failures);
+        LOG.error("Opensearch task contains failures: {}", failures);
         throw new OptimizeRuntimeException(failures.toString());
       }
     }
@@ -292,7 +289,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   public void deleteIndexTemplateByIndexTemplateName(final String indexTemplateName) {
     final String prefixedIndexTemplateName =
         indexNameService.getOptimizeIndexAliasForIndex(indexTemplateName);
-    log.debug("Deleting index template [{}].", prefixedIndexTemplateName);
+    LOG.debug("Deleting index template [{}].", prefixedIndexTemplateName);
     try {
       getOpenSearchClient().indices().deleteTemplate(b -> b.name(prefixedIndexTemplateName));
     } catch (final IOException e) {
@@ -300,7 +297,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
           String.format("Could not delete index template [%s]!", prefixedIndexTemplateName);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
-    log.debug("Successfully deleted index template [{}].", prefixedIndexTemplateName);
+    LOG.debug("Successfully deleted index template [{}].", prefixedIndexTemplateName);
   }
 
   public <A, B> UpdateResponse<A> upsert(
@@ -376,16 +373,16 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
             .conditions(new RolloverConditions.Builder().maxSize(maxIndexSizeGB + GB_UNIT).build())
             .build();
 
-    log.info("Executing rollover request on {}", indexAliasName);
+    LOG.info("Executing rollover request on {}", indexAliasName);
     try {
       final RolloverResponse rolloverResponse = rollover(rolloverRequest);
       if (rolloverResponse.rolledOver()) {
-        log.info(
+        LOG.info(
             "Index with alias {} has been rolled over. New index name: {}",
             indexAliasName,
             rolloverResponse.newIndex());
       } else {
-        log.debug(
+        LOG.debug(
             "Index with alias {} has not been rolled over. {}",
             indexAliasName,
             rolloverConditionsStatus(rolloverResponse.conditions()));
@@ -393,7 +390,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       return rolloverResponse.rolledOver();
     } catch (final Exception e) {
       final String message = "Failed to execute rollover request";
-      log.error(message, e);
+      LOG.error(message, e);
       throw new OptimizeRuntimeException(message, e);
     }
   }
@@ -401,9 +398,9 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   @Override
   public void deleteIndex(final String indexAlias) {
     if (getRichOpenSearchClient().index().deleteIndicesWithRetries(indexAlias)) {
-      log.debug("Successfully deleted index with alias {}", indexAlias);
+      LOG.debug("Successfully deleted index with alias {}", indexAlias);
     } else {
-      log.warn("Could not delete index with alias {}", indexAlias);
+      LOG.warn("Could not delete index with alias {}", indexAlias);
     }
   }
 
@@ -476,7 +473,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       final Boolean retryRequestIfNestedDocLimitReached) {
 
     if (importRequestDtos.isEmpty()) {
-      log.warn("Cannot perform bulk request with empty collection of {}.", bulkRequestName);
+      LOG.warn("Cannot perform bulk request with empty collection of {}.", bulkRequestName);
     } else {
       final List<BulkOperation> operations =
           importRequestDtos.stream().map(this::createBulkOperation).toList();
@@ -495,7 +492,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       final String definitionIdField,
       final int maxPageSize,
       final String engineAlias) {
-    log.debug("Performing " + indexName + " search query!");
+    LOG.debug("Performing " + indexName + " search query!");
     final Set<String> result = new HashSet<>();
 
     final BoolQuery filterQuery = buildBasicSearchDefinitionQuery(definitionXml, engineAlias);
@@ -522,7 +519,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     final SearchResponse<DefinitionOptimizeResponseDto> searchResponse =
         search(searchRequest, DefinitionOptimizeResponseDto.class, errorMessage);
 
-    log.debug(indexName + " search query got [{}] results", searchResponse.hits().hits());
+    LOG.debug(indexName + " search query got [{}] results", searchResponse.hits().hits());
 
     for (final Hit<DefinitionOptimizeResponseDto> hit : searchResponse.hits().hits()) {
       result.add(hit.id());
@@ -538,29 +535,29 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   @Override
   public void deleteIndexByRawIndexNames(final String... indexNames) {
     final String indexNamesString = Arrays.toString(indexNames);
-    log.debug("Deleting indices [{}].", indexNamesString);
+    LOG.debug("Deleting indices [{}].", indexNamesString);
     dbClientSnapshotFailsafe("DeleteIndex: " + indexNamesString)
         .get(
             () ->
                 getOpenSearchClient()
                     .indices()
                     .delete(DeleteIndexRequest.of(b -> b.index(List.of(indexNames)))));
-    log.debug("Successfully deleted index [{}].", indexNamesString);
+    LOG.debug("Successfully deleted index [{}].", indexNamesString);
   }
 
   @Override
   public void deleteAllIndexes() {
-    log.debug("Deleting all indexes.");
+    LOG.debug("Deleting all indexes.");
     try {
       final DeleteIndexResponse response =
           openSearchClient.indices().delete(new Builder().index("*").build());
       if (response.acknowledged()) {
-        log.debug("Successfully deleted all indexes.");
+        LOG.debug("Successfully deleted all indexes.");
       } else {
-        log.warn("There was an error deleting all indexes.");
+        LOG.warn("There was an error deleting all indexes.");
       }
     } catch (final IOException e) {
-      log.warn("There was an error deleting all indexes.", e);
+      LOG.warn("There was an error deleting all indexes.", e);
     }
   }
 
@@ -582,7 +579,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
         () ->
             richOpenSearchClient.doc().scrollWith(null, response, hitsConsumer, null, clazz, limit),
         e -> format("Could not scroll through entries for class [%s].", clazz.getSimpleName()),
-        log);
+        LOG);
   }
 
   public <T> MgetResponse<T> mget(
@@ -711,7 +708,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
           return null;
         },
         errorMessageSupplier,
-        log);
+        LOG);
   }
 
   private BulkOperation createBulkOperation(final ImportRequestDto requestDto) {
@@ -760,7 +757,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       final Boolean retryRequestIfNestedDocLimitReached,
       final String indexName) {
     if (entityCollection.isEmpty()) {
-      log.warn("Cannot perform bulk request with empty collection of {}.", importItemName);
+      LOG.warn("Cannot perform bulk request with empty collection of {}.", importItemName);
     } else {
       final List<BulkOperation> operations =
           entityCollection.stream().map(addDtoToRequestConsumer).toList();
@@ -778,7 +775,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       final Function<T, BulkOperation> addDtoToRequestConsumer,
       final Boolean retryRequestIfNestedDocLimitReached) {
     if (entityCollection.isEmpty()) {
-      log.warn("Cannot perform bulk request with empty collection of {}.", importItemName);
+      LOG.warn("Cannot perform bulk request with empty collection of {}.", importItemName);
     } else {
       final List<BulkOperation> operations =
           entityCollection.stream().map(addDtoToRequestConsumer).toList();
@@ -806,43 +803,42 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       final Supplier<BulkRequest.Builder> bulkReqBuilderSupplier,
       final List<BulkOperation> operations,
       final String itemName) {
-    if (!operations.isEmpty()) {
-      log.info("Executing bulk request on {} items of {}", operations.size(), itemName);
+    if (operations.isEmpty()) {
+      LOG.debug("Bulk request on {} not executed because it contains no actions.", itemName);
+      return;
+    }
 
-      final String errorMessage =
-          String.format("There were errors while performing a bulk on %s.", itemName);
-      final BulkResponse bulkResponse =
-          bulk(bulkReqBuilderSupplier.get().operations(operations), errorMessage);
-      if (bulkResponse.errors()) {
-        final Set<String> failedNestedDocLimitItemIds =
-            bulkResponse.items().stream()
-                .filter(operation -> Objects.nonNull(operation.error()))
-                .filter(operation -> operation.error().reason().contains(NESTED_DOC_LIMIT_MESSAGE))
-                .map(BulkResponseItem::id)
-                .collect(Collectors.toSet());
-        if (!failedNestedDocLimitItemIds.isEmpty()) {
-          log.warn(
-              "There were failures while performing bulk on {} due to the nested document limit being reached."
-                  + " Removing {} failed items and retrying",
-              itemName,
-              failedNestedDocLimitItemIds.size());
-          final List<BulkOperation> nonFailedOperations =
-              operations.stream()
-                  .filter(
-                      request ->
-                          !failedNestedDocLimitItemIds.contains(typeByBulkOperation(request).id()))
-                  .toList();
-          if (!nonFailedOperations.isEmpty()) {
-            doBulkRequestWithNestedDocHandling(
-                bulkReqBuilderSupplier, nonFailedOperations, itemName);
-          }
-        } else {
-          throw new OptimizeRuntimeException(
-              String.format("There were failures while performing bulk on %s.", itemName));
+    LOG.info("Executing bulk request on {} items of {}", operations.size(), itemName);
+    final String errorMessage =
+        String.format("There were errors while performing a bulk on %s.", itemName);
+    final BulkResponse bulkResponse =
+        bulk(bulkReqBuilderSupplier.get().operations(operations), errorMessage);
+    if (bulkResponse.errors()) {
+      final Set<String> failedNestedDocLimitItemIds =
+          bulkResponse.items().stream()
+              .filter(operation -> Objects.nonNull(operation.error()))
+              .filter(operation -> operation.error().reason().contains(NESTED_DOC_LIMIT_MESSAGE))
+              .map(BulkResponseItem::id)
+              .collect(Collectors.toSet());
+      if (!failedNestedDocLimitItemIds.isEmpty()) {
+        LOG.warn(
+            "There were failures while performing bulk on {} due to the nested document limit being reached."
+                + " Removing {} failed items and retrying",
+            itemName,
+            failedNestedDocLimitItemIds.size());
+        final List<BulkOperation> nonFailedOperations =
+            operations.stream()
+                .filter(
+                    request ->
+                        !failedNestedDocLimitItemIds.contains(typeByBulkOperation(request).id()))
+                .toList();
+        if (!nonFailedOperations.isEmpty()) {
+          doBulkRequestWithNestedDocHandling(bulkReqBuilderSupplier, nonFailedOperations, itemName);
         }
+      } else {
+        throw new OptimizeRuntimeException(
+            String.format("There were failures while performing bulk on %s.", itemName));
       }
-    } else {
-      log.debug("Bulk request on {} not executed because it contains no actions.", itemName);
     }
   }
 
@@ -868,7 +864,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
                 itemName, getHintForErrorMsg(isReachedNestedDocLimit)));
       }
     } else {
-      log.debug("Bulk request on {} not executed because it contains no actions.", itemName);
+      LOG.debug("Bulk request on {} not executed because it contains no actions.", itemName);
     }
   }
 
@@ -923,7 +919,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       final Script updateScript,
       final Query filterQuery,
       final String... indices) {
-    log.debug("Updating {}", updateItemIdentifier);
+    LOG.debug("Updating {}", updateItemIdentifier);
     final UpdateByQueryRequest.Builder requestBuilder =
         new UpdateByQueryRequest.Builder()
             .index(applyIndexPrefixes(indices))
@@ -947,12 +943,12 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
                     .get()
                     .task(),
             errorMessage,
-            log);
+            LOG);
 
     waitUntilTaskIsFinished(taskId, updateItemIdentifier);
 
     final Status taskStatus = richOpenSearchClient.task().task(taskId).response();
-    log.debug("Updated [{}] {}.", taskStatus.updated(), updateItemIdentifier);
+    LOG.debug("Updated [{}] {}.", taskStatus.updated(), updateItemIdentifier);
     return taskStatus.updated() > 0L;
   }
 
@@ -961,7 +957,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       final Query filterQuery,
       final boolean refresh,
       final String... indices) {
-    log.debug("Deleting {}", deleteItemIdentifier);
+    LOG.debug("Deleting {}", deleteItemIdentifier);
     final DeleteByQueryRequest.Builder requestBuilder =
         new DeleteByQueryRequest.Builder()
             .index(applyIndexPrefixes(indices))
@@ -984,12 +980,12 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
                     .get()
                     .task(),
             errorMessage,
-            log);
+            LOG);
 
     waitUntilTaskIsFinished(taskId, deleteItemIdentifier);
 
     final Status taskStatus = richOpenSearchClient.task().task(taskId).response();
-    log.debug("Deleted [{}] {}.", taskStatus.updated(), deleteItemIdentifier);
+    LOG.debug("Deleted [{}] {}.", taskStatus.updated(), deleteItemIdentifier);
     return taskStatus.updated() > 0L;
   }
 
@@ -1006,7 +1002,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
         if (currentProgress != progress) {
           final Status taskStatus = taskResponse.task().status();
           progress = currentProgress;
-          log.info(
+          LOG.info(
               "Progress of task (ID:{}) on {}: {}% (total: {}, updated: {}, created: {}, deleted: {}). Completed: {}",
               taskId,
               taskItemIdentifier,
@@ -1023,7 +1019,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
           Thread.sleep(backoffCalculator.calculateSleepTime());
         }
       } catch (final InterruptedException e) {
-        log.error("Waiting for Opensearch task (ID: {}) completion was interrupted!", taskId, e);
+        LOG.error("Waiting for Opensearch task (ID: {}) completion was interrupted!", taskId, e);
         Thread.currentThread().interrupt();
       } catch (final Exception e) {
         throw new OptimizeRuntimeException(
@@ -1047,7 +1043,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     return safe(
         () -> openSearchAsyncClient.snapshot().create(createSnapshotRequest),
         e -> "Failed to triger snapshot creation!",
-        log);
+        LOG);
   }
 
   public ExtendedOpenSearchClient getOpenSearchClient() {

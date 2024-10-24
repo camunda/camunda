@@ -59,7 +59,7 @@ public class EmbeddedOptimizeExtension
   private static final ObjectMapper configObjectMapper =
       new ObjectMapper().registerModules(new JavaTimeModule(), new Jdk8Module());
   private static String serializedDefaultConfiguration;
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(EmbeddedOptimizeExtension.class);
   private final boolean beforeAllMode;
   private ApplicationContext applicationContext;
@@ -72,7 +72,7 @@ public class EmbeddedOptimizeExtension
   }
 
   public EmbeddedOptimizeExtension(final boolean beforeAllMode) {
-    log.info("Running tests with database {}", IntegrationTestConfigurationUtil.getDatabaseType());
+    LOG.info("Running tests with database {}", IntegrationTestConfigurationUtil.getDatabaseType());
     System.setProperty(
         CAMUNDA_OPTIMIZE_DATABASE, IntegrationTestConfigurationUtil.getDatabaseType().getId());
     this.beforeAllMode = beforeAllMode;
@@ -139,7 +139,7 @@ public class EmbeddedOptimizeExtension
       }
     } catch (final Exception e) {
       final String message = "Failed starting embedded Optimize.";
-      log.error(message, e);
+      LOG.error(message, e);
       throw new OptimizeIntegrationTestException(message, e);
     }
   }
@@ -152,7 +152,7 @@ public class EmbeddedOptimizeExtension
       LocalDateUtil.reset();
       reloadConfiguration();
     } catch (final Exception e) {
-      log.error("Failed to clean up after test", e);
+      LOG.error("Failed to clean up after test", e);
     }
   }
 
@@ -232,12 +232,12 @@ public class EmbeddedOptimizeExtension
   }
 
   public void resetConfiguration() throws IOException {
-    log.info("resetting config, parsing defaultconfig and copying properties");
+    LOG.info("resetting config, parsing defaultconfig and copying properties");
     // copy all properties from the default configuration to the embedded optimize
     BeanUtils.copyProperties(
         configObjectMapper.readValue(serializedDefaultConfiguration, ConfigurationService.class),
         getBean(ConfigurationService.class));
-    log.info("done resetting config");
+    LOG.info("done resetting config");
   }
 
   public void resetPositionBasedImportStartIndexes() {

@@ -10,7 +10,7 @@ package io.camunda.optimize.dto.optimize.query.report.single.process.group.value
 public class NoneGroupByValueDto implements ProcessGroupByValueDto {
 
   @Override
-  public boolean isCombinable(Object o) {
+  public boolean isCombinable(final Object o) {
     return true;
   }
 }

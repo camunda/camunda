@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ProcessOverviewReader {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ProcessOverviewReader.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ProcessOverviewReader.class);
   private final ProcessRepository processRepository;
 
   public ProcessOverviewReader(final ProcessRepository processRepository) {

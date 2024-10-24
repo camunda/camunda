@@ -31,7 +31,7 @@ public class ProcessViewInstanceFrequencyInterpreterES
 
   @Override
   public ViewResult createEmptyResult(
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     // for instance count the default is 0
     // see https://jira.camunda.com/browse/OPT-3336
     return createViewResult(0.);

@@ -42,9 +42,9 @@ public class DecisionGroupByMatchedRuleInterpreterOS extends AbstractDecisionGro
   private final DecisionViewInterpreterFacadeOS viewInterpreter;
 
   public DecisionGroupByMatchedRuleInterpreterOS(
-      ConfigurationService configurationService,
-      DecisionDistributedByNoneInterpreterOS distributedByInterpreter,
-      DecisionViewInterpreterFacadeOS viewInterpreter) {
+      final ConfigurationService configurationService,
+      final DecisionDistributedByNoneInterpreterOS distributedByInterpreter,
+      final DecisionViewInterpreterFacadeOS viewInterpreter) {
     this.configurationService = configurationService;
     this.distributedByInterpreter = distributedByInterpreter;
     this.viewInterpreter = viewInterpreter;

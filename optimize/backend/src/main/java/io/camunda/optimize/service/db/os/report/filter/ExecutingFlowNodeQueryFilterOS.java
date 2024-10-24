@@ -39,7 +39,7 @@ public class ExecutingFlowNodeQueryFilterOS
   }
 
   private Query createFilterQueryBuilder(final ExecutingFlowNodeFilterDataDto flowNodeFilter) {
-    List<Query> queries =
+    final List<Query> queries =
         flowNodeFilter.getValues().stream()
             .map(
                 flowNodeId ->

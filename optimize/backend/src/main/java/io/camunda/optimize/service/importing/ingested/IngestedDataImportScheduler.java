@@ -15,7 +15,7 @@ import org.slf4j.Logger;
 
 public class IngestedDataImportScheduler extends AbstractImportScheduler<IngestedDataSourceDto> {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(IngestedDataImportScheduler.class);
 
   public IngestedDataImportScheduler(final List<ImportMediator> importMediators) {

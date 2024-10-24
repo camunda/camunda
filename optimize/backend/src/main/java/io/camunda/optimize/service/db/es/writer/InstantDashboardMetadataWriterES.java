@@ -36,23 +36,23 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class InstantDashboardMetadataWriterES implements InstantDashboardMetadataWriter {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(InstantDashboardMetadataWriterES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
   public InstantDashboardMetadataWriterES(
-      OptimizeElasticsearchClient esClient, ObjectMapper objectMapper) {
+      final OptimizeElasticsearchClient esClient, final ObjectMapper objectMapper) {
     this.esClient = esClient;
     this.objectMapper = objectMapper;
   }
 
   @Override
-  public void saveInstantDashboard(InstantDashboardDataDto dashboardDataDto) {
-    log.debug("Writing new Instant preview dashboard to Elasticsearch");
-    String id = dashboardDataDto.getInstantDashboardId();
+  public void saveInstantDashboard(final InstantDashboardDataDto dashboardDataDto) {
+    LOG.debug("Writing new Instant preview dashboard to Elasticsearch");
+    final String id = dashboardDataDto.getInstantDashboardId();
     try {
-      IndexResponse indexResponse =
+      final IndexResponse indexResponse =
           esClient.index(
               OptimizeIndexRequestBuilderES.of(
                   i ->
@@ -63,25 +63,26 @@ public class InstantDashboardMetadataWriterES implements InstantDashboardMetadat
 
       if (!indexResponse.result().equals(Result.Created)
           && !indexResponse.result().equals(Result.Updated)) {
-        String message =
+        final String message =
             "Could not write Instant preview dashboard data to Elasticsearch. "
                 + "Maybe the connection to Elasticsearch got lost?";
-        log.error(message);
+        LOG.error(message);
         throw new OptimizeRuntimeException(message);
       }
-    } catch (IOException e) {
-      String errorMessage = "Could not write Instant preview dashboard data to Elasticsearch.";
-      log.error(errorMessage, e);
+    } catch (final IOException e) {
+      final String errorMessage =
+          "Could not write Instant preview dashboard data to Elasticsearch.";
+      LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
-    log.debug("Instant preview dashboard information with id [{}] has been created", id);
+    LOG.debug("Instant preview dashboard information with id [{}] has been created", id);
   }
 
   @Override
   public List<String> deleteOutdatedTemplateEntriesAndGetExistingDashboardIds(
-      List<Long> hashesAllowed) throws IOException {
-    List<String> dashboardIdsToBeDeleted = new ArrayList<>();
-    SearchResponse<Map> searchResponse =
+      final List<Long> hashesAllowed) throws IOException {
+    final List<String> dashboardIdsToBeDeleted = new ArrayList<>();
+    final SearchResponse<Map> searchResponse =
         esClient.search(
             OptimizeSearchRequestBuilderES.of(
                 s ->
@@ -105,7 +106,7 @@ public class InstantDashboardMetadataWriterES implements InstantDashboardMetadat
                                                                             .toList()))))))),
             Map.class);
     final BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
-    log.debug(
+    LOG.debug(
         "Deleting [{}] instant dashboard documents by id with bulk request.",
         searchResponse.hits().hits().size());
     searchResponse

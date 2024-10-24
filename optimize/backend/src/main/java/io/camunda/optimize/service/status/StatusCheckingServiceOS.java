@@ -35,7 +35,7 @@ public class StatusCheckingServiceOS extends StatusCheckingService {
       final HealthResponse clusterHealthResponse =
           osClient.getOpenSearchClient().cluster().health(new HealthRequest.Builder().build());
       return clusterHealthResponse.status() != HealthStatus.Red;
-    } catch (Exception ignored) {
+    } catch (final Exception ignored) {
       return false;
     }
   }

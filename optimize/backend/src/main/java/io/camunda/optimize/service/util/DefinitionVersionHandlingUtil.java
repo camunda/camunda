@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
 
-public class DefinitionVersionHandlingUtil {
+public final class DefinitionVersionHandlingUtil {
 
   private DefinitionVersionHandlingUtil() {}
 

@@ -58,7 +58,7 @@ import org.springframework.stereotype.Component;
 @Component
 public abstract class AbstractProcessVariableQueryFilterOS extends AbstractVariableQueryFilterOS {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(AbstractProcessVariableQueryFilterOS.class);
 
   public AbstractProcessVariableQueryFilterOS() {}
@@ -70,24 +70,24 @@ public abstract class AbstractProcessVariableQueryFilterOS extends AbstractVaria
 
     switch (dto.getType()) {
       case STRING -> {
-        StringVariableFilterDataDto stringVarDto = (StringVariableFilterDataDto) dto;
+        final StringVariableFilterDataDto stringVarDto = (StringVariableFilterDataDto) dto;
         query = createStringQuery(stringVarDto);
       }
       case INTEGER, DOUBLE, SHORT, LONG -> {
-        OperatorMultipleValuesVariableFilterDataDto numericVarDto =
+        final OperatorMultipleValuesVariableFilterDataDto numericVarDto =
             (OperatorMultipleValuesVariableFilterDataDto) dto;
         query = createNumericQuery(numericVarDto);
       }
       case DATE -> {
-        DateVariableFilterDataDto dateVarDto = (DateVariableFilterDataDto) dto;
+        final DateVariableFilterDataDto dateVarDto = (DateVariableFilterDataDto) dto;
         query = createDateQuery(dateVarDto, timezone);
       }
       case BOOLEAN -> {
-        BooleanVariableFilterDataDto booleanVarDto = (BooleanVariableFilterDataDto) dto;
+        final BooleanVariableFilterDataDto booleanVarDto = (BooleanVariableFilterDataDto) dto;
         query = createBooleanQuery(booleanVarDto);
       }
       default ->
-          log.warn(
+          LOG.warn(
               "Could not filter for variables! "
                   + "Type [{}] is not supported for variable filters. Ignoring filter.",
               dto.getType());
@@ -202,17 +202,17 @@ public abstract class AbstractProcessVariableQueryFilterOS extends AbstractVaria
   protected Query createNumericQuery(final OperatorMultipleValuesVariableFilterDataDto dto) {
     OperatorMultipleValuesVariableFilterDataDtoUtil.validateMultipleValuesFilterDataDto(dto);
 
-    String nestedVariableValueFieldLabel = getVariableValueFieldForType(dto.getType());
+    final String nestedVariableValueFieldLabel = getVariableValueFieldForType(dto.getType());
     final OperatorMultipleValuesFilterDataDto data = dto.getData();
 
     boolean isInOrNotIn = false;
-    List<Query> queries =
+    final List<Query> queries =
         new ArrayList<>(
             List.of(
                 term(getNestedVariableNameField(), dto.getName()),
                 term(getNestedVariableNameField(), dto.getType().getId())));
 
-    Object value = OperatorMultipleValuesVariableFilterDataDtoUtil.retrieveValue(dto);
+    final Object value = OperatorMultipleValuesVariableFilterDataDtoUtil.retrieveValue(dto);
     switch (data.getOperator()) {
       case IN, NOT_IN -> isInOrNotIn = true;
       case LESS_THAN -> queries.add(lt(nestedVariableValueFieldLabel, value));
@@ -220,13 +220,13 @@ public abstract class AbstractProcessVariableQueryFilterOS extends AbstractVaria
       case LESS_THAN_EQUALS -> queries.add(lte(nestedVariableValueFieldLabel, value));
       case GREATER_THAN_EQUALS -> queries.add(gte(nestedVariableValueFieldLabel, value));
       default ->
-          log.warn(
+          LOG.warn(
               "Could not filter for variables! Operator [{}] is not supported for type [{}]. Ignoring filter.",
               data.getOperator(),
               dto.getType());
     }
 
-    Query query =
+    final Query query =
         new NestedQuery.Builder()
             .path(VARIABLES)
             .query(and(queries.toArray(new Query[0])))
@@ -250,7 +250,7 @@ public abstract class AbstractProcessVariableQueryFilterOS extends AbstractVaria
         new BoolQuery.Builder()
             .must(term(getNestedVariableNameField(), dto.getName()))
             .must(term(getNestedVariableTypeField(), dto.getType().getId()));
-    List<Query> filterQueries =
+    final List<Query> filterQueries =
         DateFilterQueryUtilOS.filterQueries(
             List.of(dto.getData()), getVariableValueFieldForType(dto.getType()), timezone);
     if (!filterQueries.isEmpty()) {

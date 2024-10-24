@@ -39,7 +39,7 @@ public class AssigneeRestService {
   public static final String ASSIGNEE_RESOURCE_PATH = "/assignee";
   public static final String ASSIGNEE_DEFINITION_SEARCH_SUB_PATH = "/search";
   public static final String ASSIGNEE_REPORTS_SEARCH_SUB_PATH = "/search/reports";
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(AssigneeRestService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(AssigneeRestService.class);
 
   private final SessionService sessionService;
   private final AssigneeCandidateGroupService assigneeCandidateGroupService;

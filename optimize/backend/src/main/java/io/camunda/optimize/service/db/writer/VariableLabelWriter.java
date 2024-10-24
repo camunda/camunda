@@ -24,7 +24,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class VariableLabelWriter {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(VariableLabelWriter.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(VariableLabelWriter.class);
   private final VariableRepository variableRepository;
 
   public VariableLabelWriter(final VariableRepository variableRepository) {
@@ -61,7 +61,7 @@ public class VariableLabelWriter {
   }
 
   public void deleteVariableLabelsForDefinition(final String processDefinitionKey) {
-    log.debug("Deleting variable label document with id [{}].", processDefinitionKey);
+    LOG.debug("Deleting variable label document with id [{}].", processDefinitionKey);
     variableRepository.deleteVariablesForDefinition(
         VARIABLE_LABEL_INDEX_NAME, processDefinitionKey);
   }

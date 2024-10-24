@@ -45,7 +45,7 @@ public class ZeebeUserTaskImportService
 
   public static final Set<UserTaskIntent> INTENTS_TO_IMPORT =
       Set.of(CREATING, ASSIGNED, COMPLETED, CANCELED);
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ZeebeUserTaskImportService.class);
 
   public ZeebeUserTaskImportService(
@@ -76,7 +76,7 @@ public class ZeebeUserTaskImportService
             .stream()
             .map(this::createProcessInstanceForData)
             .toList();
-    log.debug(
+    LOG.debug(
         "Processing {} fetched zeebe userTask records, of which {} are relevant to Optimize and will be imported.",
         userTaskRecords.size(),
         optimizeDtos.size());

@@ -47,9 +47,9 @@ public class ProcessIncidentGroupByNoneInterpreterES extends AbstractProcessGrou
   private final DefinitionService definitionService;
 
   public ProcessIncidentGroupByNoneInterpreterES(
-      ProcessViewInterpreterFacadeES viewInterpreter,
-      ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
-      DefinitionService definitionService) {
+      final ProcessViewInterpreterFacadeES viewInterpreter,
+      final ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
+      final DefinitionService definitionService) {
     this.viewInterpreter = viewInterpreter;
     this.distributedByInterpreter = distributedByInterpreter;
     this.definitionService = definitionService;
@@ -64,13 +64,13 @@ public class ProcessIncidentGroupByNoneInterpreterES extends AbstractProcessGrou
   public Map<String, Aggregation.Builder.ContainerBuilder> createAggregation(
       final BoolQuery boolQuery,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    Aggregation.Builder.ContainerBuilder builder =
+    final Aggregation.Builder.ContainerBuilder builder =
         new Aggregation.Builder().nested(n -> n.path(INCIDENTS));
     builder.aggregations(
         FILTERED_INCIDENT_AGGREGATION,
         Aggregation.of(
             a -> {
-              Aggregation.Builder.ContainerBuilder filter =
+              final Aggregation.Builder.ContainerBuilder filter =
                   a.filter(
                       f ->
                           f.bool(
@@ -96,7 +96,7 @@ public class ProcessIncidentGroupByNoneInterpreterES extends AbstractProcessGrou
               final List<CompositeCommandResult.DistributedByResult> distributions =
                   getDistributedByInterpreter()
                       .retrieveResult(response, nestedIncidents.aggregations(), context);
-              CompositeCommandResult.GroupByResult groupByResult =
+              final CompositeCommandResult.GroupByResult groupByResult =
                   CompositeCommandResult.GroupByResult.createGroupByNone(distributions);
               compositeCommandResult.setGroup(groupByResult);
             });

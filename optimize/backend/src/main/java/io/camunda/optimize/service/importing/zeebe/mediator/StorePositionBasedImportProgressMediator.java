@@ -32,7 +32,7 @@ public class StorePositionBasedImportProgressMediator
     extends AbstractStoreIndexesImportMediator<StorePositionBasedIndexImportService>
     implements ImportMediator {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(StorePositionBasedImportProgressMediator.class);
   private final ImportIndexHandlerRegistry importIndexHandlerRegistry;
   private final ZeebeDataSourceDto dataSource;
@@ -63,7 +63,7 @@ public class StorePositionBasedImportProgressMediator
               .collect(Collectors.toList());
       importService.executeImport(importIndexes, () -> importCompleted.complete(null));
     } catch (final Exception e) {
-      log.error("Could not execute import for storing zeebe position based index information!", e);
+      LOG.error("Could not execute import for storing zeebe position based index information!", e);
       importCompleted.complete(null);
     }
     return importCompleted;

@@ -41,8 +41,8 @@ public class ProcessGroupByNoneInterpreterOS extends AbstractProcessGroupByInter
   private final ProcessViewInterpreterFacadeOS viewInterpreter;
 
   public ProcessGroupByNoneInterpreterOS(
-      ProcessDistributedByInterpreterFacadeOS distributedByInterpreter,
-      ProcessViewInterpreterFacadeOS viewInterpreter) {
+      final ProcessDistributedByInterpreterFacadeOS distributedByInterpreter,
+      final ProcessViewInterpreterFacadeOS viewInterpreter) {
     this.distributedByInterpreter = distributedByInterpreter;
     this.viewInterpreter = viewInterpreter;
   }
@@ -69,7 +69,7 @@ public class ProcessGroupByNoneInterpreterOS extends AbstractProcessGroupByInter
         AggregateHelperOS.withNullValues(response.hits().total().value(), response.aggregations());
     final List<DistributedByResult> distributions =
         distributedByInterpreter.retrieveResult(response, fixedAggregations, context);
-    GroupByResult groupByResult = GroupByResult.createGroupByNone(distributions);
+    final GroupByResult groupByResult = GroupByResult.createGroupByNone(distributions);
     compositeCommandResult.setGroup(groupByResult);
   }
 

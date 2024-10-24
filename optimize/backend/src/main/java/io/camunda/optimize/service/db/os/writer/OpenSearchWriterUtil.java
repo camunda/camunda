@@ -23,11 +23,12 @@ import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.Script;
 import org.slf4j.Logger;
 
-public class OpenSearchWriterUtil {
+public final class OpenSearchWriterUtil {
 
-  public static final DateTimeFormatter dateTimeFormatter =
+  public static final DateTimeFormatter DATE_TIME_FORMATTER =
       DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(OpenSearchWriterUtil.class);
+
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(OpenSearchWriterUtil.class);
 
   private OpenSearchWriterUtil() {}
 
@@ -58,7 +59,7 @@ public class OpenSearchWriterUtil {
       Object fieldValue = entityAsMap.get(fieldName);
       if (fieldValue != null) {
         if (fieldValue instanceof final TemporalAccessor temporalAccessor) {
-          fieldValue = dateTimeFormatter.format(temporalAccessor);
+          fieldValue = DATE_TIME_FORMATTER.format(temporalAccessor);
         }
         params.put(fieldName, JsonData.of(fieldValue));
       }
