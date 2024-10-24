@@ -45,6 +45,19 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
   }
 
   @Test
+  void shouldGetProcessDefinitionForm() {
+    // when
+    final long processDefinitionKey = 1L;
+    client.newProcessDefinitionGetFormRequest(processDefinitionKey).send().join();
+
+    // then
+    final LoggedRequest request = gatewayService.getLastRequest();
+    assertThat(request.getUrl())
+        .isEqualTo("/v2/process-definitions/" + processDefinitionKey + "/form");
+    assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
+  }
+
+  @Test
   public void shouldGetProcessDefinitionByKey() {
     // when
     client.newProcessDefinitionGetRequest(123L).send().join();
