@@ -37,7 +37,6 @@ import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.ActivePartitions;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
-import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.Mixed;
 import io.camunda.zeebe.management.cluster.BrokerState;
 import io.camunda.zeebe.management.cluster.BrokerStateCode;
 import io.camunda.zeebe.management.cluster.Error;
@@ -57,7 +56,6 @@ import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.management.cluster.RequestHandling;
 import io.camunda.zeebe.management.cluster.RequestHandlingActivePartitions;
 import io.camunda.zeebe.management.cluster.RequestHandlingAllPartitions;
-import io.camunda.zeebe.management.cluster.RequestHandlingMixed;
 import io.camunda.zeebe.management.cluster.TopologyChange;
 import io.camunda.zeebe.management.cluster.TopologyChange.StatusEnum;
 import io.camunda.zeebe.management.cluster.TopologyChangeCompletedInner;
@@ -311,17 +309,16 @@ final class ClusterApiUtils {
   private static RequestHandling mapRequestHanding(
       final RoutingState.RequestHandling requestHandling) {
     return switch (requestHandling) {
-      case ActivePartitions(final var activePartitions, final var inactivePartitions) ->
+      case ActivePartitions(
+              final var basePartitionCount,
+              final var additionalActivePartitions,
+              final var inactivePartitions) ->
           new RequestHandlingActivePartitions(
-              new ArrayList<>(activePartitions), new ArrayList<>(inactivePartitions));
+              basePartitionCount,
+              new ArrayList<>(additionalActivePartitions),
+              new ArrayList<>(inactivePartitions));
       case AllPartitions(final var partitionCount) ->
           new RequestHandlingAllPartitions(partitionCount);
-      case Mixed(final var base, final var additional) ->
-          new RequestHandlingMixed(
-              new RequestHandlingAllPartitions(base.partitionCount()),
-              new RequestHandlingActivePartitions(
-                  new ArrayList<>(additional.activePartitions()),
-                  new ArrayList<>(additional.inactivePartitions())));
     };
   }
 

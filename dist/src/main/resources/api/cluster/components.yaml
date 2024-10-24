@@ -160,13 +160,11 @@ schemas:
     oneOf:
       - $ref: "components.yaml#/schemas/RequestHandlingAllPartitions"
       - $ref: "components.yaml#/schemas/RequestHandlingActivePartitions"
-      - $ref: "components.yaml#/schemas/RequestHandlingMixed"
     discriminator:
       propertyName: strategy
       mapping:
         AllPartitions: "components.yaml#/schemas/RequestHandlingAllPartitions"
         ActivePartitions: "components.yaml#/schemas/RequestHandlingActivePartitions"
-        Mixed: "components.yaml#/schemas/RequestHandlingMixed"
 
   RequestHandlingAllPartitions:
     description: Requests are handled by all partitions
@@ -186,39 +184,31 @@ schemas:
     description: Requests are only handled by active partitions, inactive partitions are excluded
     type: object
     required:
-      - activePartitions
+      - basePartitionCount
+      - additionalActivePartitions
       - inactivePartitions
     properties:
       strategy:
         type: string
-      activePartitions:
+      basePartitionCount:
+        type: integer
+        format: int32
+        description: Contiguous range of partitions (1..=N) that are active.
+        example: 3
+      additionalActivePartitions:
         type: array
-        description: The list of active partitions that accept round-robin requests
-        example: [ 1, 2, 3 ]
+        description: A list of additional, active partitions that also accept round-robin requests
+        example: [ 4, 5 ]
         items:
           type: integer
           format: int32
       inactivePartitions:
         type: array
-        description: The list of active partitions that accept round-robin requests
-        example: [ 1, 2, 3 ]
+        description: A list of inactive partitions that do not accept round-robing requests
+        example: [ 6, 7 ]
         items:
           type: integer
           format: int32
-
-  RequestHandlingMixed:
-    description: Requests are only handled by active partitions, inactive partitions are excluded
-    type: object
-    required:
-      - base
-      - additional
-    properties:
-      strategy:
-        type: string
-      base:
-        $ref: "components.yaml#/schemas/RequestHandlingAllPartitions"
-      additional:
-        $ref: "components.yaml#/schemas/RequestHandlingActivePartitions"
 
   MessageCorrelation:
     description: The message correlation strategy

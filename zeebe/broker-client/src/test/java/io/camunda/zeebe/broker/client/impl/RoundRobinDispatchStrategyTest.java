@@ -93,7 +93,7 @@ final class RoundRobinDispatchStrategyTest {
                 Optional.of(
                     new RoutingState(
                         1,
-                        new ActivePartitions(Set.of(1, 3), Set.of()),
+                        new ActivePartitions(1, Set.of(3), Set.of()),
                         new MessageCorrelation.HashMod(3)))));
 
     // when - then
@@ -119,7 +119,7 @@ final class RoundRobinDispatchStrategyTest {
             Optional.of(
                 new RoutingState(
                     1,
-                    new ActivePartitions(Set.of(1, 3), Set.of()),
+                    new ActivePartitions(1, Set.of(3), Set.of()),
                     new MessageCorrelation.HashMod(1)))));
 
     // then

@@ -46,12 +46,9 @@ final class PersistedClusterConfigurationRandomizedPropertyTest {
         // The type of generated `activePartitions` is `LinkedHashSet`, which AssertJ treats as an
         // ordered collection. We are not interested in the order of the partitions, so we ignore
         // it here.
-        .ignoringCollectionOrderInFields("routingState.value.requestHandling.activePartitions")
+        .ignoringCollectionOrderInFields(
+            "routingState.value.requestHandling.additionalActivePartitions")
         .ignoringCollectionOrderInFields("routingState.value.requestHandling.inactivePartitions")
-        .ignoringCollectionOrderInFields(
-            "routingState.value.requestHandling.additional.activePartitions")
-        .ignoringCollectionOrderInFields(
-            "routingState.value.requestHandling.additional.inactivePartitions")
         .isEqualTo(updatedTopology);
   }
 }

@@ -76,10 +76,12 @@ public final class ClusterTopologyDomain extends DomainContextBase {
 
   @Provide
   Arbitrary<ActivePartitions> activePartitions() {
-    final var activePartitions = Arbitraries.integers().between(1, 5).set();
-    final var inactivePartitions = Arbitraries.integers().between(6, 10).set();
+    final var basePartitionCount = Arbitraries.integers().between(1, 3);
+    final var activePartitions = Arbitraries.integers().between(4, 8).set();
+    final var inactivePartitions = Arbitraries.integers().between(9, 12).set();
 
-    return Combinators.combine(activePartitions, inactivePartitions).as(ActivePartitions::new);
+    return Combinators.combine(basePartitionCount, activePartitions, inactivePartitions)
+        .as(ActivePartitions::new);
   }
 
   @Provide

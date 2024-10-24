@@ -98,12 +98,20 @@ public record RoutingState(
       }
     }
 
-    record ActivePartitions(Set<Integer> activePartitions, Set<Integer> inactivePartitions)
+    /**
+     * @param basePartitionCount number of partitions (1..=N) that are already active.
+     * @param additionalActivePartitions set of additional partitions that are also active.
+     * @param inactivePartitions set of partitions that are explicitly not active.
+     */
+    record ActivePartitions(
+        int basePartitionCount,
+        Set<Integer> additionalActivePartitions,
+        Set<Integer> inactivePartitions)
         implements RequestHandling {
       public ActivePartitions {
-        Objects.requireNonNull(activePartitions);
+        Objects.requireNonNull(additionalActivePartitions);
         Objects.requireNonNull(inactivePartitions);
-        for (final int activePartition : activePartitions) {
+        for (final int activePartition : additionalActivePartitions) {
           validatePartitionId(activePartition);
           if (inactivePartitions.contains(activePartition)) {
             throw new IllegalArgumentException(
@@ -116,17 +124,14 @@ public record RoutingState(
           validatePartitionId(inactivePartition);
         }
       }
-    }
-
-    record Mixed(AllPartitions base, ActivePartitions additional) implements RequestHandling {
 
       @Override
       public Set<Integer> activePartitions() {
         final var all =
-            new HashSet<Integer>(base.partitionCount + additional.activePartitions.size());
-        all.addAll(base.activePartitions());
-        all.addAll(additional.activePartitions);
-        all.removeAll(additional.inactivePartitions);
+            new HashSet<Integer>(basePartitionCount + additionalActivePartitions.size());
+        all.addAll(allPartitions(basePartitionCount));
+        all.addAll(additionalActivePartitions);
+        all.removeAll(inactivePartitions);
         return all;
       }
     }

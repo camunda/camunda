@@ -490,23 +490,10 @@ public class ProtoBufSerializer
           new RequestHandling.AllPartitions(requestHandling.getAllPartitions().getPartitionCount());
       case ACTIVEPARTITIONS ->
           new RequestHandling.ActivePartitions(
-              new HashSet<>(requestHandling.getActivePartitions().getActivePartitionsList()),
+              requestHandling.getActivePartitions().getBasePartitionCount(),
+              new HashSet<>(
+                  requestHandling.getActivePartitions().getAdditionalActivePartitionsList()),
               new HashSet<>(requestHandling.getActivePartitions().getInactivePartitionsList()));
-      case MIXEDPARTITIONS ->
-          new RequestHandling.Mixed(
-              new RequestHandling.AllPartitions(
-                  requestHandling.getMixedPartitions().getBase().getPartitionCount()),
-              new RequestHandling.ActivePartitions(
-                  new HashSet<>(
-                      requestHandling
-                          .getMixedPartitions()
-                          .getAdditional()
-                          .getActivePartitionsList()),
-                  new HashSet<>(
-                      requestHandling
-                          .getMixedPartitions()
-                          .getAdditional()
-                          .getInactivePartitionsList())));
       case STRATEGY_NOT_SET -> throw new IllegalArgumentException("Unknown request handling type");
     };
   }
@@ -532,12 +519,14 @@ public class ProtoBufSerializer
   private Topology.RequestHandling encodeRequestHandling(final RequestHandling requestHandling) {
     return switch (requestHandling) {
       case RequestHandling.ActivePartitions(
-              final var activePartitions,
+              final var basePartitionCount,
+              final var additionalActivePartitions,
               final var inactivePartitions) ->
           Topology.RequestHandling.newBuilder()
               .setActivePartitions(
                   Topology.RequestHandling.ActivePartitions.newBuilder()
-                      .addAllActivePartitions(activePartitions)
+                      .setBasePartitionCount(basePartitionCount)
+                      .addAllAdditionalActivePartitions(additionalActivePartitions)
                       .addAllInactivePartitions(inactivePartitions)
                       .build())
               .build();
@@ -546,21 +535,6 @@ public class ProtoBufSerializer
               .setAllPartitions(
                   Topology.RequestHandling.AllPartitions.newBuilder()
                       .setPartitionCount(partitionCount)
-                      .build())
-              .build();
-      case RequestHandling.Mixed(final var base, final var additional) ->
-          Topology.RequestHandling.newBuilder()
-              .setMixedPartitions(
-                  Topology.RequestHandling.Mixed.newBuilder()
-                      .setBase(
-                          Topology.RequestHandling.AllPartitions.newBuilder()
-                              .setPartitionCount(base.partitionCount())
-                              .build())
-                      .setAdditional(
-                          Topology.RequestHandling.ActivePartitions.newBuilder()
-                              .addAllActivePartitions(additional.activePartitions())
-                              .addAllInactivePartitions(additional.inactivePartitions())
-                              .build())
                       .build())
               .build();
     };
