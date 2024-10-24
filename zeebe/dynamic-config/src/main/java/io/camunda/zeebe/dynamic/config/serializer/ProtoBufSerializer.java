@@ -55,6 +55,7 @@ import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
 import io.camunda.zeebe.util.Either;
 import java.nio.ByteBuffer;
 import java.time.Instant;
@@ -479,8 +480,22 @@ public class ProtoBufSerializer
   private RoutingState decodeRoutingState(final Topology.RoutingState routingState) {
     return new RoutingState(
         routingState.getVersion(),
-        new HashSet<>(routingState.getActivePartitionsList()),
+        decodeRequestHandling(routingState.getRequestHandling()),
         decodeMessageCorrelation(routingState.getMessageCorrelation()));
+  }
+
+  private RequestHandling decodeRequestHandling(final Topology.RequestHandling requestHandling) {
+    return switch (requestHandling.getStrategyCase()) {
+      case ALLPARTITIONS ->
+          new RequestHandling.AllPartitions(requestHandling.getAllPartitions().getPartitionCount());
+      case ACTIVEPARTITIONS ->
+          new RequestHandling.ActivePartitions(
+              requestHandling.getActivePartitions().getBasePartitionCount(),
+              new HashSet<>(
+                  requestHandling.getActivePartitions().getAdditionalActivePartitionsList()),
+              new HashSet<>(requestHandling.getActivePartitions().getInactivePartitionsList()));
+      case STRATEGY_NOT_SET -> throw new IllegalArgumentException("Unknown request handling type");
+    };
   }
 
   private MessageCorrelation decodeMessageCorrelation(
@@ -496,9 +511,33 @@ public class ProtoBufSerializer
   private Topology.RoutingState encodeRoutingState(final RoutingState routingState) {
     return Topology.RoutingState.newBuilder()
         .setVersion(routingState.version())
-        .addAllActivePartitions(routingState.activePartitions())
+        .setRequestHandling(encodeRequestHandling(routingState.requestHandling()))
         .setMessageCorrelation(encodeMessageCorrelation(routingState.messageCorrelation()))
         .build();
+  }
+
+  private Topology.RequestHandling encodeRequestHandling(final RequestHandling requestHandling) {
+    return switch (requestHandling) {
+      case RequestHandling.ActivePartitions(
+              final var basePartitionCount,
+              final var additionalActivePartitions,
+              final var inactivePartitions) ->
+          Topology.RequestHandling.newBuilder()
+              .setActivePartitions(
+                  Topology.RequestHandling.ActivePartitions.newBuilder()
+                      .setBasePartitionCount(basePartitionCount)
+                      .addAllAdditionalActivePartitions(additionalActivePartitions)
+                      .addAllInactivePartitions(inactivePartitions)
+                      .build())
+              .build();
+      case RequestHandling.AllPartitions(final var partitionCount) ->
+          Topology.RequestHandling.newBuilder()
+              .setAllPartitions(
+                  Topology.RequestHandling.AllPartitions.newBuilder()
+                      .setPartitionCount(partitionCount)
+                      .build())
+              .build();
+    };
   }
 
   private Topology.MessageCorrelation encodeMessageCorrelation(
