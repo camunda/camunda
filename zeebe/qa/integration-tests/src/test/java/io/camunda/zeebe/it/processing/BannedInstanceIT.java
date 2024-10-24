@@ -84,7 +84,6 @@ final class BannedInstanceIT {
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.CANCEL)
                 .withRecordKey(processInstanceKey)
-                .limit(1)
                 .exists())
         .describedAs("Expected to find cancel command for process instance")
         .isTrue();
@@ -203,17 +202,24 @@ final class BannedInstanceIT {
     // then
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.CANCEL)
-                .withProcessInstanceKey(processInstanceKey))
-        .isNotNull();
+                .withRecordKey(processInstanceKey)
+                .exists())
+        .describedAs("Expected to find cancel command for process instance")
+        .isTrue();
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
-                .withProcessInstanceKey(processInstanceKey))
-        .isNotNull();
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .exists())
+        .describedAs("Expected to find terminated event for process instance")
+        .isTrue();
 
     assertThat(
             RecordingExporter.incidentRecords(IncidentIntent.RESOLVED)
-                .withRecordKey(incident.getKey()))
-        .isNotNull();
+                .withRecordKey(incident.getKey())
+                .exists())
+        .describedAs("Expected to find resolved incident for process instance")
+        .isTrue();
   }
 }
