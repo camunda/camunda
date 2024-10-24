@@ -7,13 +7,17 @@
  */
 package io.camunda.zeebe.it.processing;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.qa.util.actuator.BanningActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -22,7 +26,6 @@ import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -68,25 +71,36 @@ final class BannedInstanceIT {
             .join()
             .getProcessInstanceKey();
 
+    RecordingExporter.processInstanceRecords()
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.SERVICE_TASK)
+        .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .await();
+
     // when
     actuator.ban(processInstanceKey);
     client.newCancelInstanceCommand(processInstanceKey).send().join();
 
     // then
-    Assertions.assertThat(
+
+    final Record<ProcessInstanceRecordValue> first =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.CANCEL).limit(1).getFirst();
+
+    assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.CANCEL)
-                .withProcessInstanceKey(processInstanceKey))
-        .isNotNull();
+                .withRecordKey(processInstanceKey)
+                .limit(1)
+                .exists())
+        .describedAs("Expected to find cancel command for process instance")
+        .isTrue();
 
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
-                .withProcessInstanceKey(processInstanceKey))
-        .isNotNull();
-
-    Assertions.assertThat(
-            RecordingExporter.timerRecords(TimerIntent.CANCELED)
-                .withProcessInstanceKey(processInstanceKey))
-        .isNotNull();
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .exists())
+        .describedAs("Expected to find terminated event for process instance")
+        .isTrue();
   }
 
   @Test
@@ -138,7 +152,7 @@ final class BannedInstanceIT {
         .await();
 
     // then
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.timerRecords()
                 .limit(
                     t ->
@@ -188,17 +202,17 @@ final class BannedInstanceIT {
     client.newCancelInstanceCommand(processInstanceKey).send().join();
 
     // then
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.CANCEL)
                 .withProcessInstanceKey(processInstanceKey))
         .isNotNull();
 
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
                 .withProcessInstanceKey(processInstanceKey))
         .isNotNull();
 
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.incidentRecords(IncidentIntent.RESOLVED)
                 .withRecordKey(incident.getKey()))
         .isNotNull();
