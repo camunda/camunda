@@ -7,6 +7,12 @@
  */
 package io.camunda.exporter;
 
+import io.camunda.exporter.archiver.Archiver;
+import io.camunda.exporter.archiver.ArchiverJob;
+import io.camunda.exporter.archiver.ArchiverUtil;
+import io.camunda.exporter.archiver.BatchOperationArchiverJob;
+import io.camunda.exporter.archiver.ElasticsearchArchiverRepository;
+import io.camunda.exporter.archiver.ProcessInstancesArchiverJob;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.handlers.AuthorizationHandler;
@@ -58,8 +64,10 @@ import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 /**
  * This is the class where teams should make their components such as handlers, and index/index
@@ -191,5 +199,29 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   public Set<ExportHandler> getExportHandlers() {
     // Register all handlers here
     return exportHandlers;
+  }
+
+  @Override
+  public Archiver getArchiver(final int partitionId) {
+    final ElasticsearchArchiverRepository archiverRepository =
+        new ElasticsearchArchiverRepository();
+    // Can provide more threads if needed. TODO: consider whether this thread pool should be shared
+    // among all partitions. Might require some refactoring, so probably not worth it for now.
+    final ScheduledThreadPoolExecutor archiverExecutor = new ScheduledThreadPoolExecutor(1);
+
+    final ArchiverUtil archiverUtil = new ArchiverUtil(archiverRepository);
+    final List<ArchiverJob> archiverJobs =
+        List.of(
+            new ProcessInstancesArchiverJob(
+                archiverUtil,
+                List.of(partitionId),
+                (ListViewTemplate) templateDescriptorsMap.get(ListViewTemplate.class),
+                List.of(), // TODO: Provide the indices ProcessInstanceDependant
+                archiverExecutor),
+            // TODO: add BatchOperationArciver only on partition 1
+            new BatchOperationArchiverJob(archiverUtil, archiverRepository, archiverExecutor)
+            // Provide more archiver jobs here if needed, example for tasklist specific indices
+            );
+    return new Archiver(archiverRepository, archiverExecutor, 1, archiverJobs);
   }
 }
