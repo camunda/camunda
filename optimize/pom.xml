@@ -420,6 +420,7 @@
               <dep>org.apache.httpcomponents:httpmime</dep>
               <dep>org.awaitility:awaitility</dep>
             </ignoredUnusedDeclaredDependencies>
+            <ignoredNonTestScopedDependencies combine.children="append"/>
           </configuration>
         </plugin>
         <plugin>

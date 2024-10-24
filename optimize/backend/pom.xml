@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -855,7 +857,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
-          <ignoredUnusedDeclaredDependencies>
+          <ignoredUnusedDeclaredDependencies combine.children="append">
             <dep>net.logstash.logback:logstash-logback-encoder</dep>
             <dep>org.codehaus.janino:janino</dep>
             <dep>org.eclipse.jetty:jetty-alpn-java-client</dep>
@@ -872,7 +874,7 @@
             <!-- test dependencies -->
             <dep>org.springframework.boot:spring-boot-starter-test</dep>
           </ignoredUnusedDeclaredDependencies>
-          <ignoredNonTestScopedDependencies>
+          <ignoredNonTestScopedDependencies combine.children="append">
             <dep>com.fasterxml.jackson.datatype:jackson-datatype-jdk8</dep>
             <dep>com.fasterxml.jackson.datatype:jackson-datatype-jsr310</dep>
             <dep>org.apache.httpcomponents:httpcore-nio</dep>
