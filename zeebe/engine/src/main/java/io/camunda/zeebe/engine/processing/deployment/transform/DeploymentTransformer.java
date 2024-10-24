@@ -145,12 +145,11 @@ public final class DeploymentTransformer {
     // step 2: update metadata (optionally) and write actual event records
     if (success) {
       for (final DeploymentResource deploymentResource : deploymentEvent.resources()) {
-        final var transformer = getResourceTransformer(deploymentResource.getResourceName());
-        transformer.writeRecords(deploymentResource, deploymentEvent);
+        success &= writeRecords(deploymentResource, deploymentEvent, errors);
       }
-      return Either.right(null);
+    }
 
-    } else {
+    if (!success) {
       rejectionType = RejectionType.INVALID_ARGUMENT;
       rejectionReason =
           String.format(
@@ -158,6 +157,8 @@ public final class DeploymentTransformer {
 
       return Either.left(new Failure(rejectionReason));
     }
+
+    return Either.right(null);
   }
 
   private boolean isBpmnResource(final DeploymentResource resource) {
@@ -185,8 +186,22 @@ public final class DeploymentTransformer {
       }
 
     } catch (final RuntimeException e) {
-      LOG.error("Unexpected error while processing resource '{}'", resourceName, e);
-      errors.append("\n'").append(resourceName).append("': ").append(e.getMessage());
+      handleUnexpectedError(resourceName, e, errors);
+    }
+    return false;
+  }
+
+  private boolean writeRecords(
+      final DeploymentResource deploymentResource,
+      final DeploymentRecord deploymentEvent,
+      final StringBuilder errors) {
+    final var resourceName = deploymentResource.getResourceName();
+    final var transformer = getResourceTransformer(resourceName);
+    try {
+      transformer.writeRecords(deploymentResource, deploymentEvent);
+      return true;
+    } catch (final RuntimeException e) {
+      handleUnexpectedError(resourceName, e, errors);
     }
     return false;
   }
@@ -205,6 +220,12 @@ public final class DeploymentTransformer {
         .map(Entry::getValue)
         .findFirst()
         .orElse(UNKNOWN_RESOURCE);
+  }
+
+  private static void handleUnexpectedError(
+      final String resourceName, final RuntimeException exception, final StringBuilder errors) {
+    LOG.error("Unexpected error while processing resource '{}'", resourceName, exception);
+    errors.append("\n'").append(resourceName).append("': ").append(exception.getMessage());
   }
 
   private static final class UnknownResourceTransformer implements DeploymentResourceTransformer {
