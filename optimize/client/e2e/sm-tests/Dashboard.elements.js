@@ -52,6 +52,5 @@ export const externalUrlTile = Selector('.ExternalUrlTile');
 export const customValueAddButton = Selector('.customValueAddButton');
 export const alertsDropdown = Selector('.AlertsDropdown button');
 export const alertDeleteButton = Selector('.AlertModal .deleteAlertButton');
-export const collectionLink = Selector('.NavItem a').withText('New collection');
 export const dashboardsLink = Selector('.NavItem a').withText('Dashboards');
 export const createCopyButton = Selector('.create-copy');

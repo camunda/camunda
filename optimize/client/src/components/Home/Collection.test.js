@@ -10,7 +10,6 @@ import {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
 import {Deleter} from 'components';
-import {refreshBreadcrumbs} from 'components/navigation';
 import {loadEntity, updateEntity} from 'services';
 import {isUserSearchAvailable} from 'config';
 
@@ -23,8 +22,6 @@ import UserList from './UserList';
 jest.mock('config', () => ({
   isUserSearchAvailable: jest.fn().mockReturnValue(true),
 }));
-
-jest.mock('components/navigation', () => ({refreshBreadcrumbs: jest.fn()}));
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -137,7 +134,6 @@ it('should modify the collections name with the edit modal', async () => {
   await node.find(CollectionModal).prop('onConfirm')('new Name');
 
   expect(updateEntity).toHaveBeenCalledWith('collection', 'aCollectionId', {name: 'new Name'});
-  expect(refreshBreadcrumbs).toHaveBeenCalled();
 });
 
 it('should hide edit/delete from context menu for collection items that does not have a "manager" role', () => {

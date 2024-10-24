@@ -34,13 +34,13 @@ test('navigate to report view and edit pages', async (t) => {
   await createNewReport(t);
   await save(t);
 
-  await t.click(e.homepageLink);
+  await t.click(Common.collectionsPage);
 
   await t.click(Common.listItemLink('report'));
 
   await t.expect(e.noDataNotice.textContent).contains('Report configuration is incomplete');
 
-  await t.click(e.homepageLink);
+  await t.click(Common.collectionsPage);
 
   await t.hover(Common.listItem('report'));
   await t.click(Common.contextMenu(Common.listItem('report')));
@@ -53,13 +53,13 @@ test('navigate to dashboard view and edit pages', async (t) => {
   await createNewDashboard(t);
   await save(t);
 
-  await t.click(e.homepageLink);
+  await t.click(Common.collectionsPage);
 
   await t.click(Common.listItemLink('dashboard'));
 
   await t.expect(Common.editButton.visible).ok();
 
-  await t.click(e.homepageLink);
+  await t.click(Common.collectionsPage);
 
   await t.hover(Common.listItem('dashboard'));
   await t.click(Common.contextMenu(Common.listItem('dashboard')));
@@ -83,7 +83,7 @@ test('complex Homepage actions', async (t) => {
 
   await t.typeText(Common.nameEditField, 'Invoice Evaluation count', {replace: true});
   await save(t);
-  await t.click(e.homepageLink);
+  await t.click(Common.collectionsPage);
 
   await t.click(Common.createNewButton);
   await t.click(Common.menuOption('Report'));
@@ -93,7 +93,7 @@ test('complex Homepage actions', async (t) => {
 
   await t.typeText(Common.nameEditField, 'Monthly Sales From Marketing', {replace: true});
   await save(t);
-  await t.click(e.homepageLink);
+  await t.click(Common.collectionsPage);
 
   await t.expect(Common.listItem('report').visible).ok();
   await t.expect(Common.listItem('report').textContent).contains('Monthly Sales From Marketing');
@@ -107,20 +107,11 @@ test('complex Homepage actions', async (t) => {
   await addReportToDashboard(t, 'Monthly Sales From Marketing');
 
   await save(t);
-  await t.click(e.homepageLink);
+  await t.click(Common.collectionsPage);
 
   await t.expect(Common.listItem('dashboard').visible).ok();
   await t.expect(Common.listItem('dashboard').textContent).contains('Sales Dashboard');
   await t.expect(Common.listItem('dashboard').textContent).contains('3 Reports');
-
-  // breadcrumb navigation
-  await t.click(Common.listItemLink('dashboard'));
-  await t.click(e.dashboardReportLink);
-  await t.click(e.breadcrumb('Sales Dashboard'));
-
-  await t.expect(e.dashboardView.visible).ok();
-
-  await t.click(e.homepageLink);
 
   await t.click(Common.createNewButton).click(Common.menuOption('Collection'));
   await t.typeText(Common.modalNameInput, 'Marketing', {replace: true});
@@ -130,7 +121,7 @@ test('complex Homepage actions', async (t) => {
   await createNewDashboard(t);
   await save(t);
 
-  await t.click(e.homepageLink);
+  await t.click(Common.collectionsPage);
 
   await t.click(Common.createNewButton).click(Common.menuOption('Collection'));
   await t.typeText(Common.modalNameInput, 'Sales', {replace: true});
@@ -145,7 +136,9 @@ test('complex Homepage actions', async (t) => {
 
   await t.typeText(Common.nameEditField, 'Incoming Leads', {replace: true});
   await save(t);
-  await t.click(e.breadcrumb('Sales'));
+
+  await t.click(Common.collectionsPage);
+  await t.click(Common.listItemLink('collection'));
 
   await t.click(Common.createNewButton);
   await t.click(Common.menuOption('Report'));
@@ -155,7 +148,9 @@ test('complex Homepage actions', async (t) => {
 
   await t.typeText(Common.nameEditField, 'Sales Goal this Quarter', {replace: true});
   await save(t);
-  await t.click(e.breadcrumb('Sales'));
+
+  await t.click(Common.collectionsPage);
+  await t.click(Common.listItemLink('collection'));
 
   await createNewDashboard(t);
 
@@ -163,14 +158,16 @@ test('complex Homepage actions', async (t) => {
   await addReportToDashboard(t, 'Incoming Leads');
   await addReportToDashboard(t, 'Sales Goal this Quarter');
   await save(t);
-  await t.click(e.breadcrumb('Sales'));
+
+  await t.click(Common.collectionsPage);
+  await t.click(Common.listItemLink('collection'));
 
   await t
     .resizeWindow(1150, 550)
     .takeScreenshot('img/collection.png', {fullPage: true})
     .maximizeWindow();
 
-  await t.click(e.homepageLink);
+  await t.click(Common.collectionsPage);
 
   await t.expect(Common.listItem('collection').visible).ok();
   await t.expect(Common.listItem('collection').textContent).contains('Sales');
@@ -251,7 +248,7 @@ test('create new dashboard from an empty state component', async (t) => {
 
   await save(t);
 
-  await t.click(e.homepageLink);
+  await t.click(Common.collectionsPage);
   await t.expect(e.emptyStateComponent.exists).notOk();
 
   await bulkDeleteAllItems(t);

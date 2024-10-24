@@ -15,8 +15,6 @@ import {Deleter, PageTitle, Tabs} from 'components';
 import {loadEntity, updateEntity, checkDeleteConflict} from 'services';
 import {showError, addNotification} from 'notifications';
 import {isUserSearchAvailable} from 'config';
-import {refreshBreadcrumbs} from 'components/navigation';
-
 import {loadCollectionEntities} from './service';
 import UserList from './UserList';
 import AlertList from './AlertList';
@@ -201,7 +199,6 @@ export class Collection extends Component {
                 await updateEntity('collection', collection.id, {name});
                 this.loadCollection();
                 this.finishCollectionEditing();
-                refreshBreadcrumbs();
               }}
             />
           )}

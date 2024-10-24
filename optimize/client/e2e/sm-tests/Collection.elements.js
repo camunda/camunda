@@ -10,7 +10,6 @@ import {Selector} from 'testcafe';
 
 import {overflowMenuOption, listItem} from './Common.elements';
 
-export const navItem = Selector('.NavItem a').withText('Collections');
 export const collectionTitle = Selector('.Collection .CollectionHeader .text');
 export const collectionBreadcrumb = Selector('.cds--header__menu-bar .breadcrumb');
 export const collectionContextMenu = Selector(
