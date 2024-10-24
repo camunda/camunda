@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -33,12 +34,15 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
   }
 
   @Override
-  public void registerPartitionChangeExecutor(final PartitionChangeExecutor executor) {
+  public void registerChangeExecutors(
+      final PartitionChangeExecutor partitionChangeExecutor,
+      final PartitionScalingChangeExecutor partitionScalingChangeExecutor) {
     if (clusterConfigurationManagerService != null) {
-      clusterConfigurationManagerService.registerPartitionChangeExecutor(executor);
+      clusterConfigurationManagerService.registerChangeExecutors(
+          partitionChangeExecutor, partitionScalingChangeExecutor);
     } else {
       throw new IllegalStateException(
-          "Cannot register partition change executor before the topology manager is started");
+          "Cannot register change executor before the topology manager is started");
     }
   }
 

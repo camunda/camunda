@@ -23,6 +23,7 @@ import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinatorImpl;
 import io.camunda.zeebe.dynamic.config.changes.NoopClusterMembershipChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiper;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
@@ -227,12 +228,14 @@ public final class ClusterConfigurationManagerService
     return managerActor.closeAsync().andThen(gossipActor::closeAsync, Runnable::run);
   }
 
-  public void registerPartitionChangeExecutor(
-      final PartitionChangeExecutor partitionChangeExecutor) {
-    // TODO: pass concrete TopologyMembershipChangeExecutor
+  public void registerChangeExecutors(
+      final PartitionChangeExecutor partitionChangeExecutor,
+      final PartitionScalingChangeExecutor partitionScalingChangeExecutor) {
     clusterConfigurationManager.registerTopologyChangeAppliers(
         new ConfigurationChangeAppliersImpl(
-            partitionChangeExecutor, new NoopClusterMembershipChangeExecutor()));
+            partitionChangeExecutor,
+            new NoopClusterMembershipChangeExecutor(),
+            partitionScalingChangeExecutor));
   }
 
   public void removePartitionChangeExecutor() {

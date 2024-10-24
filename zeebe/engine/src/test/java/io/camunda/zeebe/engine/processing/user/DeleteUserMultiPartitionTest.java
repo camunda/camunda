@@ -135,6 +135,10 @@ public class DeleteUserMultiPartitionTest {
 
   @Test
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
+    // given the user creation distribution is intercepted
+    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
+      interceptUserCreateForPartition(partitionId);
+    }
     final var userRecord =
         engine
             .user()
@@ -143,11 +147,6 @@ public class DeleteUserMultiPartitionTest {
             .withEmail("foo@bar.com")
             .withPassword("password")
             .create();
-
-    // given the user creation distribution is intercepted
-    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
-      interceptUserCreateForPartition(partitionId);
-    }
 
     // when
     engine

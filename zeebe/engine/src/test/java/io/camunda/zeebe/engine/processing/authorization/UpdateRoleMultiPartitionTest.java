@@ -46,7 +46,8 @@ public class UpdateRoleMultiPartitionTest {
     assertThat(
             RecordingExporter.records()
                 .withPartitionId(1)
-                .limit(record -> record.getIntent().equals(CommandDistributionIntent.FINISHED)))
+                .limitByCount(
+                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 2))
         .extracting(
             io.camunda.zeebe.protocol.record.Record::getIntent,
             io.camunda.zeebe.protocol.record.Record::getRecordType,
