@@ -74,7 +74,9 @@ jobs:
             secret/data/github.com/organizations/camunda NEXUS_USR;
             secret/data/github.com/organizations/camunda NEXUS_PSW;
       - name: Build frontend
-        uses: ./.github/actions/build-operate-fe
+        uses: ./.github/actions/build-frontend
+        with:
+          directory: ./operate/client
       - name: Add Yarn binaries to Path
         working-directory: ./operate/client
         run: |
