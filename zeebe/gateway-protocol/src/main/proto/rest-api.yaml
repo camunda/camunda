@@ -754,7 +754,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UserTaskVariablesSearchQueryRequest"
+              $ref: "#/components/schemas/UserTaskVariableSearchQueryRequest"
       responses:
         "200":
           description: >
@@ -2695,7 +2695,7 @@ components:
       properties:
         filter:
           $ref: "#/components/schemas/UserTaskFilterRequest"
-    UserTaskVariablesSearchQueryRequest:
+    UserTaskVariableSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
       description: User task search query request.

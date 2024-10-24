@@ -240,7 +240,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, VariableQuery> toUserTaskVariableQuery(
-      final UserTaskVariablesSearchQueryRequest request, final List<Long> treePath) {
+      final UserTaskVariableSearchQueryRequest request, final List<Long> treePath) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.variableSearchQuery().build());
     }
