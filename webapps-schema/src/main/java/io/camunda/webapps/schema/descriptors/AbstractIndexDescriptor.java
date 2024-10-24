@@ -19,9 +19,6 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
   protected String indexPrefix;
   protected boolean isElasticsearch;
 
-  // Will not use global prefix unless this value is true
-  protected boolean hasGlobalPrefix = false;
-
   public AbstractIndexDescriptor(final String indexPrefix, final boolean isElasticsearch) {
     this.indexPrefix = indexPrefix;
     this.isElasticsearch = isElasticsearch;
@@ -29,12 +26,8 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
   @Override
   public String getFullQualifiedName() {
-    if (hasGlobalPrefix) {
-      return String.format(
-          "%s%s-%s-%s_", formattedIndexPrefix(), getComponentName(), getIndexName(), getVersion());
-    } else {
-      return String.format("%s%s-%s_", formattedIndexPrefix(), getIndexName(), getVersion());
-    }
+    return String.format(
+        "%s%s-%s-%s_", formattedIndexPrefix(), getComponentName(), getIndexName(), getVersion());
   }
 
   @Override
@@ -51,12 +44,8 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
   @Override
   public String getAllVersionsIndexNameRegexPattern() {
-    if (hasGlobalPrefix) {
-      return String.format(
-          "%s%s-%s-\\d.*", formattedIndexPrefix(), getComponentName(), getIndexName());
-    } else {
-      return String.format("%s%s-\\d.*", formattedIndexPrefix(), getIndexName());
-    }
+    return String.format(
+        "%s%s-%s-\\d.*", formattedIndexPrefix(), getComponentName(), getIndexName());
   }
 
   @Override
@@ -70,11 +59,6 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
   public String getIndexPrefix() {
     return indexPrefix;
-  }
-
-  public AbstractIndexDescriptor withHasGlobalPrefix(final boolean isGlobalPrefix) {
-    hasGlobalPrefix = isGlobalPrefix;
-    return this;
   }
 
   public abstract String getComponentName();

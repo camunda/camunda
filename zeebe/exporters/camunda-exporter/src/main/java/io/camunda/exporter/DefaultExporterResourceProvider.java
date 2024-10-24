@@ -85,42 +85,42 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
     templateDescriptorsMap =
         Map.of(
             ListViewTemplate.class,
-            new ListViewTemplate(globalPrefix, isElasticsearch).withHasGlobalPrefix(true),
+            new ListViewTemplate(globalPrefix, isElasticsearch),
             VariableTemplate.class,
-            new VariableTemplate(globalPrefix, isElasticsearch).withHasGlobalPrefix(true),
+            new VariableTemplate(globalPrefix, isElasticsearch),
             PostImporterQueueTemplate.class,
-            new PostImporterQueueTemplate(globalPrefix, isElasticsearch).withHasGlobalPrefix(true),
+            new PostImporterQueueTemplate(globalPrefix, isElasticsearch),
             FlowNodeInstanceTemplate.class,
-            new FlowNodeInstanceTemplate(globalPrefix, isElasticsearch).withHasGlobalPrefix(true),
+            new FlowNodeInstanceTemplate(globalPrefix, isElasticsearch),
             IncidentTemplate.class,
-            new IncidentTemplate(globalPrefix, isElasticsearch).withHasGlobalPrefix(true),
+            new IncidentTemplate(globalPrefix, isElasticsearch),
             SequenceFlowTemplate.class,
-            new SequenceFlowTemplate(globalPrefix, isElasticsearch).withHasGlobalPrefix(true),
+            new SequenceFlowTemplate(globalPrefix, isElasticsearch),
             DecisionInstanceTemplate.class,
-            new DecisionInstanceTemplate(globalPrefix, isElasticsearch).withHasGlobalPrefix(true),
+            new DecisionInstanceTemplate(globalPrefix, isElasticsearch),
             EventTemplate.class,
-            new EventTemplate(globalPrefix, isElasticsearch).withHasGlobalPrefix(true),
+            new EventTemplate(globalPrefix, isElasticsearch),
             TaskTemplate.class,
-            new TaskTemplate(globalPrefix, isElasticsearch).withHasGlobalPrefix(true));
+            new TaskTemplate(globalPrefix, isElasticsearch));
 
     indexDescriptorsMap =
         Map.of(
             DecisionIndex.class,
-            new DecisionIndex(globalPrefix, isElasticsearch).withHasGlobalPrefix(true),
+            new DecisionIndex(globalPrefix, isElasticsearch),
             DecisionRequirementsIndex.class,
-            new DecisionRequirementsIndex(globalPrefix, isElasticsearch).withHasGlobalPrefix(true),
+            new DecisionRequirementsIndex(globalPrefix, isElasticsearch),
             MetricIndex.class,
-            new MetricIndex(globalPrefix, isElasticsearch).withHasGlobalPrefix(true),
+            new MetricIndex(globalPrefix, isElasticsearch),
             ProcessIndex.class,
-            new ProcessIndex(globalPrefix, isElasticsearch).withHasGlobalPrefix(true),
+            new ProcessIndex(globalPrefix, isElasticsearch),
             FormIndex.class,
-            new FormIndex(globalPrefix, isElasticsearch).withHasGlobalPrefix(true),
+            new FormIndex(globalPrefix, isElasticsearch),
             TasklistMetricIndex.class,
-            new TasklistMetricIndex(globalPrefix, isElasticsearch).withHasGlobalPrefix(true),
+            new TasklistMetricIndex(globalPrefix, isElasticsearch),
             UserIndex.class,
-            new UserIndex(globalPrefix, isElasticsearch).withHasGlobalPrefix(true),
+            new UserIndex(globalPrefix, isElasticsearch),
             AuthorizationIndex.class,
-            new AuthorizationIndex(globalPrefix, isElasticsearch).withHasGlobalPrefix(true));
+            new AuthorizationIndex(globalPrefix, isElasticsearch));
 
     exportHandlers =
         Set.of(

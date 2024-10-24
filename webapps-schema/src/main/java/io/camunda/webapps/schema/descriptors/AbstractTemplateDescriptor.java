@@ -46,10 +46,4 @@ public abstract class AbstractTemplateDescriptor extends AbstractIndexDescriptor
             SCHEMA_CREATE_TEMPLATE_JSON_ELASTICSEARCH, getComponentName(), getIndexName())
         : String.format(SCHEMA_CREATE_TEMPLATE_JSON_OPENSEARCH, getComponentName(), getIndexName());
   }
-
-  @Override
-  public AbstractTemplateDescriptor withHasGlobalPrefix(final boolean hasGlobalPrefixVal) {
-    hasGlobalPrefix = hasGlobalPrefixVal;
-    return this;
-  }
 }
