@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.Set;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -46,9 +47,7 @@ public class ScaleUpTest {
     initRoutingState();
     final var command =
         RecordToWrite.command()
-            .scale(
-                ScaleIntent.SCALE_UP,
-                new ScaleRecord().setCurrentPartitionCount(1).setDesiredPartitionCount(3));
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(3));
 
     // when
     engine.writeRecords(command);
@@ -64,9 +63,7 @@ public class ScaleUpTest {
     initRoutingState();
     final var command =
         RecordToWrite.command()
-            .scale(
-                ScaleIntent.SCALE_UP,
-                new ScaleRecord().setCurrentPartitionCount(1).setDesiredPartitionCount(3));
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(3));
 
     // when
     engine.writeRecords(command);
@@ -84,9 +81,7 @@ public class ScaleUpTest {
     // given
     final var command =
         RecordToWrite.command()
-            .scale(
-                ScaleIntent.SCALE_UP,
-                new ScaleRecord().setCurrentPartitionCount(1).setDesiredPartitionCount(3));
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(3));
 
     // when
     engine.writeRecords(command);
@@ -117,8 +112,7 @@ public class ScaleUpTest {
             rejection -> {
               assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
               assertThat(rejection.getRejectionReason())
-                  .isEqualTo(
-                      "Desired partition count must be greater than current partition count");
+                  .isEqualTo("Partition count must be at least 1");
             });
   }
 
@@ -128,9 +122,7 @@ public class ScaleUpTest {
     initRoutingState();
     final var command =
         RecordToWrite.command()
-            .scale(
-                ScaleIntent.SCALE_UP,
-                new ScaleRecord().setCurrentPartitionCount(1).setDesiredPartitionCount(10000));
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(10000));
 
     // when
     engine.writeRecords(command);
@@ -148,12 +140,10 @@ public class ScaleUpTest {
   @Test
   public void shouldRejectScaleDown() {
     // given
-    initRoutingState();
+    ((MutableRoutingState) engine.getProcessingState().getRoutingState()).initializeRoutingInfo(2);
     final var command =
         RecordToWrite.command()
-            .scale(
-                ScaleIntent.SCALE_UP,
-                new ScaleRecord().setCurrentPartitionCount(3).setDesiredPartitionCount(1));
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(1));
 
     // when
     engine.writeRecords(command);
@@ -162,10 +152,32 @@ public class ScaleUpTest {
     assertThat(RecordingExporter.scaleRecords().onlyCommandRejections().findFirst())
         .hasValueSatisfying(
             rejection -> {
-              assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+              assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
               assertThat(rejection.getRejectionReason())
                   .isEqualTo(
-                      "Desired partition count must be greater than current partition count");
+                      "The desired partition count is smaller than the currently active partitions");
+            });
+  }
+
+  @Test
+  public void shouldRejectRedundantScaleUp() {
+    // given - a scale up from 1 to 3 was already requested
+    ((MutableRoutingState) engine.getProcessingState().getRoutingState()).initializeRoutingInfo(1);
+    ((MutableRoutingState) engine.getProcessingState().getRoutingState())
+        .setDesiredPartitions(Set.of(1, 2, 3));
+
+    // when
+    engine.writeRecords(
+        RecordToWrite.command()
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(3)));
+
+    // then
+    assertThat(RecordingExporter.scaleRecords().onlyCommandRejections().findFirst())
+        .hasValueSatisfying(
+            rejection -> {
+              assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.ALREADY_EXISTS);
+              assertThat(rejection.getRejectionReason())
+                  .isEqualTo("The desired partition count was already requested");
             });
   }
 

@@ -10,7 +10,9 @@ package io.camunda.zeebe.engine.state.immutable;
 import java.util.Set;
 
 public interface RoutingState {
-  Set<Integer> partitions();
+  Set<Integer> currentPartitions();
+
+  Set<Integer> desiredPartitions();
 
   MessageCorrelation messageCorrelation();
 
