@@ -23,7 +23,7 @@ import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
-public class FormHanlderTest {
+public class FormHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-form";
@@ -114,7 +114,7 @@ public class FormHanlderTest {
     // then
     assertThat(formEntity.getKey()).isEqualTo(formKey);
     assertThat(formEntity.getVersion()).isEqualTo(formValue.getVersion());
-    assertThat(formEntity.getBpmnId()).isEqualTo(formValue.getResourceName());
+    assertThat(formEntity.getBpmnId()).isEqualTo(formValue.getFormId());
     assertThat(formEntity.getSchema())
         .isEqualTo(new String(formValue.getResource(), StandardCharsets.UTF_8));
     assertThat(formEntity.getTenantId()).isEqualTo(formValue.getTenantId());
