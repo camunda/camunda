@@ -7,6 +7,17 @@ inputs:
   name:
     description: 'Name of the test artifact.'
     required: true
+  path:
+    description: 'List of paths to test outputs.'
+    required: false
+    default: |
+      **/target/failsafe-reports/
+      **/target/surefire-reports/
+      **/*.log
+  retention-days:
+    description: 'Number of days to keep the test artifact'
+    required: false
+    default: "7"
 
 runs:
   using: composite
@@ -15,9 +26,6 @@ runs:
     uses: actions/upload-artifact@v4
     with:
       name: Test results for ${{ inputs.name  }}
-      path: |
-        **/target/failsafe-reports/
-        **/target/surefire-reports/
-        **/*.log
-      retention-days: 7
+      path: ${{ inputs.path }}
+      retention-days: ${{ inputs.retention-days }}
       if-no-files-found: ignore

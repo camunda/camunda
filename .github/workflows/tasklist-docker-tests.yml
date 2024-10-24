@@ -105,7 +105,7 @@ jobs:
         run: ./mvnw -pl tasklist/qa/integration-tests -DskipChecks -Dtest=StartupIT -Dsurefire.failIfNoSpecifiedTests=false -Dspring.profiles.active=docker-test test
       - name: Upload Test Report
         if: failure()
-        uses: ./.github/actions/collect-tasklist-test-artifacts
+        uses: ./.github/actions/collect-test-artifacts
         with:
           name: "docker tests"
       - name: Observe build status
