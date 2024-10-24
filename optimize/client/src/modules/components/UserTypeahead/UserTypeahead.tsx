@@ -18,6 +18,8 @@ import {getUser, User, getUserId, Identity} from './service';
 import MultiUserInput from './MultiUserInput';
 import SingleUserInput from './SingleUserInput';
 
+import './UserTypeahead.scss';
+
 export interface UserInputProps {
   titleText?: ReactNode;
   users: User[];

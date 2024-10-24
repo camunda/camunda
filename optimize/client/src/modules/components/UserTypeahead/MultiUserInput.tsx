@@ -23,8 +23,6 @@ import {
 import useLoadIdentities from './useLoadIdentities';
 import {UserInputProps} from './UserTypeahead';
 
-import './MultiUserInput.scss';
-
 export default function MultiUserInput({
   users = [],
   collectionUsers = [],

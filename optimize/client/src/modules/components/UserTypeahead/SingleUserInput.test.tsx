@@ -10,23 +10,22 @@ import {shallow} from 'enzyme';
 import {ComboBox} from '@carbon/react';
 
 import SingleUserInput from './SingleUserInput';
-import {useLoadIdentities} from './hooks';
+import useLoadIdentities from './useLoadIdentities';
 import {User} from './service';
 
-// Mocking the imported functions and hooks
 jest.mock('./service', () => ({
   identityToItem: jest.fn().mockReturnValue({id: 'user1'}),
   getItems: jest.fn().mockReturnValue([]),
   getSelectedIdentity: jest.fn().mockImplementation((id) => ({id})),
 }));
 
-jest.mock('./hooks', () => ({
-  useLoadIdentities: jest.fn().mockReturnValue({
+jest.mock('./useLoadIdentities', () =>
+  jest.fn().mockReturnValue({
     loading: false,
     identities: [],
     loadNewValues: jest.fn(),
-  }),
-}));
+  })
+);
 
 const mockUseLoadIdentities = useLoadIdentities as jest.Mock;
 

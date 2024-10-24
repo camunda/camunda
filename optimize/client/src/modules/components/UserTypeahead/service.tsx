@@ -69,7 +69,7 @@ export function itemToElement(item: Item | null, textValue: string): JSX.Element
   const {label, subText, id} = item;
   return (
     <span id={id}>
-      {formatters.getHighlightedText(label, textValue)}
+      <span className="label">{formatters.getHighlightedText(label, textValue)}</span>
       {subText && (
         <span className="subText">{formatters.getHighlightedText(subText, textValue, true)}</span>
       )}
