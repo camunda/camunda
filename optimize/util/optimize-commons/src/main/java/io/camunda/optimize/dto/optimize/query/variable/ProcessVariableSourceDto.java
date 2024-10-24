@@ -89,11 +89,11 @@ public class ProcessVariableSourceDto {
         + ")";
   }
 
-  private static List<String> $default$processDefinitionVersions() {
+  private static List<String> defaultProcessDefinitionVersions() {
     return new ArrayList<>();
   }
 
-  private static List<String> $default$tenantIds() {
+  private static List<String> defaultTenantIds() {
     return new ArrayList<>(Collections.singletonList(null));
   }
 
@@ -105,12 +105,13 @@ public class ProcessVariableSourceDto {
 
     private String processInstanceId;
     private String processDefinitionKey;
-    private List<String> processDefinitionVersions$value;
-    private boolean processDefinitionVersions$set;
-    private List<String> tenantIds$value;
-    private boolean tenantIds$set;
+    private List<String> processDefinitionVersionsValue;
+    private boolean processDefinitionVersionsSet;
+    private List<String> tenantIdsValue;
+    private boolean tenantIdsSet;
 
-    ProcessVariableSourceDtoBuilder() {}
+    ProcessVariableSourceDtoBuilder() {
+    }
 
     public ProcessVariableSourceDtoBuilder processInstanceId(final String processInstanceId) {
       this.processInstanceId = processInstanceId;
@@ -124,32 +125,32 @@ public class ProcessVariableSourceDto {
 
     public ProcessVariableSourceDtoBuilder processDefinitionVersions(
         final List<String> processDefinitionVersions) {
-      processDefinitionVersions$value = processDefinitionVersions;
-      processDefinitionVersions$set = true;
+      processDefinitionVersionsValue = processDefinitionVersions;
+      processDefinitionVersionsSet = true;
       return this;
     }
 
     public ProcessVariableSourceDtoBuilder tenantIds(final List<String> tenantIds) {
-      tenantIds$value = tenantIds;
-      tenantIds$set = true;
+      tenantIdsValue = tenantIds;
+      tenantIdsSet = true;
       return this;
     }
 
     public ProcessVariableSourceDto build() {
-      List<String> processDefinitionVersions$value = this.processDefinitionVersions$value;
-      if (!processDefinitionVersions$set) {
-        processDefinitionVersions$value =
-            ProcessVariableSourceDto.$default$processDefinitionVersions();
+      List<String> processDefinitionVersionsValue = this.processDefinitionVersionsValue;
+      if (!processDefinitionVersionsSet) {
+        processDefinitionVersionsValue =
+            ProcessVariableSourceDto.defaultProcessDefinitionVersions();
       }
-      List<String> tenantIds$value = this.tenantIds$value;
-      if (!tenantIds$set) {
-        tenantIds$value = ProcessVariableSourceDto.$default$tenantIds();
+      List<String> tenantIdsValue = this.tenantIdsValue;
+      if (!tenantIdsSet) {
+        tenantIdsValue = ProcessVariableSourceDto.defaultTenantIds();
       }
       return new ProcessVariableSourceDto(
           processInstanceId,
           processDefinitionKey,
-          processDefinitionVersions$value,
-          tenantIds$value);
+          processDefinitionVersionsValue,
+          tenantIdsValue);
     }
 
     @Override
@@ -158,10 +159,10 @@ public class ProcessVariableSourceDto {
           + processInstanceId
           + ", processDefinitionKey="
           + processDefinitionKey
-          + ", processDefinitionVersions$value="
-          + processDefinitionVersions$value
-          + ", tenantIds$value="
-          + tenantIds$value
+          + ", processDefinitionVersionsValue="
+          + processDefinitionVersionsValue
+          + ", tenantIdsValue="
+          + tenantIdsValue
           + ")";
     }
   }

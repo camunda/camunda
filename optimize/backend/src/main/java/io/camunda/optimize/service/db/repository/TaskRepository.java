@@ -19,9 +19,7 @@ import org.slf4j.Logger;
 public abstract class TaskRepository {
 
   protected static final String TASKS_ENDPOINT = "_tasks";
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(TaskRepository.class);
-
-  public record TaskProgressInfo(int progress, long totalCount, long processedCount) {}
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(TaskRepository.class);
 
   public abstract List<TaskProgressInfo> tasksProgress(final String action);
 
@@ -36,7 +34,7 @@ public abstract class TaskRepository {
                 tasksProgress(action)
                     .forEach(
                         tasksProgressInfo ->
-                            log.info(
+                            LOG.info(
                                 "Current {} BulkByScrollTaskTask progress: {}%, total: {}, done: {}",
                                 action,
                                 tasksProgressInfo.progress(),
@@ -60,11 +58,11 @@ public abstract class TaskRepository {
         final TaskResponse taskResponse = getTaskResponse(taskId);
         validateTaskResponse(taskResponse);
 
-        int currentProgress = (int) (taskResponse.getProgress() * 100.0);
+        final int currentProgress = (int) (taskResponse.getProgress() * 100.0);
         if (currentProgress != progress) {
           final TaskResponse.Status taskStatus = taskResponse.getTaskStatus();
           progress = currentProgress;
-          log.info(
+          LOG.info(
               "Progress of task (ID:{}) on {}: {}% (total: {}, updated: {}, created: {}, deleted: {}). Completed: {}",
               taskId,
               taskItemIdentifier,
@@ -79,10 +77,10 @@ public abstract class TaskRepository {
         if (!finished) {
           Thread.sleep(backoffCalculator.calculateSleepTime());
         }
-      } catch (InterruptedException e) {
-        log.error("Waiting for database task (ID: {}) completion was interrupted!", taskId, e);
+      } catch (final InterruptedException e) {
+        LOG.error("Waiting for database task (ID: {}) completion was interrupted!", taskId, e);
         Thread.currentThread().interrupt();
-      } catch (Exception e) {
+      } catch (final Exception e) {
         throw new OptimizeRuntimeException(
             String.format("Error while trying to read database task (ID: %s) progress!", taskId),
             e);
@@ -93,18 +91,18 @@ public abstract class TaskRepository {
   public static void validateTaskResponse(final TaskResponse taskResponse) {
     if (taskResponse == null) {
       final String errorMsg = "Not able to retrieve task status";
-      log.error(errorMsg);
+      LOG.error(errorMsg);
       throw new OptimizeRuntimeException(errorMsg);
     }
     if (taskResponse.getError() != null) {
-      log.error("A database task failed with error: {}", taskResponse.getError());
+      LOG.error("A database task failed with error: {}", taskResponse.getError());
       throw new OptimizeRuntimeException(taskResponse.getError().toString());
     }
 
     if (taskResponse.getResponseDetails() != null) {
       final List<Object> failures = taskResponse.getResponseDetails().getFailures();
       if (failures != null && !failures.isEmpty()) {
-        log.error("A database task contained failures: {}", failures);
+        LOG.error("A database task contained failures: {}", failures);
         throw new OptimizeRuntimeException(failures.toString());
       }
     }
@@ -117,7 +115,11 @@ public abstract class TaskRepository {
   protected static int getProgress(final JsonObject status) {
     return status.getInt("total") > 0
         ? Double.valueOf((double) getProcessedTasksCount(status) / status.getInt("total") * 100.0D)
-            .intValue()
+        .intValue()
         : 0;
+  }
+
+  public record TaskProgressInfo(int progress, long totalCount, long processedCount) {
+
   }
 }

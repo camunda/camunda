@@ -17,7 +17,7 @@ import org.slf4j.Logger;
 
 public class MyUpdatedEventIndexOS extends MyUpdatedEventIndex<IndexSettings.Builder> {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(MyUpdatedEventIndexOS.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(MyUpdatedEventIndexOS.class);
 
   @Override
   public IndexSettings.Builder getStaticSettings(

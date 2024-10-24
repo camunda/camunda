@@ -29,7 +29,7 @@ public abstract class SingleDecisionReportIndex<TBuilder> extends AbstractReport
   }
 
   @Override
-  protected TypeMapping.Builder addReportTypeSpecificFields(TypeMapping.Builder xContentBuilder) {
+  protected TypeMapping.Builder addReportTypeSpecificFields(final TypeMapping.Builder xContentBuilder) {
     return xContentBuilder.properties(
         DATA,
         p ->

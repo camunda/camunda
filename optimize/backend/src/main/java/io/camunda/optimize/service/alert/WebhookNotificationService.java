@@ -42,7 +42,7 @@ import org.springframework.stereotype.Component;
 public class WebhookNotificationService
     implements AlertNotificationService, ConfigurationReloadable {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(WebhookNotificationService.class);
   private final ConfigurationService configurationService;
   private Map<String, CloseableHttpClient> webhookClientsByWebhookName;
@@ -59,7 +59,7 @@ public class WebhookNotificationService
           try {
             value.close();
           } catch (final IOException e) {
-            log.error(
+            LOG.error(
                 "Could not close Http client for webhook with name: {}. Exception: {}", key, e);
           }
         });
@@ -80,7 +80,7 @@ public class WebhookNotificationService
     final AlertDefinitionDto alert = notification.getAlert();
     final String destination = alert.getWebhook();
     if (StringUtils.isEmpty(destination)) {
-      log.debug(
+      LOG.debug(
           "No webhook configured for alert [id: {}, name: {}], no action performed.",
           alert.getId(),
           alert.getName());
@@ -90,7 +90,7 @@ public class WebhookNotificationService
     final Map<String, WebhookConfiguration> webhookConfigurationMap =
         configurationService.getConfiguredWebhooks();
     if (!webhookConfigurationMap.containsKey(destination)) {
-      log.error(
+      LOG.error(
           "Could not send webhook notification as the configuration for webhook with name {} "
               + "no longer exists in the configuration file.",
           destination);
@@ -98,7 +98,7 @@ public class WebhookNotificationService
     }
 
     final WebhookConfiguration webhookConfiguration = webhookConfigurationMap.get(destination);
-    log.info(
+    LOG.info(
         "Sending webhook notification for alert [id: {}, name: {}] to webhook: '{}'.",
         alert.getId(),
         alert.getName(),
@@ -133,7 +133,7 @@ public class WebhookNotificationService
           Response.Status.fromStatusCode(response.getStatusLine().getStatusCode());
       if (!Response.Status.Family.familyOf(statusCode.getStatusCode())
           .equals(Response.Status.Family.SUCCESSFUL)) {
-        log.error("Unexpected response when sending webhook notification: " + statusCode);
+        LOG.error("Unexpected response when sending webhook notification: " + statusCode);
       }
     } catch (final IOException e) {
       throw new OptimizeRuntimeException(

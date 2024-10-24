@@ -19,12 +19,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
-public class ElasticsearchWriterUtil {
+public final class ElasticsearchWriterUtil {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ElasticsearchWriterUtil.class);
 
-  private ElasticsearchWriterUtil() {}
+  private ElasticsearchWriterUtil() {
+  }
 
   public static Script createFieldUpdateScript(
       final Set<String> fields, final Object entityDto, final ObjectMapper objectMapper) {

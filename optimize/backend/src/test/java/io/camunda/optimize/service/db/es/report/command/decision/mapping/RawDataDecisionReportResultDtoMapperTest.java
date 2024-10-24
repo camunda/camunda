@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 public class RawDataDecisionReportResultDtoMapperTest {
 
   @Test
-  public void testMapFromSearchResponse_hitCountNotEqualTotalCount() {
+  public void testMapFromSearchResponseHitCountNotEqualTotalCount() {
     // given
     final int rawDataLimit = 2;
     final RawDecisionDataResultDtoMapper mapper = new RawDecisionDataResultDtoMapper();
@@ -45,7 +45,7 @@ public class RawDataDecisionReportResultDtoMapperTest {
   }
 
   @Test
-  public void testMapFromSearchResponse_additionalVariablesAddedToResults() {
+  public void testMapFromSearchResponseAdditionalVariablesAddedToResults() {
     // given
     final RawDecisionDataResultDtoMapper mapper = new RawDecisionDataResultDtoMapper();
     final List<DecisionInstanceDto> decisionInstanceDtos =
@@ -99,18 +99,18 @@ public class RawDataDecisionReportResultDtoMapperTest {
         .allSatisfy(
             instanceInputVars ->
                 assertThat(
-                        instanceInputVars.values().stream()
-                            .map(VariableEntry::getName)
-                            .collect(Collectors.toList()))
+                    instanceInputVars.values().stream()
+                        .map(VariableEntry::getName)
+                        .collect(Collectors.toList()))
                     .containsExactlyInAnyOrder("inputVarClauseName", "newInputVarName"));
     assertThat(result)
         .extracting(RawDataDecisionInstanceDto::getOutputVariables)
         .allSatisfy(
             instanceOutputVars ->
                 assertThat(
-                        instanceOutputVars.values().stream()
-                            .map(VariableEntry::getName)
-                            .collect(Collectors.toList()))
+                    instanceOutputVars.values().stream()
+                        .map(VariableEntry::getName)
+                        .collect(Collectors.toList()))
                     .containsExactlyInAnyOrder("outputVarClauseName", "newOutputVarName"));
   }
 

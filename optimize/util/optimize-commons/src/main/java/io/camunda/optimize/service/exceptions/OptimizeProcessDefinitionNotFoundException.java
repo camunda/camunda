@@ -10,7 +10,7 @@ package io.camunda.optimize.service.exceptions;
 public class OptimizeProcessDefinitionNotFoundException
     extends OptimizeProcessDefinitionFetchException {
 
-  public OptimizeProcessDefinitionNotFoundException(String message) {
+  public OptimizeProcessDefinitionNotFoundException(final String message) {
     super(message);
   }
 }

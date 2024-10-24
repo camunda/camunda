@@ -32,7 +32,7 @@ public class DecisionDistributedByNoneInterpreterOS
 
   private final DecisionViewInterpreterFacadeOS viewInterpreter;
 
-  public DecisionDistributedByNoneInterpreterOS(DecisionViewInterpreterFacadeOS viewInterpreter) {
+  public DecisionDistributedByNoneInterpreterOS(final DecisionViewInterpreterFacadeOS viewInterpreter) {
     this.viewInterpreter = viewInterpreter;
   }
 
@@ -54,7 +54,7 @@ public class DecisionDistributedByNoneInterpreterOS
 
   @Override
   public List<DistributedByResult> createEmptyResult(
-      ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
+      final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
     return List.of(
         DistributedByResult.createDistributedByNoneResult(
             viewInterpreter.createEmptyResult(context)));

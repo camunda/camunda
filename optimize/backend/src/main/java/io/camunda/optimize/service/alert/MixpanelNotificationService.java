@@ -34,15 +34,15 @@ public class MixpanelNotificationService implements AlertNotificationService {
 
     final EventReportingEvent eventName;
     switch (Optional.ofNullable(notification.getType()).orElse(AlertNotificationType.NEW)) {
-      default:
-      case NEW:
-        eventName = EventReportingEvent.ALERT_NEW_TRIGGERED;
-        break;
       case REMINDER:
         eventName = EventReportingEvent.ALERT_REMINDER_TRIGGERED;
         break;
       case RESOLVED:
         eventName = EventReportingEvent.ALERT_RESOLVED_TRIGGERED;
+        break;
+      case NEW:
+      default:
+        eventName = EventReportingEvent.ALERT_NEW_TRIGGERED;
         break;
     }
     mixpanelReportingService.sendEntityEvent(eventName, notification.getAlert().getId());

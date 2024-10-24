@@ -54,7 +54,7 @@ import org.slf4j.Logger;
 public class OptimizeRequestExecutor {
 
   private static final int MAX_LOGGED_BODY_SIZE = 10_000;
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(OptimizeRequestExecutor.class);
 
   private final WebTarget defaultWebTarget;
@@ -259,7 +259,7 @@ public class OptimizeRequestExecutor {
     client.register(
         (ClientRequestFilter)
             requestContext ->
-                log.debug(
+                LOG.debug(
                     "EmbeddedTestClient request {} {}",
                     requestContext.getMethod(),
                     requestContext.getUri()));
@@ -270,7 +270,7 @@ public class OptimizeRequestExecutor {
                 responseContext.setEntityStream(
                     wrapEntityStreamIfNecessary(responseContext.getEntityStream()));
               }
-              log.debug(
+              LOG.debug(
                   "EmbeddedTestClient response for {} {}: {}",
                   requestContext.getMethod(),
                   requestContext.getUri(),
@@ -296,18 +296,18 @@ public class OptimizeRequestExecutor {
           .init(
               null,
               new TrustManager[] {
-                new X509TrustManager() {
-                  @Override
-                  public void checkClientTrusted(final X509Certificate[] arg0, final String arg1) {}
+                  new X509TrustManager() {
+                    @Override
+                    public void checkClientTrusted(final X509Certificate[] arg0, final String arg1) {}
 
-                  @Override
-                  public void checkServerTrusted(final X509Certificate[] arg0, final String arg1) {}
+                    @Override
+                    public void checkServerTrusted(final X509Certificate[] arg0, final String arg1) {}
 
-                  @Override
-                  public X509Certificate[] getAcceptedIssuers() {
-                    return new X509Certificate[0];
+                    @Override
+                    public X509Certificate[] getAcceptedIssuers() {
+                      return new X509Certificate[0];
+                    }
                   }
-                }
               },
               new java.security.SecureRandom());
       HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);

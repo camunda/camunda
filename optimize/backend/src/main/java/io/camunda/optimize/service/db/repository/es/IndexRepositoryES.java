@@ -27,16 +27,16 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class IndexRepositoryES implements IndexRepository, ConfigurationReloadable {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(IndexRepositoryES.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(IndexRepositoryES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ElasticSearchSchemaManager elasticSearchSchemaManager;
   private final OptimizeIndexNameService indexNameService;
   private final Set<String> indices = ConcurrentHashMap.newKeySet();
 
   public IndexRepositoryES(
-      OptimizeElasticsearchClient esClient,
-      ElasticSearchSchemaManager elasticSearchSchemaManager,
-      OptimizeIndexNameService indexNameService) {
+      final OptimizeElasticsearchClient esClient,
+      final ElasticSearchSchemaManager elasticSearchSchemaManager,
+      final OptimizeIndexNameService indexNameService) {
     this.esClient = esClient;
     this.elasticSearchSchemaManager = elasticSearchSchemaManager;
     this.indexNameService = indexNameService;
@@ -64,19 +64,19 @@ public class IndexRepositoryES implements IndexRepository, ConfigurationReloadab
     return indexExists(indexMappingCreatorBuilder.getElasticsearch().apply(key).getIndexName());
   }
 
-  private String getIndexName(IndexMappingCreator<IndexSettings.Builder> indexMappingCreator) {
+  private String getIndexName(final IndexMappingCreator<IndexSettings.Builder> indexMappingCreator) {
     return indexNameService.getOptimizeIndexNameWithVersion(indexMappingCreator);
   }
 
   private void createMissingIndex(
       final IndexMappingCreator<IndexSettings.Builder> indexMappingCreator,
       final Set<String> readOnlyAliases) {
-    log.debug("Creating index {}.", getIndexName(indexMappingCreator));
+    LOG.debug("Creating index {}.", getIndexName(indexMappingCreator));
 
     elasticSearchSchemaManager.createOrUpdateOptimizeIndex(
         esClient, indexMappingCreator, readOnlyAliases);
 
-    String index = getIndexName(indexMappingCreator);
+    final String index = getIndexName(indexMappingCreator);
 
     indices.add(index);
   }

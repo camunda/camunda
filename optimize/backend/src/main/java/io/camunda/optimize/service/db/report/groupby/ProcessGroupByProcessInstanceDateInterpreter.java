@@ -30,7 +30,7 @@ public interface ProcessGroupByProcessInstanceDateInterpreter {
             .orElseGet(() -> new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.ASC)));
     result.setGroupByKeyOfNumericType(false);
     result.setDistributedByKeyOfNumericType(isDistributedByKeyOfNumericType);
-    ProcessReportDataDto reportData = context.getReportData();
+    final ProcessReportDataDto reportData = context.getReportData();
     // We sort by label for management report because keys change on every request
     if (reportData.isManagementReport()) {
       result.setDistributedBySorting(

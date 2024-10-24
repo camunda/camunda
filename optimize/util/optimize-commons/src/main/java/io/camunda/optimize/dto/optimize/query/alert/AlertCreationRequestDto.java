@@ -22,7 +22,8 @@ public class AlertCreationRequestDto {
   private List<String> emails = new ArrayList<>();
   private String webhook;
 
-  public AlertCreationRequestDto() {}
+  public AlertCreationRequestDto() {
+  }
 
   public String getName() {
     return name;
@@ -134,6 +135,7 @@ public class AlertCreationRequestDto {
   }
 
   // needed to allow inheritance of field name constants
+  @SuppressWarnings("checkstyle:ConstantName")
   public static class Fields {
 
     public static final String name = "name";
@@ -146,6 +148,7 @@ public class AlertCreationRequestDto {
     public static final String emails = "emails";
     public static final String webhook = "webhook";
 
-    protected Fields() {}
+    protected Fields() {
+    }
   }
 }

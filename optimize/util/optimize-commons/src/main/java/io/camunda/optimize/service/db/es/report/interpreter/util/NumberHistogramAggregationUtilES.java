@@ -11,9 +11,10 @@ import co.elastic.clients.elasticsearch._types.Script;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import java.util.Map;
 
-public class NumberHistogramAggregationUtilES {
+public final class NumberHistogramAggregationUtilES {
 
-  private NumberHistogramAggregationUtilES() {}
+  private NumberHistogramAggregationUtilES() {
+  }
 
   public static Aggregation.Builder.ContainerBuilder generateHistogramWithField(
       final String histogramName,
@@ -23,7 +24,7 @@ public class NumberHistogramAggregationUtilES {
       final String fieldName,
       final String formatString,
       final Map<String, Aggregation.Builder.ContainerBuilder> subAggregations) {
-    Aggregation.Builder.ContainerBuilder builder =
+    final Aggregation.Builder.ContainerBuilder builder =
         new Aggregation.Builder()
             .histogram(
                 h ->
@@ -43,7 +44,7 @@ public class NumberHistogramAggregationUtilES {
       final Script script,
       final double max,
       final Map<String, Aggregation.Builder.ContainerBuilder> subAggregations) {
-    Aggregation.Builder.ContainerBuilder builder =
+    final Aggregation.Builder.ContainerBuilder builder =
         new Aggregation.Builder()
             .histogram(
                 h ->

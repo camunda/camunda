@@ -44,7 +44,7 @@ public class ViewProperty implements Combinable {
 
   // uppercase is intended here to align it with other static fields
   @SuppressWarnings("java:S100")
-  public static ViewProperty VARIABLE(final String variableName, final VariableType variableType) {
+  public static ViewProperty variable(final String variableName, final VariableType variableType) {
     return new ViewProperty(variableName, variableType);
   }
 

@@ -83,7 +83,7 @@ public class ElasticSearchSchemaManager
 
   public static final int INDEX_EXIST_BATCH_SIZE = 10;
   private static final String INDEX_READ_ONLY_SETTING = "index.blocks.read_only_allow_delete";
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ElasticSearchSchemaManager.class);
   protected final ElasticSearchMetadataService metadataService;
 
@@ -117,9 +117,9 @@ public class ElasticSearchSchemaManager
   public void initializeSchema(final OptimizeElasticsearchClient esClient) {
     unblockIndices(esClient);
     if (!schemaExists(esClient)) {
-      log.info("Initializing Optimize schema...");
+      LOG.info("Initializing Optimize schema...");
       createOptimizeIndices(esClient);
-      log.info("Optimize schema initialized successfully.");
+      LOG.info("Optimize schema initialized successfully.");
     } else {
       updateAllMappingsAndDynamicSettings(esClient);
     }
@@ -169,7 +169,7 @@ public class ElasticSearchSchemaManager
         createOrUpdateOptimizeIndex(esClient, indexMapping, additionalReadOnlyAliases);
       }
     } catch (final Exception e) {
-      log.error("Failed ensuring index is present: {}", indexMapping.getIndexName(), e);
+      LOG.error("Failed ensuring index is present: {}", indexMapping.getIndexName(), e);
       throw e;
     }
   }
@@ -209,7 +209,7 @@ public class ElasticSearchSchemaManager
       }
     } catch (final ElasticsearchException e) {
       if (e.status() == 400 && e.getMessage().contains(INDEX_ALREADY_EXISTS_EXCEPTION_TYPE)) {
-        log.debug(
+        LOG.debug(
             "index {} already exists, updating mapping and dynamic settings.", suffixedIndexName);
         updateDynamicSettingsAndMappings(esClient, mapping);
       } else {
@@ -217,7 +217,7 @@ public class ElasticSearchSchemaManager
       }
     } catch (final Exception e) {
       final String message = String.format("Could not create Index [%s]", suffixedIndexName);
-      log.warn(message, e);
+      LOG.warn(message, e);
       throw new OptimizeRuntimeException(message, e);
     }
   }
@@ -230,7 +230,7 @@ public class ElasticSearchSchemaManager
       esClient.deleteIndex(mapping);
     } catch (final ElasticsearchException e) {
       if (e.status() == 404) {
-        log.debug("Index {} was not found.", mapping.getIndexName());
+        LOG.debug("Index {} was not found.", mapping.getIndexName());
       } else {
         throw e;
       }
@@ -245,7 +245,7 @@ public class ElasticSearchSchemaManager
         indexNameService.getOptimizeIndexTemplateNameWithVersion(mappingCreator);
     final IndexSettings indexSettings = createIndexSettings(mappingCreator);
     final Map<String, JsonData> indexSettingsMap = convertToMap(indexSettings);
-    log.debug("Creating or updating template with name {}.", templateName);
+    LOG.debug("Creating or updating template with name {}.", templateName);
     try {
       esClient.createTemplate(
           PutTemplateRequest.of(
@@ -306,7 +306,7 @@ public class ElasticSearchSchemaManager
       final Set<String> additionalAliases,
       final IndexSettings indexSettings)
       throws IOException {
-    log.debug(
+    LOG.debug(
         "Creating Optimize Index with name {}, default alias {} and additional aliases {}",
         indexName,
         defaultAliasName,
@@ -332,7 +332,7 @@ public class ElasticSearchSchemaManager
       final OptimizeElasticsearchClient esClient,
       final String indexNameWithSuffix,
       final String aliasName) {
-    log.info("Creating index {} from template with write alias {}", indexNameWithSuffix, aliasName);
+    LOG.info("Creating index {} from template with write alias {}", indexNameWithSuffix, aliasName);
     try {
       esClient.createIndex(
           CreateIndexRequest.of(
@@ -346,7 +346,7 @@ public class ElasticSearchSchemaManager
     } catch (final IOException e) {
       final String message =
           String.format("Could not create index %s from template.", indexNameWithSuffix);
-      log.warn(message, e);
+      LOG.warn(message, e);
       throw new OptimizeRuntimeException(message, e);
     }
   }
@@ -359,7 +359,7 @@ public class ElasticSearchSchemaManager
       final Map<String, JsonData> indexSettings) {
     final String templateName =
         indexNameService.getOptimizeIndexNameWithVersionWithoutSuffix(mappingCreator);
-    log.info("Creating or updating template with name {}", templateName);
+    LOG.info("Creating or updating template with name {}", templateName);
     try {
       esClient.createTemplate(
           PutTemplateRequest.of(
@@ -380,24 +380,24 @@ public class ElasticSearchSchemaManager
               }));
     } catch (final IOException e) {
       final String message = String.format("Could not create or update template %s", templateName);
-      log.warn(message, e);
+      LOG.warn(message, e);
       throw new OptimizeRuntimeException(message, e);
     }
   }
 
   private void updateAllMappingsAndDynamicSettings(final OptimizeElasticsearchClient esClient) {
-    log.info("Updating Optimize schema...");
-    for (IndexMappingCreator<IndexSettings.Builder> mapping : mappings) {
+    LOG.info("Updating Optimize schema...");
+    for (final IndexMappingCreator<IndexSettings.Builder> mapping : mappings) {
       updateDynamicSettingsAndMappings(esClient, mapping);
     }
 
     final List<IndexMappingCreator<IndexSettings.Builder>> allDynamicMappings =
         new MappingMetadataUtilES(esClient)
             .getAllDynamicMappings(indexNameService.getIndexPrefix());
-    for (IndexMappingCreator<IndexSettings.Builder> mapping : allDynamicMappings) {
+    for (final IndexMappingCreator<IndexSettings.Builder> mapping : allDynamicMappings) {
       updateDynamicSettingsAndMappings(esClient, mapping);
     }
-    log.info("Finished updating Optimize schema.");
+    LOG.info("Finished updating Optimize schema.");
   }
 
   private void unblockIndices(final OptimizeElasticsearchClient esClient) {
@@ -408,7 +408,7 @@ public class ElasticSearchSchemaManager
           settingsResponse.result().values().stream()
               .anyMatch(
                   settings -> {
-                    IndexSettingBlocks s = settings.settings().blocks();
+                    final IndexSettingBlocks s = settings.settings().blocks();
                     if (s != null && s.readOnly() != null) {
                       return s.readOnly();
                     } else {
@@ -416,12 +416,12 @@ public class ElasticSearchSchemaManager
                     }
                   });
     } catch (final IOException e) {
-      log.error("Could not retrieve index settings!", e);
+      LOG.error("Could not retrieve index settings!", e);
       throw new OptimizeRuntimeException("Could not retrieve index settings!", e);
     }
 
     if (indexBlocked) {
-      log.info("Unblocking Elasticsearch indices...");
+      LOG.info("Unblocking Elasticsearch indices...");
       try {
         esClient.updateSettings(
             PutIndicesSettingsRequest.of(
@@ -493,7 +493,7 @@ public class ElasticSearchSchemaManager
       return ElasticSearchIndexSettingsBuilder.buildAllSettings(
           configurationService, indexMappingCreator);
     } catch (final IOException e) {
-      log.error("Could not create settings!", e);
+      LOG.error("Could not create settings!", e);
       throw new OptimizeRuntimeException("Could not create index settings");
     }
   }
@@ -507,11 +507,11 @@ public class ElasticSearchSchemaManager
       indexSettings.serialize(generator, jsonpMapper);
       generator.flush();
       return ((Map<String, Object>)
-              JsonData.from(new StringReader(writer.toString())).to(Map.class))
+          JsonData.from(new StringReader(writer.toString())).to(Map.class))
           .entrySet().stream()
-              .collect(Collectors.toMap(Map.Entry::getKey, entry -> JsonData.of(entry.getValue())));
-    } catch (IOException e) {
-      log.error("Could not create settings!", e);
+          .collect(Collectors.toMap(Map.Entry::getKey, entry -> JsonData.of(entry.getValue())));
+    } catch (final IOException e) {
+      LOG.error("Could not create settings!", e);
       throw new OptimizeRuntimeException("Could not create index settings");
     }
   }

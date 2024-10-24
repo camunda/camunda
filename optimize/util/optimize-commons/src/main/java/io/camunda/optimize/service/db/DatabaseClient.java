@@ -8,6 +8,7 @@
 package io.camunda.optimize.service.db;
 
 import io.camunda.optimize.dto.optimize.ImportRequestDto;
+import io.camunda.optimize.dto.optimize.ImportRequestDto.Fields;
 import io.camunda.optimize.dto.optimize.RequestType;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.db.schema.ScriptData;
@@ -26,13 +27,14 @@ import net.jodah.failsafe.FailsafeExecutor;
 import net.jodah.failsafe.RetryPolicy;
 import org.apache.tika.utils.StringUtils;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class DatabaseClient implements ConfigurationReloadable {
 
   protected static final String NESTED_DOC_LIMIT_MESSAGE =
       "The number of nested documents has exceeded the allowed limit of";
   private static final int DEFAULT_SNAPSHOT_IN_PROGRESS_RETRY_DELAY = 30;
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DatabaseClient.class);
+  private static final Logger LOG = LoggerFactory.getLogger(DatabaseClient.class);
   protected OptimizeIndexNameService indexNameService;
 
   private int snapshotInProgressRetryDelaySeconds = DEFAULT_SNAPSHOT_IN_PROGRESS_RETRY_DELAY;
@@ -42,8 +44,8 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
    *
    * @param indexNamePattern Pattern for the name of an index, may contain wildcards
    * @return A Map where the keys are the name of the matching indexes and the value is a set
-   *     containing the aliases for the respective index. This map can have multiple keys because
-   *     indexNamePattern may contain wildcards
+   * containing the aliases for the respective index. This map can have multiple keys because
+   * indexNamePattern may contain wildcards
    */
   public abstract Map<String, Set<String>> getAliasesForIndexPattern(final String indexNamePattern)
       throws IOException;
@@ -91,7 +93,7 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
     if (exists(unprefixedIndex)) {
       return countWithoutPrefix(unprefixedIndex);
     }
-    log.debug("Index {} does not exist, returning a document count of 0.", unprefixedIndex);
+    LOG.debug("Index {} does not exist, returning a document count of 0.", unprefixedIndex);
     return 0;
   }
 
@@ -100,7 +102,7 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
   }
 
   public static String[] convertToPrefixedAliasNames(
-      final String[] indices, DatabaseClient client) {
+      final String[] indices, final DatabaseClient client) {
     return Arrays.stream(indices)
         .map(i -> convertToPrefixedAliasName(i, client))
         .toArray(String[]::new);
@@ -113,7 +115,7 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
     return hasExcludePrefix ? "-" + prefixedIndexName : prefixedIndexName;
   }
 
-  public static String convertToPrefixedAliasName(final String index, DatabaseClient client) {
+  public static String convertToPrefixedAliasName(final String index, final DatabaseClient client) {
     final boolean hasExcludePrefix = '-' == index.charAt(0);
     final String rawIndexName = hasExcludePrefix ? index.substring(1) : index;
     final String prefixedIndexName =
@@ -126,33 +128,34 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
       throw new OptimizeRuntimeException(
           String.format(
               "The %s param of ImportRequestDto is not set for request",
-              ImportRequestDto.Fields.type.name()));
+              Fields.type.name()));
     }
     if (StringUtils.isBlank(importRequestDto.getIndexName())) {
       throw new OptimizeRuntimeException(
           generateErrorMessageForValidationImportRequestDto(
-              importRequestDto.getType(), ImportRequestDto.Fields.indexName.name()));
+              importRequestDto.getType(), Fields.indexName.name()));
     }
     if (StringUtils.isBlank(importRequestDto.getId())) {
       throw new OptimizeRuntimeException(
           generateErrorMessageForValidationImportRequestDto(
-              importRequestDto.getType(), ImportRequestDto.Fields.id.name()));
+              importRequestDto.getType(), Fields.id.name()));
     }
     switch (importRequestDto.getType()) {
       case INDEX -> {
         if (Objects.isNull(importRequestDto.getSource())) {
           throw new OptimizeRuntimeException(
               generateErrorMessageForValidationImportRequestDto(
-                  RequestType.INDEX, ImportRequestDto.Fields.source.name()));
+                  RequestType.INDEX, Fields.source.name()));
         }
       }
       case UPDATE -> {
         if (Objects.isNull(importRequestDto.getScriptData())) {
           throw new OptimizeRuntimeException(
               generateErrorMessageForValidationImportRequestDto(
-                  RequestType.UPDATE, ImportRequestDto.Fields.scriptData.name()));
+                  RequestType.UPDATE, Fields.scriptData.name()));
         }
       }
+      default -> throw new IllegalStateException("Unexpected value: " + importRequestDto.getType());
     }
   }
 
@@ -160,7 +163,7 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
     if (StringUtils.isBlank(importRequestDto.getImportName())) {
       throw new OptimizeRuntimeException(
           generateErrorMessageForValidationImportRequestDto(
-              importRequestDto.getType(), ImportRequestDto.Fields.importName.name()));
+              importRequestDto.getType(), Fields.importName.name()));
     }
     return true;
   }
@@ -180,11 +183,11 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
         .withMaxRetries(-1)
         .onFailedAttempt(
             e -> {
-              log.warn(
+              LOG.warn(
                   "Execution of {} failed due to a pending snapshot operation, details: {}",
                   operation,
                   e.getLastFailure().getMessage());
-              log.info("Will retry the operation in {} seconds...", delay);
+              LOG.info("Will retry the operation in {} seconds...", delay);
             });
   }
 
@@ -203,10 +206,11 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
   }
 
   public OptimizeIndexNameService getIndexNameService() {
-    return this.indexNameService;
+    return indexNameService;
   }
 
-  public void setSnapshotInProgressRetryDelaySeconds(int snapshotInProgressRetryDelaySeconds) {
+  public void setSnapshotInProgressRetryDelaySeconds(
+      final int snapshotInProgressRetryDelaySeconds) {
     this.snapshotInProgressRetryDelaySeconds = snapshotInProgressRetryDelaySeconds;
   }
 }

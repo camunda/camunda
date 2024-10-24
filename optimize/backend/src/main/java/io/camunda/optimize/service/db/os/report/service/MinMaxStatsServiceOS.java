@@ -40,10 +40,10 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class MinMaxStatsServiceOS extends AbstractMinMaxStatsService {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(MinMaxStatsServiceOS.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(MinMaxStatsServiceOS.class);
   private final OptimizeOpenSearchClient osClient;
 
-  public MinMaxStatsServiceOS(OptimizeOpenSearchClient osClient) {
+  public MinMaxStatsServiceOS(final OptimizeOpenSearchClient osClient) {
     this.osClient = osClient;
   }
 
@@ -178,14 +178,14 @@ public class MinMaxStatsServiceOS extends AbstractMinMaxStatsService {
     final SearchResponse<?> response;
     try {
       response = osClient.searchUnsafe(searchRequest, Object.class);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String reason =
           String.format(
               "Could not retrieve stats for script %s on indices %s",
               script.toString(), Arrays.toString(indexNames));
-      log.error(reason, e);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
-    } catch (RuntimeException e) {
+    } catch (final RuntimeException e) {
       return returnEmptyResultIfInstanceIndexNotFound(e, indexNames);
     }
 
@@ -280,7 +280,7 @@ public class MinMaxStatsServiceOS extends AbstractMinMaxStatsService {
                   .build());
     }
 
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         new SearchRequest.Builder()
             .index(osClient.applyIndexPrefixes(indexNames))
             .query(query)
@@ -291,17 +291,17 @@ public class MinMaxStatsServiceOS extends AbstractMinMaxStatsService {
                     statsAggField2.getKey(), statsAggField2.getValue()))
             .size(0)
             .build();
-    SearchResponse<?> response;
+    final SearchResponse<?> response;
     try {
       response = osClient.searchUnsafe(searchRequest, Object.class);
-    } catch (IOException e) {
-      String reason =
+    } catch (final IOException e) {
+      final String reason =
           String.format(
               "Could not retrieve stats for firstField %s and secondField %s on index %s",
               firstField, secondField, Arrays.toString(indexNames));
-      log.error(reason, e);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
-    } catch (RuntimeException e) {
+    } catch (final RuntimeException e) {
       return returnEmptyResultIfInstanceIndexNotFound(e, indexNames);
     }
     return mapCrossFieldStatAggregationsToStatDto(response);

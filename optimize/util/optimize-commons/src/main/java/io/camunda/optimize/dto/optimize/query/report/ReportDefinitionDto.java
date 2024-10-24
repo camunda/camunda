@@ -28,7 +28,8 @@ public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionE
   protected String lastModifier;
   protected String collectionId;
 
-  @Valid protected D data;
+  @Valid
+  protected D data;
 
   private final boolean combined;
 
@@ -231,9 +232,10 @@ public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionE
   }
 
   public ReportDefinitionDtoBuilder<D, ?, ?> toBuilder() {
-    return new ReportDefinitionDtoBuilderImpl<D>().$fillValuesFrom(this);
+    return new ReportDefinitionDtoBuilderImpl<D>().fillValuesFrom(this);
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String id = "id";
@@ -325,7 +327,7 @@ public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionE
       return self();
     }
 
-    private static <D extends ReportDataDto> void $fillValuesFromInstanceIntoBuilder(
+    private static <D extends ReportDataDto> void fillValuesFromInstanceIntoBuilder(
         final ReportDefinitionDto<D> instance, final ReportDefinitionDtoBuilder<D, ?, ?> b) {
       b.id(instance.id);
       b.name(instance.name);
@@ -340,8 +342,8 @@ public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionE
       b.reportType(instance.reportType);
     }
 
-    protected B $fillValuesFrom(final C instance) {
-      ReportDefinitionDtoBuilder.$fillValuesFromInstanceIntoBuilder(instance, this);
+    protected B fillValuesFrom(final C instance) {
+      ReportDefinitionDtoBuilder.fillValuesFromInstanceIntoBuilder(instance, this);
       return self();
     }
 
@@ -379,9 +381,10 @@ public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionE
 
   private static final class ReportDefinitionDtoBuilderImpl<D extends ReportDataDto>
       extends ReportDefinitionDtoBuilder<
-          D, ReportDefinitionDto<D>, ReportDefinitionDtoBuilderImpl<D>> {
+      D, ReportDefinitionDto<D>, ReportDefinitionDtoBuilderImpl<D>> {
 
-    private ReportDefinitionDtoBuilderImpl() {}
+    private ReportDefinitionDtoBuilderImpl() {
+    }
 
     @Override
     protected ReportDefinitionDtoBuilderImpl<D> self() {

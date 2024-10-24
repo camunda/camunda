@@ -21,7 +21,7 @@ import org.slf4j.Logger;
 public class OptimizeUserOrGroupIdNotFoundExceptionMapper
     implements ExceptionMapper<OptimizeUserOrGroupIdNotFoundException> {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(OptimizeUserOrGroupIdNotFoundExceptionMapper.class);
   private final LocalizationService localizationService;
 
@@ -32,7 +32,7 @@ public class OptimizeUserOrGroupIdNotFoundExceptionMapper
 
   @Override
   public Response toResponse(final OptimizeUserOrGroupIdNotFoundException idNotFoundException) {
-    log.info("Mapping OptimizeIdNotFoundException");
+    LOG.info("Mapping OptimizeIdNotFoundException");
 
     return Response.status(Response.Status.BAD_REQUEST)
         .type(MediaType.APPLICATION_JSON_TYPE)

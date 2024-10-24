@@ -28,41 +28,41 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class InstantDashboardMetadataReaderES implements InstantDashboardMetadataReader {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(InstantDashboardMetadataReaderES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
   public InstantDashboardMetadataReaderES(
-      OptimizeElasticsearchClient esClient, ObjectMapper objectMapper) {
+      final OptimizeElasticsearchClient esClient, final ObjectMapper objectMapper) {
     this.esClient = esClient;
     this.objectMapper = objectMapper;
   }
 
   @Override
-  public Optional<String> getInstantDashboardIdFor(String processDefinitionKey, String template)
+  public Optional<String> getInstantDashboardIdFor(final String processDefinitionKey, final String template)
       throws OptimizeRuntimeException {
-    log.debug(
+    LOG.debug(
         "Fetching Instant preview dashboard ID for [{}] with template [{}] ",
         processDefinitionKey,
         template);
-    InstantDashboardDataDto dashboardDataDto = new InstantDashboardDataDto();
+    final InstantDashboardDataDto dashboardDataDto = new InstantDashboardDataDto();
     dashboardDataDto.setTemplateName(template);
     dashboardDataDto.setProcessDefinitionKey(processDefinitionKey);
 
     final String instantDashboardKey = dashboardDataDto.getInstantDashboardId();
-    GetRequest getRequest =
+    final GetRequest getRequest =
         OptimizeGetRequestBuilderES.of(
             b -> b.optimizeIndex(esClient, INSTANT_DASHBOARD_INDEX_NAME).id(instantDashboardKey));
 
-    GetResponse<InstantDashboardDataDto> getResponse;
+    final GetResponse<InstantDashboardDataDto> getResponse;
     try {
       getResponse = esClient.get(getRequest, InstantDashboardDataDto.class);
-    } catch (IOException e) {
-      String reason =
+    } catch (final IOException e) {
+      final String reason =
           String.format(
               "Could not fetch Instant preview dashboard with key [%s]", instantDashboardKey);
-      log.error(reason, e);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
@@ -70,9 +70,9 @@ public class InstantDashboardMetadataReaderES implements InstantDashboardMetadat
       final InstantDashboardDataDto dashboardData = getResponse.source();
       return Optional.of(dashboardData.getDashboardId());
     } else {
-      String reason =
+      final String reason =
           "Could not find dashboard data for key [" + instantDashboardKey + "] in Elasticsearch.";
-      log.error(reason);
+      LOG.error(reason);
       return Optional.empty();
     }
   }

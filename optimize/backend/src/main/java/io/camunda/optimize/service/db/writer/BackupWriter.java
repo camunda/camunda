@@ -19,12 +19,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class BackupWriter {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(BackupWriter.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(BackupWriter.class);
   private final MappingMetadataRepository mappingMetadataRepository;
   private final SnapshotRepository snapshotRepository;
 
   public BackupWriter(
-      MappingMetadataRepository mappingMetadataRepository, SnapshotRepository snapshotRepository) {
+      final MappingMetadataRepository mappingMetadataRepository, final SnapshotRepository snapshotRepository) {
     this.mappingMetadataRepository = mappingMetadataRepository;
     this.snapshotRepository = snapshotRepository;
   }

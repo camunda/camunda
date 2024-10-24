@@ -27,15 +27,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class PositionBasedImportMediator<
-        T extends PositionBasedImportIndexHandler, DTO extends ZeebeRecordDto<?, ?>>
+    T extends PositionBasedImportIndexHandler, DTO extends ZeebeRecordDto<?, ?>>
     implements ImportMediator {
 
-  private final BackoffCalculator errorBackoffCalculator = new BackoffCalculator(10, 1000);
   protected Logger logger = LoggerFactory.getLogger(getClass());
   protected ConfigurationService configurationService;
   protected BackoffCalculator idleBackoffCalculator;
   protected T importIndexHandler;
   protected ImportService<DTO> importService;
+  private final BackoffCalculator errorBackoffCalculator = new BackoffCalculator(10, 1000);
 
   @Override
   public CompletableFuture<Void> runImport() {
@@ -66,10 +66,6 @@ public abstract class PositionBasedImportMediator<
     return canImportNewPage;
   }
 
-  public T getImportIndexHandler() {
-    return importIndexHandler;
-  }
-
   @Override
   public boolean hasPendingImportJobs() {
     return importService.hasPendingImportJobs();
@@ -78,6 +74,10 @@ public abstract class PositionBasedImportMediator<
   @Override
   public void shutdown() {
     importService.shutdown();
+  }
+
+  public T getImportIndexHandler() {
+    return importIndexHandler;
   }
 
   protected abstract boolean importNextPage(Runnable importCompleteCallback);

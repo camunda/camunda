@@ -28,7 +28,7 @@ public class EntitySorter extends Sorter<EntityResponseDto> {
       Comparator.comparing(EntityResponseDto::getEntityType)
           .thenComparing(Comparator.comparing(EntityResponseDto::getLastModified).reversed());
 
-  private static final ImmutableMap<String, Comparator<EntityResponseDto>> sortComparators =
+  private static final ImmutableMap<String, Comparator<EntityResponseDto>> SORT_COMPARATORS =
       ImmutableMap.of(
           name.toLowerCase(Locale.ENGLISH),
           Comparator.comparing(
@@ -44,7 +44,8 @@ public class EntitySorter extends Sorter<EntityResponseDto> {
     sortRequestDto = new SortRequestDto(sortBy, sortOrder);
   }
 
-  public EntitySorter() {}
+  public EntitySorter() {
+  }
 
   @Override
   public List<EntityResponseDto> applySort(final List<EntityResponseDto> entities) {
@@ -53,11 +54,11 @@ public class EntitySorter extends Sorter<EntityResponseDto> {
     final Optional<String> sortByOpt = getSortBy();
     if (sortByOpt.isPresent()) {
       final String sortBy = sortByOpt.get();
-      if (!sortComparators.containsKey(sortBy.toLowerCase(Locale.ENGLISH))) {
+      if (!SORT_COMPARATORS.containsKey(sortBy.toLowerCase(Locale.ENGLISH))) {
         throw new BadRequestException(String.format("%s is not a sortable field", sortBy));
       }
       Comparator<EntityResponseDto> entityDtoComparator =
-          sortComparators.get(sortBy.toLowerCase(Locale.ENGLISH));
+          SORT_COMPARATORS.get(sortBy.toLowerCase(Locale.ENGLISH));
       if (sortOrderOpt.isPresent() && SortOrder.DESC.equals(sortOrderOpt.get())) {
         entityDtoComparator = entityDtoComparator.reversed();
       }

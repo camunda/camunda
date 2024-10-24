@@ -81,6 +81,7 @@ public abstract class ImportIndexDto<T extends DataSourceDto> implements Optimiz
         + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String lastImportExecutionTimestamp = "lastImportExecutionTimestamp";

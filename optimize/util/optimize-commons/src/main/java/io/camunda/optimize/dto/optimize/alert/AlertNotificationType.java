@@ -14,10 +14,10 @@ import java.util.Locale;
 public enum AlertNotificationType {
   NEW("alert_new_triggered"),
   REMINDER("alert_reminder"),
-  RESOLVED("alert_resolved"),
-  ;
+  RESOLVED("alert_resolved");
 
-  @JsonIgnore private final String utmSource;
+  @JsonIgnore
+  private final String utmSource;
 
   private AlertNotificationType(final String utmSource) {
     this.utmSource = utmSource;

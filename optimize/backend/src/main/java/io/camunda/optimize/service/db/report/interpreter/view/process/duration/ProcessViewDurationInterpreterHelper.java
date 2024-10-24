@@ -19,9 +19,10 @@ import java.util.List;
 import java.util.function.Function;
 import org.apache.commons.math3.util.Precision;
 
-public class ProcessViewDurationInterpreterHelper {
+public final class ProcessViewDurationInterpreterHelper {
 
-  private ProcessViewDurationInterpreterHelper() {}
+  private ProcessViewDurationInterpreterHelper() {
+  }
 
   public static ProcessPartDto getProcessPart(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {

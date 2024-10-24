@@ -20,8 +20,7 @@ public enum EventReportingEvent {
   REPORT_SHARE_ENABLED,
   REPORT_SHARE_DISABLED,
   DASHBOARD_SHARE_ENABLED,
-  DASHBOARD_SHARE_DISABLED,
-  ;
+  DASHBOARD_SHARE_DISABLED;
 
   @JsonValue
   public String getId() {

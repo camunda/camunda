@@ -21,11 +21,12 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ConfigurationUtil {
+public final class ConfigurationUtil {
 
-  private static final Logger logger = LoggerFactory.getLogger(ConfigurationUtil.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ConfigurationUtil.class);
 
-  private ConfigurationUtil() {}
+  private ConfigurationUtil() {
+  }
 
   public static String cutTrailingSlash(String string) {
     if (string != null && !string.isEmpty() && string.endsWith("/")) {
@@ -45,7 +46,7 @@ public class ConfigurationUtil {
       try {
         return file.toURI().toURL();
       } catch (final MalformedURLException e) {
-        logger.error("Failed creating URL for file {}", pathToFile, e);
+        LOGGER.error("Failed creating URL for file {}", pathToFile, e);
       }
     } else if (existsInClasspath(pathToFile)) {
       return getAbsolutePathOfClasspathFile(pathToFile);
@@ -69,7 +70,7 @@ public class ConfigurationUtil {
       try {
         return new FileInputStream(file);
       } catch (final FileNotFoundException e) {
-        logger.error("Failed creating URL for file {}", pathToFile, e);
+        LOGGER.error("Failed creating URL for file {}", pathToFile, e);
       }
     } else if (existsInClasspath(pathToFile)) {
       return getStreamOfClasspathFile(pathToFile);

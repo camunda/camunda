@@ -34,7 +34,7 @@ import org.opensearch.client.util.MissingRequiredPropertyException;
 
 public class OpenSearchSchemaTestClient extends AbstractDatabaseSchemaTestClient {
 
-  private static final org.slf4j.Logger log =
+  private static final org.slf4j.Logger LOG =
       org.slf4j.LoggerFactory.getLogger(OpenSearchSchemaTestClient.class);
   private final OpenSearchClient openSearchClient;
 
@@ -53,24 +53,24 @@ public class OpenSearchSchemaTestClient extends AbstractDatabaseSchemaTestClient
 
   @Override
   public void refreshAll() throws IOException {
-    log.info("Refreshing all indices of {} Opensearch...", name);
+    LOG.info("Refreshing all indices of {} Opensearch...", name);
     openSearchClient.indices().refresh(new RefreshRequest.Builder().index("*").build());
-    log.info("Successfully refreshed all indices of {} OpenSearch!", name);
+    LOG.info("Successfully refreshed all indices of {} OpenSearch!", name);
   }
 
   @Override
   public void cleanIndicesAndTemplates() throws IOException {
-    log.info("Wiping all indices & templates from {} OpenSearch...", name);
+    LOG.info("Wiping all indices & templates from {} OpenSearch...", name);
     openSearchClient.indices().delete(new DeleteIndexRequest.Builder().index("_all").build());
     openSearchClient
         .indices()
         .deleteIndexTemplate(new DeleteIndexTemplateRequest.Builder().name("*").build());
-    log.info("Successfully wiped all indices & templates from {} OpenSearch!", name);
+    LOG.info("Successfully wiped all indices & templates from {} OpenSearch!", name);
   }
 
   @Override
   public void createSnapshotRepository() throws IOException {
-    log.info("Creating snapshot repository on {} OpenSearch...", name);
+    LOG.info("Creating snapshot repository on {} OpenSearch...", name);
     openSearchClient
         .snapshot()
         .createRepository(
@@ -84,22 +84,22 @@ public class OpenSearchSchemaTestClient extends AbstractDatabaseSchemaTestClient
                         .readOnly(false)
                         .build())
                 .build());
-    log.info("Done creating snapshot repository on {} OpenSearch!", name);
+    LOG.info("Done creating snapshot repository on {} OpenSearch!", name);
   }
 
   @Override
   public void deleteSnapshotRepository() throws IOException {
-    log.info("Removing snapshot repository on {} OpenSearch...", name);
+    LOG.info("Removing snapshot repository on {} OpenSearch...", name);
     openSearchClient
         .snapshot()
         .deleteRepository(
             new DeleteRepositoryRequest.Builder().name(SNAPSHOT_REPOSITORY_NAME).build());
-    log.info("Done removing snapshot repository on {} OpenSearch!", name);
+    LOG.info("Done removing snapshot repository on {} OpenSearch!", name);
   }
 
   @Override
   public void createSnapshotOfOptimizeIndices() throws IOException {
-    log.info("Creating snapshot on {} OpenSearch...", name);
+    LOG.info("Creating snapshot on {} OpenSearch...", name);
     openSearchClient
         .snapshot()
         .create(
@@ -110,12 +110,12 @@ public class OpenSearchSchemaTestClient extends AbstractDatabaseSchemaTestClient
                 .waitForCompletion(true)
                 .includeGlobalState(true)
                 .build());
-    log.info("Done creating snapshot on {} OpenSearch!", name);
+    LOG.info("Done creating snapshot on {} OpenSearch!", name);
   }
 
   @Override
   public void createAsyncSnapshot() throws IOException {
-    log.info("Creating snapshot asynchronously on {} OpenSearch...", name);
+    LOG.info("Creating snapshot asynchronously on {} OpenSearch...", name);
     try {
       openSearchClient
           .snapshot()
@@ -137,12 +137,12 @@ public class OpenSearchSchemaTestClient extends AbstractDatabaseSchemaTestClient
         throw e;
       }
     }
-    log.info("Done creating snapshot asynchronously on {} OpenSearch!", name);
+    LOG.info("Done creating snapshot asynchronously on {} OpenSearch!", name);
   }
 
   @Override
   public void restoreSnapshot() throws IOException {
-    log.info("Restoring snapshot on {} OpenSearch...", name);
+    LOG.info("Restoring snapshot on {} OpenSearch...", name);
     openSearchClient
         .snapshot()
         .restore(
@@ -152,7 +152,7 @@ public class OpenSearchSchemaTestClient extends AbstractDatabaseSchemaTestClient
                 .includeGlobalState(true)
                 .waitForCompletion(true)
                 .build());
-    log.info("Done restoring snapshot on {} OpenSearch!", name);
+    LOG.info("Done restoring snapshot on {} OpenSearch!", name);
   }
 
   @Override
@@ -167,7 +167,7 @@ public class OpenSearchSchemaTestClient extends AbstractDatabaseSchemaTestClient
 
   @Override
   public void deleteSnapshot(final String snapshotName) throws IOException {
-    log.info("Deleting snapshot {} on {} OpenSearch...", snapshotName, name);
+    LOG.info("Deleting snapshot {} on {} OpenSearch...", snapshotName, name);
     openSearchClient
         .snapshot()
         .delete(
@@ -175,7 +175,7 @@ public class OpenSearchSchemaTestClient extends AbstractDatabaseSchemaTestClient
                 .repository(SNAPSHOT_REPOSITORY_NAME)
                 .snapshot(snapshotName)
                 .build());
-    log.info("Done deleting {} snapshot on {} OpenSearch!", snapshotName, name);
+    LOG.info("Done deleting {} snapshot on {} OpenSearch!", snapshotName, name);
   }
 
   public Map<String, IndexState> getSettings() throws IOException {

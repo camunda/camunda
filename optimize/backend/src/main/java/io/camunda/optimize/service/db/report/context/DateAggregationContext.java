@@ -48,39 +48,39 @@ public class DateAggregationContext {
   private final List<ProcessFilterDto<?>> processFilters;
   private final FilterContext filterContext;
 
-  protected DateAggregationContext(DateAggregationContextBuilder<?, ?> b) {
-    this.aggregateByDateUnit = b.aggregateByDateUnit;
+  protected DateAggregationContext(final DateAggregationContextBuilder<?, ?> b) {
+    aggregateByDateUnit = b.aggregateByDateUnit;
     if (aggregateByDateUnit == null) {
       throw new IllegalArgumentException("aggregateByDateUnit cannot be null");
     }
 
-    this.dateField = b.dateField;
+    dateField = b.dateField;
     if (dateField == null) {
       throw new IllegalArgumentException("dateField cannot be null");
     }
 
-    this.runningDateReportEndDateField = b.runningDateReportEndDateField;
-    this.minMaxStats = b.minMaxStats;
+    runningDateReportEndDateField = b.runningDateReportEndDateField;
+    minMaxStats = b.minMaxStats;
     if (minMaxStats == null) {
       throw new IllegalArgumentException("minMaxStats cannot be null");
     }
 
-    if (b.extendBoundsToMinMaxStats$set) {
-      this.extendBoundsToMinMaxStats = b.extendBoundsToMinMaxStats$value;
+    if (b.extendBoundsToMinMaxStatsSet) {
+      extendBoundsToMinMaxStats = b.extendBoundsToMinMaxStatsValue;
     } else {
-      this.extendBoundsToMinMaxStats = $default$extendBoundsToMinMaxStats();
+      extendBoundsToMinMaxStats = defaultExtendBoundsToMinMaxStats();
     }
-    this.timezone = b.timezone;
+    timezone = b.timezone;
     if (timezone == null) {
       throw new IllegalArgumentException("timezone cannot be null");
     }
 
-    this.dateAggregationName = b.dateAggregationName;
-    this.decisionFilters = b.decisionFilters;
-    this.processGroupByType = b.processGroupByType;
-    this.distributedByType = b.distributedByType;
-    this.processFilters = b.processFilters;
-    this.filterContext = b.filterContext;
+    dateAggregationName = b.dateAggregationName;
+    decisionFilters = b.decisionFilters;
+    processGroupByType = b.processGroupByType;
+    distributedByType = b.distributedByType;
+    processFilters = b.processFilters;
+    filterContext = b.filterContext;
     if (filterContext == null) {
       throw new IllegalArgumentException("filterContext cannot be null");
     }
@@ -109,57 +109,57 @@ public class DateAggregationContext {
   }
 
   public AggregateByDateUnit getAggregateByDateUnit() {
-    return this.aggregateByDateUnit;
+    return aggregateByDateUnit;
   }
 
-  public String getDateField() {
-    return this.dateField;
-  }
-
-  public String getRunningDateReportEndDateField() {
-    return this.runningDateReportEndDateField;
-  }
-
-  public MinMaxStatDto getMinMaxStats() {
-    return this.minMaxStats;
-  }
-
-  public boolean isExtendBoundsToMinMaxStats() {
-    return this.extendBoundsToMinMaxStats;
-  }
-
-  public ZoneId getTimezone() {
-    return this.timezone;
-  }
-
-  public List<DecisionFilterDto<?>> getDecisionFilters() {
-    return this.decisionFilters;
-  }
-
-  public ProcessGroupByType getProcessGroupByType() {
-    return this.processGroupByType;
-  }
-
-  public DistributedByType getDistributedByType() {
-    return this.distributedByType;
-  }
-
-  public List<ProcessFilterDto<?>> getProcessFilters() {
-    return this.processFilters;
-  }
-
-  public FilterContext getFilterContext() {
-    return this.filterContext;
-  }
-
-  public void setAggregateByDateUnit(AggregateByDateUnit aggregateByDateUnit) {
+  public void setAggregateByDateUnit(final AggregateByDateUnit aggregateByDateUnit) {
     if (aggregateByDateUnit == null) {
       throw new IllegalArgumentException("aggregateByDateUnit cannot be null");
     }
     this.aggregateByDateUnit = aggregateByDateUnit;
   }
 
-  private static boolean $default$extendBoundsToMinMaxStats() {
+  public String getDateField() {
+    return dateField;
+  }
+
+  public String getRunningDateReportEndDateField() {
+    return runningDateReportEndDateField;
+  }
+
+  public MinMaxStatDto getMinMaxStats() {
+    return minMaxStats;
+  }
+
+  public boolean isExtendBoundsToMinMaxStats() {
+    return extendBoundsToMinMaxStats;
+  }
+
+  public ZoneId getTimezone() {
+    return timezone;
+  }
+
+  public List<DecisionFilterDto<?>> getDecisionFilters() {
+    return decisionFilters;
+  }
+
+  public ProcessGroupByType getProcessGroupByType() {
+    return processGroupByType;
+  }
+
+  public DistributedByType getDistributedByType() {
+    return distributedByType;
+  }
+
+  public List<ProcessFilterDto<?>> getProcessFilters() {
+    return processFilters;
+  }
+
+  public FilterContext getFilterContext() {
+    return filterContext;
+  }
+
+  private static boolean defaultExtendBoundsToMinMaxStats() {
     return false;
   }
 
@@ -174,8 +174,8 @@ public class DateAggregationContext {
     private String dateField;
     private String runningDateReportEndDateField;
     private MinMaxStatDto minMaxStats;
-    private boolean extendBoundsToMinMaxStats$value;
-    private boolean extendBoundsToMinMaxStats$set;
+    private boolean extendBoundsToMinMaxStatsValue;
+    private boolean extendBoundsToMinMaxStatsSet;
     private ZoneId timezone;
     private String dateAggregationName;
     private List<DecisionFilterDto<?>> decisionFilters;
@@ -184,7 +184,7 @@ public class DateAggregationContext {
     private List<ProcessFilterDto<?>> processFilters;
     private FilterContext filterContext;
 
-    public B aggregateByDateUnit(AggregateByDateUnit aggregateByDateUnit) {
+    public B aggregateByDateUnit(final AggregateByDateUnit aggregateByDateUnit) {
       this.aggregateByDateUnit = aggregateByDateUnit;
       if (aggregateByDateUnit == null) {
         throw new IllegalArgumentException("aggregateByDateUnit cannot be null");
@@ -193,7 +193,7 @@ public class DateAggregationContext {
       return self();
     }
 
-    public B dateField(String dateField) {
+    public B dateField(final String dateField) {
       this.dateField = dateField;
       if (dateField == null) {
         throw new IllegalArgumentException("dateField cannot be null");
@@ -202,12 +202,12 @@ public class DateAggregationContext {
       return self();
     }
 
-    public B runningDateReportEndDateField(String runningDateReportEndDateField) {
+    public B runningDateReportEndDateField(final String runningDateReportEndDateField) {
       this.runningDateReportEndDateField = runningDateReportEndDateField;
       return self();
     }
 
-    public B minMaxStats(MinMaxStatDto minMaxStats) {
+    public B minMaxStats(final MinMaxStatDto minMaxStats) {
       this.minMaxStats = minMaxStats;
       if (minMaxStats == null) {
         throw new IllegalArgumentException("minMaxStats cannot be null");
@@ -216,13 +216,13 @@ public class DateAggregationContext {
       return self();
     }
 
-    public B extendBoundsToMinMaxStats(boolean extendBoundsToMinMaxStats) {
-      this.extendBoundsToMinMaxStats$value = extendBoundsToMinMaxStats;
-      this.extendBoundsToMinMaxStats$set = true;
+    public B extendBoundsToMinMaxStats(final boolean extendBoundsToMinMaxStats) {
+      extendBoundsToMinMaxStatsValue = extendBoundsToMinMaxStats;
+      extendBoundsToMinMaxStatsSet = true;
       return self();
     }
 
-    public B timezone(ZoneId timezone) {
+    public B timezone(final ZoneId timezone) {
       this.timezone = timezone;
       if (timezone == null) {
         throw new IllegalArgumentException("timezone cannot be null");
@@ -231,32 +231,32 @@ public class DateAggregationContext {
       return self();
     }
 
-    public B dateAggregationName(String dateAggregationName) {
+    public B dateAggregationName(final String dateAggregationName) {
       this.dateAggregationName = dateAggregationName;
       return self();
     }
 
-    public B decisionFilters(List<DecisionFilterDto<?>> decisionFilters) {
+    public B decisionFilters(final List<DecisionFilterDto<?>> decisionFilters) {
       this.decisionFilters = decisionFilters;
       return self();
     }
 
-    public B processGroupByType(ProcessGroupByType processGroupByType) {
+    public B processGroupByType(final ProcessGroupByType processGroupByType) {
       this.processGroupByType = processGroupByType;
       return self();
     }
 
-    public B distributedByType(DistributedByType distributedByType) {
+    public B distributedByType(final DistributedByType distributedByType) {
       this.distributedByType = distributedByType;
       return self();
     }
 
-    public B processFilters(List<ProcessFilterDto<?>> processFilters) {
+    public B processFilters(final List<ProcessFilterDto<?>> processFilters) {
       this.processFilters = processFilters;
       return self();
     }
 
-    public B filterContext(FilterContext filterContext) {
+    public B filterContext(final FilterContext filterContext) {
       this.filterContext = filterContext;
       if (filterContext == null) {
         throw new IllegalArgumentException("filterContext cannot be null");
@@ -269,45 +269,49 @@ public class DateAggregationContext {
 
     public abstract C build();
 
+    @Override
     public String toString() {
       return "DateAggregationContext.DateAggregationContextBuilder(aggregateByDateUnit="
-          + this.aggregateByDateUnit
+          + aggregateByDateUnit
           + ", dateField="
-          + this.dateField
+          + dateField
           + ", runningDateReportEndDateField="
-          + this.runningDateReportEndDateField
+          + runningDateReportEndDateField
           + ", minMaxStats="
-          + this.minMaxStats
-          + ", extendBoundsToMinMaxStats$value="
-          + this.extendBoundsToMinMaxStats$value
+          + minMaxStats
+          + ", extendBoundsToMinMaxStatsValue="
+          + extendBoundsToMinMaxStatsValue
           + ", timezone="
-          + this.timezone
+          + timezone
           + ", dateAggregationName="
-          + this.dateAggregationName
+          + dateAggregationName
           + ", decisionFilters="
-          + this.decisionFilters
+          + decisionFilters
           + ", processGroupByType="
-          + this.processGroupByType
+          + processGroupByType
           + ", distributedByType="
-          + this.distributedByType
+          + distributedByType
           + ", processFilters="
-          + this.processFilters
+          + processFilters
           + ", filterContext="
-          + this.filterContext
+          + filterContext
           + ")";
     }
   }
 
   private static final class DateAggregationContextBuilderImpl
       extends DateAggregationContextBuilder<
-          DateAggregationContext, DateAggregationContextBuilderImpl> {
+      DateAggregationContext, DateAggregationContextBuilderImpl> {
 
-    private DateAggregationContextBuilderImpl() {}
+    private DateAggregationContextBuilderImpl() {
+    }
 
+    @Override
     protected DateAggregationContextBuilderImpl self() {
       return this;
     }
 
+    @Override
     public DateAggregationContext build() {
       return new DateAggregationContext(this);
     }

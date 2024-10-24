@@ -38,7 +38,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class EntitiesService {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(EntitiesService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(EntitiesService.class);
   private final CollectionService collectionService;
   private final AuthorizedEntitiesService authorizedEntitiesService;
   private final EntitiesReader entitiesReader;
@@ -132,7 +132,7 @@ public class EntitiesService {
       try {
         reportService.deleteReportAsUser(userId, reportId, true);
       } catch (final NotFoundException | OptimizeRuntimeException e) {
-        log.debug("The report with id {} could not be deleted: {}", reportId, e);
+        LOG.debug("The report with id {} could not be deleted: {}", reportId, e);
       }
     }
 
@@ -140,7 +140,7 @@ public class EntitiesService {
       try {
         dashboardService.deleteDashboardAsUser(dashboardId, userId);
       } catch (final NotFoundException | OptimizeRuntimeException e) {
-        log.debug("The dashboard with id {} could not be deleted: {}", dashboardId, e);
+        LOG.debug("The dashboard with id {} could not be deleted: {}", dashboardId, e);
       }
     }
 
@@ -148,7 +148,7 @@ public class EntitiesService {
       try {
         collectionService.deleteCollection(userId, collectionId, true);
       } catch (final NotFoundException | OptimizeRuntimeException e) {
-        log.debug("The collection with id {} could not be deleted: {}", collectionId, e);
+        LOG.debug("The collection with id {} could not be deleted: {}", collectionId, e);
       }
     }
   }

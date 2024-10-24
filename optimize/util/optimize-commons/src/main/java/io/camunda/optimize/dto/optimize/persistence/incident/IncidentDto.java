@@ -30,20 +30,20 @@ public class IncidentDto implements Serializable, OptimizeDto {
   @JsonIgnore private String engineAlias;
 
   public IncidentDto(
-      String id,
-      OffsetDateTime createTime,
-      OffsetDateTime endTime,
-      Long durationInMs,
-      IncidentType incidentType,
-      String activityId,
-      String failedActivityId,
-      String incidentMessage,
-      IncidentStatus incidentStatus,
-      String processInstanceId,
-      String definitionKey,
-      String definitionVersion,
-      String tenantId,
-      String engineAlias) {
+      final String id,
+      final OffsetDateTime createTime,
+      final OffsetDateTime endTime,
+      final Long durationInMs,
+      final IncidentType incidentType,
+      final String activityId,
+      final String failedActivityId,
+      final String incidentMessage,
+      final IncidentStatus incidentStatus,
+      final String processInstanceId,
+      final String definitionKey,
+      final String definitionVersion,
+      final String tenantId,
+      final String engineAlias) {
     this.id = id;
     this.createTime = createTime;
     this.endTime = endTime;
@@ -118,61 +118,61 @@ public class IncidentDto implements Serializable, OptimizeDto {
     return this.engineAlias;
   }
 
-  public void setId(String id) {
+  public void setId(final String id) {
     this.id = id;
   }
 
-  public void setCreateTime(OffsetDateTime createTime) {
+  public void setCreateTime(final OffsetDateTime createTime) {
     this.createTime = createTime;
   }
 
-  public void setEndTime(OffsetDateTime endTime) {
+  public void setEndTime(final OffsetDateTime endTime) {
     this.endTime = endTime;
   }
 
-  public void setDurationInMs(Long durationInMs) {
+  public void setDurationInMs(final Long durationInMs) {
     this.durationInMs = durationInMs;
   }
 
-  public void setIncidentType(IncidentType incidentType) {
+  public void setIncidentType(final IncidentType incidentType) {
     this.incidentType = incidentType;
   }
 
-  public void setActivityId(String activityId) {
+  public void setActivityId(final String activityId) {
     this.activityId = activityId;
   }
 
-  public void setFailedActivityId(String failedActivityId) {
+  public void setFailedActivityId(final String failedActivityId) {
     this.failedActivityId = failedActivityId;
   }
 
-  public void setIncidentMessage(String incidentMessage) {
+  public void setIncidentMessage(final String incidentMessage) {
     this.incidentMessage = incidentMessage;
   }
 
-  public void setIncidentStatus(IncidentStatus incidentStatus) {
+  public void setIncidentStatus(final IncidentStatus incidentStatus) {
     this.incidentStatus = incidentStatus;
   }
 
   @JsonIgnore
-  public void setProcessInstanceId(String processInstanceId) {
+  public void setProcessInstanceId(final String processInstanceId) {
     this.processInstanceId = processInstanceId;
   }
 
-  public void setDefinitionKey(String definitionKey) {
+  public void setDefinitionKey(final String definitionKey) {
     this.definitionKey = definitionKey;
   }
 
-  public void setDefinitionVersion(String definitionVersion) {
+  public void setDefinitionVersion(final String definitionVersion) {
     this.definitionVersion = definitionVersion;
   }
 
-  public void setTenantId(String tenantId) {
+  public void setTenantId(final String tenantId) {
     this.tenantId = tenantId;
   }
 
   @JsonIgnore
-  public void setEngineAlias(String engineAlias) {
+  public void setEngineAlias(final String engineAlias) {
     this.engineAlias = engineAlias;
   }
 
@@ -224,6 +224,7 @@ public class IncidentDto implements Serializable, OptimizeDto {
     return new IncidentDtoBuilder();
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String processInstanceId = "processInstanceId";
@@ -261,74 +262,74 @@ public class IncidentDto implements Serializable, OptimizeDto {
 
     IncidentDtoBuilder() {}
 
-    public IncidentDtoBuilder id(String id) {
+    public IncidentDtoBuilder id(final String id) {
       this.id = id;
       return this;
     }
 
-    public IncidentDtoBuilder createTime(OffsetDateTime createTime) {
+    public IncidentDtoBuilder createTime(final OffsetDateTime createTime) {
       this.createTime = createTime;
       return this;
     }
 
-    public IncidentDtoBuilder endTime(OffsetDateTime endTime) {
+    public IncidentDtoBuilder endTime(final OffsetDateTime endTime) {
       this.endTime = endTime;
       return this;
     }
 
-    public IncidentDtoBuilder durationInMs(Long durationInMs) {
+    public IncidentDtoBuilder durationInMs(final Long durationInMs) {
       this.durationInMs = durationInMs;
       return this;
     }
 
-    public IncidentDtoBuilder incidentType(IncidentType incidentType) {
+    public IncidentDtoBuilder incidentType(final IncidentType incidentType) {
       this.incidentType = incidentType;
       return this;
     }
 
-    public IncidentDtoBuilder activityId(String activityId) {
+    public IncidentDtoBuilder activityId(final String activityId) {
       this.activityId = activityId;
       return this;
     }
 
-    public IncidentDtoBuilder failedActivityId(String failedActivityId) {
+    public IncidentDtoBuilder failedActivityId(final String failedActivityId) {
       this.failedActivityId = failedActivityId;
       return this;
     }
 
-    public IncidentDtoBuilder incidentMessage(String incidentMessage) {
+    public IncidentDtoBuilder incidentMessage(final String incidentMessage) {
       this.incidentMessage = incidentMessage;
       return this;
     }
 
-    public IncidentDtoBuilder incidentStatus(IncidentStatus incidentStatus) {
+    public IncidentDtoBuilder incidentStatus(final IncidentStatus incidentStatus) {
       this.incidentStatus = incidentStatus;
       return this;
     }
 
     @JsonIgnore
-    public IncidentDtoBuilder processInstanceId(String processInstanceId) {
+    public IncidentDtoBuilder processInstanceId(final String processInstanceId) {
       this.processInstanceId = processInstanceId;
       return this;
     }
 
-    public IncidentDtoBuilder definitionKey(String definitionKey) {
+    public IncidentDtoBuilder definitionKey(final String definitionKey) {
       this.definitionKey = definitionKey;
       return this;
     }
 
-    public IncidentDtoBuilder definitionVersion(String definitionVersion) {
+    public IncidentDtoBuilder definitionVersion(final String definitionVersion) {
       this.definitionVersion = definitionVersion;
       return this;
     }
 
-    public IncidentDtoBuilder tenantId(String tenantId) {
+    public IncidentDtoBuilder tenantId(final String tenantId) {
       this.tenantId = tenantId;
       return this;
     }
 
     @JsonIgnore
-    public IncidentDtoBuilder engineAlias(String engineAlias) {
+    public IncidentDtoBuilder engineAlias(final String engineAlias) {
       this.engineAlias = engineAlias;
       return this;
     }

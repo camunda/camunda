@@ -13,9 +13,10 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 
-public class DateModificationHelper {
+public final class DateModificationHelper {
 
-  private DateModificationHelper() {}
+  private DateModificationHelper() {
+  }
 
   public static ZonedDateTime truncateToStartOfUnit(
       final OffsetDateTime date, final ChronoUnit unit) {
@@ -24,7 +25,7 @@ public class DateModificationHelper {
 
   public static ZonedDateTime truncateToStartOfUnit(
       final OffsetDateTime date, final ChronoUnit unit, final ZoneId timezone) {
-    ZonedDateTime truncatedDate;
+    final ZonedDateTime truncatedDate;
     if (unit.equals(ChronoUnit.MINUTES)) {
       truncatedDate = date.atZoneSameInstant(timezone).truncatedTo(unit);
     } else if (unit.equals(ChronoUnit.HOURS)) {

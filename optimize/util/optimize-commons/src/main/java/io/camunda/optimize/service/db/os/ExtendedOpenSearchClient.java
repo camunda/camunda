@@ -167,7 +167,7 @@ public class ExtendedOpenSearchClient extends OpenSearchClient {
         arbitraryRequestAsString(
             "GET", format("/_snapshot/%s/%s", getSnapshotRequest.repository(), snapshots), "{}");
     final InputStream is = new ByteArrayInputStream(json.getBytes());
-    try (JsonParser parser = jsonpMapper.jsonProvider().createParser(is)) {
+    try (final JsonParser parser = jsonpMapper.jsonProvider().createParser(is)) {
       return deserializer.deserialize(parser, jsonpMapper);
     }
   }
@@ -188,7 +188,7 @@ public class ExtendedOpenSearchClient extends OpenSearchClient {
                 e -> {
                   try {
                     return jsonToMap(new String(e.getContent().readAllBytes()));
-                  } catch (IOException ex) {
+                  } catch (final IOException ex) {
                     return new HashMap<String, Object>();
                   }
                 })

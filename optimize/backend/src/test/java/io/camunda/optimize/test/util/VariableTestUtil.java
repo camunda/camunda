@@ -16,9 +16,10 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
-public class VariableTestUtil {
+public final class VariableTestUtil {
 
-  private VariableTestUtil() {}
+  private VariableTestUtil() {
+  }
 
   public static Map<String, Object> createAllPrimitiveTypeVariables() {
     final Map<String, Object> variables = new HashMap<>();

@@ -61,7 +61,7 @@ import org.springframework.stereotype.Component;
 public class DefinitionService implements ConfigurationReloadable {
 
   public static final TenantDto TENANT_NOT_DEFINED = new TenantDto(null, "Not defined", null);
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DefinitionService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(DefinitionService.class);
 
   private final DefinitionReader definitionReader;
   private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
@@ -268,7 +268,7 @@ public class DefinitionService implements ConfigurationReloadable {
 
   public <T extends DefinitionOptimizeResponseDto> List<T> getFullyImportedDefinitions(
       final DefinitionType type, final String userId, final boolean withXml) {
-    log.debug("Fetching definitions of type " + type);
+    LOG.debug("Fetching definitions of type " + type);
     List<T> definitionsResult = definitionReader.getFullyImportedDefinitions(type, withXml);
     if (userId != null) {
       definitionsResult = filterAuthorizedDefinitions(userId, definitionsResult);

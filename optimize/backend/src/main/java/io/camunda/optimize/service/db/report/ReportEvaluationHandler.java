@@ -70,12 +70,12 @@ public abstract class ReportEvaluationHandler {
   private final CollapsedSubprocessNodesService collapsedSubprocessNodesService;
 
   public ReportEvaluationHandler(
-      ReportService reportService,
-      SingleReportEvaluator singleReportEvaluator,
-      CombinedReportEvaluator combinedReportEvaluator,
-      ProcessVariableService processVariableService,
-      DefinitionService definitionService,
-      CollapsedSubprocessNodesService collapsedSubprocessNodesService) {
+      final ReportService reportService,
+      final SingleReportEvaluator singleReportEvaluator,
+      final CombinedReportEvaluator combinedReportEvaluator,
+      final ProcessVariableService processVariableService,
+      final DefinitionService definitionService,
+      final CollapsedSubprocessNodesService collapsedSubprocessNodesService) {
     this.reportService = reportService;
     this.singleReportEvaluator = singleReportEvaluator;
     this.combinedReportEvaluator = combinedReportEvaluator;

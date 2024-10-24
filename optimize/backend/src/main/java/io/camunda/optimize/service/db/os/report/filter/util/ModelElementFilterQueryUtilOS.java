@@ -72,19 +72,19 @@ import org.opensearch.client.opensearch._types.query_dsl.ChildScoreMode;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.ScriptQuery;
 
-public class ModelElementFilterQueryUtilOS {
+public final class ModelElementFilterQueryUtilOS {
 
   private static final Map<Class<? extends ProcessFilterDto<?>>, Function<Builder, Builder>>
       FLOW_NODE_STATUS_VIEW_FILTER_INSTANCE_QUERIES =
-          Map.of(
-              RunningFlowNodesOnlyFilterDto.class,
-              ModelElementFilterQueryUtilOS::createRunningFlowNodesOnlyFilterQuery,
-              CompletedFlowNodesOnlyFilterDto.class,
-              ModelElementFilterQueryUtilOS::createCompletedFlowNodesOnlyFilterQuery,
-              CompletedOrCanceledFlowNodesOnlyFilterDto.class,
-              ModelElementFilterQueryUtilOS::createCompletedOrCanceledFlowNodesOnlyFilterQuery,
-              CanceledFlowNodesOnlyFilterDto.class,
-              ModelElementFilterQueryUtilOS::createCanceledFlowNodesOnlyFilterQuery);
+      Map.of(
+          RunningFlowNodesOnlyFilterDto.class,
+          ModelElementFilterQueryUtilOS::createRunningFlowNodesOnlyFilterQuery,
+          CompletedFlowNodesOnlyFilterDto.class,
+          ModelElementFilterQueryUtilOS::createCompletedFlowNodesOnlyFilterQuery,
+          CompletedOrCanceledFlowNodesOnlyFilterDto.class,
+          ModelElementFilterQueryUtilOS::createCompletedOrCanceledFlowNodesOnlyFilterQuery,
+          CanceledFlowNodesOnlyFilterDto.class,
+          ModelElementFilterQueryUtilOS::createCanceledFlowNodesOnlyFilterQuery);
 
   private static final NestedDefinitionQueryBuilderOS NESTED_DEFINITION_QUERY_BUILDER =
       new NestedDefinitionQueryBuilderOS(
@@ -94,23 +94,24 @@ public class ModelElementFilterQueryUtilOS {
           FLOW_NODE_TENANT_ID);
 
   private static final Map<
-          Class<? extends ProcessFilterDto<?>>,
-          TriFunction<FlowNodeDateFilterDataDto<?>, ZoneId, Builder, Builder>>
+      Class<? extends ProcessFilterDto<?>>,
+      TriFunction<FlowNodeDateFilterDataDto<?>, ZoneId, Builder, Builder>>
       FLOW_NODE_DATE_VIEW_FILTER_INSTANCE_QUERIES =
-          Map.of(
-              FlowNodeStartDateFilterDto.class,
-              ModelElementFilterQueryUtilOS::createFlowNodeStartDateFilterQuery,
-              FlowNodeEndDateFilterDto.class,
-              ModelElementFilterQueryUtilOS::createFlowNodeEndDateFilterQuery);
+      Map.of(
+          FlowNodeStartDateFilterDto.class,
+          ModelElementFilterQueryUtilOS::createFlowNodeStartDateFilterQuery,
+          FlowNodeEndDateFilterDto.class,
+          ModelElementFilterQueryUtilOS::createFlowNodeEndDateFilterQuery);
 
-  private ModelElementFilterQueryUtilOS() {}
+  private ModelElementFilterQueryUtilOS() {
+  }
 
   public static Optional<Query> instanceFilterForRelevantViewLevelFiltersQuery(
       final List<ProcessFilterDto<?>> filters, final FilterContext filterContext) {
     final List<ProcessFilterDto<?>> viewLevelFiltersForInstanceMatch =
         getViewLevelFiltersForInstanceMatch(filters);
     if (!viewLevelFiltersForInstanceMatch.isEmpty()) {
-      Builder viewFilterInstanceQueryBuilder =
+      final Builder viewFilterInstanceQueryBuilder =
           createFlowNodeTypeFilterQuery(filterContext.isUserTaskReport());
       viewLevelFiltersForInstanceMatch.forEach(
           filter -> {
@@ -220,10 +221,10 @@ public class ModelElementFilterQueryUtilOS {
       final String nestedFieldReference,
       final BoolQuery.Builder boolQueryBuilder) {
     return createExecutedFlowNodeFilterQuery(
-            boolQueryBuilder,
-            nestedFieldReference,
-            executedFlowNodeFilterData.getValues(),
-            executedFlowNodeFilterData.getOperator())
+        boolQueryBuilder,
+        nestedFieldReference,
+        executedFlowNodeFilterData.getValues(),
+        executedFlowNodeFilterData.getOperator())
         .build()
         .toQuery();
   }
@@ -333,7 +334,7 @@ public class ModelElementFilterQueryUtilOS {
 
   public static Query createAssigneeFilterQuery(final IdentityLinkFilterDataDto assigneeFilter) {
     return createIdentityLinkFilterQuery(
-            assigneeFilter, USER_TASK_ASSIGNEE, new BoolQuery.Builder())
+        assigneeFilter, USER_TASK_ASSIGNEE, new BoolQuery.Builder())
         .build()
         .toQuery();
   }
@@ -346,7 +347,7 @@ public class ModelElementFilterQueryUtilOS {
   public static Query createCandidateGroupFilterQuery(
       final IdentityLinkFilterDataDto candidateGroupFilter) {
     return createIdentityLinkFilterQuery(
-            candidateGroupFilter, USER_TASK_CANDIDATE_GROUPS, new BoolQuery.Builder())
+        candidateGroupFilter, USER_TASK_CANDIDATE_GROUPS, new BoolQuery.Builder())
         .build()
         .toQuery();
   }
@@ -477,7 +478,7 @@ public class ModelElementFilterQueryUtilOS {
             executedFlowNodeFilterData ->
                 boolQuery.filter(
                     createExecutedFlowNodeFilterQuery(
-                            executedFlowNodeFilterData, new BoolQuery.Builder())
+                        executedFlowNodeFilterData, new BoolQuery.Builder())
                         .build()
                         .toQuery()));
   }

@@ -19,7 +19,8 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.filter.Proce
 import java.time.OffsetDateTime;
 import java.util.List;
 
-public class FixedFlowNodeDateFilterBuilder {
+public final class FixedFlowNodeDateFilterBuilder {
+
   private final ProcessFilterBuilder filterBuilder;
   private List<String> flowNodeIds;
   private OffsetDateTime start;
@@ -27,18 +28,20 @@ public class FixedFlowNodeDateFilterBuilder {
   private String type;
   private FilterApplicationLevel filterLevel = FilterApplicationLevel.VIEW;
 
-  private FixedFlowNodeDateFilterBuilder(ProcessFilterBuilder filterBuilder) {
+  private FixedFlowNodeDateFilterBuilder(final ProcessFilterBuilder filterBuilder) {
     this.filterBuilder = filterBuilder;
   }
 
-  public static FixedFlowNodeDateFilterBuilder startDate(ProcessFilterBuilder filterBuilder) {
-    FixedFlowNodeDateFilterBuilder builder = new FixedFlowNodeDateFilterBuilder(filterBuilder);
+  public static FixedFlowNodeDateFilterBuilder startDate(final ProcessFilterBuilder filterBuilder) {
+    final FixedFlowNodeDateFilterBuilder builder = new FixedFlowNodeDateFilterBuilder(
+        filterBuilder);
     builder.type = FLOW_NODE_START_DATE;
     return builder;
   }
 
-  public static FixedFlowNodeDateFilterBuilder endDate(ProcessFilterBuilder filterBuilder) {
-    FixedFlowNodeDateFilterBuilder builder = new FixedFlowNodeDateFilterBuilder(filterBuilder);
+  public static FixedFlowNodeDateFilterBuilder endDate(final ProcessFilterBuilder filterBuilder) {
+    final FixedFlowNodeDateFilterBuilder builder = new FixedFlowNodeDateFilterBuilder(
+        filterBuilder);
     builder.type = FLOW_NODE_END_DATE;
     return builder;
   }
@@ -64,7 +67,7 @@ public class FixedFlowNodeDateFilterBuilder {
   }
 
   public ProcessFilterBuilder add() {
-    ProcessFilterDto<FlowNodeDateFilterDataDto<?>> filterDto;
+    final ProcessFilterDto<FlowNodeDateFilterDataDto<?>> filterDto;
     filterDto =
         type.equals(FLOW_NODE_START_DATE)
             ? new FlowNodeStartDateFilterDto()

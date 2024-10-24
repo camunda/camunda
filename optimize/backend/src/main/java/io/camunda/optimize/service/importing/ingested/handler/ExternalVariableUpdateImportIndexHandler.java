@@ -51,7 +51,7 @@ public class ExternalVariableUpdateImportIndexHandler
   public ExternalVariableUpdateImportIndexHandler() {}
 
   public TimestampBasedImportIndexDto getIndexStateDto() {
-    TimestampBasedImportIndexDto indexToStore = new TimestampBasedImportIndexDto();
+    final TimestampBasedImportIndexDto indexToStore = new TimestampBasedImportIndexDto();
     indexToStore.setLastImportExecutionTimestamp(lastImportExecutionTimestamp);
     indexToStore.setTimestampOfLastEntity(persistedTimestampOfLastEntity);
     indexToStore.setDataSource(getDataSource());
@@ -64,7 +64,7 @@ public class ExternalVariableUpdateImportIndexHandler
     final Optional<TimestampBasedImportIndexDto> dto =
         importIndexReader.getImportIndex(getDatabaseDocID(), getDataSource());
     if (dto.isPresent()) {
-      TimestampBasedImportIndexDto loadedImportIndex = dto.get();
+      final TimestampBasedImportIndexDto loadedImportIndex = dto.get();
       updateLastPersistedEntityTimestamp(loadedImportIndex.getTimestampOfLastEntity());
       updatePendingLastEntityTimestamp(loadedImportIndex.getTimestampOfLastEntity());
       updateLastImportExecutionTimestamp(loadedImportIndex.getLastImportExecutionTimestamp());

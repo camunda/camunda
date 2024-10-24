@@ -31,7 +31,7 @@ public class DecisionDistributedByNoneInterpreterES
 
   private final DecisionViewInterpreterFacadeES viewInterpreter;
 
-  public DecisionDistributedByNoneInterpreterES(DecisionViewInterpreterFacadeES viewInterpreter) {
+  public DecisionDistributedByNoneInterpreterES(final DecisionViewInterpreterFacadeES viewInterpreter) {
     this.viewInterpreter = viewInterpreter;
   }
 
@@ -46,14 +46,14 @@ public class DecisionDistributedByNoneInterpreterES
   public List<DistributedByResult> retrieveResult(
       final ResponseBody<?> response,
       final Map<String, Aggregate> aggregations,
-      ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
+      final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
     final ViewResult viewResult = viewInterpreter.retrieveResult(response, aggregations, context);
     return List.of(DistributedByResult.createDistributedByNoneResult(viewResult));
   }
 
   @Override
   public List<DistributedByResult> createEmptyResult(
-      ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
+      final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
     return List.of(
         DistributedByResult.createDistributedByNoneResult(
             viewInterpreter.createEmptyResult(context)));

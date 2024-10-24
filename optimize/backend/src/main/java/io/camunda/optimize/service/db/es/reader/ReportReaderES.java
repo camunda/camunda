@@ -64,15 +64,15 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class ReportReaderES implements ReportReader {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ReportReaderES.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ReportReaderES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
 
   public ReportReaderES(
-      OptimizeElasticsearchClient esClient,
-      ConfigurationService configurationService,
-      ObjectMapper objectMapper) {
+      final OptimizeElasticsearchClient esClient,
+      final ConfigurationService configurationService,
+      final ObjectMapper objectMapper) {
     this.esClient = esClient;
     this.configurationService = configurationService;
     this.objectMapper = objectMapper;
@@ -80,7 +80,7 @@ public class ReportReaderES implements ReportReader {
 
   @Override
   public Optional<ReportDefinitionDto> getReport(final String reportId) {
-    log.debug("Fetching report with id [{}]", reportId);
+    LOG.debug("Fetching report with id [{}]", reportId);
     final MgetResponse<ReportDefinitionDto> multiGetItemResponses =
         performMultiGetReportRequest(reportId, ReportDefinitionDto.class);
 
@@ -101,7 +101,7 @@ public class ReportReaderES implements ReportReader {
   @Override
   public Optional<SingleProcessReportDefinitionRequestDto> getSingleProcessReportOmitXml(
       final String reportId) {
-    log.debug("Fetching single process report with id [{}]", reportId);
+    LOG.debug("Fetching single process report with id [{}]", reportId);
     final GetRequest getRequest = getGetRequestOmitXml(SINGLE_PROCESS_REPORT_INDEX_NAME, reportId);
     final GetResponse<SingleProcessReportDefinitionRequestDto> getResponse;
     try {
@@ -109,7 +109,7 @@ public class ReportReaderES implements ReportReader {
     } catch (final IOException e) {
       final String reason =
           String.format("Could not fetch single process report with id [%s]", reportId);
-      log.error(reason, e);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
@@ -123,7 +123,7 @@ public class ReportReaderES implements ReportReader {
   @Override
   public Optional<SingleDecisionReportDefinitionRequestDto> getSingleDecisionReportOmitXml(
       final String reportId) {
-    log.debug("Fetching single decision report with id [{}]", reportId);
+    LOG.debug("Fetching single decision report with id [{}]", reportId);
     final GetRequest getRequest = getGetRequestOmitXml(SINGLE_DECISION_REPORT_INDEX_NAME, reportId);
 
     final GetResponse<SingleDecisionReportDefinitionRequestDto> getResponse;
@@ -132,7 +132,7 @@ public class ReportReaderES implements ReportReader {
     } catch (final IOException e) {
       final String reason =
           String.format("Could not fetch single decision report with id [%s]", reportId);
-      log.error(reason, e);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
@@ -146,10 +146,10 @@ public class ReportReaderES implements ReportReader {
   @Override
   public List<ReportDefinitionDto> getAllReportsForIdsOmitXml(final List<String> reportIds) {
     if (reportIds.isEmpty()) {
-      log.debug("No report IDs supplied so no reports to fetch");
+      LOG.debug("No report IDs supplied so no reports to fetch");
       return Collections.emptyList();
     }
-    log.debug("Fetching all report definitions for Ids {}", reportIds);
+    LOG.debug("Fetching all report definitions for Ids {}", reportIds);
     final Query.Builder qb = new Query.Builder();
     qb.ids(i -> i.values(reportIds));
 
@@ -179,7 +179,7 @@ public class ReportReaderES implements ReportReader {
 
   @Override
   public List<ReportDefinitionDto> getAllPrivateReportsOmitXml() {
-    log.debug("Fetching all available private reports");
+    LOG.debug("Fetching all available private reports");
 
     final Query.Builder qb = new Query.Builder();
     qb.bool(
@@ -201,7 +201,7 @@ public class ReportReaderES implements ReportReader {
   @Override
   public List<SingleProcessReportDefinitionRequestDto> getAllSingleProcessReportsForIdsOmitXml(
       final List<String> reportIds) {
-    log.debug("Fetching all available single process reports for IDs [{}]", reportIds);
+    LOG.debug("Fetching all available single process reports for IDs [{}]", reportIds);
     final Class<SingleProcessReportDefinitionRequestDto> reportType =
         SingleProcessReportDefinitionRequestDto.class;
     final String[] indices = new String[] {SINGLE_PROCESS_REPORT_INDEX_NAME};
@@ -265,7 +265,7 @@ public class ReportReaderES implements ReportReader {
 
   @Override
   public long getUserTaskReportCount() {
-    Query.Builder builder = new Query.Builder();
+    final Query.Builder builder = new Query.Builder();
     builder.bool(
         b ->
             b.mustNot(m -> m.term(t -> t.field(DATA + "." + MANAGEMENT_REPORT).value(true)))
@@ -279,7 +279,7 @@ public class ReportReaderES implements ReportReader {
           esClient.search(searchRequest, SingleProcessReportDefinitionRequestDto.class);
     } catch (final IOException e) {
       final String reason = "Was not able to fetch process reports to count userTask reports.";
-      log.error(reason, e);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
     final List<SingleProcessReportDefinitionRequestDto> allProcessReports =
@@ -290,10 +290,10 @@ public class ReportReaderES implements ReportReader {
 
   private List<ReportDefinitionDto> getAllProcessReportsForDefinitionKeyOmitXml(
       final String definitionKey) {
-    log.debug(
+    LOG.debug(
         "Fetching all available process reports for process definition key {}", definitionKey);
 
-    Query.Builder builder = new Query.Builder();
+    final Query.Builder builder = new Query.Builder();
     builder.bool(
         b ->
             b.must(
@@ -323,9 +323,9 @@ public class ReportReaderES implements ReportReader {
 
   private List<CombinedReportDefinitionRequestDto> getCombinedReportsForSimpleReports(
       final List<String> simpleReportIds) {
-    log.debug("Fetching first combined reports using simpleReports with ids {}", simpleReportIds);
+    LOG.debug("Fetching first combined reports using simpleReports with ids {}", simpleReportIds);
 
-    Query.Builder builder = new Query.Builder();
+    final Query.Builder builder = new Query.Builder();
     builder.nested(
         n ->
             n.path(DATA)
@@ -360,7 +360,7 @@ public class ReportReaderES implements ReportReader {
           String.format(
               "Was not able to fetch combined reports that contain reports with ids [%s]",
               simpleReportIds);
-      log.error(reason, e);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
     return ElasticsearchReaderUtil.mapHits(
@@ -369,9 +369,9 @@ public class ReportReaderES implements ReportReader {
 
   private List<ReportDefinitionDto> getReportsForCollection(
       final String collectionId, final boolean includeXml) {
-    log.debug("Fetching reports using collection with id {}", collectionId);
+    LOG.debug("Fetching reports using collection with id {}", collectionId);
 
-    Query.Builder qb = new Query.Builder();
+    final Query.Builder qb = new Query.Builder();
     qb.bool(
         b ->
             b.must(m -> m.term(t -> t.field(COLLECTION_ID).value(collectionId)))
@@ -398,7 +398,7 @@ public class ReportReaderES implements ReportReader {
     } catch (final IOException e) {
       final String reason =
           String.format("Was not able to fetch reports for collection with id [%s]", collectionId);
-      log.error(reason, e);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
   }
@@ -408,7 +408,7 @@ public class ReportReaderES implements ReportReader {
     if (reportIds.isEmpty()) {
       return Collections.emptyList();
     }
-    Query.Builder builder = new Query.Builder();
+    final Query.Builder builder = new Query.Builder();
     builder.ids(i -> i.values(reportIds));
     final SearchResponse<T> searchResponse =
         performGetReportRequestOmitXml(builder, indices, reportIds.size(), reportType);
@@ -431,7 +431,7 @@ public class ReportReaderES implements ReportReader {
 
   private Optional<ReportDefinitionDto> processGetReportResponse(
       final String reportId, final GetResult<ReportDefinitionDto> getResponse) {
-    Optional<ReportDefinitionDto> result = Optional.empty();
+    final Optional<ReportDefinitionDto> result = Optional.empty();
     if (getResponse != null && getResponse.found()) {
       return Optional.of(getResponse.source());
     }
@@ -467,7 +467,7 @@ public class ReportReaderES implements ReportReader {
       final String[] indices,
       final int size,
       final String[] excludeFields) {
-    OptimizeSearchRequestBuilderES builder = new OptimizeSearchRequestBuilderES();
+    final OptimizeSearchRequestBuilderES builder = new OptimizeSearchRequestBuilderES();
     builder.optimizeIndex(esClient, indices);
     builder.query(query.build());
     builder.size(size);
@@ -480,7 +480,7 @@ public class ReportReaderES implements ReportReader {
   }
 
   private <T> SearchResponse<T> performGetReportRequestOmitXml(
-      final Query.Builder query, final String[] indices, final int size, Class<T> clas) {
+      final Query.Builder query, final String[] indices, final int size, final Class<T> clas) {
     final SearchRequest.Builder searchRequestBuilder =
         getSearchRequestOmitXml(query, indices, size)
             .scroll(
@@ -494,12 +494,12 @@ public class ReportReaderES implements ReportReader {
     try {
       return esClient.search(searchRequestBuilder.build(), clas);
     } catch (final IOException e) {
-      log.error("Was not able to retrieve reports!", e);
+      LOG.error("Was not able to retrieve reports!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve reports!", e);
     }
   }
 
-  private <T> MgetResponse<T> performMultiGetReportRequest(final String reportId, Class<T> clas) {
+  private <T> MgetResponse<T> performMultiGetReportRequest(final String reportId, final Class<T> clas) {
     final MgetRequest.Builder request = new MgetRequest.Builder();
     request.docs(
         MultiGetOperation.of(
@@ -523,7 +523,7 @@ public class ReportReaderES implements ReportReader {
       multiGetItemResponses = esClient.mget(request.build(), clas);
     } catch (final IOException e) {
       final String reason = String.format("Could not fetch report with id [%s]", reportId);
-      log.error(reason, e);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
     return multiGetItemResponses;

@@ -25,12 +25,13 @@ import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 
 @Conditional(ElasticSearchCondition.class)
-public class OptimizeElasticsearchClientFactory {
+public final class OptimizeElasticsearchClientFactory {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(OptimizeElasticsearchClientFactory.class);
 
-  private OptimizeElasticsearchClientFactory() {}
+  private OptimizeElasticsearchClientFactory() {
+  }
 
   public static OptimizeElasticsearchClient create(
       final ConfigurationService configurationService,
@@ -39,14 +40,14 @@ public class OptimizeElasticsearchClientFactory {
       final BackoffCalculator backoffCalculator,
       final PluginRepository pluginRepository)
       throws IOException {
-    log.info("Initializing Elasticsearch rest client...");
+    LOG.info("Initializing Elasticsearch rest client...");
     final TransportOptionsProvider transportOptionsProvider =
         new TransportOptionsProvider(configurationService);
     final ElasticsearchClient build =
         ElasticsearchClientBuilder.build(configurationService, OPTIMIZE_MAPPER, pluginRepository);
 
     waitForElasticsearch(build, backoffCalculator, transportOptionsProvider.getTransportOptions());
-    log.info("Elasticsearch client has successfully been started");
+    LOG.info("Elasticsearch client has successfully been started");
 
     final OptimizeElasticsearchClient prefixedClient =
         new OptimizeElasticsearchClient(
@@ -76,19 +77,19 @@ public class OptimizeElasticsearchClientFactory {
         final String errorMessage =
             "Can't connect to any Elasticsearch node. Please check the connection!";
         if (connectionAttempts < 10) {
-          log.warn(errorMessage);
+          LOG.warn(errorMessage);
         } else {
-          log.error(errorMessage, e);
+          LOG.error(errorMessage, e);
         }
       } finally {
         if (!isConnected) {
           final long sleepTime = backoffCalculator.calculateSleepTime();
-          log.info(
+          LOG.info(
               "No Elasticsearch nodes available, waiting [{}] ms to retry connecting", sleepTime);
           try {
             Thread.sleep(sleepTime);
           } catch (final InterruptedException e) {
-            log.warn("Got interrupted while waiting to retry connecting to Elasticsearch.", e);
+            LOG.warn("Got interrupted while waiting to retry connecting to Elasticsearch.", e);
             Thread.currentThread().interrupt();
           }
         }

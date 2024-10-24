@@ -49,11 +49,11 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class AssigneeAndCandidateGroupsReaderES implements AssigneeAndCandidateGroupsReader {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(AssigneeAndCandidateGroupsReaderES.class);
   private final OptimizeElasticsearchClient esClient;
 
-  public AssigneeAndCandidateGroupsReaderES(OptimizeElasticsearchClient esClient) {
+  public AssigneeAndCandidateGroupsReaderES(final OptimizeElasticsearchClient esClient) {
     this.esClient = esClient;
   }
 
@@ -128,7 +128,7 @@ public class AssigneeAndCandidateGroupsReaderES implements AssigneeAndCandidateG
   @Override
   public Set<String> getUserTaskFieldTerms(
       final String userTaskFieldName, final Map<String, Set<String>> definitionKeyToTenantsMap) {
-    log.debug(
+    LOG.debug(
         "Fetching {} for process definition with key and tenants [{}]",
         userTaskFieldName,
         definitionKeyToTenantsMap);

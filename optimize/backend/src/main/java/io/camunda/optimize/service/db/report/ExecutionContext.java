@@ -152,55 +152,55 @@ public class ExecutionContext<D extends SingleReportDataDto, P extends Execution
     return this.multiIndexAlias;
   }
 
-  public void setPlan(P plan) {
+  public void setPlan(final P plan) {
     this.plan = plan;
   }
 
-  public void setReportData(D reportData) {
+  public void setReportData(final D reportData) {
     this.reportData = reportData;
   }
 
-  public void setTimezone(ZoneId timezone) {
+  public void setTimezone(final ZoneId timezone) {
     this.timezone = timezone;
   }
 
-  public void setUnfilteredTotalInstanceCount(long unfilteredTotalInstanceCount) {
+  public void setUnfilteredTotalInstanceCount(final long unfilteredTotalInstanceCount) {
     this.unfilteredTotalInstanceCount = unfilteredTotalInstanceCount;
   }
 
-  public void setPagination(Optional<PaginationDto> pagination) {
+  public void setPagination(final Optional<PaginationDto> pagination) {
     this.pagination = pagination;
   }
 
-  public void setCsvExport(boolean isCsvExport) {
+  public void setCsvExport(final boolean isCsvExport) {
     this.isCsvExport = isCsvExport;
   }
 
-  public void setJsonExport(boolean isJsonExport) {
+  public void setJsonExport(final boolean isJsonExport) {
     this.isJsonExport = isJsonExport;
   }
 
-  public void setCombinedRangeMinMaxStats(MinMaxStatDto combinedRangeMinMaxStats) {
+  public void setCombinedRangeMinMaxStats(final MinMaxStatDto combinedRangeMinMaxStats) {
     this.combinedRangeMinMaxStats = combinedRangeMinMaxStats;
   }
 
-  public void setAllDistributedByKeysAndLabels(Map<String, String> allDistributedByKeysAndLabels) {
+  public void setAllDistributedByKeysAndLabels(final Map<String, String> allDistributedByKeysAndLabels) {
     this.allDistributedByKeysAndLabels = allDistributedByKeysAndLabels;
   }
 
-  public void setAllVariablesNames(Set<String> allVariablesNames) {
+  public void setAllVariablesNames(final Set<String> allVariablesNames) {
     this.allVariablesNames = allVariablesNames;
   }
 
-  public void setHiddenFlowNodeIds(Set<String> hiddenFlowNodeIds) {
+  public void setHiddenFlowNodeIds(final Set<String> hiddenFlowNodeIds) {
     this.hiddenFlowNodeIds = hiddenFlowNodeIds;
   }
 
-  public void setFilterContext(FilterContext filterContext) {
+  public void setFilterContext(final FilterContext filterContext) {
     this.filterContext = filterContext;
   }
 
-  public void setMultiIndexAlias(boolean multiIndexAlias) {
+  public void setMultiIndexAlias(final boolean multiIndexAlias) {
     this.multiIndexAlias = multiIndexAlias;
   }
 

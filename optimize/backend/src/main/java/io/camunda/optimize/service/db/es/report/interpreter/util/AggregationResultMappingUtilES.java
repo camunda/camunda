@@ -10,9 +10,10 @@ package io.camunda.optimize.service.db.es.report.interpreter.util;
 import co.elastic.clients.elasticsearch._types.aggregations.TDigestPercentilesAggregate;
 import java.util.Optional;
 
-public class AggregationResultMappingUtilES {
+public final class AggregationResultMappingUtilES {
 
-  private AggregationResultMappingUtilES() {}
+  private AggregationResultMappingUtilES() {
+  }
 
   public static Double mapToDoubleOrNull(
       final TDigestPercentilesAggregate aggregation, final double percentileValue) {

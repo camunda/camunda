@@ -55,11 +55,11 @@ public class ProcessGroupByProcessInstanceRunningDateInterpreterOS
   private final ProcessViewInterpreterFacadeOS viewInterpreter;
 
   public ProcessGroupByProcessInstanceRunningDateInterpreterOS(
-      DateTimeFormatter formatter,
-      DateAggregationServiceOS dateAggregationService,
-      MinMaxStatsServiceOS minMaxStatsService,
-      ProcessDistributedByInterpreterFacadeOS distributedByInterpreter,
-      ProcessViewInterpreterFacadeOS viewInterpreter) {
+      final DateTimeFormatter formatter,
+      final DateAggregationServiceOS dateAggregationService,
+      final MinMaxStatsServiceOS minMaxStatsService,
+      final ProcessDistributedByInterpreterFacadeOS distributedByInterpreter,
+      final ProcessViewInterpreterFacadeOS viewInterpreter) {
     this.formatter = formatter;
     this.dateAggregationService = dateAggregationService;
     this.minMaxStatsService = minMaxStatsService;
@@ -130,12 +130,12 @@ public class ProcessGroupByProcessInstanceRunningDateInterpreterOS
     if (!aggregations.containsKey(FILTER_LIMITED_AGGREGATION)) {
       return List.of();
     } else {
-      FiltersAggregate agg = aggregations.get(FILTER_LIMITED_AGGREGATION).filters();
+      final FiltersAggregate agg = aggregations.get(FILTER_LIMITED_AGGREGATION).filters();
 
       return agg.buckets().keyed().entrySet().stream()
           .map(
               entry -> {
-                String key =
+                final String key =
                     formatToCorrectTimezone(entry.getKey(), context.getTimezone(), formatter);
                 final List<CompositeCommandResult.DistributedByResult> distributions =
                     getDistributedByInterpreter()

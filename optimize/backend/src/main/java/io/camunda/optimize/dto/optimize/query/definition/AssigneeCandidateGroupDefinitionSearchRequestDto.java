@@ -17,7 +17,8 @@ public class AssigneeCandidateGroupDefinitionSearchRequestDto {
 
   private String terms;
   private int limit = 25;
-  @NotNull private String processDefinitionKey;
+  @NotNull
+  private String processDefinitionKey;
 
   private List<String> tenantIds = new ArrayList<>(Collections.singletonList(null));
 
@@ -32,7 +33,8 @@ public class AssigneeCandidateGroupDefinitionSearchRequestDto {
     this.tenantIds = tenantIds;
   }
 
-  public AssigneeCandidateGroupDefinitionSearchRequestDto() {}
+  public AssigneeCandidateGroupDefinitionSearchRequestDto() {
+  }
 
   public Optional<String> getTerms() {
     return Optional.ofNullable(terms);
@@ -93,11 +95,11 @@ public class AssigneeCandidateGroupDefinitionSearchRequestDto {
         + ")";
   }
 
-  private static int $default$limit() {
+  private static int defaultLimit() {
     return 25;
   }
 
-  private static List<String> $default$tenantIds() {
+  private static List<String> defaultTenantIds() {
     return new ArrayList<>(Collections.singletonList(null));
   }
 
@@ -108,13 +110,14 @@ public class AssigneeCandidateGroupDefinitionSearchRequestDto {
   public static class AssigneeCandidateGroupDefinitionSearchRequestDtoBuilder {
 
     private String terms;
-    private int limit$value;
-    private boolean limit$set;
+    private int limitValue;
+    private boolean limitSet;
     private @NotNull String processDefinitionKey;
-    private List<String> tenantIds$value;
-    private boolean tenantIds$set;
+    private List<String> tenantIdsValue;
+    private boolean tenantIdsSet;
 
-    AssigneeCandidateGroupDefinitionSearchRequestDtoBuilder() {}
+    AssigneeCandidateGroupDefinitionSearchRequestDtoBuilder() {
+    }
 
     public AssigneeCandidateGroupDefinitionSearchRequestDtoBuilder terms(final String terms) {
       this.terms = terms;
@@ -122,8 +125,8 @@ public class AssigneeCandidateGroupDefinitionSearchRequestDto {
     }
 
     public AssigneeCandidateGroupDefinitionSearchRequestDtoBuilder limit(final int limit) {
-      limit$value = limit;
-      limit$set = true;
+      limitValue = limit;
+      limitSet = true;
       return this;
     }
 
@@ -135,35 +138,36 @@ public class AssigneeCandidateGroupDefinitionSearchRequestDto {
 
     public AssigneeCandidateGroupDefinitionSearchRequestDtoBuilder tenantIds(
         final List<String> tenantIds) {
-      tenantIds$value = tenantIds;
-      tenantIds$set = true;
+      tenantIdsValue = tenantIds;
+      tenantIdsSet = true;
       return this;
     }
 
     public AssigneeCandidateGroupDefinitionSearchRequestDto build() {
-      int limit$value = this.limit$value;
-      if (!limit$set) {
-        limit$value = AssigneeCandidateGroupDefinitionSearchRequestDto.$default$limit();
+      int limitValue = this.limitValue;
+      if (!limitSet) {
+        limitValue = AssigneeCandidateGroupDefinitionSearchRequestDto.defaultLimit();
       }
-      List<String> tenantIds$value = this.tenantIds$value;
-      if (!tenantIds$set) {
-        tenantIds$value = AssigneeCandidateGroupDefinitionSearchRequestDto.$default$tenantIds();
+      List<String> tenantIdsValue = this.tenantIdsValue;
+      if (!tenantIdsSet) {
+        tenantIdsValue = AssigneeCandidateGroupDefinitionSearchRequestDto.defaultTenantIds();
       }
       return new AssigneeCandidateGroupDefinitionSearchRequestDto(
-          terms, limit$value, processDefinitionKey, tenantIds$value);
+          terms, limitValue, processDefinitionKey, tenantIdsValue);
     }
 
     @Override
     public String toString() {
-      return "AssigneeCandidateGroupDefinitionSearchRequestDto.AssigneeCandidateGroupDefinitionSearchRequestDtoBuilder(terms="
-          + terms
-          + ", limit$value="
-          + limit$value
-          + ", processDefinitionKey="
-          + processDefinitionKey
-          + ", tenantIds$value="
-          + tenantIds$value
-          + ")";
+      return
+          "AssigneeCandidateGroupDefinitionSearchRequestDto.AssigneeCandidateGroupDefinitionSearchRequestDtoBuilder(terms="
+              + terms
+              + ", limitValue="
+              + limitValue
+              + ", processDefinitionKey="
+              + processDefinitionKey
+              + ", tenantIdsValue="
+              + tenantIdsValue
+              + ")";
     }
   }
 }

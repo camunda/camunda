@@ -30,15 +30,15 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class TenantReaderES implements TenantReader {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(TenantReaderES.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(TenantReaderES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
 
   public TenantReaderES(
-      OptimizeElasticsearchClient esClient,
-      ConfigurationService configurationService,
-      ObjectMapper objectMapper) {
+      final OptimizeElasticsearchClient esClient,
+      final ConfigurationService configurationService,
+      final ObjectMapper objectMapper) {
     this.esClient = esClient;
     this.configurationService = configurationService;
     this.objectMapper = objectMapper;
@@ -46,9 +46,9 @@ public class TenantReaderES implements TenantReader {
 
   @Override
   public Set<TenantDto> getTenants() {
-    log.debug("Fetching all available tenants");
+    LOG.debug("Fetching all available tenants");
 
-    SearchResponse<TenantDto> scrollResp;
+    final SearchResponse<TenantDto> scrollResp;
     try {
       scrollResp =
           esClient.search(
@@ -65,7 +65,7 @@ public class TenantReaderES implements TenantReader {
                                               .getScrollTimeoutInSeconds()
                                           + "s"))),
               TenantDto.class);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException("Was not able to retrieve tenants!", e);
     }
 

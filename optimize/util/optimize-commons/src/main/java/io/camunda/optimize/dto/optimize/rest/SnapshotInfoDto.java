@@ -18,7 +18,7 @@ public class SnapshotInfoDto {
   private List<String> failures;
 
   public SnapshotInfoDto(
-      String snapshotName, SnapshotState state, OffsetDateTime startTime, List<String> failures) {
+      final String snapshotName, final SnapshotState state, final OffsetDateTime startTime, final List<String> failures) {
     this.snapshotName = snapshotName;
     this.state = state;
     this.startTime = startTime;
@@ -43,19 +43,19 @@ public class SnapshotInfoDto {
     return this.failures;
   }
 
-  public void setSnapshotName(String snapshotName) {
+  public void setSnapshotName(final String snapshotName) {
     this.snapshotName = snapshotName;
   }
 
-  public void setState(SnapshotState state) {
+  public void setState(final SnapshotState state) {
     this.state = state;
   }
 
-  public void setStartTime(OffsetDateTime startTime) {
+  public void setStartTime(final OffsetDateTime startTime) {
     this.startTime = startTime;
   }
 
-  public void setFailures(List<String> failures) {
+  public void setFailures(final List<String> failures) {
     this.failures = failures;
   }
 

@@ -11,7 +11,7 @@ import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_DATA_SOURCE
 
 import io.camunda.optimize.dto.optimize.TenantDto;
 
-public class ZeebeConstants {
+public final class ZeebeConstants {
 
   // zeebe export
   public static final String ZEEBE_RECORD_TEST_PREFIX = "zeebe-record";
@@ -39,5 +39,6 @@ public class ZeebeConstants {
   public static final String FLOW_NODE_TYPE_USER_TASK = "userTask";
   public static final String FLOW_NODE_TYPE_MI_BODY = "multiInstanceBody";
 
-  private ZeebeConstants() {}
+  private ZeebeConstants() {
+  }
 }

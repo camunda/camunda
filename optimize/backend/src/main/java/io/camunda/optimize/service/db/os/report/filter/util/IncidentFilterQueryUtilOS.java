@@ -39,33 +39,34 @@ import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.ChildScoreMode;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 
-public class IncidentFilterQueryUtilOS extends IncidentFilterQueryUtil {
+public final class IncidentFilterQueryUtilOS extends IncidentFilterQueryUtil {
 
   private static final NestedDefinitionQueryBuilderOS NESTED_DEFINITION_QUERY_BUILDER =
       new NestedDefinitionQueryBuilderOS(
           INCIDENTS, INCIDENT_DEFINITION_KEY, INCIDENT_DEFINITION_VERSION, INCIDENT_TENANT_ID);
   private static final Map<Class<? extends ProcessFilterDto<?>>, Query>
-      incidentViewFilterInstanceQueries =
-          ImmutableMap.of(
-              OpenIncidentFilterDto.class,
-              IncidentFilterQueryUtilOS.createOpenIncidentTermQuery(),
-              ResolvedIncidentFilterDto.class,
-              IncidentFilterQueryUtilOS.createResolvedIncidentTermQuery());
+      INCIDENT_VIEW_FILTER_INSTANCE_QUERIES =
+      ImmutableMap.of(
+          OpenIncidentFilterDto.class,
+          IncidentFilterQueryUtilOS.createOpenIncidentTermQuery(),
+          ResolvedIncidentFilterDto.class,
+          IncidentFilterQueryUtilOS.createResolvedIncidentTermQuery());
 
-  private IncidentFilterQueryUtilOS() {}
+  private IncidentFilterQueryUtilOS() {
+  }
 
   public static Query createIncidentAggregationFilterQuery(
       final ProcessReportDataDto reportData, final DefinitionService definitionService) {
     final Map<String, List<ProcessFilterDto<?>>> filtersByDefinition =
         reportData.groupFiltersByDefinitionIdentifier();
-    List<ProcessFilterDto<?>> allDefinitionFilters =
+    final List<ProcessFilterDto<?>> allDefinitionFilters =
         filtersByDefinition.getOrDefault(APPLIED_TO_ALL_DEFINITIONS, Collections.emptyList());
 
     final List<Query> definitionQueries =
         reportData.getDefinitions().stream()
             .map(
                 definitionDto -> {
-                  List<ProcessFilterDto<?>> filters =
+                  final List<ProcessFilterDto<?>> filters =
                       filtersByDefinition.getOrDefault(
                           definitionDto.getIdentifier(), Collections.emptyList());
                   return buildIncidentDefinitionQuery(definitionDto, definitionService, filters);
@@ -139,8 +140,8 @@ public class IncidentFilterQueryUtilOS extends IncidentFilterQueryUtil {
     final List<Query> filterQueries =
         filters.stream()
             .filter(filter -> FilterApplicationLevel.VIEW.equals(filter.getFilterLevel()))
-            .filter(filter -> incidentViewFilterInstanceQueries.containsKey(filter.getClass()))
-            .map(filter -> incidentViewFilterInstanceQueries.get(filter.getClass()))
+            .filter(filter -> INCIDENT_VIEW_FILTER_INSTANCE_QUERIES.containsKey(filter.getClass()))
+            .map(filter -> INCIDENT_VIEW_FILTER_INSTANCE_QUERIES.get(filter.getClass()))
             .toList();
     return filterQueries.isEmpty()
         ? Optional.empty()

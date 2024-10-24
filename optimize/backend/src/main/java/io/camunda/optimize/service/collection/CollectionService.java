@@ -39,7 +39,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class CollectionService {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(CollectionService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(CollectionService.class);
   private final AuthorizedCollectionService authorizedCollectionService;
   private final CollectionRelationService collectionRelationService;
   private final CollectionEntityService collectionEntityService;
@@ -87,7 +87,7 @@ public class CollectionService {
         // If it doesn't exist yet and it could not be created, then we have another problem, log it
         // and rethrow
         // exception
-        log.error("Unexpected error when trying to create collection with ID " + presetId, e);
+        LOG.error("Unexpected error when trying to create collection with ID " + presetId, e);
         throw e;
       } else {
         // If it exists already, there's nothing we need to do, return empty to avoid the
@@ -99,7 +99,7 @@ public class CollectionService {
 
   public AuthorizedCollectionDefinitionRestDto getCollectionDefinitionRestDto(
       final String userId, final String collectionId) {
-    log.debug("Fetching resolved collection with id [{}]", collectionId);
+    LOG.debug("Fetching resolved collection with id [{}]", collectionId);
 
     final AuthorizedCollectionDefinitionDto collectionDefinition =
         authorizedCollectionService.getAuthorizedCollectionDefinitionOrFail(userId, collectionId);

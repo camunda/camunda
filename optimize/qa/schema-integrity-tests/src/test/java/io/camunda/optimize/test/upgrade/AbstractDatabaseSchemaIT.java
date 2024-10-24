@@ -23,9 +23,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class AbstractDatabaseSchemaIT<T extends AbstractDatabaseSchemaTestClient> {
-  private static final Logger log = LoggerFactory.getLogger(AbstractDatabaseSchemaIT.class);
+
   protected static final String TOKEN_CHARS_FIELD_PATH =
       "settings.index.analysis.tokenizer.ngram_tokenizer._value._value.tokenChars";
+  private static final Logger LOG = LoggerFactory.getLogger(AbstractDatabaseSchemaIT.class);
   protected T oldDatabaseSchemaClient;
   protected T newDatabaseSchemaClient;
   private final String previousVersion = System.getProperties().getProperty("previousVersion");
@@ -119,11 +120,11 @@ public abstract class AbstractDatabaseSchemaIT<T extends AbstractDatabaseSchemaT
       newOptimize.start(getNewOptimizeOutputLogPath());
       newOptimize.stop();
 
-      log.info("Asserting expected index metadata...");
+      LOG.info("Asserting expected index metadata...");
       assertMigratedDatabaseIndicesMatchExpected();
       assertMigratedDatabaseAliasesMatchExpected();
       assertMigratedDatabaseTemplatesMatchExpected();
-      log.info("Finished asserting expected index metadata!");
+      LOG.info("Finished asserting expected index metadata!");
     } finally {
       oldDatabaseSchemaClient.close();
       newDatabaseSchemaClient.close();
@@ -145,14 +146,14 @@ public abstract class AbstractDatabaseSchemaIT<T extends AbstractDatabaseSchemaT
   }
 
   protected <T> void assertMapContentEqualityFieldByField(
-      Map<String, T> expected, Map<String, T> actual, String ignoringFields) {
+      final Map<String, T> expected, final Map<String, T> actual, final String ignoringFields) {
     // Check that the keys are the same
     assertThat(actual.keySet()).containsExactlyInAnyOrderElementsOf(expected.keySet());
 
     // Check recursively each value is the same
     expected.forEach(
         (key, expectedValue) -> {
-          T actualValue = actual.get(key);
+          final T actualValue = actual.get(key);
           if (StringUtils.isNotBlank(ignoringFields)) {
             assertThat(actualValue)
                 .usingRecursiveComparison()

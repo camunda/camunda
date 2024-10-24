@@ -79,19 +79,20 @@ import org.mockserver.model.HttpRequest;
 
 public abstract class AbstractUpgradeIT {
 
-  protected static MetadataIndex METADATA_INDEX;
-
+  @RegisterExtension
+  @Order(1)
+  public static DatabaseIntegrationTestExtension databaseIntegrationTestExtension =
+      new DatabaseIntegrationTestExtension(getDatabaseTypeFromEnvVar());
+  protected static MetadataIndex metadataIndex;
   protected static final String FROM_VERSION = "2.6.0";
   protected static final String INTERMEDIATE_VERSION = "2.6.1";
   protected static final String TO_VERSION = "2.7.0";
-
-  protected static IndexMappingCreator TEST_INDEX_V1;
-  protected static IndexMappingCreator TEST_INDEX_V2;
-  protected static IndexMappingCreator TEST_INDEX_WITH_UPDATED_MAPPING_V2;
-  protected static IndexMappingCreator TEST_INDEX_WITH_TEMPLATE_V1;
-  protected static IndexMappingCreator TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2;
-  protected static IndexMappingCreator TEST_INDEX_RENAME_FIELD;
-
+  protected static IndexMappingCreator testIndexV1;
+  protected static IndexMappingCreator testIndexV2;
+  protected static IndexMappingCreator testIndexWithUpdatedMappingV2;
+  protected static IndexMappingCreator testIndexWithTemplateV1;
+  protected static IndexMappingCreator testIndexWithTemplateUpdatedMappingV2;
+  protected static IndexMappingCreator testIndexRenameField;
   protected ClientAndServer dbMockServer;
   protected ObjectMapper objectMapper;
   protected UpgradeExecutionDependencies upgradeDependencies;
@@ -99,17 +100,13 @@ public abstract class AbstractUpgradeIT {
   protected ConfigurationService configurationService;
   protected UpgradeProcedure upgradeProcedure;
 
-  @RegisterExtension
-  @Order(1)
-  public static DatabaseIntegrationTestExtension databaseIntegrationTestExtension =
-      new DatabaseIntegrationTestExtension(getDatabaseTypeFromEnvVar());
-
   public static boolean isElasticSearchUpgrade() {
     return databaseIntegrationTestExtension.getDatabaseVendor().equals(DatabaseType.ELASTICSEARCH);
   }
 
   public static DatabaseType getDatabaseTypeFromEnvVar() {
-    Optional<String> envVarValue = Optional.ofNullable(System.getenv(CAMUNDA_OPTIMIZE_DATABASE));
+    final Optional<String> envVarValue = Optional.ofNullable(
+        System.getenv(CAMUNDA_OPTIMIZE_DATABASE));
     return envVarValue
         .map(db -> DatabaseType.valueOf(db.toUpperCase(Locale.ROOT)))
         .orElse(DatabaseType.ELASTICSEARCH);
@@ -163,27 +160,27 @@ public abstract class AbstractUpgradeIT {
     getPrefixAwareClient().setSnapshotInProgressRetryDelaySeconds(2);
     cleanAllDataFromDatabase();
     createEmptyEnvConfig();
-    initSchema(Collections.singletonList(METADATA_INDEX));
+    initSchema(Collections.singletonList(metadataIndex));
     setMetadataVersion(FROM_VERSION);
   }
 
-  private void instantiateProperIndices(DatabaseType databaseVendor) {
+  private void instantiateProperIndices(final DatabaseType databaseVendor) {
     if (!isElasticSearchUpgrade()) {
-      METADATA_INDEX = new MetadataIndexOS();
-      TEST_INDEX_V1 = new UserTestIndexOS(1);
-      TEST_INDEX_V2 = new UserTestIndexOS(2);
-      TEST_INDEX_WITH_UPDATED_MAPPING_V2 = new UserTestUpdatedMappingIndexOS();
-      TEST_INDEX_WITH_TEMPLATE_V1 = new UserTestWithTemplateIndexOS();
-      TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2 = new UserTestWithTemplateUpdatedMappingIndexOS();
-      TEST_INDEX_RENAME_FIELD = new RenameFieldTestIndexOS();
+      metadataIndex = new MetadataIndexOS();
+      testIndexV1 = new UserTestIndexOS(1);
+      testIndexV2 = new UserTestIndexOS(2);
+      testIndexWithUpdatedMappingV2 = new UserTestUpdatedMappingIndexOS();
+      testIndexWithTemplateV1 = new UserTestWithTemplateIndexOS();
+      testIndexWithTemplateUpdatedMappingV2 = new UserTestWithTemplateUpdatedMappingIndexOS();
+      testIndexRenameField = new RenameFieldTestIndexOS();
     } else {
-      METADATA_INDEX = new MetadataIndexES();
-      TEST_INDEX_V1 = new UserTestIndexES(1);
-      TEST_INDEX_V2 = new UserTestIndexES(2);
-      TEST_INDEX_WITH_UPDATED_MAPPING_V2 = new UserTestUpdatedMappingIndexES();
-      TEST_INDEX_WITH_TEMPLATE_V1 = new UserTestWithTemplateIndexES();
-      TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2 = new UserTestWithTemplateUpdatedMappingIndexES();
-      TEST_INDEX_RENAME_FIELD = new RenameFieldTestIndexES();
+      metadataIndex = new MetadataIndexES();
+      testIndexV1 = new UserTestIndexES(1);
+      testIndexV2 = new UserTestIndexES(2);
+      testIndexWithUpdatedMappingV2 = new UserTestUpdatedMappingIndexES();
+      testIndexWithTemplateV1 = new UserTestWithTemplateIndexES();
+      testIndexWithTemplateUpdatedMappingV2 = new UserTestWithTemplateUpdatedMappingIndexES();
+      testIndexRenameField = new RenameFieldTestIndexES();
     }
   }
 
@@ -210,7 +207,7 @@ public abstract class AbstractUpgradeIT {
 
   protected void initSchema(
       final List<IndexMappingCreator<IndexSettings.Builder>> mappingCreators) {
-    DatabaseSchemaManager schemaManager;
+    final DatabaseSchemaManager schemaManager;
     if (!isElasticSearchUpgrade()) {
       schemaManager =
           new OpenSearchSchemaManager(
@@ -221,7 +218,7 @@ public abstract class AbstractUpgradeIT {
                   .map(
                       index ->
                           (IndexMappingCreator<
-                                  org.opensearch.client.opensearch.indices.IndexSettings.Builder>)
+                              org.opensearch.client.opensearch.indices.IndexSettings.Builder>)
                               IndexLookupUtilIncludingTestIndices.convertIndexForDatabase(
                                   index, DatabaseType.OPENSEARCH))
                   .toList());
@@ -237,10 +234,6 @@ public abstract class AbstractUpgradeIT {
     databaseIntegrationTestExtension.initSchema(schemaManager);
   }
 
-  protected void setMetadataVersion(final String version) {
-    metadataService.upsertMetadata(getPrefixAwareClient(), version);
-  }
-
   protected String getMetadataVersion() {
     try {
       return (String)
@@ -250,9 +243,13 @@ public abstract class AbstractUpgradeIT {
                   () ->
                       new OptimizeIntegrationTestException(
                           "Could not obtain current schema version!"));
-    } catch (Throwable e) {
+    } catch (final Throwable e) {
       throw new OptimizeIntegrationTestException(e);
     }
+  }
+
+  protected void setMetadataVersion(final String version) {
+    metadataService.upsertMetadata(getPrefixAwareClient(), version);
   }
 
   protected String getIndexNameWithVersion(final UpgradeStep upgradeStep) {
@@ -270,17 +267,17 @@ public abstract class AbstractUpgradeIT {
     final String indexName = getVersionedIndexName(indexMapping.getIndexName(), version);
     try {
       databaseIntegrationTestExtension.createIndex(indexName, aliasName, indexMapping);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeIntegrationTestException(e);
     }
   }
 
   protected void executeBulk(final String bulkPayloadFilePath) {
-    String bulkPayload = UpgradeUtil.readClasspathFileAsString(bulkPayloadFilePath);
+    final String bulkPayload = UpgradeUtil.readClasspathFileAsString(bulkPayloadFilePath);
     try {
       databaseIntegrationTestExtension.performLowLevelBulkRequest(
           HttpPost.METHOD_NAME, "/_bulk", bulkPayload);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeIntegrationTestException(e);
     }
     getPrefixAwareClient().refresh("*");
@@ -303,7 +300,7 @@ public abstract class AbstractUpgradeIT {
     try {
       return getPrefixAwareClient()
           .getAllIndicesForAlias(getIndexNameService().getOptimizeIndexAliasForIndex(mapping));
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeIntegrationTestException(e);
     }
   }
@@ -342,13 +339,13 @@ public abstract class AbstractUpgradeIT {
   }
 
   protected void insertTestDocuments(final int amount) throws IOException {
-    final String indexName = TEST_INDEX_V1.getIndexName();
+    final String indexName = testIndexV1.getIndexName();
     databaseIntegrationTestExtension.insertTestDocuments(
         amount,
         indexName,
         """
-{"password" : "admin","username" : "admin%d"}
-""");
+            {"password" : "admin","username" : "admin%d"}
+            """);
   }
 
   public void deleteAllDocsInIndex(final IndexMappingCreator index) {

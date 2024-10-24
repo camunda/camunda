@@ -16,11 +16,16 @@ import java.util.List;
 
 public class ProcessRawDataCsvExportRequestDto {
 
-  @NotNull private String processDefinitionKey;
-  @NotEmpty private List<String> processDefinitionVersions = new ArrayList<>();
-  @NotNull private List<String> tenantIds = Collections.singletonList(null);
-  @NotNull private List<ProcessFilterDto<?>> filter = new ArrayList<>();
-  @NotEmpty private List<String> includedColumns = new ArrayList<>();
+  @NotNull
+  private String processDefinitionKey;
+  @NotEmpty
+  private List<String> processDefinitionVersions = new ArrayList<>();
+  @NotNull
+  private List<String> tenantIds = Collections.singletonList(null);
+  @NotNull
+  private List<ProcessFilterDto<?>> filter = new ArrayList<>();
+  @NotEmpty
+  private List<String> includedColumns = new ArrayList<>();
 
   public ProcessRawDataCsvExportRequestDto(
       @NotNull final String processDefinitionKey,
@@ -35,7 +40,8 @@ public class ProcessRawDataCsvExportRequestDto {
     this.includedColumns = includedColumns;
   }
 
-  protected ProcessRawDataCsvExportRequestDto() {}
+  protected ProcessRawDataCsvExportRequestDto() {
+  }
 
   public @NotNull String getProcessDefinitionKey() {
     return processDefinitionKey;
@@ -107,22 +113,22 @@ public class ProcessRawDataCsvExportRequestDto {
   }
 
   @NotEmpty
-  private static List<String> $default$processDefinitionVersions() {
+  private static List<String> defaultProcessDefinitionVersions() {
     return new ArrayList<>();
   }
 
   @NotNull
-  private static List<String> $default$tenantIds() {
+  private static List<String> defaultTenantIds() {
     return Collections.singletonList(null);
   }
 
   @NotNull
-  private static List<ProcessFilterDto<?>> $default$filter() {
+  private static List<ProcessFilterDto<?>> defaultFilter() {
     return new ArrayList<>();
   }
 
   @NotEmpty
-  private static List<String> $default$includedColumns() {
+  private static List<String> defaultIncludedColumns() {
     return new ArrayList<>();
   }
 
@@ -133,16 +139,17 @@ public class ProcessRawDataCsvExportRequestDto {
   public static class ProcessRawDataCsvExportRequestDtoBuilder {
 
     private @NotNull String processDefinitionKey;
-    private @NotEmpty List<String> processDefinitionVersions$value;
-    private boolean processDefinitionVersions$set;
-    private @NotNull List<String> tenantIds$value;
-    private boolean tenantIds$set;
-    private @NotNull List<ProcessFilterDto<?>> filter$value;
-    private boolean filter$set;
-    private @NotEmpty List<String> includedColumns$value;
-    private boolean includedColumns$set;
+    private @NotEmpty List<String> processDefinitionVersionsValue;
+    private boolean processDefinitionVersionsSet;
+    private @NotNull List<String> tenantIdsValue;
+    private boolean tenantIdsSet;
+    private @NotNull List<ProcessFilterDto<?>> filterValue;
+    private boolean filterSet;
+    private @NotEmpty List<String> includedColumnsValue;
+    private boolean includedColumnsSet;
 
-    ProcessRawDataCsvExportRequestDtoBuilder() {}
+    ProcessRawDataCsvExportRequestDtoBuilder() {
+    }
 
     public ProcessRawDataCsvExportRequestDtoBuilder processDefinitionKey(
         @NotNull final String processDefinitionKey) {
@@ -152,71 +159,72 @@ public class ProcessRawDataCsvExportRequestDto {
 
     public ProcessRawDataCsvExportRequestDtoBuilder processDefinitionVersions(
         @NotEmpty final List<String> processDefinitionVersions) {
-      processDefinitionVersions$value = processDefinitionVersions;
-      processDefinitionVersions$set = true;
+      processDefinitionVersionsValue = processDefinitionVersions;
+      processDefinitionVersionsSet = true;
       return this;
     }
 
     public ProcessRawDataCsvExportRequestDtoBuilder tenantIds(
         @NotNull final List<String> tenantIds) {
-      tenantIds$value = tenantIds;
-      tenantIds$set = true;
+      tenantIdsValue = tenantIds;
+      tenantIdsSet = true;
       return this;
     }
 
     public ProcessRawDataCsvExportRequestDtoBuilder filter(
         @NotNull final List<ProcessFilterDto<?>> filter) {
-      filter$value = filter;
-      filter$set = true;
+      filterValue = filter;
+      filterSet = true;
       return this;
     }
 
     public ProcessRawDataCsvExportRequestDtoBuilder includedColumns(
         @NotEmpty final List<String> includedColumns) {
-      includedColumns$value = includedColumns;
-      includedColumns$set = true;
+      includedColumnsValue = includedColumns;
+      includedColumnsSet = true;
       return this;
     }
 
     public ProcessRawDataCsvExportRequestDto build() {
-      List<String> processDefinitionVersions$value = this.processDefinitionVersions$value;
-      if (!processDefinitionVersions$set) {
-        processDefinitionVersions$value =
-            ProcessRawDataCsvExportRequestDto.$default$processDefinitionVersions();
+      List<String> processDefinitionVersionsValue = this.processDefinitionVersionsValue;
+      if (!processDefinitionVersionsSet) {
+        processDefinitionVersionsValue =
+            ProcessRawDataCsvExportRequestDto.defaultProcessDefinitionVersions();
       }
-      List<String> tenantIds$value = this.tenantIds$value;
-      if (!tenantIds$set) {
-        tenantIds$value = ProcessRawDataCsvExportRequestDto.$default$tenantIds();
+      List<String> tenantIdsValue = this.tenantIdsValue;
+      if (!tenantIdsSet) {
+        tenantIdsValue = ProcessRawDataCsvExportRequestDto.defaultTenantIds();
       }
-      List<ProcessFilterDto<?>> filter$value = this.filter$value;
-      if (!filter$set) {
-        filter$value = ProcessRawDataCsvExportRequestDto.$default$filter();
+      List<ProcessFilterDto<?>> filterValue = this.filterValue;
+      if (!filterSet) {
+        filterValue = ProcessRawDataCsvExportRequestDto.defaultFilter();
       }
-      List<String> includedColumns$value = this.includedColumns$value;
-      if (!includedColumns$set) {
-        includedColumns$value = ProcessRawDataCsvExportRequestDto.$default$includedColumns();
+      List<String> includedColumnsValue = this.includedColumnsValue;
+      if (!includedColumnsSet) {
+        includedColumnsValue = ProcessRawDataCsvExportRequestDto.defaultIncludedColumns();
       }
       return new ProcessRawDataCsvExportRequestDto(
           processDefinitionKey,
-          processDefinitionVersions$value,
-          tenantIds$value,
-          filter$value,
-          includedColumns$value);
+          processDefinitionVersionsValue,
+          tenantIdsValue,
+          filterValue,
+          includedColumnsValue);
     }
 
     @Override
     public String toString() {
-      return "ProcessRawDataCsvExportRequestDto.ProcessRawDataCsvExportRequestDtoBuilder(processDefinitionKey="
-          + processDefinitionKey
-          + ", processDefinitionVersions$value="
-          + processDefinitionVersions$value
-          + ", tenantIds$value="
-          + tenantIds$value
-          + ", filter$value="
-          + filter$value
-          + ", includedColumns$value="
-          + includedColumns$value
-          + ")";
+      return
+          "ProcessRawDataCsvExportRequestDto.ProcessRawDataCsvExportRequestDtoBuilder(processDefinitionKey="
+              + processDefinitionKey
+              + ", processDefinitionVersionsValue="
+              + processDefinitionVersionsValue
+              + ", tenantIdsValue="
+              + tenantIdsValue
+              + ", filterValue="
+              + filterValue
+              + ", includedColumnsValue="
+              + includedColumnsValue
+              + ")";
     }
   }
 }

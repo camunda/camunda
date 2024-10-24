@@ -34,7 +34,7 @@ public class IdentityRestService {
   public static final String IDENTITY_RESOURCE_PATH = "/identity";
   public static final String IDENTITY_SEARCH_SUB_PATH = "/search";
   public static final String CURRENT_USER_IDENTITY_SUB_PATH = "/current/user";
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(IdentityRestService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(IdentityRestService.class);
 
   private final AbstractIdentityService identityService;
   private final SessionService sessionService;

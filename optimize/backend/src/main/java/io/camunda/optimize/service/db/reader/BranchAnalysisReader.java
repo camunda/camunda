@@ -33,8 +33,9 @@ import org.slf4j.Logger;
 
 public abstract class BranchAnalysisReader {
 
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(BranchAnalysisReader.class);
+
   private final DefinitionService definitionService;
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(BranchAnalysisReader.class);
 
   protected BranchAnalysisReader(final DefinitionService definitionService) {
     this.definitionService = definitionService;
@@ -42,18 +43,18 @@ public abstract class BranchAnalysisReader {
 
   public BranchAnalysisResponseDto branchAnalysis(
       final BranchAnalysisRequestDto request, final ZoneId timezone) {
-    String logMsg =
+    final String logMsg =
         LogUtil.sanitizeLogMessage(
             String.format(
                 "Performing branch analysis on process definition with key [%s] and versions [%s]",
                 request.getProcessDefinitionKey(), request.getProcessDefinitionVersions()));
-    log.debug(logMsg);
+    LOG.debug(logMsg);
 
     final BranchAnalysisResponseDto result = new BranchAnalysisResponseDto();
     getBpmnModelInstance(
-            request.getProcessDefinitionKey(),
-            request.getProcessDefinitionVersions(),
-            request.getTenantIds())
+        request.getProcessDefinitionKey(),
+        request.getProcessDefinitionVersions(),
+        request.getTenantIds())
         .ifPresent(
             bpmnModelInstance -> {
               final List<FlowNode> gatewayOutcomes =
@@ -65,7 +66,7 @@ public abstract class BranchAnalysisReader {
               final boolean canReachEndFromGateway =
                   isPathPossible(gateway, end, Sets.newHashSet());
 
-              for (FlowNode flowNode : gatewayOutcomes) {
+              for (final FlowNode flowNode : gatewayOutcomes) {
                 final Set<String> flowNodesToExcludeFromBranchAnalysis =
                     extractActivitiesToExclude(
                         gatewayOutcomes,
@@ -135,9 +136,9 @@ public abstract class BranchAnalysisReader {
 
   private List<FlowNode> fetchGatewayOutcomes(
       final BpmnModelInstance bpmnModelInstance, final String gatewayFlowNodeId) {
-    List<FlowNode> result = new ArrayList<>();
-    FlowNode flowNode = bpmnModelInstance.getModelElementById(gatewayFlowNodeId);
-    for (SequenceFlow sequence : flowNode.getOutgoing()) {
+    final List<FlowNode> result = new ArrayList<>();
+    final FlowNode flowNode = bpmnModelInstance.getModelElementById(gatewayFlowNodeId);
+    for (final SequenceFlow sequence : flowNode.getOutgoing()) {
       result.add(sequence.getTarget());
     }
     return result;
@@ -145,12 +146,12 @@ public abstract class BranchAnalysisReader {
 
   private Set<String> extractFlowNodesWithMultipleIncomingSequenceFlows(
       final BpmnModelInstance bpmnModelInstance) {
-    Collection<SequenceFlow> sequenceFlowCollection =
+    final Collection<SequenceFlow> sequenceFlowCollection =
         bpmnModelInstance.getModelElementsByType(SequenceFlow.class);
-    Set<String> flowNodesWithOneIncomingSequenceFlow = new HashSet<>();
-    Set<String> flowNodeIdsWithMultipleIncomingSequenceFlows = new HashSet<>();
-    for (SequenceFlow sequenceFlow : sequenceFlowCollection) {
-      String targetFlowNodeId = sequenceFlow.getTarget().getId();
+    final Set<String> flowNodesWithOneIncomingSequenceFlow = new HashSet<>();
+    final Set<String> flowNodeIdsWithMultipleIncomingSequenceFlows = new HashSet<>();
+    for (final SequenceFlow sequenceFlow : sequenceFlowCollection) {
+      final String targetFlowNodeId = sequenceFlow.getTarget().getId();
       if (flowNodesWithOneIncomingSequenceFlow.contains(targetFlowNodeId)) {
         flowNodeIdsWithMultipleIncomingSequenceFlows.add(targetFlowNodeId);
       } else {
@@ -165,7 +166,7 @@ public abstract class BranchAnalysisReader {
     visitedNodes.add(currentNode);
     final List<FlowNode> succeedingNodes = currentNode.getSucceedingNodes().list();
     boolean pathFound = false;
-    for (FlowNode succeedingNode : succeedingNodes) {
+    for (final FlowNode succeedingNode : succeedingNodes) {
       if (visitedNodes.contains(succeedingNode)) {
         continue;
       }
@@ -184,9 +185,9 @@ public abstract class BranchAnalysisReader {
       final Set<String> flowNodeIdsWithMultipleIncomingSequenceFlows,
       final String currentFlowNodeId,
       final String endEventFlowNodeId) {
-    Set<String> flowNodesToExcludeFromBranchAnalysis = new HashSet<>();
-    for (FlowNode gatewayOutgoingNode : gatewayOutcomes) {
-      String flowNodeId = gatewayOutgoingNode.getId();
+    final Set<String> flowNodesToExcludeFromBranchAnalysis = new HashSet<>();
+    for (final FlowNode gatewayOutgoingNode : gatewayOutcomes) {
+      final String flowNodeId = gatewayOutgoingNode.getId();
       if (!flowNodeIdsWithMultipleIncomingSequenceFlows.contains(flowNodeId)) {
         flowNodesToExcludeFromBranchAnalysis.add(gatewayOutgoingNode.getId());
       }
@@ -202,7 +203,7 @@ public abstract class BranchAnalysisReader {
       final Set<String> activitiesToExclude,
       final ZoneId timezone) {
 
-    BranchAnalysisOutcomeDto result = new BranchAnalysisOutcomeDto();
+    final BranchAnalysisOutcomeDto result = new BranchAnalysisOutcomeDto();
     result.setActivityId(flowNode.getId());
     result.setActivityCount(
         calculateFlowNodeCount(flowNode.getId(), request, activitiesToExclude, timezone));

@@ -47,17 +47,17 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class ImportRepositoryES implements ImportRepository {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ImportRepositoryES.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ImportRepositoryES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
   private final ConfigurationService configurationService;
   private final DateTimeFormatter dateTimeFormatter;
 
   public ImportRepositoryES(
-      OptimizeElasticsearchClient esClient,
-      ObjectMapper objectMapper,
-      ConfigurationService configurationService,
-      DateTimeFormatter dateTimeFormatter) {
+      final OptimizeElasticsearchClient esClient,
+      final ObjectMapper objectMapper,
+      final ConfigurationService configurationService,
+      final DateTimeFormatter dateTimeFormatter) {
     this.esClient = esClient;
     this.objectMapper = objectMapper;
     this.configurationService = configurationService;
@@ -66,10 +66,10 @@ public class ImportRepositoryES implements ImportRepository {
 
   @Override
   public List<TimestampBasedImportIndexDto> getAllTimestampBasedImportIndicesForTypes(
-      List<String> indexTypes) {
-    log.debug("Fetching timestamp based import indices of types '{}'", indexTypes);
+      final List<String> indexTypes) {
+    LOG.debug("Fetching timestamp based import indices of types '{}'", indexTypes);
 
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         OptimizeSearchRequestBuilderES.of(
             b ->
                 b.optimizeIndex(esClient, TIMESTAMP_BASED_IMPORT_INDEX_NAME)
@@ -89,8 +89,8 @@ public class ImportRepositoryES implements ImportRepository {
     final SearchResponse<TimestampBasedImportIndexDto> searchResponse;
     try {
       searchResponse = esClient.search(searchRequest, TimestampBasedImportIndexDto.class);
-    } catch (IOException e) {
-      log.error("Was not able to get timestamp based import indices!", e);
+    } catch (final IOException e) {
+      LOG.error("Was not able to get timestamp based import indices!", e);
       throw new OptimizeRuntimeException("Was not able to get timestamp based import indices!", e);
     }
     return ElasticsearchReaderUtil.mapHits(
@@ -99,29 +99,29 @@ public class ImportRepositoryES implements ImportRepository {
 
   @Override
   public <T extends ImportIndexDto<D>, D extends DataSourceDto> Optional<T> getImportIndex(
-      String indexName,
-      String indexType,
-      Class<T> importDTOClass,
-      String typeIndexComesFrom,
-      D dataSourceDto) {
-    log.debug("Fetching {} import index of type '{}'", indexType, typeIndexComesFrom);
+      final String indexName,
+      final String indexType,
+      final Class<T> importDTOClass,
+      final String typeIndexComesFrom,
+      final D dataSourceDto) {
+    LOG.debug("Fetching {} import index of type '{}'", indexType, typeIndexComesFrom);
 
     GetResponse<T> getResponse = null;
-    GetRequest getRequest =
+    final GetRequest getRequest =
         OptimizeGetRequestBuilderES.of(
             b ->
                 b.optimizeIndex(esClient, indexName)
                     .id(DatabaseHelper.constructKey(typeIndexComesFrom, dataSourceDto)));
     try {
       getResponse = esClient.get(getRequest, importDTOClass);
-    } catch (IOException e) {
-      log.error("Could not fetch {} import index", indexType, e);
+    } catch (final IOException e) {
+      LOG.error("Could not fetch {} import index", indexType, e);
     }
 
     if (getResponse != null && getResponse.source() != null) {
       return Optional.of(getResponse.source());
     } else {
-      log.debug(
+      LOG.debug(
           "Was not able to retrieve {} import index for type [{}] and engine [{}] from elasticsearch.",
           indexType,
           typeIndexComesFrom,
@@ -132,7 +132,7 @@ public class ImportRepositoryES implements ImportRepository {
 
   @Override
   public void importPositionBasedIndices(
-      String importItemName, List<PositionBasedImportIndexDto> importIndexDtos) {
+      final String importItemName, final List<PositionBasedImportIndexDto> importIndexDtos) {
     esClient.doImportBulkRequestWithList(
         importItemName,
         importIndexDtos,
@@ -142,7 +142,7 @@ public class ImportRepositoryES implements ImportRepository {
 
   @Override
   public void importIndices(
-      String importItemName, List<TimestampBasedImportIndexDto> timestampBasedImportIndexDtos) {
+      final String importItemName, final List<TimestampBasedImportIndexDto> timestampBasedImportIndexDtos) {
     esClient.doImportBulkRequestWithList(
         importItemName,
         timestampBasedImportIndexDtos,
@@ -152,7 +152,7 @@ public class ImportRepositoryES implements ImportRepository {
 
   private void addPositionBasedImportIndexRequest(
       final BulkRequest.Builder bulkRequestBuilder, final PositionBasedImportIndexDto optimizeDto) {
-    log.debug(
+    LOG.debug(
         "Writing position based import index of type [{}] with position [{}] to elasticsearch",
         optimizeDto.getEsTypeIndexRefersTo(),
         optimizeDto.getPositionOfLastEntity());
@@ -173,7 +173,7 @@ public class ImportRepositoryES implements ImportRepository {
       final BulkRequest.Builder bulkRequestBuilder, final OptimizeDto optimizeDto) {
     bulkRequestBuilder.operations(
         b -> {
-          if (optimizeDto instanceof TimestampBasedImportIndexDto timestampBasedIndexDto) {
+          if (optimizeDto instanceof final TimestampBasedImportIndexDto timestampBasedIndexDto) {
             return b.<TimestampBasedImportIndexDto>index(
                 OptimizeIndexOperationBuilderES.of(
                     ib -> createTimestampBasedRequest(ib, timestampBasedIndexDto)));
@@ -184,9 +184,9 @@ public class ImportRepositoryES implements ImportRepository {
 
   private IndexOperation.Builder<TimestampBasedImportIndexDto> createTimestampBasedRequest(
       final OptimizeIndexOperationBuilderES<TimestampBasedImportIndexDto> builder,
-      TimestampBasedImportIndexDto importIndex) {
-    String currentTimeStamp = dateTimeFormatter.format(importIndex.getTimestampOfLastEntity());
-    log.debug(
+      final TimestampBasedImportIndexDto importIndex) {
+    final String currentTimeStamp = dateTimeFormatter.format(importIndex.getTimestampOfLastEntity());
+    LOG.debug(
         "Writing timestamp based import index [{}] of type [{}] with execution timestamp [{}] to elasticsearch",
         currentTimeStamp,
         importIndex.getEsTypeIndexRefersTo(),
@@ -197,7 +197,7 @@ public class ImportRepositoryES implements ImportRepository {
         .document(importIndex);
   }
 
-  private String getId(TimestampBasedImportIndexDto importIndex) {
+  private String getId(final TimestampBasedImportIndexDto importIndex) {
     return DatabaseHelper.constructKey(
         importIndex.getEsTypeIndexRefersTo(), importIndex.getDataSourceName());
   }

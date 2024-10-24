@@ -66,7 +66,8 @@ public class ProcessInstanceDto implements OptimizeDto {
     this.tenantId = tenantId;
   }
 
-  public ProcessInstanceDto() {}
+  public ProcessInstanceDto() {
+  }
 
   protected ProcessInstanceDto(final ProcessInstanceDtoBuilder<?, ?> b) {
     processDefinitionKey = b.processDefinitionKey;
@@ -78,20 +79,20 @@ public class ProcessInstanceDto implements OptimizeDto {
     endDate = b.endDate;
     duration = b.duration;
     state = b.state;
-    if (b.flowNodeInstances$set) {
-      flowNodeInstances = b.flowNodeInstances$value;
+    if (b.flowNodeInstancesSet) {
+      flowNodeInstances = b.flowNodeInstancesValue;
     } else {
-      flowNodeInstances = $default$flowNodeInstances();
+      flowNodeInstances = defaultFlowNodeInstances();
     }
-    if (b.variables$set) {
-      variables = b.variables$value;
+    if (b.variablesSet) {
+      variables = b.variablesValue;
     } else {
-      variables = $default$variables();
+      variables = defaultVariables();
     }
-    if (b.incidents$set) {
-      incidents = b.incidents$value;
+    if (b.incidentsSet) {
+      incidents = b.incidentsValue;
     } else {
-      incidents = $default$incidents();
+      incidents = defaultIncidents();
     }
     dataSource = b.dataSource;
     tenantId = b.tenantId;
@@ -263,15 +264,15 @@ public class ProcessInstanceDto implements OptimizeDto {
         + ")";
   }
 
-  private static List<FlowNodeInstanceDto> $default$flowNodeInstances() {
+  private static List<FlowNodeInstanceDto> defaultFlowNodeInstances() {
     return new ArrayList<>();
   }
 
-  private static List<SimpleProcessVariableDto> $default$variables() {
+  private static List<SimpleProcessVariableDto> defaultVariables() {
     return new ArrayList<>();
   }
 
-  private static List<IncidentDto> $default$incidents() {
+  private static List<IncidentDto> defaultIncidents() {
     return new ArrayList<>();
   }
 
@@ -279,6 +280,7 @@ public class ProcessInstanceDto implements OptimizeDto {
     return new ProcessInstanceDtoBuilderImpl();
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String processDefinitionKey = "processDefinitionKey";
@@ -309,12 +311,12 @@ public class ProcessInstanceDto implements OptimizeDto {
     private OffsetDateTime endDate;
     private Long duration;
     private String state;
-    private List<FlowNodeInstanceDto> flowNodeInstances$value;
-    private boolean flowNodeInstances$set;
-    private List<SimpleProcessVariableDto> variables$value;
-    private boolean variables$set;
-    private List<IncidentDto> incidents$value;
-    private boolean incidents$set;
+    private List<FlowNodeInstanceDto> flowNodeInstancesValue;
+    private boolean flowNodeInstancesSet;
+    private List<SimpleProcessVariableDto> variablesValue;
+    private boolean variablesSet;
+    private List<IncidentDto> incidentsValue;
+    private boolean incidentsSet;
     private DataSourceDto dataSource;
     private String tenantId;
 
@@ -364,20 +366,20 @@ public class ProcessInstanceDto implements OptimizeDto {
     }
 
     public B flowNodeInstances(final List<FlowNodeInstanceDto> flowNodeInstances) {
-      flowNodeInstances$value = flowNodeInstances;
-      flowNodeInstances$set = true;
+      flowNodeInstancesValue = flowNodeInstances;
+      flowNodeInstancesSet = true;
       return self();
     }
 
     public B variables(final List<SimpleProcessVariableDto> variables) {
-      variables$value = variables;
-      variables$set = true;
+      variablesValue = variables;
+      variablesSet = true;
       return self();
     }
 
     public B incidents(final List<IncidentDto> incidents) {
-      incidents$value = incidents;
-      incidents$set = true;
+      incidentsValue = incidents;
+      incidentsSet = true;
       return self();
     }
 
@@ -415,12 +417,12 @@ public class ProcessInstanceDto implements OptimizeDto {
           + duration
           + ", state="
           + state
-          + ", flowNodeInstances$value="
-          + flowNodeInstances$value
-          + ", variables$value="
-          + variables$value
-          + ", incidents$value="
-          + incidents$value
+          + ", flowNodeInstancesValue="
+          + flowNodeInstancesValue
+          + ", variablesValue="
+          + variablesValue
+          + ", incidentsValue="
+          + incidentsValue
           + ", dataSource="
           + dataSource
           + ", tenantId="
@@ -432,7 +434,8 @@ public class ProcessInstanceDto implements OptimizeDto {
   private static final class ProcessInstanceDtoBuilderImpl
       extends ProcessInstanceDtoBuilder<ProcessInstanceDto, ProcessInstanceDtoBuilderImpl> {
 
-    private ProcessInstanceDtoBuilderImpl() {}
+    private ProcessInstanceDtoBuilderImpl() {
+    }
 
     @Override
     protected ProcessInstanceDtoBuilderImpl self() {

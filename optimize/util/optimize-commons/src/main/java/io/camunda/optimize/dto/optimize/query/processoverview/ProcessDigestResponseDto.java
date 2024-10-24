@@ -19,7 +19,8 @@ public class ProcessDigestResponseDto implements OptimizeDto {
     this.enabled = enabled;
   }
 
-  public ProcessDigestResponseDto() {}
+  public ProcessDigestResponseDto() {
+  }
 
   public boolean isEnabled() {
     return enabled;
@@ -50,10 +51,12 @@ public class ProcessDigestResponseDto implements OptimizeDto {
   }
 
   // needed to allow inheritance of field name constants
+  @SuppressWarnings("checkstyle:ConstantName")
   public static class Fields {
 
     public static final String enabled = "enabled";
 
-    protected Fields() {}
+    protected Fields() {
+    }
   }
 }

@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.dto.optimize.cloud.panelnotifications;
 
-public class PanelNotificationDataDto {
+public final class PanelNotificationDataDto {
 
   private final String uniqueId;
   private final String source;
@@ -109,7 +109,8 @@ public class PanelNotificationDataDto {
     private String description;
     private PanelNotificationMetaDataDto meta;
 
-    PanelNotificationDataDtoBuilder() {}
+    PanelNotificationDataDtoBuilder() {
+    }
 
     public PanelNotificationDataDtoBuilder uniqueId(final String uniqueId) {
       this.uniqueId = uniqueId;

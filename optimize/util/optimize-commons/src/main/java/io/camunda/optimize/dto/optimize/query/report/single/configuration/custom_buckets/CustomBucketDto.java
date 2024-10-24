@@ -41,7 +41,8 @@ public class CustomBucketDto {
     this.baselineUnit = baselineUnit;
   }
 
-  protected CustomBucketDto() {}
+  protected CustomBucketDto() {
+  }
 
   public Optional<Double> getBucketSizeInUnit(final BucketUnit requestedBucketUnit) {
     return convertValueToRequestedUnit(requestedBucketUnit, bucketSize, bucketSizeUnit);
@@ -168,23 +169,23 @@ public class CustomBucketDto {
         + ")";
   }
 
-  private static boolean $default$active() {
+  private static boolean defaultActive() {
     return false;
   }
 
-  private static Double $default$bucketSize() {
+  private static Double defaultBucketSize() {
     return 10.0;
   }
 
-  private static BucketUnit $default$bucketSizeUnit() {
+  private static BucketUnit defaultBucketSizeUnit() {
     return null;
   }
 
-  private static Double $default$baseline() {
+  private static Double defaultBaseline() {
     return 0.0;
   }
 
-  private static BucketUnit $default$baselineUnit() {
+  private static BucketUnit defaultBaselineUnit() {
     return null;
   }
 
@@ -194,88 +195,89 @@ public class CustomBucketDto {
 
   public static class CustomBucketDtoBuilder {
 
-    private boolean active$value;
-    private boolean active$set;
-    private Double bucketSize$value;
-    private boolean bucketSize$set;
-    private BucketUnit bucketSizeUnit$value;
-    private boolean bucketSizeUnit$set;
-    private Double baseline$value;
-    private boolean baseline$set;
-    private BucketUnit baselineUnit$value;
-    private boolean baselineUnit$set;
+    private boolean activeValue;
+    private boolean activeSet;
+    private Double bucketSizeValue;
+    private boolean bucketSizeSet;
+    private BucketUnit bucketSizeUnitValue;
+    private boolean bucketSizeUnitSet;
+    private Double baselineValue;
+    private boolean baselineSet;
+    private BucketUnit baselineUnitValue;
+    private boolean baselineUnitSet;
 
-    CustomBucketDtoBuilder() {}
+    CustomBucketDtoBuilder() {
+    }
 
     public CustomBucketDtoBuilder active(final boolean active) {
-      active$value = active;
-      active$set = true;
+      activeValue = active;
+      activeSet = true;
       return this;
     }
 
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     public CustomBucketDtoBuilder bucketSize(final Double bucketSize) {
-      bucketSize$value = bucketSize;
-      bucketSize$set = true;
+      bucketSizeValue = bucketSize;
+      bucketSizeSet = true;
       return this;
     }
 
     public CustomBucketDtoBuilder bucketSizeUnit(final BucketUnit bucketSizeUnit) {
-      bucketSizeUnit$value = bucketSizeUnit;
-      bucketSizeUnit$set = true;
+      bucketSizeUnitValue = bucketSizeUnit;
+      bucketSizeUnitSet = true;
       return this;
     }
 
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     public CustomBucketDtoBuilder baseline(final Double baseline) {
-      baseline$value = baseline;
-      baseline$set = true;
+      baselineValue = baseline;
+      baselineSet = true;
       return this;
     }
 
     public CustomBucketDtoBuilder baselineUnit(final BucketUnit baselineUnit) {
-      baselineUnit$value = baselineUnit;
-      baselineUnit$set = true;
+      baselineUnitValue = baselineUnit;
+      baselineUnitSet = true;
       return this;
     }
 
     public CustomBucketDto build() {
-      boolean active$value = this.active$value;
-      if (!active$set) {
-        active$value = CustomBucketDto.$default$active();
+      boolean activeValue = this.activeValue;
+      if (!activeSet) {
+        activeValue = CustomBucketDto.defaultActive();
       }
-      Double bucketSize$value = this.bucketSize$value;
-      if (!bucketSize$set) {
-        bucketSize$value = CustomBucketDto.$default$bucketSize();
+      Double bucketSizeValue = this.bucketSizeValue;
+      if (!bucketSizeSet) {
+        bucketSizeValue = CustomBucketDto.defaultBucketSize();
       }
-      BucketUnit bucketSizeUnit$value = this.bucketSizeUnit$value;
-      if (!bucketSizeUnit$set) {
-        bucketSizeUnit$value = CustomBucketDto.$default$bucketSizeUnit();
+      BucketUnit bucketSizeUnitValue = this.bucketSizeUnitValue;
+      if (!bucketSizeUnitSet) {
+        bucketSizeUnitValue = CustomBucketDto.defaultBucketSizeUnit();
       }
-      Double baseline$value = this.baseline$value;
-      if (!baseline$set) {
-        baseline$value = CustomBucketDto.$default$baseline();
+      Double baselineValue = this.baselineValue;
+      if (!baselineSet) {
+        baselineValue = CustomBucketDto.defaultBaseline();
       }
-      BucketUnit baselineUnit$value = this.baselineUnit$value;
-      if (!baselineUnit$set) {
-        baselineUnit$value = CustomBucketDto.$default$baselineUnit();
+      BucketUnit baselineUnitValue = this.baselineUnitValue;
+      if (!baselineUnitSet) {
+        baselineUnitValue = CustomBucketDto.defaultBaselineUnit();
       }
       return new CustomBucketDto(
-          active$value, bucketSize$value, bucketSizeUnit$value, baseline$value, baselineUnit$value);
+          activeValue, bucketSizeValue, bucketSizeUnitValue, baselineValue, baselineUnitValue);
     }
 
     @Override
     public String toString() {
       return "CustomBucketDto.CustomBucketDtoBuilder(active$value="
-          + active$value
-          + ", bucketSize$value="
-          + bucketSize$value
-          + ", bucketSizeUnit$value="
-          + bucketSizeUnit$value
-          + ", baseline$value="
-          + baseline$value
-          + ", baselineUnit$value="
-          + baselineUnit$value
+          + activeValue
+          + ", bucketSizeValue="
+          + bucketSizeValue
+          + ", bucketSizeUnitValue="
+          + bucketSizeUnitValue
+          + ", baselineValue="
+          + baselineValue
+          + ", baselineUnitValue="
+          + baselineUnitValue
           + ")";
     }
   }

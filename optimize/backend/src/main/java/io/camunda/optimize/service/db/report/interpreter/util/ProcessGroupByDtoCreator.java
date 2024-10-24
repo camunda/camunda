@@ -22,9 +22,10 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.group.value.
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 
-public class ProcessGroupByDtoCreator {
+public final class ProcessGroupByDtoCreator {
 
-  private ProcessGroupByDtoCreator() {}
+  private ProcessGroupByDtoCreator() {
+  }
 
   public static StartDateGroupByDto createGroupByStartDateDto(
       final AggregateByDateUnit dateInterval) {

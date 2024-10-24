@@ -41,11 +41,12 @@ import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
 
-public class CSVUtils {
+public final class CSVUtils {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(CSVUtils.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(CSVUtils.class);
 
-  private CSVUtils() {}
+  private CSVUtils() {
+  }
 
   public static byte[] mapCsvLinesToCsvBytes(
       final List<String[]> csvStrings, final char csvDelimiter) {
@@ -63,7 +64,7 @@ public class CSVUtils {
       bytes = arrayOutputStream.toByteArray();
       arrayOutputStream.close();
     } catch (final Exception e) {
-      log.error("can't write CSV to buffer", e);
+      LOG.error("can't write CSV to buffer", e);
     }
     return bytes;
   }
@@ -71,9 +72,9 @@ public class CSVUtils {
   public static <T extends IdResponseDto> List<String[]> mapIdList(final List<T> ids) {
     final List<String[]> result = new ArrayList<>();
 
-    result.add(new String[] {"processInstanceId"});
+    result.add(new String[]{"processInstanceId"});
 
-    ids.forEach(idDto -> result.add(new String[] {idDto.getId()}));
+    ids.forEach(idDto -> result.add(new String[]{idDto.getId()}));
 
     return result;
   }
@@ -299,13 +300,13 @@ public class CSVUtils {
                 try {
                   value = Optional.ofNullable(descriptor.getReadMethod().invoke(instanceDto));
                 } catch (final Exception e) {
-                  log.error("can't read value of field", e);
+                  LOG.error("can't read value of field", e);
                 }
                 return value.map(Object::toString).orElse(null);
               });
     } catch (final IntrospectionException e) {
       // no field like that
-      log.error(
+      LOG.error(
           "Tried to access RawDataInstanceDto field that did not exist {} on class {}",
           fieldKey,
           instanceClass);

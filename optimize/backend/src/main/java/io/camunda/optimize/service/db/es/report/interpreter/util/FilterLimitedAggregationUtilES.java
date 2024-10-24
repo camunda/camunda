@@ -13,26 +13,27 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import java.util.Map;
 import java.util.Optional;
 
-public class FilterLimitedAggregationUtilES {
+public final class FilterLimitedAggregationUtilES {
 
   public static final String FILTER_LIMITED_AGGREGATION = "filterLimitedAggregation";
 
-  private FilterLimitedAggregationUtilES() {}
+  private FilterLimitedAggregationUtilES() {
+  }
 
   public static Map<String, Aggregation.Builder.ContainerBuilder>
-      wrapWithFilterLimitedParentAggregation(
-          final Query limitFilterQuery,
-          final Map<String, Aggregation.Builder.ContainerBuilder> subAggregationsToLimit) {
+  wrapWithFilterLimitedParentAggregation(
+      final Query limitFilterQuery,
+      final Map<String, Aggregation.Builder.ContainerBuilder> subAggregationsToLimit) {
     return wrapWithFilterLimitedParentAggregation(
         FILTER_LIMITED_AGGREGATION, limitFilterQuery, subAggregationsToLimit);
   }
 
   public static Map<String, Aggregation.Builder.ContainerBuilder>
-      wrapWithFilterLimitedParentAggregation(
-          final String filterParentAggregationName,
-          final Query limitFilterQuery,
-          final Map<String, Aggregation.Builder.ContainerBuilder> subAggregationsToLimit) {
-    Aggregation.Builder.ContainerBuilder builder =
+  wrapWithFilterLimitedParentAggregation(
+      final String filterParentAggregationName,
+      final Query limitFilterQuery,
+      final Map<String, Aggregation.Builder.ContainerBuilder> subAggregationsToLimit) {
+    final Aggregation.Builder.ContainerBuilder builder =
         new Aggregation.Builder().filter(limitFilterQuery);
     subAggregationsToLimit.forEach((k, v) -> builder.aggregations(k, a -> v));
     return Map.of(filterParentAggregationName, builder);

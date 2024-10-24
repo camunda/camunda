@@ -30,7 +30,7 @@ public class CCSaaSUserClient extends AbstractCCSaaSClient {
 
   private static final String GET_USER_BY_ID_TEMPLATE = GET_ORGS_TEMPLATE + "/members/%s";
   private static final String GET_USERS_TEMPLATE = GET_ORGS_TEMPLATE + "/members?filter=members";
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(CCSaaSUserClient.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(CCSaaSUserClient.class);
 
   public CCSaaSUserClient(
       final ConfigurationService configurationService, final ObjectMapper objectMapper) {
@@ -39,7 +39,7 @@ public class CCSaaSUserClient extends AbstractCCSaaSClient {
 
   public Optional<CloudUserDto> getCloudUserById(final String userId, final String accessToken) {
     try {
-      log.info("Fetching Cloud user by id.");
+      LOG.info("Fetching Cloud user by id.");
       final HttpGet request =
           new HttpGet(
               String.format(
@@ -66,7 +66,7 @@ public class CCSaaSUserClient extends AbstractCCSaaSClient {
 
   public List<CloudUserDto> fetchAllCloudUsers(final String accessToken) {
     try {
-      log.info("Fetching Cloud users.");
+      LOG.info("Fetching Cloud users.");
       final HttpGet request =
           new HttpGet(
               String.format(

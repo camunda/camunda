@@ -16,7 +16,9 @@ public class AssigneeCandidateGroupReportSearchRequestDto {
 
   private String terms;
   private int limit = 25;
-  @NotNull @NotEmpty private List<String> reportIds;
+  @NotNull
+  @NotEmpty
+  private List<String> reportIds;
 
   public AssigneeCandidateGroupReportSearchRequestDto(
       final String terms, final int limit, @NotNull @NotEmpty final List<String> reportIds) {
@@ -25,7 +27,8 @@ public class AssigneeCandidateGroupReportSearchRequestDto {
     this.reportIds = reportIds;
   }
 
-  public AssigneeCandidateGroupReportSearchRequestDto() {}
+  public AssigneeCandidateGroupReportSearchRequestDto() {
+  }
 
   public Optional<String> getTerms() {
     return Optional.ofNullable(terms);
@@ -76,7 +79,7 @@ public class AssigneeCandidateGroupReportSearchRequestDto {
         + ")";
   }
 
-  private static int $default$limit() {
+  private static int defaultLimit() {
     return 25;
   }
 
@@ -87,11 +90,13 @@ public class AssigneeCandidateGroupReportSearchRequestDto {
   public static class AssigneeCandidateGroupReportSearchRequestDtoBuilder {
 
     private String terms;
-    private int limit$value;
-    private boolean limit$set;
-    private @NotNull @NotEmpty List<String> reportIds;
+    private int limitValue;
+    private boolean limitSet;
+    private @NotNull
+    @NotEmpty List<String> reportIds;
 
-    AssigneeCandidateGroupReportSearchRequestDtoBuilder() {}
+    AssigneeCandidateGroupReportSearchRequestDtoBuilder() {
+    }
 
     public AssigneeCandidateGroupReportSearchRequestDtoBuilder terms(final String terms) {
       this.terms = terms;
@@ -99,8 +104,8 @@ public class AssigneeCandidateGroupReportSearchRequestDto {
     }
 
     public AssigneeCandidateGroupReportSearchRequestDtoBuilder limit(final int limit) {
-      limit$value = limit;
-      limit$set = true;
+      limitValue = limit;
+      limitSet = true;
       return this;
     }
 
@@ -111,22 +116,23 @@ public class AssigneeCandidateGroupReportSearchRequestDto {
     }
 
     public AssigneeCandidateGroupReportSearchRequestDto build() {
-      int limit$value = this.limit$value;
-      if (!limit$set) {
-        limit$value = AssigneeCandidateGroupReportSearchRequestDto.$default$limit();
+      int limitValue = this.limitValue;
+      if (!limitSet) {
+        limitValue = AssigneeCandidateGroupReportSearchRequestDto.defaultLimit();
       }
-      return new AssigneeCandidateGroupReportSearchRequestDto(terms, limit$value, reportIds);
+      return new AssigneeCandidateGroupReportSearchRequestDto(terms, limitValue, reportIds);
     }
 
     @Override
     public String toString() {
-      return "AssigneeCandidateGroupReportSearchRequestDto.AssigneeCandidateGroupReportSearchRequestDtoBuilder(terms="
-          + terms
-          + ", limit$value="
-          + limit$value
-          + ", reportIds="
-          + reportIds
-          + ")";
+      return
+          "AssigneeCandidateGroupReportSearchRequestDto.AssigneeCandidateGroupReportSearchRequestDtoBuilder(terms="
+              + terms
+              + ", limitValue="
+              + limitValue
+              + ", reportIds="
+              + reportIds
+              + ")";
     }
   }
 }

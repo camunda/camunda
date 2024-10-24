@@ -20,35 +20,37 @@ public class EntityNameRequestDto {
   @QueryParam("reportId")
   private String reportId;
 
-  public EntityNameRequestDto(String collectionId, String dashboardId, String reportId) {
+  public EntityNameRequestDto(final String collectionId, final String dashboardId,
+      final String reportId) {
     this.collectionId = collectionId;
     this.dashboardId = dashboardId;
     this.reportId = reportId;
   }
 
-  public EntityNameRequestDto() {}
-
-  public String getCollectionId() {
-    return this.collectionId;
+  public EntityNameRequestDto() {
   }
 
-  public void setCollectionId(String collectionId) {
+  public String getCollectionId() {
+    return collectionId;
+  }
+
+  public void setCollectionId(final String collectionId) {
     this.collectionId = collectionId;
   }
 
   public String getDashboardId() {
-    return this.dashboardId;
+    return dashboardId;
   }
 
-  public void setDashboardId(String dashboardId) {
+  public void setDashboardId(final String dashboardId) {
     this.dashboardId = dashboardId;
   }
 
   public String getReportId() {
-    return this.reportId;
+    return reportId;
   }
 
-  public void setReportId(String reportId) {
+  public void setReportId(final String reportId) {
     this.reportId = reportId;
   }
 
@@ -56,21 +58,24 @@ public class EntityNameRequestDto {
     return other instanceof EntityNameRequestDto;
   }
 
+  @Override
   public int hashCode() {
     return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
+  @Override
   public boolean equals(final Object o) {
     return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
+  @Override
   public String toString() {
     return "EntityNameRequestDto(collectionId="
-        + this.getCollectionId()
+        + getCollectionId()
         + ", dashboardId="
-        + this.getDashboardId()
+        + getDashboardId()
         + ", reportId="
-        + this.getReportId()
+        + getReportId()
         + ")";
   }
 

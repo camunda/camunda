@@ -28,9 +28,9 @@ public class DecisionGroupByDtoCreator {
   }
 
   public static DecisionGroupByDto createGroupDecisionByEvaluationDateTime(
-      AggregateByDateUnit groupByDateUnit) {
-    DecisionGroupByEvaluationDateTimeDto groupByDto = new DecisionGroupByEvaluationDateTimeDto();
-    DecisionGroupByEvaluationDateTimeValueDto valueDto =
+      final AggregateByDateUnit groupByDateUnit) {
+    final DecisionGroupByEvaluationDateTimeDto groupByDto = new DecisionGroupByEvaluationDateTimeDto();
+    final DecisionGroupByEvaluationDateTimeValueDto valueDto =
         new DecisionGroupByEvaluationDateTimeValueDto();
     valueDto.setUnit(groupByDateUnit);
     groupByDto.setValue(valueDto);
@@ -43,12 +43,12 @@ public class DecisionGroupByDtoCreator {
   }
 
   public static DecisionGroupByDto createGroupDecisionByInputVariable(
-      String variableId, String variableName, VariableType variableType) {
-    DecisionGroupByVariableValueDto groupByValueDto = new DecisionGroupByVariableValueDto();
+      final String variableId, final String variableName, final VariableType variableType) {
+    final DecisionGroupByVariableValueDto groupByValueDto = new DecisionGroupByVariableValueDto();
     groupByValueDto.setId(variableId);
     groupByValueDto.setName(variableName);
     groupByValueDto.setType(variableType);
-    DecisionGroupByInputVariableDto groupByDto = new DecisionGroupByInputVariableDto();
+    final DecisionGroupByInputVariableDto groupByDto = new DecisionGroupByInputVariableDto();
     groupByDto.setValue(groupByValueDto);
     return groupByDto;
   }
@@ -58,12 +58,12 @@ public class DecisionGroupByDtoCreator {
   }
 
   public static DecisionGroupByDto createGroupDecisionByOutputVariable(
-      String variableId, String variableName, VariableType variableType) {
-    DecisionGroupByVariableValueDto groupByValueDto = new DecisionGroupByVariableValueDto();
+      final String variableId, final String variableName, final VariableType variableType) {
+    final DecisionGroupByVariableValueDto groupByValueDto = new DecisionGroupByVariableValueDto();
     groupByValueDto.setId(variableId);
     groupByValueDto.setName(variableName);
     groupByValueDto.setType(variableType);
-    DecisionGroupByOutputVariableDto groupByDto = new DecisionGroupByOutputVariableDto();
+    final DecisionGroupByOutputVariableDto groupByDto = new DecisionGroupByOutputVariableDto();
     groupByDto.setValue(groupByValueDto);
     return groupByDto;
   }

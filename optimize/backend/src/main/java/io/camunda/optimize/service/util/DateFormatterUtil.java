@@ -16,7 +16,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Optional;
 
-public class DateFormatterUtil {
+public final class DateFormatterUtil {
 
   private static final DateTimeFormatter OPTIMIZE_FORMATTER =
       DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);

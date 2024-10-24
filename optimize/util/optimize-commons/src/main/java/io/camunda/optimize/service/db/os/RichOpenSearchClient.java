@@ -22,7 +22,8 @@ import org.slf4j.Logger;
 
 public class RichOpenSearchClient {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(RichOpenSearchClient.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(RichOpenSearchClient.class);
+
   private final OptimizeIndexNameService indexNameService;
   // TODO slash unused operations with OPT-7352
   private final OpenSearchClusterOperations openSearchClusterOperations;

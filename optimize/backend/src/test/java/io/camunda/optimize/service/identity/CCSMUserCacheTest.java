@@ -52,10 +52,14 @@ public class CCSMUserCacheTest {
   public static final UserDto TEST_USER_2 =
       new UserDto("456", "John Smith", "john@email.com", Collections.emptyList());
 
-  @Mock Identity identity;
-  @Mock Users users;
-  @Mock CCSMTokenService ccsmTokenService;
-  @Mock Cache<String, UserDto> ccsmUsersCache;
+  @Mock
+  Identity identity;
+  @Mock
+  Users users;
+  @Mock
+  CCSMTokenService ccsmTokenService;
+  @Mock
+  Cache<String, UserDto> ccsmUsersCache;
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   ConfigurationService configurationService;
@@ -86,7 +90,7 @@ public class CCSMUserCacheTest {
   }
 
   @Test
-  public void searchesUserCacheWithSearchString_oneMatch() {
+  public void searchesUserCacheWithSearchStringOneMatch() {
     // given
     when(ccsmUsersCache.asMap())
         .thenReturn(
@@ -105,7 +109,7 @@ public class CCSMUserCacheTest {
   }
 
   @Test
-  public void searchesUserCacheWithSearchString_multipleMatches() {
+  public void searchesUserCacheWithSearchStringMultipleMatches() {
     // given
     when(ccsmUsersCache.asMap())
         .thenReturn(
@@ -140,7 +144,7 @@ public class CCSMUserCacheTest {
   }
 
   @Test
-  public void searchForUsersInCacheUsingEmail_oneEmail() {
+  public void searchForUsersInCacheUsingEmailOneEmail() {
     // given
     when(ccsmUsersCache.asMap())
         .thenReturn(
@@ -159,7 +163,7 @@ public class CCSMUserCacheTest {
   }
 
   @Test
-  public void searchForUsersInCacheUsingEmail_multipleEmails_multipleMatches() {
+  public void searchForUsersInCacheUsingEmailMultipleEmailsMultipleMatches() {
     // given
     when(ccsmUsersCache.asMap())
         .thenReturn(
@@ -179,7 +183,7 @@ public class CCSMUserCacheTest {
   }
 
   @Test
-  public void searchForUsersInCacheUsingEmail_multipleEmails_oneMatch() {
+  public void searchForUsersInCacheUsingEmailMultipleEmailsOneMatch() {
     // given
     when(ccsmUsersCache.asMap())
         .thenReturn(
@@ -201,7 +205,7 @@ public class CCSMUserCacheTest {
   }
 
   @Test
-  public void searchForUsersInCacheUsingEmail_noPartialMatching() {
+  public void searchForUsersInCacheUsingEmailNoPartialMatching() {
     // given botch cache and identity contain users whose email matches the searchstring partially
     when(ccsmUsersCache.asMap())
         .thenReturn(

@@ -41,17 +41,17 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class ImportRepositoryOS implements ImportRepository {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ImportRepositoryOS.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ImportRepositoryOS.class);
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
   private final OptimizeIndexNameService indexNameService;
   private final DateTimeFormatter dateTimeFormatter;
 
   public ImportRepositoryOS(
-      OptimizeOpenSearchClient osClient,
-      ConfigurationService configurationService,
-      OptimizeIndexNameService indexNameService,
-      DateTimeFormatter dateTimeFormatter) {
+      final OptimizeOpenSearchClient osClient,
+      final ConfigurationService configurationService,
+      final OptimizeIndexNameService indexNameService,
+      final DateTimeFormatter dateTimeFormatter) {
     this.osClient = osClient;
     this.configurationService = configurationService;
     this.indexNameService = indexNameService;
@@ -60,8 +60,8 @@ public class ImportRepositoryOS implements ImportRepository {
 
   @Override
   public List<TimestampBasedImportIndexDto> getAllTimestampBasedImportIndicesForTypes(
-      List<String> indexTypes) {
-    log.debug("Fetching timestamp based import indices of types '{}'", indexTypes);
+      final List<String> indexTypes) {
+    LOG.debug("Fetching timestamp based import indices of types '{}'", indexTypes);
 
     final SearchRequest.Builder requestBuilder =
         new SearchRequest.Builder()
@@ -80,7 +80,7 @@ public class ImportRepositoryOS implements ImportRepository {
       final Class<T> importDTOClass,
       final String typeIndexComesFrom,
       final D dataSourceDto) {
-    log.debug("Fetching {} import index of type '{}'", indexType, typeIndexComesFrom);
+    LOG.debug("Fetching {} import index of type '{}'", indexType, typeIndexComesFrom);
     final GetResponse<T> response =
         osClient.get(
             indexNameService.getOptimizeIndexAliasForIndex(indexName),
@@ -91,7 +91,7 @@ public class ImportRepositoryOS implements ImportRepository {
     if (response.found()) {
       return Optional.ofNullable(response.source());
     } else {
-      log.debug(
+      LOG.debug(
           "Was not able to retrieve {} import index for type [{}] and engine [{}] from opensearch.",
           indexType,
           typeIndexComesFrom,
@@ -122,8 +122,8 @@ public class ImportRepositoryOS implements ImportRepository {
   }
 
   private BulkOperation addPositionBasedImportIndexRequest(
-      PositionBasedImportIndexDto optimizeDto) {
-    log.debug(
+      final PositionBasedImportIndexDto optimizeDto) {
+    LOG.debug(
         "Writing position based import index of type [{}] with position [{}] to opensearch",
         optimizeDto.getEsTypeIndexRefersTo(),
         optimizeDto.getPositionOfLastEntity());
@@ -144,8 +144,8 @@ public class ImportRepositoryOS implements ImportRepository {
         .build();
   }
 
-  private BulkOperation addImportIndexRequest(OptimizeDto optimizeDto) {
-    if (optimizeDto instanceof TimestampBasedImportIndexDto timestampBasedIndexDto) {
+  private BulkOperation addImportIndexRequest(final OptimizeDto optimizeDto) {
+    if (optimizeDto instanceof final TimestampBasedImportIndexDto timestampBasedIndexDto) {
       return createTimestampBasedRequest(timestampBasedIndexDto);
     } else {
       throw new OptimizeRuntimeException(
@@ -154,9 +154,9 @@ public class ImportRepositoryOS implements ImportRepository {
     }
   }
 
-  private BulkOperation createTimestampBasedRequest(TimestampBasedImportIndexDto importIndex) {
-    String currentTimeStamp = dateTimeFormatter.format(importIndex.getTimestampOfLastEntity());
-    log.debug(
+  private BulkOperation createTimestampBasedRequest(final TimestampBasedImportIndexDto importIndex) {
+    final String currentTimeStamp = dateTimeFormatter.format(importIndex.getTimestampOfLastEntity());
+    LOG.debug(
         "Writing timestamp based import index [{}] of type [{}] with execution timestamp [{}] to opensearch",
         currentTimeStamp,
         importIndex.getEsTypeIndexRefersTo(),
@@ -173,7 +173,7 @@ public class ImportRepositoryOS implements ImportRepository {
         .build();
   }
 
-  private String getId(TimestampBasedImportIndexDto importIndex) {
+  private String getId(final TimestampBasedImportIndexDto importIndex) {
     return DatabaseHelper.constructKey(
         importIndex.getEsTypeIndexRefersTo(), importIndex.getDataSourceName());
   }

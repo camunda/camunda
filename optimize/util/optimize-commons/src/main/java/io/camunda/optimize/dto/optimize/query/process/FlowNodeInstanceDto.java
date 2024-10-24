@@ -35,7 +35,8 @@ public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
   private String tenantId;
 
   // Note that engine is transient and only used for correct "routing" during import
-  @JsonIgnore private String engine;
+  @JsonIgnore
+  private String engine;
 
   private String userTaskInstanceId;
 
@@ -195,27 +196,27 @@ public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
   }
 
   public FlowNodeInstanceDto(
-      String flowNodeInstanceId,
-      String flowNodeId,
-      String flowNodeType,
-      String processInstanceId,
-      Long totalDurationInMs,
-      OffsetDateTime startDate,
-      OffsetDateTime endDate,
-      Boolean canceled,
-      String definitionKey,
-      String definitionVersion,
-      String tenantId,
-      String engine,
-      String userTaskInstanceId,
-      OffsetDateTime dueDate,
-      String deleteReason,
-      String assignee,
-      List<String> candidateGroups,
-      List<AssigneeOperationDto> assigneeOperations,
-      List<CandidateGroupOperationDto> candidateGroupOperations,
-      Long idleDurationInMs,
-      Long workDurationInMs) {
+      final String flowNodeInstanceId,
+      final String flowNodeId,
+      final String flowNodeType,
+      final String processInstanceId,
+      final Long totalDurationInMs,
+      final OffsetDateTime startDate,
+      final OffsetDateTime endDate,
+      final Boolean canceled,
+      final String definitionKey,
+      final String definitionVersion,
+      final String tenantId,
+      final String engine,
+      final String userTaskInstanceId,
+      final OffsetDateTime dueDate,
+      final String deleteReason,
+      final String assignee,
+      final List<String> candidateGroups,
+      final List<AssigneeOperationDto> assigneeOperations,
+      final List<CandidateGroupOperationDto> candidateGroupOperations,
+      final Long idleDurationInMs,
+      final Long workDurationInMs) {
     this.flowNodeInstanceId = flowNodeInstanceId;
     this.flowNodeId = flowNodeId;
     this.flowNodeType = flowNodeType;
@@ -239,236 +240,241 @@ public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
     this.workDurationInMs = workDurationInMs;
   }
 
-  public FlowNodeInstanceDto() {}
+  public FlowNodeInstanceDto() {
+  }
 
   public String getFlowNodeInstanceId() {
-    return this.flowNodeInstanceId;
+    return flowNodeInstanceId;
+  }
+
+  public void setFlowNodeInstanceId(final String flowNodeInstanceId) {
+    this.flowNodeInstanceId = flowNodeInstanceId;
   }
 
   public String getFlowNodeId() {
-    return this.flowNodeId;
+    return flowNodeId;
   }
 
-  public String getFlowNodeType() {
-    return this.flowNodeType;
-  }
-
-  public String getProcessInstanceId() {
-    return this.processInstanceId;
-  }
-
-  public Long getTotalDurationInMs() {
-    return this.totalDurationInMs;
-  }
-
-  public OffsetDateTime getStartDate() {
-    return this.startDate;
-  }
-
-  public OffsetDateTime getEndDate() {
-    return this.endDate;
-  }
-
-  public Boolean getCanceled() {
-    return this.canceled;
-  }
-
-  public String getDefinitionKey() {
-    return this.definitionKey;
-  }
-
-  public String getDefinitionVersion() {
-    return this.definitionVersion;
-  }
-
-  public String getTenantId() {
-    return this.tenantId;
-  }
-
-  public String getEngine() {
-    return this.engine;
-  }
-
-  public String getUserTaskInstanceId() {
-    return this.userTaskInstanceId;
-  }
-
-  public OffsetDateTime getDueDate() {
-    return this.dueDate;
-  }
-
-  public String getDeleteReason() {
-    return this.deleteReason;
-  }
-
-  public String getAssignee() {
-    return this.assignee;
-  }
-
-  public List<String> getCandidateGroups() {
-    return this.candidateGroups;
-  }
-
-  public List<AssigneeOperationDto> getAssigneeOperations() {
-    return this.assigneeOperations;
-  }
-
-  public List<CandidateGroupOperationDto> getCandidateGroupOperations() {
-    return this.candidateGroupOperations;
-  }
-
-  public Long getIdleDurationInMs() {
-    return this.idleDurationInMs;
-  }
-
-  public Long getWorkDurationInMs() {
-    return this.workDurationInMs;
-  }
-
-  public void setFlowNodeInstanceId(String flowNodeInstanceId) {
-    this.flowNodeInstanceId = flowNodeInstanceId;
-  }
-
-  public void setFlowNodeId(String flowNodeId) {
+  public void setFlowNodeId(final String flowNodeId) {
     this.flowNodeId = flowNodeId;
   }
 
-  public void setFlowNodeType(String flowNodeType) {
+  public String getFlowNodeType() {
+    return flowNodeType;
+  }
+
+  public void setFlowNodeType(final String flowNodeType) {
     this.flowNodeType = flowNodeType;
   }
 
-  public void setProcessInstanceId(String processInstanceId) {
+  public String getProcessInstanceId() {
+    return processInstanceId;
+  }
+
+  public void setProcessInstanceId(final String processInstanceId) {
     this.processInstanceId = processInstanceId;
   }
 
-  public void setTotalDurationInMs(Long totalDurationInMs) {
+  public Long getTotalDurationInMs() {
+    return totalDurationInMs;
+  }
+
+  public void setTotalDurationInMs(final Long totalDurationInMs) {
     this.totalDurationInMs = totalDurationInMs;
   }
 
-  public void setStartDate(OffsetDateTime startDate) {
+  public OffsetDateTime getStartDate() {
+    return startDate;
+  }
+
+  public void setStartDate(final OffsetDateTime startDate) {
     this.startDate = startDate;
   }
 
-  public void setEndDate(OffsetDateTime endDate) {
+  public OffsetDateTime getEndDate() {
+    return endDate;
+  }
+
+  public void setEndDate(final OffsetDateTime endDate) {
     this.endDate = endDate;
   }
 
-  public void setCanceled(Boolean canceled) {
+  public Boolean getCanceled() {
+    return canceled;
+  }
+
+  public void setCanceled(final Boolean canceled) {
     this.canceled = canceled;
   }
 
-  public void setDefinitionKey(String definitionKey) {
+  public String getDefinitionKey() {
+    return definitionKey;
+  }
+
+  public void setDefinitionKey(final String definitionKey) {
     this.definitionKey = definitionKey;
   }
 
-  public void setDefinitionVersion(String definitionVersion) {
+  public String getDefinitionVersion() {
+    return definitionVersion;
+  }
+
+  public void setDefinitionVersion(final String definitionVersion) {
     this.definitionVersion = definitionVersion;
   }
 
-  public void setTenantId(String tenantId) {
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public void setTenantId(final String tenantId) {
     this.tenantId = tenantId;
   }
 
+  public String getEngine() {
+    return engine;
+  }
+
   @JsonIgnore
-  public void setEngine(String engine) {
+  public void setEngine(final String engine) {
     this.engine = engine;
   }
 
-  public void setUserTaskInstanceId(String userTaskInstanceId) {
+  public String getUserTaskInstanceId() {
+    return userTaskInstanceId;
+  }
+
+  public void setUserTaskInstanceId(final String userTaskInstanceId) {
     this.userTaskInstanceId = userTaskInstanceId;
   }
 
-  public void setDueDate(OffsetDateTime dueDate) {
+  public OffsetDateTime getDueDate() {
+    return dueDate;
+  }
+
+  public void setDueDate(final OffsetDateTime dueDate) {
     this.dueDate = dueDate;
   }
 
-  public void setDeleteReason(String deleteReason) {
+  public String getDeleteReason() {
+    return deleteReason;
+  }
+
+  public void setDeleteReason(final String deleteReason) {
     this.deleteReason = deleteReason;
   }
 
-  public void setAssignee(String assignee) {
+  public String getAssignee() {
+    return assignee;
+  }
+
+  public void setAssignee(final String assignee) {
     this.assignee = assignee;
   }
 
-  public void setCandidateGroups(List<String> candidateGroups) {
+  public List<String> getCandidateGroups() {
+    return candidateGroups;
+  }
+
+  public void setCandidateGroups(final List<String> candidateGroups) {
     this.candidateGroups = candidateGroups;
   }
 
-  public void setAssigneeOperations(List<AssigneeOperationDto> assigneeOperations) {
+  public List<AssigneeOperationDto> getAssigneeOperations() {
+    return assigneeOperations;
+  }
+
+  public void setAssigneeOperations(final List<AssigneeOperationDto> assigneeOperations) {
     this.assigneeOperations = assigneeOperations;
   }
 
+  public List<CandidateGroupOperationDto> getCandidateGroupOperations() {
+    return candidateGroupOperations;
+  }
+
   public void setCandidateGroupOperations(
-      List<CandidateGroupOperationDto> candidateGroupOperations) {
+      final List<CandidateGroupOperationDto> candidateGroupOperations) {
     this.candidateGroupOperations = candidateGroupOperations;
   }
 
-  public void setIdleDurationInMs(Long idleDurationInMs) {
+  public Long getIdleDurationInMs() {
+    return idleDurationInMs;
+  }
+
+  public void setIdleDurationInMs(final Long idleDurationInMs) {
     this.idleDurationInMs = idleDurationInMs;
   }
 
-  public void setWorkDurationInMs(Long workDurationInMs) {
-    this.workDurationInMs = workDurationInMs;
+  public Long getWorkDurationInMs() {
+    return workDurationInMs;
   }
 
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public void setWorkDurationInMs(final Long workDurationInMs) {
+    this.workDurationInMs = workDurationInMs;
   }
 
   protected boolean canEqual(final Object other) {
     return other instanceof FlowNodeInstanceDto;
   }
 
+  @Override
   public int hashCode() {
     return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
+  @Override
+  public boolean equals(final Object o) {
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  }
+
+  @Override
   public String toString() {
     return "FlowNodeInstanceDto(flowNodeInstanceId="
-        + this.getFlowNodeInstanceId()
+        + getFlowNodeInstanceId()
         + ", flowNodeId="
-        + this.getFlowNodeId()
+        + getFlowNodeId()
         + ", flowNodeType="
-        + this.getFlowNodeType()
+        + getFlowNodeType()
         + ", processInstanceId="
-        + this.getProcessInstanceId()
+        + getProcessInstanceId()
         + ", totalDurationInMs="
-        + this.getTotalDurationInMs()
+        + getTotalDurationInMs()
         + ", startDate="
-        + this.getStartDate()
+        + getStartDate()
         + ", endDate="
-        + this.getEndDate()
+        + getEndDate()
         + ", canceled="
-        + this.getCanceled()
+        + getCanceled()
         + ", definitionKey="
-        + this.getDefinitionKey()
+        + getDefinitionKey()
         + ", definitionVersion="
-        + this.getDefinitionVersion()
+        + getDefinitionVersion()
         + ", tenantId="
-        + this.getTenantId()
+        + getTenantId()
         + ", engine="
-        + this.getEngine()
+        + getEngine()
         + ", userTaskInstanceId="
-        + this.getUserTaskInstanceId()
+        + getUserTaskInstanceId()
         + ", dueDate="
-        + this.getDueDate()
+        + getDueDate()
         + ", deleteReason="
-        + this.getDeleteReason()
+        + getDeleteReason()
         + ", assignee="
-        + this.getAssignee()
+        + getAssignee()
         + ", candidateGroups="
-        + this.getCandidateGroups()
+        + getCandidateGroups()
         + ", assigneeOperations="
-        + this.getAssigneeOperations()
+        + getAssigneeOperations()
         + ", candidateGroupOperations="
-        + this.getCandidateGroupOperations()
+        + getCandidateGroupOperations()
         + ", idleDurationInMs="
-        + this.getIdleDurationInMs()
+        + getIdleDurationInMs()
         + ", workDurationInMs="
-        + this.getWorkDurationInMs()
+        + getWorkDurationInMs()
         + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String flowNodeInstanceId = "flowNodeInstanceId";

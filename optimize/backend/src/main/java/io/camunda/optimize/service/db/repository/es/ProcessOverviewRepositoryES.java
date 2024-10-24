@@ -41,13 +41,13 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class ProcessOverviewRepositoryES implements ProcessOverviewRepository {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ProcessOverviewRepositoryES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
   public ProcessOverviewRepositoryES(
-      OptimizeElasticsearchClient esClient, ObjectMapper objectMapper) {
+      final OptimizeElasticsearchClient esClient, final ObjectMapper objectMapper) {
     this.esClient = esClient;
     this.objectMapper = objectMapper;
   }
@@ -81,10 +81,10 @@ public class ProcessOverviewRepositoryES implements ProcessOverviewRepository {
                       .refresh(Refresh.True)
                       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT));
       esClient.update(updateRequest, ProcessOverviewDto.class);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       final String errorMessage =
           String.format("There was a problem while updating the process: [%s].", overviewDto);
-      log.error(errorMessage, e);
+      LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
   }
@@ -116,12 +116,12 @@ public class ProcessOverviewRepositoryES implements ProcessOverviewRepository {
                       .refresh(Refresh.True)
                       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT));
       esClient.update(updateRequest, ProcessDigestDto.class);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       final String errorMessage =
           String.format(
               "There was a problem while updating the digest results for process with key: [%s] and digest results: %s.",
               processDefKey, processDigestDto.getKpiReportResults());
-      log.error(errorMessage, e);
+      LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
   }
@@ -146,18 +146,18 @@ public class ProcessOverviewRepositoryES implements ProcessOverviewRepository {
                       .refresh(Refresh.True)
                       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT));
       esClient.update(updateRequestBuilder, ProcessOverviewDto.class);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       final String errorMessage =
           String.format(
               "There was a problem while updating the owner for process with key: [%s] and owner ID: %s.",
               processDefinitionKey, ownerId);
-      log.error(errorMessage, e);
+      LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
   }
 
   @Override
-  public void updateKpisForProcessDefinitions(List<ProcessOverviewDto> processOverviewDtos) {
+  public void updateKpisForProcessDefinitions(final List<ProcessOverviewDto> processOverviewDtos) {
     final BulkRequest bulkRequest =
         processOverviewDtos.isEmpty()
             ? null
@@ -199,12 +199,12 @@ public class ProcessOverviewRepositoryES implements ProcessOverviewRepository {
           OptimizeDeleteRequestBuilderES.of(
               d ->
                   d.optimizeIndex(esClient, PROCESS_OVERVIEW_INDEX_NAME).id(processDefinitionKey)));
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String errorMessage =
           String.format(
               "There was a problem while deleting process owner entry for %s",
               processDefinitionKey);
-      log.error(errorMessage, e);
+      LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
   }

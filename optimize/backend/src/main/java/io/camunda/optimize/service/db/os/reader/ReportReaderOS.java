@@ -65,7 +65,7 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class ReportReaderOS implements ReportReader {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ReportReaderOS.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ReportReaderOS.class);
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
 
@@ -77,7 +77,7 @@ public class ReportReaderOS implements ReportReader {
 
   @Override
   public Optional<ReportDefinitionDto> getReport(final String reportId) {
-    log.debug("Fetching report with id [{}]", reportId);
+    LOG.debug("Fetching report with id [{}]", reportId);
     final MgetResponse<ReportDefinitionDto> multiGetItemResponses =
         performMultiGetReportRequest(reportId);
 
@@ -99,7 +99,7 @@ public class ReportReaderOS implements ReportReader {
   @Override
   public Optional<SingleProcessReportDefinitionRequestDto> getSingleProcessReportOmitXml(
       final String reportId) {
-    log.debug("Fetching single process report with id [{}]", reportId);
+    LOG.debug("Fetching single process report with id [{}]", reportId);
     final GetRequest.Builder getRequest =
         getGetRequestOmitXml(SINGLE_PROCESS_REPORT_INDEX_NAME, reportId);
 
@@ -119,7 +119,7 @@ public class ReportReaderOS implements ReportReader {
   @Override
   public Optional<SingleDecisionReportDefinitionRequestDto> getSingleDecisionReportOmitXml(
       final String reportId) {
-    log.debug("Fetching single decision report with id [{}]", reportId);
+    LOG.debug("Fetching single decision report with id [{}]", reportId);
     final GetRequest.Builder getRequest =
         getGetRequestOmitXml(SINGLE_DECISION_REPORT_INDEX_NAME, reportId);
 
@@ -139,10 +139,10 @@ public class ReportReaderOS implements ReportReader {
   @Override
   public List<ReportDefinitionDto> getAllReportsForIdsOmitXml(final List<String> reportIds) {
     if (reportIds.isEmpty()) {
-      log.debug("No report IDs supplied so no reports to fetch");
+      LOG.debug("No report IDs supplied so no reports to fetch");
       return Collections.emptyList();
     }
-    log.debug("Fetching all report definitions for Ids {}", reportIds);
+    LOG.debug("Fetching all report definitions for Ids {}", reportIds);
     final String[] reportIdsAsArray = reportIds.toArray(new String[0]);
     final Query reportIdsQuery = QueryDSL.ids(reportIdsAsArray);
 
@@ -163,7 +163,7 @@ public class ReportReaderOS implements ReportReader {
     } catch (final IOException e) {
       final String reason =
           String.format("Was not able to fetch all reports definitions for ids [%s]", reportIds);
-      log.error(reason, e);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
     return OpensearchReaderUtil.extractAggregatedResponseValues(searchResponse);
@@ -184,7 +184,7 @@ public class ReportReaderOS implements ReportReader {
 
   @Override
   public List<ReportDefinitionDto> getAllPrivateReportsOmitXml() {
-    log.debug("Fetching all available private reports");
+    LOG.debug("Fetching all available private reports");
 
     final Query privateReportsQuery =
         new BoolQuery.Builder()
@@ -210,7 +210,7 @@ public class ReportReaderOS implements ReportReader {
       searchResponse = osClient.retrieveAllScrollResults(searchRequest, ReportDefinitionDto.class);
     } catch (final IOException e) {
       final String reason = "Was not able to fetch all private reports";
-      log.error(reason, e);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
     return OpensearchReaderUtil.extractAggregatedResponseValues(searchResponse);
@@ -224,7 +224,7 @@ public class ReportReaderOS implements ReportReader {
   @Override
   public List<SingleProcessReportDefinitionRequestDto> getAllSingleProcessReportsForIdsOmitXml(
       final List<String> reportIds) {
-    log.debug("Fetching all available single process reports for IDs [{}]", reportIds);
+    LOG.debug("Fetching all available single process reports for IDs [{}]", reportIds);
     final String[] indices = new String[] {SINGLE_PROCESS_REPORT_INDEX_NAME};
     return getReportDefinitionDtos(reportIds, indices);
   }
@@ -278,7 +278,7 @@ public class ReportReaderOS implements ReportReader {
 
   private List<ReportDefinitionDto> getAllProcessReportsForDefinitionKeyOmitXml(
       final String definitionKey) {
-    log.debug(
+    LOG.debug(
         "Fetching all available process reports for process definition key {}", definitionKey);
 
     final Query processReportQuery =
@@ -315,7 +315,7 @@ public class ReportReaderOS implements ReportReader {
       final String reason =
           String.format(
               "Was not able to fetch all process reports for definition key [%s]", definitionKey);
-      log.error(reason, e);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
     return OpensearchReaderUtil.extractAggregatedResponseValues(searchResponse);
@@ -323,7 +323,7 @@ public class ReportReaderOS implements ReportReader {
 
   private List<CombinedReportDefinitionRequestDto> getCombinedReportsForSimpleReports(
       final List<String> simpleReportIds) {
-    log.debug("Fetching first combined reports using simpleReports with ids {}", simpleReportIds);
+    LOG.debug("Fetching first combined reports using simpleReports with ids {}", simpleReportIds);
 
     final Query inner =
         new NestedQuery.Builder()
@@ -361,7 +361,7 @@ public class ReportReaderOS implements ReportReader {
 
   private List<ReportDefinitionDto> getReportsForCollection(
       final String collectionId, final boolean includeXml) {
-    log.debug("Fetching reports using collection with id {}", collectionId);
+    LOG.debug("Fetching reports using collection with id {}", collectionId);
 
     final Query reportByCollectionQuery =
         new BoolQuery.Builder()

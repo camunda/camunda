@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.dto.optimize;
 
-public class ProcessInstanceConstants {
+public final class ProcessInstanceConstants {
 
   public static final String ACTIVE_STATE = "ACTIVE";
   public static final String SUSPENDED_STATE = "SUSPENDED";
@@ -15,5 +15,6 @@ public class ProcessInstanceConstants {
   public static final String EXTERNALLY_TERMINATED_STATE = "EXTERNALLY_TERMINATED";
   public static final String INTERNALLY_TERMINATED_STATE = "INTERNALLY_TERMINATED";
 
-  private ProcessInstanceConstants() {}
+  private ProcessInstanceConstants() {
+  }
 }

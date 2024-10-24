@@ -20,7 +20,7 @@ import org.slf4j.Logger;
 @Provider
 public class ForbiddenExceptionMapper implements ExceptionMapper<ForbiddenException> {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ForbiddenExceptionMapper.class);
   private static final String FORBIDDEN_ERROR_CODE = "forbiddenError";
   private final LocalizationService localizationService;
@@ -31,7 +31,7 @@ public class ForbiddenExceptionMapper implements ExceptionMapper<ForbiddenExcept
 
   @Override
   public Response toResponse(final ForbiddenException forbiddenException) {
-    log.info("Mapping ForbiddenException");
+    LOG.info("Mapping ForbiddenException");
 
     return Response.status(Response.Status.FORBIDDEN)
         .type(MediaType.APPLICATION_JSON_TYPE)

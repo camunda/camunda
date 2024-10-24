@@ -25,9 +25,10 @@ import static io.camunda.optimize.service.util.importing.ZeebeConstants.FLOW_NOD
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.text.StringSubstitutor;
 
-public class UserTaskDurationScriptUtil {
+public final class UserTaskDurationScriptUtil {
 
-  private UserTaskDurationScriptUtil() {}
+  private UserTaskDurationScriptUtil() {
+  }
 
   public static String createUpdateUserTaskMetricsScript() {
     final StringSubstitutor substitutor =

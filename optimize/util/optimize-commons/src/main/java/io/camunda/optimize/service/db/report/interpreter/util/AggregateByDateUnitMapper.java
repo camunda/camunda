@@ -10,11 +10,12 @@ package io.camunda.optimize.service.db.report.interpreter.util;
 import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import java.time.temporal.ChronoUnit;
 
-public class AggregateByDateUnitMapper {
+public final class AggregateByDateUnitMapper {
 
   private static final String UNSUPPORTED_UNIT_STRING = "Unsupported unit: ";
 
-  private AggregateByDateUnitMapper() {}
+  private AggregateByDateUnitMapper() {
+  }
 
   public static ChronoUnit mapToChronoUnit(final AggregateByDateUnit unit) {
     switch (unit) {

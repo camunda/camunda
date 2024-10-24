@@ -52,6 +52,7 @@ public class BusinessKeyDto implements OptimizeDto {
         + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String processInstanceId = "processInstanceId";

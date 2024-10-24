@@ -19,7 +19,8 @@ public class WebhookConfiguration {
   private String defaultPayload;
   private ProxyConfiguration proxy;
 
-  public WebhookConfiguration() {}
+  public WebhookConfiguration() {
+  }
 
   public String getUrl() {
     return url;
@@ -109,8 +110,7 @@ public class WebhookConfiguration {
         notificationDto ->
             String.valueOf(notificationDto.getAlert().getCheckInterval().getValue())),
     ALERT_INTERVAL_UNIT(
-        notificationDto -> notificationDto.getAlert().getCheckInterval().getUnit().getId()),
-    ;
+        notificationDto -> notificationDto.getAlert().getCheckInterval().getUnit().getId());
 
     private static final String PLACEHOLDER_TEMPLATE = "{{%s}}";
 

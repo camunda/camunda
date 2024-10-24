@@ -62,7 +62,7 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 public abstract class DatabaseTestService {
 
   protected static final ObjectMapper OBJECT_MAPPER = createObjectMapper();
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DatabaseTestService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(DatabaseTestService.class);
   protected final String customIndexPrefix;
   protected boolean haveToClean;
   private TestIndexRepository testIndexRepository;
@@ -74,7 +74,7 @@ public abstract class DatabaseTestService {
 
   protected static ClientAndServer initMockServer(
       final DatabaseConnectionNodeConfiguration dbConfig) {
-    log.info(
+    LOG.info(
         "Setting up DB MockServer on port {}",
         IntegrationTestConfigurationUtil.getDatabaseMockServerPort());
     return MockServerUtil.createProxyMockServer(

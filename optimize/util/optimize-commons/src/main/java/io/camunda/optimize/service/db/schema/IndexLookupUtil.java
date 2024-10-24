@@ -64,20 +64,21 @@ import java.util.function.Function;
 
 public class IndexLookupUtil {
 
-  private static final Map<String, Function<String, IndexMappingCreator>> osIndexLookupMap =
+  private static final Map<String, Function<String, IndexMappingCreator>> OS_INDEX_LOOKUP_MAP =
       createOpensearchIndexFunctionLookupMap();
-  private static final Map<String, Function<String, IndexMappingCreator>> esIndexLookupMap =
+  private static final Map<String, Function<String, IndexMappingCreator>> ES_INDEX_LOOKUP_MAP =
       createElasticsearchIndexFunctionLookupMap();
 
   public static IndexMappingCreator convertIndexForDatabase(
       final IndexMappingCreator indexToConvert, final DatabaseType databaseType) {
     if (databaseType.equals(DatabaseType.ELASTICSEARCH)) {
-      if (osIndexLookupMap.containsKey(indexToConvert.getClass().getSimpleName())) {
+      if (OS_INDEX_LOOKUP_MAP.containsKey(indexToConvert.getClass().getSimpleName())) {
         // If the key exists in the OS lookup map, it does not need converting in this type
         return indexToConvert;
       } else {
         // otherwise we get the index from the ES lookup
-        return Optional.ofNullable(esIndexLookupMap.get(indexToConvert.getClass().getSimpleName()))
+        return Optional.ofNullable(
+                ES_INDEX_LOOKUP_MAP.get(indexToConvert.getClass().getSimpleName()))
             .map(indexName -> indexName.apply(getFunctionParameter(indexToConvert)))
             .orElseThrow(
                 () ->
@@ -86,12 +87,13 @@ public class IndexLookupUtil {
                             + indexToConvert.getClass().getSimpleName()));
       }
     } else if (databaseType.equals(DatabaseType.OPENSEARCH)) {
-      if (esIndexLookupMap.containsKey(indexToConvert.getClass().getSimpleName())) {
+      if (ES_INDEX_LOOKUP_MAP.containsKey(indexToConvert.getClass().getSimpleName())) {
         // If the key exists in the ES lookup map, it does not need converting in this type
         return indexToConvert;
       } else {
         // otherwise we get the index from the OS lookup
-        return Optional.ofNullable(osIndexLookupMap.get(indexToConvert.getClass().getSimpleName()))
+        return Optional.ofNullable(
+                OS_INDEX_LOOKUP_MAP.get(indexToConvert.getClass().getSimpleName()))
             .map(indexName -> indexName.apply(getFunctionParameter(indexToConvert)))
             .orElseThrow(
                 () ->
@@ -104,7 +106,7 @@ public class IndexLookupUtil {
   }
 
   private static Map<String, Function<String, IndexMappingCreator>>
-      createOpensearchIndexFunctionLookupMap() {
+  createOpensearchIndexFunctionLookupMap() {
     final Map<String, Function<String, IndexMappingCreator>> lookupMap = new HashMap<>();
     lookupMap.put(AlertIndexES.class.getSimpleName(), index -> new AlertIndexOS());
     lookupMap.put(BusinessKeyIndexES.class.getSimpleName(), index -> new BusinessKeyIndexOS());
@@ -155,7 +157,7 @@ public class IndexLookupUtil {
   }
 
   private static Map<String, Function<String, IndexMappingCreator>>
-      createElasticsearchIndexFunctionLookupMap() {
+  createElasticsearchIndexFunctionLookupMap() {
     final Map<String, Function<String, IndexMappingCreator>> lookupMap = new HashMap<>();
     // OpenSearch -> ElasticSearch Index lookup functions
     lookupMap.put(AlertIndexOS.class.getSimpleName(), index -> new AlertIndexES());

@@ -106,7 +106,7 @@ public class DateAggregationServiceOS extends DateAggregationService {
     final Pair<String, Aggregation> agg =
         AggregateByDateUnit.AUTOMATIC.equals(context.getAggregateByDateUnit())
             ? createAutomaticIntervalAggregationOrFallbackToMonth(
-                context, this::createFilterLimitedModelElementDateHistogramWithSubAggregation)
+            context, this::createFilterLimitedModelElementDateHistogramWithSubAggregation)
             : createFilterLimitedModelElementDateHistogramWithSubAggregation(context);
 
     return Optional.of(agg);
@@ -393,7 +393,7 @@ public class DateAggregationServiceOS extends DateAggregationService {
       final List<DateFilterDataDto<?>> dateFilters =
           context.isStartDateAggregation()
               ? queryFilterEnhancer.extractInstanceFilters(
-                  context.getProcessFilters(), InstanceStartDateFilterDto.class)
+              context.getProcessFilters(), InstanceStartDateFilterDto.class)
               : queryFilterEnhancer.extractInstanceFilters(
                   context.getProcessFilters(), InstanceEndDateFilterDto.class);
       if (!dateFilters.isEmpty()) {
@@ -419,31 +419,32 @@ public class DateAggregationServiceOS extends DateAggregationService {
             // if custom end filters and no startDateFilters are present, limit based on them
             !endDateFilters.isEmpty() && startDateFilters.isEmpty()
                 ? createFilterBoolQueryBuilder(
-                    endDateFilters,
-                    queryFilterEnhancer.getInstanceEndDateQueryFilter(),
-                    context.getFilterContext())
+                endDateFilters,
+                queryFilterEnhancer.getInstanceEndDateQueryFilter(),
+                context.getFilterContext())
                 : createFilterBoolQueryBuilder(
                     startDateFilters,
                     queryFilterEnhancer.getInstanceStartDateQueryFilter(),
                     context.getFilterContext())
             :
-            // if custom start filters and no endDateFilters are present, limit based on them
-            endDateFilters.isEmpty() && !startDateFilters.isEmpty()
-                ? createFilterBoolQueryBuilder(
+                // if custom start filters and no endDateFilters are present, limit based on them
+                endDateFilters.isEmpty() && !startDateFilters.isEmpty()
+                    ? createFilterBoolQueryBuilder(
                     startDateFilters,
                     queryFilterEnhancer.getInstanceStartDateQueryFilter(),
                     context.getFilterContext())
-                : createFilterBoolQueryBuilder(
-                    endDateFilters,
-                    queryFilterEnhancer.getInstanceEndDateQueryFilter(),
-                    context.getFilterContext());
+                    : createFilterBoolQueryBuilder(
+                        endDateFilters,
+                        queryFilterEnhancer.getInstanceEndDateQueryFilter(),
+                        context.getFilterContext());
     return filter(limitFilterQueries);
   }
 
   private Pair<String, Aggregation> createFilterLimitedModelElementDateHistogramWithSubAggregation(
       final DateAggregationContextOS context) {
     final Pair<String, Aggregation> dateHistogramAggregation =
-        createDateHistogramAggregation(context, x -> {});
+        createDateHistogramAggregation(context, x -> {
+        });
     final Query limitFilterQuery =
         createModelElementDateHistogramLimitingFilterQueryFor(context, dateTimeFormatter);
     return wrapWithFilterLimitedParentAggregation(limitFilterQuery, dateHistogramAggregation);

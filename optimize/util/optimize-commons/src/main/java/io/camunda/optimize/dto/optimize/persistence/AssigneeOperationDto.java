@@ -20,7 +20,7 @@ public class AssigneeOperationDto implements OptimizeDto, Serializable {
   private OffsetDateTime timestamp;
 
   public AssigneeOperationDto(
-      String id, String userId, String operationType, OffsetDateTime timestamp) {
+      final String id, final String userId, final String operationType, final OffsetDateTime timestamp) {
     this.id = id;
     this.userId = userId;
     this.operationType = operationType;
@@ -45,19 +45,19 @@ public class AssigneeOperationDto implements OptimizeDto, Serializable {
     return this.timestamp;
   }
 
-  public void setId(String id) {
+  public void setId(final String id) {
     this.id = id;
   }
 
-  public void setUserId(String userId) {
+  public void setUserId(final String userId) {
     this.userId = userId;
   }
 
-  public void setOperationType(String operationType) {
+  public void setOperationType(final String operationType) {
     this.operationType = operationType;
   }
 
-  public void setTimestamp(OffsetDateTime timestamp) {
+  public void setTimestamp(final OffsetDateTime timestamp) {
     this.timestamp = timestamp;
   }
 
@@ -85,6 +85,7 @@ public class AssigneeOperationDto implements OptimizeDto, Serializable {
     return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String id = "id";

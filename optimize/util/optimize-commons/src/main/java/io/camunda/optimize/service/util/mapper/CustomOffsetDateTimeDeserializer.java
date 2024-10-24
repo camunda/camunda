@@ -43,7 +43,7 @@ public class CustomOffsetDateTimeDeserializer extends JsonDeserializer<OffsetDat
       } else {
         return ((LocalDateTime) parsedTemporal).atZone(ZoneId.systemDefault()).toOffsetDateTime();
       }
-    } catch (DateTimeParseException exception) {
+    } catch (final DateTimeParseException exception) {
       // If the offset is a 'Z', we can handle it using a backup `X` pattern rather than failing
       return ZonedDateTime.parse(
               parser.getText(),

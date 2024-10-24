@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.service.util;
 
-public class RoundingUtil {
+public final class RoundingUtil {
 
   private RoundingUtil() {}
 

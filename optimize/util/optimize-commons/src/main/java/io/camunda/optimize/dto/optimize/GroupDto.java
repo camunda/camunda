@@ -70,6 +70,7 @@ public class GroupDto extends IdentityWithMetadataResponseDto {
     return "GroupDto(super=" + super.toString() + ", memberCount=" + getMemberCount() + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String memberCount = "memberCount";

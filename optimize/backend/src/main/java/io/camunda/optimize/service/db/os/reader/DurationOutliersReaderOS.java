@@ -86,7 +86,7 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class DurationOutliersReaderOS implements DurationOutliersReader {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(DurationOutliersReaderOS.class);
 
   private final OptimizeOpenSearchClient osClient;
@@ -145,11 +145,11 @@ public class DurationOutliersReaderOS implements DurationOutliersReader {
     try {
       search = osClient.searchUnsafe(searchRequest, DurationChartEntryDto.class);
     } catch (final IOException e) {
-      log.warn("Couldn't retrieve duration chart");
+      LOG.warn("Couldn't retrieve duration chart");
       throw new OptimizeRuntimeException(e.getMessage(), e);
     } catch (final OpenSearchException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
-        log.info(
+        LOG.info(
             "Was not able to evaluate count by duration chart because instance index with alias {} does not exist. "
                 + "Returning empty list.",
             LogUtil.sanitizeLogMessage(
@@ -279,11 +279,11 @@ public class DurationOutliersReaderOS implements DurationOutliersReader {
       searchResponse = osClient.searchUnsafe(searchRequest, Object.class);
     } catch (final IOException e) {
       final String reason = "Could not fetch data to generate Outlier Analysis Heatmap";
-      log.error(reason, e);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     } catch (final OpenSearchException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
-        log.info(
+        LOG.info(
             "Was not able to get Flow Node outlier map because instance index with alias {} does not exist. "
                 + "Returning empty results.",
             LogUtil.sanitizeLogMessage(
@@ -368,11 +368,11 @@ public class DurationOutliersReaderOS implements DurationOutliersReader {
           totalProcessInstanceCount);
 
     } catch (final IOException e) {
-      log.warn("Couldn't determine significant outlier variable terms.");
+      LOG.warn("Couldn't determine significant outlier variable terms.");
       throw new OptimizeRuntimeException(e.getMessage(), e);
     } catch (final OpenSearchException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
-        log.info(
+        LOG.info(
             "Was not able to determine significant outlier variable terms because instance index with name {} does not "
                 + "exist. Returning empty list.",
             LogUtil.sanitizeLogMessage(
@@ -442,8 +442,8 @@ public class DurationOutliersReaderOS implements DurationOutliersReader {
                         s ->
                             s.time(
                                 configurationService
-                                        .getOpenSearchConfiguration()
-                                        .getScrollTimeoutInSeconds()
+                                    .getOpenSearchConfiguration()
+                                    .getScrollTimeoutInSeconds()
                                     + "s")));
 
     try {
@@ -456,7 +456,7 @@ public class DurationOutliersReaderOS implements DurationOutliersReader {
       throw new OptimizeRuntimeException("Could not obtain outlier instance ids.", e);
     } catch (final OpenSearchException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
-        log.info(
+        LOG.info(
             "Was not able to obtain outlier instance IDs because instance index with name {} does not exist. "
                 + "Returning empty list.",
             LogUtil.sanitizeLogMessage(
@@ -815,7 +815,7 @@ public class DurationOutliersReaderOS implements DurationOutliersReader {
       throw new OptimizeRuntimeException(e.getMessage(), e);
     } catch (final OpenSearchException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
-        log.info(
+        LOG.info(
             "Was not able to retrieve flownode outlier map because instance index with alias {} does not exist. "
                 + "Returning empty map.",
             LogUtil.sanitizeLogMessage(
@@ -843,7 +843,7 @@ public class DurationOutliersReaderOS implements DurationOutliersReader {
 
                   if (stats.stdDeviation() != 0.0D
                       && allFlowNodeFilterAggs.get(getFilteredFlowNodeAggregationName(flowNodeId))
-                          != null) {
+                      != null) {
                     final Aggregate flowNodeFilterAgg =
                         allFlowNodeFilterAggs.get(getFilteredFlowNodeAggregationName(flowNodeId));
                     final Aggregate lowerOutlierFilterAgg =
@@ -932,7 +932,7 @@ public class DurationOutliersReaderOS implements DurationOutliersReader {
       throw new OptimizeRuntimeException(e.getMessage(), e);
     } catch (final OpenSearchException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
-        log.info(
+        LOG.info(
             "Was not able to determine interval because instance index {} does not exist. Returning 0.",
             LogUtil.sanitizeLogMessage(getProcessInstanceIndexAliasName(processDefinitionKey)));
         return 0L;

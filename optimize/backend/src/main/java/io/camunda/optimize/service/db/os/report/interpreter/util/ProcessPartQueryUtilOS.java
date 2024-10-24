@@ -37,9 +37,10 @@ import org.opensearch.client.opensearch._types.aggregations.ScriptedMetricAggreg
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.ChildScoreMode;
 
-public class ProcessPartQueryUtilOS extends AbstractProcessPartQueryUtil {
+public final class ProcessPartQueryUtilOS extends AbstractProcessPartQueryUtil {
 
-  private ProcessPartQueryUtilOS() {}
+  private ProcessPartQueryUtilOS() {
+  }
 
   public static Double getProcessPartAggregationResult(
       final Map<String, Aggregate> aggs, final AggregationDto aggregationType) {
@@ -48,7 +49,7 @@ public class ProcessPartQueryUtilOS extends AbstractProcessPartQueryUtil {
         nested.aggregations().get(getScriptAggregationName(aggregationType)).scriptedMetric();
     try {
       return scriptedMetric.value().to(Double.class);
-    } catch (IllegalStateException i) {
+    } catch (final IllegalStateException i) {
       return NO_DATA_AVAILABLE_RESULT;
     }
   }
@@ -99,7 +100,7 @@ public class ProcessPartQueryUtilOS extends AbstractProcessPartQueryUtil {
                     Pair.of(getScriptAggregationName(aggDto), buildScriptedMetricAgg.apply(aggDto)))
             .collect(MapUtil.pairCollector());
 
-    Aggregation nestedFlowNodeAggregation =
+    final Aggregation nestedFlowNodeAggregation =
         new Aggregation.Builder()
             .nested(n -> n.path(ProcessInstanceIndex.FLOW_NODE_INSTANCES))
             .aggregations(aggregations)

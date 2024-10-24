@@ -27,9 +27,10 @@ import io.camunda.optimize.upgrade.os.SchemaUpgradeClientOS;
 import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import jakarta.ws.rs.NotSupportedException;
 
-public class SchemaUpgradeClientFactory {
+public final class SchemaUpgradeClientFactory {
 
-  private SchemaUpgradeClientFactory() {}
+  private SchemaUpgradeClientFactory() {
+  }
 
   public static SchemaUpgradeClient<?, ?> createSchemaUpgradeClient(
       final UpgradeExecutionDependencies upgradeDependencies) {
@@ -38,7 +39,7 @@ public class SchemaUpgradeClientFactory {
           (OptimizeElasticsearchClient) upgradeDependencies.databaseClient();
       final ElasticSearchMetadataService metadataService =
           (ElasticSearchMetadataService) upgradeDependencies.metadataService();
-      MappingMetadataUtilES mappingUtil = new MappingMetadataUtilES(esClient);
+      final MappingMetadataUtilES mappingUtil = new MappingMetadataUtilES(esClient);
       return new SchemaUpgradeClientES(
           new ElasticSearchSchemaManager(
               metadataService,
@@ -48,8 +49,8 @@ public class SchemaUpgradeClientFactory {
           metadataService,
           esClient,
           new ObjectMapperFactory(
-                  new OptimizeDateTimeFormatterFactory().getObject(),
-                  upgradeDependencies.configurationService())
+              new OptimizeDateTimeFormatterFactory().getObject(),
+              upgradeDependencies.configurationService())
               .createOptimizeMapper());
     } else if (upgradeDependencies.databaseType().equals(DatabaseType.OPENSEARCH)) {
       final OptimizeOpenSearchClient osClient =
@@ -66,8 +67,8 @@ public class SchemaUpgradeClientFactory {
           metadataService,
           osClient,
           new ObjectMapperFactory(
-                  new OptimizeDateTimeFormatterFactory().getObject(),
-                  upgradeDependencies.configurationService())
+              new OptimizeDateTimeFormatterFactory().getObject(),
+              upgradeDependencies.configurationService())
               .createOptimizeMapper());
     } else {
       throw new NotSupportedException(
@@ -83,21 +84,21 @@ public class SchemaUpgradeClientFactory {
       final ConfigurationService configurationService,
       final DatabaseClient dbClient) {
 
-    if (dbClient instanceof OptimizeElasticsearchClient esClient) {
+    if (dbClient instanceof final OptimizeElasticsearchClient esClient) {
       return new SchemaUpgradeClientES(
           (ElasticSearchSchemaManager) schemaManager,
           (ElasticSearchMetadataService) metadataService,
           esClient,
           new ObjectMapperFactory(
-                  new OptimizeDateTimeFormatterFactory().getObject(), configurationService)
+              new OptimizeDateTimeFormatterFactory().getObject(), configurationService)
               .createOptimizeMapper());
-    } else if (dbClient instanceof OptimizeOpenSearchClient osClient) {
+    } else if (dbClient instanceof final OptimizeOpenSearchClient osClient) {
       return new SchemaUpgradeClientOS(
           (OpenSearchSchemaManager) schemaManager,
           (OpenSearchMetadataService) metadataService,
           osClient,
           new ObjectMapperFactory(
-                  new OptimizeDateTimeFormatterFactory().getObject(), configurationService)
+              new OptimizeDateTimeFormatterFactory().getObject(), configurationService)
               .createOptimizeMapper());
     } else {
       throw new NotSupportedException(

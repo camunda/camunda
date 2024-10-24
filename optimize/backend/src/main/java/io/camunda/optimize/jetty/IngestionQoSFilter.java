@@ -41,7 +41,7 @@ public class IngestionQoSFilter implements Filter {
 
   public static final String RETRY_AFTER_SECONDS = "5";
   private static final String TOO_MANY_REQUESTS = "Too many requests";
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(IngestionQoSFilter.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(IngestionQoSFilter.class);
   private final long waitMs = 50;
   private final long suspendMs = 500;
   private int maxRequests = 10;
@@ -49,6 +49,10 @@ public class IngestionQoSFilter implements Filter {
   private Queue<AsyncContext>[] queues;
   private AsyncListener[] listeners;
   private final Callable<Integer> maxRequestCountProvider;
+  private final String suspended =
+      "IngestionQoSFilter@" + Integer.toHexString(hashCode()) + ".SUSPENDED";
+  private final String resumed =
+      "IngestionQoSFilter@" + Integer.toHexString(hashCode()) + ".RESUMED";
 
   public IngestionQoSFilter(final Callable<Integer> maxRequestCountProvider) {
     this.maxRequestCountProvider = maxRequestCountProvider;
@@ -84,7 +88,7 @@ public class IngestionQoSFilter implements Filter {
         accepted = passes.tryAcquire(waitMs, TimeUnit.MILLISECONDS);
         if (accepted) {
           request.setAttribute(this.suspended, Boolean.FALSE);
-          log.debug("Accepted {}", request);
+          LOG.debug("Accepted {}", request);
         } else {
           request.setAttribute(this.suspended, Boolean.TRUE);
           final int priority = getPriority(request);
@@ -105,7 +109,7 @@ public class IngestionQoSFilter implements Filter {
           }
 
           queues[priority].add(asyncContext);
-          log.debug("Suspended {}", request);
+          LOG.debug("Suspended {}", request);
           return;
         }
       } else {
@@ -115,24 +119,24 @@ public class IngestionQoSFilter implements Filter {
           if (Boolean.TRUE.equals(resumed)) {
             passes.acquire();
             accepted = true;
-            log.debug("Resumed {}", request);
+            LOG.debug("Resumed {}", request);
           } else {
             // Timeout! try 1 more time.
             accepted = passes.tryAcquire(waitMs, TimeUnit.MILLISECONDS);
-            log.debug("Timeout {}", request);
+            LOG.debug("Timeout {}", request);
           }
         } else {
           // Pass through resume of previously accepted request.
           passes.acquire();
           accepted = true;
-          log.debug("Passthrough {}", request);
+          LOG.debug("Passthrough {}", request);
         }
       }
 
       if (accepted) {
         chain.doFilter(request, response);
       } else {
-        log.debug("Rejected {}", request);
+        LOG.debug("Rejected {}", request);
         sendErrorResponse(response);
       }
     } catch (final InterruptedException e) {
@@ -152,7 +156,7 @@ public class IngestionQoSFilter implements Filter {
                 asyncContext.dispatch();
                 break;
               } catch (final IllegalStateException x) {
-                log.warn(x.getMessage());
+                LOG.warn(x.getMessage());
                 continue;
               }
             }
@@ -163,7 +167,8 @@ public class IngestionQoSFilter implements Filter {
   }
 
   @Override
-  public void destroy() {}
+  public void destroy() {
+  }
 
   private int getPriority(final ServletRequest request) {
     // We use the default prioritization for requests, as per the Jetty QoSFilter
@@ -180,11 +185,8 @@ public class IngestionQoSFilter implements Filter {
     }
   }
 
-  private final String suspended =
-      "IngestionQoSFilter@" + Integer.toHexString(hashCode()) + ".SUSPENDED";
-
   private void setMaxRequests(final int value) {
-    log.info("setting the max number of ingestion requests to {}", value);
+    LOG.info("setting the max number of ingestion requests to {}", value);
     passes = new Semaphore((value - maxRequests + passes.availablePermits()), true);
     maxRequests = value;
   }
@@ -251,7 +253,8 @@ public class IngestionQoSFilter implements Filter {
     }
 
     @Override
-    public void onComplete(final AsyncEvent event) throws IOException {}
+    public void onComplete(final AsyncEvent event) throws IOException {
+    }
 
     @Override
     public void onTimeout(final AsyncEvent event) throws IOException {
@@ -264,12 +267,11 @@ public class IngestionQoSFilter implements Filter {
     }
 
     @Override
-    public void onError(final AsyncEvent event) throws IOException {}
+    public void onError(final AsyncEvent event) throws IOException {
+    }
 
     @Override
-    public void onStartAsync(final AsyncEvent event) throws IOException {}
+    public void onStartAsync(final AsyncEvent event) throws IOException {
+    }
   }
-
-  private final String resumed =
-      "IngestionQoSFilter@" + Integer.toHexString(hashCode()) + ".RESUMED";
 }

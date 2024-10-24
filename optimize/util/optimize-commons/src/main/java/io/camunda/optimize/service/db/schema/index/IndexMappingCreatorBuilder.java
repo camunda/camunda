@@ -21,23 +21,23 @@ public enum IndexMappingCreatorBuilder {
   PROCESS_INSTANCE_INDEX(ProcessInstanceIndexES::new, ProcessInstanceIndexOS::new);
 
   private final Function<
-          String,
-          IndexMappingCreator<co.elastic.clients.elasticsearch.indices.IndexSettings.Builder>>
+      String,
+      IndexMappingCreator<co.elastic.clients.elasticsearch.indices.IndexSettings.Builder>>
       elasticsearch;
   private final Function<String, IndexMappingCreator<IndexSettings.Builder>> opensearch;
 
   private IndexMappingCreatorBuilder(
-      Function<String, IndexMappingCreator<Builder>> elasticsearch,
-      Function<String, IndexMappingCreator<IndexSettings.Builder>> opensearch) {
+      final Function<String, IndexMappingCreator<Builder>> elasticsearch,
+      final Function<String, IndexMappingCreator<IndexSettings.Builder>> opensearch) {
     this.elasticsearch = elasticsearch;
     this.opensearch = opensearch;
   }
 
   public Function<String, IndexMappingCreator<Builder>> getElasticsearch() {
-    return this.elasticsearch;
+    return elasticsearch;
   }
 
   public Function<String, IndexMappingCreator<IndexSettings.Builder>> getOpensearch() {
-    return this.opensearch;
+    return opensearch;
   }
 }

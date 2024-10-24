@@ -37,11 +37,11 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class ProcessRepositoryES implements ProcessRepository {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ProcessRepositoryES.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ProcessRepositoryES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-  public ProcessRepositoryES(OptimizeElasticsearchClient esClient, ObjectMapper objectMapper) {
+  public ProcessRepositoryES(final OptimizeElasticsearchClient esClient, final ObjectMapper objectMapper) {
     this.esClient = esClient;
     this.objectMapper = objectMapper;
   }
@@ -49,24 +49,24 @@ public class ProcessRepositoryES implements ProcessRepository {
   @Override
   public Map<String, ProcessOverviewDto> getProcessOverviewsByKey(
       final Set<String> processDefinitionKeys) {
-    log.debug("Fetching process overviews for [{}] processes", processDefinitionKeys.size());
+    LOG.debug("Fetching process overviews for [{}] processes", processDefinitionKeys.size());
     if (processDefinitionKeys.isEmpty()) {
       return Collections.emptyMap();
     }
 
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         OptimizeSearchRequestBuilderES.of(
             b ->
                 b.optimizeIndex(esClient, PROCESS_OVERVIEW_INDEX_NAME)
                     .query(q -> q.ids(i -> i.values(processDefinitionKeys.stream().toList()))));
-    SearchResponse<ProcessOverviewDto> searchResponse;
+    final SearchResponse<ProcessOverviewDto> searchResponse;
     try {
       searchResponse = esClient.search(searchRequest, ProcessOverviewDto.class);
-    } catch (IOException e) {
-      String reason =
+    } catch (final IOException e) {
+      final String reason =
           String.format(
               "Was not able to fetch overviews for processes [%s].", processDefinitionKeys);
-      log.error(reason, e);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
@@ -79,9 +79,9 @@ public class ProcessRepositoryES implements ProcessRepository {
 
   @Override
   public Map<String, ProcessDigestResponseDto> getAllActiveProcessDigestsByKey() {
-    log.debug("Fetching all available process overviews.");
+    LOG.debug("Fetching all available process overviews.");
 
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         OptimizeSearchRequestBuilderES.of(
             b ->
                 b.optimizeIndex(esClient, PROCESS_OVERVIEW_INDEX_NAME)
@@ -95,12 +95,12 @@ public class ProcessRepositoryES implements ProcessRepository {
                                                 t -> t.field(DIGEST + "." + ENABLED).value(true)))))
                     .size(LIST_FETCH_LIMIT));
 
-    SearchResponse<ProcessOverviewDto> searchResponse;
+    final SearchResponse<ProcessOverviewDto> searchResponse;
     try {
       searchResponse = esClient.search(searchRequest, ProcessOverviewDto.class);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String reason = "Was not able to fetch process overviews.";
-      log.error(reason, e);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
@@ -114,9 +114,9 @@ public class ProcessRepositoryES implements ProcessRepository {
 
   @Override
   public Map<String, ProcessOverviewDto> getProcessOverviewsWithPendingOwnershipData() {
-    log.debug("Fetching pending process overviews");
+    LOG.debug("Fetching pending process overviews");
 
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         OptimizeSearchRequestBuilderES.of(
             b ->
                 b.optimizeIndex(esClient, PROCESS_OVERVIEW_INDEX_NAME)
@@ -127,12 +127,12 @@ public class ProcessRepositoryES implements ProcessRepository {
                                     p.field(ProcessOverviewDto.Fields.processDefinitionKey)
                                         .value("pendingauthcheck"))));
 
-    SearchResponse<ProcessOverviewDto> searchResponse;
+    final SearchResponse<ProcessOverviewDto> searchResponse;
     try {
       searchResponse = esClient.search(searchRequest, ProcessOverviewDto.class);
-    } catch (IOException e) {
-      String reason = "Was not able to fetch pending processes";
-      log.error(reason, e);
+    } catch (final IOException e) {
+      final String reason = "Was not able to fetch pending processes";
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 

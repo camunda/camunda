@@ -40,7 +40,7 @@ public class BackupServiceIT extends AbstractCCSMIT {
                     ::getOptimizeIndexAliasForIndex)
             .toArray(String[]::new));
 
-    DatabaseBackup databaseBackup = new DatabaseBackup();
+    final DatabaseBackup databaseBackup = new DatabaseBackup();
     databaseBackup.setSnapshotRepositoryName(VALID_REPOSITORY_NAME);
     embeddedOptimizeExtension
         .getConfigurationService()

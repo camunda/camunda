@@ -7,9 +7,10 @@
  */
 package io.camunda.optimize.rest.queryparam;
 
-public class QueryParamUtil {
+public final class QueryParamUtil {
 
-  private QueryParamUtil() {}
+  private QueryParamUtil() {
+  }
 
   public static <T> T normalizeNullStringValue(final T nullableIn) {
     return "null".equals(nullableIn) ? null : nullableIn;

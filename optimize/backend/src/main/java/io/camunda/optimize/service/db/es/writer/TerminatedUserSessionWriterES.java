@@ -33,7 +33,7 @@ public class TerminatedUserSessionWriterES extends TerminatedUserSessionWriter {
   private final TaskRepositoryES taskRepositoryES;
 
   public TerminatedUserSessionWriterES(
-      OptimizeElasticsearchClient esClient, TaskRepositoryES taskRepositoryES) {
+      final OptimizeElasticsearchClient esClient, final TaskRepositoryES taskRepositoryES) {
     this.esClient = esClient;
     this.taskRepositoryES = taskRepositoryES;
   }
@@ -52,7 +52,7 @@ public class TerminatedUserSessionWriterES extends TerminatedUserSessionWriter {
 
   @Override
   protected void performDeleteTerminatedUserSessionOlderThan(final OffsetDateTime timestamp) {
-    Query filterQuery =
+    final Query filterQuery =
         Query.of(
             b ->
                 b.bool(

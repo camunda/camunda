@@ -10,7 +10,7 @@ package io.camunda.optimize.service.db.os.externalcode.client.dsl;
 import org.opensearch.client.opensearch._types.Time;
 
 public interface UnitDSL {
-  static Time seconds(long seconds) {
+  static Time seconds(final long seconds) {
     return new Time.Builder().time(seconds + "s").build();
   }
 }

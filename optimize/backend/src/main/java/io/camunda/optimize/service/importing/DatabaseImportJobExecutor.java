@@ -18,7 +18,7 @@ import org.slf4j.Logger;
 
 public class DatabaseImportJobExecutor {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(DatabaseImportJobExecutor.class);
   private final ConfigurationService configurationService;
   private final String name;
@@ -48,13 +48,13 @@ public class DatabaseImportJobExecutor {
       final boolean timeElapsedBeforeTermination =
           !importExecutor.awaitTermination(60L, TimeUnit.SECONDS);
       if (timeElapsedBeforeTermination) {
-        log.warn(
+        LOG.warn(
             "{}: Timeout during shutdown of import job executor! "
                 + "The current running jobs could not end within 60 seconds after shutdown operation.",
             getClass().getSimpleName());
       }
     } catch (final InterruptedException e) {
-      log.error(
+      LOG.error(
           "{}: Interrupted while shutting down the import job executor!",
           getClass().getSimpleName(),
           e);
@@ -62,7 +62,7 @@ public class DatabaseImportJobExecutor {
   }
 
   public void executeImportJob(final Runnable dbImportJob) {
-    log.debug(
+    LOG.debug(
         "{}: Currently active [{}] jobs and [{}] in queue of job type [{}]",
         getClass().getSimpleName(),
         importExecutor.getActiveCount(),
@@ -88,34 +88,39 @@ public class DatabaseImportJobExecutor {
     }
   }
 
-  /** Number of threads that should be used in the thread pool executor. */
+  /**
+   * Number of threads that should be used in the thread pool executor.
+   */
   protected int getExecutorThreadCount() {
     return configurationService.getJobExecutorThreadCount();
   }
 
-  /** Number of jobs that should be able to accumulate until new submission is blocked. */
+  /**
+   * Number of jobs that should be able to accumulate until new submission is blocked.
+   */
   protected int getMaxQueueSize() {
     return configurationService.getJobExecutorQueueSize();
   }
 
-  private static class BlockCallerUntilExecutorHasCapacity implements RejectedExecutionHandler {
+  private static final class BlockCallerUntilExecutorHasCapacity implements
+      RejectedExecutionHandler {
 
     @Override
     public void rejectedExecution(final Runnable runnable, final ThreadPoolExecutor executor) {
       // this will block if the queue is full
       if (!executor.isShutdown()) {
         try {
-          log.debug(
+          LOG.debug(
               "{}: Max queue capacity is reached and, thus, can't schedule any new jobs. "
                   + "Caller needs to wait until there is new free spot. Job class [{}].",
               super.getClass().getSimpleName(),
               runnable.getClass().getSimpleName());
           executor.getQueue().put(runnable);
-          log.debug(
+          LOG.debug(
               "{}: Added job to queue. Caller can continue working on his tasks.",
               super.getClass().getSimpleName());
         } catch (final InterruptedException e) {
-          log.error(
+          LOG.error(
               "{}: Interrupted while waiting to submit a new job to the job executor!",
               getClass().getSimpleName(),
               e);

@@ -9,9 +9,10 @@ package io.camunda.optimize.service.db.report.interpreter.util;
 
 import java.util.Optional;
 
-public class AggregationResultMappingUtil {
+public final class AggregationResultMappingUtil {
 
-  private AggregationResultMappingUtil() {}
+  private AggregationResultMappingUtil() {
+  }
 
   public static Double mapToDoubleOrNull(final Double value) {
     return Double.isInfinite(value) || Double.isNaN(value) ? null : value;

@@ -34,7 +34,7 @@ public class ConfigurationValidator {
   public static final String DOC_URL =
       "https://docs.camunda.io/optimize/next/self-managed/optimize-deployment/configuration/system-configuration/";
   private static final String[] DEFAULT_DELETED_CONFIG_LOCATIONS = {"deleted-config.yaml"};
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ConfigurationValidator.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ConfigurationValidator.class);
 
   private final Map<String, String> deletedConfigKeys;
 
@@ -64,7 +64,7 @@ public class ConfigurationValidator {
   }
 
   public static ConfigurationValidator createValidatorWithoutDeletions() {
-    return new ConfigurationValidator(new String[] {});
+    return new ConfigurationValidator(new String[]{});
   }
 
   private void validateNoDeletedConfigKeysUsed(final ReadContext configJsonContext) {
@@ -92,7 +92,7 @@ public class ConfigurationValidator {
             .peek(keyAndUrl -> keyAndUrl.setValue(DOC_URL))
             .peek(
                 keyAndUrl ->
-                    log.error(
+                    LOG.error(
                         "Deleted setting used with key {}, please see the updated documentation {}",
                         keyAndUrl.getKey(),
                         DOC_URL))
@@ -133,25 +133,25 @@ public class ConfigurationValidator {
       errorMsg =
           errorMsg
               + String.format(
-                  "The following webhooks are missing their payload configuration: %s.%n",
-                  webhooksWithoutPayload);
+              "The following webhooks are missing their payload configuration: %s.%n",
+              webhooksWithoutPayload);
     }
     if (!webhooksWithoutUrl.isEmpty()) {
       errorMsg =
           errorMsg
               + String.format(
-                  "The following webhooks are missing their URL configuration: %s.%n",
-                  webhooksWithoutUrl);
+              "The following webhooks are missing their URL configuration: %s.%n",
+              webhooksWithoutUrl);
     }
     if (!webhooksWithoutPlaceholder.isEmpty()) {
       errorMsg =
           errorMsg
               + String.format(
-                  "At least one alert placeholder [%s] must be used in the following webhooks: %s",
-                  Arrays.stream(WebhookConfiguration.Placeholder.values())
-                      .map(WebhookConfiguration.Placeholder::getPlaceholderString)
-                      .collect(Collectors.joining(", ")),
-                  webhooksWithoutPlaceholder);
+              "At least one alert placeholder [%s] must be used in the following webhooks: %s",
+              Arrays.stream(WebhookConfiguration.Placeholder.values())
+                  .map(WebhookConfiguration.Placeholder::getPlaceholderString)
+                  .collect(Collectors.joining(", ")),
+              webhooksWithoutPlaceholder);
     }
     if (!errorMsg.isEmpty()) {
       throw new OptimizeConfigurationException(errorMsg);

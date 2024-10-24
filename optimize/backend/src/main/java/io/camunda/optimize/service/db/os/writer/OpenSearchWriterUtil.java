@@ -23,13 +23,15 @@ import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.Script;
 import org.slf4j.Logger;
 
-public class OpenSearchWriterUtil {
+public final class OpenSearchWriterUtil {
 
-  public static final DateTimeFormatter dateTimeFormatter =
+  public static final DateTimeFormatter DATE_TIME_FORMATTER =
       DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(OpenSearchWriterUtil.class);
 
-  private OpenSearchWriterUtil() {}
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(OpenSearchWriterUtil.class);
+
+  private OpenSearchWriterUtil() {
+  }
 
   public static Script createFieldUpdateScript(
       final Set<String> fields, final Object entityDto, final ObjectMapper objectMapper) {
@@ -52,13 +54,14 @@ public class OpenSearchWriterUtil {
   public static Map<String, JsonData> createFieldUpdateScriptParams(
       final Set<String> fields, final Object entityDto, final ObjectMapper objectMapper) {
     final Map<String, Object> entityAsMap =
-        objectMapper.convertValue(entityDto, new TypeReference<>() {});
+        objectMapper.convertValue(entityDto, new TypeReference<>() {
+        });
     final Map<String, JsonData> params = new HashMap<>();
     for (final String fieldName : fields) {
       Object fieldValue = entityAsMap.get(fieldName);
       if (fieldValue != null) {
         if (fieldValue instanceof final TemporalAccessor temporalAccessor) {
-          fieldValue = dateTimeFormatter.format(temporalAccessor);
+          fieldValue = DATE_TIME_FORMATTER.format(temporalAccessor);
         }
         params.put(fieldName, JsonData.of(fieldValue));
       }

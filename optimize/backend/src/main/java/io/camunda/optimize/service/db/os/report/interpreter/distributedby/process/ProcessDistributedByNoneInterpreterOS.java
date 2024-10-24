@@ -35,7 +35,7 @@ public class ProcessDistributedByNoneInterpreterOS
 
   private final ProcessViewInterpreterFacadeOS viewInterpreter;
 
-  public ProcessDistributedByNoneInterpreterOS(ProcessViewInterpreterFacadeOS viewInterpreter) {
+  public ProcessDistributedByNoneInterpreterOS(final ProcessViewInterpreterFacadeOS viewInterpreter) {
     this.viewInterpreter = viewInterpreter;
   }
 

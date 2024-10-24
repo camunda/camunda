@@ -42,7 +42,8 @@ public class EngineConfiguration {
     this.authentication = authentication;
   }
 
-  protected EngineConfiguration() {}
+  protected EngineConfiguration() {
+  }
 
   @JsonIgnore
   public Optional<String> getDefaultTenantId() {
@@ -143,19 +144,19 @@ public class EngineConfiguration {
         + ")";
   }
 
-  private static DefaultTenant $default$defaultTenant() {
+  private static DefaultTenant defaultDefaultTenant() {
     return new DefaultTenant();
   }
 
-  private static boolean $default$importEnabled() {
+  private static boolean defaultImportEnabled() {
     return false;
   }
 
-  private static boolean $default$eventImportEnabled() {
+  private static boolean defaultEventImportEnabled() {
     return false;
   }
 
-  private static List<String> $default$excludedTenants() {
+  private static List<String> defaultExcludedTenants() {
     return new ArrayList<>();
   }
 
@@ -166,19 +167,20 @@ public class EngineConfiguration {
   public static class EngineConfigurationBuilder {
 
     private String name;
-    private DefaultTenant defaultTenant$value;
-    private boolean defaultTenant$set;
+    private DefaultTenant defaultTenantValue;
+    private boolean defaultTenantSet;
     private String rest;
     private EngineWebappsConfiguration webapps;
-    private boolean importEnabled$value;
-    private boolean importEnabled$set;
-    private boolean eventImportEnabled$value;
-    private boolean eventImportEnabled$set;
-    private List<String> excludedTenants$value;
-    private boolean excludedTenants$set;
+    private boolean importEnabledValue;
+    private boolean importEnabledSet;
+    private boolean eventImportEnabledValue;
+    private boolean eventImportEnabledSet;
+    private List<String> excludedTenantsValue;
+    private boolean excludedTenantsSet;
     private EngineAuthenticationConfiguration authentication;
 
-    EngineConfigurationBuilder() {}
+    EngineConfigurationBuilder() {
+    }
 
     public EngineConfigurationBuilder name(final String name) {
       this.name = name;
@@ -186,8 +188,8 @@ public class EngineConfiguration {
     }
 
     public EngineConfigurationBuilder defaultTenant(final DefaultTenant defaultTenant) {
-      defaultTenant$value = defaultTenant;
-      defaultTenant$set = true;
+      defaultTenantValue = defaultTenant;
+      defaultTenantSet = true;
       return this;
     }
 
@@ -202,20 +204,20 @@ public class EngineConfiguration {
     }
 
     public EngineConfigurationBuilder importEnabled(final boolean importEnabled) {
-      importEnabled$value = importEnabled;
-      importEnabled$set = true;
+      importEnabledValue = importEnabled;
+      importEnabledSet = true;
       return this;
     }
 
     public EngineConfigurationBuilder eventImportEnabled(final boolean eventImportEnabled) {
-      eventImportEnabled$value = eventImportEnabled;
-      eventImportEnabled$set = true;
+      eventImportEnabledValue = eventImportEnabled;
+      eventImportEnabledSet = true;
       return this;
     }
 
     public EngineConfigurationBuilder excludedTenants(final List<String> excludedTenants) {
-      excludedTenants$value = excludedTenants;
-      excludedTenants$set = true;
+      excludedTenantsValue = excludedTenants;
+      excludedTenantsSet = true;
       return this;
     }
 
@@ -226,30 +228,30 @@ public class EngineConfiguration {
     }
 
     public EngineConfiguration build() {
-      DefaultTenant defaultTenant$value = this.defaultTenant$value;
-      if (!defaultTenant$set) {
-        defaultTenant$value = EngineConfiguration.$default$defaultTenant();
+      DefaultTenant defaultTenantValue = this.defaultTenantValue;
+      if (!defaultTenantSet) {
+        defaultTenantValue = EngineConfiguration.defaultDefaultTenant();
       }
-      boolean importEnabled$value = this.importEnabled$value;
-      if (!importEnabled$set) {
-        importEnabled$value = EngineConfiguration.$default$importEnabled();
+      boolean importEnabledValue = this.importEnabledValue;
+      if (!importEnabledSet) {
+        importEnabledValue = EngineConfiguration.defaultImportEnabled();
       }
-      boolean eventImportEnabled$value = this.eventImportEnabled$value;
-      if (!eventImportEnabled$set) {
-        eventImportEnabled$value = EngineConfiguration.$default$eventImportEnabled();
+      boolean eventImportEnabledValue = this.eventImportEnabledValue;
+      if (!eventImportEnabledSet) {
+        eventImportEnabledValue = EngineConfiguration.defaultEventImportEnabled();
       }
-      List<String> excludedTenants$value = this.excludedTenants$value;
-      if (!excludedTenants$set) {
-        excludedTenants$value = EngineConfiguration.$default$excludedTenants();
+      List<String> excludedTenantsValue = this.excludedTenantsValue;
+      if (!excludedTenantsSet) {
+        excludedTenantsValue = EngineConfiguration.defaultExcludedTenants();
       }
       return new EngineConfiguration(
           name,
-          defaultTenant$value,
+          defaultTenantValue,
           rest,
           webapps,
-          importEnabled$value,
-          eventImportEnabled$value,
-          excludedTenants$value,
+          importEnabledValue,
+          eventImportEnabledValue,
+          excludedTenantsValue,
           authentication);
     }
 
@@ -257,18 +259,18 @@ public class EngineConfiguration {
     public String toString() {
       return "EngineConfiguration.EngineConfigurationBuilder(name="
           + name
-          + ", defaultTenant$value="
-          + defaultTenant$value
+          + ", defaultTenantValue="
+          + defaultTenantValue
           + ", rest="
           + rest
           + ", webapps="
           + webapps
-          + ", importEnabled$value="
-          + importEnabled$value
-          + ", eventImportEnabled$value="
-          + eventImportEnabled$value
-          + ", excludedTenants$value="
-          + excludedTenants$value
+          + ", importEnabledValue="
+          + importEnabledValue
+          + ", eventImportEnabledValue="
+          + eventImportEnabledValue
+          + ", excludedTenantsValue="
+          + excludedTenantsValue
           + ", authentication="
           + authentication
           + ")";

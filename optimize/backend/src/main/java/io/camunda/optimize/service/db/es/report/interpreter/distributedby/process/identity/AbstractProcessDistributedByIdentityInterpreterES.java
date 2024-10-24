@@ -68,13 +68,13 @@ public abstract class AbstractProcessDistributedByIdentityInterpreterES
   public Map<String, Aggregation.Builder.ContainerBuilder> createAggregations(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
       final BoolQuery baseQuery) {
-    TermsAggregation.Builder builder = new TermsAggregation.Builder();
+    final TermsAggregation.Builder builder = new TermsAggregation.Builder();
     builder
         .size(getConfigurationService().getElasticSearchConfiguration().getAggregationBucketLimit())
         .order(NamedValue.of("_key", SortOrder.Asc))
         .field(FLOW_NODE_INSTANCES + "." + getIdentityField())
         .missing(DISTRIBUTE_BY_IDENTITY_MISSING_KEY);
-    Aggregation.Builder.ContainerBuilder identityTermsAggregation =
+    final Aggregation.Builder.ContainerBuilder identityTermsAggregation =
         new Aggregation.Builder().terms(builder.build());
     getViewInterpreter()
         .createAggregations(context)
@@ -85,7 +85,7 @@ public abstract class AbstractProcessDistributedByIdentityInterpreterES
     // that we only fetch
     // assignees related to this definition version we filter for userTasks that only
     // occur in the latest version.
-    Aggregation.Builder.ContainerBuilder ag =
+    final Aggregation.Builder.ContainerBuilder ag =
         new Aggregation.Builder()
             .filter(
                 f ->
@@ -113,15 +113,15 @@ public abstract class AbstractProcessDistributedByIdentityInterpreterES
             .aggregations()
             .get(DISTRIBUTE_BY_IDENTITY_TERMS_AGGREGATION)
             .sterms();
-    List<CompositeCommandResult.DistributedByResult> distributedByIdentity = new ArrayList<>();
+    final List<CompositeCommandResult.DistributedByResult> distributedByIdentity = new ArrayList<>();
 
-    for (StringTermsBucket identityBucket : byIdentityAggregations.buckets().array()) {
-      CompositeCommandResult.ViewResult viewResult =
+    for (final StringTermsBucket identityBucket : byIdentityAggregations.buckets().array()) {
+      final CompositeCommandResult.ViewResult viewResult =
           getViewInterpreter().retrieveResult(response, identityBucket.aggregations(), context);
 
       final String key = identityBucket.key().stringValue();
       if (DISTRIBUTE_BY_IDENTITY_MISSING_KEY.equals(key)) {
-        for (CompositeCommandResult.ViewMeasure viewMeasure : viewResult.getViewMeasures()) {
+        for (final CompositeCommandResult.ViewMeasure viewMeasure : viewResult.getViewMeasures()) {
           final AggregationDto aggTypeDto = viewMeasure.getAggregationType();
           if (aggTypeDto != null
               && aggTypeDto.getType() == AggregationType.SUM
@@ -188,7 +188,7 @@ public abstract class AbstractProcessDistributedByIdentityInterpreterES
   }
 
   private void addEmptyMissingDistributedByResults(
-      List<CompositeCommandResult.DistributedByResult> distributedByIdentityResultList,
+      final List<CompositeCommandResult.DistributedByResult> distributedByIdentityResultList,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     context.getAllDistributedByKeysAndLabels().entrySet().stream()
         .filter(

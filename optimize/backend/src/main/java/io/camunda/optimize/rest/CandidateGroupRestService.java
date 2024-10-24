@@ -39,7 +39,7 @@ public class CandidateGroupRestService {
   public static final String CANDIDATE_GROUP_RESOURCE_PATH = "/candidateGroup";
   public static final String CANDIDATE_GROUP_DEFINITION_SEARCH_SUB_PATH = "/search";
   public static final String CANDIDATE_GROUP_REPORTS_SEARCH_SUB_PATH = "/search/reports";
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(CandidateGroupRestService.class);
 
   private final SessionService sessionService;

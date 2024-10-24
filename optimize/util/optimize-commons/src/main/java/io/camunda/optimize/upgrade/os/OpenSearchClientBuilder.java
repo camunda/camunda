@@ -95,12 +95,12 @@ import software.amazon.awssdk.regions.Region;
 
 public class OpenSearchClientBuilder {
 
-  private static final Logger log = LoggerFactory.getLogger(OpenSearchClientBuilder.class);
+  private static final Logger LOG = LoggerFactory.getLogger(OpenSearchClientBuilder.class);
 
   public static ExtendedOpenSearchClient buildOpenSearchClientFromConfig(
       final ConfigurationService configurationService, final PluginRepository pluginRepo) {
     final var plugins = extractPluginConfigs(configurationService.getOpenSearchConfiguration());
-    log.trace("Loading plugins while building extended client: {}", plugins);
+    LOG.trace("Loading plugins while building extended client: {}", plugins);
     pluginRepo.load(plugins);
     return new ExtendedOpenSearchClient(buildOpenSearchTransport(configurationService, pluginRepo));
   }
@@ -108,7 +108,7 @@ public class OpenSearchClientBuilder {
   public static OpenSearchAsyncClient buildOpenSearchAsyncClientFromConfig(
       final ConfigurationService configurationService, final PluginRepository pluginRepo) {
     final var plugins = extractPluginConfigs(configurationService.getOpenSearchConfiguration());
-    log.trace("Loading plugins while building async client: {}", plugins);
+    LOG.trace("Loading plugins while building async client: {}", plugins);
     pluginRepo.load(plugins);
     return new OpenSearchAsyncClient(buildOpenSearchTransport(configurationService, pluginRepo));
   }
@@ -159,7 +159,7 @@ public class OpenSearchClientBuilder {
     if (configurationService.getOpenSearchConfiguration().getSecuritySSLEnabled()) {
       throw new NotSupportedException("Rest client is only supported with HTTP");
     } else {
-      log.info("Setting up http rest client connection");
+      LOG.info("Setting up http rest client connection");
       return buildDefaultRestClient(configurationService).build();
     }
   }
@@ -169,14 +169,14 @@ public class OpenSearchClientBuilder {
       final AwsCredentialsProvider credentialsProvider = DefaultCredentialsProvider.create();
       try {
         credentialsProvider.resolveCredentials();
-        log.info("AWS Credentials can be resolved. Use AWS OpenSearch");
+        LOG.info("AWS Credentials can be resolved. Use AWS OpenSearch");
         return true;
       } catch (final Exception e) {
-        log.info("Use standard OpenSearch since AWS not configured ({}) ", e.getMessage());
+        LOG.info("Use standard OpenSearch since AWS not configured ({}) ", e.getMessage());
         return false;
       }
     }
-    log.info("AWS Credentials are disabled. Using basic auth.");
+    LOG.info("AWS Credentials are disabled. Using basic auth.");
     return false;
   }
 
@@ -292,7 +292,7 @@ public class OpenSearchClientBuilder {
     final String username = configurationService.getOpenSearchConfiguration().getSecurityUsername();
     final String password = configurationService.getOpenSearchConfiguration().getSecurityPassword();
     if (StringUtils.isBlank(username) || StringUtils.isBlank(password)) {
-      log.warn(
+      LOG.warn(
           "Username and/or password for are empty. Basic authentication for OpenSearch is not used.");
       return builder;
     }
@@ -327,7 +327,7 @@ public class OpenSearchClientBuilder {
       httpAsyncClientBuilder.setConnectionManager(connectionManager);
 
     } catch (final Exception e) {
-      log.error("Error in setting up SSLContext", e);
+      LOG.error("Error in setting up SSLContext", e);
     }
   }
 
@@ -336,7 +336,7 @@ public class OpenSearchClientBuilder {
     final KeyStore truststore = loadCustomTrustStore(configurationService);
     final org.apache.http.ssl.TrustStrategy trustStrategy =
         Boolean.TRUE.equals(
-                configurationService.getOpenSearchConfiguration().getSecuritySslSelfSigned())
+            configurationService.getOpenSearchConfiguration().getSecuritySslSelfSigned())
             ? new TrustSelfSignedStrategy()
             : null;
     if (truststore.size() > 0) {
@@ -402,7 +402,7 @@ public class OpenSearchClientBuilder {
 
       if (bis.available() > 0) {
         cert = cf.generateCertificate(bis);
-        log.debug("Found certificate: {}", cert);
+        LOG.debug("Found certificate: {}", cert);
       } else {
         throw new OptimizeRuntimeException(
             "Could not load certificate from file, file is empty. File: " + certificatePath);

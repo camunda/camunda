@@ -90,6 +90,7 @@ public class CandidateGroupOperationDto implements OptimizeDto, Serializable {
         + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String id = "id";

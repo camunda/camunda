@@ -29,7 +29,7 @@ import org.slf4j.Logger;
 
 public class OpensearchReaderUtil {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(OpensearchReaderUtil.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(OpensearchReaderUtil.class);
 
   public static <T> List<T> extractResponseValues(final SearchResponse<T> searchResponse) {
     return Optional.ofNullable(searchResponse)
@@ -39,7 +39,7 @@ public class OpensearchReaderUtil {
         .orElseThrow(
             () -> {
               final String reason = "Was not able to parse response values from OpenSearch";
-              log.error(reason);
+              LOG.error(reason);
               return new OptimizeRuntimeException(reason);
             });
   }
@@ -53,7 +53,7 @@ public class OpensearchReaderUtil {
         .orElseThrow(
             () -> {
               final String reason = "Was not able to parse response values from OpenSearch";
-              log.error(reason);
+              LOG.error(reason);
               return new OptimizeRuntimeException(reason);
             });
   }
@@ -74,7 +74,7 @@ public class OpensearchReaderUtil {
                   String.format(
                       "Was not able to parse aggregated sterm response values from OpenSearch with path %s",
                       aggPath);
-              log.error(reason);
+              LOG.error(reason);
               return new OptimizeRuntimeException(reason);
             });
   }
@@ -93,7 +93,7 @@ public class OpensearchReaderUtil {
         .orElseThrow(
             () -> {
               final String reason = "Was not able to parse response aggregations from OpenSearch";
-              log.error(reason);
+              LOG.error(reason);
               return new OptimizeRuntimeException(reason);
             });
   }
@@ -126,7 +126,7 @@ public class OpensearchReaderUtil {
                 final String reason =
                     "While mapping search results to class {} "
                         + "it was not possible to deserialize a hit from OpenSearch!";
-                log.error(reason, typeClass.getSimpleName(), e);
+                LOG.error(reason, typeClass.getSimpleName(), e);
                 throw new OptimizeRuntimeException(reason);
               }
             });
@@ -134,7 +134,7 @@ public class OpensearchReaderUtil {
         final String reason =
             "While mapping search results to class {} "
                 + "it was not possible to deserialize a hit from Opensearch!";
-        log.error(reason, typeClass.getSimpleName(), e);
+        LOG.error(reason, typeClass.getSimpleName(), e);
         throw new OptimizeRuntimeException(reason);
       }
     }

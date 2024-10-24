@@ -35,7 +35,7 @@ import org.springframework.stereotype.Component;
 @Conditional(CCSaaSCondition.class)
 public class CCSaaSIdentityService extends AbstractIdentityService {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(CCSaaSIdentityService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(CCSaaSIdentityService.class);
   private final CCSaaSUserCache usersCache;
 
   public CCSaaSIdentityService(
@@ -100,7 +100,7 @@ public class CCSaaSIdentityService extends AbstractIdentityService {
                 .collect(toList()));
       }
     } catch (final OptimizeRuntimeException e) {
-      log.warn("Failed retrieving users.", e);
+      LOG.warn("Failed retrieving users.", e);
       return new IdentitySearchResultResponseDto(Collections.emptyList());
     }
   }
@@ -129,7 +129,7 @@ public class CCSaaSIdentityService extends AbstractIdentityService {
           .map(this::mapToUserDto)
           .toList();
     } catch (final OptimizeRuntimeException e) {
-      log.warn("Failed retrieving users.", e);
+      LOG.warn("Failed retrieving users.", e);
       return Collections.emptyList();
     }
   }

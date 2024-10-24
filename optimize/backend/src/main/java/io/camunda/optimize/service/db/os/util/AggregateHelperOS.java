@@ -43,9 +43,10 @@ import org.opensearch.client.opensearch._types.aggregations.StringTermsAggregate
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
 import org.opensearch.client.opensearch._types.aggregations.SumAggregate;
 
-public class AggregateHelperOS {
+public final class AggregateHelperOS {
 
-  private AggregateHelperOS() {}
+  private AggregateHelperOS() {
+  }
 
   /* It is a suggested workaround from ES (and OS inherits it) to distinguish between 0 and null
    * values in aggregates based on doc count in a bucket (if doc count is 0 value is supposed to be
@@ -222,8 +223,8 @@ public class AggregateHelperOS {
   }
 
   private static <BUCKET, AGGREGATE extends MultiBucketAggregateBase<BUCKET>>
-      Buckets<BUCKET> copyBuckets(
-          final AGGREGATE aggregate, final Function<BUCKET, BUCKET> copyBucket) {
+  Buckets<BUCKET> copyBuckets(
+      final AGGREGATE aggregate, final Function<BUCKET, BUCKET> copyBucket) {
     final List<BUCKET> bucketList = aggregate.buckets().array().stream().map(copyBucket).toList();
     return new Buckets.Builder<BUCKET>().array(bucketList).build();
   }

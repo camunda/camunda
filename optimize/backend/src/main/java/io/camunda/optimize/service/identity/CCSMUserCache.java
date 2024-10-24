@@ -37,7 +37,7 @@ import org.springframework.stereotype.Component;
 @Conditional(CCSMCondition.class)
 public class CCSMUserCache {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(CCSMUserCache.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(CCSMUserCache.class);
   private final Cache<String, UserDto> ccsmUsersCache;
   private final CCSMTokenService ccsmTokenService;
   private final Identity identity;
@@ -115,7 +115,7 @@ public class CCSMUserCache {
           .findFirst()
           .map(this::mapToUserDto);
     } catch (final Exception e) {
-      log.warn("Failed retrieving user by ID from Camunda Identity.", e);
+      LOG.warn("Failed retrieving user by ID from Camunda Identity.", e);
       return Optional.empty();
     }
   }
@@ -126,11 +126,11 @@ public class CCSMUserCache {
       if (token.isPresent()) {
         return getUserFromIdentity(token.get(), userId);
       } else {
-        log.warn("Could not retrieve user because no user token present.");
+        LOG.warn("Could not retrieve user because no user token present.");
         return Optional.empty();
       }
     } else {
-      log.info(
+      LOG.info(
           "Cannot search for user by ID because user search not available in Camunda identity.");
       return Optional.empty();
     }
@@ -147,11 +147,11 @@ public class CCSMUserCache {
             .flatMap(Optional::stream)
             .collect(toMap(UserDto::getId, Function.identity()));
       } else {
-        log.warn("Could not retrieve user because no user token present.");
+        LOG.warn("Could not retrieve user because no user token present.");
         return Collections.emptyMap();
       }
     } else {
-      log.info(
+      LOG.info(
           "Cannot search for user by ID because user search not available in Camunda identity.");
       return Collections.emptyMap();
     }
@@ -168,18 +168,18 @@ public class CCSMUserCache {
               .map(this::mapToUserDto)
               .toList();
         } catch (final Exception e) {
-          log.warn(
+          LOG.warn(
               "Failed searching for users with searchString [{}] in Camunda Identity.",
               searchString,
               e);
           return Collections.emptyList();
         }
       } else {
-        log.warn("Could not search for users because no user token present.");
+        LOG.warn("Could not search for users because no user token present.");
         return Collections.emptyList();
       }
     } else {
-      log.info("Cannot search for users because no user search available in Camunda Identity.");
+      LOG.info("Cannot search for users because no user search available in Camunda Identity.");
       return Collections.emptyList();
     }
   }

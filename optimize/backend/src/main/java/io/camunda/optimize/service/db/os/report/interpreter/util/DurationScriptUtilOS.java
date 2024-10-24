@@ -24,9 +24,10 @@ import java.util.Map;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.Script;
 
-public class DurationScriptUtilOS {
+public final class DurationScriptUtilOS {
 
-  private DurationScriptUtilOS() {}
+  private DurationScriptUtilOS() {
+  }
 
   public static Script getDurationScript(
       final long currRequestDateInMs,
@@ -35,7 +36,7 @@ public class DurationScriptUtilOS {
     final Map<String, JsonData> params = new HashMap<>();
     return OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams(
         getDurationCalculationScriptPart(
-                params, currRequestDateInMs, durationFieldName, referenceDateFieldName)
+            params, currRequestDateInMs, durationFieldName, referenceDateFieldName)
             + " return result;",
         params);
   }
@@ -190,7 +191,7 @@ public class DurationScriptUtilOS {
         // All duration filters operate on totalDuration
         // --> no specific userTask calculations needed, can use the general duration script
         getDurationCalculationScriptPart(
-                params, currRequestDateInMs, durationFieldName, referenceDateFieldName)
+            params, currRequestDateInMs, durationFieldName, referenceDateFieldName)
             + " return (result != null && result "
             + durationFilterDto.getOperator().getId()
             + " params['filterDuration']) || ("

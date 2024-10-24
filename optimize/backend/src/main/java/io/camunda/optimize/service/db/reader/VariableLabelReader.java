@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class VariableLabelReader {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(VariableLabelReader.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(VariableLabelReader.class);
   private final VariableRepository variableRepository;
 
   public VariableLabelReader(final VariableRepository variableRepository) {

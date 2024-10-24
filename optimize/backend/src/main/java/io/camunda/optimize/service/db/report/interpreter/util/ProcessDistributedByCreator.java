@@ -20,9 +20,10 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.
 import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.value.VariableDistributedByValueDto;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 
-public class ProcessDistributedByCreator {
+public final class ProcessDistributedByCreator {
 
-  private ProcessDistributedByCreator() {}
+  private ProcessDistributedByCreator() {
+  }
 
   public static NoneDistributedByDto createDistributedByNone() {
     return new NoneDistributedByDto();

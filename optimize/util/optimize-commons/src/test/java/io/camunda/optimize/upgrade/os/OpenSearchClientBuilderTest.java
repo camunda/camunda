@@ -57,7 +57,7 @@ class OpenSearchClientBuilderTest {
   }
 
   @Test
-  void buildExtendedClient_HappyPath() throws Exception {
+  void buildExtendedClientHappyPath() throws Exception {
     final var context = new HttpClientContext();
     final var config = Mockito.mock(ConfigurationService.class);
     final var osConfig = Mockito.mock(OpenSearchConfiguration.class);
@@ -98,7 +98,7 @@ class OpenSearchClientBuilderTest {
   }
 
   @Test
-  void buildAsyncClient_HappyPath() throws Exception {
+  void buildAsyncClientHappyPath() throws Exception {
     final var context = new HttpClientContext();
     final var config = Mockito.mock(ConfigurationService.class);
     final var osConfig = Mockito.mock(OpenSearchConfiguration.class);
@@ -140,7 +140,7 @@ class OpenSearchClientBuilderTest {
   }
 
   @Test
-  void buildClientWithNoPlugins_DoesNotFail() throws Exception {
+  void buildClientWithNoPluginsDoesNotFail() throws Exception {
     final var context = new HttpClientContext();
     final var config = Mockito.mock(ConfigurationService.class);
     final var osConfig = Mockito.mock(OpenSearchConfiguration.class);
@@ -180,7 +180,7 @@ class OpenSearchClientBuilderTest {
   }
 
   @Test
-  void buildClientWithAllEmptyPlugins_DoesNotFail() throws Exception {
+  void buildClientWithAllEmptyPluginsDoesNotFail() throws Exception {
     final var context = new HttpClientContext();
     final var config = Mockito.mock(ConfigurationService.class);
     final var osConfig = Mockito.mock(OpenSearchConfiguration.class);
@@ -231,15 +231,19 @@ class OpenSearchClientBuilderTest {
   }
 
   private static final class NoopCallback implements FutureCallback<SimpleHttpResponse> {
+
     private static final NoopCallback INSTANCE = new NoopCallback();
 
     @Override
-    public void completed(final SimpleHttpResponse result) {}
+    public void completed(final SimpleHttpResponse result) {
+    }
 
     @Override
-    public void failed(final Exception ex) {}
+    public void failed(final Exception ex) {
+    }
 
     @Override
-    public void cancelled() {}
+    public void cancelled() {
+    }
   }
 }

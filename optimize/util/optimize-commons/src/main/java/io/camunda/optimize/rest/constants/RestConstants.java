@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.rest.constants;
 
-public class RestConstants {
+public final class RestConstants {
 
   public static final String BACKUP_ENDPOINT = "/backups";
 
@@ -27,5 +27,6 @@ public class RestConstants {
   public static final String HTTPS_PREFIX = "https://";
   public static final String HTTP_PREFIX = "http://";
 
-  private RestConstants() {}
+  private RestConstants() {
+  }
 }

@@ -21,7 +21,8 @@ public abstract class SingleReportDataDto implements ReportDataDto {
 
   private SingleReportConfigurationDto configuration = new SingleReportConfigurationDto();
 
-  @Valid private List<ReportDataDefinitionDto> definitions = new ArrayList<>();
+  @Valid
+  private List<ReportDataDefinitionDto> definitions = new ArrayList<>();
 
   public SingleReportDataDto(
       final SingleReportConfigurationDto configuration,
@@ -30,18 +31,19 @@ public abstract class SingleReportDataDto implements ReportDataDto {
     this.definitions = definitions;
   }
 
-  protected SingleReportDataDto() {}
+  protected SingleReportDataDto() {
+  }
 
   protected SingleReportDataDto(final SingleReportDataDtoBuilder<?, ?> b) {
-    if (b.configuration$set) {
-      configuration = b.configuration$value;
+    if (b.configurationSet) {
+      configuration = b.configurationValue;
     } else {
-      configuration = $default$configuration();
+      configuration = defaultConfiguration();
     }
-    if (b.definitions$set) {
-      definitions = b.definitions$value;
+    if (b.definitionsSet) {
+      definitions = b.definitionsValue;
     } else {
-      definitions = $default$definitions();
+      definitions = defaultDefinitions();
     }
   }
 
@@ -107,15 +109,16 @@ public abstract class SingleReportDataDto implements ReportDataDto {
     this.definitions = definitions;
   }
 
-  private static SingleReportConfigurationDto $default$configuration() {
+  private static SingleReportConfigurationDto defaultConfiguration() {
     return new SingleReportConfigurationDto();
   }
 
   @Valid
-  private static List<ReportDataDefinitionDto> $default$definitions() {
+  private static List<ReportDataDefinitionDto> defaultDefinitions() {
     return new ArrayList<>();
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String configuration = "configuration";
@@ -125,20 +128,20 @@ public abstract class SingleReportDataDto implements ReportDataDto {
   public abstract static class SingleReportDataDtoBuilder<
       C extends SingleReportDataDto, B extends SingleReportDataDtoBuilder<C, B>> {
 
-    private SingleReportConfigurationDto configuration$value;
-    private boolean configuration$set;
-    private @Valid List<ReportDataDefinitionDto> definitions$value;
-    private boolean definitions$set;
+    private SingleReportConfigurationDto configurationValue;
+    private boolean configurationSet;
+    private @Valid List<ReportDataDefinitionDto> definitionsValue;
+    private boolean definitionsSet;
 
     public B configuration(final SingleReportConfigurationDto configuration) {
-      configuration$value = configuration;
-      configuration$set = true;
+      configurationValue = configuration;
+      configurationSet = true;
       return self();
     }
 
     public B definitions(@Valid final List<ReportDataDefinitionDto> definitions) {
-      definitions$value = definitions;
-      definitions$set = true;
+      definitionsValue = definitions;
+      definitionsSet = true;
       return self();
     }
 
@@ -149,9 +152,9 @@ public abstract class SingleReportDataDto implements ReportDataDto {
     @Override
     public String toString() {
       return "SingleReportDataDto.SingleReportDataDtoBuilder(configuration$value="
-          + configuration$value
-          + ", definitions$value="
-          + definitions$value
+          + configurationValue
+          + ", definitionsValue="
+          + definitionsValue
           + ")";
     }
   }

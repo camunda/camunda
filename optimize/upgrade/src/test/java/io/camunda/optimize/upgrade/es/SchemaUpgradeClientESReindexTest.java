@@ -54,20 +54,22 @@ import org.mockito.stubbing.OngoingStubbing;
 
 @ExtendWith(MockitoExtension.class)
 public class SchemaUpgradeClientESReindexTest {
-  @Mock private ElasticSearchSchemaManager schemaManager;
-
-  @Mock(answer = Answers.RETURNS_DEEP_STUBS, strictness = Mock.Strictness.LENIENT)
-  private OptimizeElasticsearchClient elasticsearchClient;
-
-  @Mock private ConfigurationService configurationService;
-  @Mock private OptimizeIndexNameService indexNameService;
-  @Mock private ElasticSearchMetadataService metadataService;
-  @Mock private TaskInfo taskInfo;
-
-  private SchemaUpgradeClient<?, ?> underTest;
 
   @RegisterExtension
   LogCapturer logCapturer = LogCapturer.create().captureForType(SchemaUpgradeClientES.class);
+  @Mock
+  private ElasticSearchSchemaManager schemaManager;
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS, strictness = Mock.Strictness.LENIENT)
+  private OptimizeElasticsearchClient elasticsearchClient;
+  @Mock
+  private ConfigurationService configurationService;
+  @Mock
+  private OptimizeIndexNameService indexNameService;
+  @Mock
+  private ElasticSearchMetadataService metadataService;
+  @Mock
+  private TaskInfo taskInfo;
+  private SchemaUpgradeClient<?, ?> underTest;
 
   @BeforeEach
   public void init() {
@@ -239,7 +241,7 @@ public class SchemaUpgradeClientESReindexTest {
                   new TaskResponse.Task(taskId, new TaskResponse.Status(20L, 6L, 6L, 8L)),
                   null,
                   null));
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
     }
     Response progressResponse = null;
@@ -249,7 +251,7 @@ public class SchemaUpgradeClientESReindexTest {
             createEsResponse(
                 new TaskResponse(
                     false, new TaskResponse.Task(taskId, inProgressStatus), null, null));
-      } catch (IOException e) {
+      } catch (final IOException e) {
         throw new OptimizeRuntimeException(e);
       }
     }
@@ -261,7 +263,7 @@ public class SchemaUpgradeClientESReindexTest {
   }
 
   private void mockListTaskInfoResponseContainingSourceAndTarget(
-      final String taskId, String node, final String sourceIndex, final String targetIndex)
+      final String taskId, final String node, final String sourceIndex, final String targetIndex)
       throws IOException {
     when(taskInfo.description()).thenReturn(createReindexTaskDescription(sourceIndex, targetIndex));
     when(taskInfo.id()).thenReturn(Long.valueOf(taskId));
@@ -289,7 +291,7 @@ public class SchemaUpgradeClientESReindexTest {
                       argument != null
                           && argument.getMethod().equals(HttpGet.METHOD_NAME)
                           && argument.getEndpoint().equals("/_tasks/" + taskId))));
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
     }
   }
@@ -298,7 +300,7 @@ public class SchemaUpgradeClientESReindexTest {
     when(elasticsearchClient.countWithoutPrefix(matches(indexName))).thenAnswer(a -> count);
   }
 
-  private Response createEsResponse(TaskResponse taskResponse) throws IOException {
+  private Response createEsResponse(final TaskResponse taskResponse) throws IOException {
     final Response mockedReindexResponse = mock(Response.class);
 
     final HttpEntity httpEntity = mock(HttpEntity.class);

@@ -58,7 +58,7 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class ProcessQueryFilterEnhancerES implements QueryFilterEnhancerES<ProcessFilterDto<?>> {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ProcessQueryFilterEnhancerES.class);
   private final ConfigurationService configurationService;
   private final Environment environment;
@@ -93,36 +93,36 @@ public class ProcessQueryFilterEnhancerES implements QueryFilterEnhancerES<Proce
   private final FlowNodeEndDateQueryFilterES flowNodeEndDateQueryFilter;
 
   public ProcessQueryFilterEnhancerES(
-      ConfigurationService configurationService,
-      Environment environment,
-      InstanceStartDateQueryFilterES instanceStartDateQueryFilter,
-      InstanceEndDateQueryFilterES instanceEndDateQueryFilter,
-      ProcessVariableQueryFilterES variableQueryFilter,
-      ProcessMultiVariableQueryFilterES multiVariableQueryFilter,
-      ExecutedFlowNodeQueryFilterES executedFlowNodeQueryFilter,
-      ExecutingFlowNodeQueryFilterES executingFlowNodeQueryFilter,
-      CanceledFlowNodeQueryFilterES canceledFlowNodeQueryFilter,
-      DurationQueryFilterES durationQueryFilter,
-      RunningInstancesOnlyQueryFilterES runningInstancesOnlyQueryFilter,
-      CompletedInstancesOnlyQueryFilterES completedInstancesOnlyQueryFilter,
-      CanceledInstancesOnlyQueryFilterES canceledInstancesOnlyQueryFilter,
-      NonCanceledInstancesOnlyQueryFilterES nonCanceledInstancesOnlyQueryFilter,
-      SuspendedInstancesOnlyQueryFilterES suspendedInstancesOnlyQueryFilter,
-      NonSuspendedInstancesOnlyQueryFilterES nonSuspendedInstancesOnlyQueryFilter,
-      FlowNodeDurationQueryFilterES flowNodeDurationQueryFilter,
-      AssigneeQueryFilterES assigneeQueryFilter,
-      CandidateGroupQueryFilterES candidateGroupQueryFilter,
-      OpenIncidentQueryFilterES openIncidentQueryFilter,
-      DeletedIncidentQueryFilterES deletedIncidentQueryFilter,
-      ResolvedIncidentQueryFilterES resolvedIncidentQueryFilter,
-      NoIncidentQueryFilterES noIncidentQueryFilter,
-      RunningFlowNodesOnlyQueryFilterES runningFlowNodesOnlyQueryFilter,
-      CompletedFlowNodesOnlyQueryFilterES completedFlowNodesOnlyQueryFilter,
-      CanceledFlowNodesOnlyQueryFilterES canceledFlowNodesOnlyQueryFilter,
-      CompletedOrCanceledFlowNodesOnlyQueryFilterES completedOrCanceledFlowNodesOnlyQueryFilter,
-      InstancesContainingUserTasksFilterES instancesContainingUserTasksFilter,
-      FlowNodeStartDateQueryFilterES flowNodeStartDateQueryFilter,
-      FlowNodeEndDateQueryFilterES flowNodeEndDateQueryFilter) {
+      final ConfigurationService configurationService,
+      final Environment environment,
+      final InstanceStartDateQueryFilterES instanceStartDateQueryFilter,
+      final InstanceEndDateQueryFilterES instanceEndDateQueryFilter,
+      final ProcessVariableQueryFilterES variableQueryFilter,
+      final ProcessMultiVariableQueryFilterES multiVariableQueryFilter,
+      final ExecutedFlowNodeQueryFilterES executedFlowNodeQueryFilter,
+      final ExecutingFlowNodeQueryFilterES executingFlowNodeQueryFilter,
+      final CanceledFlowNodeQueryFilterES canceledFlowNodeQueryFilter,
+      final DurationQueryFilterES durationQueryFilter,
+      final RunningInstancesOnlyQueryFilterES runningInstancesOnlyQueryFilter,
+      final CompletedInstancesOnlyQueryFilterES completedInstancesOnlyQueryFilter,
+      final CanceledInstancesOnlyQueryFilterES canceledInstancesOnlyQueryFilter,
+      final NonCanceledInstancesOnlyQueryFilterES nonCanceledInstancesOnlyQueryFilter,
+      final SuspendedInstancesOnlyQueryFilterES suspendedInstancesOnlyQueryFilter,
+      final NonSuspendedInstancesOnlyQueryFilterES nonSuspendedInstancesOnlyQueryFilter,
+      final FlowNodeDurationQueryFilterES flowNodeDurationQueryFilter,
+      final AssigneeQueryFilterES assigneeQueryFilter,
+      final CandidateGroupQueryFilterES candidateGroupQueryFilter,
+      final OpenIncidentQueryFilterES openIncidentQueryFilter,
+      final DeletedIncidentQueryFilterES deletedIncidentQueryFilter,
+      final ResolvedIncidentQueryFilterES resolvedIncidentQueryFilter,
+      final NoIncidentQueryFilterES noIncidentQueryFilter,
+      final RunningFlowNodesOnlyQueryFilterES runningFlowNodesOnlyQueryFilter,
+      final CompletedFlowNodesOnlyQueryFilterES completedFlowNodesOnlyQueryFilter,
+      final CanceledFlowNodesOnlyQueryFilterES canceledFlowNodesOnlyQueryFilter,
+      final CompletedOrCanceledFlowNodesOnlyQueryFilterES completedOrCanceledFlowNodesOnlyQueryFilter,
+      final InstancesContainingUserTasksFilterES instancesContainingUserTasksFilter,
+      final FlowNodeStartDateQueryFilterES flowNodeStartDateQueryFilter,
+      final FlowNodeEndDateQueryFilterES flowNodeEndDateQueryFilter) {
     this.configurationService = configurationService;
     this.environment = environment;
     this.instanceStartDateQueryFilter = instanceStartDateQueryFilter;

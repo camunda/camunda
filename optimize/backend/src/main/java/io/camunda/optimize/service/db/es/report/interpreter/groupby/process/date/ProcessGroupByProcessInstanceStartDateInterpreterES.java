@@ -35,12 +35,12 @@ public class ProcessGroupByProcessInstanceStartDateInterpreterES
   private final ProcessViewInterpreterFacadeES viewInterpreter;
 
   public ProcessGroupByProcessInstanceStartDateInterpreterES(
-      ConfigurationService configurationService,
-      DateAggregationServiceES dateAggregationService,
-      MinMaxStatsServiceES minMaxStatsService,
-      ProcessQueryFilterEnhancerES queryFilterEnhancer,
-      ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
-      ProcessViewInterpreterFacadeES viewInterpreter) {
+      final ConfigurationService configurationService,
+      final DateAggregationServiceES dateAggregationService,
+      final MinMaxStatsServiceES minMaxStatsService,
+      final ProcessQueryFilterEnhancerES queryFilterEnhancer,
+      final ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
+      final ProcessViewInterpreterFacadeES viewInterpreter) {
     this.configurationService = configurationService;
     this.dateAggregationService = dateAggregationService;
     this.minMaxStatsService = minMaxStatsService;
@@ -55,31 +55,37 @@ public class ProcessGroupByProcessInstanceStartDateInterpreterES
   }
 
   @Override
+  public ConfigurationService getConfigurationService() {
+    return configurationService;
+  }
+
+  @Override
+  public DateAggregationServiceES getDateAggregationService() {
+    return dateAggregationService;
+  }
+
+  @Override
+  public MinMaxStatsServiceES getMinMaxStatsService() {
+    return minMaxStatsService;
+  }
+
+  @Override
+  public ProcessQueryFilterEnhancerES getQueryFilterEnhancer() {
+    return queryFilterEnhancer;
+  }
+
+  @Override
   public String getDateField() {
     return START_DATE;
   }
 
-  public ConfigurationService getConfigurationService() {
-    return this.configurationService;
-  }
-
-  public DateAggregationServiceES getDateAggregationService() {
-    return this.dateAggregationService;
-  }
-
-  public MinMaxStatsServiceES getMinMaxStatsService() {
-    return this.minMaxStatsService;
-  }
-
-  public ProcessQueryFilterEnhancerES getQueryFilterEnhancer() {
-    return this.queryFilterEnhancer;
-  }
-
+  @Override
   public ProcessDistributedByInterpreterFacadeES getDistributedByInterpreter() {
-    return this.distributedByInterpreter;
+    return distributedByInterpreter;
   }
 
+  @Override
   public ProcessViewInterpreterFacadeES getViewInterpreter() {
-    return this.viewInterpreter;
+    return viewInterpreter;
   }
 }

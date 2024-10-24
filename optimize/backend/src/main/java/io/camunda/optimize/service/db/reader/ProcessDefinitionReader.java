@@ -19,7 +19,7 @@ public interface ProcessDefinitionReader {
     return getDefinitionReader().getDefinitions(DefinitionType.PROCESS, false, false, true);
   }
 
-  default String getLatestVersionToKey(String key) {
+  default String getLatestVersionToKey(final String key) {
     return getDefinitionReader().getLatestVersionToKey(DefinitionType.PROCESS, key);
   }
 

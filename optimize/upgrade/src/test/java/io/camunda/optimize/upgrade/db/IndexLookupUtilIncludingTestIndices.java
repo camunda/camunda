@@ -19,9 +19,9 @@ import java.util.function.Function;
 
 public final class IndexLookupUtilIncludingTestIndices {
 
-  private static final Map<String, Function<String, IndexMappingCreator>> osIndexLookupMap =
+  private static final Map<String, Function<String, IndexMappingCreator>> OS_INDEX_LOOKUP_MAP =
       createOpensearchIndexFunctionLookupMap();
-  private static final Map<String, Function<String, IndexMappingCreator>> esIndexLookupMap =
+  private static final Map<String, Function<String, IndexMappingCreator>> ES_INDEX_LOOKUP_MAP =
       createElasticsearchIndexFunctionLookupMap();
 
   private IndexLookupUtilIncludingTestIndices() {
@@ -31,22 +31,24 @@ public final class IndexLookupUtilIncludingTestIndices {
   public static IndexMappingCreator convertIndexForDatabase(
       final IndexMappingCreator indexToConvert, final DatabaseType databaseType) {
     if (databaseType.equals(DatabaseType.ELASTICSEARCH)) {
-      if (osIndexLookupMap.containsKey(indexToConvert.getClass().getSimpleName())) {
+      if (OS_INDEX_LOOKUP_MAP.containsKey(indexToConvert.getClass().getSimpleName())) {
         // If the key exists in the OS lookup map, it does not need converting in this type
         return indexToConvert;
       } else {
         // otherwise we get the index from the ES lookup
-        return Optional.ofNullable(esIndexLookupMap.get(indexToConvert.getClass().getSimpleName()))
+        return Optional.ofNullable(
+                ES_INDEX_LOOKUP_MAP.get(indexToConvert.getClass().getSimpleName()))
             .map(indexName -> indexName.apply(getFunctionParameter(indexToConvert)))
             .orElse(IndexLookupUtil.convertIndexForDatabase(indexToConvert, databaseType));
       }
     } else if (databaseType.equals(DatabaseType.OPENSEARCH)) {
-      if (esIndexLookupMap.containsKey(indexToConvert.getClass().getSimpleName())) {
+      if (ES_INDEX_LOOKUP_MAP.containsKey(indexToConvert.getClass().getSimpleName())) {
         // If the key exists in the ES lookup map, it does not need converting in this type
         return indexToConvert;
       } else {
         // otherwise we get the index from the OS lookup
-        return Optional.ofNullable(osIndexLookupMap.get(indexToConvert.getClass().getSimpleName()))
+        return Optional.ofNullable(
+                OS_INDEX_LOOKUP_MAP.get(indexToConvert.getClass().getSimpleName()))
             .map(indexName -> indexName.apply(getFunctionParameter(indexToConvert)))
             .orElse(IndexLookupUtil.convertIndexForDatabase(indexToConvert, databaseType));
       }
@@ -55,19 +57,19 @@ public final class IndexLookupUtilIncludingTestIndices {
   }
 
   private static Map<String, Function<String, IndexMappingCreator>>
-      createOpensearchIndexFunctionLookupMap() {
-    Map<String, Function<String, IndexMappingCreator>> lookupMap = new HashMap<>();
+  createOpensearchIndexFunctionLookupMap() {
+    final Map<String, Function<String, IndexMappingCreator>> lookupMap = new HashMap<>();
     return lookupMap;
   }
 
   private static Map<String, Function<String, IndexMappingCreator>>
-      createElasticsearchIndexFunctionLookupMap() {
-    Map<String, Function<String, IndexMappingCreator>> lookupMap = new HashMap<>();
+  createElasticsearchIndexFunctionLookupMap() {
+    final Map<String, Function<String, IndexMappingCreator>> lookupMap = new HashMap<>();
     return lookupMap;
   }
 
   private static String getFunctionParameter(final IndexMappingCreator index) {
-    if (index instanceof DynamicIndexable dynamicIndex) {
+    if (index instanceof final DynamicIndexable dynamicIndex) {
       return dynamicIndex.getKey();
     }
     return null;

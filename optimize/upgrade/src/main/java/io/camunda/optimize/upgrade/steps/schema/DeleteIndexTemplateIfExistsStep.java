@@ -56,14 +56,17 @@ public class DeleteIndexTemplateIfExistsStep extends UpgradeStep {
             templateName, String.valueOf(templateVersion)));
   }
 
+  @Override
   public boolean equals(final Object o) {
     return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
+  @Override
   protected boolean canEqual(final Object other) {
     return other instanceof DeleteIndexTemplateIfExistsStep;
   }
 
+  @Override
   public int hashCode() {
     return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }

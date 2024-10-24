@@ -32,13 +32,13 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class CombinedReportInstanceCounterOS extends CombinedReportInstanceCounter<Query> {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(CombinedReportInstanceCounterOS.class);
   private final OptimizeOpenSearchClient osClient;
   private final ExecutionPlanExtractor executionPlanExtractor;
 
   public CombinedReportInstanceCounterOS(
-      OptimizeOpenSearchClient osClient, ExecutionPlanExtractor executionPlanExtractor) {
+      final OptimizeOpenSearchClient osClient, final ExecutionPlanExtractor executionPlanExtractor) {
     this.osClient = osClient;
     this.executionPlanExtractor = executionPlanExtractor;
   }
@@ -46,21 +46,21 @@ public class CombinedReportInstanceCounterOS extends CombinedReportInstanceCount
   //  private final ProcessExecutionPlanInterpreterFacadeOS interpreter;
 
   @Override
-  public long count(List<SingleProcessReportDefinitionRequestDto> singleReportDefinitions) {
+  public long count(final List<SingleProcessReportDefinitionRequestDto> singleReportDefinitions) {
     final List<Query> baseQueries = getAllBaseQueries(singleReportDefinitions);
     final Query instanceCountRequestQuery = createInstanceCountRequestQueries(baseQueries);
     try {
       return osClient.count(new String[] {PROCESS_INSTANCE_MULTI_ALIAS}, instanceCountRequestQuery);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format(
               "Could not count instances in combined report with single report IDs: [%s]",
               singleReportDefinitions.stream().map(ReportDefinitionDto::getId));
-      log.error(message, e);
+      LOG.error(message, e);
       throw new OptimizeRuntimeException(message, e);
-    } catch (RuntimeException e) {
+    } catch (final RuntimeException e) {
       if (isInstanceIndexNotFoundException(e)) {
-        log.info(
+        LOG.info(
             "Could not evaluate combined instance count because no instance indices exist. "
                 + "Returning a count of 0 instead.");
         return 0L;
@@ -77,10 +77,10 @@ public class CombinedReportInstanceCounterOS extends CombinedReportInstanceCount
 
   @Override
   protected Query getBaseQuery(
-      ProcessExecutionPlan plan,
-      ReportEvaluationContext<SingleProcessReportDefinitionRequestDto> context) {
+      final ProcessExecutionPlan plan,
+      final ReportEvaluationContext<SingleProcessReportDefinitionRequestDto> context) {
     //    return interpreter.getBaseQuery(plan, context);
-    log.debug("Functionality not implemented");
+    LOG.debug("Functionality not implemented");
     throw new NotImplementedException();
   }
 

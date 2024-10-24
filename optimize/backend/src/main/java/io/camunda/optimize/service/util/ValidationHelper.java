@@ -53,11 +53,12 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ValidationHelper {
+public final class ValidationHelper {
 
-  protected static final Logger logger = LoggerFactory.getLogger(ValidationHelper.class);
+  protected static final Logger LOG = LoggerFactory.getLogger(ValidationHelper.class);
 
-  private ValidationHelper() {}
+  private ValidationHelper() {
+  }
 
   public static void validate(final BranchAnalysisRequestDto dto) {
     ensureNotEmpty("gateway activity id", dto.getGateway());
@@ -127,7 +128,7 @@ public class ValidationHelper {
       validate(dataDto);
       return true;
     } catch (final Exception e) {
-      logger.debug("Report Data Validation failed", e);
+      LOG.debug("Report Data Validation failed", e);
       return false;
     }
   }
@@ -198,8 +199,7 @@ public class ValidationHelper {
           ensureNotEmpty("values", flowNodeFilterData.getValues());
         } else if (filterDto instanceof FlowNodeStartDateFilterDto
             || filterDto instanceof FlowNodeEndDateFilterDto) {
-          @SuppressWarnings(UNCHECKED_CAST)
-          final ProcessFilterDto<FlowNodeDateFilterDataDto<?>> flowNodeDateFilterDto =
+          @SuppressWarnings(UNCHECKED_CAST) final ProcessFilterDto<FlowNodeDateFilterDataDto<?>> flowNodeDateFilterDto =
               (ProcessFilterDto<FlowNodeDateFilterDataDto<?>>) filterDto;
           validateFlowNodeDateFilter(flowNodeDateFilterDto);
         }

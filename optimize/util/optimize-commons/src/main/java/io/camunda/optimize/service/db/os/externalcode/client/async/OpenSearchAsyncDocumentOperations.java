@@ -18,21 +18,21 @@ import org.opensearch.client.opensearch.core.UpdateByQueryResponse;
 
 public class OpenSearchAsyncDocumentOperations extends OpenSearchAsyncOperation {
   public OpenSearchAsyncDocumentOperations(
-      OptimizeIndexNameService indexNameService, OpenSearchAsyncClient openSearchAsyncClient) {
+      final OptimizeIndexNameService indexNameService, final OpenSearchAsyncClient openSearchAsyncClient) {
     super(indexNameService, openSearchAsyncClient);
   }
 
   public CompletableFuture<UpdateByQueryResponse> updateByQuery(
-      UpdateByQueryRequest.Builder requestBuilder,
-      Function<Exception, String> errorMessageSupplier) {
+      final UpdateByQueryRequest.Builder requestBuilder,
+      final Function<Exception, String> errorMessageSupplier) {
     requestBuilder.waitForCompletion(false);
     return safe(
         () -> openSearchAsyncClient.updateByQuery(requestBuilder.build()), errorMessageSupplier);
   }
 
   public CompletableFuture<DeleteByQueryResponse> deleteByQuery(
-      DeleteByQueryRequest.Builder requestBuilder,
-      Function<Exception, String> errorMessageSupplier) {
+      final DeleteByQueryRequest.Builder requestBuilder,
+      final Function<Exception, String> errorMessageSupplier) {
     requestBuilder.waitForCompletion(false);
     return safe(
         () -> openSearchAsyncClient.deleteByQuery(requestBuilder.build()), errorMessageSupplier);

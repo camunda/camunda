@@ -10,9 +10,10 @@ package io.camunda.optimize.service.util;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.StringUtils;
 
-public class DurationFormatterUtil {
+public final class DurationFormatterUtil {
 
-  private DurationFormatterUtil() {}
+  private DurationFormatterUtil() {
+  }
 
   public static String formatMilliSecondsToReadableDurationString(long durationInMs) {
     if (durationInMs <= 0) {

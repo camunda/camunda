@@ -43,10 +43,10 @@ public class ProcessGroupByVariableInterpreterOS
   private final ProcessViewInterpreterFacadeOS viewInterpreter;
 
   public ProcessGroupByVariableInterpreterOS(
-      VariableAggregationServiceOS variableAggregationService,
-      DefinitionService definitionService,
-      ProcessDistributedByInterpreterFacadeOS distributedByInterpreter,
-      ProcessViewInterpreterFacadeOS viewInterpreter) {
+      final VariableAggregationServiceOS variableAggregationService,
+      final DefinitionService definitionService,
+      final ProcessDistributedByInterpreterFacadeOS distributedByInterpreter,
+      final ProcessViewInterpreterFacadeOS viewInterpreter) {
     this.variableAggregationService = variableAggregationService;
     this.definitionService = definitionService;
     this.distributedByInterpreter = distributedByInterpreter;

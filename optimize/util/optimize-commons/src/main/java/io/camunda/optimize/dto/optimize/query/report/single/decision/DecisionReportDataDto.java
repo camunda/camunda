@@ -25,7 +25,8 @@ import java.util.List;
 @DecisionFiltersMustReferenceExistingDefinitionsConstraint
 public class DecisionReportDataDto extends SingleReportDataDto {
 
-  @Valid protected List<DecisionFilterDto<?>> filter = new ArrayList<>();
+  @Valid
+  protected List<DecisionFilterDto<?>> filter = new ArrayList<>();
   protected DecisionViewDto view;
   protected DecisionGroupByDto<?> groupBy;
 
@@ -46,21 +47,22 @@ public class DecisionReportDataDto extends SingleReportDataDto {
     this.visualization = visualization;
   }
 
-  public DecisionReportDataDto() {}
+  public DecisionReportDataDto() {
+  }
 
   protected DecisionReportDataDto(final DecisionReportDataDtoBuilder<?, ?> b) {
     super(b);
-    if (b.filter$set) {
-      filter = b.filter$value;
+    if (b.filterSet) {
+      filter = b.filterValue;
     } else {
-      filter = $default$filter();
+      filter = defaultFilter();
     }
     view = b.view;
     groupBy = b.groupBy;
-    if (b.distributedBy$set) {
-      distributedBy = b.distributedBy$value;
+    if (b.distributedBySet) {
+      distributedBy = b.distributedByValue;
     } else {
-      distributedBy = $default$distributedBy();
+      distributedBy = defaultDistributedBy();
     }
     visualization = b.visualization;
   }
@@ -197,11 +199,11 @@ public class DecisionReportDataDto extends SingleReportDataDto {
   }
 
   @Valid
-  private static List<DecisionFilterDto<?>> $default$filter() {
+  private static List<DecisionFilterDto<?>> defaultFilter() {
     return new ArrayList<>();
   }
 
-  private static ProcessReportDistributedByDto<?> $default$distributedBy() {
+  private static ProcessReportDistributedByDto<?> defaultDistributedBy() {
     return new NoneDistributedByDto();
   }
 
@@ -209,6 +211,7 @@ public class DecisionReportDataDto extends SingleReportDataDto {
     return new DecisionReportDataDtoBuilderImpl();
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String filter = "filter";
@@ -219,20 +222,20 @@ public class DecisionReportDataDto extends SingleReportDataDto {
   }
 
   public abstract static class DecisionReportDataDtoBuilder<
-          C extends DecisionReportDataDto, B extends DecisionReportDataDtoBuilder<C, B>>
+      C extends DecisionReportDataDto, B extends DecisionReportDataDtoBuilder<C, B>>
       extends SingleReportDataDtoBuilder<C, B> {
 
-    private @Valid List<DecisionFilterDto<?>> filter$value;
-    private boolean filter$set;
+    private @Valid List<DecisionFilterDto<?>> filterValue;
+    private boolean filterSet;
     private DecisionViewDto view;
     private DecisionGroupByDto<?> groupBy;
-    private ProcessReportDistributedByDto<?> distributedBy$value;
-    private boolean distributedBy$set;
+    private ProcessReportDistributedByDto<?> distributedByValue;
+    private boolean distributedBySet;
     private DecisionVisualization visualization;
 
     public B filter(@Valid final List<DecisionFilterDto<?>> filter) {
-      filter$value = filter;
-      filter$set = true;
+      filterValue = filter;
+      filterSet = true;
       return self();
     }
 
@@ -247,8 +250,8 @@ public class DecisionReportDataDto extends SingleReportDataDto {
     }
 
     public B distributedBy(final ProcessReportDistributedByDto<?> distributedBy) {
-      distributedBy$value = distributedBy;
-      distributedBy$set = true;
+      distributedByValue = distributedBy;
+      distributedBySet = true;
       return self();
     }
 
@@ -267,14 +270,14 @@ public class DecisionReportDataDto extends SingleReportDataDto {
     public String toString() {
       return "DecisionReportDataDto.DecisionReportDataDtoBuilder(super="
           + super.toString()
-          + ", filter$value="
-          + filter$value
+          + ", filterValue="
+          + filterValue
           + ", view="
           + view
           + ", groupBy="
           + groupBy
-          + ", distributedBy$value="
-          + distributedBy$value
+          + ", distributedByValue="
+          + distributedByValue
           + ", visualization="
           + visualization
           + ")";
@@ -283,9 +286,10 @@ public class DecisionReportDataDto extends SingleReportDataDto {
 
   private static final class DecisionReportDataDtoBuilderImpl
       extends DecisionReportDataDtoBuilder<
-          DecisionReportDataDto, DecisionReportDataDtoBuilderImpl> {
+      DecisionReportDataDto, DecisionReportDataDtoBuilderImpl> {
 
-    private DecisionReportDataDtoBuilderImpl() {}
+    private DecisionReportDataDtoBuilderImpl() {
+    }
 
     @Override
     protected DecisionReportDataDtoBuilderImpl self() {

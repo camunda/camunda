@@ -19,8 +19,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 public enum UserTaskDurationTime {
   IDLE(IDLE_USER_TASK_DURATION_TIME, USER_TASK_IDLE_DURATION),
   WORK(WORK_USER_TASK_DURATION_TIME, USER_TASK_WORK_DURATION),
-  TOTAL(TOTAL_USER_TASK_DURATION_TIME, FLOW_NODE_TOTAL_DURATION),
-  ;
+  TOTAL(TOTAL_USER_TASK_DURATION_TIME, FLOW_NODE_TOTAL_DURATION);
 
   private final String id;
   private final String durationFieldName;
