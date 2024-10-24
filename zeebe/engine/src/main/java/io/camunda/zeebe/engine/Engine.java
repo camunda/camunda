@@ -125,19 +125,7 @@ public class Engine implements RecordProcessor {
         return processingResultBuilder.build();
       }
 
-      // There is no ban check needed if the intent is not instance related
-      // nor if the intent is to create new instances, which can't be banned yet
-      final Intent intent = typedCommand.getIntent();
-      final boolean noBanCheckNeeded =
-          !(intent instanceof ProcessInstanceRelatedIntent)
-              || intent instanceof ProcessInstanceCreationIntent;
-      final boolean banned = processingState.getBannedInstanceState().isBanned(typedCommand);
-      final boolean commandAllowedForBanned =
-          intent == ProcessInstanceIntent.CANCEL
-              || intent == ProcessInstanceIntent.TERMINATE_ELEMENT
-              || intent == ProcessInstanceBatchIntent.TERMINATE;
-
-      final var shouldProcess = noBanCheckNeeded || !banned || commandAllowedForBanned;
+      final var shouldProcess = shouldProcessCommand(typedCommand);
       if (shouldProcess) {
         currentProcessor.processRecord(record);
       }
@@ -175,6 +163,23 @@ public class Engine implements RecordProcessor {
       }
     }
     return processingResultBuilder.build();
+  }
+
+  private boolean shouldProcessCommand(final TypedRecord<?> typedCommand) {
+    // There is no ban check needed if the intent is not instance related
+    // nor if the intent is to create new instances, which can't be banned yet
+    final Intent intent = typedCommand.getIntent();
+    final boolean noBanCheckNeeded =
+        !(intent instanceof ProcessInstanceRelatedIntent)
+            || intent instanceof ProcessInstanceCreationIntent;
+    final boolean banned = processingState.getBannedInstanceState().isBanned(typedCommand);
+    final boolean commandAllowedForBanned =
+        intent == ProcessInstanceIntent.CANCEL
+            || intent == ProcessInstanceIntent.TERMINATE_ELEMENT
+            || intent == ProcessInstanceBatchIntent.TERMINATE;
+
+    final var shouldProcess = noBanCheckNeeded || !banned || commandAllowedForBanned;
+    return shouldProcess;
   }
 
   private void handleUnexpectedError(
