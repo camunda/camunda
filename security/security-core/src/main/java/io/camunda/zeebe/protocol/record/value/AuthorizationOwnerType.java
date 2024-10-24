@@ -11,5 +11,6 @@ public enum AuthorizationOwnerType {
   USER,
   ROLE,
   GROUP,
+  MAPPING,
   UNSPECIFIED
 }

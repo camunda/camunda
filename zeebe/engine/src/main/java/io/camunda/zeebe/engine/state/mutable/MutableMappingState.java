@@ -8,5 +8,9 @@
 package io.camunda.zeebe.engine.state.mutable;
 
 import io.camunda.zeebe.engine.state.immutable.MappingState;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 
-public interface MutableMappingState extends MappingState {}
+public interface MutableMappingState extends MappingState {
+
+  void create(final MappingRecord mappingRecord);
+}
