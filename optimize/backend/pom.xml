@@ -26,6 +26,11 @@
     <dependencies>
       <dependency>
         <groupId>org.ow2.asm</groupId>
+        <artifactId>asm</artifactId>
+        <version>9.7</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ow2.asm</groupId>
         <artifactId>asm-commons</artifactId>
         <version>9.7</version>
       </dependency>
@@ -409,7 +414,7 @@
       <version>4.8.177</version>
     </dependency>
 
-    <!-- used/undeclared block -->
+    <!-- transitive dependencies -->
 
     <dependency>
       <groupId>com.sun.mail</groupId>
