@@ -1283,6 +1283,11 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   UserTaskVariableQuery newUserTaskVariableRequest(long userTaskKey);
 
   /**
+   * <strong>Experimental: This method is under development. The respective API on compatible
+   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
+   * with all clusters. Until this warning is removed, anything described below may not yet have
+   * taken effect, and the interface and its description are subject to change.</strong>
+   *
    * <p>Command to create a document.
    *
    * <pre>
