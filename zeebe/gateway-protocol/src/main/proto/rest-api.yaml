@@ -4565,7 +4565,7 @@ components:
     DocumentReference:
       type: object
       properties:
-        documentType:
+        camunda.document.type:
           type: string
           description: Document discriminator. Always set to "camunda".
           enum:
@@ -4580,7 +4580,6 @@ components:
           $ref: "#/components/schemas/DocumentMetadata"
     DocumentMetadata:
       type: object
-      additionalProperties: true
       properties:
         contentType:
           type: string
@@ -4596,14 +4595,19 @@ components:
           type: integer
           format: int64
           description: The size of the document in bytes.
+        customProperties:
+            type: object
+            description: Custom properties of the document.
+            additionalProperties: true
+
     DocumentLinkRequest:
       type: object
       properties:
-        expiresAt:
-          type: string
-          format: date-time
-          description: The date and time when the link expires.
-          nullable: true
+        timeToLive:
+          type: integer
+          format: int64
+          description: The time-to-live of the document link in ms.
+          default: 3600000 # 1 hour
     DocumentLink:
       type: object
       properties:
