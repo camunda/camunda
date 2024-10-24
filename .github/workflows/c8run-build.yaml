@@ -14,7 +14,7 @@ jobs:
         os: [ubuntu-latest, macos-latest, macos-13]
     name: C8Run Test ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 25
+    timeout-minutes: 45
     steps:
 
       - if: ${{ matrix.os == 'ubuntu-latest' }}
