@@ -25,6 +25,11 @@ public record FormSort(List<FieldSorting> orderings) implements SortOption {
   public static final class Builder extends AbstractBuilder<Builder>
       implements ObjectBuilder<FormSort> {
 
+    public Builder version() {
+      currentOrdering = new FieldSorting("version", null);
+      return this;
+    }
+
     @Override
     protected Builder self() {
       return this;

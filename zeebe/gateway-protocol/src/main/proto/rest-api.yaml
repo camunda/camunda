@@ -1089,6 +1089,67 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /process-definitions/{processDefinitionsKey}/form:
+    get:
+      tags:
+        - Process definition
+      operationId: getStartProcessForm
+      summary: Get start process form
+      description: |
+        Get the start form of a process.
+
+        :::note
+        This endpoint will only return linked forms. This endpoint does not support embedded forms.
+        :::
+
+        :::note
+        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
+      parameters:
+        - name: processDefinitionsKey
+          in: path
+          required: true
+          description: The process key.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: >
+            The form is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FormItem"
+        "204":
+          description: >
+            The process was found, but no form is associated with it.
+        "400":
+          description: "Bad request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "Not found"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: "Internal server error"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /process-instances:
     post:
       tags:

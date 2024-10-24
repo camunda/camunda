@@ -15,4 +15,5 @@ public record ProcessDefinitionEntity(
     String resourceName,
     Integer version,
     String versionTag,
-    String tenantId) {}
+    String tenantId,
+    String formId) {}

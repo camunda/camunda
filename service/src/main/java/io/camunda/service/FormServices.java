@@ -19,6 +19,7 @@ import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import java.util.Optional;
 
 public final class FormServices extends SearchQueryService<FormServices, FormQuery, FormEntity> {
 
@@ -54,6 +55,24 @@ public final class FormServices extends SearchQueryService<FormServices, FormQue
       throw new CamundaSearchException(String.format("Found form with key %d more than once", key));
     } else {
       return result.items().stream().findFirst().orElseThrow();
+    }
+  }
+
+  public Optional<FormEntity> getLatestVersionByFormId(final String formId) {
+    final Optional<FormEntity> result =
+        search(
+                SearchQueryBuilders.formSearchQuery()
+                    .filter(f -> f.formIds(formId))
+                    .sort(s -> s.version().desc())
+                    .build())
+            .items()
+            .stream()
+            .findFirst();
+
+    if (result.isPresent()) {
+      return result;
+    } else {
+      return Optional.empty();
     }
   }
 }
