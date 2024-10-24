@@ -11,7 +11,6 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
-import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor.NoopPartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -65,10 +64,7 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
             brokerStartupContext.setPartitionManager(partitionManager);
             brokerStartupContext
                 .getClusterConfigurationService()
-                .registerChangeExecutors(
-                    partitionManager,
-                    // TODO: Pass an actual implementation of PartitionScalingChangeExecutor
-                    new NoopPartitionScalingChangeExecutor());
+                .registerChangeExecutors(partitionManager, partitionManager);
             startupFuture.complete(brokerStartupContext);
           } catch (final Exception e) {
             startupFuture.completeExceptionally(e);
