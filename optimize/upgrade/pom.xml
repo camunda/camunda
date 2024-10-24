@@ -126,7 +126,6 @@
     <dependency>
       <groupId>org.opensearch.client</groupId>
       <artifactId>opensearch-java</artifactId>
-      <version>${opensearch.client.version}</version>
     </dependency>
 
     <dependency>
