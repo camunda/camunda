@@ -434,13 +434,13 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
   private void updateHealthStatusWithError(final Throwable failure) {
     if (failure instanceof UnrecoverableException) {
-      healthReport = HealthReport.dead(this).withIssue(failure);
+      healthReport = HealthReport.dead(this).withIssue(failure, clock.instant());
 
       for (final var listener : listeners) {
         listener.onUnrecoverableFailure(healthReport);
       }
     } else {
-      healthReport = HealthReport.unhealthy(this).withIssue(failure);
+      healthReport = HealthReport.unhealthy(this).withIssue(failure, clock.instant());
       for (final var listener : listeners) {
         listener.onFailure(healthReport);
       }

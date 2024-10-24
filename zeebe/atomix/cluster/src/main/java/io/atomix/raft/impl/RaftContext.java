@@ -84,6 +84,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collection;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
@@ -313,10 +314,10 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private void notifyFailureListeners(final Throwable error) {
     try {
       if (error instanceof UnrecoverableException) {
-        health = HealthReport.dead(this).withIssue(error);
+        health = HealthReport.dead(this).withIssue(error, Instant.now());
         failureListeners.forEach((l) -> l.onUnrecoverableFailure(health));
       } else {
-        health = HealthReport.unhealthy(this).withIssue(error);
+        health = HealthReport.unhealthy(this).withIssue(error, Instant.now());
         failureListeners.forEach((l) -> l.onFailure(health));
       }
     } catch (final Exception e) {
