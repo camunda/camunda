@@ -64,7 +64,8 @@ public class IndexRepositoryES implements IndexRepository, ConfigurationReloadab
     return indexExists(indexMappingCreatorBuilder.getElasticsearch().apply(key).getIndexName());
   }
 
-  private String getIndexName(final IndexMappingCreator<IndexSettings.Builder> indexMappingCreator) {
+  private String getIndexName(
+      final IndexMappingCreator<IndexSettings.Builder> indexMappingCreator) {
     return indexNameService.getOptimizeIndexNameWithVersion(indexMappingCreator);
   }
 

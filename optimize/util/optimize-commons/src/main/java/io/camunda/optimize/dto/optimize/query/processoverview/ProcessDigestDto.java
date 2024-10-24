@@ -24,8 +24,7 @@ public class ProcessDigestDto extends ProcessDigestResponseDto {
     this.kpiReportResults = kpiReportResults;
   }
 
-  public ProcessDigestDto() {
-  }
+  public ProcessDigestDto() {}
 
   public Map<String, String> getKpiReportResults() {
     return kpiReportResults;
@@ -55,9 +54,7 @@ public class ProcessDigestDto extends ProcessDigestResponseDto {
     return "ProcessDigestDto(kpiReportResults=" + getKpiReportResults() + ")";
   }
 
-  /**
-   * Needed to inherit field name constants from {@link ProcessDigestResponseDto}
-   */
+  /** Needed to inherit field name constants from {@link ProcessDigestResponseDto} */
   @SuppressWarnings("checkstyle:ConstantName")
   public static class Fields extends ProcessDigestResponseDto.Fields {
 

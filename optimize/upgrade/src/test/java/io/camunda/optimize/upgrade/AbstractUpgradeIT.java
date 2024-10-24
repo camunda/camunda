@@ -83,6 +83,7 @@ public abstract class AbstractUpgradeIT {
   @Order(1)
   public static DatabaseIntegrationTestExtension databaseIntegrationTestExtension =
       new DatabaseIntegrationTestExtension(getDatabaseTypeFromEnvVar());
+
   protected static MetadataIndex metadataIndex;
   protected static final String FROM_VERSION = "2.6.0";
   protected static final String INTERMEDIATE_VERSION = "2.6.1";
@@ -105,8 +106,8 @@ public abstract class AbstractUpgradeIT {
   }
 
   public static DatabaseType getDatabaseTypeFromEnvVar() {
-    final Optional<String> envVarValue = Optional.ofNullable(
-        System.getenv(CAMUNDA_OPTIMIZE_DATABASE));
+    final Optional<String> envVarValue =
+        Optional.ofNullable(System.getenv(CAMUNDA_OPTIMIZE_DATABASE));
     return envVarValue
         .map(db -> DatabaseType.valueOf(db.toUpperCase(Locale.ROOT)))
         .orElse(DatabaseType.ELASTICSEARCH);
@@ -218,7 +219,7 @@ public abstract class AbstractUpgradeIT {
                   .map(
                       index ->
                           (IndexMappingCreator<
-                              org.opensearch.client.opensearch.indices.IndexSettings.Builder>)
+                                  org.opensearch.client.opensearch.indices.IndexSettings.Builder>)
                               IndexLookupUtilIncludingTestIndices.convertIndexForDatabase(
                                   index, DatabaseType.OPENSEARCH))
                   .toList());

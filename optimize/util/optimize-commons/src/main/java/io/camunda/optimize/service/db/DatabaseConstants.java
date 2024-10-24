@@ -98,6 +98,5 @@ public final class DatabaseConstants {
   // Units
   public static final String GB_UNIT = "gb";
 
-  private DatabaseConstants() {
-  }
+  private DatabaseConstants() {}
 }

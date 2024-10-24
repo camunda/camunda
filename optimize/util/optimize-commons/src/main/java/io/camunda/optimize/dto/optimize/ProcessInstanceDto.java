@@ -66,8 +66,7 @@ public class ProcessInstanceDto implements OptimizeDto {
     this.tenantId = tenantId;
   }
 
-  public ProcessInstanceDto() {
-  }
+  public ProcessInstanceDto() {}
 
   protected ProcessInstanceDto(final ProcessInstanceDtoBuilder<?, ?> b) {
     processDefinitionKey = b.processDefinitionKey;
@@ -434,8 +433,7 @@ public class ProcessInstanceDto implements OptimizeDto {
   private static final class ProcessInstanceDtoBuilderImpl
       extends ProcessInstanceDtoBuilder<ProcessInstanceDto, ProcessInstanceDtoBuilderImpl> {
 
-    private ProcessInstanceDtoBuilderImpl() {
-    }
+    private ProcessInstanceDtoBuilderImpl() {}
 
     @Override
     protected ProcessInstanceDtoBuilderImpl self() {

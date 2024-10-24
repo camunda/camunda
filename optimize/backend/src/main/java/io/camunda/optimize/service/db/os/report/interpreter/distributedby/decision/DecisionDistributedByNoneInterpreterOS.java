@@ -32,7 +32,8 @@ public class DecisionDistributedByNoneInterpreterOS
 
   private final DecisionViewInterpreterFacadeOS viewInterpreter;
 
-  public DecisionDistributedByNoneInterpreterOS(final DecisionViewInterpreterFacadeOS viewInterpreter) {
+  public DecisionDistributedByNoneInterpreterOS(
+      final DecisionViewInterpreterFacadeOS viewInterpreter) {
     this.viewInterpreter = viewInterpreter;
   }
 

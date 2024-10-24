@@ -24,7 +24,8 @@ public class BackupWriter {
   private final SnapshotRepository snapshotRepository;
 
   public BackupWriter(
-      final MappingMetadataRepository mappingMetadataRepository, final SnapshotRepository snapshotRepository) {
+      final MappingMetadataRepository mappingMetadataRepository,
+      final SnapshotRepository snapshotRepository) {
     this.mappingMetadataRepository = mappingMetadataRepository;
     this.snapshotRepository = snapshotRepository;
   }

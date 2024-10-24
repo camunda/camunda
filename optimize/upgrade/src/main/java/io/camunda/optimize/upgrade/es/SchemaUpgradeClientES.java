@@ -275,8 +275,8 @@ public class SchemaUpgradeClientES
                                       .aliases(indexAliases.stream().toList()))));
       getElasticsearchClient().indices().updateAliases(indicesAliasesRequest);
     } catch (final Exception e) {
-      final String errorMessage = String.format("Could not add alias to index [%s]!",
-          completeIndexName);
+      final String errorMessage =
+          String.format("Could not add alias to index [%s]!", completeIndexName);
       throw new UpgradeRuntimeException(errorMessage, e);
     }
   }
@@ -299,8 +299,8 @@ public class SchemaUpgradeClientES
                     }
                   }));
     } catch (final Exception e) {
-      final String errorMessage = String.format("Could not add data to indexAlias [%s]!",
-          aliasName);
+      final String errorMessage =
+          String.format("Could not add data to indexAlias [%s]!", aliasName);
       throw new UpgradeRuntimeException(errorMessage, e);
     }
   }
@@ -447,10 +447,10 @@ public class SchemaUpgradeClientES
                     taskInfo ->
                         taskInfo.description() != null
                             && areTaskAndRequestDescriptionsEqual(
-                            taskInfo.description(),
-                            createReIndexRequestDescription(
-                                reindexRequest.source().index(),
-                                reindexRequest.dest().index())))
+                                taskInfo.description(),
+                                createReIndexRequestDescription(
+                                    reindexRequest.source().index(),
+                                    reindexRequest.dest().index())))
                 .findAny();
           }
         }
@@ -462,7 +462,7 @@ public class SchemaUpgradeClientES
               taskInfo ->
                   taskInfo.description() != null
                       && areTaskAndRequestDescriptionsEqual(
-                      taskInfo.description(), request.toString()))
+                          taskInfo.description(), request.toString()))
           .findAny();
     } catch (final Exception e) {
       LOG.warn("Could not get pending task for description matching [{}].", request.toString());

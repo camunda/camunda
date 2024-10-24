@@ -16,8 +16,7 @@ public final class LocalDateUtil {
 
   private static volatile OffsetDateTime currentTime = null;
 
-  private LocalDateUtil() {
-  }
+  private LocalDateUtil() {}
 
   public static void setCurrentTime(final OffsetDateTime currentTime) {
     LocalDateUtil.currentTime = normalize(currentTime);

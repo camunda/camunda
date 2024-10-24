@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 
 public interface ProcessExecutionPlanInterpreter
     extends ExecutionPlanInterpreter<ProcessReportDataDto, ProcessExecutionPlan>,
-    HasGroupByMinMaxStats<ProcessReportDataDto, ProcessExecutionPlan> {
+        HasGroupByMinMaxStats<ProcessReportDataDto, ProcessExecutionPlan> {
 
   // Instance date filters should also reduce the total count (baseline) considered for report
   // evaluation

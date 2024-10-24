@@ -30,8 +30,7 @@ public final class OpenSearchWriterUtil {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(OpenSearchWriterUtil.class);
 
-  private OpenSearchWriterUtil() {
-  }
+  private OpenSearchWriterUtil() {}
 
   public static Script createFieldUpdateScript(
       final Set<String> fields, final Object entityDto, final ObjectMapper objectMapper) {
@@ -54,8 +53,7 @@ public final class OpenSearchWriterUtil {
   public static Map<String, JsonData> createFieldUpdateScriptParams(
       final Set<String> fields, final Object entityDto, final ObjectMapper objectMapper) {
     final Map<String, Object> entityAsMap =
-        objectMapper.convertValue(entityDto, new TypeReference<>() {
-        });
+        objectMapper.convertValue(entityDto, new TypeReference<>() {});
     final Map<String, JsonData> params = new HashMap<>();
     for (final String fieldName : fields) {
       Object fieldValue = entityAsMap.get(fieldName);

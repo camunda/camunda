@@ -33,8 +33,7 @@ public class OptimizeResourceConstants implements ConfigurationReloadable {
   @SuppressWarnings("checkstyle:StaticVariableName")
   public static int ACTUATOR_PORT;
 
-  public OptimizeResourceConstants() {
-  }
+  public OptimizeResourceConstants() {}
 
   @Value("${management.endpoints.web.base-path:/actuator}")
   public void setActuatorEndpointStatic(final String endpoint) {

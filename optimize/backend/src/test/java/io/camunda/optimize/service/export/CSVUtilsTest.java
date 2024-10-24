@@ -40,7 +40,7 @@ public class CSVUtilsTest {
 
   @Test
   public void
-  testRawProcessResultMappingNewVariablesAndDtoFieldsAreExcludedWhenSetInReportConfig() {
+      testRawProcessResultMappingNewVariablesAndDtoFieldsAreExcludedWhenSetInReportConfig() {
     // given
     final List<RawDataProcessInstanceDto> toMap = RawDataHelper.getRawDataProcessInstanceDtos();
     final List<String> unexpectedVariableColumns =
@@ -145,8 +145,8 @@ public class CSVUtilsTest {
     // when
     final RawDataCommandResult rawDataReportResult =
         new RawDataCommandResult(toMap, reportDefinition.getData());
-    final List<String[]> result = rawDataReportResult.getResultAsCsv(10, null,
-        ZoneId.systemDefault());
+    final List<String[]> result =
+        rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     // then
     assertThat(result).hasSize(4);
@@ -186,8 +186,8 @@ public class CSVUtilsTest {
     // when
     final RawDataCommandResult rawDataReportResult =
         new RawDataCommandResult(toMap, reportDefinition.getData());
-    final List<String[]> result = rawDataReportResult.getResultAsCsv(10, null,
-        ZoneId.systemDefault());
+    final List<String[]> result =
+        rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     // then
     assertThat(result).hasSize(4);
@@ -263,7 +263,7 @@ public class CSVUtilsTest {
 
   @Test
   public void
-  testRawProcessResultMappingWithIncludingVariableAndExcludingSameVariableExcludeWins() {
+      testRawProcessResultMappingWithIncludingVariableAndExcludingSameVariableExcludeWins() {
     // given
     final List<RawDataProcessInstanceDto> toMap = RawDataHelper.getRawDataProcessInstanceDtos();
 
@@ -303,7 +303,7 @@ public class CSVUtilsTest {
 
   @Test
   public void
-  testRawDecisionResultMappingNewVariablesAreExcludedAndDtoFieldsAreIncludedByDefault() {
+      testRawDecisionResultMappingNewVariablesAreExcludedAndDtoFieldsAreIncludedByDefault() {
     // given
     final List<RawDataDecisionInstanceDto> toMap = RawDataHelper.getRawDataDecisionInstanceDtos();
     final List<String> unexpectedInputVariableColumns =
@@ -351,8 +351,8 @@ public class CSVUtilsTest {
     // when
     final RawDataCommandResult rawDataReportResult =
         new RawDataCommandResult(toMap, reportDefinition.getData());
-    final List<String[]> result = rawDataReportResult.getResultAsCsv(10, null,
-        ZoneId.systemDefault());
+    final List<String[]> result =
+        rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     // then
     assertThat(result).hasSize(4);
@@ -388,8 +388,8 @@ public class CSVUtilsTest {
     // when
     final RawDataCommandResult rawDataReportResult =
         new RawDataCommandResult(toMap, reportDefinition.getData());
-    final List<String[]> result = rawDataReportResult.getResultAsCsv(10, null,
-        ZoneId.systemDefault());
+    final List<String[]> result =
+        rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     // then
     assertThat(result).hasSize(4);
@@ -419,8 +419,8 @@ public class CSVUtilsTest {
     // when
     final RawDataCommandResult rawDataReportResult =
         new RawDataCommandResult(toMap, reportDefinition.getData());
-    final List<String[]> result = rawDataReportResult.getResultAsCsv(10, null,
-        ZoneId.systemDefault());
+    final List<String[]> result =
+        rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     // then
     assertThat(result).hasSize(4);
@@ -451,8 +451,8 @@ public class CSVUtilsTest {
     // when
     final RawDataCommandResult rawDataReportResult =
         new RawDataCommandResult(toMap, reportDefinition.getData());
-    final List<String[]> result = rawDataReportResult.getResultAsCsv(10, null,
-        ZoneId.systemDefault());
+    final List<String[]> result =
+        rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     // then
     assertThat(result).hasSize(4);
@@ -463,7 +463,7 @@ public class CSVUtilsTest {
 
   @Test
   public void
-  testRawDecisionResultMappingWithIncludingInputVariableAndExcludingSameVariableExcludeWins() {
+      testRawDecisionResultMappingWithIncludingInputVariableAndExcludingSameVariableExcludeWins() {
     // given
     final List<RawDataDecisionInstanceDto> toMap = RawDataHelper.getRawDataDecisionInstanceDtos();
     final List<String> firstRowInputVariableColumnNames =
@@ -491,8 +491,8 @@ public class CSVUtilsTest {
     // when
     final RawDataCommandResult rawDataReportResult =
         new RawDataCommandResult(toMap, reportDefinition.getData());
-    final List<String[]> result = rawDataReportResult.getResultAsCsv(10, null,
-        ZoneId.systemDefault());
+    final List<String[]> result =
+        rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     // then
     assertThat(result).hasSize(4);
@@ -522,8 +522,8 @@ public class CSVUtilsTest {
     // when
     final RawDataCommandResult rawDataReportResult =
         new RawDataCommandResult(toMap, reportDefinition.getData());
-    final List<String[]> result = rawDataReportResult.getResultAsCsv(10, null,
-        ZoneId.systemDefault());
+    final List<String[]> result =
+        rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     // then
     assertThat(result).hasSize(4);
@@ -554,8 +554,8 @@ public class CSVUtilsTest {
     // when
     final RawDataCommandResult rawDataReportResult =
         new RawDataCommandResult(toMap, reportDefinition.getData());
-    final List<String[]> result = rawDataReportResult.getResultAsCsv(10, null,
-        ZoneId.systemDefault());
+    final List<String[]> result =
+        rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     // then
     assertThat(result).hasSize(4);
@@ -566,7 +566,7 @@ public class CSVUtilsTest {
 
   @Test
   public void
-  testRawDecisionResultMappingWithIncludingOutputVariableAndExcludingSameVariableExcludeWins() {
+      testRawDecisionResultMappingWithIncludingOutputVariableAndExcludingSameVariableExcludeWins() {
     // given
     final List<RawDataDecisionInstanceDto> toMap = RawDataHelper.getRawDataDecisionInstanceDtos();
     final List<String> firstRowOutputVariableColumnNames =
@@ -594,8 +594,8 @@ public class CSVUtilsTest {
     // when
     final RawDataCommandResult rawDataReportResult =
         new RawDataCommandResult(toMap, reportDefinition.getData());
-    final List<String[]> result = rawDataReportResult.getResultAsCsv(10, null,
-        ZoneId.systemDefault());
+    final List<String[]> result =
+        rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     // then
     assertThat(result).hasSize(4);

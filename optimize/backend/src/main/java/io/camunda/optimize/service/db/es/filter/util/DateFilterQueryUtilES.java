@@ -33,8 +33,7 @@ public final class DateFilterQueryUtilES {
       DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(DateFilterQueryUtilES.class);
 
-  private DateFilterQueryUtilES() {
-  }
+  private DateFilterQueryUtilES() {}
 
   public static void addFilters(
       final BoolQuery.Builder query,
@@ -57,11 +56,11 @@ public final class DateFilterQueryUtilES {
             (OffsetDateTime) dateFilterDto.getStart(), dateFilterDto.getEnd(), dateField, timezone);
       case ROLLING:
         return createRollingDateFilter(
-            (RollingDateFilterStartDto) dateFilterDto.getStart(), dateField, timezone)
+                (RollingDateFilterStartDto) dateFilterDto.getStart(), dateField, timezone)
             .map(RangeQuery.Builder::build);
       case RELATIVE:
         return createRelativeDateFilter(
-            (RelativeDateFilterStartDto) dateFilterDto.getStart(), dateField, timezone)
+                (RelativeDateFilterStartDto) dateFilterDto.getStart(), dateField, timezone)
             .map(RangeQuery.Builder::build);
       default:
         LOG.warn("Cannot execute date filter. Unknown type [{}]", dateFilterDto.getType());

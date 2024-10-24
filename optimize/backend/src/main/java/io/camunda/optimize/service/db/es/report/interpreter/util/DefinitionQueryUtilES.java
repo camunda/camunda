@@ -26,18 +26,17 @@ import java.util.function.UnaryOperator;
 
 public final class DefinitionQueryUtilES {
 
-  private DefinitionQueryUtilES() {
-  }
+  private DefinitionQueryUtilES() {}
 
   public static BoolQuery createDefinitionQuery(
       final String definitionKey, final List<String> tenantIds, final AbstractInstanceIndex type) {
     return createDefinitionQuery(
-        definitionKey,
-        ImmutableList.of(ReportConstants.ALL_VERSIONS),
-        tenantIds,
-        type,
-        // not relevant
-        s -> "")
+            definitionKey,
+            ImmutableList.of(ReportConstants.ALL_VERSIONS),
+            tenantIds,
+            type,
+            // not relevant
+            s -> "")
         .build();
   }
 

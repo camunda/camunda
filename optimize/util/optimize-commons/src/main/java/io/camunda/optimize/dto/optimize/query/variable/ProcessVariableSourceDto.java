@@ -110,8 +110,7 @@ public class ProcessVariableSourceDto {
     private List<String> tenantIdsValue;
     private boolean tenantIdsSet;
 
-    ProcessVariableSourceDtoBuilder() {
-    }
+    ProcessVariableSourceDtoBuilder() {}
 
     public ProcessVariableSourceDtoBuilder processInstanceId(final String processInstanceId) {
       this.processInstanceId = processInstanceId;
@@ -147,10 +146,7 @@ public class ProcessVariableSourceDto {
         tenantIdsValue = ProcessVariableSourceDto.defaultTenantIds();
       }
       return new ProcessVariableSourceDto(
-          processInstanceId,
-          processDefinitionKey,
-          processDefinitionVersionsValue,
-          tenantIdsValue);
+          processInstanceId, processDefinitionKey, processDefinitionVersionsValue, tenantIdsValue);
     }
 
     @Override

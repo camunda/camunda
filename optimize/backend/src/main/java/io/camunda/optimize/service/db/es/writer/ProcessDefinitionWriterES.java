@@ -181,7 +181,8 @@ public class ProcessDefinitionWriterES extends AbstractProcessDefinitionWriterES
         FIELDS_TO_UPDATE, processDefinitionDto, objectMapper);
   }
 
-  private void writeProcessDefinitionInformation(final List<ProcessDefinitionOptimizeDto> procDefs) {
+  private void writeProcessDefinitionInformation(
+      final List<ProcessDefinitionOptimizeDto> procDefs) {
     final String importItemName = "process definition information";
     LOG.debug("Writing [{}] {} to ES.", procDefs.size(), importItemName);
 

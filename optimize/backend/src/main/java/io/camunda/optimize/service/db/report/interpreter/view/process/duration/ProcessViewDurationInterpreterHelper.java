@@ -21,8 +21,7 @@ import org.apache.commons.math3.util.Precision;
 
 public final class ProcessViewDurationInterpreterHelper {
 
-  private ProcessViewDurationInterpreterHelper() {
-  }
+  private ProcessViewDurationInterpreterHelper() {}
 
   public static ProcessPartDto getProcessPart(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {

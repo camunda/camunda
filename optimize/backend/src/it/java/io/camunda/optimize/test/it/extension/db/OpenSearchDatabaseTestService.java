@@ -317,8 +317,8 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  public void insertTestDocuments(final int amount, final String indexName, final String jsonDocument)
-      throws IOException {
+  public void insertTestDocuments(
+      final int amount, final String indexName, final String jsonDocument) throws IOException {
     getOptimizeOpenSearchClient()
         .getOpenSearchClient()
         .bulk(
@@ -350,8 +350,8 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  public void performLowLevelBulkRequest(final String methodName, final String endpoint, final String bulkPayload)
-      throws IOException {
+  public void performLowLevelBulkRequest(
+      final String methodName, final String endpoint, final String bulkPayload) throws IOException {
     final HttpEntity entity = new NStringEntity(bulkPayload, ContentType.APPLICATION_JSON);
     final Request request = new Request(methodName, endpoint);
     request.setEntity(entity);
@@ -364,7 +364,8 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   private IndexSettings createIndexSettings(
-      final IndexMappingCreator indexMappingCreator, final ConfigurationService configurationService) {
+      final IndexMappingCreator indexMappingCreator,
+      final ConfigurationService configurationService) {
     try {
       return OpenSearchIndexSettingsBuilder.buildAllSettings(
           configurationService, indexMappingCreator);
@@ -399,7 +400,8 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  public boolean templateExists(final String optimizeIndexTemplateNameWithVersion) throws IOException {
+  public boolean templateExists(final String optimizeIndexTemplateNameWithVersion)
+      throws IOException {
     final ExistsTemplateRequest.Builder request =
         new ExistsTemplateRequest.Builder().name(optimizeIndexTemplateNameWithVersion);
     return getOptimizeOpenSearchClient()
@@ -796,7 +798,9 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
 
   @Override
   public void createIndex(
-      final String indexName, final Map<String, Boolean> aliases, final DefaultIndexMappingCreator indexMapping)
+      final String indexName,
+      final Map<String, Boolean> aliases,
+      final DefaultIndexMappingCreator indexMapping)
       throws IOException {
 
     final IndexSettings indexSettings =

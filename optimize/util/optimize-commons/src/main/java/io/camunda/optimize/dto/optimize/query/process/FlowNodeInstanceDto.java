@@ -35,8 +35,7 @@ public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
   private String tenantId;
 
   // Note that engine is transient and only used for correct "routing" during import
-  @JsonIgnore
-  private String engine;
+  @JsonIgnore private String engine;
 
   private String userTaskInstanceId;
 
@@ -240,8 +239,7 @@ public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
     this.workDurationInMs = workDurationInMs;
   }
 
-  public FlowNodeInstanceDto() {
-  }
+  public FlowNodeInstanceDto() {}
 
   public String getFlowNodeInstanceId() {
     return flowNodeInstanceId;

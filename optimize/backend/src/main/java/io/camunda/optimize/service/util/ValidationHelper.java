@@ -57,8 +57,7 @@ public final class ValidationHelper {
 
   protected static final Logger LOG = LoggerFactory.getLogger(ValidationHelper.class);
 
-  private ValidationHelper() {
-  }
+  private ValidationHelper() {}
 
   public static void validate(final BranchAnalysisRequestDto dto) {
     ensureNotEmpty("gateway activity id", dto.getGateway());
@@ -199,7 +198,8 @@ public final class ValidationHelper {
           ensureNotEmpty("values", flowNodeFilterData.getValues());
         } else if (filterDto instanceof FlowNodeStartDateFilterDto
             || filterDto instanceof FlowNodeEndDateFilterDto) {
-          @SuppressWarnings(UNCHECKED_CAST) final ProcessFilterDto<FlowNodeDateFilterDataDto<?>> flowNodeDateFilterDto =
+          @SuppressWarnings(UNCHECKED_CAST)
+          final ProcessFilterDto<FlowNodeDateFilterDataDto<?>> flowNodeDateFilterDto =
               (ProcessFilterDto<FlowNodeDateFilterDataDto<?>>) filterDto;
           validateFlowNodeDateFilter(flowNodeDateFilterDto);
         }

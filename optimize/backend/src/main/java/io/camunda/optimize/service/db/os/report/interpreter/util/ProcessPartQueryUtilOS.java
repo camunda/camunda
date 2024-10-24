@@ -39,8 +39,7 @@ import org.opensearch.client.opensearch._types.query_dsl.ChildScoreMode;
 
 public final class ProcessPartQueryUtilOS extends AbstractProcessPartQueryUtil {
 
-  private ProcessPartQueryUtilOS() {
-  }
+  private ProcessPartQueryUtilOS() {}
 
   public static Double getProcessPartAggregationResult(
       final Map<String, Aggregate> aggs, final AggregationDto aggregationType) {

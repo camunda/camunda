@@ -119,7 +119,7 @@ public class CCSaaSOnboardingPanelNotificationService {
             processKey,
             List.of(ALL_VERSIONS),
             Collections.emptyList() // TODO to be adjusted with OPT-7113
-        )
+            )
         .map(DefinitionOptimizeResponseDto::getName)
         .orElse(processKey);
   }

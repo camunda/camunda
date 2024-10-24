@@ -47,7 +47,7 @@ public class DateAggregationContextOS extends DateAggregationContext {
   }
 
   public abstract static class DateAggregationContextOSBuilder<
-      C extends DateAggregationContextOS, B extends DateAggregationContextOSBuilder<C, B>>
+          C extends DateAggregationContextOS, B extends DateAggregationContextOSBuilder<C, B>>
       extends DateAggregationContextBuilder<C, B> {
 
     private Map<String, Aggregation> subAggregations;
@@ -97,10 +97,9 @@ public class DateAggregationContextOS extends DateAggregationContext {
 
   private static final class DateAggregationContextOSBuilderImpl
       extends DateAggregationContextOSBuilder<
-      DateAggregationContextOS, DateAggregationContextOSBuilderImpl> {
+          DateAggregationContextOS, DateAggregationContextOSBuilderImpl> {
 
-    private DateAggregationContextOSBuilderImpl() {
-    }
+    private DateAggregationContextOSBuilderImpl() {}
 
     @Override
     protected DateAggregationContextOSBuilderImpl self() {

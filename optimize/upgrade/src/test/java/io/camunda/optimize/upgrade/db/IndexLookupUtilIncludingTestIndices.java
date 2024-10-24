@@ -57,13 +57,13 @@ public final class IndexLookupUtilIncludingTestIndices {
   }
 
   private static Map<String, Function<String, IndexMappingCreator>>
-  createOpensearchIndexFunctionLookupMap() {
+      createOpensearchIndexFunctionLookupMap() {
     final Map<String, Function<String, IndexMappingCreator>> lookupMap = new HashMap<>();
     return lookupMap;
   }
 
   private static Map<String, Function<String, IndexMappingCreator>>
-  createElasticsearchIndexFunctionLookupMap() {
+      createElasticsearchIndexFunctionLookupMap() {
     final Map<String, Function<String, IndexMappingCreator>> lookupMap = new HashMap<>();
     return lookupMap;
   }

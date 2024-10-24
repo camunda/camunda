@@ -176,7 +176,8 @@ public class ProcessReportDataBuilderHelper {
     return this;
   }
 
-  public ProcessReportDataBuilderHelper distributedByType(final DistributedByType distributedByType) {
+  public ProcessReportDataBuilderHelper distributedByType(
+      final DistributedByType distributedByType) {
     this.distributedByType = distributedByType;
     return this;
   }

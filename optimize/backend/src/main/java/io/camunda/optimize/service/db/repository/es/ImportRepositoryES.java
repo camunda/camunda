@@ -142,7 +142,8 @@ public class ImportRepositoryES implements ImportRepository {
 
   @Override
   public void importIndices(
-      final String importItemName, final List<TimestampBasedImportIndexDto> timestampBasedImportIndexDtos) {
+      final String importItemName,
+      final List<TimestampBasedImportIndexDto> timestampBasedImportIndexDtos) {
     esClient.doImportBulkRequestWithList(
         importItemName,
         timestampBasedImportIndexDtos,
@@ -185,7 +186,8 @@ public class ImportRepositoryES implements ImportRepository {
   private IndexOperation.Builder<TimestampBasedImportIndexDto> createTimestampBasedRequest(
       final OptimizeIndexOperationBuilderES<TimestampBasedImportIndexDto> builder,
       final TimestampBasedImportIndexDto importIndex) {
-    final String currentTimeStamp = dateTimeFormatter.format(importIndex.getTimestampOfLastEntity());
+    final String currentTimeStamp =
+        dateTimeFormatter.format(importIndex.getTimestampOfLastEntity());
     LOG.debug(
         "Writing timestamp based import index [{}] of type [{}] with execution timestamp [{}] to elasticsearch",
         currentTimeStamp,

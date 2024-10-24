@@ -41,8 +41,7 @@ public class CustomBucketDto {
     this.baselineUnit = baselineUnit;
   }
 
-  protected CustomBucketDto() {
-  }
+  protected CustomBucketDto() {}
 
   public Optional<Double> getBucketSizeInUnit(final BucketUnit requestedBucketUnit) {
     return convertValueToRequestedUnit(requestedBucketUnit, bucketSize, bucketSizeUnit);
@@ -206,8 +205,7 @@ public class CustomBucketDto {
     private BucketUnit baselineUnitValue;
     private boolean baselineUnitSet;
 
-    CustomBucketDtoBuilder() {
-    }
+    CustomBucketDtoBuilder() {}
 
     public CustomBucketDtoBuilder active(final boolean active) {
       activeValue = active;

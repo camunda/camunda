@@ -210,7 +210,8 @@ public class ProcessViewRawDataInterpreterES extends AbstractProcessViewRawDataI
       final ResponseBody<?> response,
       final Map<String, Aggregate> aggs,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    final Map<String, Map<String, Long>> processInstanceIdsToFlowNodeIdsAndDurations = new HashMap<>();
+    final Map<String, Map<String, Long>> processInstanceIdsToFlowNodeIdsAndDurations =
+        new HashMap<>();
     final Map<String, Long> instanceIdsToUserTaskCount = new HashMap<>();
     final Function<Hit<?>, ProcessInstanceDto> mappingFunction =
         hit -> {

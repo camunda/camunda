@@ -15,8 +15,7 @@ import io.camunda.optimize.upgrade.service.UpgradeValidationService;
 
 public final class UpgradeProcedureFactory {
 
-  private UpgradeProcedureFactory() {
-  }
+  private UpgradeProcedureFactory() {}
 
   public static UpgradeProcedure create(final UpgradeExecutionDependencies upgradeDependencies) {
     return new UpgradeProcedure(

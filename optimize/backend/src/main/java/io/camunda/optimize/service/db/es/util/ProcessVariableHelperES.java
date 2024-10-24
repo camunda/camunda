@@ -18,8 +18,7 @@ import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 public final class ProcessVariableHelperES {
 
-  private ProcessVariableHelperES() {
-  }
+  private ProcessVariableHelperES() {}
 
   public static BoolQuery.Builder createFilterForUndefinedOrNullQueryBuilder(
       final String variableName, final VariableType variableType) {

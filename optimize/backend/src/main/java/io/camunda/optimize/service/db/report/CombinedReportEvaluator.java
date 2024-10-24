@@ -108,8 +108,8 @@ public class CombinedReportEvaluator {
       final ZoneId timezone) {
     Optional<SingleReportEvaluationResult<?>> result = Optional.empty();
     try {
-      final ReportEvaluationContext<SingleProcessReportDefinitionRequestDto> reportEvaluationContext =
-          new ReportEvaluationContext<>();
+      final ReportEvaluationContext<SingleProcessReportDefinitionRequestDto>
+          reportEvaluationContext = new ReportEvaluationContext<>();
       reportEvaluationContext.setReportDefinition(reportDefinition);
       reportEvaluationContext.setTimezone(timezone);
       reportEvaluationContext.setCombinedRangeMinMaxStats(combinedRangeMinMaxStats);

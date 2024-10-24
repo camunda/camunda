@@ -81,7 +81,8 @@ public class AlertEmailNotificationServiceTest {
 
   @ParameterizedTest(name = "test send email with security protocol = {0}")
   @MethodSource("getSecurityProtocolVariations")
-  public void sendEmailWithSecurityProtocolVariations(final EmailSecurityProtocol emailSecurityProtocol) {
+  public void sendEmailWithSecurityProtocolVariations(
+      final EmailSecurityProtocol emailSecurityProtocol) {
     // given
     mockConfig(true, "demo", "demo", emailSecurityProtocol);
     initGreenMail(ServerSetup.PROTOCOL_SMTP);

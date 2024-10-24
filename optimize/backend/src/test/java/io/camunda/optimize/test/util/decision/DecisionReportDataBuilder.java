@@ -89,7 +89,8 @@ public class DecisionReportDataBuilder {
     return this;
   }
 
-  public DecisionReportDataBuilder setDecisionDefinitionVersion(final String decisionDefinitionVersion) {
+  public DecisionReportDataBuilder setDecisionDefinitionVersion(
+      final String decisionDefinitionVersion) {
     this.definitions.get(0).setVersion(decisionDefinitionVersion);
     return this;
   }

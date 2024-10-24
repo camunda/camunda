@@ -9,8 +9,7 @@ package io.camunda.optimize.service.util;
 
 public final class CronNormalizerUtil {
 
-  private CronNormalizerUtil() {
-  }
+  private CronNormalizerUtil() {}
 
   public static String normalizeToSixParts(final String cronTrigger) {
     final String[] cronParts = cronTrigger.split(" ");

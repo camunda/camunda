@@ -18,8 +18,7 @@ public abstract class UpgradeStep {
 
   // This should always be false in real upgrades. In test scenarios, it can be set to true to avoid
   // failing conversion of test indices that don't have lookups
-  @VisibleForTesting
-  protected boolean skipIndexConversion = false;
+  @VisibleForTesting protected boolean skipIndexConversion = false;
 
   protected UpgradeStep(final IndexMappingCreator index) {
     this.index = index;
@@ -30,8 +29,7 @@ public abstract class UpgradeStep {
     this.skipIndexConversion = skipIndexConversion;
   }
 
-  protected UpgradeStep() {
-  }
+  protected UpgradeStep() {}
 
   public abstract UpgradeStepType getType();
 

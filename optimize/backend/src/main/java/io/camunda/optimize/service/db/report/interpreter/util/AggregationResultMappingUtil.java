@@ -11,8 +11,7 @@ import java.util.Optional;
 
 public final class AggregationResultMappingUtil {
 
-  private AggregationResultMappingUtil() {
-  }
+  private AggregationResultMappingUtil() {}
 
   public static Double mapToDoubleOrNull(final Double value) {
     return Double.isInfinite(value) || Double.isNaN(value) ? null : value;

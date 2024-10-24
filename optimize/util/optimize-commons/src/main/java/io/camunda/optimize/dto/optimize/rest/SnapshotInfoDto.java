@@ -18,7 +18,10 @@ public class SnapshotInfoDto {
   private List<String> failures;
 
   public SnapshotInfoDto(
-      final String snapshotName, final SnapshotState state, final OffsetDateTime startTime, final List<String> failures) {
+      final String snapshotName,
+      final SnapshotState state,
+      final OffsetDateTime startTime,
+      final List<String> failures) {
     this.snapshotName = snapshotName;
     this.state = state;
     this.startTime = startTime;

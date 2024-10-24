@@ -54,9 +54,7 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
     return getOptimizeIndexNameWithVersionWithoutSuffix(indexMappingCreator);
   }
 
-  /**
-   * This will suffix the indices that are created from templates with their initial suffix
-   */
+  /** This will suffix the indices that are created from templates with their initial suffix */
   public String getOptimizeIndexNameWithVersion(final IndexMappingCreator indexMappingCreator) {
     return getOptimizeIndexNameWithVersionWithoutSuffix(indexMappingCreator)
         + indexMappingCreator.getIndexNameInitialSuffix();

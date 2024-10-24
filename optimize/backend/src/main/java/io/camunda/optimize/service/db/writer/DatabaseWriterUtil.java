@@ -26,14 +26,12 @@ public final class DatabaseWriterUtil {
   public static final DateTimeFormatter DATE_TIME_FORMATTER =
       DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
 
-  private DatabaseWriterUtil() {
-  }
+  private DatabaseWriterUtil() {}
 
   public static <T> Map<String, T> createFieldUpdateScriptParams(
       final Set<String> fields, final Object entityDto, final ObjectMapper objectMapper) {
     final Map<String, Object> entityAsMap =
-        objectMapper.convertValue(entityDto, new TypeReference<>() {
-        });
+        objectMapper.convertValue(entityDto, new TypeReference<>() {});
     final Map<String, T> params = new HashMap<>();
     for (final String fieldName : fields) {
       Object fieldValue = entityAsMap.get(fieldName);
@@ -77,8 +75,7 @@ public final class DatabaseWriterUtil {
         // get converted to generic objects that the elasticsearch client is happy to serialize
         // while it complains on
         // specific DTO's
-        .map(value -> objectMapper.convertValue(value, new TypeReference<Map<String, T>>() {
-        }))
+        .map(value -> objectMapper.convertValue(value, new TypeReference<Map<String, T>>() {}))
         .orElse(Collections.emptyMap());
   }
 }

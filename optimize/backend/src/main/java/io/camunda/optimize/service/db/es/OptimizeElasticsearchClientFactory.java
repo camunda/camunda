@@ -30,8 +30,7 @@ public final class OptimizeElasticsearchClientFactory {
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(OptimizeElasticsearchClientFactory.class);
 
-  private OptimizeElasticsearchClientFactory() {
-  }
+  private OptimizeElasticsearchClientFactory() {}
 
   public static OptimizeElasticsearchClient create(
       final ConfigurationService configurationService,

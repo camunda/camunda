@@ -46,8 +46,7 @@ public final class PanelNotificationRequestDto {
 
     private PanelNotificationDataDto notification;
 
-    PanelNotificationRequestDtoBuilder() {
-    }
+    PanelNotificationRequestDtoBuilder() {}
 
     public PanelNotificationRequestDtoBuilder notification(
         final PanelNotificationDataDto notification) {

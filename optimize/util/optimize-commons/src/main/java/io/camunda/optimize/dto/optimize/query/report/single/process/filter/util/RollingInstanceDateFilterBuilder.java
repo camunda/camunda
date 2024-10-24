@@ -28,15 +28,15 @@ public final class RollingInstanceDateFilterBuilder {
   }
 
   static RollingInstanceDateFilterBuilder endDate(final ProcessFilterBuilder filterBuilder) {
-    final RollingInstanceDateFilterBuilder builder = new RollingInstanceDateFilterBuilder(
-        filterBuilder);
+    final RollingInstanceDateFilterBuilder builder =
+        new RollingInstanceDateFilterBuilder(filterBuilder);
     builder.type = "endDate";
     return builder;
   }
 
   static RollingInstanceDateFilterBuilder startDate(final ProcessFilterBuilder filterBuilder) {
-    final RollingInstanceDateFilterBuilder builder = new RollingInstanceDateFilterBuilder(
-        filterBuilder);
+    final RollingInstanceDateFilterBuilder builder =
+        new RollingInstanceDateFilterBuilder(filterBuilder);
     builder.type = "startDate";
     return builder;
   }

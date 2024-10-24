@@ -449,10 +449,10 @@ public class SchemaUpgradeClientOS extends SchemaUpgradeClient<OptimizeOpenSearc
                     taskInfo ->
                         taskInfo.description() != null
                             && areTaskAndRequestDescriptionsEqual(
-                            taskInfo.description(),
-                            createReIndexRequestDescription(
-                                reindexRequest.source().index(),
-                                reindexRequest.dest().index())))
+                                taskInfo.description(),
+                                createReIndexRequestDescription(
+                                    reindexRequest.source().index(),
+                                    reindexRequest.dest().index())))
                 .findAny()
                 .map(SchemaUpgradeClientOS::convertStateToInfo);
           }
@@ -473,7 +473,7 @@ public class SchemaUpgradeClientOS extends SchemaUpgradeClient<OptimizeOpenSearc
               taskInfo ->
                   taskInfo.description() != null
                       && areTaskAndRequestDescriptionsEqual(
-                      taskInfo.description(), matchingDescription))
+                          taskInfo.description(), matchingDescription))
           .findAny();
     } catch (final Exception e) {
       LOG.warn("Could not get pending task for description matching [{}].", request.toString());

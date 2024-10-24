@@ -31,8 +31,7 @@ public final class ReportEvaluationInfo {
   private boolean isSharedReport;
   private Set<String> hiddenFlowNodeIds;
 
-  private ReportEvaluationInfo() {
-  }
+  private ReportEvaluationInfo() {}
 
   public void postFetchSavedReport(final ReportService reportService) {
     if (reportId != null) {

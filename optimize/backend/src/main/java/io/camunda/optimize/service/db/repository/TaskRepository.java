@@ -115,11 +115,9 @@ public abstract class TaskRepository {
   protected static int getProgress(final JsonObject status) {
     return status.getInt("total") > 0
         ? Double.valueOf((double) getProcessedTasksCount(status) / status.getInt("total") * 100.0D)
-        .intValue()
+            .intValue()
         : 0;
   }
 
-  public record TaskProgressInfo(int progress, long totalCount, long processedCount) {
-
-  }
+  public record TaskProgressInfo(int progress, long totalCount, long processedCount) {}
 }

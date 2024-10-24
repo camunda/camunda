@@ -22,8 +22,7 @@ public final class TimeZoneUtil {
   private static final Set<String> AVAILABLE_ZONE_IDS = ZoneId.getAvailableZoneIds();
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(TimeZoneUtil.class);
 
-  private TimeZoneUtil() {
-  }
+  private TimeZoneUtil() {}
 
   public static ZoneId extractTimezone(final ContainerRequestContext requestContext) {
     final String headerString = requestContext.getHeaderString(X_OPTIMIZE_CLIENT_TIMEZONE);

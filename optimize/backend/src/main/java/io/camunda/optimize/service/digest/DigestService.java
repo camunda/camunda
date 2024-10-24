@@ -330,7 +330,7 @@ public class DigestService implements ConfigurationReloadable {
     try {
       return 100
           * ((Double.parseDouble(kpiResult.getValue()) - previousValueAsDouble)
-          / previousValueAsDouble);
+              / previousValueAsDouble);
     } catch (final NumberFormatException exception) {
       throw new OptimizeRuntimeException(
           "Value could not be parsed to number: " + kpiResult.getValue());
@@ -371,7 +371,7 @@ public class DigestService implements ConfigurationReloadable {
 
     /**
      * @return a string to indicate report target depending on viewProperty and isBelow, eg "< 2h"
-     * or "> 50.55 %"
+     *     or "> 50.55 %"
      */
     private String getKpiTargetString(
         final String target,

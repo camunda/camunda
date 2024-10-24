@@ -31,7 +31,8 @@ public class DecisionDistributedByNoneInterpreterES
 
   private final DecisionViewInterpreterFacadeES viewInterpreter;
 
-  public DecisionDistributedByNoneInterpreterES(final DecisionViewInterpreterFacadeES viewInterpreter) {
+  public DecisionDistributedByNoneInterpreterES(
+      final DecisionViewInterpreterFacadeES viewInterpreter) {
     this.viewInterpreter = viewInterpreter;
   }
 

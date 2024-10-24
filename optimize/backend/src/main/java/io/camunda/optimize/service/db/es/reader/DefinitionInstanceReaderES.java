@@ -102,7 +102,8 @@ public class DefinitionInstanceReaderES extends DefinitionInstanceReader {
       throw e;
     }
 
-    final StringTermsAggregate definitionKeyTerms = response.aggregations().get(defKeyAggName).sterms();
+    final StringTermsAggregate definitionKeyTerms =
+        response.aggregations().get(defKeyAggName).sterms();
     return definitionKeyTerms.buckets().array().stream()
         .map(r -> r.key().stringValue())
         .collect(toSet());

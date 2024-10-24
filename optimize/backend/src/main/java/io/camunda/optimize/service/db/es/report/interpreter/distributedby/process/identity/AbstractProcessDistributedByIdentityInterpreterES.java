@@ -113,7 +113,8 @@ public abstract class AbstractProcessDistributedByIdentityInterpreterES
             .aggregations()
             .get(DISTRIBUTE_BY_IDENTITY_TERMS_AGGREGATION)
             .sterms();
-    final List<CompositeCommandResult.DistributedByResult> distributedByIdentity = new ArrayList<>();
+    final List<CompositeCommandResult.DistributedByResult> distributedByIdentity =
+        new ArrayList<>();
 
     for (final StringTermsBucket identityBucket : byIdentityAggregations.buckets().array()) {
       final CompositeCommandResult.ViewResult viewResult =

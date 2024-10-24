@@ -18,8 +18,7 @@ import java.util.Map;
 
 public final class VariableTestUtil {
 
-  private VariableTestUtil() {
-  }
+  private VariableTestUtil() {}
 
   public static Map<String, Object> createAllPrimitiveTypeVariables() {
     final Map<String, Object> variables = new HashMap<>();

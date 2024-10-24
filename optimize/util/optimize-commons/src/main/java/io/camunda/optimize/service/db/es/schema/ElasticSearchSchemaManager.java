@@ -507,9 +507,9 @@ public class ElasticSearchSchemaManager
       indexSettings.serialize(generator, jsonpMapper);
       generator.flush();
       return ((Map<String, Object>)
-          JsonData.from(new StringReader(writer.toString())).to(Map.class))
+              JsonData.from(new StringReader(writer.toString())).to(Map.class))
           .entrySet().stream()
-          .collect(Collectors.toMap(Map.Entry::getKey, entry -> JsonData.of(entry.getValue())));
+              .collect(Collectors.toMap(Map.Entry::getKey, entry -> JsonData.of(entry.getValue())));
     } catch (final IOException e) {
       LOG.error("Could not create settings!", e);
       throw new OptimizeRuntimeException("Could not create index settings");

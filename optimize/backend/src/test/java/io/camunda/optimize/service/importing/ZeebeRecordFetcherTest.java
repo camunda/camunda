@@ -39,16 +39,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class ZeebeRecordFetcherTest {
 
   public static final int TEST_CONFIGURED_BATCH_SIZE = 5;
-  @Mock
-  ObjectMapper objectMapper;
+  @Mock ObjectMapper objectMapper;
+
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   ConfigurationService configurationService;
-  @Mock
-  SearchResponse searchResponse;
+
+  @Mock SearchResponse searchResponse;
   // We test using a single specific implementation of the abstract record fetcher
   private ZeebeProcessInstanceFetcher underTest;
-  @Mock
-  private OptimizeElasticsearchClient optimizeElasticsearchClient;
+  @Mock private OptimizeElasticsearchClient optimizeElasticsearchClient;
 
   @Test
   public void testFetchFailsTriggersDynamicBatchResizing() {
@@ -56,9 +55,9 @@ public class ZeebeRecordFetcherTest {
     when(configurationService.getConfiguredZeebe().getMaxImportPageSize())
         .thenReturn(TEST_CONFIGURED_BATCH_SIZE);
     when(configurationService
-        .getConfiguredZeebe()
-        .getImportConfig()
-        .getDynamicBatchSuccessAttempts())
+            .getConfiguredZeebe()
+            .getImportConfig()
+            .getDynamicBatchSuccessAttempts())
         .thenReturn(10);
     initalizeClassUnderTest();
     // the class is initialized with the default batch size and number of successful requests

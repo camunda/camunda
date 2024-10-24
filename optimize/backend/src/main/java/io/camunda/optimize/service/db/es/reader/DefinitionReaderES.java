@@ -979,7 +979,8 @@ public class DefinitionReaderES implements DefinitionReader {
   private List<CompositeBucket> performSearchAndCollectAllKeyAndTypeBuckets(
       final Query.Builder filterQuery,
       final String[] definitionIndexNames,
-      final Function<CompositeAggregation.Builder, Aggregation.Builder.ContainerBuilder> keyAggregation,
+      final Function<CompositeAggregation.Builder, Aggregation.Builder.ContainerBuilder>
+          keyAggregation,
       final Supplier<CompositeAggregation.Builder> supplier) {
     final Aggregation.Builder.ContainerBuilder build = keyAggregation.apply(supplier.get());
     final Query query = filterQuery.build();

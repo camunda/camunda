@@ -184,7 +184,8 @@ public class ExecutionContext<D extends SingleReportDataDto, P extends Execution
     this.combinedRangeMinMaxStats = combinedRangeMinMaxStats;
   }
 
-  public void setAllDistributedByKeysAndLabels(final Map<String, String> allDistributedByKeysAndLabels) {
+  public void setAllDistributedByKeysAndLabels(
+      final Map<String, String> allDistributedByKeysAndLabels) {
     this.allDistributedByKeysAndLabels = allDistributedByKeysAndLabels;
   }
 

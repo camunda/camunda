@@ -24,8 +24,7 @@ import java.util.Map;
 
 public final class DurationScriptUtilES {
 
-  private DurationScriptUtilES() {
-  }
+  private DurationScriptUtilES() {}
 
   public static Script getDurationScript(
       final long currRequestDateInMs,
@@ -35,7 +34,7 @@ public final class DurationScriptUtilES {
 
     return createDefaultScriptWithPrimitiveParams(
         getDurationCalculationScriptPart(
-            params, currRequestDateInMs, durationFieldName, referenceDateFieldName)
+                params, currRequestDateInMs, durationFieldName, referenceDateFieldName)
             + " return result;",
         params);
   }
@@ -61,7 +60,7 @@ public final class DurationScriptUtilES {
         // All duration filters operate on totalDuration
         // --> no specific userTask calculations needed, can use the general duration script
         getDurationCalculationScriptPart(
-            params, currRequestDateInMs, durationFieldName, referenceDateFieldName)
+                params, currRequestDateInMs, durationFieldName, referenceDateFieldName)
             + " return (result != null "
             + "&& result "
             + durationFilterDto.getOperator().getId()

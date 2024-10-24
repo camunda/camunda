@@ -46,14 +46,13 @@ public final class IncidentFilterQueryUtilOS extends IncidentFilterQueryUtil {
           INCIDENTS, INCIDENT_DEFINITION_KEY, INCIDENT_DEFINITION_VERSION, INCIDENT_TENANT_ID);
   private static final Map<Class<? extends ProcessFilterDto<?>>, Query>
       INCIDENT_VIEW_FILTER_INSTANCE_QUERIES =
-      ImmutableMap.of(
-          OpenIncidentFilterDto.class,
-          IncidentFilterQueryUtilOS.createOpenIncidentTermQuery(),
-          ResolvedIncidentFilterDto.class,
-          IncidentFilterQueryUtilOS.createResolvedIncidentTermQuery());
+          ImmutableMap.of(
+              OpenIncidentFilterDto.class,
+              IncidentFilterQueryUtilOS.createOpenIncidentTermQuery(),
+              ResolvedIncidentFilterDto.class,
+              IncidentFilterQueryUtilOS.createResolvedIncidentTermQuery());
 
-  private IncidentFilterQueryUtilOS() {
-  }
+  private IncidentFilterQueryUtilOS() {}
 
   public static Query createIncidentAggregationFilterQuery(
       final ProcessReportDataDto reportData, final DefinitionService definitionService) {

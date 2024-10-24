@@ -301,10 +301,9 @@ public class DateAggregationContext {
 
   private static final class DateAggregationContextBuilderImpl
       extends DateAggregationContextBuilder<
-      DateAggregationContext, DateAggregationContextBuilderImpl> {
+          DateAggregationContext, DateAggregationContextBuilderImpl> {
 
-    private DateAggregationContextBuilderImpl() {
-    }
+    private DateAggregationContextBuilderImpl() {}
 
     @Override
     protected DateAggregationContextBuilderImpl self() {

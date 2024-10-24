@@ -25,8 +25,7 @@ public final class ConfigurationUtil {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ConfigurationUtil.class);
 
-  private ConfigurationUtil() {
-  }
+  private ConfigurationUtil() {}
 
   public static String cutTrailingSlash(String string) {
     if (string != null && !string.isEmpty() && string.endsWith("/")) {

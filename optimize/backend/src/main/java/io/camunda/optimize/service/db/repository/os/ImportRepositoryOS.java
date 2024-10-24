@@ -154,8 +154,10 @@ public class ImportRepositoryOS implements ImportRepository {
     }
   }
 
-  private BulkOperation createTimestampBasedRequest(final TimestampBasedImportIndexDto importIndex) {
-    final String currentTimeStamp = dateTimeFormatter.format(importIndex.getTimestampOfLastEntity());
+  private BulkOperation createTimestampBasedRequest(
+      final TimestampBasedImportIndexDto importIndex) {
+    final String currentTimeStamp =
+        dateTimeFormatter.format(importIndex.getTimestampOfLastEntity());
     LOG.debug(
         "Writing timestamp based import index [{}] of type [{}] with execution timestamp [{}] to opensearch",
         currentTimeStamp,

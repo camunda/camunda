@@ -25,8 +25,7 @@ public final class PanelNotificationConstants {
       "Your first process of %s was started successfully. Track the status in the instant preview dashboard.";
   public static final String INITIAL_VISIT_TO_INSTANT_DASHBOARD_LINK_LABEL =
       "View instant preview dashboard";
-  public static final String[] OPTIMIZE_USER_PERMISSIONS = new String[]{"cluster:optimize:read"};
+  public static final String[] OPTIMIZE_USER_PERMISSIONS = new String[] {"cluster:optimize:read"};
 
-  private PanelNotificationConstants() {
-  }
+  private PanelNotificationConstants() {}
 }

@@ -58,18 +58,16 @@ public class SchemaUpgradeClientOSReindexTest {
 
   @RegisterExtension
   LogCapturer logCapturer = LogCapturer.create().captureForType(SchemaUpgradeClientOS.class);
-  @Mock
-  private OpenSearchSchemaManager schemaManager;
+
+  @Mock private OpenSearchSchemaManager schemaManager;
+
   @Mock(answer = Answers.RETURNS_DEEP_STUBS, strictness = Mock.Strictness.LENIENT)
   private OptimizeOpenSearchClient openSearchClient;
-  @Mock
-  private ConfigurationService configurationService;
-  @Mock
-  private OptimizeIndexNameService indexNameService;
-  @Mock
-  private OpenSearchMetadataService metadataService;
-  @Mock
-  private Info taskInfo;
+
+  @Mock private ConfigurationService configurationService;
+  @Mock private OptimizeIndexNameService indexNameService;
+  @Mock private OpenSearchMetadataService metadataService;
+  @Mock private Info taskInfo;
   private SchemaUpgradeClient<?, ?> underTest;
 
   @BeforeEach
@@ -235,14 +233,22 @@ public class SchemaUpgradeClientOSReindexTest {
     verify(openSearchClient).submitReindexTask(any(ReindexRequest.class));
   }
 
-  private Info createInfo(final String taskId, final long total, final long updated,
-      final long created, final long deleted) {
+  private Info createInfo(
+      final String taskId,
+      final long total,
+      final long updated,
+      final long created,
+      final long deleted) {
     return createInfo(taskId, total, updated, created, deleted, "");
   }
 
   private Info createInfo(
-      final String taskId, final long total, final long updated, final long created,
-      final long deleted, final String description) {
+      final String taskId,
+      final long total,
+      final long updated,
+      final long created,
+      final long deleted,
+      final String description) {
     return Info.of(
         i ->
             i.id(Long.parseLong(taskId))
@@ -257,8 +263,8 @@ public class SchemaUpgradeClientOSReindexTest {
                 .status(createStatus(total, updated, created, deleted)));
   }
 
-  private Status createStatus(final long total, final long updated, final long created,
-      final long deleted) {
+  private Status createStatus(
+      final long total, final long updated, final long created, final long deleted) {
     return Status.of(
         s ->
             s.total(total)

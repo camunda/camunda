@@ -12,6 +12,5 @@ public final class RestTestConstants {
   public static final String DEFAULT_USERNAME = "demo";
   public static final String DEFAULT_PASSWORD = "demo";
 
-  private RestTestConstants() {
-  }
+  private RestTestConstants() {}
 }

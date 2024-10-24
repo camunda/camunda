@@ -45,7 +45,8 @@ public abstract class AbstractExecutionPlanInterpreterES<
       org.slf4j.LoggerFactory.getLogger(AbstractExecutionPlanInterpreterES.class);
 
   @Override
-  public CommandEvaluationResult<Object> interpret(final ExecutionContext<DATA, PLAN> executionContext) {
+  public CommandEvaluationResult<Object> interpret(
+      final ExecutionContext<DATA, PLAN> executionContext) {
     final OptimizeSearchRequestBuilderES searchRequest =
         createBaseQuerySearchRequest(executionContext, getIndexNames(executionContext));
     ResponseBody<?> response;
@@ -170,7 +171,8 @@ public abstract class AbstractExecutionPlanInterpreterES<
       throws IOException {
     final ResponseBody<?> response;
     ScrollRequest scrollRequest = null;
-    final PaginationDto paginationInfo = executionContext.getPagination().orElse(new PaginationDto());
+    final PaginationDto paginationInfo =
+        executionContext.getPagination().orElse(new PaginationDto());
     if (paginationInfo instanceof final PaginationScrollableDto scrollableDto) {
       final String scrollId = scrollableDto.getScrollId();
       final Integer timeout = scrollableDto.getScrollTimeout();

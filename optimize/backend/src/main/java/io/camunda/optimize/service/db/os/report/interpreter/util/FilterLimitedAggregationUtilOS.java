@@ -18,8 +18,7 @@ public final class FilterLimitedAggregationUtilOS {
 
   public static final String FILTER_LIMITED_AGGREGATION = "filterLimitedAggregation";
 
-  private FilterLimitedAggregationUtilOS() {
-  }
+  private FilterLimitedAggregationUtilOS() {}
 
   public static Pair<String, Aggregation> wrapWithFilterLimitedParentAggregation(
       final Query limitFilterQuery, final Pair<String, Aggregation> subAggregationToLimit) {

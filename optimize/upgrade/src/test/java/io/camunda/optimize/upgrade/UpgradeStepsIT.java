@@ -43,8 +43,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
         UpgradePlanBuilder.createUpgradePlan()
             .fromVersion(FROM_VERSION)
             .toVersion(TO_VERSION)
-            .addUpgradeStep(
-                applyLookupSkip(new CreateIndexStep(testIndexWithUpdatedMappingV2)))
+            .addUpgradeStep(applyLookupSkip(new CreateIndexStep(testIndexWithUpdatedMappingV2)))
             .build();
 
     // when
@@ -84,8 +83,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
             .fromVersion(FROM_VERSION)
             .toVersion(TO_VERSION)
             .addUpgradeStep(applyLookupSkip(new CreateIndexStep(testIndexV1)))
-            .addUpgradeStep(
-                applyLookupSkip(new UpdateIndexStep(testIndexWithUpdatedMappingV2)))
+            .addUpgradeStep(applyLookupSkip(new UpdateIndexStep(testIndexWithUpdatedMappingV2)))
             .build();
 
     // when
@@ -93,9 +91,9 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
     // then
     assertThat(
-        databaseIntegrationTestExtension.indexExists(
-            getIndexNameService()
-                .getOptimizeIndexNameWithVersion(testIndexWithUpdatedMappingV2)))
+            databaseIntegrationTestExtension.indexExists(
+                getIndexNameService()
+                    .getOptimizeIndexNameWithVersion(testIndexWithUpdatedMappingV2)))
         .isTrue();
   }
 
@@ -114,8 +112,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
         UpgradePlanBuilder.createUpgradePlan()
             .fromVersion(FROM_VERSION)
             .toVersion(TO_VERSION)
-            .addUpgradeStep(
-                applyLookupSkip(new UpdateIndexStep(testIndexWithUpdatedMappingV2)))
+            .addUpgradeStep(applyLookupSkip(new UpdateIndexStep(testIndexWithUpdatedMappingV2)))
             .build();
 
     // when
@@ -123,9 +120,9 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
     // then
     assertThat(
-        databaseIntegrationTestExtension.indexExists(
-            getIndexNameService()
-                .getOptimizeIndexNameWithVersion(testIndexWithUpdatedMappingV2)))
+            databaseIntegrationTestExtension.indexExists(
+                getIndexNameService()
+                    .getOptimizeIndexNameWithVersion(testIndexWithUpdatedMappingV2)))
         .isTrue();
     // even though not being set before the writeIndex flag is now set
     assertThatIndexIsSetAsWriteIndex(testIndexWithUpdatedMappingV2);
@@ -148,9 +145,9 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
     // then
     assertThat(
-        databaseIntegrationTestExtension.indexExists(
-            getIndexNameService()
-                .getOptimizeIndexNameWithVersion(testIndexWithTemplateUpdatedMappingV2)))
+            databaseIntegrationTestExtension.indexExists(
+                getIndexNameService()
+                    .getOptimizeIndexNameWithVersion(testIndexWithTemplateUpdatedMappingV2)))
         .isTrue();
 
     final Map<String, ?> mappingFields;
@@ -166,7 +163,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
   @Test
   public void
-  executeUpdateIndexFromTemplateStepPreexistingIndexWasNotFromTemplateAndLackedAliasWriteIndexFlag() {
+      executeUpdateIndexFromTemplateStepPreexistingIndexWasNotFromTemplateAndLackedAliasWriteIndexFlag() {
     // given
     final String aliasForIndex =
         getIndexNameService().getOptimizeIndexAliasForIndex(testIndexV1.getIndexName());
@@ -189,9 +186,9 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
     // then
     assertThat(
-        databaseIntegrationTestExtension.indexExists(
-            getIndexNameService()
-                .getOptimizeIndexNameWithVersion(testIndexWithTemplateUpdatedMappingV2)))
+            databaseIntegrationTestExtension.indexExists(
+                getIndexNameService()
+                    .getOptimizeIndexNameWithVersion(testIndexWithTemplateUpdatedMappingV2)))
         .isTrue();
 
     final Map<String, ?> mappingFields;
@@ -210,7 +207,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
   @Test
   public void
-  executeUpdateIndexFromTemplateStepPreexistingIndexWasNotFromTemplateAndHadWriteAndReadAlias() {
+      executeUpdateIndexFromTemplateStepPreexistingIndexWasNotFromTemplateAndHadWriteAndReadAlias() {
     // given
     final String aliasForIndex =
         getIndexNameService().getOptimizeIndexAliasForIndex(testIndexV1.getIndexName());
@@ -244,9 +241,9 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
     // then
     assertThat(
-        databaseIntegrationTestExtension.indexExists(
-            getIndexNameService()
-                .getOptimizeIndexNameWithVersion(testIndexWithTemplateUpdatedMappingV2)))
+            databaseIntegrationTestExtension.indexExists(
+                getIndexNameService()
+                    .getOptimizeIndexNameWithVersion(testIndexWithTemplateUpdatedMappingV2)))
         .isTrue();
 
     assertThatIndexIsSetAsWriteIndex(testIndexWithTemplateUpdatedMappingV2);
@@ -286,8 +283,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     final String expectedSuffixAfterRollover = "-000002";
     final String indexAlias =
         getIndexNameService()
-            .getOptimizeIndexAliasForIndex(
-                testIndexWithTemplateUpdatedMappingV2.getIndexName());
+            .getOptimizeIndexAliasForIndex(testIndexWithTemplateUpdatedMappingV2.getIndexName());
     final Map<String, Set<String>> aliasMap;
     try {
       aliasMap = getAliasMap(indexAlias);
@@ -313,9 +309,9 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     // old template is gone
     try {
       assertThat(
-          databaseIntegrationTestExtension.templateExists(
-              getIndexNameService()
-                  .getOptimizeIndexTemplateNameWithVersion(testIndexWithTemplateV1)))
+              databaseIntegrationTestExtension.templateExists(
+                  getIndexNameService()
+                      .getOptimizeIndexTemplateNameWithVersion(testIndexWithTemplateV1)))
           .isFalse();
     } catch (final IOException e) {
       throw new OptimizeIntegrationTestException(e);
@@ -418,8 +414,8 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
     // then
     assertThat(
-        databaseIntegrationTestExtension.indexExists(
-            getIndexNameService().getOptimizeIndexNameWithVersion(testIndexV2)))
+            databaseIntegrationTestExtension.indexExists(
+                getIndexNameService().getOptimizeIndexNameWithVersion(testIndexV2)))
         .isFalse();
   }
 

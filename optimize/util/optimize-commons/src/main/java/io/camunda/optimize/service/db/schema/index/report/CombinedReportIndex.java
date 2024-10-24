@@ -34,7 +34,8 @@ public abstract class CombinedReportIndex<TBuilder> extends AbstractReportIndex<
   }
 
   @Override
-  protected TypeMapping.Builder addReportTypeSpecificFields(final TypeMapping.Builder xContentBuilder) {
+  protected TypeMapping.Builder addReportTypeSpecificFields(
+      final TypeMapping.Builder xContentBuilder) {
     return xContentBuilder.properties(
         DATA,
         Property.of(

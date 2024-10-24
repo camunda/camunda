@@ -62,7 +62,8 @@ public class ElasticsearchCompositeAggregationScroller {
   private Buckets<CompositeBucket> getNextPage() {
     try {
       final SearchResponse<?> searchResponse = esClient.search(searchRequest, Object.class);
-      final CompositeAggregate compositeAggregate = extractCompositeAggregationResult(searchResponse);
+      final CompositeAggregate compositeAggregate =
+          extractCompositeAggregationResult(searchResponse);
       // find aggregation and adjust after key for next invocation
       searchRequest = searchRequestProvider.apply(compositeAggregate.afterKey());
       return compositeAggregate.buckets();

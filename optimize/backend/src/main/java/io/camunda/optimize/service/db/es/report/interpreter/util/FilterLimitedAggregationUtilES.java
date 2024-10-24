@@ -17,22 +17,21 @@ public final class FilterLimitedAggregationUtilES {
 
   public static final String FILTER_LIMITED_AGGREGATION = "filterLimitedAggregation";
 
-  private FilterLimitedAggregationUtilES() {
-  }
+  private FilterLimitedAggregationUtilES() {}
 
   public static Map<String, Aggregation.Builder.ContainerBuilder>
-  wrapWithFilterLimitedParentAggregation(
-      final Query limitFilterQuery,
-      final Map<String, Aggregation.Builder.ContainerBuilder> subAggregationsToLimit) {
+      wrapWithFilterLimitedParentAggregation(
+          final Query limitFilterQuery,
+          final Map<String, Aggregation.Builder.ContainerBuilder> subAggregationsToLimit) {
     return wrapWithFilterLimitedParentAggregation(
         FILTER_LIMITED_AGGREGATION, limitFilterQuery, subAggregationsToLimit);
   }
 
   public static Map<String, Aggregation.Builder.ContainerBuilder>
-  wrapWithFilterLimitedParentAggregation(
-      final String filterParentAggregationName,
-      final Query limitFilterQuery,
-      final Map<String, Aggregation.Builder.ContainerBuilder> subAggregationsToLimit) {
+      wrapWithFilterLimitedParentAggregation(
+          final String filterParentAggregationName,
+          final Query limitFilterQuery,
+          final Map<String, Aggregation.Builder.ContainerBuilder> subAggregationsToLimit) {
     final Aggregation.Builder.ContainerBuilder builder =
         new Aggregation.Builder().filter(limitFilterQuery);
     subAggregationsToLimit.forEach((k, v) -> builder.aggregations(k, a -> v));

@@ -19,8 +19,7 @@ public class WebhookConfiguration {
   private String defaultPayload;
   private ProxyConfiguration proxy;
 
-  public WebhookConfiguration() {
-  }
+  public WebhookConfiguration() {}
 
   public String getUrl() {
     return url;

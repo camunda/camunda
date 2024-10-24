@@ -43,10 +43,9 @@ public class OptimizeDecisionCleanupServiceTest {
 
   @RegisterExtension
   LogCapturer logCapturer = LogCapturer.create().captureForType(CleanupService.class);
-  @Mock
-  private DecisionDefinitionReader decisionDefinitionReader;
-  @Mock
-  private DecisionInstanceWriter decisionInstanceWriter;
+
+  @Mock private DecisionDefinitionReader decisionDefinitionReader;
+  @Mock private DecisionInstanceWriter decisionInstanceWriter;
   private ConfigurationService configurationService;
 
   @BeforeEach
@@ -92,9 +91,9 @@ public class OptimizeDecisionCleanupServiceTest {
     final Set<String> decisionDefinitionKeysWithSpecificTtl = generateRandomDefinitionsKeys(3);
     final Map<String, DecisionDefinitionCleanupConfiguration>
         decisionDefinitionSpecificConfiguration =
-        getCleanupConfiguration()
-            .getDecisionCleanupConfiguration()
-            .getDecisionDefinitionSpecificConfiguration();
+            getCleanupConfiguration()
+                .getDecisionCleanupConfiguration()
+                .getDecisionDefinitionSpecificConfiguration();
     decisionDefinitionKeysWithSpecificTtl.forEach(
         decisionDefinitionKey ->
             decisionDefinitionSpecificConfiguration.put(
@@ -183,7 +182,7 @@ public class OptimizeDecisionCleanupServiceTest {
     assertThat(filteredInvocationArguments).hasSameSizeAs(expectedDefinitionKeys);
 
     final OffsetDateTime dateFilterValue =
-        filteredInvocationArguments.values().toArray(new OffsetDateTime[]{})[0];
+        filteredInvocationArguments.values().toArray(new OffsetDateTime[] {})[0];
     assertThat(dateFilterValue).isBeforeOrEqualTo(OffsetDateTime.now().minus(expectedTtl));
     filteredInvocationArguments
         .values()

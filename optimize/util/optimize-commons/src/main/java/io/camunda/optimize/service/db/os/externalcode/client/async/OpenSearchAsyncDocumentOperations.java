@@ -18,7 +18,8 @@ import org.opensearch.client.opensearch.core.UpdateByQueryResponse;
 
 public class OpenSearchAsyncDocumentOperations extends OpenSearchAsyncOperation {
   public OpenSearchAsyncDocumentOperations(
-      final OptimizeIndexNameService indexNameService, final OpenSearchAsyncClient openSearchAsyncClient) {
+      final OptimizeIndexNameService indexNameService,
+      final OpenSearchAsyncClient openSearchAsyncClient) {
     super(indexNameService, openSearchAsyncClient);
   }
 

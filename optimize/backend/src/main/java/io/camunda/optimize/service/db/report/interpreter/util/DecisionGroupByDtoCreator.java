@@ -29,7 +29,8 @@ public class DecisionGroupByDtoCreator {
 
   public static DecisionGroupByDto createGroupDecisionByEvaluationDateTime(
       final AggregateByDateUnit groupByDateUnit) {
-    final DecisionGroupByEvaluationDateTimeDto groupByDto = new DecisionGroupByEvaluationDateTimeDto();
+    final DecisionGroupByEvaluationDateTimeDto groupByDto =
+        new DecisionGroupByEvaluationDateTimeDto();
     final DecisionGroupByEvaluationDateTimeValueDto valueDto =
         new DecisionGroupByEvaluationDateTimeValueDto();
     valueDto.setUnit(groupByDateUnit);

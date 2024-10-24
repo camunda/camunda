@@ -23,8 +23,7 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 
 public final class DecisionVariableHelperOS {
 
-  private DecisionVariableHelperOS() {
-  }
+  private DecisionVariableHelperOS() {}
 
   public static Query getVariableUndefinedOrNullQuery(
       final String clauseId, final String variablePath, final VariableType variableType) {

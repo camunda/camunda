@@ -22,8 +22,7 @@ import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 public final class ProcessDistributedByCreator {
 
-  private ProcessDistributedByCreator() {
-  }
+  private ProcessDistributedByCreator() {}
 
   public static NoneDistributedByDto createDistributedByNone() {
     return new NoneDistributedByDto();

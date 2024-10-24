@@ -24,7 +24,7 @@ public interface UpgradePlanFactory {
       final DatabaseClient databaseClient, final OptimizeIndexNameService indexNameService) {
     try {
       return databaseClient.countWithoutPrefixWithExistsCheck(
-          indexNameService.getOptimizeIndexAliasForIndex("license"))
+              indexNameService.getOptimizeIndexAliasForIndex("license"))
           > 0;
     } catch (final IOException e) {
       final String reason = "Was not able to determine existence of C7 data.";

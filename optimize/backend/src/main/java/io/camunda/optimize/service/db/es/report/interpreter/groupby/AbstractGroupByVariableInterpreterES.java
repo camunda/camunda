@@ -100,7 +100,8 @@ public abstract class AbstractGroupByVariableInterpreterES<
   @Override
   public Map<String, Aggregation.Builder.ContainerBuilder> createAggregation(
       final BoolQuery boolQuery, final ExecutionContext<DATA, PLAN> context) {
-    final Aggregation.Builder.ContainerBuilder builder = new Aggregation.Builder().reverseNested(r -> r);
+    final Aggregation.Builder.ContainerBuilder builder =
+        new Aggregation.Builder().reverseNested(r -> r);
     createDistributedBySubAggregations(context, boolQuery).forEach(builder::aggregations);
     final VariableAggregationContextES varAggContext =
         VariableAggregationContextES.builder()

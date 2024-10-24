@@ -41,15 +41,18 @@ public class ExecutionPlanInterpreterFacade {
       final ExecutionContext<? extends SingleReportDataDto, ? extends ExecutionPlan> context) {
     if (context.getPlan() instanceof DecisionExecutionPlan) {
       if (context.getReportData() instanceof DecisionReportDataDto) {
-        @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST) final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> decisionExecutionContext =
-            (ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan>) context;
+        @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
+        final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan>
+            decisionExecutionContext =
+                (ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan>) context;
         return decisionExecutionPlanInterpreterFacade.interpret(decisionExecutionContext);
       }
     }
 
     if (context.getPlan() instanceof ProcessExecutionPlan) {
       if (context.getReportData() instanceof ProcessReportDataDto) {
-        @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST) final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> processExecutionContext =
+        @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
+        final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> processExecutionContext =
             (ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan>) context;
         return processExecutionPlanInterpreterFacade.interpret(processExecutionContext);
       }
@@ -62,7 +65,8 @@ public class ExecutionPlanInterpreterFacade {
   public Optional<MinMaxStatDto> getGroupByMinMaxStats(final ExecutionContext context) {
     if (context.getPlan() instanceof ProcessExecutionPlan) {
       if (context.getReportData() instanceof ProcessReportDataDto) {
-        @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST) final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> processExecutionContext =
+        @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
+        final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> processExecutionContext =
             (ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan>) context;
         return processExecutionPlanInterpreterFacade.getGroupByMinMaxStats(processExecutionContext);
       }

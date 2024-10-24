@@ -57,18 +57,16 @@ public class SchemaUpgradeClientESReindexTest {
 
   @RegisterExtension
   LogCapturer logCapturer = LogCapturer.create().captureForType(SchemaUpgradeClientES.class);
-  @Mock
-  private ElasticSearchSchemaManager schemaManager;
+
+  @Mock private ElasticSearchSchemaManager schemaManager;
+
   @Mock(answer = Answers.RETURNS_DEEP_STUBS, strictness = Mock.Strictness.LENIENT)
   private OptimizeElasticsearchClient elasticsearchClient;
-  @Mock
-  private ConfigurationService configurationService;
-  @Mock
-  private OptimizeIndexNameService indexNameService;
-  @Mock
-  private ElasticSearchMetadataService metadataService;
-  @Mock
-  private TaskInfo taskInfo;
+
+  @Mock private ConfigurationService configurationService;
+  @Mock private OptimizeIndexNameService indexNameService;
+  @Mock private ElasticSearchMetadataService metadataService;
+  @Mock private TaskInfo taskInfo;
   private SchemaUpgradeClient<?, ?> underTest;
 
   @BeforeEach

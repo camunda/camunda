@@ -33,8 +33,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class CsvExportServiceTest {
 
-  @Mock
-  private AuthorizationCheckReportEvaluationHandler reportService;
+  @Mock private AuthorizationCheckReportEvaluationHandler reportService;
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private ConfigurationService configurationService;

@@ -144,7 +144,8 @@ public abstract class AbstractExecutionPlanInterpreterOS<
       final ExecutionContext<DATA, PLAN> executionContext,
       final SearchRequest.Builder searchRequestBuilder)
       throws IOException {
-    final PaginationDto paginationInfo = executionContext.getPagination().orElse(new PaginationDto());
+    final PaginationDto paginationInfo =
+        executionContext.getPagination().orElse(new PaginationDto());
     final String errorMsg = "Failed to execute search request";
     if (paginationInfo instanceof final PaginationScrollableDto scrollableDto) {
       final String scrollId = scrollableDto.getScrollId();

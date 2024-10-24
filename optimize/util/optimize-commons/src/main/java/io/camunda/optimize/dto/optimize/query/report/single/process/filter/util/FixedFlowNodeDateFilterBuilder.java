@@ -33,15 +33,15 @@ public final class FixedFlowNodeDateFilterBuilder {
   }
 
   public static FixedFlowNodeDateFilterBuilder startDate(final ProcessFilterBuilder filterBuilder) {
-    final FixedFlowNodeDateFilterBuilder builder = new FixedFlowNodeDateFilterBuilder(
-        filterBuilder);
+    final FixedFlowNodeDateFilterBuilder builder =
+        new FixedFlowNodeDateFilterBuilder(filterBuilder);
     builder.type = FLOW_NODE_START_DATE;
     return builder;
   }
 
   public static FixedFlowNodeDateFilterBuilder endDate(final ProcessFilterBuilder filterBuilder) {
-    final FixedFlowNodeDateFilterBuilder builder = new FixedFlowNodeDateFilterBuilder(
-        filterBuilder);
+    final FixedFlowNodeDateFilterBuilder builder =
+        new FixedFlowNodeDateFilterBuilder(filterBuilder);
     builder.type = FLOW_NODE_END_DATE;
     return builder;
   }

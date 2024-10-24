@@ -24,7 +24,8 @@ public class DateFilterUtilTest {
 
   @ParameterizedTest
   @MethodSource("dateFilterUnitsAndExpectedStartOfInterval")
-  public void testStartOfCurrentInterval(final DateUnit unit, final String expectedStartOfCurrentInterval) {
+  public void testStartOfCurrentInterval(
+      final DateUnit unit, final String expectedStartOfCurrentInterval) {
     final OffsetDateTime expected =
         OffsetDateTime.parse(expectedStartOfCurrentInterval, ISO_OFFSET_DATE_TIME);
     final OffsetDateTime result = DateFilterUtil.getStartOfCurrentInterval(CURRENT_TIME, unit);

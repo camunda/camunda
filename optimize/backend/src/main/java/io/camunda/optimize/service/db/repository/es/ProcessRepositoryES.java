@@ -41,7 +41,8 @@ public class ProcessRepositoryES implements ProcessRepository {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-  public ProcessRepositoryES(final OptimizeElasticsearchClient esClient, final ObjectMapper objectMapper) {
+  public ProcessRepositoryES(
+      final OptimizeElasticsearchClient esClient, final ObjectMapper objectMapper) {
     this.esClient = esClient;
     this.objectMapper = objectMapper;
   }

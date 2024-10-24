@@ -16,6 +16,5 @@ public final class SuppressionConstants {
   public static final String OPTIONAL_FIELD_OR_PARAM = "OptionalUsedAsFieldOrParameterType";
   public static final String OPTIONAL_ASSIGNED_TO_NULL = "OptionalAssignedToNull";
 
-  private SuppressionConstants() {
-  }
+  private SuppressionConstants() {}
 }

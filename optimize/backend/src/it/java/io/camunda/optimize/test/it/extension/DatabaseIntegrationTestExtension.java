@@ -204,15 +204,14 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     databaseTestService.deleteAllDocumentsInIndex(optimizeIndexAliasForIndex);
   }
 
-  public void insertTestDocuments(final int amount, final String indexName,
-      final String documentContentAsJson)
+  public void insertTestDocuments(
+      final int amount, final String indexName, final String documentContentAsJson)
       throws IOException {
     databaseTestService.insertTestDocuments(amount, indexName, documentContentAsJson);
   }
 
-  public void performLowLevelBulkRequest(final String methodName, final String endpoint,
-      final String bulkPayload)
-      throws IOException {
+  public void performLowLevelBulkRequest(
+      final String methodName, final String endpoint, final String bulkPayload) throws IOException {
     databaseTestService.performLowLevelBulkRequest(methodName, endpoint, bulkPayload);
   }
 
@@ -255,4 +254,3 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     return databaseTestService.isAliasReadOnly(readOnlyAliasForIndex);
   }
 }
-

@@ -26,8 +26,7 @@ public final class DecisionVariableHelper {
       Collections.unmodifiableList(
           Arrays.asList(VariableType.DATE, VariableType.DOUBLE, VariableType.LONG));
 
-  private DecisionVariableHelper() {
-  }
+  private DecisionVariableHelper() {}
 
   public static String getVariableValueField(final String variablePath) {
     return variablePath + "." + VARIABLE_VALUE;

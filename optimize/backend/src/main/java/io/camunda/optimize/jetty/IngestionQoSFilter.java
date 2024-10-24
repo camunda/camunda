@@ -167,8 +167,7 @@ public class IngestionQoSFilter implements Filter {
   }
 
   @Override
-  public void destroy() {
-  }
+  public void destroy() {}
 
   private int getPriority(final ServletRequest request) {
     // We use the default prioritization for requests, as per the Jetty QoSFilter
@@ -253,8 +252,7 @@ public class IngestionQoSFilter implements Filter {
     }
 
     @Override
-    public void onComplete(final AsyncEvent event) throws IOException {
-    }
+    public void onComplete(final AsyncEvent event) throws IOException {}
 
     @Override
     public void onTimeout(final AsyncEvent event) throws IOException {
@@ -267,11 +265,9 @@ public class IngestionQoSFilter implements Filter {
     }
 
     @Override
-    public void onError(final AsyncEvent event) throws IOException {
-    }
+    public void onError(final AsyncEvent event) throws IOException {}
 
     @Override
-    public void onStartAsync(final AsyncEvent event) throws IOException {
-    }
+    public void onStartAsync(final AsyncEvent event) throws IOException {}
   }
 }

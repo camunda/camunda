@@ -44,16 +44,15 @@ public final class IncidentFilterQueryUtilES extends IncidentFilterQueryUtil {
           INCIDENTS, INCIDENT_DEFINITION_KEY, INCIDENT_DEFINITION_VERSION, INCIDENT_TENANT_ID);
 
   private static final Map<
-      Class<? extends ProcessFilterDto<?>>, Function<BoolQuery.Builder, BoolQuery.Builder>>
+          Class<? extends ProcessFilterDto<?>>, Function<BoolQuery.Builder, BoolQuery.Builder>>
       INCIDENT_VIEW_FILTER_INSTANCE_QUERIES =
-      ImmutableMap.of(
-          OpenIncidentFilterDto.class,
-          IncidentFilterQueryUtilES::createOpenIncidentTermQuery,
-          ResolvedIncidentFilterDto.class,
-          IncidentFilterQueryUtilES::createResolvedIncidentTermQuery);
+          ImmutableMap.of(
+              OpenIncidentFilterDto.class,
+              IncidentFilterQueryUtilES::createOpenIncidentTermQuery,
+              ResolvedIncidentFilterDto.class,
+              IncidentFilterQueryUtilES::createResolvedIncidentTermQuery);
 
-  private IncidentFilterQueryUtilES() {
-  }
+  private IncidentFilterQueryUtilES() {}
 
   public static BoolQuery.Builder createIncidentAggregationFilter(
       final ProcessReportDataDto reportData, final DefinitionService definitionService) {
@@ -183,9 +182,9 @@ public final class IncidentFilterQueryUtilES extends IncidentFilterQueryUtil {
                     f ->
                         f.bool(
                             createExecutedFlowNodeFilterQuery(
-                                executedFlowNodeFilterData,
-                                nestedFieldReference(IncidentDto.Fields.activityId),
-                                new BoolQuery.Builder())
+                                    executedFlowNodeFilterData,
+                                    nestedFieldReference(IncidentDto.Fields.activityId),
+                                    new BoolQuery.Builder())
                                 .build())));
   }
 }

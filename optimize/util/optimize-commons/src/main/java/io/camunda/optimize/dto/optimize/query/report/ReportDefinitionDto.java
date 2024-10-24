@@ -28,8 +28,7 @@ public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionE
   protected String lastModifier;
   protected String collectionId;
 
-  @Valid
-  protected D data;
+  @Valid protected D data;
 
   private final boolean combined;
 
@@ -381,10 +380,9 @@ public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionE
 
   private static final class ReportDefinitionDtoBuilderImpl<D extends ReportDataDto>
       extends ReportDefinitionDtoBuilder<
-      D, ReportDefinitionDto<D>, ReportDefinitionDtoBuilderImpl<D>> {
+          D, ReportDefinitionDto<D>, ReportDefinitionDtoBuilderImpl<D>> {
 
-    private ReportDefinitionDtoBuilderImpl() {
-    }
+    private ReportDefinitionDtoBuilderImpl() {}
 
     @Override
     protected ReportDefinitionDtoBuilderImpl<D> self() {

@@ -13,8 +13,7 @@ import java.util.Optional;
 
 public final class VariableHelper {
 
-  private VariableHelper() {
-  }
+  private VariableHelper() {}
 
   public static boolean isProcessVariableTypeSupported(final String variableTypeString) {
     return Optional.ofNullable(variableTypeString)

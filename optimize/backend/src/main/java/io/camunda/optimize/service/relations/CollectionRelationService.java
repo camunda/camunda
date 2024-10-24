@@ -25,7 +25,8 @@ public class CollectionRelationService {
     this.referenceServices = referenceServices;
   }
 
-  public Set<ConflictedItemDto> getConflictedItemsForDelete(final CollectionDefinitionDto definition) {
+  public Set<ConflictedItemDto> getConflictedItemsForDelete(
+      final CollectionDefinitionDto definition) {
     final Set<ConflictedItemDto> conflictedItems = new LinkedHashSet<>();
     for (final CollectionReferencingService referencingService : referenceServices) {
       conflictedItems.addAll(referencingService.getConflictedItemsForCollectionDelete(definition));

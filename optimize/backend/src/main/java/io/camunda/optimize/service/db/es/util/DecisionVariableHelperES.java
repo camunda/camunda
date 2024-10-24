@@ -18,8 +18,7 @@ import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 public final class DecisionVariableHelperES {
 
-  private DecisionVariableHelperES() {
-  }
+  private DecisionVariableHelperES() {}
 
   public static BoolQuery.Builder getVariableUndefinedOrNullQuery(
       final String clauseId, final String variablePath, final VariableType variableType) {

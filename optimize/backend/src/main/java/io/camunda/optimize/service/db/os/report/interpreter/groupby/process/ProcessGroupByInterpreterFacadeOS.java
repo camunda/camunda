@@ -61,7 +61,8 @@ public class ProcessGroupByInterpreterFacadeOS
 
   @Override
   public Map<String, Aggregation> createAggregation(
-      final Query query, final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+      final Query query,
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     return interpreter(context.getPlan().getGroupBy()).createAggregation(query, context);
   }
 

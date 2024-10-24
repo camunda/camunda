@@ -32,8 +32,7 @@ public final class ElasticsearchReaderUtil {
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ElasticsearchReaderUtil.class);
 
-  private ElasticsearchReaderUtil() {
-  }
+  private ElasticsearchReaderUtil() {}
 
   public static <T> List<T> retrieveAllScrollResults(
       final SearchResponse<T> initialScrollResponse,

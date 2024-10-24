@@ -143,14 +143,12 @@ public final class VariableFilterBuilder {
   }
 
   public VariableFilterBuilder rollingDate(final Long value, final DateUnit unit) {
-    dateFilterDataDto =
-        new RollingDateFilterDataDto(new RollingDateFilterStartDto(value, unit));
+    dateFilterDataDto = new RollingDateFilterDataDto(new RollingDateFilterStartDto(value, unit));
     return this;
   }
 
   public VariableFilterBuilder relativeDate(final Long value, final DateUnit unit) {
-    dateFilterDataDto =
-        new RelativeDateFilterDataDto(new RelativeDateFilterStartDto(value, unit));
+    dateFilterDataDto = new RelativeDateFilterDataDto(new RelativeDateFilterStartDto(value, unit));
     return this;
   }
 

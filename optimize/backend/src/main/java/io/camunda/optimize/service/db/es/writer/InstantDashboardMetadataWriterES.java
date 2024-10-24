@@ -70,7 +70,8 @@ public class InstantDashboardMetadataWriterES implements InstantDashboardMetadat
         throw new OptimizeRuntimeException(message);
       }
     } catch (final IOException e) {
-      final String errorMessage = "Could not write Instant preview dashboard data to Elasticsearch.";
+      final String errorMessage =
+          "Could not write Instant preview dashboard data to Elasticsearch.";
       LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }

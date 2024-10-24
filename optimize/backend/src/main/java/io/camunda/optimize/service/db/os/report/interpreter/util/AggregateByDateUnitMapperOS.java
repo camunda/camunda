@@ -14,8 +14,7 @@ public final class AggregateByDateUnitMapperOS {
 
   private static final String UNSUPPORTED_UNIT_STRING = "Unsupported unit: ";
 
-  private AggregateByDateUnitMapperOS() {
-  }
+  private AggregateByDateUnitMapperOS() {}
 
   public static CalendarInterval mapToCalendarInterval(final AggregateByDateUnit unit) {
     switch (unit) {

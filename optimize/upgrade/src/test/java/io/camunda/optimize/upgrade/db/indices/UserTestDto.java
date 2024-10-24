@@ -12,8 +12,7 @@ public class UserTestDto {
   String username;
   String password;
 
-  public UserTestDto() {
-  }
+  public UserTestDto() {}
 
   public String getUsername() {
     return username;

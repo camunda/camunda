@@ -19,8 +19,7 @@ public class ProcessDigestResponseDto implements OptimizeDto {
     this.enabled = enabled;
   }
 
-  public ProcessDigestResponseDto() {
-  }
+  public ProcessDigestResponseDto() {}
 
   public boolean isEnabled() {
     return enabled;
@@ -56,7 +55,6 @@ public class ProcessDigestResponseDto implements OptimizeDto {
 
     public static final String enabled = "enabled";
 
-    protected Fields() {
-    }
+    protected Fields() {}
   }
 }

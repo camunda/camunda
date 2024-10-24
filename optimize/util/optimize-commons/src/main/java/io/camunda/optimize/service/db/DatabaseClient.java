@@ -44,8 +44,8 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
    *
    * @param indexNamePattern Pattern for the name of an index, may contain wildcards
    * @return A Map where the keys are the name of the matching indexes and the value is a set
-   * containing the aliases for the respective index. This map can have multiple keys because
-   * indexNamePattern may contain wildcards
+   *     containing the aliases for the respective index. This map can have multiple keys because
+   *     indexNamePattern may contain wildcards
    */
   public abstract Map<String, Set<String>> getAliasesForIndexPattern(final String indexNamePattern)
       throws IOException;
@@ -127,8 +127,7 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
     if (Objects.isNull(importRequestDto.getType())) {
       throw new OptimizeRuntimeException(
           String.format(
-              "The %s param of ImportRequestDto is not set for request",
-              Fields.type.name()));
+              "The %s param of ImportRequestDto is not set for request", Fields.type.name()));
     }
     if (StringUtils.isBlank(importRequestDto.getIndexName())) {
       throw new OptimizeRuntimeException(

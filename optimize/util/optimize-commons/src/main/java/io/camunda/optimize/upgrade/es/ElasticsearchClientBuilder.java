@@ -86,7 +86,7 @@ public class ElasticsearchClientBuilder {
         if (truststore.size() > 0) {
           final TrustStrategy trustStrategy =
               configurationService.getElasticSearchConfiguration().getSecuritySslSelfSigned()
-                  == Boolean.TRUE
+                      == Boolean.TRUE
                   ? new TrustSelfSignedStrategy()
                   : null;
           sslContext = SSLContexts.custom().loadTrustMaterial(truststore, trustStrategy).build();
@@ -105,7 +105,7 @@ public class ElasticsearchClientBuilder {
     } else {
       LOGGER.info("Setting up http rest client connection");
       return buildDefaultRestClient(
-          configurationService, HTTP, pluginRepository.asRequestInterceptor())
+              configurationService, HTTP, pluginRepository.asRequestInterceptor())
           .build();
     }
   }

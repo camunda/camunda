@@ -20,7 +20,10 @@ public class AssigneeOperationDto implements OptimizeDto, Serializable {
   private OffsetDateTime timestamp;
 
   public AssigneeOperationDto(
-      final String id, final String userId, final String operationType, final OffsetDateTime timestamp) {
+      final String id,
+      final String userId,
+      final String operationType,
+      final OffsetDateTime timestamp) {
     this.id = id;
     this.userId = userId;
     this.operationType = operationType;

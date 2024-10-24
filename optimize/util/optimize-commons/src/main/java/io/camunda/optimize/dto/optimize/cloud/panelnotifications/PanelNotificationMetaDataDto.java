@@ -76,8 +76,7 @@ public final class PanelNotificationMetaDataDto {
     private String href;
     private String label;
 
-    PanelNotificationMetaDataDtoBuilder() {
-    }
+    PanelNotificationMetaDataDtoBuilder() {}
 
     public PanelNotificationMetaDataDtoBuilder identifier(final String identifier) {
       this.identifier = identifier;

@@ -107,7 +107,10 @@ public interface RequestDSL {
   }
 
   static ReindexRequest.Builder reindexRequestBuilder(
-      final String srcIndex, final String dstIndex, final String script, final Map<String, Object> scriptParams) {
+      final String srcIndex,
+      final String dstIndex,
+      final String script,
+      final Map<String, Object> scriptParams) {
     final var jsonParams =
         scriptParams.entrySet().stream()
             .collect(Collectors.toMap(Map.Entry::getKey, e -> JsonData.of(e.getValue())));
@@ -126,7 +129,8 @@ public interface RequestDSL {
     return new SearchRequest.Builder().index(List.of(index));
   }
 
-  static GetSnapshotRequest.Builder getSnapshotRequestBuilder(final String repository, final String snapshot) {
+  static GetSnapshotRequest.Builder getSnapshotRequestBuilder(
+      final String repository, final String snapshot) {
     return new GetSnapshotRequest.Builder().repository(repository).snapshot(snapshot);
   }
 

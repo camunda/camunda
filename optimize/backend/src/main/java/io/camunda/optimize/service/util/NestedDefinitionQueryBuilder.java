@@ -25,7 +25,10 @@ public class NestedDefinitionQueryBuilder {
   private final String tenantIdField;
 
   public NestedDefinitionQueryBuilder(
-      final String nestedField, final String definitionKeyField, final String versionField, final String tenantIdField) {
+      final String nestedField,
+      final String definitionKeyField,
+      final String versionField,
+      final String tenantIdField) {
     this.nestedField = nestedField;
     this.definitionKeyField = definitionKeyField;
     this.versionField = versionField;

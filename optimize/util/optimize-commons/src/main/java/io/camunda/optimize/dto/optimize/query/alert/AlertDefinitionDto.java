@@ -18,8 +18,7 @@ public class AlertDefinitionDto extends AlertCreationRequestDto {
   protected String lastModifier;
   protected boolean triggered;
 
-  public AlertDefinitionDto() {
-  }
+  public AlertDefinitionDto() {}
 
   public String getId() {
     return id;
@@ -101,9 +100,7 @@ public class AlertDefinitionDto extends AlertCreationRequestDto {
         + ")";
   }
 
-  /**
-   * Needed to inherit field name constants from {@link AlertCreationRequestDto}
-   */
+  /** Needed to inherit field name constants from {@link AlertCreationRequestDto} */
   @SuppressWarnings("checkstyle:ConstantName")
   public static class Fields extends AlertCreationRequestDto.Fields {
 

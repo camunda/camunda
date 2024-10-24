@@ -26,8 +26,7 @@ public class SystemPropertiesExtension implements BeforeEachCallback, AfterEachC
       org.slf4j.LoggerFactory.getLogger(SystemPropertiesExtension.class);
   private Properties originalProperties;
 
-  public SystemPropertiesExtension() {
-  }
+  public SystemPropertiesExtension() {}
 
   @Override
   public void beforeEach(final ExtensionContext extensionContext) throws Exception {

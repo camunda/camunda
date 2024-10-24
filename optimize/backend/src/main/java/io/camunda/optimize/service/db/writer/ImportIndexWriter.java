@@ -23,7 +23,8 @@ public class ImportIndexWriter {
     this.importRepository = importRepository;
   }
 
-  public void importIndexes(final List<TimestampBasedImportIndexDto> timestampBasedImportIndexDtos) {
+  public void importIndexes(
+      final List<TimestampBasedImportIndexDto> timestampBasedImportIndexDtos) {
     final String importItemName = "import index information";
     LOG.debug("Writing [{}] {} to database.", timestampBasedImportIndexDtos.size(), importItemName);
     importRepository.importIndices(importItemName, timestampBasedImportIndexDtos);

@@ -29,8 +29,7 @@ import jakarta.ws.rs.NotSupportedException;
 
 public final class SchemaUpgradeClientFactory {
 
-  private SchemaUpgradeClientFactory() {
-  }
+  private SchemaUpgradeClientFactory() {}
 
   public static SchemaUpgradeClient<?, ?> createSchemaUpgradeClient(
       final UpgradeExecutionDependencies upgradeDependencies) {
@@ -49,8 +48,8 @@ public final class SchemaUpgradeClientFactory {
           metadataService,
           esClient,
           new ObjectMapperFactory(
-              new OptimizeDateTimeFormatterFactory().getObject(),
-              upgradeDependencies.configurationService())
+                  new OptimizeDateTimeFormatterFactory().getObject(),
+                  upgradeDependencies.configurationService())
               .createOptimizeMapper());
     } else if (upgradeDependencies.databaseType().equals(DatabaseType.OPENSEARCH)) {
       final OptimizeOpenSearchClient osClient =
@@ -67,8 +66,8 @@ public final class SchemaUpgradeClientFactory {
           metadataService,
           osClient,
           new ObjectMapperFactory(
-              new OptimizeDateTimeFormatterFactory().getObject(),
-              upgradeDependencies.configurationService())
+                  new OptimizeDateTimeFormatterFactory().getObject(),
+                  upgradeDependencies.configurationService())
               .createOptimizeMapper());
     } else {
       throw new NotSupportedException(
@@ -90,7 +89,7 @@ public final class SchemaUpgradeClientFactory {
           (ElasticSearchMetadataService) metadataService,
           esClient,
           new ObjectMapperFactory(
-              new OptimizeDateTimeFormatterFactory().getObject(), configurationService)
+                  new OptimizeDateTimeFormatterFactory().getObject(), configurationService)
               .createOptimizeMapper());
     } else if (dbClient instanceof final OptimizeOpenSearchClient osClient) {
       return new SchemaUpgradeClientOS(
@@ -98,7 +97,7 @@ public final class SchemaUpgradeClientFactory {
           (OpenSearchMetadataService) metadataService,
           osClient,
           new ObjectMapperFactory(
-              new OptimizeDateTimeFormatterFactory().getObject(), configurationService)
+                  new OptimizeDateTimeFormatterFactory().getObject(), configurationService)
               .createOptimizeMapper());
     } else {
       throw new NotSupportedException(

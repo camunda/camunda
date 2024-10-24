@@ -38,7 +38,8 @@ public class CombinedReportInstanceCounterOS extends CombinedReportInstanceCount
   private final ExecutionPlanExtractor executionPlanExtractor;
 
   public CombinedReportInstanceCounterOS(
-      final OptimizeOpenSearchClient osClient, final ExecutionPlanExtractor executionPlanExtractor) {
+      final OptimizeOpenSearchClient osClient,
+      final ExecutionPlanExtractor executionPlanExtractor) {
     this.osClient = osClient;
     this.executionPlanExtractor = executionPlanExtractor;
   }

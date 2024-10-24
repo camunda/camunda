@@ -57,7 +57,8 @@ public abstract class AbstractProcessExecutionPlanInterpreterES
   @Override
   public Optional<MinMaxStatDto> getGroupByMinMaxStats(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    if (getGroupByInterpreter() instanceof final ProcessGroupByInterpreterES processGroupByInterpreter) {
+    if (getGroupByInterpreter()
+        instanceof final ProcessGroupByInterpreterES processGroupByInterpreter) {
       return processGroupByInterpreter.getMinMaxStats(
           context, Query.of(q -> q.bool(getBaseQueryBuilder(context).build())));
     } else {

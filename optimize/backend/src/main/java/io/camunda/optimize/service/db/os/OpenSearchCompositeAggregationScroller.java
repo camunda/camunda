@@ -154,8 +154,7 @@ public class OpenSearchCompositeAggregationScroller {
             new Builder()
                 .nested(new NestedAggregation.Builder().path(agg.nested().path()).build())
                 .aggregations(
-                    updateAfterKeyInCompositeAggregation(
-                        safeAfterKeyMap, agg.aggregations(), true))
+                    updateAfterKeyInCompositeAggregation(safeAfterKeyMap, agg.aggregations(), true))
                 .build();
         newAggregations.put(aggPath, newNestedAgg);
       } else if (agg.isComposite()) {
@@ -175,7 +174,6 @@ public class OpenSearchCompositeAggregationScroller {
           newAggregations.put(aggPath, upgradeAgg);
         }
       }
-
     }
     return newAggregations;
   }

@@ -24,8 +24,7 @@ public final class ElasticsearchWriterUtil {
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ElasticsearchWriterUtil.class);
 
-  private ElasticsearchWriterUtil() {
-  }
+  private ElasticsearchWriterUtil() {}
 
   public static Script createFieldUpdateScript(
       final Set<String> fields, final Object entityDto, final ObjectMapper objectMapper) {

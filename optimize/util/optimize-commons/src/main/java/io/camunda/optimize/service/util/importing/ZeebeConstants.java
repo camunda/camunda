@@ -39,6 +39,5 @@ public final class ZeebeConstants {
   public static final String FLOW_NODE_TYPE_USER_TASK = "userTask";
   public static final String FLOW_NODE_TYPE_MI_BODY = "multiInstanceBody";
 
-  private ZeebeConstants() {
-  }
+  private ZeebeConstants() {}
 }

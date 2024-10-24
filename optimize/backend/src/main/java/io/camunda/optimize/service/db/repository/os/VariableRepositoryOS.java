@@ -666,7 +666,8 @@ public class VariableRepositoryOS implements VariableRepository {
       final String variableName, final VariableType type, final String valueFilter) {
     final Query filterQuery1 = QueryDSL.term(getNestedVariableNameField(), variableName);
     final Query filterQuery2 = QueryDSL.term(getNestedVariableTypeField(), type.getId());
-    final Query filterQuery = addValueFilter(type, valueFilter, QueryDSL.and(filterQuery1, filterQuery2));
+    final Query filterQuery =
+        addValueFilter(type, valueFilter, QueryDSL.and(filterQuery1, filterQuery2));
     return new Aggregation.Builder().filter(filterQuery);
   }
 

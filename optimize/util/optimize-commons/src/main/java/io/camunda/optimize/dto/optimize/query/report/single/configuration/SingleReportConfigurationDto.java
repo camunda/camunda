@@ -130,8 +130,7 @@ public class SingleReportConfigurationDto implements Combinable {
     this.logScale = logScale;
   }
 
-  public SingleReportConfigurationDto() {
-  }
+  public SingleReportConfigurationDto() {}
 
   @JsonIgnore
   public String createCommandKey() {
@@ -656,8 +655,7 @@ public class SingleReportConfigurationDto implements Combinable {
     private Boolean logScaleValue;
     private boolean logScaleSet;
 
-    SingleReportConfigurationDtoBuilder() {
-    }
+    SingleReportConfigurationDtoBuilder() {}
 
     public SingleReportConfigurationDtoBuilder color(final String color) {
       colorValue = color;

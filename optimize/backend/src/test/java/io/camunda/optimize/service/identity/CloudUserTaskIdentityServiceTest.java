@@ -47,8 +47,7 @@ public class CloudUserTaskIdentityServiceTest {
   public static final UserDto TEST_USER_2 =
       new UserDto("456", "John Smith", "john@email.com", Collections.emptyList());
 
-  @Mock
-  AbstractIdentityService identityService;
+  @Mock AbstractIdentityService identityService;
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   ConfigurationService configurationService;

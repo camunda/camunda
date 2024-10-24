@@ -370,7 +370,8 @@ public class ReportWriterES implements ReportWriter {
                           .id(reportId)
                           .refresh(Refresh.True)));
     } catch (final IOException e) {
-      final String reason = String.format("Could not delete combined report with id [%s].", reportId);
+      final String reason =
+          String.format("Could not delete combined report with id [%s].", reportId);
       LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }

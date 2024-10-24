@@ -154,20 +154,23 @@ public interface ProcessDistributedByProcessInterpreter {
             .collect(Collectors.groupingBy(ViewMeasure::getAggregationType));
     final Double mergedAggResult;
     switch (aggregationType.getType()) {
-      case MAX -> mergedAggResult =
-          measuresByAggType.getOrDefault(aggregationType, Collections.emptyList()).stream()
-              .mapToDouble(ViewMeasure::getValue)
-              .max()
-              .orElse(0.0);
-      case MIN -> mergedAggResult =
-          measuresByAggType.getOrDefault(aggregationType, Collections.emptyList()).stream()
-              .mapToDouble(ViewMeasure::getValue)
-              .min()
-              .orElse(0.0);
-      case SUM -> mergedAggResult =
-          measuresByAggType.getOrDefault(aggregationType, Collections.emptyList()).stream()
-              .mapToDouble(ViewMeasure::getValue)
-              .sum();
+      case MAX ->
+          mergedAggResult =
+              measuresByAggType.getOrDefault(aggregationType, Collections.emptyList()).stream()
+                  .mapToDouble(ViewMeasure::getValue)
+                  .max()
+                  .orElse(0.0);
+      case MIN ->
+          mergedAggResult =
+              measuresByAggType.getOrDefault(aggregationType, Collections.emptyList()).stream()
+                  .mapToDouble(ViewMeasure::getValue)
+                  .min()
+                  .orElse(0.0);
+      case SUM ->
+          mergedAggResult =
+              measuresByAggType.getOrDefault(aggregationType, Collections.emptyList()).stream()
+                  .mapToDouble(ViewMeasure::getValue)
+                  .sum();
       case AVERAGE -> {
         final double totalDocCount =
             processBuckets.stream().mapToDouble(ProcessBucket::docCount).sum();
@@ -199,8 +202,9 @@ public interface ProcessDistributedByProcessInterpreter {
       // is lost on merging
       // of buckets
       case PERCENTILE -> mergedAggResult = null;
-      default -> throw new OptimizeRuntimeException(
-          String.format("%s is not a valid Aggregation type", aggregationType));
+      default ->
+          throw new OptimizeRuntimeException(
+              String.format("%s is not a valid Aggregation type", aggregationType));
     }
     return mergedAggResult;
   }
@@ -229,7 +233,7 @@ public interface ProcessDistributedByProcessInterpreter {
             bucketForKey ->
                 (definition.getTenantIds().contains(bucketForKey.tenant))
                     || (bucketForKey.tenant.equals(MISSING_TENANT_KEY)
-                    && definition.getTenantIds().contains(null)))
+                        && definition.getTenantIds().contains(null)))
         .collect(Collectors.toList());
   }
 
@@ -251,7 +255,5 @@ public interface ProcessDistributedByProcessInterpreter {
       String version,
       String tenant,
       long docCount,
-      CompositeCommandResult.ViewResult result) {
-
-  }
+      CompositeCommandResult.ViewResult result) {}
 }

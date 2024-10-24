@@ -74,27 +74,27 @@ import org.apache.commons.lang3.function.TriFunction;
 public final class ModelElementFilterQueryUtilES {
 
   private static final Map<
-      Class<? extends ProcessFilterDto<?>>, Function<BoolQuery.Builder, BoolQuery.Builder>>
+          Class<? extends ProcessFilterDto<?>>, Function<BoolQuery.Builder, BoolQuery.Builder>>
       FLOW_NODE_STATUS_VIEW_FILTER_INSTANCE_QUERIES =
-      Map.of(
-          RunningFlowNodesOnlyFilterDto.class,
-          ModelElementFilterQueryUtilES::createRunningFlowNodesOnlyFilterQuery,
-          CompletedFlowNodesOnlyFilterDto.class,
-          ModelElementFilterQueryUtilES::createCompletedFlowNodesOnlyFilterQuery,
-          CompletedOrCanceledFlowNodesOnlyFilterDto.class,
-          ModelElementFilterQueryUtilES::createCompletedOrCanceledFlowNodesOnlyFilterQuery,
-          CanceledFlowNodesOnlyFilterDto.class,
-          ModelElementFilterQueryUtilES::createCanceledFlowNodesOnlyFilterQuery);
+          Map.of(
+              RunningFlowNodesOnlyFilterDto.class,
+              ModelElementFilterQueryUtilES::createRunningFlowNodesOnlyFilterQuery,
+              CompletedFlowNodesOnlyFilterDto.class,
+              ModelElementFilterQueryUtilES::createCompletedFlowNodesOnlyFilterQuery,
+              CompletedOrCanceledFlowNodesOnlyFilterDto.class,
+              ModelElementFilterQueryUtilES::createCompletedOrCanceledFlowNodesOnlyFilterQuery,
+              CanceledFlowNodesOnlyFilterDto.class,
+              ModelElementFilterQueryUtilES::createCanceledFlowNodesOnlyFilterQuery);
 
   private static final Map<
-      Class<? extends ProcessFilterDto<?>>,
-      TriFunction<FlowNodeDateFilterDataDto<?>, ZoneId, Builder, Builder>>
+          Class<? extends ProcessFilterDto<?>>,
+          TriFunction<FlowNodeDateFilterDataDto<?>, ZoneId, Builder, Builder>>
       FLOW_NODE_DATE_VIEW_FILTER_INSTANCE_QUERIES =
-      Map.of(
-          FlowNodeStartDateFilterDto.class,
-          ModelElementFilterQueryUtilES::createFlowNodeStartDateFilterQuery,
-          FlowNodeEndDateFilterDto.class,
-          ModelElementFilterQueryUtilES::createFlowNodeEndDateFilterQuery);
+          Map.of(
+              FlowNodeStartDateFilterDto.class,
+              ModelElementFilterQueryUtilES::createFlowNodeStartDateFilterQuery,
+              FlowNodeEndDateFilterDto.class,
+              ModelElementFilterQueryUtilES::createFlowNodeEndDateFilterQuery);
 
   private static final NestedDefinitionQueryBuilderES NESTED_DEFINITION_QUERY_BUILDER =
       new NestedDefinitionQueryBuilderES(
@@ -103,8 +103,7 @@ public final class ModelElementFilterQueryUtilES {
           FLOW_NODE_DEFINITION_VERSION,
           FLOW_NODE_TENANT_ID);
 
-  private ModelElementFilterQueryUtilES() {
-  }
+  private ModelElementFilterQueryUtilES() {}
 
   public static Optional<NestedQuery.Builder> addInstanceFilterForRelevantViewLevelFilters(
       final List<ProcessFilterDto<?>> filters, final FilterContext filterContext) {
@@ -540,7 +539,7 @@ public final class ModelElementFilterQueryUtilES {
                     f ->
                         f.bool(
                             createCandidateGroupFilterQuery(
-                                candidateFilterData, new BoolQuery.Builder())
+                                    candidateFilterData, new BoolQuery.Builder())
                                 .build())));
   }
 
@@ -554,7 +553,7 @@ public final class ModelElementFilterQueryUtilES {
                     f ->
                         f.bool(
                             createExecutedFlowNodeFilterQuery(
-                                executedFlowNodeFilterData, new BoolQuery.Builder())
+                                    executedFlowNodeFilterData, new BoolQuery.Builder())
                                 .build())));
   }
 

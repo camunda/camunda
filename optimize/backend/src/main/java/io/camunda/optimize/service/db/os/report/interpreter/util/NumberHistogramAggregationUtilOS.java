@@ -14,8 +14,7 @@ import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 
 public final class NumberHistogramAggregationUtilOS {
 
-  private NumberHistogramAggregationUtilOS() {
-  }
+  private NumberHistogramAggregationUtilOS() {}
 
   public static Pair<String, Aggregation> generateHistogramWithField(
       final String histogramName,

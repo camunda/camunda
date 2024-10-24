@@ -26,8 +26,7 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 
 public final class DefinitionQueryUtilOS {
 
-  private DefinitionQueryUtilOS() {
-  }
+  private DefinitionQueryUtilOS() {}
 
   public static BoolQuery.Builder createDefinitionQuery(
       final String definitionKey,

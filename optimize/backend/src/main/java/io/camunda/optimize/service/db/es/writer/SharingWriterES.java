@@ -38,7 +38,8 @@ public class SharingWriterES implements SharingWriter {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-  public SharingWriterES(final OptimizeElasticsearchClient esClient, final ObjectMapper objectMapper) {
+  public SharingWriterES(
+      final OptimizeElasticsearchClient esClient, final ObjectMapper objectMapper) {
     this.esClient = esClient;
     this.objectMapper = objectMapper;
   }

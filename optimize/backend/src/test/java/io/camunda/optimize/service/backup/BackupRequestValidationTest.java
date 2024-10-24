@@ -30,7 +30,8 @@ public class BackupRequestValidationTest {
     final ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
     final Validator validator = factory.getValidator();
     final BackupRequestDto backupRequestDto = new BackupRequestDto(invalidBackupId);
-    final Set<ConstraintViolation<BackupRequestDto>> violations = validator.validate(backupRequestDto);
+    final Set<ConstraintViolation<BackupRequestDto>> violations =
+        validator.validate(backupRequestDto);
 
     // then
     assertThat(violations)

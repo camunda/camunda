@@ -297,7 +297,7 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   public <R> List<R> searchValues(
       final SearchRequest.Builder requestBuilder, final Class<R> entityClass, final boolean retry) {
     return search(
-        requestBuilder, entityClass, defaultSearchErrorMessage(getIndex(requestBuilder)), retry)
+            requestBuilder, entityClass, defaultSearchErrorMessage(getIndex(requestBuilder)), retry)
         .hits()
         .hits()
         .stream()
@@ -459,8 +459,8 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
     return executeWithRetries(
         () ->
             openSearchClient
-                .delete(applyIndexPrefix(deleteRequestBuilder(index, id)).build())
-                .result()
+                    .delete(applyIndexPrefix(deleteRequestBuilder(index, id)).build())
+                    .result()
                 == Result.Deleted);
   }
 
@@ -578,7 +578,5 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   }
 
   // TODO check unused methods with OPT-7352
-  public record AggregatedResult<R>(List<R> values, Map<String, Aggregate> aggregates) {
-
-  }
+  public record AggregatedResult<R>(List<R> values, Map<String, Aggregate> aggregates) {}
 }

@@ -23,8 +23,7 @@ public class UpgradeValidationService {
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(UpgradeValidationService.class);
 
-  public UpgradeValidationService() {
-  }
+  public UpgradeValidationService() {}
 
   public void validateSchemaVersions(
       final String schemaVersion, final String fromVersion, final String toVersion) {

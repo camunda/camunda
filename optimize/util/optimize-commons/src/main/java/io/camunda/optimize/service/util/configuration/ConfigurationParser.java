@@ -43,8 +43,7 @@ import org.slf4j.Logger;
 public final class ConfigurationParser {
 
   public static final TypeReference<Map<String, Object>> STRING_OBJECT_MAP_TYPE =
-      new TypeReference<Map<String, Object>>() {
-      };
+      new TypeReference<Map<String, Object>>() {};
   private static final String ENGINES_FIELD = "engines";
   private static final Pattern VARIABLE_PLACEHOLDER_PATTERN =
       Pattern.compile("\\$\\{([a-zA-Z_]+[a-zA-Z0-9_]*)(:(.*))?}");
@@ -105,10 +104,12 @@ public final class ConfigurationParser {
       final Object value, final YAMLMapper yamlMapper) {
     Object newValue = value;
     if (value instanceof Map) {
-      @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST) final Map<String, Object> valueMap = (Map<String, Object>) value;
+      @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
+      final Map<String, Object> valueMap = (Map<String, Object>) value;
       newValue = resolveVariablePlaceholders(valueMap, yamlMapper);
     } else if (value instanceof List) {
-      @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST) final List<Object> values = ((List<Object>) value);
+      @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
+      final List<Object> values = ((List<Object>) value);
       if (!values.isEmpty()) {
         newValue =
             values.stream()

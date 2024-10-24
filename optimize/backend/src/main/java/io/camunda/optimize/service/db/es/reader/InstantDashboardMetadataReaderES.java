@@ -40,8 +40,8 @@ public class InstantDashboardMetadataReaderES implements InstantDashboardMetadat
   }
 
   @Override
-  public Optional<String> getInstantDashboardIdFor(final String processDefinitionKey, final String template)
-      throws OptimizeRuntimeException {
+  public Optional<String> getInstantDashboardIdFor(
+      final String processDefinitionKey, final String template) throws OptimizeRuntimeException {
     LOG.debug(
         "Fetching Instant preview dashboard ID for [{}] with template [{}] ",
         processDefinitionKey,

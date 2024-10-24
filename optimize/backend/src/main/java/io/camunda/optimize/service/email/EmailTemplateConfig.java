@@ -19,7 +19,8 @@ public class EmailTemplateConfig {
   @Bean
   public FreeMarkerConfigurer freemarkerClassLoaderConfig() {
     final Configuration configuration = new Configuration(Configuration.VERSION_2_3_27);
-    final TemplateLoader templateLoader = new ClassTemplateLoader(this.getClass(), "/emailtemplates");
+    final TemplateLoader templateLoader =
+        new ClassTemplateLoader(this.getClass(), "/emailtemplates");
     configuration.setTemplateLoader(templateLoader);
     final FreeMarkerConfigurer freeMarkerConfigurer = new FreeMarkerConfigurer();
     freeMarkerConfigurer.setConfiguration(configuration);

@@ -35,7 +35,8 @@ public class NoCachingFilter implements Filter {
   }
 
   @Override
-  public void doFilter(final ServletRequest request, final ServletResponse response, final FilterChain chain)
+  public void doFilter(
+      final ServletRequest request, final ServletResponse response, final FilterChain chain)
       throws IOException, ServletException {
     final HttpServletRequest servletRequest = (HttpServletRequest) request;
     final String requestPath = servletRequest.getServletPath();

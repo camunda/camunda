@@ -16,16 +16,11 @@ import java.util.List;
 
 public class ProcessRawDataCsvExportRequestDto {
 
-  @NotNull
-  private String processDefinitionKey;
-  @NotEmpty
-  private List<String> processDefinitionVersions = new ArrayList<>();
-  @NotNull
-  private List<String> tenantIds = Collections.singletonList(null);
-  @NotNull
-  private List<ProcessFilterDto<?>> filter = new ArrayList<>();
-  @NotEmpty
-  private List<String> includedColumns = new ArrayList<>();
+  @NotNull private String processDefinitionKey;
+  @NotEmpty private List<String> processDefinitionVersions = new ArrayList<>();
+  @NotNull private List<String> tenantIds = Collections.singletonList(null);
+  @NotNull private List<ProcessFilterDto<?>> filter = new ArrayList<>();
+  @NotEmpty private List<String> includedColumns = new ArrayList<>();
 
   public ProcessRawDataCsvExportRequestDto(
       @NotNull final String processDefinitionKey,
@@ -40,8 +35,7 @@ public class ProcessRawDataCsvExportRequestDto {
     this.includedColumns = includedColumns;
   }
 
-  protected ProcessRawDataCsvExportRequestDto() {
-  }
+  protected ProcessRawDataCsvExportRequestDto() {}
 
   public @NotNull String getProcessDefinitionKey() {
     return processDefinitionKey;
@@ -148,8 +142,7 @@ public class ProcessRawDataCsvExportRequestDto {
     private @NotEmpty List<String> includedColumnsValue;
     private boolean includedColumnsSet;
 
-    ProcessRawDataCsvExportRequestDtoBuilder() {
-    }
+    ProcessRawDataCsvExportRequestDtoBuilder() {}
 
     public ProcessRawDataCsvExportRequestDtoBuilder processDefinitionKey(
         @NotNull final String processDefinitionKey) {
@@ -213,18 +206,17 @@ public class ProcessRawDataCsvExportRequestDto {
 
     @Override
     public String toString() {
-      return
-          "ProcessRawDataCsvExportRequestDto.ProcessRawDataCsvExportRequestDtoBuilder(processDefinitionKey="
-              + processDefinitionKey
-              + ", processDefinitionVersionsValue="
-              + processDefinitionVersionsValue
-              + ", tenantIdsValue="
-              + tenantIdsValue
-              + ", filterValue="
-              + filterValue
-              + ", includedColumnsValue="
-              + includedColumnsValue
-              + ")";
+      return "ProcessRawDataCsvExportRequestDto.ProcessRawDataCsvExportRequestDtoBuilder(processDefinitionKey="
+          + processDefinitionKey
+          + ", processDefinitionVersionsValue="
+          + processDefinitionVersionsValue
+          + ", tenantIdsValue="
+          + tenantIdsValue
+          + ", filterValue="
+          + filterValue
+          + ", includedColumnsValue="
+          + includedColumnsValue
+          + ")";
     }
   }
 }

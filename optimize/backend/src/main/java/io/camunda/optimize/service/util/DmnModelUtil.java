@@ -29,8 +29,7 @@ public final class DmnModelUtil {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(DmnModelUtil.class);
 
-  private DmnModelUtil() {
-  }
+  private DmnModelUtil() {}
 
   public static DmnModelInstance parseDmnModel(final String dmn10Xml) {
     try (final ByteArrayInputStream stream = new ByteArrayInputStream(dmn10Xml.getBytes())) {

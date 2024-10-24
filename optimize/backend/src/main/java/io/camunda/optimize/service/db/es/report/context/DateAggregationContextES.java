@@ -48,7 +48,7 @@ public class DateAggregationContextES extends DateAggregationContext {
   }
 
   public abstract static class DateAggregationContextESBuilder<
-      C extends DateAggregationContextES, B extends DateAggregationContextESBuilder<C, B>>
+          C extends DateAggregationContextES, B extends DateAggregationContextESBuilder<C, B>>
       extends DateAggregationContextBuilder<C, B> {
 
     private Map<String, ContainerBuilder> subAggregations;
@@ -98,10 +98,9 @@ public class DateAggregationContextES extends DateAggregationContext {
 
   private static final class DateAggregationContextESBuilderImpl
       extends DateAggregationContextESBuilder<
-      DateAggregationContextES, DateAggregationContextESBuilderImpl> {
+          DateAggregationContextES, DateAggregationContextESBuilderImpl> {
 
-    private DateAggregationContextESBuilderImpl() {
-    }
+    private DateAggregationContextESBuilderImpl() {}
 
     @Override
     protected DateAggregationContextESBuilderImpl self() {

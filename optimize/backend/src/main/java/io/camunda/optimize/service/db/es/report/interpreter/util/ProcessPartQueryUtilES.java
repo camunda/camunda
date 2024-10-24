@@ -34,8 +34,7 @@ import org.apache.commons.text.StringSubstitutor;
 
 public final class ProcessPartQueryUtilES extends AbstractProcessPartQueryUtil {
 
-  private ProcessPartQueryUtilES() {
-  }
+  private ProcessPartQueryUtilES() {}
 
   public static Map<String, Aggregate> getProcessPartAggregations(
       final Map<String, Aggregate> aggs) {

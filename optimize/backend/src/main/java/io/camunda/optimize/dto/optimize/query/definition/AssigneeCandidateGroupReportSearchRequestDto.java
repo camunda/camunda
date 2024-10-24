@@ -16,9 +16,7 @@ public class AssigneeCandidateGroupReportSearchRequestDto {
 
   private String terms;
   private int limit = 25;
-  @NotNull
-  @NotEmpty
-  private List<String> reportIds;
+  @NotNull @NotEmpty private List<String> reportIds;
 
   public AssigneeCandidateGroupReportSearchRequestDto(
       final String terms, final int limit, @NotNull @NotEmpty final List<String> reportIds) {
@@ -27,8 +25,7 @@ public class AssigneeCandidateGroupReportSearchRequestDto {
     this.reportIds = reportIds;
   }
 
-  public AssigneeCandidateGroupReportSearchRequestDto() {
-  }
+  public AssigneeCandidateGroupReportSearchRequestDto() {}
 
   public Optional<String> getTerms() {
     return Optional.ofNullable(terms);
@@ -92,11 +89,9 @@ public class AssigneeCandidateGroupReportSearchRequestDto {
     private String terms;
     private int limitValue;
     private boolean limitSet;
-    private @NotNull
-    @NotEmpty List<String> reportIds;
+    private @NotNull @NotEmpty List<String> reportIds;
 
-    AssigneeCandidateGroupReportSearchRequestDtoBuilder() {
-    }
+    AssigneeCandidateGroupReportSearchRequestDtoBuilder() {}
 
     public AssigneeCandidateGroupReportSearchRequestDtoBuilder terms(final String terms) {
       this.terms = terms;
@@ -125,14 +120,13 @@ public class AssigneeCandidateGroupReportSearchRequestDto {
 
     @Override
     public String toString() {
-      return
-          "AssigneeCandidateGroupReportSearchRequestDto.AssigneeCandidateGroupReportSearchRequestDtoBuilder(terms="
-              + terms
-              + ", limitValue="
-              + limitValue
-              + ", reportIds="
-              + reportIds
-              + ")";
+      return "AssigneeCandidateGroupReportSearchRequestDto.AssigneeCandidateGroupReportSearchRequestDtoBuilder(terms="
+          + terms
+          + ", limitValue="
+          + limitValue
+          + ", reportIds="
+          + reportIds
+          + ")";
     }
   }
 }

@@ -45,8 +45,7 @@ public final class CSVUtils {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(CSVUtils.class);
 
-  private CSVUtils() {
-  }
+  private CSVUtils() {}
 
   public static byte[] mapCsvLinesToCsvBytes(
       final List<String[]> csvStrings, final char csvDelimiter) {
@@ -72,9 +71,9 @@ public final class CSVUtils {
   public static <T extends IdResponseDto> List<String[]> mapIdList(final List<T> ids) {
     final List<String[]> result = new ArrayList<>();
 
-    result.add(new String[]{"processInstanceId"});
+    result.add(new String[] {"processInstanceId"});
 
-    ids.forEach(idDto -> result.add(new String[]{idDto.getId()}));
+    ids.forEach(idDto -> result.add(new String[] {idDto.getId()}));
 
     return result;
   }

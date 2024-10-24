@@ -28,7 +28,8 @@ public class ConfigurationServiceBuilder {
     return createConfiguration().build();
   }
 
-  public static ConfigurationService createConfigurationFromLocations(final String... configLocations) {
+  public static ConfigurationService createConfigurationFromLocations(
+      final String... configLocations) {
     return createConfiguration().loadConfigurationFrom(configLocations).build();
   }
 
@@ -51,7 +52,8 @@ public class ConfigurationServiceBuilder {
     return this;
   }
 
-  public ConfigurationServiceBuilder useValidator(final ConfigurationValidator configurationValidator) {
+  public ConfigurationServiceBuilder useValidator(
+      final ConfigurationValidator configurationValidator) {
     this.configurationValidator = configurationValidator;
     return this;
   }

@@ -27,6 +27,5 @@ public final class RestConstants {
   public static final String HTTPS_PREFIX = "https://";
   public static final String HTTP_PREFIX = "http://";
 
-  private RestConstants() {
-  }
+  private RestConstants() {}
 }

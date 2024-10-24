@@ -13,8 +13,7 @@ import java.util.Map;
 
 public final class NumberHistogramAggregationUtilES {
 
-  private NumberHistogramAggregationUtilES() {
-  }
+  private NumberHistogramAggregationUtilES() {}
 
   public static Aggregation.Builder.ContainerBuilder generateHistogramWithField(
       final String histogramName,

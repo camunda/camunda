@@ -123,7 +123,8 @@ public class ProcessQueryFilterEnhancerOS implements QueryFilterEnhancerOS<Proce
       final RunningFlowNodesOnlyQueryFilterOS runningFlowNodesOnlyQueryFilter,
       final CompletedFlowNodesOnlyQueryFilterOS completedFlowNodesOnlyQueryFilter,
       final CanceledFlowNodesOnlyQueryFilterOS canceledFlowNodesOnlyQueryFilter,
-      final CompletedOrCanceledFlowNodesOnlyQueryFilterOS completedOrCanceledFlowNodesOnlyQueryFilter,
+      final CompletedOrCanceledFlowNodesOnlyQueryFilterOS
+          completedOrCanceledFlowNodesOnlyQueryFilter,
       final InstancesContainingUserTasksFilterOS instancesContainingUserTasksFilter,
       final FlowNodeStartDateQueryFilterOS flowNodeStartDateQueryFilter,
       final FlowNodeEndDateQueryFilterOS flowNodeEndDateQueryFilter) {

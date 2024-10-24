@@ -52,9 +52,9 @@ public abstract class BranchAnalysisReader {
 
     final BranchAnalysisResponseDto result = new BranchAnalysisResponseDto();
     getBpmnModelInstance(
-        request.getProcessDefinitionKey(),
-        request.getProcessDefinitionVersions(),
-        request.getTenantIds())
+            request.getProcessDefinitionKey(),
+            request.getProcessDefinitionVersions(),
+            request.getTenantIds())
         .ifPresent(
             bpmnModelInstance -> {
               final List<FlowNode> gatewayOutcomes =

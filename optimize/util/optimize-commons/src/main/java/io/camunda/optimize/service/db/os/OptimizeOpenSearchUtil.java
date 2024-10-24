@@ -14,8 +14,7 @@ import org.opensearch.client.opensearch.indices.IndexSettings;
 
 public final class OptimizeOpenSearchUtil {
 
-  private OptimizeOpenSearchUtil() {
-  }
+  private OptimizeOpenSearchUtil() {}
 
   public static IndexSettings.Builder addStaticSetting(
       final String key, final int value, final IndexSettings.Builder contentBuilder) {

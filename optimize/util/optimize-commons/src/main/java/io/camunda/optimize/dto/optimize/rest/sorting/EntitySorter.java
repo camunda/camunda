@@ -44,8 +44,7 @@ public class EntitySorter extends Sorter<EntityResponseDto> {
     sortRequestDto = new SortRequestDto(sortBy, sortOrder);
   }
 
-  public EntitySorter() {
-  }
+  public EntitySorter() {}
 
   @Override
   public List<EntityResponseDto> applySort(final List<EntityResponseDto> entities) {

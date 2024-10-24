@@ -45,22 +45,22 @@ public class CodeQualityTest {
 
   private static void checkForForbiddenAnnotations(final File currentDirectory) {
     final String[] forbiddenStrings = {
-        "@NoArgsConstructor",
-        "@AllArgsConstructor",
-        "@RequiredArgsConstructor",
-        "@SneakyThrows",
-        "@NonNull",
-        "@EqualsAndHashCode",
-        "@ToString",
-        "@Builder",
-        "@Builder.Default",
-        "@FieldNameConstants",
-        "@UtilityClass",
-        "@Data",
-        "@Getter",
-        "@Setter",
-        "@Slf4j",
-        "import lombok"
+      "@NoArgsConstructor",
+      "@AllArgsConstructor",
+      "@RequiredArgsConstructor",
+      "@SneakyThrows",
+      "@NonNull",
+      "@EqualsAndHashCode",
+      "@ToString",
+      "@Builder",
+      "@Builder.Default",
+      "@FieldNameConstants",
+      "@UtilityClass",
+      "@Data",
+      "@Getter",
+      "@Setter",
+      "@Slf4j",
+      "import lombok"
     };
 
     if (currentDirectory == null || !currentDirectory.isDirectory()) {

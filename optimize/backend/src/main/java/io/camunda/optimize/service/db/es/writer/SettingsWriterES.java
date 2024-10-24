@@ -40,7 +40,8 @@ public class SettingsWriterES implements SettingsWriter {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-  public SettingsWriterES(final OptimizeElasticsearchClient esClient, final ObjectMapper objectMapper) {
+  public SettingsWriterES(
+      final OptimizeElasticsearchClient esClient, final ObjectMapper objectMapper) {
     this.esClient = esClient;
     this.objectMapper = objectMapper;
   }

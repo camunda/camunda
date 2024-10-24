@@ -26,8 +26,7 @@ public class CookieConfiguration {
   @JsonProperty("maxSize")
   private Integer maxSize;
 
-  public CookieConfiguration() {
-  }
+  public CookieConfiguration() {}
 
   public boolean resolveSecureFlagValue(final String requestScheme) {
     return Optional.ofNullable(cookieSecureMode)

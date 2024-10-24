@@ -24,8 +24,7 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 
 public final class ProcessVariableHelperOS {
 
-  private ProcessVariableHelperOS() {
-  }
+  private ProcessVariableHelperOS() {}
 
   public static Query createFilterForUndefinedOrNullQuery(
       final String variableName, final VariableType variableType) {

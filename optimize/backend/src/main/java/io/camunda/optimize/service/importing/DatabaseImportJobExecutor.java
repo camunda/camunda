@@ -88,22 +88,18 @@ public class DatabaseImportJobExecutor {
     }
   }
 
-  /**
-   * Number of threads that should be used in the thread pool executor.
-   */
+  /** Number of threads that should be used in the thread pool executor. */
   protected int getExecutorThreadCount() {
     return configurationService.getJobExecutorThreadCount();
   }
 
-  /**
-   * Number of jobs that should be able to accumulate until new submission is blocked.
-   */
+  /** Number of jobs that should be able to accumulate until new submission is blocked. */
   protected int getMaxQueueSize() {
     return configurationService.getJobExecutorQueueSize();
   }
 
-  private static final class BlockCallerUntilExecutorHasCapacity implements
-      RejectedExecutionHandler {
+  private static final class BlockCallerUntilExecutorHasCapacity
+      implements RejectedExecutionHandler {
 
     @Override
     public void rejectedExecution(final Runnable runnable, final ThreadPoolExecutor executor) {

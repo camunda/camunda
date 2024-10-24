@@ -99,18 +99,18 @@ public class RawDataDecisionReportResultDtoMapperTest {
         .allSatisfy(
             instanceInputVars ->
                 assertThat(
-                    instanceInputVars.values().stream()
-                        .map(VariableEntry::getName)
-                        .collect(Collectors.toList()))
+                        instanceInputVars.values().stream()
+                            .map(VariableEntry::getName)
+                            .collect(Collectors.toList()))
                     .containsExactlyInAnyOrder("inputVarClauseName", "newInputVarName"));
     assertThat(result)
         .extracting(RawDataDecisionInstanceDto::getOutputVariables)
         .allSatisfy(
             instanceOutputVars ->
                 assertThat(
-                    instanceOutputVars.values().stream()
-                        .map(VariableEntry::getName)
-                        .collect(Collectors.toList()))
+                        instanceOutputVars.values().stream()
+                            .map(VariableEntry::getName)
+                            .collect(Collectors.toList()))
                     .containsExactlyInAnyOrder("outputVarClauseName", "newOutputVarName"));
   }
 

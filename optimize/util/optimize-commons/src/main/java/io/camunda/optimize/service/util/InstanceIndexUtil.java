@@ -18,8 +18,7 @@ import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 
 public final class InstanceIndexUtil {
 
-  private InstanceIndexUtil() {
-  }
+  private InstanceIndexUtil() {}
 
   public static String[] getDecisionInstanceIndexAliasName(
       final DecisionReportDataDto reportDataDto) {
@@ -28,8 +27,8 @@ public final class InstanceIndexUtil {
         .findFirst()
         .map(ReportDataDefinitionDto::getKey)
         .map(InstanceIndexUtil::getDecisionInstanceIndexAliasName)
-        .map(value -> new String[]{value})
-        .orElse(new String[]{DECISION_INSTANCE_MULTI_ALIAS});
+        .map(value -> new String[] {value})
+        .orElse(new String[] {DECISION_INSTANCE_MULTI_ALIAS});
   }
 
   public static String getDecisionInstanceIndexAliasName(final String decisionDefinitionKey) {
@@ -43,14 +42,14 @@ public final class InstanceIndexUtil {
   public static String[] getProcessInstanceIndexAliasNames(
       final ProcessReportDataDto reportDataDto) {
     if (reportDataDto.isManagementReport()) {
-      return new String[]{PROCESS_INSTANCE_MULTI_ALIAS};
+      return new String[] {PROCESS_INSTANCE_MULTI_ALIAS};
     }
     return !reportDataDto.getDefinitions().isEmpty()
         ? reportDataDto.getDefinitions().stream()
-        .map(ReportDataDefinitionDto::getKey)
-        .map(InstanceIndexUtil::getProcessInstanceIndexAliasName)
-        .toArray(String[]::new)
-        : new String[]{PROCESS_INSTANCE_MULTI_ALIAS};
+            .map(ReportDataDefinitionDto::getKey)
+            .map(InstanceIndexUtil::getProcessInstanceIndexAliasName)
+            .toArray(String[]::new)
+        : new String[] {PROCESS_INSTANCE_MULTI_ALIAS};
   }
 
   public static String getProcessInstanceIndexAliasName(final String processDefinitionKey) {

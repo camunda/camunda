@@ -14,6 +14,5 @@ public final class EnvironmentPropertiesConstants {
   public static final String HTTP_PORT_KEY = "httpPort";
   public static final String CONTEXT_PATH = "contextPath";
 
-  private EnvironmentPropertiesConstants() {
-  }
+  private EnvironmentPropertiesConstants() {}
 }

@@ -15,8 +15,7 @@ import java.time.temporal.ChronoUnit;
 
 public final class DateModificationHelper {
 
-  private DateModificationHelper() {
-  }
+  private DateModificationHelper() {}
 
   public static ZonedDateTime truncateToStartOfUnit(
       final OffsetDateTime date, final ChronoUnit unit) {

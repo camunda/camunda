@@ -21,8 +21,7 @@ public abstract class SingleReportDataDto implements ReportDataDto {
 
   private SingleReportConfigurationDto configuration = new SingleReportConfigurationDto();
 
-  @Valid
-  private List<ReportDataDefinitionDto> definitions = new ArrayList<>();
+  @Valid private List<ReportDataDefinitionDto> definitions = new ArrayList<>();
 
   public SingleReportDataDto(
       final SingleReportConfigurationDto configuration,
@@ -31,8 +30,7 @@ public abstract class SingleReportDataDto implements ReportDataDto {
     this.definitions = definitions;
   }
 
-  protected SingleReportDataDto() {
-  }
+  protected SingleReportDataDto() {}
 
   protected SingleReportDataDto(final SingleReportDataDtoBuilder<?, ?> b) {
     if (b.configurationSet) {

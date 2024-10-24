@@ -106,7 +106,7 @@ public class IndexLookupUtil {
   }
 
   private static Map<String, Function<String, IndexMappingCreator>>
-  createOpensearchIndexFunctionLookupMap() {
+      createOpensearchIndexFunctionLookupMap() {
     final Map<String, Function<String, IndexMappingCreator>> lookupMap = new HashMap<>();
     lookupMap.put(AlertIndexES.class.getSimpleName(), index -> new AlertIndexOS());
     lookupMap.put(BusinessKeyIndexES.class.getSimpleName(), index -> new BusinessKeyIndexOS());
@@ -157,7 +157,7 @@ public class IndexLookupUtil {
   }
 
   private static Map<String, Function<String, IndexMappingCreator>>
-  createElasticsearchIndexFunctionLookupMap() {
+      createElasticsearchIndexFunctionLookupMap() {
     final Map<String, Function<String, IndexMappingCreator>> lookupMap = new HashMap<>();
     // OpenSearch -> ElasticSearch Index lookup functions
     lookupMap.put(AlertIndexOS.class.getSimpleName(), index -> new AlertIndexES());

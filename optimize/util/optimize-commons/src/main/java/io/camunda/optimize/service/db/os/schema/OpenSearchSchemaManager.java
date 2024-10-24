@@ -269,9 +269,9 @@ public class OpenSearchSchemaManager
     final String jsonNew =
         "{\"mappings\": "
             + jsonMappings
-            .replace("TypeMapping: ", "")
-            .replace("\"match_mapping_type\":[\"string\"]", "\"match_mapping_type\":\"string\"")
-            .replace("\"path_match\":[\"*\"]", "\"path_match\":\"*\"")
+                .replace("TypeMapping: ", "")
+                .replace("\"match_mapping_type\":[\"string\"]", "\"match_mapping_type\":\"string\"")
+                .replace("\"path_match\":[\"*\"]", "\"path_match\":\"*\"")
             + "}";
     try (final JsonParser jsonParser =
         JsonProvider.provider().createParser(new StringReader(jsonNew))) {
@@ -417,9 +417,9 @@ public class OpenSearchSchemaManager
   }
 
   private static ObjectDeserializer<CreateIndexRequest.Builder>
-  getDeserializerWithPreconfiguredBuilder(
-      final Supplier<CreateIndexRequest.Builder> builderSupplier)
-      throws OptimizeRuntimeException {
+      getDeserializerWithPreconfiguredBuilder(
+          final Supplier<CreateIndexRequest.Builder> builderSupplier)
+          throws OptimizeRuntimeException {
     final Class<CreateIndexRequest> clazz = CreateIndexRequest.class;
     final String methodName = "setupCreateIndexRequestDeserializer";
     final Method method;
@@ -443,9 +443,9 @@ public class OpenSearchSchemaManager
   }
 
   private static ObjectDeserializer<IndexTemplateMapping.Builder>
-  getDeserializerIndexTemplateMapping(
-      final Supplier<IndexTemplateMapping.Builder> builderSupplier)
-      throws OptimizeRuntimeException {
+      getDeserializerIndexTemplateMapping(
+          final Supplier<IndexTemplateMapping.Builder> builderSupplier)
+          throws OptimizeRuntimeException {
     final Class<IndexTemplateMapping> clazz = IndexTemplateMapping.class;
     final String methodName = "setupIndexTemplateMappingDeserializer";
     final Method method;
@@ -533,8 +533,8 @@ public class OpenSearchSchemaManager
 
         return ((Map<String, Object>) JsonData.from(jsonParser, jsonpMapper).to(Map.class))
             .entrySet().stream()
-            .collect(
-                Collectors.toMap(Map.Entry::getKey, entry -> JsonData.of(entry.getValue())));
+                .collect(
+                    Collectors.toMap(Map.Entry::getKey, entry -> JsonData.of(entry.getValue())));
       }
     } catch (final IOException e) {
       LOG.error("Could not create settings!", e);
@@ -548,8 +548,8 @@ public class OpenSearchSchemaManager
     final String jsonNew =
         "{\"mappings\": "
             + json.replace("TypeMapping: ", "")
-            .replace("\"match_mapping_type\":[\"string\"]", "\"match_mapping_type\":\"string\"")
-            .replace("\"path_match\":[\"*\"]", "\"path_match\":\"*\"")
+                .replace("\"match_mapping_type\":[\"string\"]", "\"match_mapping_type\":\"string\"")
+                .replace("\"path_match\":[\"*\"]", "\"path_match\":\"*\"")
             + "}";
     try {
       indexAsJSONNode = objectMapper.readTree(new StringReader(jsonNew));
@@ -571,9 +571,9 @@ public class OpenSearchSchemaManager
     final String jsonNew =
         "{\"mappings\": "
             + jsonMappings
-            .replace("TypeMapping: ", "")
-            .replace("\"match_mapping_type\":[\"string\"]", "\"match_mapping_type\":\"string\"")
-            .replace("\"path_match\":[\"*\"]", "\"path_match\":\"*\"")
+                .replace("TypeMapping: ", "")
+                .replace("\"match_mapping_type\":[\"string\"]", "\"match_mapping_type\":\"string\"")
+                .replace("\"path_match\":[\"*\"]", "\"path_match\":\"*\"")
             + "}";
     try (final JsonParser jsonParser =
         JsonProvider.provider().createParser(new StringReader(jsonNew))) {

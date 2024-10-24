@@ -15,9 +15,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Represents one page of entities that should be added to database.
- */
+/** Represents one page of entities that should be added to database. */
 public abstract class DatabaseImportJob<OPT extends OptimizeDto> implements Runnable {
 
   protected final DatabaseClient databaseClient;
@@ -32,9 +30,7 @@ public abstract class DatabaseImportJob<OPT extends OptimizeDto> implements Runn
     this.databaseClient = databaseClient;
   }
 
-  /**
-   * Run the import job
-   */
+  /** Run the import job */
   @Override
   public void run() {
     executeImport();

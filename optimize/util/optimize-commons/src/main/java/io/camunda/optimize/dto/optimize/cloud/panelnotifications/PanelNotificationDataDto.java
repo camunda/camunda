@@ -109,8 +109,7 @@ public final class PanelNotificationDataDto {
     private String description;
     private PanelNotificationMetaDataDto meta;
 
-    PanelNotificationDataDtoBuilder() {
-    }
+    PanelNotificationDataDtoBuilder() {}
 
     public PanelNotificationDataDtoBuilder uniqueId(final String uniqueId) {
       this.uniqueId = uniqueId;

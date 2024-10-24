@@ -39,8 +39,7 @@ public final class BpmnModelUtil {
   public static final String IS_EXPANDED_ATTRIBUTE = "isExpanded";
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(BpmnModelUtil.class);
 
-  private BpmnModelUtil() {
-  }
+  private BpmnModelUtil() {}
 
   public static BpmnModelInstance parseBpmnModel(final String bpmn20Xml) {
     try (final ByteArrayInputStream stream = new ByteArrayInputStream(bpmn20Xml.getBytes())) {

@@ -33,8 +33,7 @@ public final class DateFilterQueryUtilOS {
       DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(DateFilterQueryUtilOS.class);
 
-  private DateFilterQueryUtilOS() {
-  }
+  private DateFilterQueryUtilOS() {}
 
   public static List<Query> filterQueries(
       final List<DateFilterDataDto<?>> dates, final String dateField, final ZoneId timezone) {

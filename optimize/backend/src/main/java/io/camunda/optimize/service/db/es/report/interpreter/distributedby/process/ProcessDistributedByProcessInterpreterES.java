@@ -141,7 +141,8 @@ public class ProcessDistributedByProcessInterpreterES
           procDefKeyAgg.buckets().array()) {
         final Aggregate procDefVersionAgg = keyBucket.aggregations().get(PROC_DEF_VERSION_AGG);
         if (procDefVersionAgg != null) {
-          for (final StringTermsBucket versionBucket : procDefVersionAgg.sterms().buckets().array()) {
+          for (final StringTermsBucket versionBucket :
+              procDefVersionAgg.sterms().buckets().array()) {
             final Aggregate tenantTermsAgg = versionBucket.aggregations().get(TENANT_AGG);
             if (tenantTermsAgg != null) {
               final List<ProcessBucket> bucketsForKey =

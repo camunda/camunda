@@ -22,8 +22,7 @@ public class DefinitionTenantsRequestDto {
     this.filterByCollectionScope = filterByCollectionScope;
   }
 
-  protected DefinitionTenantsRequestDto() {
-  }
+  protected DefinitionTenantsRequestDto() {}
 
   public List<String> getVersions() {
     return versions;
@@ -78,8 +77,7 @@ public class DefinitionTenantsRequestDto {
     private boolean versionsSet;
     private String filterByCollectionScope;
 
-    DefinitionTenantsRequestDtoBuilder() {
-    }
+    DefinitionTenantsRequestDtoBuilder() {}
 
     public DefinitionTenantsRequestDtoBuilder versions(final List<String> versions) {
       versionsValue = versions;

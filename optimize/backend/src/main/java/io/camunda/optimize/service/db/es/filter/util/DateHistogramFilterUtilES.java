@@ -32,8 +32,7 @@ import java.util.Optional;
 
 public final class DateHistogramFilterUtilES {
 
-  private DateHistogramFilterUtilES() {
-  }
+  private DateHistogramFilterUtilES() {}
 
   public static BoolQuery.Builder createModelElementDateHistogramLimitingFilterFor(
       final DateAggregationContextES context, final DateTimeFormatter dateTimeFormatter) {

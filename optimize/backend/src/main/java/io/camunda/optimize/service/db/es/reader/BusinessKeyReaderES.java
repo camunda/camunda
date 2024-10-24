@@ -48,7 +48,8 @@ public class BusinessKeyReaderES implements BusinessKeyReader {
   }
 
   @Override
-  public List<BusinessKeyDto> getBusinessKeysForProcessInstanceIds(final Set<String> processInstanceIds) {
+  public List<BusinessKeyDto> getBusinessKeysForProcessInstanceIds(
+      final Set<String> processInstanceIds) {
     LOG.debug("Fetching business keys for [{}] process instances", processInstanceIds.size());
 
     if (processInstanceIds.isEmpty()) {

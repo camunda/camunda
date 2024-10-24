@@ -12,8 +12,7 @@ import java.util.Optional;
 
 public final class AggregationResultMappingUtilES {
 
-  private AggregationResultMappingUtilES() {
-  }
+  private AggregationResultMappingUtilES() {}
 
   public static Double mapToDoubleOrNull(
       final TDigestPercentilesAggregate aggregation, final double percentileValue) {

@@ -30,10 +30,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class CacheRequestFilterTest {
 
-  @Mock
-  ContainerRequestContext requestContext;
-  @Mock
-  ContainerResponseContext responseContext;
+  @Mock ContainerRequestContext requestContext;
+  @Mock ContainerResponseContext responseContext;
   private CacheRequestFilterFactory.CacheRequestFilter underTest;
 
   @BeforeEach

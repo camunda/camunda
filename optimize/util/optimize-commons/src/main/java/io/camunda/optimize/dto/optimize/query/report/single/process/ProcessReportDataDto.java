@@ -41,8 +41,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   private static final String COMMAND_KEY_SEPARATOR = "_";
   private static final String MISSING_COMMAND_PART_PLACEHOLDER = "null";
 
-  @Valid
-  protected List<ProcessFilterDto<?>> filter = new ArrayList<>();
+  @Valid protected List<ProcessFilterDto<?>> filter = new ArrayList<>();
   protected ProcessViewDto view;
   protected ProcessGroupByDto<?> groupBy;
 
@@ -69,8 +68,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     this.instantPreviewReport = instantPreviewReport;
   }
 
-  public ProcessReportDataDto() {
-  }
+  public ProcessReportDataDto() {}
 
   protected ProcessReportDataDto(final ProcessReportDataDtoBuilder<?, ?> b) {
     super(b);
@@ -247,10 +245,10 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
 
   private boolean isBucketSizeCombinable(final ProcessReportDataDto that) {
     return getConfiguration().getCustomBucket().isActive()
-        && that.getConfiguration().getCustomBucket().isActive()
-        && Objects.equals(
-        getConfiguration().getCustomBucket().getBucketSize(),
-        that.getConfiguration().getCustomBucket().getBucketSize())
+            && that.getConfiguration().getCustomBucket().isActive()
+            && Objects.equals(
+                getConfiguration().getCustomBucket().getBucketSize(),
+                that.getConfiguration().getCustomBucket().getBucketSize())
         || isBucketSizeIrrelevant(this) && isBucketSizeIrrelevant(that);
   }
 
@@ -278,16 +276,16 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   private boolean isGroupByNumberReport() {
     return groupBy != null
         && (ProcessGroupByType.VARIABLE.equals(groupBy.getType())
-        && (VariableType.getNumericTypes()
-        .contains(((VariableGroupByDto) groupBy).getValue().getType()))
-        || ProcessGroupByType.DURATION.equals(groupBy.getType()));
+                && (VariableType.getNumericTypes()
+                    .contains(((VariableGroupByDto) groupBy).getValue().getType()))
+            || ProcessGroupByType.DURATION.equals(groupBy.getType()));
   }
 
   private boolean isModelElementCommand() {
     return nonNull(view)
         && nonNull(view.getEntity())
         && (ProcessViewEntity.USER_TASK.equals(view.getEntity())
-        || ProcessViewEntity.FLOW_NODE.equals(view.getEntity()));
+            || ProcessViewEntity.FLOW_NODE.equals(view.getEntity()));
   }
 
   private boolean isInstanceCommand() {
@@ -419,7 +417,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   }
 
   public abstract static class ProcessReportDataDtoBuilder<
-      C extends ProcessReportDataDto, B extends ProcessReportDataDtoBuilder<C, B>>
+          C extends ProcessReportDataDto, B extends ProcessReportDataDtoBuilder<C, B>>
       extends SingleReportDataDtoBuilder<C, B> {
 
     private @Valid List<ProcessFilterDto<?>> filterValue;
@@ -504,8 +502,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   private static final class ProcessReportDataDtoBuilderImpl
       extends ProcessReportDataDtoBuilder<ProcessReportDataDto, ProcessReportDataDtoBuilderImpl> {
 
-    private ProcessReportDataDtoBuilderImpl() {
-    }
+    private ProcessReportDataDtoBuilderImpl() {}
 
     @Override
     protected ProcessReportDataDtoBuilderImpl self() {

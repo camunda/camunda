@@ -59,7 +59,8 @@ public class DecisionGroupByInterpreterFacadeOS
 
   @Override
   public Map<String, Aggregation> createAggregation(
-      final Query query, final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
+      final Query query,
+      final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
     return interpreter(context.getPlan().getGroupBy()).createAggregation(query, context);
   }
 

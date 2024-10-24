@@ -23,8 +23,7 @@ public class CombinedReportItemDto {
     this.color = color;
   }
 
-  protected CombinedReportItemDto() {
-  }
+  protected CombinedReportItemDto() {}
 
   public String getId() {
     return id;
@@ -86,8 +85,7 @@ public class CombinedReportItemDto {
     private String colorValue;
     private boolean colorSet;
 
-    CombinedReportItemDtoBuilder() {
-    }
+    CombinedReportItemDtoBuilder() {}
 
     public CombinedReportItemDtoBuilder id(final String id) {
       this.id = id;

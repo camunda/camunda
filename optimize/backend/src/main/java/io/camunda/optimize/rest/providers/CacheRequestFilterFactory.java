@@ -26,7 +26,8 @@ public class CacheRequestFilterFactory implements DynamicFeature {
 
   @Override
   public void configure(final ResourceInfo resourceInfo, final FeatureContext context) {
-    final CacheRequest cacheRequest = resourceInfo.getResourceMethod().getAnnotation(CacheRequest.class);
+    final CacheRequest cacheRequest =
+        resourceInfo.getResourceMethod().getAnnotation(CacheRequest.class);
 
     if (cacheRequest != null) {
       context.register(new CacheRequestFilter());

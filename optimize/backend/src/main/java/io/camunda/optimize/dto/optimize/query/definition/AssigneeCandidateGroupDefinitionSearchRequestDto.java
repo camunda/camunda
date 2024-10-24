@@ -17,8 +17,7 @@ public class AssigneeCandidateGroupDefinitionSearchRequestDto {
 
   private String terms;
   private int limit = 25;
-  @NotNull
-  private String processDefinitionKey;
+  @NotNull private String processDefinitionKey;
 
   private List<String> tenantIds = new ArrayList<>(Collections.singletonList(null));
 
@@ -33,8 +32,7 @@ public class AssigneeCandidateGroupDefinitionSearchRequestDto {
     this.tenantIds = tenantIds;
   }
 
-  public AssigneeCandidateGroupDefinitionSearchRequestDto() {
-  }
+  public AssigneeCandidateGroupDefinitionSearchRequestDto() {}
 
   public Optional<String> getTerms() {
     return Optional.ofNullable(terms);
@@ -116,8 +114,7 @@ public class AssigneeCandidateGroupDefinitionSearchRequestDto {
     private List<String> tenantIdsValue;
     private boolean tenantIdsSet;
 
-    AssigneeCandidateGroupDefinitionSearchRequestDtoBuilder() {
-    }
+    AssigneeCandidateGroupDefinitionSearchRequestDtoBuilder() {}
 
     public AssigneeCandidateGroupDefinitionSearchRequestDtoBuilder terms(final String terms) {
       this.terms = terms;
@@ -158,16 +155,15 @@ public class AssigneeCandidateGroupDefinitionSearchRequestDto {
 
     @Override
     public String toString() {
-      return
-          "AssigneeCandidateGroupDefinitionSearchRequestDto.AssigneeCandidateGroupDefinitionSearchRequestDtoBuilder(terms="
-              + terms
-              + ", limitValue="
-              + limitValue
-              + ", processDefinitionKey="
-              + processDefinitionKey
-              + ", tenantIdsValue="
-              + tenantIdsValue
-              + ")";
+      return "AssigneeCandidateGroupDefinitionSearchRequestDto.AssigneeCandidateGroupDefinitionSearchRequestDtoBuilder(terms="
+          + terms
+          + ", limitValue="
+          + limitValue
+          + ", processDefinitionKey="
+          + processDefinitionKey
+          + ", tenantIdsValue="
+          + tenantIdsValue
+          + ")";
     }
   }
 }

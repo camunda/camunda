@@ -27,7 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class PositionBasedImportMediator<
-    T extends PositionBasedImportIndexHandler, DTO extends ZeebeRecordDto<?, ?>>
+        T extends PositionBasedImportIndexHandler, DTO extends ZeebeRecordDto<?, ?>>
     implements ImportMediator {
 
   protected Logger logger = LoggerFactory.getLogger(getClass());

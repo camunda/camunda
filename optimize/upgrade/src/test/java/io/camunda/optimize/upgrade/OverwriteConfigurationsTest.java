@@ -40,7 +40,8 @@ public class OverwriteConfigurationsTest {
             + "      httpPort: 9200");
 
     // when
-    final ConfigurationService configuration = ConfigurationServiceBuilder.createDefaultConfiguration();
+    final ConfigurationService configuration =
+        ConfigurationServiceBuilder.createDefaultConfiguration();
 
     // then
     assertThat(configuration.getElasticSearchConfiguration().getConnectionNodes()).hasSize(1);

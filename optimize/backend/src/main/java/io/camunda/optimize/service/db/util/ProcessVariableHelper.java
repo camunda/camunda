@@ -21,8 +21,7 @@ import java.util.Optional;
 
 public final class ProcessVariableHelper {
 
-  private ProcessVariableHelper() {
-  }
+  private ProcessVariableHelper() {}
 
   public static String getNestedVariableNameField() {
     return VARIABLES + "." + VARIABLE_NAME;

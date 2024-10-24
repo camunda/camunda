@@ -59,7 +59,8 @@ public class CollectionWriterOS implements CollectionWriter {
   private final OptimizeOpenSearchClient osClient;
   private final DateTimeFormatter formatter;
 
-  public CollectionWriterOS(final OptimizeOpenSearchClient osClient, final DateTimeFormatter formatter) {
+  public CollectionWriterOS(
+      final OptimizeOpenSearchClient osClient, final DateTimeFormatter formatter) {
     this.osClient = osClient;
     this.formatter = formatter;
   }

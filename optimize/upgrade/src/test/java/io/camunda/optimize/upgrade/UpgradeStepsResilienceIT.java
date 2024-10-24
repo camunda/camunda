@@ -64,8 +64,8 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     dbMockServer.verify(indexDeleteRequest, exactly(3));
     // and the index is gone
     assertThat(
-        databaseIntegrationTestExtension.indexExists(
-            getIndexNameService().getOptimizeIndexNameWithVersion(testIndexV2)))
+            databaseIntegrationTestExtension.indexExists(
+                getIndexNameService().getOptimizeIndexNameWithVersion(testIndexV2)))
         .isFalse();
   }
 
@@ -90,8 +90,8 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     dbMockServer.verify(indexDeleteRequest, exactly(1));
     // and the index is still there
     assertThat(
-        databaseIntegrationTestExtension.indexExists(
-            getIndexNameService().getOptimizeIndexNameWithVersion(testIndexV2)))
+            databaseIntegrationTestExtension.indexExists(
+                getIndexNameService().getOptimizeIndexNameWithVersion(testIndexV2)))
         .isTrue();
   }
 
@@ -125,14 +125,14 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     dbMockServer.verify(indexDeleteRequest, exactly(3));
     // and the old index is gone
     assertThat(
-        databaseIntegrationTestExtension.indexExists(
-            getIndexNameService().getOptimizeIndexNameWithVersion(testIndexV1)))
+            databaseIntegrationTestExtension.indexExists(
+                getIndexNameService().getOptimizeIndexNameWithVersion(testIndexV1)))
         .isFalse();
     // and the new index exists
     assertThat(
-        databaseIntegrationTestExtension.indexExists(
-            getIndexNameService()
-                .getOptimizeIndexNameWithVersion(testIndexWithUpdatedMappingV2)))
+            databaseIntegrationTestExtension.indexExists(
+                getIndexNameService()
+                    .getOptimizeIndexNameWithVersion(testIndexWithUpdatedMappingV2)))
         .isTrue();
   }
 
@@ -157,14 +157,14 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     dbMockServer.verify(indexDeleteRequest, exactly(1));
     // and the old index is still there
     assertThat(
-        databaseIntegrationTestExtension.indexExists(
-            getIndexNameService().getOptimizeIndexNameWithVersion(testIndexV1)))
+            databaseIntegrationTestExtension.indexExists(
+                getIndexNameService().getOptimizeIndexNameWithVersion(testIndexV1)))
         .isTrue();
     // and the new index as well
     assertThat(
-        databaseIntegrationTestExtension.indexExists(
-            getIndexNameService()
-                .getOptimizeIndexNameWithVersion(testIndexWithUpdatedMappingV2)))
+            databaseIntegrationTestExtension.indexExists(
+                getIndexNameService()
+                    .getOptimizeIndexNameWithVersion(testIndexWithUpdatedMappingV2)))
         .isTrue();
   }
 

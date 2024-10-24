@@ -142,8 +142,7 @@ import org.springframework.context.ApplicationContext;
  */
 public class OptimizeElasticsearchClient extends DatabaseClient {
 
-  private static final Logger LOG =
-      LoggerFactory.getLogger(OptimizeElasticsearchClient.class);
+  private static final Logger LOG = LoggerFactory.getLogger(OptimizeElasticsearchClient.class);
   private RestClient restClient;
   private final ObjectMapper objectMapper;
   private ElasticsearchClient esClient;
@@ -178,8 +177,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
   }
 
   public final GetMappingResponse getMapping(
-      final Builder getMappingsRequest, final String... indexes)
-      throws IOException {
+      final Builder getMappingsRequest, final String... indexes) throws IOException {
     getMappingsRequest.index(Arrays.stream(convertToPrefixedAliasNames(indexes)).toList());
     return esWithTransportOptions().indices().getMapping(getMappingsRequest.build());
   }
@@ -216,8 +214,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
       if (!List.class.isInstance(analyzer.get("filter"))) {
         analyzer.put("filter", List.of(analyzer.get("filter")));
       }
-      final Map lowercaseNgram = (Map) ((Map) analysis.get("analyzer")).get(
-          "lowercase_ngram");
+      final Map lowercaseNgram = (Map) ((Map) analysis.get("analyzer")).get("lowercase_ngram");
       if (!List.class.isInstance(lowercaseNgram.get("filter"))) {
         lowercaseNgram.put("filter", List.of(lowercaseNgram.get("filter")));
       }
@@ -236,7 +233,6 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
                 TokenChar.Punctuation.jsonValue(),
                 TokenChar.Symbol.jsonValue()));
       }
-
     }
     return GetIndicesSettingsResponse.of(
         b -> {
@@ -346,7 +342,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
   public final boolean templateExists(final String indexName) throws IOException {
     return esWithTransportOptions()
         .indices()
-        .existsTemplate(b -> b.name(List.of(convertToPrefixedAliasNames(new String[]{indexName}))))
+        .existsTemplate(b -> b.name(List.of(convertToPrefixedAliasNames(new String[] {indexName}))))
         .value();
   }
 
@@ -416,8 +412,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
   public Map<String, Set<String>> getAliasesForIndexPattern(final String indexNamePattern) {
     try {
       return getAlias(indexNamePattern).result().entrySet().stream()
-          .collect(
-              Collectors.toMap(Entry::getKey, entry -> entry.getValue().aliases().keySet()));
+          .collect(Collectors.toMap(Entry::getKey, entry -> entry.getValue().aliases().keySet()));
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
@@ -527,7 +522,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
                             convertToPrefixedAliasNames(
                                 GetIndexRequest.of(r -> r.index("*"))
                                     .index()
-                                    .toArray(new String[]{}))))))
+                                    .toArray(new String[] {}))))))
         .result()
         .keySet()
         .stream()
@@ -645,10 +640,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
                                             lb ->
                                                 lb.term(
                                                     tb ->
-                                                        tb.field(
-                                                                DATA_SOURCE
-                                                                    + "."
-                                                                    + Fields.type)
+                                                        tb.field(DATA_SOURCE + "." + Fields.type)
                                                             .value(
                                                                 FieldValue.of(
                                                                     DataImportSourceType.ENGINE))))
@@ -656,10 +648,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
                                             lb ->
                                                 lb.term(
                                                     tb ->
-                                                        tb.field(
-                                                                DATA_SOURCE
-                                                                    + "."
-                                                                    + Fields.name)
+                                                        tb.field(DATA_SOURCE + "." + Fields.name)
                                                             .value(engineAlias)))))
                     .source(sb -> sb.fetch(false))
                     .sort(
@@ -740,7 +729,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
 
   private void applyIndexPrefixes(
       final RefreshRequest.Builder request, final List<String> indexes) {
-    request.index(List.of(convertToPrefixedAliasNames(indexes.toArray(new String[]{}))));
+    request.index(List.of(convertToPrefixedAliasNames(indexes.toArray(new String[] {}))));
   }
 
   public <T> SearchResponse<T> search(final SearchRequest searchRequest, final Class<T> tClass)
@@ -795,12 +784,12 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
    * which rely on the presence of {@code null} to distinguish between absent and zero-valued
    * aggregations.
    *
-   * <p>To mitigate this, we opted to use the low-level client API to perform the search request,
-   * as it does not enforce default deserialization. By retrieving the raw response as a
-   * {@code Map}, we can manually inspect the aggregation values. If a {@code null} value is found,
-   * we replace it with {@code Double.NaN}, which our existing logic handles appropriately. This
-   * approach allows us to maintain backward compatibility without waiting for the official fix,
-   * which the Elasticsearch team has indicated will be reintroduced in an upcoming minor release.
+   * <p>To mitigate this, we opted to use the low-level client API to perform the search request, as
+   * it does not enforce default deserialization. By retrieving the raw response as a {@code Map},
+   * we can manually inspect the aggregation values. If a {@code null} value is found, we replace it
+   * with {@code Double.NaN}, which our existing logic handles appropriately. This approach allows
+   * us to maintain backward compatibility without waiting for the official fix, which the
+   * Elasticsearch team has indicated will be reintroduced in an upcoming minor release.
    *
    * <p>Note that this workaround will be removed once the issue is resolved in the Elasticsearch
    * client library.
@@ -864,27 +853,29 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     validateOperationParams(requestDto);
 
     switch (requestDto.getType()) {
-      case INDEX -> builder.operations(
-          bb ->
-              bb.index(
-                  bi ->
-                      bi.index(addPrefixesToIndices(requestDto.getIndexName()).get(0))
-                          .id(requestDto.getId())
-                          .document(requestDto.getSource())));
-      case UPDATE -> builder.operations(
-          bb ->
-              bb.update(
-                  bi ->
-                      bi.index(addPrefixesToIndices(requestDto.getIndexName()).get(0))
-                          .id(requestDto.getId())
-                          .action(
-                              a ->
-                                  a.upsert(requestDto.getSource())
-                                      .script(
-                                          createDefaultScriptWithPrimitiveParams(
-                                              requestDto.getScriptData().scriptString(),
-                                              requestDto.getScriptData().params())))
-                          .retryOnConflict(requestDto.getRetryNumberOnConflict())));
+      case INDEX ->
+          builder.operations(
+              bb ->
+                  bb.index(
+                      bi ->
+                          bi.index(addPrefixesToIndices(requestDto.getIndexName()).get(0))
+                              .id(requestDto.getId())
+                              .document(requestDto.getSource())));
+      case UPDATE ->
+          builder.operations(
+              bb ->
+                  bb.update(
+                      bi ->
+                          bi.index(addPrefixesToIndices(requestDto.getIndexName()).get(0))
+                              .id(requestDto.getId())
+                              .action(
+                                  a ->
+                                      a.upsert(requestDto.getSource())
+                                          .script(
+                                              createDefaultScriptWithPrimitiveParams(
+                                                  requestDto.getScriptData().scriptString(),
+                                                  requestDto.getScriptData().params())))
+                              .retryOnConflict(requestDto.getRetryNumberOnConflict())));
       default -> throw new IllegalStateException("Unexpected value: " + requestDto.getType());
     }
   }
@@ -946,11 +937,10 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
   private static String getHintForErrorMsg(final BulkResponse bulkResponse) {
     if (containsNestedDocumentLimitErrorMessage(bulkResponse)) {
       // exception potentially related to nested object limit
-      return
-          "If you are experiencing failures due to too many nested documents, try carefully increasing the "
-              + "configured nested object limit (es.settings.index.nested_documents_limit) or enabling the skipping of "
-              + "documents that have reached this limit during import (import.skipDataAfterNestedDocLimitReached). "
-              + "See Optimize documentation for details.";
+      return "If you are experiencing failures due to too many nested documents, try carefully increasing the "
+          + "configured nested object limit (es.settings.index.nested_documents_limit) or enabling the skipping of "
+          + "documents that have reached this limit during import (import.skipDataAfterNestedDocLimitReached). "
+          + "See Optimize documentation for details.";
     }
     return "";
   }

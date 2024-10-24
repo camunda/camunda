@@ -50,7 +50,8 @@ public class ExceptionHelper {
   }
 
   public static <R> R safe(
-      final ExceptionSupplier<R> supplier, final Function<Exception, String> errorMessage,
+      final ExceptionSupplier<R> supplier,
+      final Function<Exception, String> errorMessage,
       final Logger log) {
     try {
       return supplier.get();

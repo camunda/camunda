@@ -43,7 +43,8 @@ public class DashboardReaderES implements DashboardReader {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-  public DashboardReaderES(final OptimizeElasticsearchClient esClient, final ObjectMapper objectMapper) {
+  public DashboardReaderES(
+      final OptimizeElasticsearchClient esClient, final ObjectMapper objectMapper) {
     this.esClient = esClient;
     this.objectMapper = objectMapper;
   }
@@ -98,7 +99,8 @@ public class DashboardReaderES implements DashboardReader {
     try {
       searchResponse = esClient.search(searchRequest, DashboardDefinitionRestDto.class);
     } catch (final IOException e) {
-      final String reason = String.format("Was not able to fetch dashboards for IDs [%s]", dashboardIds);
+      final String reason =
+          String.format("Was not able to fetch dashboards for IDs [%s]", dashboardIds);
       LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }

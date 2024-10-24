@@ -28,15 +28,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import org.slf4j.Logger;
 
-/**
- * Bunch of utility methods that might be required during upgrade operation.
- */
+/** Bunch of utility methods that might be required during upgrade operation. */
 public final class UpgradeUtil {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(UpgradeUtil.class);
 
-  private UpgradeUtil() {
-  }
+  private UpgradeUtil() {}
 
   public static UpgradeExecutionDependencies createUpgradeDependencies(
       final DatabaseType databaseType) {

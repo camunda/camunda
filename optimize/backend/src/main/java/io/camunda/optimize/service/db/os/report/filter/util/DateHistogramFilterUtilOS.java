@@ -30,8 +30,7 @@ import org.opensearch.client.opensearch._types.query_dsl.RangeQuery;
 
 public final class DateHistogramFilterUtilOS {
 
-  private DateHistogramFilterUtilOS() {
-  }
+  private DateHistogramFilterUtilOS() {}
 
   public static Query createModelElementDateHistogramLimitingFilterQueryFor(
       final DateAggregationContextOS context, final DateTimeFormatter dateTimeFormatter) {

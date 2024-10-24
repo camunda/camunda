@@ -41,7 +41,7 @@ public class MappingMetadataUtilES extends MappingMetadataUtil<IndexSettings.Bui
 
   @Override
   protected Collection<? extends IndexMappingCreator<IndexSettings.Builder>>
-  getAllNonDynamicMappings() {
+      getAllNonDynamicMappings() {
     return ElasticSearchSchemaManager.getAllNonDynamicMappings();
   }
 }

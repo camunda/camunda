@@ -41,8 +41,7 @@ public class TableColumnDto {
     this.columnOrder = columnOrder;
   }
 
-  public TableColumnDto() {
-  }
+  public TableColumnDto() {}
 
   public void addNewAndRemoveUnexpectedVariableColumns(final List<String> allVariableColumns) {
     final List<String> newColumns = determineNewColumns(allVariableColumns);
@@ -260,8 +259,7 @@ public class TableColumnDto {
     private List<String> columnOrderValue;
     private boolean columnOrderSet;
 
-    TableColumnDtoBuilder() {
-    }
+    TableColumnDtoBuilder() {}
 
     public TableColumnDtoBuilder includeNewVariables(final boolean includeNewVariables) {
       includeNewVariablesValue = includeNewVariables;
@@ -305,10 +303,7 @@ public class TableColumnDto {
         columnOrderValue = TableColumnDto.defaultColumnOrder();
       }
       return new TableColumnDto(
-          includeNewVariablesValue,
-          excludedColumnsValue,
-          includedColumnsValue,
-          columnOrderValue);
+          includeNewVariablesValue, excludedColumnsValue, includedColumnsValue, columnOrderValue);
     }
 
     @Override

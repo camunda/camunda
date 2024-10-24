@@ -499,7 +499,8 @@ public class ReportReaderES implements ReportReader {
     }
   }
 
-  private <T> MgetResponse<T> performMultiGetReportRequest(final String reportId, final Class<T> clas) {
+  private <T> MgetResponse<T> performMultiGetReportRequest(
+      final String reportId, final Class<T> clas) {
     final MgetRequest.Builder request = new MgetRequest.Builder();
     request.docs(
         MultiGetOperation.of(
