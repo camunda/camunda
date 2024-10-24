@@ -28,11 +28,7 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequestPermissionsInner;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequestPermissionsInner.PermissionTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResponse;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResponse.OwnerTypeEnum;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResponse.ResourceTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResponse;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionItem;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryResponse;
@@ -52,6 +48,9 @@ import io.camunda.zeebe.gateway.protocol.rest.IncidentItem;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.OperationItem;
+import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.PermissionDTO;
+import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionItem;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResponse;
@@ -59,6 +58,7 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceItem;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceReferenceItem;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateEnum;
+import io.camunda.zeebe.gateway.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
@@ -580,7 +580,7 @@ public final class SearchQueryResponseMapper {
                 authorization.permissions().stream()
                     .map(
                         p ->
-                            new AuthorizationPatchRequestPermissionsInner()
+                            new PermissionDTO()
                                 .permissionType(PermissionTypeEnum.fromValue(p.type().name()))
                                 .resourceIds(p.resourceIds()))
                     .toList()));

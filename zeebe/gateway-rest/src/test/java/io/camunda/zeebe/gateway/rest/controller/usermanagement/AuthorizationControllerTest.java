@@ -21,9 +21,9 @@ import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest.ActionEnum;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest.ResourceTypeEnum;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequestPermissionsInner;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequestPermissionsInner.PermissionTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.PermissionDTO;
+import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
@@ -66,9 +66,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
     final var action = ActionEnum.ADD;
     final var resourceIds = List.of("permission1", "permission2");
     final var permissions =
-        new AuthorizationPatchRequestPermissionsInner()
-            .permissionType(PermissionTypeEnum.CREATE)
-            .resourceIds(resourceIds);
+        new PermissionDTO().permissionType(PermissionTypeEnum.CREATE).resourceIds(resourceIds);
     final var request =
         new AuthorizationPatchRequest()
             .action(action)
@@ -116,9 +114,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
     final var action = ActionEnum.ADD;
     final var resourceIds = List.of("permission1", "permission2");
     final var permissions =
-        new AuthorizationPatchRequestPermissionsInner()
-            .permissionType(PermissionTypeEnum.CREATE)
-            .resourceIds(resourceIds);
+        new PermissionDTO().permissionType(PermissionTypeEnum.CREATE).resourceIds(resourceIds);
     final var request =
         new AuthorizationPatchRequest()
             .action(action)
@@ -178,9 +174,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
     final var resourceIds = List.of("permission1", "permission2");
     final var validPermissions =
         List.of(
-            new AuthorizationPatchRequestPermissionsInner()
-                .permissionType(PermissionTypeEnum.CREATE)
-                .resourceIds(resourceIds));
+            new PermissionDTO().permissionType(PermissionTypeEnum.CREATE).resourceIds(resourceIds));
 
     return Stream.of(
         Arguments.of(
@@ -206,19 +200,14 @@ public class AuthorizationControllerTest extends RestControllerTest {
             new AuthorizationPatchRequest()
                 .action(ActionEnum.ADD)
                 .resourceType(ResourceTypeEnum.DEPLOYMENT)
-                .permissions(
-                    List.of(
-                        new AuthorizationPatchRequestPermissionsInner()
-                            .resourceIds(List.of("resourceId")))),
+                .permissions(List.of(new PermissionDTO().resourceIds(List.of("resourceId")))),
             "No permissionType provided."),
         Arguments.of(
             new AuthorizationPatchRequest()
                 .action(ActionEnum.ADD)
                 .resourceType(ResourceTypeEnum.DEPLOYMENT)
                 .permissions(
-                    List.of(
-                        new AuthorizationPatchRequestPermissionsInner()
-                            .permissionType(PermissionTypeEnum.CREATE))),
+                    List.of(new PermissionDTO().permissionType(PermissionTypeEnum.CREATE))),
             "No resourceIds provided in 'CREATE'."),
         Arguments.of(
             new AuthorizationPatchRequest()
@@ -226,7 +215,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 .resourceType(ResourceTypeEnum.DEPLOYMENT)
                 .permissions(
                     List.of(
-                        new AuthorizationPatchRequestPermissionsInner()
+                        new PermissionDTO()
                             .permissionType(PermissionTypeEnum.CREATE)
                             .resourceIds(List.of()))),
             "No resourceIds provided in 'CREATE'."));
