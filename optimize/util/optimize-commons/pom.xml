@@ -138,7 +138,6 @@
     <dependency>
       <groupId>org.opensearch.client</groupId>
       <artifactId>opensearch-java</artifactId>
-      <version>${opensearch.client.version}</version>
       <exclusions>
         <exclusion>
           <groupId>commons-logging</groupId>
