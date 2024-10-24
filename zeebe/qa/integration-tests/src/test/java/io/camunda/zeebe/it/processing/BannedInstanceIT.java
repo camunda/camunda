@@ -18,13 +18,11 @@ import io.camunda.zeebe.qa.util.actuator.BanningActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
-import org.junit.Rule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -32,7 +30,7 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 final class BannedInstanceIT {
 
-  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+  public static final String PROCESS_ID = "process";
 
   @TestZeebe
   private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
@@ -49,11 +47,10 @@ final class BannedInstanceIT {
   @Test
   public void shouldAllowCancelProcessInstanceWhenInstanceIsBanned() {
     // given
-    final var processId = helper.getBpmnProcessId();
     client
         .newDeployResourceCommand()
         .addProcessModel(
-            Bpmn.createExecutableProcess(processId)
+            Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent("start")
                 .serviceTask("task", t -> t.zeebeJobType("type"))
                 .endEvent("end")
@@ -65,7 +62,7 @@ final class BannedInstanceIT {
     final long processInstanceKey =
         client
             .newCreateInstanceCommand()
-            .bpmnProcessId(processId)
+            .bpmnProcessId(PROCESS_ID)
             .latestVersion()
             .send()
             .join()
@@ -95,11 +92,10 @@ final class BannedInstanceIT {
   @Test
   public void shouldNotTriggerTimerEventWhenInstanceIsBanned() {
     // given
-    final var processId = helper.getBpmnProcessId();
     client
         .newDeployResourceCommand()
         .addProcessModel(
-            Bpmn.createExecutableProcess(processId)
+            Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent("start")
                 .intermediateCatchEvent("timer", b -> b.timerWithDurationExpression("duration"))
                 .endEvent("end")
@@ -111,7 +107,7 @@ final class BannedInstanceIT {
     final long processInstanceKey =
         client
             .newCreateInstanceCommand()
-            .bpmnProcessId(processId)
+            .bpmnProcessId(PROCESS_ID)
             .latestVersion()
             .variables(Map.of("duration", "PT2S"))
             .send()
@@ -130,7 +126,7 @@ final class BannedInstanceIT {
     final long secondProcessInstanceKey =
         client
             .newCreateInstanceCommand()
-            .bpmnProcessId(processId)
+            .bpmnProcessId(PROCESS_ID)
             .latestVersion()
             .variable("duration", "PT3S")
             .send()
@@ -157,11 +153,10 @@ final class BannedInstanceIT {
   @Test
   public void shouldAllowCancelBannedInstanceWithIncident() {
     // given
-    final var processId = helper.getBpmnProcessId();
     client
         .newDeployResourceCommand()
         .addProcessModel(
-            Bpmn.createExecutableProcess(processId)
+            Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
                 .serviceTask(
                     "A",
@@ -177,7 +172,7 @@ final class BannedInstanceIT {
     final long processInstanceKey =
         client
             .newCreateInstanceCommand()
-            .bpmnProcessId(processId)
+            .bpmnProcessId(PROCESS_ID)
             .latestVersion()
             .send()
             .join()
