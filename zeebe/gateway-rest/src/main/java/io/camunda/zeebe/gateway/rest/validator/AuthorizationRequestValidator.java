@@ -12,7 +12,7 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAG
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequestPermissionsInner;
+import io.camunda.zeebe.gateway.protocol.rest.PermissionDTO;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
@@ -42,7 +42,7 @@ public final class AuthorizationRequestValidator {
   }
 
   private static void validatePermission(
-      final AuthorizationPatchRequestPermissionsInner permission, final List<String> violations) {
+      final PermissionDTO permission, final List<String> violations) {
     if (permission.getPermissionType() == null) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("permissionType"));
     } else if (permission.getResourceIds() == null || permission.getResourceIds().isEmpty()) {

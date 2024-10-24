@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest;
 
 import static java.util.Optional.ofNullable;
 
+import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
@@ -27,6 +28,8 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResponse;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResponse;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionItem;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionTypeEnum;
@@ -45,6 +48,9 @@ import io.camunda.zeebe.gateway.protocol.rest.IncidentItem;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.OperationItem;
+import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.PermissionDTO;
+import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionItem;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResponse;
@@ -52,6 +58,7 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceItem;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceReferenceItem;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateEnum;
+import io.camunda.zeebe.gateway.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
@@ -529,6 +536,54 @@ public final class SearchQueryResponseMapper {
         .tenantId(variableEntity.tenantId())
         .isTruncated(variableEntity.isPreview())
         .scopeKey(variableEntity.scopeKey());
+  }
+
+  public static AuthorizationSearchResponse toAuthorizationSearchQueryResponse(
+      final SearchQueryResult<AuthorizationEntity> result) {
+    final var response = new AuthorizationSearchResponse();
+    final var total = result.total();
+    final var sortValues = result.sortValues();
+    final var items = result.items();
+
+    final var page = new SearchQueryPageResponse();
+    page.setTotalItems(total);
+    response.setPage(page);
+
+    if (sortValues != null) {
+      page.setLastSortValues(Arrays.asList(sortValues));
+    }
+
+    if (items != null) {
+      response.setItems(toAuthorizations(items).get());
+    }
+
+    return response;
+  }
+
+  public static Either<ProblemDetail, List<AuthorizationResponse>> toAuthorizations(
+      final List<AuthorizationEntity> authorizations) {
+    return Either.right(
+        authorizations.stream()
+            .map(SearchQueryResponseMapper::toAuthorization)
+            .map(Either::get)
+            .toList());
+  }
+
+  public static Either<ProblemDetail, AuthorizationResponse> toAuthorization(
+      final AuthorizationEntity authorization) {
+    return Either.right(
+        new AuthorizationResponse()
+            .ownerType(OwnerTypeEnum.fromValue(authorization.ownerType()))
+            .ownerKey(Long.valueOf(authorization.ownerKey()))
+            .resourceType(ResourceTypeEnum.valueOf(authorization.resourceType()))
+            .permissions(
+                authorization.permissions().stream()
+                    .map(
+                        p ->
+                            new PermissionDTO()
+                                .permissionType(PermissionTypeEnum.fromValue(p.type().name()))
+                                .resourceIds(p.resourceIds()))
+                    .toList()));
   }
 
   private record RuleIdentifier(String ruleId, int ruleIndex) {}
