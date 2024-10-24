@@ -8,7 +8,6 @@
 package io.camunda.webapps.schema.entities.tasklist;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import io.camunda.webapps.schema.entities.operate.VariableEntity;
 
 public class TaskVariableEntity extends TasklistEntity<TaskVariableEntity> {
 
@@ -31,23 +30,12 @@ public class TaskVariableEntity extends TasklistEntity<TaskVariableEntity> {
   private Long processInstanceId;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Long position;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private TaskJoinRelationship join;
 
   public TaskVariableEntity() {}
-
-  public TaskVariableEntity(final VariableEntity entity) {
-    setKey(entity.getKey());
-    setId(entity.getId());
-    setPartitionId(entity.getPartitionId());
-    setTenantId(entity.getTenantId());
-    name = entity.getName();
-    value = entity.getValue();
-    fullValue = entity.getFullValue();
-    isTruncated = entity.getIsPreview();
-    scopeKey = entity.getScopeKey();
-    processInstanceId = entity.getProcessInstanceKey();
-    join = new TaskJoinRelationship();
-  }
 
   public String getName() {
     return name;
@@ -112,26 +100,12 @@ public class TaskVariableEntity extends TasklistEntity<TaskVariableEntity> {
     return this;
   }
 
-  public static TaskVariableEntity createFrom(
-      final String tenantId,
-      final String id,
-      final String name,
-      final String value,
-      final Long scopeKey,
-      final int variableSizeThreshold,
-      final TaskJoinRelationship joinRelationship) {
-    final TaskVariableEntity entity = new TaskVariableEntity().setId(id).setName(name);
-    if (value.length() > variableSizeThreshold) {
-      entity.setValue(value.substring(0, variableSizeThreshold));
-      entity.setFullValue(value);
-      entity.setIsTruncated(true);
-    } else {
-      entity.setIsTruncated(false);
-      entity.setValue(value);
-    }
-    entity.setScopeKey(scopeKey);
-    entity.setTenantId(tenantId);
-    entity.setJoin(joinRelationship);
-    return entity;
+  public Long getPosition() {
+    return position;
+  }
+
+  public TaskVariableEntity setPosition(final Long position) {
+    this.position = position;
+    return this;
   }
 }
