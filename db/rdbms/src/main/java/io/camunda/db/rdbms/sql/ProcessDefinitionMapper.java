@@ -16,7 +16,7 @@ public interface ProcessDefinitionMapper {
 
   void insert(ProcessDefinitionDbModel processDeployment);
 
-  Integer count(ProcessDefinitionDbQuery filter);
+  Long count(ProcessDefinitionDbQuery filter);
 
   List<ProcessDefinitionEntity> search(ProcessDefinitionDbQuery filter);
 }

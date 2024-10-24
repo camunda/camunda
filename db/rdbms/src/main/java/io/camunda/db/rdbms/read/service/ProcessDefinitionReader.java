@@ -44,5 +44,5 @@ public class ProcessDefinitionReader {
     return new SearchResult(hits, totalHits);
   }
 
-  public record SearchResult(List<ProcessDefinitionEntity> hits, Integer total) {}
+  public record SearchResult(List<ProcessDefinitionEntity> hits, Long total) {}
 }
