@@ -38,7 +38,7 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class CollectionReaderOS implements CollectionReader {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(CollectionReaderOS.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(CollectionReaderOS.class);
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
 
@@ -50,7 +50,7 @@ public class CollectionReaderOS implements CollectionReader {
 
   @Override
   public Optional<CollectionDefinitionDto> getCollection(final String collectionId) {
-    log.debug("Fetching collection with id [{}]", collectionId);
+    LOG.debug("Fetching collection with id [{}]", collectionId);
     final GetRequest.Builder getRequest =
         new GetRequest.Builder().index(COLLECTION_INDEX_NAME).id(collectionId);
     final String errorMessage =
@@ -62,7 +62,7 @@ public class CollectionReaderOS implements CollectionReader {
       if (Objects.isNull(getResponse.source())) {
         final String reason =
             "Could not deserialize collection information for collection " + collectionId;
-        log.error(
+        LOG.error(
             "Was not able to retrieve collection with id [{}] from OpenSearch. Reason: {}",
             collectionId,
             reason);
@@ -76,7 +76,7 @@ public class CollectionReaderOS implements CollectionReader {
 
   @Override
   public List<CollectionDefinitionDto> getAllCollections() {
-    log.debug("Fetching all available collections");
+    LOG.debug("Fetching all available collections");
 
     final SearchRequest.Builder searchRequest =
         new SearchRequest.Builder()
@@ -103,7 +103,7 @@ public class CollectionReaderOS implements CollectionReader {
       scrollResp = osClient.retrieveAllScrollResults(searchRequest, CollectionDefinitionDto.class);
     } catch (final IOException e) {
       final String errorMessage = "Was not able to retrieve collections!";
-      log.error(errorMessage, e);
+      LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
     return OpensearchReaderUtil.extractAggregatedResponseValues(scrollResp);

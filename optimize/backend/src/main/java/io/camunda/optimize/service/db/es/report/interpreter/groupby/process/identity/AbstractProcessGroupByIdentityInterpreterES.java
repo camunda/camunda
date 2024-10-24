@@ -69,7 +69,7 @@ public abstract class AbstractProcessGroupByIdentityInterpreterES
   public Map<String, Aggregation.Builder.ContainerBuilder> createAggregation(
       final BoolQuery boolQuery,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    Aggregation.Builder.ContainerBuilder builder =
+    final Aggregation.Builder.ContainerBuilder builder =
         new Aggregation.Builder().nested(n -> n.path(FLOW_NODE_INSTANCES));
     builder.aggregations(
         USER_TASKS_AGGREGATION,
@@ -101,7 +101,7 @@ public abstract class AbstractProcessGroupByIdentityInterpreterES
                                         GROUP_BY_IDENTITY_TERMS_AGGREGATION,
                                         Aggregation.of(
                                             aaa -> {
-                                              Aggregation.Builder.ContainerBuilder terms =
+                                              final Aggregation.Builder.ContainerBuilder terms =
                                                   aaa.terms(
                                                       t ->
                                                           t.size(

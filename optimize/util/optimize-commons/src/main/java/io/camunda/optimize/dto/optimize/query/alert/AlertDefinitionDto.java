@@ -101,6 +101,7 @@ public class AlertDefinitionDto extends AlertCreationRequestDto {
   }
 
   /** Needed to inherit field name constants from {@link AlertCreationRequestDto} */
+  @SuppressWarnings("checkstyle:ConstantName")
   public static class Fields extends AlertCreationRequestDto.Fields {
 
     public static final String id = "id";

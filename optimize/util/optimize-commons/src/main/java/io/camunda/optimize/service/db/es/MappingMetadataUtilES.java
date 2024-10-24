@@ -23,9 +23,9 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class MappingMetadataUtilES extends MappingMetadataUtil<IndexSettings.Builder> {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(MappingMetadataUtilES.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(MappingMetadataUtilES.class);
 
-  public MappingMetadataUtilES(OptimizeElasticsearchClient dbClient) {
+  public MappingMetadataUtilES(final OptimizeElasticsearchClient dbClient) {
     super(dbClient);
   }
 

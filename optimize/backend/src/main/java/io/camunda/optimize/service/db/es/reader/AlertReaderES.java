@@ -39,15 +39,15 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class AlertReaderES implements AlertReader {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(AlertReaderES.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(AlertReaderES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
 
   public AlertReaderES(
-      OptimizeElasticsearchClient esClient,
-      ConfigurationService configurationService,
-      ObjectMapper objectMapper) {
+      final OptimizeElasticsearchClient esClient,
+      final ConfigurationService configurationService,
+      final ObjectMapper objectMapper) {
     this.esClient = esClient;
     this.configurationService = configurationService;
     this.objectMapper = objectMapper;
@@ -59,16 +59,16 @@ public class AlertReaderES implements AlertReader {
         OptimizeCountRequestBuilderES.of(b -> b.optimizeIndex(esClient, ALERT_INDEX_NAME));
     try {
       return esClient.count(countRequest).count();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException("Was not able to retrieve alert count!", e);
     }
   }
 
   @Override
   public List<AlertDefinitionDto> getStoredAlerts() {
-    log.debug("getting all stored alerts");
+    LOG.debug("getting all stored alerts");
 
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         OptimizeSearchRequestBuilderES.of(
             b ->
                 b.optimizeIndex(esClient, ALERT_INDEX_NAME)
@@ -83,11 +83,11 @@ public class AlertReaderES implements AlertReader {
                                             .getScrollTimeoutInSeconds()
                                         + "s"))));
 
-    SearchResponse<AlertDefinitionDto> scrollResp;
+    final SearchResponse<AlertDefinitionDto> scrollResp;
     try {
       scrollResp = esClient.search(searchRequest, AlertDefinitionDto.class);
-    } catch (IOException e) {
-      log.error("Was not able to retrieve stored alerts!", e);
+    } catch (final IOException e) {
+      LOG.error("Was not able to retrieve stored alerts!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve stored alerts!", e);
     }
 
@@ -100,27 +100,27 @@ public class AlertReaderES implements AlertReader {
   }
 
   @Override
-  public Optional<AlertDefinitionDto> getAlert(String alertId) {
-    log.debug("Fetching alert with id [{}]", alertId);
+  public Optional<AlertDefinitionDto> getAlert(final String alertId) {
+    LOG.debug("Fetching alert with id [{}]", alertId);
 
-    GetRequest getRequest =
+    final GetRequest getRequest =
         OptimizeGetRequestBuilderES.of(
             b -> b.optimizeIndex(esClient, ALERT_INDEX_NAME).id(alertId));
 
     try {
       return Optional.ofNullable(esClient.get(getRequest, AlertDefinitionDto.class).source());
-    } catch (IOException e) {
-      String reason = String.format("Could not fetch alert with id [%s]", alertId);
-      log.error(reason, e);
+    } catch (final IOException e) {
+      final String reason = String.format("Could not fetch alert with id [%s]", alertId);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
   }
 
   @Override
-  public List<AlertDefinitionDto> getAlertsForReport(String reportId) {
-    log.debug("Fetching first {} alerts using report with id {}", LIST_FETCH_LIMIT, reportId);
+  public List<AlertDefinitionDto> getAlertsForReport(final String reportId) {
+    LOG.debug("Fetching first {} alerts using report with id {}", LIST_FETCH_LIMIT, reportId);
 
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         OptimizeSearchRequestBuilderES.of(
             b ->
                 b.optimizeIndex(esClient, ALERT_INDEX_NAME)
@@ -130,13 +130,13 @@ public class AlertReaderES implements AlertReader {
                                 t -> t.field(AlertIndex.REPORT_ID).value(FieldValue.of(reportId))))
                     .size(LIST_FETCH_LIMIT));
 
-    SearchResponse<AlertDefinitionDto> searchResponse;
+    final SearchResponse<AlertDefinitionDto> searchResponse;
     try {
       searchResponse = esClient.search(searchRequest, AlertDefinitionDto.class);
-    } catch (IOException e) {
-      String reason =
+    } catch (final IOException e) {
+      final String reason =
           String.format("Was not able to fetch alerts for report with id [%s]", reportId);
-      log.error(reason, e);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
@@ -145,10 +145,10 @@ public class AlertReaderES implements AlertReader {
   }
 
   @Override
-  public List<AlertDefinitionDto> getAlertsForReports(List<String> reportIds) {
-    log.debug("Fetching first {} alerts using reports with ids {}", LIST_FETCH_LIMIT, reportIds);
+  public List<AlertDefinitionDto> getAlertsForReports(final List<String> reportIds) {
+    LOG.debug("Fetching first {} alerts using reports with ids {}", LIST_FETCH_LIMIT, reportIds);
 
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         OptimizeSearchRequestBuilderES.of(
             b ->
                 b.optimizeIndex(esClient, ALERT_INDEX_NAME)
@@ -165,13 +165,13 @@ public class AlertReaderES implements AlertReader {
                                                         .toList()))))
                     .size(LIST_FETCH_LIMIT));
 
-    SearchResponse<AlertDefinitionDto> searchResponse;
+    final SearchResponse<AlertDefinitionDto> searchResponse;
     try {
       searchResponse = esClient.search(searchRequest, AlertDefinitionDto.class);
-    } catch (IOException e) {
-      String reason =
+    } catch (final IOException e) {
+      final String reason =
           String.format("Was not able to fetch alerts for reports with ids [%s]", reportIds);
-      log.error(reason, e);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
@@ -179,7 +179,7 @@ public class AlertReaderES implements AlertReader {
         searchResponse.hits(), AlertDefinitionDto.class, objectMapper);
   }
 
-  private void logError(String alertId) {
-    log.error("Was not able to retrieve alert with id [{}] from Elasticsearch.", alertId);
+  private void logError(final String alertId) {
+    LOG.error("Was not able to retrieve alert with id [{}] from Elasticsearch.", alertId);
   }
 }

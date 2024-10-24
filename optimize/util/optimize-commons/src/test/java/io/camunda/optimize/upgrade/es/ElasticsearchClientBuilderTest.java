@@ -33,7 +33,7 @@ import org.mockito.Mockito;
 class ElasticsearchClientBuilderTest {
 
   @Test
-  void buildExtendedClient_HappyPath() {
+  void buildExtendedClientHappyPath() {
     // given
     final BasicHttpContext context = new BasicHttpContext();
     final ConfigurationService config = Mockito.mock(ConfigurationService.class);
@@ -68,7 +68,7 @@ class ElasticsearchClientBuilderTest {
   }
 
   @Test
-  void buildClientWithNoPlugins_DoesNotFail() {
+  void buildClientWithNoPluginsDoesNotFail() {
     // given
     final BasicHttpContext context = new BasicHttpContext();
     final ConfigurationService config = Mockito.mock(ConfigurationService.class);
@@ -102,7 +102,7 @@ class ElasticsearchClientBuilderTest {
   }
 
   @Test
-  void buildClientWithAllEmptyPlugins_DoesNotFail() {
+  void buildClientWithAllEmptyPluginsDoesNotFail() {
     // given
     final BasicHttpContext context = new BasicHttpContext();
     final ConfigurationService config = Mockito.mock(ConfigurationService.class);
@@ -141,6 +141,7 @@ class ElasticsearchClientBuilderTest {
   }
 
   private static final class NoopCallback implements FutureCallback<HttpResponse> {
+
     private static final NoopCallback INSTANCE = new NoopCallback();
 
     @Override

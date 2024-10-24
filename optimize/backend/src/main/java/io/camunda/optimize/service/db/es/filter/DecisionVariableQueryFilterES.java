@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
 public abstract class DecisionVariableQueryFilterES extends AbstractVariableQueryFilterES
     implements QueryFilterES<VariableFilterDataDto<?>> {
 
-  private static final Logger log = LoggerFactory.getLogger(DecisionVariableQueryFilterES.class);
+  private static final Logger LOG = LoggerFactory.getLogger(DecisionVariableQueryFilterES.class);
   protected final Logger logger = LoggerFactory.getLogger(getClass());
 
   public DecisionVariableQueryFilterES() {}
@@ -77,23 +77,23 @@ public abstract class DecisionVariableQueryFilterES extends AbstractVariableQuer
 
     switch (dto.getType()) {
       case BOOLEAN:
-        BooleanVariableFilterDataDto booleanVarDto = (BooleanVariableFilterDataDto) dto;
+        final BooleanVariableFilterDataDto booleanVarDto = (BooleanVariableFilterDataDto) dto;
         queryBuilder = createBooleanQueryBuilder(booleanVarDto);
         break;
       case STRING:
-        StringVariableFilterDataDto stringVarDto = (StringVariableFilterDataDto) dto;
+        final StringVariableFilterDataDto stringVarDto = (StringVariableFilterDataDto) dto;
         queryBuilder = createStringQueryBuilder(stringVarDto);
         break;
       case INTEGER:
       case DOUBLE:
       case SHORT:
       case LONG:
-        OperatorMultipleValuesVariableFilterDataDto numericVarDto =
+        final OperatorMultipleValuesVariableFilterDataDto numericVarDto =
             (OperatorMultipleValuesVariableFilterDataDto) dto;
         queryBuilder = createNumericQueryBuilder(numericVarDto);
         break;
       case DATE:
-        DateVariableFilterDataDto dateVarDto = (DateVariableFilterDataDto) dto;
+        final DateVariableFilterDataDto dateVarDto = (DateVariableFilterDataDto) dto;
         queryBuilder = createDateQueryBuilder(dateVarDto, timezone);
         break;
       default:
@@ -107,11 +107,11 @@ public abstract class DecisionVariableQueryFilterES extends AbstractVariableQuer
   @Override
   protected Query.Builder createContainsOneOfTheGivenStringsQueryBuilder(
       final StringVariableFilterDataDto dto) {
-    Query.Builder containOneOfTheGivenStrings =
+    final Query.Builder containOneOfTheGivenStrings =
         createContainsOneOfTheGivenStringsQueryBuilder(dto.getName(), dto.getData().getValues());
 
     if (NOT_CONTAINS.equals(dto.getData().getOperator())) {
-      Query.Builder builder = new Query.Builder();
+      final Query.Builder builder = new Query.Builder();
       builder.bool(b -> b.mustNot(containOneOfTheGivenStrings.build()));
       return builder;
     } else {
@@ -123,7 +123,7 @@ public abstract class DecisionVariableQueryFilterES extends AbstractVariableQuer
   protected Query.Builder createContainsOneOfTheGivenStringsQueryBuilder(
       final String variableId, final List<String> values) {
 
-    Query.Builder builder = new Query.Builder();
+    final Query.Builder builder = new Query.Builder();
     builder.bool(
         b -> {
           values.stream()
@@ -146,13 +146,13 @@ public abstract class DecisionVariableQueryFilterES extends AbstractVariableQuer
   protected Query.Builder createContainsGivenStringQuery(
       final String variableId, final String valueToContain) {
 
-    Query.Builder builder = new Query.Builder();
+    final Query.Builder builder = new Query.Builder();
 
-    BoolQuery.Builder containsVariableString = new BoolQuery.Builder();
+    final BoolQuery.Builder containsVariableString = new BoolQuery.Builder();
     containsVariableString.must(m -> m.term(t -> t.field(getVariableIdField()).value(variableId)));
 
     final String lowerCaseValue = valueToContain.toLowerCase(Locale.ENGLISH);
-    Query filter =
+    final Query filter =
         (lowerCaseValue.length() > MAX_GRAM)
             /*
               using the slow wildcard query for uncommonly large filter strings (> 10 chars)
@@ -187,12 +187,12 @@ public abstract class DecisionVariableQueryFilterES extends AbstractVariableQuer
   @Override
   protected Query.Builder createEqualsOneOrMoreValuesQueryBuilder(
       final OperatorMultipleValuesVariableFilterDataDto dto) {
-    Query.Builder variableFilterBuilder =
+    final Query.Builder variableFilterBuilder =
         createMultiValueVariableFilterQuery(
             getVariableId(dto), dto.getType(), dto.getData().getValues());
 
     if (NOT_IN.equals(dto.getData().getOperator())) {
-      Query.Builder builder = new Query.Builder();
+      final Query.Builder builder = new Query.Builder();
       builder.bool(b -> b.mustNot(variableFilterBuilder.build()));
       return builder;
     } else {
@@ -210,7 +210,7 @@ public abstract class DecisionVariableQueryFilterES extends AbstractVariableQuer
 
   private Query.Builder createMultiValueVariableFilterQuery(
       final String variableId, final VariableType variableType, final List<?> values) {
-    Query.Builder builder = new Query.Builder();
+    final Query.Builder builder = new Query.Builder();
     builder.bool(
         b -> {
           b.minimumShouldMatch("1");
@@ -264,14 +264,14 @@ public abstract class DecisionVariableQueryFilterES extends AbstractVariableQuer
 
   @Override
   protected Query.Builder createNumericQueryBuilder(
-      OperatorMultipleValuesVariableFilterDataDto dto) {
+      final OperatorMultipleValuesVariableFilterDataDto dto) {
     OperatorMultipleValuesVariableFilterDataDtoUtil.validateMultipleValuesFilterDataDto(dto);
 
-    String nestedVariableValueFieldLabel = getVariableValueFieldForType(dto.getType());
+    final String nestedVariableValueFieldLabel = getVariableValueFieldForType(dto.getType());
     final OperatorMultipleValuesFilterDataDto data = dto.getData();
 
-    Query.Builder builder = new Query.Builder();
-    Supplier<BoolQuery.Builder> supplier =
+    final Query.Builder builder = new Query.Builder();
+    final Supplier<BoolQuery.Builder> supplier =
         () ->
             new BoolQuery.Builder()
                 .must(m -> m.term(t -> t.field(getVariableIdField()).value(getVariableId(dto))));
@@ -284,7 +284,7 @@ public abstract class DecisionVariableQueryFilterES extends AbstractVariableQuer
       return builder;
     }
 
-    Object value = OperatorMultipleValuesVariableFilterDataDtoUtil.retrieveValue(dto);
+    final Object value = OperatorMultipleValuesVariableFilterDataDtoUtil.retrieveValue(dto);
     switch (data.getOperator()) {
       case IN:
       case NOT_IN:
@@ -378,7 +378,7 @@ public abstract class DecisionVariableQueryFilterES extends AbstractVariableQuer
   @Override
   protected Query.Builder createDateQueryBuilder(
       final DateVariableFilterDataDto dto, final ZoneId timezone) {
-    Query.Builder builder = new Query.Builder();
+    final Query.Builder builder = new Query.Builder();
     builder.bool(
         b -> {
           b.minimumShouldMatch("1");
@@ -388,7 +388,7 @@ public abstract class DecisionVariableQueryFilterES extends AbstractVariableQuer
             b.should(createExcludeUndefinedOrNullQueryBuilder(getVariableId(dto)).build());
           }
 
-          BoolQuery.Builder dateValueFilterQuery =
+          final BoolQuery.Builder dateValueFilterQuery =
               new BoolQuery.Builder()
                   .must(m -> m.term(t -> t.field(getVariableIdField()).value(getVariableId(dto))));
           DateFilterQueryUtilES.addFilters(
@@ -396,7 +396,7 @@ public abstract class DecisionVariableQueryFilterES extends AbstractVariableQuer
               Collections.singletonList(dto.getData()),
               getVariableValueFieldForType(dto.getType()),
               timezone);
-          BoolQuery build = dateValueFilterQuery.build();
+          final BoolQuery build = dateValueFilterQuery.build();
           if (!build.filter().isEmpty()) {
             b.should(
                 s ->
@@ -413,7 +413,7 @@ public abstract class DecisionVariableQueryFilterES extends AbstractVariableQuer
   }
 
   private Query.Builder createFilterForUndefinedOrNullQueryBuilder(final String variableId) {
-    Query.Builder builder = new Query.Builder();
+    final Query.Builder builder = new Query.Builder();
     builder.bool(
         b ->
             b.should(
@@ -466,7 +466,7 @@ public abstract class DecisionVariableQueryFilterES extends AbstractVariableQuer
   }
 
   private Query.Builder createExcludeUndefinedOrNullQueryBuilder(final String variableId) {
-    Query.Builder builder = new Query.Builder();
+    final Query.Builder builder = new Query.Builder();
     builder.bool(
         b ->
             b.must(

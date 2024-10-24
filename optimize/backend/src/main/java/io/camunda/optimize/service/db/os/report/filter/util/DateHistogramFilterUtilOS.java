@@ -28,7 +28,7 @@ import org.opensearch.client.opensearch._types.aggregations.FieldDateMath;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.RangeQuery;
 
-public class DateHistogramFilterUtilOS {
+public final class DateHistogramFilterUtilOS {
 
   private DateHistogramFilterUtilOS() {}
 

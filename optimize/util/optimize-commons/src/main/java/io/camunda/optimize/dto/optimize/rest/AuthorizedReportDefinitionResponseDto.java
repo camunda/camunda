@@ -53,6 +53,7 @@ public class AuthorizedReportDefinitionResponseDto extends AuthorizedEntityDto {
     return "AuthorizedReportDefinitionResponseDto(definitionDto=" + getDefinitionDto() + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String definitionDto = "definitionDto";

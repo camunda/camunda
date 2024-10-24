@@ -60,17 +60,17 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class CollectionWriterES implements CollectionWriter {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(CollectionWriterES.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(CollectionWriterES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
   private final DateTimeFormatter formatter;
   private final TaskRepositoryES taskRepositoryES;
 
   public CollectionWriterES(
-      OptimizeElasticsearchClient esClient,
-      ObjectMapper objectMapper,
-      DateTimeFormatter formatter,
-      TaskRepositoryES taskRepositoryES) {
+      final OptimizeElasticsearchClient esClient,
+      final ObjectMapper objectMapper,
+      final DateTimeFormatter formatter,
+      final TaskRepositoryES taskRepositoryES) {
     this.esClient = esClient;
     this.objectMapper = objectMapper;
     this.formatter = formatter;
@@ -79,7 +79,7 @@ public class CollectionWriterES implements CollectionWriter {
 
   @Override
   public void updateCollection(final CollectionDefinitionUpdateDto collection, final String id) {
-    log.debug("Updating collection with id [{}] in Elasticsearch", id);
+    LOG.debug("Updating collection with id [{}] in Elasticsearch", id);
 
     try {
       final UpdateResponse<CollectionDefinitionUpdateDto> updateResponse =
@@ -95,7 +95,7 @@ public class CollectionWriterES implements CollectionWriter {
               CollectionDefinitionUpdateDto.class);
 
       if (!updateResponse.shards().failures().isEmpty()) {
-        log.error(
+        LOG.error(
             "Was not able to update collection with id [{}] and name [{}].",
             id,
             collection.getName());
@@ -106,21 +106,21 @@ public class CollectionWriterES implements CollectionWriter {
           String.format(
               "Was not able to update collection with id [%s] and name [%s].",
               id, collection.getName());
-      log.error(errorMessage, e);
+      LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     } catch (final ElasticsearchException e) {
       final String errorMessage =
           String.format(
               "Was not able to update collection with id [%s] and name [%s]. Collection does not exist!",
               id, collection.getName());
-      log.error(errorMessage, e);
+      LOG.error(errorMessage, e);
       throw new NotFoundException(errorMessage, e);
     }
   }
 
   @Override
   public void deleteCollection(final String collectionId) {
-    log.debug("Deleting collection with id [{}]", collectionId);
+    LOG.debug("Deleting collection with id [{}]", collectionId);
     final DeleteResponse deleteResponse;
     try {
       deleteResponse =
@@ -133,7 +133,7 @@ public class CollectionWriterES implements CollectionWriter {
     } catch (final IOException e) {
       final String reason =
           String.format("Could not delete collection with id [%s]. ", collectionId);
-      log.error(reason, e);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
@@ -143,7 +143,7 @@ public class CollectionWriterES implements CollectionWriter {
               "Could not delete collection with id [%s]. Collection does not exist. "
                   + "Maybe it was already deleted by someone else?",
               collectionId);
-      log.error(message);
+      LOG.error(message);
       throw new NotFoundException(message);
     }
   }
@@ -171,14 +171,14 @@ public class CollectionWriterES implements CollectionWriter {
             String.format(
                 "Was not able to add scope entries to collection with id [%s]. Collection does not exist!",
                 collectionId);
-        log.error(message);
+        LOG.error(message);
         throw new NotFoundException(message);
       }
     } catch (final IOException e) {
       final String errorMessage =
           String.format(
               "Wasn't able to add scope entries to collection with id [%s].", collectionId);
-      log.error(errorMessage, e);
+      LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
   }
@@ -186,7 +186,7 @@ public class CollectionWriterES implements CollectionWriter {
   @Override
   public void deleteScopeEntryFromAllCollections(final String scopeEntryId) {
     final String updateItem = String.format("collection scope entry with ID [%s].", scopeEntryId);
-    log.info("Removing {} from all collections.", updateItem);
+    LOG.info("Removing {} from all collections.", updateItem);
 
     final Script removeScopeEntryFromCollectionsScript =
         Script.of(
@@ -251,7 +251,7 @@ public class CollectionWriterES implements CollectionWriter {
     } catch (final IOException e) {
       final String errorMessage =
           String.format("Was not able to update collection with id [%s].", collectionId);
-      log.error(errorMessage, e);
+      LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     } catch (final ElasticsearchException e) {
       final String errorMessage =
@@ -259,7 +259,7 @@ public class CollectionWriterES implements CollectionWriter {
               "Was not able to update scope entry with id [%s] on collection with id [%s]."
                   + " Collection or scope Entry does not exist!",
               scopeEntryId, collectionId);
-      log.error(errorMessage, e);
+      LOG.error(errorMessage, e);
       throw new NotFoundException(errorMessage, e);
     }
   }
@@ -284,7 +284,7 @@ public class CollectionWriterES implements CollectionWriter {
           String.format(
               "The scope with ids %s could not be removed from the collection %s.",
               scopeEntryIds, collectionId);
-      log.error(errorMessage, e);
+      LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
   }
@@ -310,14 +310,14 @@ public class CollectionWriterES implements CollectionWriter {
       if (updateResponse.result().equals(NoOp)) {
         final String message =
             String.format("Scope entry for id [%s] doesn't exist.", scopeEntryId);
-        log.warn(message);
+        LOG.warn(message);
         throw new NotFoundException(message);
       }
 
     } catch (final IOException e) {
       final String errorMessage =
           String.format("Was not able to update collection with id [%s].", collectionId);
-      log.error(errorMessage, e);
+      LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
   }
@@ -327,7 +327,7 @@ public class CollectionWriterES implements CollectionWriter {
       final String collectionId,
       final List<CollectionRoleRequestDto> rolesToAdd,
       final String userId) {
-    log.debug(
+    LOG.debug(
         "Adding roles {} to collection with id [{}] in Elasticsearch.", rolesToAdd, collectionId);
 
     try {
@@ -347,20 +347,20 @@ public class CollectionWriterES implements CollectionWriter {
         final String message =
             String.format(
                 "One of the roles %s already exists in collection [%s].", rolesToAdd, collectionId);
-        log.warn(message);
+        LOG.warn(message);
         throw new OptimizeCollectionConflictException(message);
       }
     } catch (final IOException e) {
       final String errorMessage =
           String.format("Was not able to update collection with id [%s].", collectionId);
-      log.error(errorMessage, e);
+      LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     } catch (final ElasticsearchException e) {
       final String errorMessage =
           String.format(
               "Was not able to update collection with id [%s]. Collection does not exist!",
               collectionId);
-      log.error(errorMessage, e);
+      LOG.error(errorMessage, e);
       throw new NotFoundException(errorMessage, e);
     }
   }
@@ -372,7 +372,7 @@ public class CollectionWriterES implements CollectionWriter {
       final CollectionRoleUpdateRequestDto roleUpdateDto,
       final String userId)
       throws OptimizeConflictException {
-    log.debug(
+    LOG.debug(
         "Updating the role [{}] in collection with id [{}] in Elasticsearch.",
         roleEntryId,
         collectionId);
@@ -394,20 +394,20 @@ public class CollectionWriterES implements CollectionWriter {
             String.format(
                 "Cannot assign lower privileged role to last [%s] of collection [%s].",
                 RoleType.MANAGER, collectionId);
-        log.warn(message);
+        LOG.warn(message);
         throw new OptimizeCollectionConflictException(message);
       }
     } catch (final IOException e) {
       final String errorMessage =
           String.format("Was not able to update collection with id [%s].", collectionId);
-      log.error(errorMessage, e);
+      LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     } catch (final ElasticsearchException e) {
       final String errorMessage =
           String.format(
               "Was not able to update role with id [%s] on collection with id [%s]. Collection or role does not exist!",
               roleEntryId, collectionId);
-      log.error(errorMessage, e);
+      LOG.error(errorMessage, e);
       throw new NotFoundException(errorMessage, e);
     }
   }
@@ -435,16 +435,16 @@ public class CollectionWriterES implements CollectionWriter {
 
       if (!indexResponse.result().equals(Created)) {
         final String message = "Could not write collection to Elasticsearch. ";
-        log.error(message);
+        LOG.error(message);
         throw new OptimizeRuntimeException(message);
       }
     } catch (final IOException e) {
       final String errorMessage = "Could not create collection.";
-      log.error(errorMessage, e);
+      LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
 
-    log.debug("Collection with id [{}] has successfully been created.", id);
+    LOG.debug("Collection with id [{}] has successfully been created.", id);
   }
 
   private UpdateResponse<?> executeUpdateRequest(
@@ -464,7 +464,7 @@ public class CollectionWriterES implements CollectionWriter {
 
     if (!updateResponse.shards().failures().isEmpty()) {
       final String message = String.format(errorMessage, collectionId);
-      log.error(message, collectionId);
+      LOG.error(message, collectionId);
       throw new OptimizeRuntimeException(message);
     }
     return updateResponse;
@@ -473,7 +473,7 @@ public class CollectionWriterES implements CollectionWriter {
   private void removeRoleFromCollectionUnlessIsLastManager(
       final String collectionId, final String roleEntryId, final Map<String, String> params)
       throws OptimizeConflictException {
-    log.debug(
+    LOG.debug(
         "Deleting the role [{}] in collection with id [{}] in Elasticsearch.",
         roleEntryId,
         collectionId);
@@ -492,20 +492,20 @@ public class CollectionWriterES implements CollectionWriter {
         final String message =
             String.format(
                 "Cannot delete last [%s] of collection [%s].", RoleType.MANAGER, collectionId);
-        log.warn(message);
+        LOG.warn(message);
         throw new OptimizeCollectionConflictException(message);
       }
     } catch (final IOException e) {
       final String errorMessage =
           String.format("Was not able to update collection with id [%s].", collectionId);
-      log.error(errorMessage, e);
+      LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     } catch (final ElasticsearchException e) {
       final String errorMessage =
           String.format(
               "Was not able to update role with id [%s] on collection with id [%s]. Collection or role does not exist!",
               roleEntryId, collectionId);
-      log.error(errorMessage, e);
+      LOG.error(errorMessage, e);
       throw new NotFoundException(errorMessage, e);
     }
   }

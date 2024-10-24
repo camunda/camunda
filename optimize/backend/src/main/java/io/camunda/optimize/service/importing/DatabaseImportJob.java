@@ -18,14 +18,11 @@ import org.slf4j.LoggerFactory;
 /** Represents one page of entities that should be added to database. */
 public abstract class DatabaseImportJob<OPT extends OptimizeDto> implements Runnable {
 
-  private final Logger logger = LoggerFactory.getLogger(getClass());
-
   protected final DatabaseClient databaseClient;
-
+  protected List<OPT> newOptimizeEntities = Collections.emptyList();
+  private final Logger logger = LoggerFactory.getLogger(getClass());
   private final BackoffCalculator backoffCalculator = new BackoffCalculator(1L, 30L);
   private final Runnable importCompleteCallback;
-
-  protected List<OPT> newOptimizeEntities = Collections.emptyList();
 
   protected DatabaseImportJob(
       final Runnable importCompleteCallback, final DatabaseClient databaseClient) {
@@ -44,8 +41,8 @@ public abstract class DatabaseImportJob<OPT extends OptimizeDto> implements Runn
    *
    * @param pageOfOptimizeEntities that are not already in database and need to be imported.
    */
-  public void setEntitiesToImport(List<OPT> pageOfOptimizeEntities) {
-    this.newOptimizeEntities = pageOfOptimizeEntities;
+  public void setEntitiesToImport(final List<OPT> pageOfOptimizeEntities) {
+    newOptimizeEntities = pageOfOptimizeEntities;
   }
 
   protected void executeImport() {
@@ -58,12 +55,12 @@ public abstract class DatabaseImportJob<OPT extends OptimizeDto> implements Runn
           final long persistEnd = System.currentTimeMillis();
           logger.debug("Executing import to database took [{}] ms", persistEnd - persistStart);
           success = true;
-        } catch (Exception e) {
+        } catch (final Exception e) {
           logger.error("Error while executing import to database", e);
-          long sleepTime = backoffCalculator.calculateSleepTime();
+          final long sleepTime = backoffCalculator.calculateSleepTime();
           try {
             Thread.sleep(sleepTime);
-          } catch (InterruptedException exception) {
+          } catch (final InterruptedException exception) {
             Thread.currentThread().interrupt();
           }
         }

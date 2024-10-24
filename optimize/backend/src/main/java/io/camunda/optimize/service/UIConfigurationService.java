@@ -35,7 +35,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class UIConfigurationService {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(UIConfigurationService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(UIConfigurationService.class);
   private final ConfigurationService configurationService;
   private final OptimizeVersionService versionService;
   private final TenantService tenantService;
@@ -47,14 +47,14 @@ public class UIConfigurationService {
   private final Identity identity;
 
   public UIConfigurationService(
-      ConfigurationService configurationService,
-      OptimizeVersionService versionService,
-      TenantService tenantService,
-      SettingsService settingService,
-      CamundaLicenseService camundaLicenseService,
-      Environment environment,
-      Optional<CloudSaasMetaInfoService> cloudSaasMetaInfoService,
-      Identity identity) {
+      final ConfigurationService configurationService,
+      final OptimizeVersionService versionService,
+      final TenantService tenantService,
+      final SettingsService settingService,
+      final CamundaLicenseService camundaLicenseService,
+      final Environment environment,
+      final Optional<CloudSaasMetaInfoService> cloudSaasMetaInfoService,
+      final Identity identity) {
     this.configurationService = configurationService;
     this.versionService = versionService;
     this.tenantService = tenantService;

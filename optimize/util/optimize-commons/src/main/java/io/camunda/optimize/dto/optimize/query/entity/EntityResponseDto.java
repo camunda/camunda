@@ -247,6 +247,7 @@ public class EntityResponseDto {
         + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String id = "id";

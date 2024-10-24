@@ -27,7 +27,7 @@ import org.springframework.stereotype.Component;
 public class ZeebeVariableFetcherES extends AbstractZeebeRecordFetcherES<ZeebeVariableRecordDto>
     implements ZeebeVariableFetcher {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ZeebeVariableFetcherES.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ZeebeVariableFetcherES.class);
 
   public ZeebeVariableFetcherES(
       final int partitionId,

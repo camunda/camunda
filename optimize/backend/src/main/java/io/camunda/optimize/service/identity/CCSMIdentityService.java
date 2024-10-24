@@ -31,7 +31,7 @@ import org.springframework.stereotype.Component;
 @Conditional(CCSMCondition.class)
 public class CCSMIdentityService extends AbstractIdentityService {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(CCSMIdentityService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(CCSMIdentityService.class);
   private final CCSMTokenService ccsmTokenService;
   private final CCSMUserCache userCache;
 

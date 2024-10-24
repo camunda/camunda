@@ -32,19 +32,19 @@ public enum ProcessView {
   PROCESS_VIEW_INSTANCE_PERCENTAGE(new ProcessViewDto(PROCESS_INSTANCE, PERCENTAGE)),
   PROCESS_VIEW_RAW_DATA(new ProcessViewDto(ViewProperty.RAW_DATA)),
   PROCESS_VIEW_VARIABLE(
-      new ProcessViewDto(ProcessViewEntity.VARIABLE, ViewProperty.VARIABLE(null, null))),
+      new ProcessViewDto(ProcessViewEntity.VARIABLE, ViewProperty.variable(null, null))),
   PROCESS_VIEW_USER_TASK_FREQUENCY(new ProcessViewDto(USER_TASK, FREQUENCY)),
   PROCESS_VIEW_USER_TASK_DURATION(new ProcessViewDto(USER_TASK, DURATION));
 
   private final ProcessViewDto processViewDto;
   private final ProcessPartDto processPartDto;
 
-  ProcessView(ProcessViewDto processViewDto) {
+  ProcessView(final ProcessViewDto processViewDto) {
     this.processViewDto = processViewDto;
-    this.processPartDto = null;
+    processPartDto = null;
   }
 
-  private ProcessView(ProcessViewDto processViewDto, ProcessPartDto processPartDto) {
+  private ProcessView(final ProcessViewDto processViewDto, final ProcessPartDto processPartDto) {
     this.processViewDto = processViewDto;
     this.processPartDto = processPartDto;
   }
@@ -54,10 +54,10 @@ public enum ProcessView {
   }
 
   public ProcessViewDto getProcessViewDto() {
-    return this.processViewDto;
+    return processViewDto;
   }
 
   public ProcessPartDto getProcessPartDto() {
-    return this.processPartDto;
+    return processPartDto;
   }
 }

@@ -35,7 +35,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class DashboardImportService {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DashboardImportService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(DashboardImportService.class);
   private final DashboardWriter dashboardWriter;
   private final DashboardService dashboardService;
   private final OptimizeIndexNameService optimizeIndexNameService;

@@ -50,7 +50,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class EntityImportService {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(EntityImportService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(EntityImportService.class);
   private final ReportImportService reportImportService;
   private final DashboardImportService dashboardImportService;
   private final AuthorizedCollectionService authorizedCollectionService;

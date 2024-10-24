@@ -10,7 +10,7 @@ package io.camunda.optimize.dto.optimize.query.report.single.decision.group.valu
 public class DecisionGroupByNoneValueDto implements DecisionGroupByValueDto {
 
   @Override
-  public boolean isCombinable(Object o) {
+  public boolean isCombinable(final Object o) {
     return true;
   }
 }

@@ -12,7 +12,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 
-public class NumberHistogramAggregationUtilOS {
+public final class NumberHistogramAggregationUtilOS {
 
   private NumberHistogramAggregationUtilOS() {}
 

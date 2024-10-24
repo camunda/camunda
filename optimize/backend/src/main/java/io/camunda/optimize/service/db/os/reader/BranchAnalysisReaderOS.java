@@ -46,7 +46,7 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class BranchAnalysisReaderOS extends BranchAnalysisReader {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(BranchAnalysisReaderOS.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(BranchAnalysisReaderOS.class);
 
   private final OptimizeOpenSearchClient osClient;
   private final ProcessQueryFilterEnhancerOS queryFilterEnhancer;
@@ -107,7 +107,7 @@ public class BranchAnalysisReaderOS extends BranchAnalysisReader {
 
   private void excludeFlowNodes(
       final Set<String> flowNodeIdsToExclude, final BoolQuery.Builder query) {
-    for (String excludeFlowNodeId : flowNodeIdsToExclude) {
+    for (final String excludeFlowNodeId : flowNodeIdsToExclude) {
       query.mustNot(createMustMatchFlowNodeIdQuery(excludeFlowNodeId));
     }
   }
@@ -145,17 +145,17 @@ public class BranchAnalysisReaderOS extends BranchAnalysisReader {
     try {
       final CountResponse countResponse = osClient.getOpenSearchClient().count(countRequest);
       return countResponse.count();
-    } catch (IOException e) {
-      String reason =
+    } catch (final IOException e) {
+      final String reason =
           LogUtil.sanitizeLogMessage(
               String.format(
                   "Was not able to perform branch analysis on process definition with key [%s] and versions [%s}]",
                   request.getProcessDefinitionKey(), request.getProcessDefinitionVersions()));
-      log.error(reason, e);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
-    } catch (OpenSearchException e) {
+    } catch (final OpenSearchException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
-        log.info(
+        LOG.info(
             "Was not able to perform branch analysis because the required instance index {} does not "
                 + "exist. Returning 0 instead.",
             LogUtil.sanitizeLogMessage(

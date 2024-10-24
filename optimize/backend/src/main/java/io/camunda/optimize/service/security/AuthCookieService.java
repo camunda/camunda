@@ -40,20 +40,20 @@ import org.springframework.stereotype.Component;
 @Component
 public class AuthCookieService {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(AuthCookieService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(AuthCookieService.class);
   private final ConfigurationService configurationService;
 
-  public AuthCookieService(ConfigurationService configurationService) {
+  public AuthCookieService(final ConfigurationService configurationService) {
     this.configurationService = configurationService;
   }
 
   public jakarta.servlet.http.Cookie createDeleteOptimizeAuthCookie() {
-    log.trace("Deleting Optimize authentication cookie.");
+    LOG.trace("Deleting Optimize authentication cookie.");
     return createDeleteCookie(OPTIMIZE_AUTHORIZATION, "", "https");
   }
 
   public NewCookie createDeleteOptimizeAuthNewCookie(final boolean secure) {
-    log.trace("Deleting Optimize authentication cookie.");
+    LOG.trace("Deleting Optimize authentication cookie.");
     return new NewCookie.Builder(OPTIMIZE_AUTHORIZATION)
         .value("")
         .path(getCookiePath())
@@ -66,12 +66,12 @@ public class AuthCookieService {
   }
 
   public jakarta.servlet.http.Cookie createDeleteOptimizeRefreshCookie() {
-    log.trace("Deleting Optimize refresh cookie.");
+    LOG.trace("Deleting Optimize refresh cookie.");
     return createDeleteCookie(OPTIMIZE_REFRESH_TOKEN, "", "https");
   }
 
   public NewCookie createDeleteOptimizeRefreshNewCookie(final boolean secure) {
-    log.trace("Deleting Optimize refresh cookie.");
+    LOG.trace("Deleting Optimize refresh cookie.");
     return new NewCookie.Builder(OPTIMIZE_REFRESH_TOKEN)
         .value("")
         .path(getCookiePath())
@@ -113,7 +113,7 @@ public class AuthCookieService {
 
   public List<jakarta.servlet.http.Cookie> createOptimizeServiceTokenCookies(
       final OAuth2AccessToken accessToken, final Instant expiresAt, final String requestScheme) {
-    log.trace("Creating Optimize service token cookie(s).");
+    LOG.trace("Creating Optimize service token cookie(s).");
     final String tokenValue = accessToken.getTokenValue();
     final int maxCookieLength =
         configurationService.getAuthConfiguration().getCookieConfiguration().getMaxSize();
@@ -248,7 +248,7 @@ public class AuthCookieService {
       final DecodedJWT decoded = JWT.decode(token);
       return Optional.of(getTokenAttributeFunction.apply(decoded));
     } catch (final Exception e) {
-      log.debug("Could not decode security token to extract attribute!", e);
+      LOG.debug("Could not decode security token to extract attribute!", e);
     }
     return Optional.empty();
   }

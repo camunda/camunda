@@ -23,7 +23,7 @@ public class ProcessInstanceEngineDto {
     return processDefinitionKey;
   }
 
-  public void setProcessDefinitionKey(String processDefinitionKey) {
+  public void setProcessDefinitionKey(final String processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
   }
 
@@ -31,7 +31,7 @@ public class ProcessInstanceEngineDto {
     return processDefinitionVersion;
   }
 
-  public void setProcessDefinitionVersion(String processDefinitionVersion) {
+  public void setProcessDefinitionVersion(final String processDefinitionVersion) {
     this.processDefinitionVersion = processDefinitionVersion;
   }
 
@@ -39,7 +39,7 @@ public class ProcessInstanceEngineDto {
     return id;
   }
 
-  public void setId(String id) {
+  public void setId(final String id) {
     this.id = id;
   }
 
@@ -47,7 +47,7 @@ public class ProcessInstanceEngineDto {
     return definitionId;
   }
 
-  public void setDefinitionId(String definitionId) {
+  public void setDefinitionId(final String definitionId) {
     this.definitionId = definitionId;
   }
 
@@ -55,7 +55,7 @@ public class ProcessInstanceEngineDto {
     return businessKey;
   }
 
-  public void setBusinessKey(String businessKey) {
+  public void setBusinessKey(final String businessKey) {
     this.businessKey = businessKey;
   }
 
@@ -63,7 +63,7 @@ public class ProcessInstanceEngineDto {
     return caseInstanceId;
   }
 
-  public void setCaseInstanceId(String caseInstanceId) {
+  public void setCaseInstanceId(final String caseInstanceId) {
     this.caseInstanceId = caseInstanceId;
   }
 
@@ -71,7 +71,7 @@ public class ProcessInstanceEngineDto {
     return ended;
   }
 
-  public void setEnded(boolean ended) {
+  public void setEnded(final boolean ended) {
     this.ended = ended;
   }
 
@@ -79,7 +79,7 @@ public class ProcessInstanceEngineDto {
     return suspended;
   }
 
-  public void setSuspended(boolean suspended) {
+  public void setSuspended(final boolean suspended) {
     this.suspended = suspended;
   }
 
@@ -87,7 +87,7 @@ public class ProcessInstanceEngineDto {
     return tenantId;
   }
 
-  public void setTenantId(String tenantId) {
+  public void setTenantId(final String tenantId) {
     this.tenantId = tenantId;
   }
 }

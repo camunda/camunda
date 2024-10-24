@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 public class UpgradeElasticsearchSchemaIT
     extends AbstractDatabaseSchemaIT<ElasticsearchSchemaTestClient> {
-  private static final Logger log = LoggerFactory.getLogger(UpgradeElasticsearchSchemaIT.class);
+  private static final Logger LOG = LoggerFactory.getLogger(UpgradeElasticsearchSchemaIT.class);
 
   Map<String, Map> expectedSettings;
   Map<String, MappingMetadata> expectedMappings;
@@ -47,31 +47,31 @@ public class UpgradeElasticsearchSchemaIT
 
   @Override
   protected void assertMigratedDatabaseIndicesMatchExpected() throws IOException {
-    log.info(
+    LOG.info(
         "Expected settings size: {}, keys: {}", expectedSettings.size(), expectedSettings.keySet());
     final Map<String, Map> newSettings = newDatabaseSchemaClient.getSettings();
-    log.info("Actual settings size: {}, keys: {}", newSettings.size(), newSettings.keySet());
+    LOG.info("Actual settings size: {}, keys: {}", newSettings.size(), newSettings.keySet());
     assertThat(newSettings).isEqualTo(expectedSettings);
     assertThat(newDatabaseSchemaClient.getMappings()).isEqualTo(expectedMappings);
   }
 
   @Override
   protected void assertMigratedDatabaseAliasesMatchExpected() throws IOException {
-    log.info(
+    LOG.info(
         "Expected aliases size: {}, keys: {}", expectedAliases.size(), expectedAliases.keySet());
     final Map<String, Set<AliasMetadata>> newAliases = newDatabaseSchemaClient.getAliases();
-    log.info("Actual aliases size: {}, keys: {}", newAliases.size(), newAliases.keySet());
+    LOG.info("Actual aliases size: {}, keys: {}", newAliases.size(), newAliases.keySet());
     assertThat(newAliases).isEqualTo(expectedAliases);
   }
 
   @Override
   protected void assertMigratedDatabaseTemplatesMatchExpected() throws IOException {
-    log.info(
+    LOG.info(
         "Expected templates size: {}, names: {}",
         expectedTemplates.size(),
         expectedTemplates.stream().map(IndexTemplateMetadata::name).toList());
     final List<IndexTemplateMetadata> newTemplates = newDatabaseSchemaClient.getTemplates();
-    log.info(
+    LOG.info(
         "Actual templates size: {}, names: {}",
         newTemplates.size(),
         newTemplates.stream().map(IndexTemplateMetadata::name).toList());

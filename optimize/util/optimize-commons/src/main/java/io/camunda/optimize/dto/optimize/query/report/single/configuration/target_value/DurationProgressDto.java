@@ -43,6 +43,7 @@ public class DurationProgressDto {
     this.target = target;
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String baseline = "baseline";

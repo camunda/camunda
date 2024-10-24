@@ -70,7 +70,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class DashboardService implements ReportReferencingService, CollectionReferencingService {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DashboardService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(DashboardService.class);
   private final DashboardWriter dashboardWriter;
   private final DashboardReader dashboardReader;
   private final ProcessVariableService processVariableService;
@@ -400,7 +400,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
         dashboardReader.getDashboard(dashboardId);
 
     if (dashboard.isEmpty()) {
-      log.error("Was not able to retrieve dashboard with id [{}] from Elasticsearch.", dashboardId);
+      LOG.error("Was not able to retrieve dashboard with id [{}] from Elasticsearch.", dashboardId);
       throw new NotFoundException(
           "Dashboard does not exist! Tried to retrieve dashboard with id " + dashboardId);
     }

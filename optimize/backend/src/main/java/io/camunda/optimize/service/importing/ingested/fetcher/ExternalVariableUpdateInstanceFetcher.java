@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ExternalVariableUpdateInstanceFetcher {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ExternalVariableUpdateInstanceFetcher.class);
   private final ExternalVariableReader variableReader;
   private final ConfigurationService configurationService;

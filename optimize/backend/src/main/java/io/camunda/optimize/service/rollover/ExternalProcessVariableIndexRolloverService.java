@@ -25,7 +25,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ExternalProcessVariableIndexRolloverService extends AbstractScheduledService {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ExternalProcessVariableIndexRolloverService.class);
   private final DatabaseClient databaseClient;
   private final ConfigurationService configurationService;
@@ -47,18 +47,18 @@ public class ExternalProcessVariableIndexRolloverService extends AbstractSchedul
   }
 
   public List<String> triggerRollover() {
-    List<String> rolledOverIndexAliases = new ArrayList<>();
+    final List<String> rolledOverIndexAliases = new ArrayList<>();
     getAliasesToConsiderRolling()
         .forEach(
             indexAlias -> {
               try {
-                boolean isRolledOver =
+                final boolean isRolledOver =
                     databaseClient.triggerRollover(indexAlias, getMaxIndexSizeGB());
                 if (isRolledOver) {
                   rolledOverIndexAliases.add(indexAlias);
                 }
-              } catch (Exception e) {
-                log.warn("Failed rolling over index {}, will try again next time.", indexAlias, e);
+              } catch (final Exception e) {
+                LOG.warn("Failed rolling over index {}, will try again next time.", indexAlias, e);
               }
             });
     return rolledOverIndexAliases;

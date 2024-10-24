@@ -78,9 +78,9 @@ public abstract class AbstractProcessDistributedByInstanceDateInterpreterOS
 
   @Override
   public List<DistributedByResult> retrieveResult(
-      SearchResponse<RawResult> response,
-      Map<String, Aggregate> aggregations,
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+      final SearchResponse<RawResult> response,
+      final Map<String, Aggregate> aggregations,
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     if (aggregations == null) {
       // aggregations are null when there are no instances in the report
       return List.of();
@@ -88,7 +88,7 @@ public abstract class AbstractProcessDistributedByInstanceDateInterpreterOS
 
     final Optional<Map<String, Aggregate>> unwrappedLimitedAggregations =
         unwrapFilterLimitedAggregations(aggregations);
-    Map<String, Map<String, Aggregate>> keyToAggregationMap;
+    final Map<String, Map<String, Aggregate>> keyToAggregationMap;
     if (unwrappedLimitedAggregations.isPresent()) {
       keyToAggregationMap =
           getDateAggregationService()

@@ -186,7 +186,7 @@ public interface CollectionWriter {
           }
           """;
 
-  Logger log = LoggerFactory.getLogger(CollectionWriter.class);
+  Logger LOG = LoggerFactory.getLogger(CollectionWriter.class);
 
   default IdResponseDto createNewCollectionAndReturnId(
       final String userId,
@@ -215,7 +215,7 @@ public interface CollectionWriter {
     if (id == null) {
       throw new OptimizeRuntimeException("id cannot be null");
     }
-    log.debug("Writing new collection to Database");
+    LOG.debug("Writing new collection to Database");
     final CollectionDefinitionDto collectionDefinitionDto = new CollectionDefinitionDto();
     collectionDefinitionDto.setId(id);
     collectionDefinitionDto.setCreated(LocalDateUtil.getCurrentDateTime());

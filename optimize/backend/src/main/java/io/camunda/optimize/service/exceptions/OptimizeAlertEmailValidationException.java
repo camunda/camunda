@@ -17,7 +17,7 @@ public class OptimizeAlertEmailValidationException extends OptimizeRuntimeExcept
 
   private final Set<String> invalidAlertEmails;
 
-  public OptimizeAlertEmailValidationException(Set<String> alertEmails) {
+  public OptimizeAlertEmailValidationException(final Set<String> alertEmails) {
     super(ERROR_MESSAGE + alertEmails);
     this.invalidAlertEmails = alertEmails;
   }

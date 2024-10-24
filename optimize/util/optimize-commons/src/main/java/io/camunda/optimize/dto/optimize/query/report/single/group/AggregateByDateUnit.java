@@ -24,8 +24,7 @@ public enum AggregateByDateUnit {
   DAY(DATE_UNIT_DAY),
   HOUR(DATE_UNIT_HOUR),
   MINUTE(DATE_UNIT_MINUTE),
-  AUTOMATIC(DATE_UNIT_AUTOMATIC),
-  ;
+  AUTOMATIC(DATE_UNIT_AUTOMATIC);
 
   private final String id;
 

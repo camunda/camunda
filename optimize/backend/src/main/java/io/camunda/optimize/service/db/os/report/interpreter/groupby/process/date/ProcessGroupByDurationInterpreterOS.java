@@ -49,10 +49,10 @@ public class ProcessGroupByDurationInterpreterOS extends AbstractProcessGroupByI
   private final ProcessViewInterpreterFacadeOS viewInterpreter;
 
   public ProcessGroupByDurationInterpreterOS(
-      DurationAggregationServiceOS durationAggregationService,
-      MinMaxStatsServiceOS minMaxStatsService,
-      ProcessDistributedByInterpreterFacadeOS distributedByInterpreter,
-      ProcessViewInterpreterFacadeOS viewInterpreter) {
+      final DurationAggregationServiceOS durationAggregationService,
+      final MinMaxStatsServiceOS minMaxStatsService,
+      final ProcessDistributedByInterpreterFacadeOS distributedByInterpreter,
+      final ProcessViewInterpreterFacadeOS viewInterpreter) {
     this.durationAggregationService = durationAggregationService;
     this.minMaxStatsService = minMaxStatsService;
     this.distributedByInterpreter = distributedByInterpreter;

@@ -32,7 +32,7 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class DecisionInstanceRepositoryES implements DecisionInstanceRepository {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(DecisionInstanceRepositoryES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
@@ -41,11 +41,11 @@ public class DecisionInstanceRepositoryES implements DecisionInstanceRepository 
   private final TaskRepositoryES taskRepositoryES;
 
   public DecisionInstanceRepositoryES(
-      OptimizeElasticsearchClient esClient,
-      ConfigurationService configurationService,
-      ObjectMapper objectMapper,
-      DateTimeFormatter dateTimeFormatter,
-      TaskRepositoryES taskRepositoryES) {
+      final OptimizeElasticsearchClient esClient,
+      final ConfigurationService configurationService,
+      final ObjectMapper objectMapper,
+      final DateTimeFormatter dateTimeFormatter,
+      final TaskRepositoryES taskRepositoryES) {
     this.esClient = esClient;
     this.configurationService = configurationService;
     this.objectMapper = objectMapper;
@@ -55,7 +55,7 @@ public class DecisionInstanceRepositoryES implements DecisionInstanceRepository 
 
   @Override
   public void importDecisionInstances(
-      final String importItemName, List<DecisionInstanceDto> decisionInstanceDtos) {
+      final String importItemName, final List<DecisionInstanceDto> decisionInstanceDtos) {
     esClient.doImportBulkRequestWithList(
         importItemName,
         decisionInstanceDtos,
@@ -66,7 +66,7 @@ public class DecisionInstanceRepositoryES implements DecisionInstanceRepository 
   @Override
   public void deleteDecisionInstancesByDefinitionKeyAndEvaluationDateOlderThan(
       final String decisionDefinitionKey, final OffsetDateTime evaluationDate) {
-    Query query =
+    final Query query =
         Query.of(
             q ->
                 q.bool(

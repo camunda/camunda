@@ -47,9 +47,9 @@ public class ProcessDistributedByProcessInterpreterES
   private final ProcessDefinitionReader processDefinitionReader;
 
   public ProcessDistributedByProcessInterpreterES(
-      ProcessViewInterpreterFacadeES viewInterpreter,
-      ConfigurationService configurationService,
-      ProcessDefinitionReader processDefinitionReader) {
+      final ProcessViewInterpreterFacadeES viewInterpreter,
+      final ConfigurationService configurationService,
+      final ProcessDefinitionReader processDefinitionReader) {
     this.viewInterpreter = viewInterpreter;
     this.configurationService = configurationService;
     this.processDefinitionReader = processDefinitionReader;
@@ -63,8 +63,8 @@ public class ProcessDistributedByProcessInterpreterES
   @Override
   public Map<String, Aggregation.Builder.ContainerBuilder> createAggregations(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
-      BoolQuery baseQueryBuilder) {
-    Aggregation.Builder.ContainerBuilder builder =
+      final BoolQuery baseQueryBuilder) {
+    final Aggregation.Builder.ContainerBuilder builder =
         new Aggregation.Builder()
             .terms(
                 t ->
@@ -79,7 +79,7 @@ public class ProcessDistributedByProcessInterpreterES
     viewInterpreter
         .createAggregations(context)
         .forEach((k, v) -> builder.aggregations(k, v.build()));
-    Aggregation.Builder aggBuilder = new Aggregation.Builder();
+    final Aggregation.Builder aggBuilder = new Aggregation.Builder();
 
     return Map.of(
         PROC_DEF_KEY_AGG,
@@ -134,14 +134,15 @@ public class ProcessDistributedByProcessInterpreterES
       final ResponseBody<?> response,
       final Map<String, Aggregate> aggregations,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    Map<String, List<ProcessBucket>> bucketsByDefKey = new HashMap<>();
+    final Map<String, List<ProcessBucket>> bucketsByDefKey = new HashMap<>();
     final StringTermsAggregate procDefKeyAgg = aggregations.get(PROC_DEF_KEY_AGG).sterms();
     if (procDefKeyAgg != null) {
-      for (co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket keyBucket :
+      for (final co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket keyBucket :
           procDefKeyAgg.buckets().array()) {
         final Aggregate procDefVersionAgg = keyBucket.aggregations().get(PROC_DEF_VERSION_AGG);
         if (procDefVersionAgg != null) {
-          for (StringTermsBucket versionBucket : procDefVersionAgg.sterms().buckets().array()) {
+          for (final StringTermsBucket versionBucket :
+              procDefVersionAgg.sterms().buckets().array()) {
             final Aggregate tenantTermsAgg = versionBucket.aggregations().get(TENANT_AGG);
             if (tenantTermsAgg != null) {
               final List<ProcessBucket> bucketsForKey =
@@ -171,6 +172,7 @@ public class ProcessDistributedByProcessInterpreterES
     return this.viewInterpreter;
   }
 
+  @Override
   public ProcessDefinitionReader getProcessDefinitionReader() {
     return this.processDefinitionReader;
   }

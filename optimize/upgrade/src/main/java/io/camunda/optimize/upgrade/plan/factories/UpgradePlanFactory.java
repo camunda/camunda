@@ -15,6 +15,7 @@ import io.camunda.optimize.upgrade.plan.UpgradePlan;
 import java.io.IOException;
 
 public interface UpgradePlanFactory {
+
   UpgradePlan createUpgradePlan(final UpgradeExecutionDependencies upgradeExecutionDependencies);
 
   void logErrorMessage(final String message);
@@ -25,7 +26,7 @@ public interface UpgradePlanFactory {
       return databaseClient.countWithoutPrefixWithExistsCheck(
               indexNameService.getOptimizeIndexAliasForIndex("license"))
           > 0;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String reason = "Was not able to determine existence of C7 data.";
       logErrorMessage(reason);
       throw new UpgradeRuntimeException(reason, e);

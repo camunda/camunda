@@ -15,7 +15,7 @@ import org.slf4j.Logger;
 
 public class ZeebeImportScheduler extends AbstractImportScheduler<ZeebeConfigDto> {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ZeebeImportScheduler.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ZeebeImportScheduler.class);
 
   public ZeebeImportScheduler(
       final List<ImportMediator> importMediators, final ZeebeConfigDto dataImportSourceDto) {

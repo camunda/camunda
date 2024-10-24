@@ -73,9 +73,9 @@ public class ProcessDistributedByVariableInterpreterES
   private final VariableAggregationServiceES variableAggregationService;
 
   public ProcessDistributedByVariableInterpreterES(
-      ProcessViewInterpreterFacadeES viewInterpreter,
-      DateAggregationServiceES dateAggregationService,
-      VariableAggregationServiceES variableAggregationService) {
+      final ProcessViewInterpreterFacadeES viewInterpreter,
+      final DateAggregationServiceES dateAggregationService,
+      final VariableAggregationServiceES variableAggregationService) {
     this.viewInterpreter = viewInterpreter;
     this.dateAggregationService = dateAggregationService;
     this.variableAggregationService = variableAggregationService;
@@ -95,8 +95,8 @@ public class ProcessDistributedByVariableInterpreterES
   @Override
   public Map<String, Aggregation.Builder.ContainerBuilder> createAggregations(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
-      BoolQuery baseQueryBuilder) {
-    Aggregation.Builder.ContainerBuilder rnBuilder =
+      final BoolQuery baseQueryBuilder) {
+    final Aggregation.Builder.ContainerBuilder rnBuilder =
         new Aggregation.Builder().reverseNested(r -> r);
 
     getViewInterpreter()
@@ -135,9 +135,9 @@ public class ProcessDistributedByVariableInterpreterES
     // sibling aggregation
     // to the nested existing variable filter
 
-    Map<String, Aggregation.Builder.ContainerBuilder> undefinedOrNullVariableAggregation =
+    final Map<String, Aggregation.Builder.ContainerBuilder> undefinedOrNullVariableAggregation =
         createUndefinedOrNullVariableAggregation(context);
-    Aggregation.Builder.ContainerBuilder builder =
+    final Aggregation.Builder.ContainerBuilder builder =
         new Aggregation.Builder().filter(f -> f.matchAll(m -> m));
     undefinedOrNullVariableAggregation.forEach((k, v) -> builder.aggregations(k, v.build()));
     builder.aggregations(
@@ -194,7 +194,7 @@ public class ProcessDistributedByVariableInterpreterES
   private Map<String, Aggregation.Builder.ContainerBuilder>
       createUndefinedOrNullVariableAggregation(
           final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    Aggregation.Builder.ContainerBuilder builder =
+    final Aggregation.Builder.ContainerBuilder builder =
         new Aggregation.Builder()
             .filter(
                 f ->
@@ -232,16 +232,16 @@ public class ProcessDistributedByVariableInterpreterES
       variableTerms = filteredParentAgg.filter().aggregations().get(VARIABLE_HISTOGRAM_AGGREGATION);
     }
 
-    Map<String, Map<String, Aggregate>> bucketAggregations =
+    final Map<String, Map<String, Aggregate>> bucketAggregations =
         variableAggregationService.retrieveResultBucketMap(
             filteredParentAgg.filter(),
             variableTerms,
             getVariableType(context),
             context.getTimezone());
 
-    List<CompositeCommandResult.DistributedByResult> distributedByResults = new ArrayList<>();
+    final List<CompositeCommandResult.DistributedByResult> distributedByResults = new ArrayList<>();
 
-    for (Map.Entry<String, Map<String, Aggregate>> keyToAggregationEntry :
+    for (final Map.Entry<String, Map<String, Aggregate>> keyToAggregationEntry :
         bucketAggregations.entrySet()) {
       final CompositeCommandResult.ViewResult viewResult =
           getViewInterpreter()
@@ -314,7 +314,7 @@ public class ProcessDistributedByVariableInterpreterES
   }
 
   private void addEmptyMissingDistributedByResults(
-      List<CompositeCommandResult.DistributedByResult> distributedByResults,
+      final List<CompositeCommandResult.DistributedByResult> distributedByResults,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     context.getAllDistributedByKeysAndLabels().entrySet().stream()
         .filter(

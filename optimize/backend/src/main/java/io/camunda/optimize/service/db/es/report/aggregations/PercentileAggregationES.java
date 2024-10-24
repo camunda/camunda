@@ -24,7 +24,7 @@ public class PercentileAggregationES extends AggregationStrategyES<Builder> {
 
   private Double percentileValue;
 
-  public PercentileAggregationES(Double percentileValue) {
+  public PercentileAggregationES(final Double percentileValue) {
     this.percentileValue = percentileValue;
   }
 

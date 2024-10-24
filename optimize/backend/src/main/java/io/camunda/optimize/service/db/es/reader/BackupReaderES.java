@@ -47,12 +47,12 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class BackupReaderES extends AbstractBackupReader {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(BackupReaderES.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(BackupReaderES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
 
   public BackupReaderES(
-      OptimizeElasticsearchClient esClient, ConfigurationService configurationService) {
+      final OptimizeElasticsearchClient esClient, final ConfigurationService configurationService) {
     this.esClient = esClient;
     this.configurationService = configurationService;
   }
@@ -68,7 +68,7 @@ public class BackupReaderES extends AbstractBackupReader {
     if (StringUtils.isEmpty(repositoryName)) {
       final String reason =
           "Cannot trigger backup because no Elasticsearch snapshot repository name found in Optimize configuration.";
-      log.error(reason);
+      LOG.error(reason);
       throw new OptimizeConfigurationException(reason);
     } else {
       final GetRepositoryRequest getRepositoriesRequest =
@@ -79,14 +79,14 @@ public class BackupReaderES extends AbstractBackupReader {
         if (StringUtils.contains(e.getMessage(), REPOSITORY_MISSING_EXCEPTION_TYPE)) {
           final String reason =
               String.format("No repository with name [%s] could be found.", repositoryName);
-          log.error(reason, e);
+          LOG.error(reason, e);
           throw new OptimizeSnapshotRepositoryNotFoundException(reason, e);
         } else {
           final String reason =
               String.format(
                   "Error while retrieving repository with name [%s] due to an ElasticsearchException.",
                   repositoryName);
-          log.error(reason, e);
+          LOG.error(reason, e);
           throw new OptimizeRuntimeException(reason, e);
         }
       } catch (final IOException e) {
@@ -94,7 +94,7 @@ public class BackupReaderES extends AbstractBackupReader {
             String.format(
                 "Encountered an error connecting to Elasticsearch while retrieving repository with name [%s].",
                 repositoryName);
-        log.error(reason, e);
+        LOG.error(reason, e);
         throw new OptimizeElasticsearchConnectionException(reason, e);
       }
     }
@@ -148,14 +148,14 @@ public class BackupReaderES extends AbstractBackupReader {
           String.format(
               "Could not retrieve snapshots with names [%s] due to an ElasticsearchException.",
               String.join(", ", snapshots));
-      log.error(reason);
+      LOG.error(reason);
       throw new OptimizeRuntimeException(reason, e);
     } catch (final IOException e) {
       final String reason =
           String.format(
               "Encountered an error connecting to Elasticsearch while retrieving snapshots with names [%s].",
               String.join(", ", snapshots));
-      log.error(reason, e);
+      LOG.error(reason, e);
       throw new OptimizeElasticsearchConnectionException(reason, e);
     }
     return response.snapshots();

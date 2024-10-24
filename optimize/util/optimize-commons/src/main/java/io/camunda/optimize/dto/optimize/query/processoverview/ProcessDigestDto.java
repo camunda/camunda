@@ -35,16 +35,6 @@ public class ProcessDigestDto extends ProcessDigestResponseDto {
   }
 
   @Override
-  public String toString() {
-    return "ProcessDigestDto(kpiReportResults=" + getKpiReportResults() + ")";
-  }
-
-  @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
-  }
-
-  @Override
   protected boolean canEqual(final Object other) {
     return other instanceof ProcessDigestDto;
   }
@@ -54,7 +44,18 @@ public class ProcessDigestDto extends ProcessDigestResponseDto {
     return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
+  @Override
+  public boolean equals(final Object o) {
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  }
+
+  @Override
+  public String toString() {
+    return "ProcessDigestDto(kpiReportResults=" + getKpiReportResults() + ")";
+  }
+
   /** Needed to inherit field name constants from {@link ProcessDigestResponseDto} */
+  @SuppressWarnings("checkstyle:ConstantName")
   public static class Fields extends ProcessDigestResponseDto.Fields {
 
     public static final String kpiReportResults = "kpiReportResults";

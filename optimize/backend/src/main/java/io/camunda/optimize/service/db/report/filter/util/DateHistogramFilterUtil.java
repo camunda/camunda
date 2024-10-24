@@ -54,9 +54,9 @@ public class DateHistogramFilterUtil {
                 .filter(RelativeDateFilterDataDto.class::isInstance)
                 .map(
                     filter -> {
-                      RelativeDateFilterStartDto startDto =
+                      final RelativeDateFilterStartDto startDto =
                           ((RelativeDateFilterDataDto) filter).getStart();
-                      OffsetDateTime startOfCurrentInterval =
+                      final OffsetDateTime startOfCurrentInterval =
                           getStartOfCurrentInterval(now, startDto.getUnit());
                       if (startDto.getValue() == 0L) {
                         return startOfCurrentInterval;

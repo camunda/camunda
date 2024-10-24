@@ -18,8 +18,7 @@ public enum DecisionTypeRef {
   DOUBLE("double"),
   INTEGER("integer"),
   BOOLEAN("boolean"),
-  DATE("date"),
-  ;
+  DATE("date");
 
   private static final Set<DecisionTypeRef> NUMERIC_TYPES =
       Collections.unmodifiableSet(new HashSet<>(Arrays.asList(INTEGER, LONG, DOUBLE)));

@@ -32,7 +32,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class CamundaCCSMTenantAuthorizationService implements DataSourceTenantAuthorizationService {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(CamundaCCSMTenantAuthorizationService.class);
   private final CCSMTokenService ccsmTokenService;
   private final ConfigurationService configurationService;
@@ -94,7 +94,7 @@ public class CamundaCCSMTenantAuthorizationService implements DataSourceTenantAu
     if (configurationService.isMultiTenancyEnabled()) {
       final Optional<String> currentUserId = getCurrentUserId();
       if (currentUserId.isEmpty()) {
-        log.warn(
+        LOG.warn(
             "Unable to determine currently logged in user ID to retrieve tenant authorizations.");
         return Collections.emptyList();
       }

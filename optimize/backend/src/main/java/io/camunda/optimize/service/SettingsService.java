@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class SettingsService {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(SettingsService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(SettingsService.class);
   private final SettingsReader settingsReader;
   private final SettingsWriter settingsWriter;
   private final AbstractIdentityService identityService;

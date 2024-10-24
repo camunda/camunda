@@ -19,7 +19,7 @@ import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.V
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 import java.util.Optional;
 
-public class ProcessVariableHelper {
+public final class ProcessVariableHelper {
 
   private ProcessVariableHelper() {}
 

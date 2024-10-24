@@ -21,7 +21,7 @@ import org.opensearch.client.opensearch._types.query_dsl.ChildScoreMode;
 import org.opensearch.client.opensearch._types.query_dsl.NestedQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 
-public class DecisionVariableHelperOS {
+public final class DecisionVariableHelperOS {
 
   private DecisionVariableHelperOS() {}
 

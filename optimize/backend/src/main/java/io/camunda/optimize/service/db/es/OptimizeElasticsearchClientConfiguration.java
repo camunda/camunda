@@ -28,7 +28,7 @@ import org.springframework.context.annotation.Configuration;
 @Conditional(ElasticSearchCondition.class)
 public class OptimizeElasticsearchClientConfiguration {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(OptimizeElasticsearchClientConfiguration.class);
   private final ConfigurationService configurationService;
   private final OptimizeIndexNameService optimizeIndexNameService;
@@ -36,9 +36,9 @@ public class OptimizeElasticsearchClientConfiguration {
   private final PluginRepository pluginRepository = new PluginRepository();
 
   public OptimizeElasticsearchClientConfiguration(
-      ConfigurationService configurationService,
-      OptimizeIndexNameService optimizeIndexNameService,
-      ElasticSearchSchemaManager elasticSearchSchemaManager) {
+      final ConfigurationService configurationService,
+      final OptimizeIndexNameService optimizeIndexNameService,
+      final ElasticSearchSchemaManager elasticSearchSchemaManager) {
     this.configurationService = configurationService;
     this.optimizeIndexNameService = optimizeIndexNameService;
     this.elasticSearchSchemaManager = elasticSearchSchemaManager;
@@ -64,7 +64,7 @@ public class OptimizeElasticsearchClientConfiguration {
           elasticSearchSchemaManager,
           backoffCalculator,
           pluginRepository);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
     }
   }

@@ -57,7 +57,8 @@ public abstract class AbstractProcessExecutionPlanInterpreterES
   @Override
   public Optional<MinMaxStatDto> getGroupByMinMaxStats(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    if (getGroupByInterpreter() instanceof ProcessGroupByInterpreterES processGroupByInterpreter) {
+    if (getGroupByInterpreter()
+        instanceof final ProcessGroupByInterpreterES processGroupByInterpreter) {
       return processGroupByInterpreter.getMinMaxStats(
           context, Query.of(q -> q.bool(getBaseQueryBuilder(context).build())));
     } else {
@@ -122,7 +123,7 @@ public abstract class AbstractProcessExecutionPlanInterpreterES
     // data source so we exclude all instances from the result
     if (context.getReportData().getDefinitions().isEmpty()
         && context.getReportData().isManagementReport()) {
-      BoolQuery.Builder builder = new OptimizeBoolQueryBuilderES();
+      final BoolQuery.Builder builder = new OptimizeBoolQueryBuilderES();
       builder.mustNot(m -> m.matchAll(i -> i));
       return builder;
     }

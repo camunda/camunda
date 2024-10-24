@@ -33,29 +33,30 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class BusinessKeyReaderES implements BusinessKeyReader {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(BusinessKeyReaderES.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(BusinessKeyReaderES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
   private final ConfigurationService configurationService;
 
   public BusinessKeyReaderES(
-      OptimizeElasticsearchClient esClient,
-      ObjectMapper objectMapper,
-      ConfigurationService configurationService) {
+      final OptimizeElasticsearchClient esClient,
+      final ObjectMapper objectMapper,
+      final ConfigurationService configurationService) {
     this.esClient = esClient;
     this.objectMapper = objectMapper;
     this.configurationService = configurationService;
   }
 
   @Override
-  public List<BusinessKeyDto> getBusinessKeysForProcessInstanceIds(Set<String> processInstanceIds) {
-    log.debug("Fetching business keys for [{}] process instances", processInstanceIds.size());
+  public List<BusinessKeyDto> getBusinessKeysForProcessInstanceIds(
+      final Set<String> processInstanceIds) {
+    LOG.debug("Fetching business keys for [{}] process instances", processInstanceIds.size());
 
     if (processInstanceIds.isEmpty()) {
       return Collections.emptyList();
     }
 
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         OptimizeSearchRequestBuilderES.of(
             b ->
                 b.optimizeIndex(esClient, DatabaseConstants.BUSINESS_KEY_INDEX_NAME)
@@ -70,11 +71,11 @@ public class BusinessKeyReaderES implements BusinessKeyReader {
                                             .getScrollTimeoutInSeconds()
                                         + "s"))));
 
-    SearchResponse<BusinessKeyDto> searchResponse;
+    final SearchResponse<BusinessKeyDto> searchResponse;
     try {
       searchResponse = esClient.search(searchRequest, BusinessKeyDto.class);
-    } catch (IOException e) {
-      log.error("Was not able to retrieve business keys!", e);
+    } catch (final IOException e) {
+      LOG.error("Was not able to retrieve business keys!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve event business keys!", e);
     }
     return ElasticsearchReaderUtil.retrieveAllScrollResults(

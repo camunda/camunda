@@ -42,13 +42,13 @@ public abstract class AbstractGroupByUserTaskInterpreterES
     // keys that
     // should be present in distributedBy result via enrichContextWithAllExpectedDistributedByKeys
 
-    Aggregation.Builder.ContainerBuilder builder =
+    final Aggregation.Builder.ContainerBuilder builder =
         new Aggregation.Builder().nested(n -> n.path(FLOW_NODE_INSTANCES));
     builder.aggregations(
         USER_TASKS_AGGREGATION,
         Aggregation.of(
             a -> {
-              Aggregation.Builder.ContainerBuilder aggregations =
+              final Aggregation.Builder.ContainerBuilder aggregations =
                   a.filter(f -> f.bool(createUserTaskFlowNodeTypeFilter().build()))
                       .aggregations(
                           FILTERED_USER_TASKS_AGGREGATION,

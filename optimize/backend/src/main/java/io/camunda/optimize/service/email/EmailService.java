@@ -36,7 +36,7 @@ import org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer;
 @Component
 public class EmailService {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(EmailService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(EmailService.class);
   private final ConfigurationService configurationService;
 
   @Autowired private final FreeMarkerConfigurer freemarkerConfigurer;
@@ -68,25 +68,25 @@ public class EmailService {
     if (configurationService.getEmailEnabled()) {
       if (StringUtils.isNotEmpty(recipient)) {
         try {
-          log.debug("Sending email [{}] to [{}]", subject, recipient);
+          LOG.debug("Sending email [{}] to [{}]", subject, recipient);
           if (fromTemplate) {
             sendHtmlMessage(recipient, subject, body);
           } else {
             sendEmail(recipient, subject, body);
           }
         } catch (final MessagingException e) {
-          log.error(
+          LOG.error(
               "Was not able to send email from [{}] to [{}]!",
               configurationService.getNotificationEmailAddress(),
               recipient,
               e);
         }
       } else {
-        log.warn(
+        LOG.warn(
             "There is no email destination specified, therefore not sending any email notifications.");
       }
     } else if (StringUtils.isNotEmpty(recipient)) {
-      log.warn(
+      LOG.warn(
           "The email service is not enabled, so no email will be sent. Please check the Optimize documentation on how to enable "
               + "email notifications!");
     }
@@ -176,11 +176,11 @@ public class EmailService {
       return FreeMarkerTemplateUtils.processTemplateIntoString(freemarkerTemplate, templateInput);
     } catch (final IOException e) {
       final String reason = String.format("Failed to read email template %s.", templateName);
-      log.error(reason, e);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     } catch (final TemplateException e) {
       final String reason = String.format("Failed to process email template  %s.", templateName);
-      log.error(reason, e);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
   }

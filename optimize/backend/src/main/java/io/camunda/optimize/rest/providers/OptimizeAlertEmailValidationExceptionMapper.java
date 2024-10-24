@@ -19,13 +19,13 @@ import org.slf4j.Logger;
 public class OptimizeAlertEmailValidationExceptionMapper
     implements ExceptionMapper<OptimizeAlertEmailValidationException> {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(OptimizeAlertEmailValidationExceptionMapper.class);
 
   @Override
   public Response toResponse(
       final OptimizeAlertEmailValidationException optimizeAlertEmailValidationException) {
-    log.info("Mapping OptimizeAlertEmailValidationException");
+    LOG.info("Mapping OptimizeAlertEmailValidationException");
 
     return Response.status(Response.Status.BAD_REQUEST)
         .type(MediaType.APPLICATION_JSON_TYPE)

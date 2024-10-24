@@ -17,7 +17,7 @@ public class RootUrlGenerator {
 
   private static final String HTTP_PREFIX = "http://";
   private static final String HTTPS_PREFIX = "https://";
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(RootUrlGenerator.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(RootUrlGenerator.class);
 
   private final ConfigurationService configurationService;
 

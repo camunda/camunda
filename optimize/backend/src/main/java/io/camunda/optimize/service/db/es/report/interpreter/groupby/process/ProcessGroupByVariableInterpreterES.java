@@ -45,10 +45,10 @@ public class ProcessGroupByVariableInterpreterES
   private final ProcessViewInterpreterFacadeES viewInterpreter;
 
   public ProcessGroupByVariableInterpreterES(
-      VariableAggregationServiceES variableAggregationService,
-      DefinitionService definitionService,
-      ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
-      ProcessViewInterpreterFacadeES viewInterpreter) {
+      final VariableAggregationServiceES variableAggregationService,
+      final DefinitionService definitionService,
+      final ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
+      final ProcessViewInterpreterFacadeES viewInterpreter) {
     this.variableAggregationService = variableAggregationService;
     this.definitionService = definitionService;
     this.distributedByInterpreter = distributedByInterpreter;

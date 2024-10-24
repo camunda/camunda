@@ -109,8 +109,7 @@ public class WebhookConfiguration {
         notificationDto ->
             String.valueOf(notificationDto.getAlert().getCheckInterval().getValue())),
     ALERT_INTERVAL_UNIT(
-        notificationDto -> notificationDto.getAlert().getCheckInterval().getUnit().getId()),
-    ;
+        notificationDto -> notificationDto.getAlert().getCheckInterval().getUnit().getId());
 
     private static final String PLACEHOLDER_TEMPLATE = "{{%s}}";
 

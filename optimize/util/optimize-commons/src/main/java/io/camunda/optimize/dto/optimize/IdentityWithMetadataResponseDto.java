@@ -88,6 +88,7 @@ public abstract class IdentityWithMetadataResponseDto extends IdentityDto {
         + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String name = "name";

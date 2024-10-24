@@ -29,7 +29,7 @@ public class ProcessExecutionPlanInterpreterFacadeOS
     implements ProcessExecutionPlanInterpreterFacade, ProcessExecutionPlanInterpreterOS {
 
   public ProcessExecutionPlanInterpreterFacadeOS(
-      List<ProcessExecutionPlanInterpreterOS> interpreters) {
+      final List<ProcessExecutionPlanInterpreterOS> interpreters) {
     super(interpreters, ProcessExecutionPlanInterpreterOS::getSupportedExecutionPlans);
   }
 

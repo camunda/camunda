@@ -62,7 +62,7 @@ public abstract class DecisionInstanceIndex<TBuilder> extends AbstractInstanceIn
     indexName = constructIndexName(decisionDefinitionKey);
   }
 
-  public static String constructIndexName(String decisionDefinitionKey) {
+  public static String constructIndexName(final String decisionDefinitionKey) {
     return DECISION_INSTANCE_INDEX_PREFIX + decisionDefinitionKey.toLowerCase(Locale.ENGLISH);
   }
 

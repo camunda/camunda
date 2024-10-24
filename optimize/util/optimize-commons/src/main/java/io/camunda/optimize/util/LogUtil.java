@@ -34,7 +34,7 @@ public class LogUtil extends CompositeConverter<ILoggingEvent> {
         .replace("\u2029", "\\u2029");
   }
 
-  public static String sanitizeLogMessage(String input) {
+  public static String sanitizeLogMessage(final String input) {
     return input.replaceAll("[\n|\r|\t]", "_");
   }
 }

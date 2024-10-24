@@ -99,8 +99,8 @@ public interface VariableRepository {
   }
 
   default String extractProcessDefinitionKeyFromIndexName(final String indexName) {
-    int firstIndex = indexName.indexOf(PROCESS_INSTANCE_INDEX_NAME_SUBSECTION);
-    int lastIndex = indexName.lastIndexOf(PROCESS_INSTANCE_INDEX_NAME_SUBSECTION);
+    final int firstIndex = indexName.indexOf(PROCESS_INSTANCE_INDEX_NAME_SUBSECTION);
+    final int lastIndex = indexName.lastIndexOf(PROCESS_INSTANCE_INDEX_NAME_SUBSECTION);
     if (firstIndex != lastIndex) {
       return null;
     }
@@ -119,7 +119,7 @@ public interface VariableRepository {
     String labelValue = null;
     if (processDefinitionKey != null && definitionLabelsByKey.containsKey(processDefinitionKey)) {
       final List<LabelDto> labels = definitionLabelsByKey.get(processDefinitionKey).getLabels();
-      for (LabelDto label : labels) {
+      for (final LabelDto label : labels) {
         if (label.getVariableName().equals(variableName)
             && label.getVariableType().toString().equalsIgnoreCase(variableType)) {
           labelValue = label.getVariableLabel();

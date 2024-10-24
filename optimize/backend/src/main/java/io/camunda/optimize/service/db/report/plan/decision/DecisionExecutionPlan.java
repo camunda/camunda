@@ -60,10 +60,10 @@ public enum DecisionExecutionPlan implements ExecutionPlan {
   private final String commandKey;
 
   DecisionExecutionPlan(
-      DecisionView view,
-      DecisionGroupBy groupBy,
-      DecisionDistributedBy distributedBy,
-      ReportResultType resultType) {
+      final DecisionView view,
+      final DecisionGroupBy groupBy,
+      final DecisionDistributedBy distributedBy,
+      final ReportResultType resultType) {
     this.view = view;
     this.groupBy = groupBy;
     this.distributedBy = distributedBy;
@@ -72,11 +72,11 @@ public enum DecisionExecutionPlan implements ExecutionPlan {
   }
 
   private DecisionExecutionPlan(
-      DecisionView view,
-      DecisionGroupBy groupBy,
-      DecisionDistributedBy distributedBy,
-      ReportResultType resultType,
-      String commandKey) {
+      final DecisionView view,
+      final DecisionGroupBy groupBy,
+      final DecisionDistributedBy distributedBy,
+      final ReportResultType resultType,
+      final String commandKey) {
     this.view = view;
     this.groupBy = groupBy;
     this.distributedBy = distributedBy;
@@ -90,7 +90,7 @@ public enum DecisionExecutionPlan implements ExecutionPlan {
   }
 
   private String buildCommandKey() {
-    DecisionReportDataDto decisionReportDataDto =
+    final DecisionReportDataDto decisionReportDataDto =
         DecisionReportDataDto.builder()
             .groupBy(groupBy.getDto())
             .distributedBy(distributedBy.getDto())

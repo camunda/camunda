@@ -23,7 +23,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 @Conditional(CCSaaSCondition.class)
 public class AccountsUserAccessTokenProvider {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(AccountsUserAccessTokenProvider.class);
 
   public AccountsUserAccessTokenProvider() {}
@@ -35,7 +35,7 @@ public class AccountsUserAccessTokenProvider {
         return Optional.ofNullable(
             ((JwtAuthenticationToken) authentication).getToken().getTokenValue());
       } else {
-        log.info(
+        LOG.info(
             "Could not retrieve Jwt Token. Provided token has type "
                 + authentication.getClass().getTypeName());
         return Optional.empty();

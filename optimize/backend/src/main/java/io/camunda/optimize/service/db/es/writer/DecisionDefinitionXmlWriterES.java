@@ -28,16 +28,16 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class DecisionDefinitionXmlWriterES implements DecisionDefinitionXmlWriter {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(DecisionDefinitionXmlWriterES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
 
   public DecisionDefinitionXmlWriterES(
-      OptimizeElasticsearchClient esClient,
-      ConfigurationService configurationService,
-      ObjectMapper objectMapper) {
+      final OptimizeElasticsearchClient esClient,
+      final ConfigurationService configurationService,
+      final ObjectMapper objectMapper) {
     this.esClient = esClient;
     this.configurationService = configurationService;
     this.objectMapper = objectMapper;
@@ -46,8 +46,8 @@ public class DecisionDefinitionXmlWriterES implements DecisionDefinitionXmlWrite
   @Override
   public void importDecisionDefinitionXmls(
       final List<DecisionDefinitionOptimizeDto> decisionDefinitions) {
-    String importItemName = "decision definition XML information";
-    log.debug("Writing [{}] {} to ES.", decisionDefinitions.size(), importItemName);
+    final String importItemName = "decision definition XML information";
+    LOG.debug("Writing [{}] {} to ES.", decisionDefinitions.size(), importItemName);
     esClient.doImportBulkRequestWithList(
         importItemName,
         decisionDefinitions,

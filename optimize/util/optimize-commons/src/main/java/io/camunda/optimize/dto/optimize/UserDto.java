@@ -144,6 +144,7 @@ public class UserDto extends IdentityWithMetadataResponseDto {
         + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String firstName = "firstName";

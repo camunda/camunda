@@ -16,6 +16,7 @@ import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 
 public abstract class ProcessOverviewIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
+
   public static final int VERSION = 2;
 
   public static final String PROCESS_DEFINITION_KEY =

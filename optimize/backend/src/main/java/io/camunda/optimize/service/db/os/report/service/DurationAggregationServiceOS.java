@@ -51,8 +51,8 @@ public class DurationAggregationServiceOS extends DurationAggregationService {
   private final ProcessDistributedByInterpreterFacadeOS distributedByInterpreter;
 
   public DurationAggregationServiceOS(
-      MinMaxStatsServiceOS minMaxStatsService,
-      ProcessDistributedByInterpreterFacadeOS distributedByInterpreter) {
+      final MinMaxStatsServiceOS minMaxStatsService,
+      final ProcessDistributedByInterpreterFacadeOS distributedByInterpreter) {
     this.minMaxStatsService = minMaxStatsService;
     this.distributedByInterpreter = distributedByInterpreter;
   }

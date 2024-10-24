@@ -25,7 +25,7 @@ import org.slf4j.Logger;
 public class OpenSearchOperation {
 
   private static final String INDEX_FIELD = "index";
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(OpenSearchOperation.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(OpenSearchOperation.class);
   protected OptimizeIndexNameService indexNameService;
 
   public OpenSearchOperation(final OptimizeIndexNameService indexNameService) {
@@ -86,7 +86,7 @@ public class OpenSearchOperation {
       indexField.setAccessible(true);
       return indexField.get(builder).toString();
     } catch (final Exception e) {
-      log.error(
+      LOG.error(
           String.format(
               "Failed to get the method %s from %s", INDEX_FIELD, builder.getClass().getName()));
       return "FAILED_INDEX";
@@ -100,11 +100,11 @@ public class OpenSearchOperation {
     } catch (final OpenSearchException e) {
       final String message =
           "An exception has occurred when trying to execute an OpenSearch operation";
-      log.error(message, e);
+      LOG.error(message, e);
       throw e;
     } catch (final Exception e) {
       final String message = errorMessage.apply(e);
-      log.error(message, e);
+      LOG.error(message, e);
       throw new OptimizeRuntimeException(message, e);
     }
   }

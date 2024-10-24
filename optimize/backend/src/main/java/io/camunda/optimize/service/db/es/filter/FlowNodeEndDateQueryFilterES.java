@@ -29,7 +29,7 @@ public class FlowNodeEndDateQueryFilterES implements QueryFilterES<FlowNodeDateF
       final List<FlowNodeDateFilterDataDto<?>> flowNodeEndDateFilters,
       final FilterContext filterContext) {
     if (!flowNodeEndDateFilters.isEmpty()) {
-      for (FlowNodeDateFilterDataDto<?> flowNodeEndDateFilter : flowNodeEndDateFilters) {
+      for (final FlowNodeDateFilterDataDto<?> flowNodeEndDateFilter : flowNodeEndDateFilters) {
         query.filter(
             f ->
                 f.nested(

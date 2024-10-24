@@ -36,11 +36,11 @@ import org.springframework.util.CollectionUtils;
 @Conditional(ElasticSearchCondition.class)
 public class DefinitionInstanceReaderES extends DefinitionInstanceReader {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(DefinitionInstanceReaderES.class);
   private final OptimizeElasticsearchClient esClient;
 
-  public DefinitionInstanceReaderES(OptimizeElasticsearchClient esClient) {
+  public DefinitionInstanceReaderES(final OptimizeElasticsearchClient esClient) {
     this.esClient = esClient;
   }
 
@@ -49,7 +49,7 @@ public class DefinitionInstanceReaderES extends DefinitionInstanceReader {
       final DefinitionType type, final Set<String> instanceIds) {
     final String defKeyAggName = "definitionKeyAggregation";
 
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         OptimizeSearchRequestBuilderES.of(
             b ->
                 b.optimizeIndex(esClient, resolveIndexMultiAliasForType(type))
@@ -87,13 +87,13 @@ public class DefinitionInstanceReaderES extends DefinitionInstanceReader {
     final SearchResponse<?> response;
     try {
       response = esClient.search(searchRequest, Object.class);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(
           String.format("Was not able to retrieve definition keys for instances of type %s", type),
           e);
-    } catch (ElasticsearchException e) {
+    } catch (final ElasticsearchException e) {
       if (isInstanceIndexNotFoundException(type, e)) {
-        log.info(
+        LOG.info(
             "Was not able to retrieve definition keys for instances because no {} instance indices exist. "
                 + "Returning empty set.",
             type);
@@ -102,7 +102,8 @@ public class DefinitionInstanceReaderES extends DefinitionInstanceReader {
       throw e;
     }
 
-    StringTermsAggregate definitionKeyTerms = response.aggregations().get(defKeyAggName).sterms();
+    final StringTermsAggregate definitionKeyTerms =
+        response.aggregations().get(defKeyAggName).sterms();
     return definitionKeyTerms.buckets().array().stream()
         .map(r -> r.key().stringValue())
         .collect(toSet());

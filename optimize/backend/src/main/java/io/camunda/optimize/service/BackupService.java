@@ -34,16 +34,16 @@ import org.springframework.stereotype.Component;
 public class BackupService {
 
   private static final int EXPECTED_NUMBER_OF_SNAPSHOTS_PER_BACKUP = 2;
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(BackupService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(BackupService.class);
 
   private final BackupReader backupReader;
   private final BackupWriter backupWriter;
   private final ConfigurationService configurationService;
 
   public BackupService(
-      BackupReader backupReader,
-      BackupWriter backupWriter,
-      ConfigurationService configurationService) {
+      final BackupReader backupReader,
+      final BackupWriter backupWriter,
+      final ConfigurationService configurationService) {
     this.backupReader = backupReader;
     this.backupWriter = backupWriter;
     this.configurationService = configurationService;
@@ -53,7 +53,7 @@ public class BackupService {
     backupReader.validateRepositoryExists();
     validateNoDuplicateBackupId(backupId);
 
-    log.info("Triggering backup with ID {}", backupId);
+    LOG.info("Triggering backup with ID {}", backupId);
     backupWriter.triggerSnapshotCreation(backupId);
   }
 
@@ -81,7 +81,7 @@ public class BackupService {
     if (snapshotInfosPerState.isEmpty()) {
       final String reason =
           String.format("No Optimize backup with ID [%d] could be found.", backupId);
-      log.error(reason);
+      LOG.error(reason);
       throw new NotFoundException(reason);
     }
     return getBackupInfoDto(backupId, snapshotInfosPerState);
@@ -144,7 +144,7 @@ public class BackupService {
               existingSnapshots.stream()
                   .map(SnapshotInfoDto::getSnapshotName)
                   .collect(joining(", ")));
-      log.error(reason);
+      LOG.error(reason);
       throw new OptimizeConflictException(reason);
     }
   }

@@ -30,6 +30,21 @@ import java.util.Set;
 
 public abstract class AbstractProcessViewRawDataInterpreter
     implements ViewInterpreter<ProcessReportDataDto, ProcessExecutionPlan> {
+
+  public static final String SORT_SCRIPT =
+      """
+          if (doc[params.duration].size() == 0) {
+            params.currentTime - doc[params.startDate].value.toInstant().toEpochMilli()
+          } else {
+             doc[params.duration].value
+          }
+          """;
+  public static final String NUMBER_OF_USER_TASKS_SCRIPT =
+      """
+          Optional.ofNullable(params._source.flowNodeInstances)
+            .map(list -> list.stream().filter(item -> item.flowNodeType.equals('userTask')).count())
+            .orElse(0L)
+          """;
   protected static final String CURRENT_TIME = "currentTime";
   protected static final String PARAMS_CURRENT_TIME = "params." + CURRENT_TIME;
   protected static final String DATE_FORMAT = "dateFormat";
@@ -37,49 +52,36 @@ public abstract class AbstractProcessViewRawDataInterpreter
   protected static final String NUMBER_OF_USER_TASKS = "numberOfUserTasks";
   protected static final String GET_FLOW_NODE_DURATIONS_SCRIPT =
       """
-    def flowNodeInstanceIdToDuration = new HashMap();
-    def dateFormatter = new SimpleDateFormat(params.dateFormat);
-    for (flowNodeInstance in params._source.flowNodeInstances) {
-      if (flowNodeInstance.totalDurationInMs != null) {
-        if (flowNodeInstanceIdToDuration.containsKey(flowNodeInstance.flowNodeId)) {
-          def currentDuration = flowNodeInstanceIdToDuration.get(flowNodeInstance.flowNodeId);
-          flowNodeInstanceIdToDuration.put(flowNodeInstance.flowNodeId, flowNodeInstance.totalDurationInMs + currentDuration)
-        } else {
-          flowNodeInstanceIdToDuration.put(flowNodeInstance.flowNodeId, flowNodeInstance.totalDurationInMs)
-        }
-      } else {
-        if (flowNodeInstance.startDate != null) {
-          def duration = params.currentTime - dateFormatter.parse(flowNodeInstance.startDate).getTime();
-          if (flowNodeInstanceIdToDuration.containsKey(flowNodeInstance.flowNodeId)) {
-            def currentDuration = flowNodeInstanceIdToDuration.get(flowNodeInstance.flowNodeId);
-            flowNodeInstanceIdToDuration.put(flowNodeInstance.flowNodeId, duration + currentDuration)
-          } else {
-            flowNodeInstanceIdToDuration.put(flowNodeInstance.flowNodeId, duration)
+          def flowNodeInstanceIdToDuration = new HashMap();
+          def dateFormatter = new SimpleDateFormat(params.dateFormat);
+          for (flowNodeInstance in params._source.flowNodeInstances) {
+            if (flowNodeInstance.totalDurationInMs != null) {
+              if (flowNodeInstanceIdToDuration.containsKey(flowNodeInstance.flowNodeId)) {
+                def currentDuration = flowNodeInstanceIdToDuration.get(flowNodeInstance.flowNodeId);
+                flowNodeInstanceIdToDuration.put(flowNodeInstance.flowNodeId, flowNodeInstance.totalDurationInMs + currentDuration)
+              } else {
+                flowNodeInstanceIdToDuration.put(flowNodeInstance.flowNodeId, flowNodeInstance.totalDurationInMs)
+              }
+            } else {
+              if (flowNodeInstance.startDate != null) {
+                def duration = params.currentTime - dateFormatter.parse(flowNodeInstance.startDate).getTime();
+                if (flowNodeInstanceIdToDuration.containsKey(flowNodeInstance.flowNodeId)) {
+                  def currentDuration = flowNodeInstanceIdToDuration.get(flowNodeInstance.flowNodeId);
+                  flowNodeInstanceIdToDuration.put(flowNodeInstance.flowNodeId, duration + currentDuration)
+                } else {
+                  flowNodeInstanceIdToDuration.put(flowNodeInstance.flowNodeId, duration)
+                }
+              }
+            }
           }
-        }
-      }
-    }
-    return flowNodeInstanceIdToDuration;
-    """;
-  public static final String SORT_SCRIPT =
-      """
-    if (doc[params.duration].size() == 0) {
-      params.currentTime - doc[params.startDate].value.toInstant().toEpochMilli()
-    } else {
-       doc[params.duration].value
-    }
-    """;
-  public static final String NUMBER_OF_USER_TASKS_SCRIPT =
-      """
-    Optional.ofNullable(params._source.flowNodeInstances)
-      .map(list -> list.stream().filter(item -> item.flowNodeType.equals('userTask')).count())
-      .orElse(0L)
-    """;
+          return flowNodeInstanceIdToDuration;
+          """;
 
   public Set<ProcessView> getSupportedViews() {
     return Set.of(PROCESS_VIEW_RAW_DATA);
   }
 
+  @Override
   public ViewResult createEmptyResult(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     return ViewResult.builder().rawData(new ArrayList<>()).build();
@@ -96,7 +98,7 @@ public abstract class AbstractProcessViewRawDataInterpreter
             .map(varKey -> VARIABLE_PREFIX + varKey)
             .toList();
 
-    TableColumnDto tableColumns = context.getReportConfiguration().getTableColumns();
+    final TableColumnDto tableColumns = context.getReportConfiguration().getTableColumns();
     tableColumns.addCountColumns(CSVUtils.extractAllPrefixedCountKeys());
     tableColumns.addNewAndRemoveUnexpectedVariableColumns(variableNames);
     tableColumns.addNewAndRemoveUnexpectedFlowNodeDurationColumns(
@@ -104,7 +106,7 @@ public abstract class AbstractProcessViewRawDataInterpreter
     tableColumns.addDtoColumns(extractAllProcessInstanceDtoFieldKeys());
   }
 
-  protected List<String> defKeysToTarget(List<ReportDataDefinitionDto> definitions) {
+  protected List<String> defKeysToTarget(final List<ReportDataDefinitionDto> definitions) {
     return definitions.stream()
         .map(ReportDataDefinitionDto::getKey)
         .filter(Objects::nonNull)

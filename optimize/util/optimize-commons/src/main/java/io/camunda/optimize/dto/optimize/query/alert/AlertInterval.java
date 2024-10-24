@@ -54,6 +54,7 @@ public class AlertInterval {
     return "AlertInterval(value=" + getValue() + ", unit=" + getUnit() + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String value = "value";

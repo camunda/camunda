@@ -15,34 +15,37 @@ public class UserTestDto {
   public UserTestDto() {}
 
   public String getUsername() {
-    return this.username;
+    return username;
   }
 
-  public String getPassword() {
-    return this.password;
-  }
-
-  public void setUsername(String username) {
+  public void setUsername(final String username) {
     this.username = username;
   }
 
-  public void setPassword(String password) {
-    this.password = password;
+  public String getPassword() {
+    return password;
   }
 
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public void setPassword(final String password) {
+    this.password = password;
   }
 
   protected boolean canEqual(final Object other) {
     return other instanceof UserTestDto;
   }
 
+  @Override
   public int hashCode() {
     return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
+  @Override
+  public boolean equals(final Object o) {
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  }
+
+  @Override
   public String toString() {
-    return "UserTestDto(username=" + this.getUsername() + ", password=" + this.getPassword() + ")";
+    return "UserTestDto(username=" + getUsername() + ", password=" + getPassword() + ")";
   }
 }

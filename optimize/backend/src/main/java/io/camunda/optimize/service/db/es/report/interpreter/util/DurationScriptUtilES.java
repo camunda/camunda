@@ -22,7 +22,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 
-public class DurationScriptUtilES {
+public final class DurationScriptUtilES {
 
   private DurationScriptUtilES() {}
 

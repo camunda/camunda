@@ -52,7 +52,7 @@ public enum VariableType {
     return id;
   }
 
-  public static VariableType getTypeForId(String id) {
+  public static VariableType getTypeForId(final String id) {
     return Optional.ofNullable(id)
         .map(String::toLowerCase)
         .map(BY_LOWER_CASE_ID_MAP::get)

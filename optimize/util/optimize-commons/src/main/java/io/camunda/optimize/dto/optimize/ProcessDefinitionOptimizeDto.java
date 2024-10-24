@@ -157,6 +157,7 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
     return new ProcessDefinitionOptimizeDtoBuilder();
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String bpmn20Xml = "bpmn20Xml";

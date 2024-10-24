@@ -9,7 +9,7 @@ package io.camunda.optimize.service.exceptions;
 
 public class OptimizeDecisionDefinitionFetchException extends OptimizeRuntimeException {
 
-  public OptimizeDecisionDefinitionFetchException(String message) {
+  public OptimizeDecisionDefinitionFetchException(final String message) {
     super(message);
   }
 }

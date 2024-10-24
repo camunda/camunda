@@ -152,7 +152,7 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
                       .defaultAuthenticationEntryPointFor(
                           this::redirectToIdentity, new AntPathRequestMatcher("/**")))
           .build();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new OptimizeRuntimeException(e);
     }
   }

@@ -13,6 +13,7 @@ import io.camunda.optimize.util.SuppressionConstants;
 
 public class ReportEvaluationException extends OptimizeRuntimeException {
 
+  @SuppressWarnings("checkstyle:MutableException")
   protected AuthorizedReportDefinitionResponseDto reportDefinition;
 
   @SuppressWarnings(SuppressionConstants.UNUSED)
@@ -21,17 +22,17 @@ public class ReportEvaluationException extends OptimizeRuntimeException {
   }
 
   public ReportEvaluationException(
-      AuthorizedReportDefinitionResponseDto reportDefinition, Exception e) {
+      final AuthorizedReportDefinitionResponseDto reportDefinition, final Exception e) {
     super(e.getMessage(), e);
     setReportDefinition(reportDefinition);
   }
 
-  public void setReportDefinition(AuthorizedReportDefinitionResponseDto reportDefinition) {
-    this.reportDefinition = reportDefinition;
-  }
-
   public AuthorizedReportDefinitionResponseDto getReportDefinition() {
     return reportDefinition;
+  }
+
+  public void setReportDefinition(final AuthorizedReportDefinitionResponseDto reportDefinition) {
+    this.reportDefinition = reportDefinition;
   }
 
   @Override

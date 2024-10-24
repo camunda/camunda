@@ -60,7 +60,7 @@ public class CombinedReportItemDto {
     return "CombinedReportItemDto(id=" + getId() + ", color=" + getColor() + ")";
   }
 
-  private static String $default$color() {
+  private static String defaultColor() {
     return DEFAULT_CONFIGURATION_COLOR;
   }
 
@@ -72,6 +72,7 @@ public class CombinedReportItemDto {
     return new CombinedReportItemDtoBuilder().id(id).color(color);
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String id = "id";
@@ -81,8 +82,8 @@ public class CombinedReportItemDto {
   public static class CombinedReportItemDtoBuilder {
 
     private String id;
-    private String color$value;
-    private boolean color$set;
+    private String colorValue;
+    private boolean colorSet;
 
     CombinedReportItemDtoBuilder() {}
 
@@ -92,25 +93,25 @@ public class CombinedReportItemDto {
     }
 
     public CombinedReportItemDtoBuilder color(final String color) {
-      color$value = color;
-      color$set = true;
+      colorValue = color;
+      colorSet = true;
       return this;
     }
 
     public CombinedReportItemDto build() {
-      String color$value = this.color$value;
-      if (!color$set) {
-        color$value = CombinedReportItemDto.$default$color();
+      String colorValue = this.colorValue;
+      if (!colorSet) {
+        colorValue = CombinedReportItemDto.defaultColor();
       }
-      return new CombinedReportItemDto(id, color$value);
+      return new CombinedReportItemDto(id, colorValue);
     }
 
     @Override
     public String toString() {
       return "CombinedReportItemDto.CombinedReportItemDtoBuilder(id="
           + id
-          + ", color$value="
-          + color$value
+          + ", colorValue="
+          + colorValue
           + ")";
     }
   }

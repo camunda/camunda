@@ -20,7 +20,7 @@ import org.slf4j.Logger;
 @Provider
 public class ReportEvaluationExceptionMapper implements ExceptionMapper<ReportEvaluationException> {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ReportEvaluationExceptionMapper.class);
   private final LocalizationService localizationService;
 
@@ -30,7 +30,7 @@ public class ReportEvaluationExceptionMapper implements ExceptionMapper<ReportEv
 
   @Override
   public Response toResponse(final ReportEvaluationException reportEvaluationException) {
-    log.debug("Mapping ReportEvaluationException: {}", reportEvaluationException.getMessage());
+    LOG.debug("Mapping ReportEvaluationException: {}", reportEvaluationException.getMessage());
     return Response.status(Response.Status.BAD_REQUEST)
         .type(MediaType.APPLICATION_JSON_TYPE)
         .entity(mapToEvaluationErrorResponseDto(reportEvaluationException))

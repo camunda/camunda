@@ -21,7 +21,7 @@ import org.slf4j.Logger;
 
 public class OpenSearchAsyncSnapshotOperations extends OpenSearchAsyncOperation {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(OpenSearchAsyncSnapshotOperations.class);
 
   public OpenSearchAsyncSnapshotOperations(

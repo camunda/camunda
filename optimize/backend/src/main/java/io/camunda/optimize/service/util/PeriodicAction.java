@@ -17,7 +17,7 @@ import org.slf4j.Logger;
 
 public class PeriodicAction {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(PeriodicAction.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(PeriodicAction.class);
   private final ScheduledExecutorService executorService;
   private final String actionName;
   private final Runnable onSchedule;
@@ -31,16 +31,16 @@ public class PeriodicAction {
   }
 
   public void start() {
-    log.debug(format("Scheduling periodic action %s", actionName));
+    LOG.debug(format("Scheduling periodic action %s", actionName));
     executorService.scheduleAtFixedRate(onSchedule, 0, 30, TimeUnit.SECONDS);
   }
 
   public void stop() {
     try {
-      log.debug(format("Stopping periodic action %s", actionName));
+      LOG.debug(format("Stopping periodic action %s", actionName));
       executorService.shutdownNow();
     } catch (final Exception e) {
-      log.error(format("Failed to stop periodic action %s", actionName));
+      LOG.error(format("Failed to stop periodic action %s", actionName));
     }
   }
 }

@@ -27,7 +27,7 @@ public class ProcessDefinitionDatabaseImportJob
   }
 
   @Override
-  protected void persistEntities(List<ProcessDefinitionOptimizeDto> newOptimizeEntities) {
+  protected void persistEntities(final List<ProcessDefinitionOptimizeDto> newOptimizeEntities) {
     processDefinitionWriter.importProcessDefinitions(newOptimizeEntities);
   }
 }

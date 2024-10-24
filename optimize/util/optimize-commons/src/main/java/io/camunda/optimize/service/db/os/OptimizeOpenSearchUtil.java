@@ -12,7 +12,7 @@ import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_SHARDS_
 import jakarta.ws.rs.NotSupportedException;
 import org.opensearch.client.opensearch.indices.IndexSettings;
 
-public class OptimizeOpenSearchUtil {
+public final class OptimizeOpenSearchUtil {
 
   private OptimizeOpenSearchUtil() {}
 
