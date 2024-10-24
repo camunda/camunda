@@ -123,7 +123,7 @@ public class Engine implements RecordProcessor {
 
       // There is no ban check needed if the intent is not instance related
       // nor if the intent is to create new instances, which can't be banned yet
-      final Intent intent = record.getIntent();
+      final Intent intent = typedCommand.getIntent();
       final boolean noBanCheckNeeded =
           !(intent instanceof ProcessInstanceRelatedIntent)
               || intent instanceof ProcessInstanceCreationIntent;
@@ -133,7 +133,8 @@ public class Engine implements RecordProcessor {
               || intent == ProcessInstanceIntent.TERMINATE_ELEMENT
               || intent == ProcessInstanceBatchIntent.TERMINATE;
 
-      if (noBanCheckNeeded || !banned || commandAllowedForBanned) {
+      final var shouldProcess = noBanCheckNeeded || !banned || commandAllowedForBanned;
+      if (shouldProcess) {
         currentProcessor.processRecord(record);
       }
     }
