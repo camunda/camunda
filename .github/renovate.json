@@ -8,6 +8,7 @@
   "baseBranches": [
     "/^stable\\/8\\..*/",
     "stable/operate-8.5",
+    "stable/optimize-8.6",
     "main"
   ],
   "dependencyDashboard": true,
@@ -36,7 +37,8 @@
       "description": "Only patch updates for our maintenance branches to avoid breaking changes.",
       "matchBaseBranches": [
         "/^stable\\/8\\..*/",
-        "stable/operate-8.5"
+        "stable/operate-8.5",
+        "stable/optimize-8.6"
       ],
       "matchUpdateTypes": ["minor", "major"],
       "enabled": false
@@ -108,18 +110,14 @@
       "additionalBranchPrefix": "fe-"
     },
     {
-      "description": "Exclude frontend deps until Optimize migrates to react-router v6 and react v18",
+      "description": "Exclude frontend deps until Optimize migrates to react-router v6",
       "matchManagers": ["npm", "nvm"],
       "matchFileNames": ["optimize/**"],
       "matchPackagePatterns": [
         "@carbon/react",
         "old-bpmn-js",
-        "react",
-        "react-dom",
         "react-router",
         "react-router-dom",
-        "@types/react",
-        "@types/react-dom",
         "@types/react-router-dom"
       ],
       "enabled": false

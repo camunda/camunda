@@ -15,4 +15,4 @@ public record DocumentMetadataModel(
     String fileName,
     ZonedDateTime expiresAt,
     Long size,
-    Map<String, Object> additionalProperties) {}
+    Map<String, Object> customProperties) {}

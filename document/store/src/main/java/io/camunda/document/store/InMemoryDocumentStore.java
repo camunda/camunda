@@ -83,10 +83,10 @@ public class InMemoryDocumentStore implements DocumentStore {
 
   @Override
   public CompletableFuture<Either<DocumentError, DocumentLink>> createLink(
-      final String documentId, final long durationInSeconds) {
+      final String documentId, final long durationInMillis) {
     return CompletableFuture.completedFuture(
         Either.left(
             new OperationNotSupported(
-                "The in-memory document instance does not support creating links")));
+                "The in-memory document store does not support creating links")));
   }
 }
