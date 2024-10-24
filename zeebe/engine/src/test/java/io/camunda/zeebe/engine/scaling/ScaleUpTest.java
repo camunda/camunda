@@ -111,8 +111,7 @@ public class ScaleUpTest {
             rejection -> {
               assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
               assertThat(rejection.getRejectionReason())
-                  .isEqualTo(
-                      "Desired partition count must be greater than current partition count");
+                  .isEqualTo("Partition count must be at least 1");
             });
   }
 
@@ -140,7 +139,7 @@ public class ScaleUpTest {
   @Test
   public void shouldRejectScaleDown() {
     // given
-    initRoutingState();
+    ((MutableRoutingState) engine.getProcessingState().getRoutingState()).initializeRoutingInfo(2);
     final var command =
         RecordToWrite.command()
             .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(1));
@@ -152,10 +151,10 @@ public class ScaleUpTest {
     assertThat(RecordingExporter.scaleRecords().onlyCommandRejections().findFirst())
         .hasValueSatisfying(
             rejection -> {
-              assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+              assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
               assertThat(rejection.getRejectionReason())
                   .isEqualTo(
-                      "Desired partition count must be greater than current partition count");
+                      "The desired partition count is smaller than the currently active partitions");
             });
   }
 
