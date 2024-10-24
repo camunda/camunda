@@ -55,6 +55,8 @@ jobs:
           distball: ${{ steps.build-zeebe.outputs.distball }}
           platforms: linux/${{ matrix.arch }}
           push: false
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Run smoke test on ${{ matrix.arch }}
         env:
           # For non Linux runners there is no container available for testing, see build-zeebe-docker job
@@ -67,9 +69,16 @@ jobs:
           -D excludedGroups=$EXCLUDED_TEST_GROUPS
           -f zeebe
           verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
-        if: ${{ failure() || cancelled() }}
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
           name: "[Smoke] ${{ matrix.os }} with ${{ matrix.arch }}"
       - name: Observe build status
@@ -109,6 +118,7 @@ jobs:
           test
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
+        id: analyze-test-run
         if: always()
         uses: ./.github/actions/analyze-test-runs
         with:
@@ -117,7 +127,7 @@ jobs:
           skipSummary: true
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
-        if: ${{ failure() || cancelled() }}
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
           name: Property Tests
       - name: Observe build status
@@ -160,6 +170,7 @@ jobs:
         env:
           LARGE_STATE_CONTROLLER_PERFORMANCE_TEST_SIZE_GB: "4"
       - name: Analyze Test Runs
+        id: analyze-test-run
         if: always()
         uses: ./.github/actions/analyze-test-runs
         with:
@@ -177,7 +188,7 @@ jobs:
           echo '```' >> $GITHUB_STEP_SUMMARY
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
-        if: ${{ failure() || cancelled() }}
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
           name: Performance Tests
       - name: Observe build status
@@ -221,6 +232,7 @@ jobs:
           test
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
+        id: analyze-test-run
         if: always()
         uses: ./.github/actions/analyze-test-runs
         with:
@@ -229,7 +241,7 @@ jobs:
           skipSummary: true
       - name: Upload test artifacts
         uses: ./.github/actions/collect-test-artifacts
-        if: ${{ failure() || cancelled() }}
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
           name: Strace Tests
       - name: Observe build status
