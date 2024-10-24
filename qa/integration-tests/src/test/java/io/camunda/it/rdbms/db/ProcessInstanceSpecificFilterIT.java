@@ -21,6 +21,7 @@ import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.sort.ProcessInstanceSort;
@@ -96,9 +97,11 @@ public class ProcessInstanceSpecificFilterIT {
 
   static List<ProcessInstanceFilter> shouldFindProcessInstanceWithSpecificFilterParameters() {
     return List.of(
-        new ProcessInstanceFilter.Builder().processInstanceKeys(42L).build(),
-        new ProcessInstanceFilter.Builder().processDefinitionIds("test-process").build(),
-        new ProcessInstanceFilter.Builder().processDefinitionKeys(1337L).build(),
+        new ProcessInstanceFilter.Builder().processInstanceKeys(Operation.eq(42L)).build(),
+        new ProcessInstanceFilter.Builder()
+            .processDefinitionIds(Operation.eq("test-process"))
+            .build(),
+        new ProcessInstanceFilter.Builder().processDefinitionKeys(Operation.eq(1337L)).build(),
         new ProcessInstanceFilter.Builder().states(ProcessInstanceState.ACTIVE.name()).build(),
         new ProcessInstanceFilter.Builder().parentProcessInstanceKeys(-1L).build(),
         new ProcessInstanceFilter.Builder().parentFlowNodeInstanceKeys(-1L).build(),

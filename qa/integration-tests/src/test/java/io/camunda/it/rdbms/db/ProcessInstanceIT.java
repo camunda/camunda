@@ -19,6 +19,7 @@ import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.sort.ProcessInstanceSort;
@@ -96,7 +97,7 @@ public class ProcessInstanceIT {
         processInstanceReader.search(
             new ProcessInstanceDbQuery(
                 new ProcessInstanceFilter.Builder()
-                    .processDefinitionIds("test-process-unique")
+                    .processDefinitionIds(Operation.eq("test-process-unique"))
                     .build(),
                 ProcessInstanceSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(10))));
@@ -131,7 +132,7 @@ public class ProcessInstanceIT {
         processInstanceReader.search(
             new ProcessInstanceDbQuery(
                 new ProcessInstanceFilter.Builder()
-                    .processDefinitionIds(processDefinitionId)
+                    .processDefinitionIds(Operation.eq(processDefinitionId))
                     .build(),
                 ProcessInstanceSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(5))));
@@ -189,9 +190,9 @@ public class ProcessInstanceIT {
         processInstanceReader.search(
             new ProcessInstanceDbQuery(
                 new ProcessInstanceFilter.Builder()
-                    .processInstanceKeys(processInstanceKey)
-                    .processDefinitionIds("test-process")
-                    .processDefinitionKeys(1337L)
+                    .processInstanceKeys(Operation.eq(processInstanceKey))
+                    .processDefinitionIds(Operation.eq("test-process"))
+                    .processDefinitionKeys(Operation.eq(1337L))
                     .states(ProcessInstanceState.ACTIVE.name())
                     .parentProcessInstanceKeys(-1L)
                     .parentFlowNodeInstanceKeys(-1L)
