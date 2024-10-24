@@ -8,17 +8,6 @@
 
 import {get, post, put, del} from 'request';
 
-export async function loadCollectionEntities(id, sortBy, sortOrder) {
-  const params = {};
-  if (sortBy && sortOrder) {
-    params.sortBy = sortBy;
-    params.sortOrder = sortOrder;
-  }
-
-  const response = await get(`api/collection/${id}/entities`, params);
-  return await response.json();
-}
-
 export async function getUsers(collection) {
   const response = await get(`api/collection/${collection}/role`);
   return await response.json();
