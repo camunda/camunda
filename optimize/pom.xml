@@ -65,6 +65,7 @@
     <project.previousVersion>8.6.0</project.previousVersion>
     <camunda.maven.artifacts.version>7.22.0</camunda.maven.artifacts.version>
 
+    <!-- NOTE: We're overriding jetty version as Optimize uses a much newer version -->
     <version.jetty>12.0.13</version.jetty>
 
     <!-- We use this version to compile but run IT against containers with zeebe.docker.version -->
