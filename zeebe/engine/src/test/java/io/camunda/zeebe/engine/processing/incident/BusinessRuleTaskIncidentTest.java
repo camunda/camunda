@@ -120,13 +120,20 @@ public class BusinessRuleTaskIncidentTest {
             .withXmlResource(
                 processWithBusinessRuleTask(
                     b ->
-                        b.zeebeCalledDecisionId(DECISION_ID)
+                        // an incident can only occur at run time if the target decision ID is an
+                        // expression; static IDs are already checked at deploy time
+                        b.zeebeCalledDecisionIdExpression(DECISION_ID_VARIABLE)
                             .zeebeBindingType(ZeebeBindingType.deployment)
                             .zeebeResultVariable(RESULT_VARIABLE)))
             .deploy();
 
     // when
-    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(DECISION_ID_VARIABLE, DECISION_ID)
+            .create();
 
     final var taskActivating =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
