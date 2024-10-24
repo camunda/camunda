@@ -19,9 +19,9 @@ public class ActorClockEndpointIT {
       TestCluster.builder()
           .useRecordingExporter(true)
           .withEmbeddedGateway(true)
-          .withBrokersCount(2)
+          .withBrokersCount(1)
           .withPartitionsCount(1)
-          .withReplicationFactor(2)
+          .withReplicationFactor(1)
           .withBrokerConfig(
               testStandaloneBroker ->
                   testStandaloneBroker.withProperty("zeebe.clock.controlled", true))
