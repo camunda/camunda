@@ -23,7 +23,10 @@ import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceRelatedIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
 import io.camunda.zeebe.stream.api.ProcessingResult;
@@ -122,12 +125,7 @@ public class Engine implements RecordProcessor {
         return processingResultBuilder.build();
       }
 
-      // There is no ban check needed if the intent is not instance related
-      // nor if the intent is to create new instances, which can't be banned yet
-      final boolean noBanCheckNeeded =
-          !(record.getIntent() instanceof ProcessInstanceRelatedIntent)
-              || record.getIntent() instanceof ProcessInstanceCreationIntent;
-      if (noBanCheckNeeded || !processingState.getBannedInstanceState().isBanned(typedCommand)) {
+      if (shouldProcessCommand(typedCommand)) {
         currentProcessor.processRecord(record);
       }
     }
@@ -164,6 +162,30 @@ public class Engine implements RecordProcessor {
       }
     }
     return processingResultBuilder.build();
+  }
+
+  private boolean shouldProcessCommand(final TypedRecord<?> typedCommand) {
+    // There is no ban check needed if the intent is not instance related
+    // nor if the intent is to create new instances, which can't be banned yet
+    final Intent intent = typedCommand.getIntent();
+    final boolean noBanCheckNeeded =
+        !(intent instanceof ProcessInstanceRelatedIntent)
+            || intent instanceof ProcessInstanceCreationIntent;
+
+    if (noBanCheckNeeded) {
+      return true;
+    }
+
+    final boolean banned = processingState.getBannedInstanceState().isBanned(typedCommand);
+
+    if (!banned) {
+      return true;
+    }
+
+    // Commands allowed to be processed on banned instances
+    return intent == ProcessInstanceIntent.CANCEL
+        || intent == ProcessInstanceIntent.TERMINATE_ELEMENT
+        || intent == ProcessInstanceBatchIntent.TERMINATE;
   }
 
   private void handleUnexpectedError(
