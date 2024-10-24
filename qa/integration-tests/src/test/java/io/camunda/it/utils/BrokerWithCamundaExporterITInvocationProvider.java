@@ -37,11 +37,11 @@ import org.testcontainers.utility.DockerImageName;
  * The tests must take this into account, as the state in Zeebe and the exporter backend is not
  * reset between test cases.
  */
-public class CamundaExporterITInvocationProvider
+public class BrokerWithCamundaExporterITInvocationProvider
     implements TestTemplateInvocationContextProvider, AfterAllCallback, BeforeAllCallback {
 
   private static final Logger LOGGER =
-      LoggerFactory.getLogger(CamundaExporterITInvocationProvider.class);
+      LoggerFactory.getLogger(BrokerWithCamundaExporterITInvocationProvider.class);
 
   private static final DockerImageName ELASTIC_IMAGE =
       DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
@@ -52,7 +52,7 @@ public class CamundaExporterITInvocationProvider
 
   private final List<AutoCloseable> closeables = new ArrayList<>();
 
-  public CamundaExporterITInvocationProvider() {
+  public BrokerWithCamundaExporterITInvocationProvider() {
     exporterTypes = new HashMap<>();
     exporterTypes.put(
         "with-camunda-exporter-elasticsearch", ExporterType.CAMUNDA_EXPORTER_ELASTIC_SEARCH);
