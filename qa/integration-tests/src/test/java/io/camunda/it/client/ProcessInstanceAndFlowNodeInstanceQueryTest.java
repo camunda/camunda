@@ -89,9 +89,9 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     flowNodeInstance = allFlowNodeInstances.getFirst();
     flowNodeInstanceWithIncident =
         allFlowNodeInstances.stream()
-            .filter(f -> f.getIncidentKey() != null)
+            .filter(FlowNodeInstance::getIncident)
             .findFirst()
-            .orElse(null);
+            .orElseThrow();
   }
 
   @AfterAll
