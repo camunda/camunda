@@ -49,7 +49,6 @@
     <dependency>
       <groupId>co.elastic.clients</groupId>
       <artifactId>elasticsearch-java</artifactId>
-      <version>${elasticsearch.client.version}</version>
     </dependency>
 
     <!-- Jackson/JSON -->
@@ -87,7 +86,6 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-core</artifactId>
-      <version>${logback.version}</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -133,13 +131,11 @@
     <dependency>
       <groupId>org.apache.httpcomponents.core5</groupId>
       <artifactId>httpcore5</artifactId>
-      <version>${apache.http5-core.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.opensearch.client</groupId>
       <artifactId>opensearch-java</artifactId>
-      <version>${opensearch.client.version}</version>
       <exclusions>
         <exclusion>
           <groupId>commons-logging</groupId>
@@ -150,7 +146,6 @@
     <dependency>
       <groupId>org.apache.httpcomponents.client5</groupId>
       <artifactId>httpclient5</artifactId>
-      <version>${apache.http5-client.version}</version>
     </dependency>
     <dependency>
       <groupId>org.springframework</groupId>
@@ -164,7 +159,6 @@
       <groupId>com.amazonaws</groupId>
       <artifactId>aws-java-sdk-core</artifactId>
       <version>1.12.777</version>
-      <scope>compile</scope>
     </dependency>
 
     <!-- this is necessary. Dependency:analyze error suppressed -->
@@ -184,7 +178,6 @@
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>netty-nio-client</artifactId>
-      <version>${awssdk.version}</version>
     </dependency>
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
@@ -203,7 +196,6 @@
     <dependency>
       <groupId>org.opensearch.client</groupId>
       <artifactId>opensearch-rest-client</artifactId>
-      <version>2.12.0</version>
     </dependency>
 
     <dependency>
@@ -227,28 +219,23 @@
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpcore-nio</artifactId>
       <version>4.4.16</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-core</artifactId>
-      <version>${spring.version}</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
       <version>${httpclient.version}</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.elasticsearch.client</groupId>
       <artifactId>elasticsearch-rest-client</artifactId>
       <version>8.13.4</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
@@ -261,49 +248,40 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
-      <version>2.17.2</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpcore</artifactId>
       <version>4.4.16</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-beans</artifactId>
-      <version>${spring.version}</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpasyncclient</artifactId>
       <version>4.1.5</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
       <version>2.17.2</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>http-client-spi</artifactId>
       <version>${awssdk.version}</version>
-      <scope>compile</scope>
     </dependency>
-
   </dependencies>
 
   <build>
-     <pluginManagement>
+    <pluginManagement>
       <plugins>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
