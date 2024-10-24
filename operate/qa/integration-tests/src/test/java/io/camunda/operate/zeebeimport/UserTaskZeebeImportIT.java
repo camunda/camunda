@@ -17,7 +17,7 @@ import io.camunda.webapps.schema.entities.operate.EventType;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.FlowNodeState;
 import io.camunda.webapps.schema.entities.operate.FlowNodeType;
-import io.camunda.webapps.schema.entities.operate.UserTaskEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import java.util.Objects;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,14 +60,14 @@ public class UserTaskZeebeImportIT extends OperateZeebeAbstractIT {
     final var userTasks = userTaskReader.getUserTasks();
     assertThat(userTasks).hasSize(1);
 
-    final UserTaskEntity userTask = userTasks.get(0);
+    final TaskEntity userTask = userTasks.get(0);
 
     assertThat(userTask.getKey()).isGreaterThan(0);
     assertThat(userTask.getPartitionId()).isGreaterThan(0);
-    assertThat(userTask.getElementId()).isEqualTo("taskRequestLeave");
+    assertThat(userTask.getFlowNodeBpmnId()).isEqualTo("taskRequestLeave");
     assertThat(userTask.getBpmnProcessId()).isEqualTo("processAnnualLeave");
-    assertThat(userTask.getProcessDefinitionKey()).isEqualTo(tester.getProcessDefinitionKey());
-    assertThat(userTask.getProcessInstanceKey()).isEqualTo(tester.getProcessInstanceKey());
+    assertThat(userTask.getProcessDefinitionId()).isEqualTo(tester.getProcessDefinitionKey());
+    assertThat(userTask.getProcessInstanceId()).isEqualTo(tester.getProcessInstanceKey());
   }
 
   @Test
@@ -90,7 +90,7 @@ public class UserTaskZeebeImportIT extends OperateZeebeAbstractIT {
     final var flowNodeInstanceEntities = tester.getAllFlowNodeInstances();
     final FlowNodeInstanceEntity flowNodeUserTask =
         flowNodeInstanceEntities.stream()
-            .filter(x -> Objects.equals(x.getFlowNodeId(), userTasks.get(0).getElementId()))
+            .filter(x -> Objects.equals(x.getFlowNodeId(), userTasks.get(0).getFlowNodeBpmnId()))
             .findFirst()
             .orElse(null);
 
@@ -117,10 +117,11 @@ public class UserTaskZeebeImportIT extends OperateZeebeAbstractIT {
     final var events = searchAllDocuments(eventTemplate.getAlias(), EventEntity.class);
     final var userTaskEvents =
         events.stream()
-            .filter(x -> Objects.equals(x.getFlowNodeId(), userTasks.get(0).getElementId()))
+            .filter(x -> Objects.equals(x.getFlowNodeId(), userTasks.get(0).getFlowNodeBpmnId()))
             .toList();
     assertThat(userTaskEvents).hasSize(1);
-    assertThat(userTaskEvents.get(0).getFlowNodeId()).isEqualTo(userTasks.get(0).getElementId());
+    assertThat(userTaskEvents.get(0).getFlowNodeId())
+        .isEqualTo(userTasks.get(0).getFlowNodeBpmnId());
     assertThat(userTaskEvents.get(0).getEventType()).isEqualTo(EventType.ELEMENT_TERMINATED);
   }
 }

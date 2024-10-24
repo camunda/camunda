@@ -14,8 +14,8 @@ import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBu
 
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.webapp.reader.UserTaskReader;
-import io.camunda.webapps.schema.descriptors.operate.template.UserTaskTemplate;
-import io.camunda.webapps.schema.entities.operate.UserTaskEntity;
+import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.context.annotation.Conditional;
@@ -25,26 +25,25 @@ import org.springframework.stereotype.Component;
 @Component
 public class OpensearchUserTaskReader extends OpensearchAbstractReader implements UserTaskReader {
 
-  private final UserTaskTemplate userTaskTemplate;
+  private final TaskTemplate userTaskTemplate;
 
-  public OpensearchUserTaskReader(final UserTaskTemplate userTaskTemplate) {
+  public OpensearchUserTaskReader(final TaskTemplate userTaskTemplate) {
     this.userTaskTemplate = userTaskTemplate;
   }
 
   @Override
-  public List<UserTaskEntity> getUserTasks() {
+  public List<TaskEntity> getUserTasks() {
     final var request =
         searchRequestBuilder(userTaskTemplate.getAlias()).query(withTenantCheck(matchAll()));
-    return richOpenSearchClient.doc().searchValues(request, UserTaskEntity.class);
+    return richOpenSearchClient.doc().searchValues(request, TaskEntity.class);
   }
 
   @Override
-  public Optional<UserTaskEntity> getUserTaskByFlowNodeInstanceKey(final long flowNodeInstanceKey) {
+  public Optional<TaskEntity> getUserTaskByFlowNodeInstanceKey(final long flowNodeInstanceKey) {
     final var request =
         searchRequestBuilder(userTaskTemplate.getAlias())
-            .query(
-                withTenantCheck(term(UserTaskTemplate.ELEMENT_INSTANCE_KEY, flowNodeInstanceKey)));
-    final var hits = richOpenSearchClient.doc().search(request, UserTaskEntity.class).hits();
+            .query(withTenantCheck(term(TaskTemplate.FLOW_NODE_INSTANCE_ID, flowNodeInstanceKey)));
+    final var hits = richOpenSearchClient.doc().search(request, TaskEntity.class).hits();
     if (hits.total().value() == 1) {
       return Optional.of(hits.hits().get(0).source());
     }
