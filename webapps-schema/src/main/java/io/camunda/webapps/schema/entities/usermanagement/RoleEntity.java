@@ -35,7 +35,6 @@ public class RoleEntity extends AbstractExporterEntity<RoleEntity> {
     return this;
   }
 
-  // TODO - goes to assignedMemberKeys
   public Set<Long> getAssignMemberKeys() {
     return assignedMemberKeys;
   }
