@@ -26,16 +26,22 @@ public class TenantEntityRemovedApplier implements TypedEventApplier<TenantInten
 
   @Override
   public void applyState(final long key, final TenantRecord tenant) {
-    tenantState.removeEntity(tenant.getEntityKey(), tenant.getEntityKey());
+    tenantState.removeEntity(tenant.getTenantKey(), tenant.getEntityKey());
     switch (tenant.getEntityType()) {
       case USER -> userState.removeTenant(tenant.getEntityKey(), tenant.getTenantId());
       case MAPPING ->
-          throw new UnsupportedOperationException("MAPPING entity type is not implemented yet.");
+          throw new UnsupportedOperationException(
+              String.format(
+                  "Expected to remove entity with key %d and type %s from tenant %s, but type %s is not supported.",
+                  tenant.getEntityKey(),
+                  tenant.getEntityType(),
+                  tenant.getTenantId(),
+                  tenant.getEntityType()));
       default ->
           throw new IllegalStateException(
-              "Unknown or unsupported entity type: '"
-                  + tenant.getEntityType()
-                  + "'. Please contact support for clarification.");
+              String.format(
+                  "Unknown or unsupported entity type: '%s' for tenant '%s'. Please contact support for clarification.",
+                  tenant.getEntityType(), tenant.getTenantId()));
     }
   }
 }
