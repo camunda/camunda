@@ -55,6 +55,21 @@ public class TenantClient {
     return new TenantAddEntityClient(writer, tenantKey);
   }
 
+  /**
+   * Creates a new {@link TenantRemoveEntityClient} for removing an entity from a tenant. The client
+   * uses the internal command writer to submit the remove entity commands.
+   *
+   * <p>This operation is used when a specific entity (e.g., a user) needs to be disassociated from
+   * a tenant. The entity type and entity key must be provided through the {@link
+   * TenantRemoveEntityClient}.
+   *
+   * @param tenantKey the key of the tenant from which the entity will be removed
+   * @return a new instance of {@link TenantRemoveEntityClient}
+   */
+  public TenantRemoveEntityClient removeEntity(final long tenantKey) {
+    return new TenantRemoveEntityClient(writer, tenantKey);
+  }
+
   public static class TenantCreationClient {
 
     private static final Function<Long, Record<TenantRecordValue>> SUCCESS_SUPPLIER =
@@ -259,6 +274,54 @@ public class TenantClient {
     }
 
     public TenantAddEntityClient expectRejection() {
+      expectation = REJECTION_SUPPLIER;
+      return this;
+    }
+  }
+
+  public static class TenantRemoveEntityClient {
+
+    private static final Function<Long, Record<TenantRecordValue>> SUCCESS_SUPPLIER =
+        (position) ->
+            RecordingExporter.tenantRecords()
+                .withIntent(TenantIntent.ENTITY_REMOVED)
+                .withSourceRecordPosition(position)
+                .getFirst();
+
+    private static final Function<Long, Record<TenantRecordValue>> REJECTION_SUPPLIER =
+        (position) ->
+            RecordingExporter.tenantRecords()
+                .onlyCommandRejections()
+                .withIntent(TenantIntent.REMOVE_ENTITY)
+                .withSourceRecordPosition(position)
+                .getFirst();
+
+    private final CommandWriter writer;
+    private final TenantRecord tenantRecord;
+    private Function<Long, Record<TenantRecordValue>> expectation = SUCCESS_SUPPLIER;
+
+    public TenantRemoveEntityClient(final CommandWriter writer, final long tenantKey) {
+      this.writer = writer;
+      tenantRecord = new TenantRecord();
+      tenantRecord.setTenantKey(tenantKey);
+    }
+
+    public TenantRemoveEntityClient withEntityKey(final long entityKey) {
+      tenantRecord.setEntityKey(entityKey);
+      return this;
+    }
+
+    public TenantRemoveEntityClient withEntityType(final EntityType entityType) {
+      tenantRecord.setEntityType(entityType);
+      return this;
+    }
+
+    public Record<TenantRecordValue> remove() {
+      final long position = writer.writeCommand(TenantIntent.REMOVE_ENTITY, tenantRecord);
+      return expectation.apply(position);
+    }
+
+    public TenantRemoveEntityClient expectRejection() {
       expectation = REJECTION_SUPPLIER;
       return this;
     }
