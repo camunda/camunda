@@ -17,6 +17,8 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.qa.util.actuator.ActorClockActuator;
+import io.camunda.zeebe.qa.util.actuator.ActorClockActuator.AddTimeRequest;
 import io.camunda.zeebe.qa.util.actuator.BanningActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -24,6 +26,7 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.time.Duration;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,9 +38,13 @@ final class BannedInstanceIT {
   public static final String PROCESS_ID = "process";
 
   @TestZeebe
-  private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
+  private final TestStandaloneBroker zeebe =
+      new TestStandaloneBroker()
+          .withRecordingExporter(true)
+          .withProperty("zeebe.clock.controlled", true);
 
   private final BanningActuator actuator = BanningActuator.of(zeebe);
+  private final ActorClockActuator clock = ActorClockActuator.of(zeebe);
 
   @AutoCloseResource private ZeebeClient client;
 
@@ -117,7 +124,7 @@ final class BannedInstanceIT {
             .newCreateInstanceCommand()
             .bpmnProcessId(PROCESS_ID)
             .latestVersion()
-            .variables(Map.of("duration", "PT2S"))
+            .variables(Map.of("duration", "PT10M"))
             .send()
             .join()
             .getProcessInstanceKey();
@@ -135,31 +142,16 @@ final class BannedInstanceIT {
         .withProcessInstanceKey(processInstanceKey)
         .withElementType(BpmnElementType.PROCESS);
 
-    final long secondProcessInstanceKey =
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId(PROCESS_ID)
-            .latestVersion()
-            .variable("duration", "PT3S")
-            .send()
-            .join()
-            .getProcessInstanceKey();
-
-    RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
-        .withProcessInstanceKey(secondProcessInstanceKey)
-        .await();
+    clock.addTime(new AddTimeRequest(Duration.ofMinutes(15).toMillis()));
 
     // then
     assertThat(
-            RecordingExporter.timerRecords()
-                .limit(
-                    t ->
-                        t.getValue().getProcessInstanceKey() == secondProcessInstanceKey
-                            && t.getIntent() == TimerIntent.TRIGGERED)
+            RecordingExporter.timerRecords(TimerIntent.TRIGGER)
                 .withProcessInstanceKey(processInstanceKey)
-                .filter(t -> t.getIntent() == TimerIntent.TRIGGER)
-                .onlyCommands())
-        .isEmpty();
+                .exists())
+        .describedAs(
+            "Expected not to find trigger event for timer because the process instance is terminated")
+        .isFalse();
   }
 
   @Test
