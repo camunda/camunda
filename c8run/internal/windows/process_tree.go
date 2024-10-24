@@ -1,4 +1,7 @@
-package main
+//go:build windows
+
+// process_tree.go
+package windows
 
 import (
 	"fmt"
@@ -80,7 +83,7 @@ func getTreePids(rootPid uint32) ([]uint32, error) {
 
 		// if the specified rootPid is not found, return error
 		if !foundRootPid {
-			return nil, fmt.Errorf("specified rootPid not found")
+			return nil, fmt.Errorf("getTreePids: specified rootPid not found")
 		}
 
 		// fmt.Println(childLayer)
