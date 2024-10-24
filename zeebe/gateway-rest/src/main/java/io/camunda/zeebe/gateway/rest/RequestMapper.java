@@ -412,6 +412,7 @@ public class RequestMapper {
   }
 
   public static Authentication getAuthentication() {
+    Long authenticatedUserKey = null;
     final List<String> authorizedTenants = TenantAttributeHolder.tenantIds();
 
     final var token =
@@ -427,7 +428,8 @@ public class RequestMapper {
 
       if (requestAuthentication.getPrincipal()
           instanceof final CamundaUser authenticatedPrincipal) {
-        token.withClaim(Authorization.AUTHORIZED_USER_KEY, authenticatedPrincipal.getUserKey());
+        authenticatedUserKey = authenticatedPrincipal.getUserKey();
+        token.withClaim(Authorization.AUTHORIZED_USER_KEY, authenticatedUserKey);
       }
 
       if (requestAuthentication instanceof final JwtAuthenticationToken jwtAuthenticationToken) {
@@ -437,7 +439,11 @@ public class RequestMapper {
       }
     }
 
-    return new Builder().token(token.build()).tenants(authorizedTenants).build();
+    return new Builder()
+        .token(token.build())
+        .user(authenticatedUserKey)
+        .tenants(authorizedTenants)
+        .build();
   }
 
   public static <T> Either<ProblemDetail, T> getResult(

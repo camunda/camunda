@@ -19,6 +19,8 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserCreateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.concurrent.CompletableFuture;
 
 public class UserServices extends SearchQueryService<UserServices, UserQuery, UserEntity> {
@@ -37,7 +39,15 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
   @Override
   public SearchQueryResult<UserEntity> search(final UserQuery query) {
     return userSearchClient.searchUsers(
-        query, SecurityContext.of(s -> s.withAuthentication(authentication)));
+        query,
+        SecurityContext.of(
+            s ->
+                s.withAuthentication(authentication)
+                    .withAuthorizationIfEnabled(
+                        securityConfiguration.getAuthorizations().isEnabled(),
+                        a ->
+                            a.resourceType(AuthorizationResourceType.USER)
+                                .permissionType(PermissionType.READ))));
   }
 
   @Override
