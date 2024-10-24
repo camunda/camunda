@@ -7,17 +7,9 @@
  */
 package io.camunda.webapps.schema.descriptors.usermanagement;
 
-import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
-import io.camunda.webapps.schema.descriptors.ComponentNames;
-
-public abstract class RoleManagementIndexDescriptor extends AbstractIndexDescriptor {
+public abstract class RoleManagementIndexDescriptor extends UserManagementIndexDescriptor {
 
   public RoleManagementIndexDescriptor(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
-  }
-
-  @Override
-  public String getComponentName() {
-    return ComponentNames.IDENTITY.toString();
   }
 }

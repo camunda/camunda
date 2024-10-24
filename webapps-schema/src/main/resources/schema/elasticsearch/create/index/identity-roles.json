@@ -12,8 +12,15 @@
         "type": "keyword"
       },
       "entityKey": {
-        "type": "long"
-      }
+        "type": "object",
+        "properties": { // TODO - what should this be?
+          "type": {
+            "type": "keyword"
+          },
+          "resourceIds": {
+            "type": "keyword"
+          }
+        }
     }
   }
 }

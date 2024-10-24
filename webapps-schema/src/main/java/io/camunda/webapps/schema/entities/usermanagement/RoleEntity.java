@@ -8,25 +8,14 @@
 package io.camunda.webapps.schema.entities.usermanagement;
 
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import java.util.Set;
 
 public class RoleEntity extends AbstractExporterEntity<RoleEntity> {
 
   public static final String DEFAULT_TENANT_IDENTIFIER = "<default>";
-  private String id;
   private Long roleKey;
   private String name;
-  private Long entityKey;
-
-  @Override
-  public String getId() {
-    return id;
-  }
-
-  @Override
-  public RoleEntity setId(final String id) {
-    this.id = id;
-    return this;
-  }
+  private Set<Long> entityKey;
 
   public Long getRoleKey() {
     return roleKey;
@@ -46,11 +35,11 @@ public class RoleEntity extends AbstractExporterEntity<RoleEntity> {
     return this;
   }
 
-  public Long getEntityKey() {
+  public Set<Long> getEntityKey() {
     return entityKey;
   }
 
-  public RoleEntity setEntityKey(final Long entityKey) {
+  public RoleEntity setEntityKey(final Set<Long> entityKey) {
     this.entityKey = entityKey;
     return this;
   }

@@ -24,7 +24,7 @@ public class RoleHandler implements ExportHandler<RoleEntity, RoleRecordValue> {
 
   @Override
   public ValueType getHandledValueType() {
-    return ValueType.USER;
+    return ValueType.ROLE;
   }
 
   @Override
@@ -50,15 +50,14 @@ public class RoleHandler implements ExportHandler<RoleEntity, RoleRecordValue> {
   @Override
   public void updateEntity(final Record<RoleRecordValue> record, final RoleEntity entity) {
     final RoleRecordValue value = record.getValue();
-    entity
-        .setRoleKey(value.getRoleKey())
-        .setName(value.getName())
-        .setEntityKey(value.getEntityKey());
+    entity.setRoleKey(value.getRoleKey()).setName(value.getName());
   }
 
   @Override
   public void flush(final RoleEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
+    // TODO - Update the entityKey. Need to update the entityKey set,
+    //  its not a clear setter like the other values
     batchRequest.add(indexName, entity);
   }
 }
