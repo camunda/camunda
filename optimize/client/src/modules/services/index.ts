@@ -10,7 +10,14 @@ export function getRandomId() {
   return Math.random().toString(36).slice(2);
 }
 
-export {loadReports, loadEntities, copyEntity, createEntity, getEntityIcon} from './entityService';
+export {
+  loadReports,
+  loadEntities,
+  copyEntity,
+  deleteEntity,
+  createEntity,
+  getEntityIcon,
+} from './entityService';
 export {UNAUTHORIZED_TENANT_ID} from './tenantService';
 export * as formatters from './formatters';
 export {loadProcessDefinitionXml, loadVariables} from './dataLoaders';

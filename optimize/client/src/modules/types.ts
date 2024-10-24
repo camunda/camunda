@@ -20,6 +20,7 @@ export type GenericEntity<D extends object = Record<string, unknown>> = {
 };
 
 export type EntityListEntity<D extends object = Record<string, unknown>> = GenericEntity<D> & {
+  id: string;
   entityType: string;
 };
 

@@ -8,7 +8,7 @@
 
 import {ChartColumn, Dashboard, Folder} from '@carbon/icons-react';
 
-import {get, post} from 'request';
+import {del, get, post} from 'request';
 import {EntityListEntity, GenericReport} from 'types';
 import {track} from 'tracking';
 
@@ -33,6 +33,12 @@ export async function loadEntities<T extends Record<string, unknown>>(
 
   const response = await get('api/entities', params);
   return await response.json();
+}
+
+export async function deleteEntity(type: string, id: string): Promise<Response> {
+  const response = await del(`api/${type}/${id}`, {force: true});
+  track(createEventName('delete', type), {entityId: id});
+  return response;
 }
 
 export function createEventName(action: string, entityType: string) {

@@ -21,8 +21,14 @@ interface MoveCopyProps {
   moving: boolean;
   collection?: Partial<EntityListEntity> | null;
   setMoving: (moving: boolean) => void;
-  setCollection: (collection: Partial<EntityListEntity> | null) => void;
+  setCollection: (collection: Partial<EntityListEntity> | CollectionsHome | null) => void;
 }
+
+export type CollectionsHome = {
+  id: null;
+  entityType: 'collection';
+  name: string;
+};
 
 export default function MoveCopy({
   parentCollection,
@@ -32,7 +38,9 @@ export default function MoveCopy({
   setCollection,
 }: MoveCopyProps) {
   const {mightFail} = useErrorHandling();
-  const [availableCollections, setAvailableCollections] = useState<Partial<EntityListEntity>[]>([]);
+  const [availableCollections, setAvailableCollections] = useState<
+    (EntityListEntity | CollectionsHome)[]
+  >([]);
 
   useEffect(() => {
     mightFail(
@@ -40,7 +48,11 @@ export default function MoveCopy({
       (entities) =>
         setAvailableCollections(
           [
-            {id: null, entityType: 'collection', name: t('navigation.collections').toString()},
+            {
+              id: null,
+              entityType: 'collection',
+              name: t('navigation.collections').toString(),
+            } as CollectionsHome,
             ...entities,
           ].filter(({entityType, id}) => entityType === 'collection' && id !== parentCollection)
         ),
@@ -85,7 +97,7 @@ export default function MoveCopy({
       />
       {moving && (
         <>
-          <ComboBox<Partial<EntityListEntity>>
+          <ComboBox<Partial<EntityListEntity> | CollectionsHome>
             id="collectionSelection"
             items={availableCollections}
             itemToString={(collection) => (collection as EntityListEntity)?.name}

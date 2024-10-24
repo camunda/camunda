@@ -5,15 +5,9 @@ exports[`should accept a custom name formatter 1`] = `
   <p>
     The 'cool name' Report will be permanently deleted.
   </p>
-  <p>
-    <b>
-      Warning: This action cannot be undone.
-    </b>
-  </p>
+  <p />
 </ForwardRef>
 `;
-
-exports[`should not render anything when no entity is set 1`] = `""`;
 
 exports[`should show the confirmation modal when entity is set 1`] = `
 <Modal
@@ -28,11 +22,7 @@ exports[`should show the confirmation modal when entity is set 1`] = `
     <p>
       The 'Doomed Report' Report will be permanently deleted.
     </p>
-    <p>
-      <b>
-        Warning: This action cannot be undone.
-      </b>
-    </p>
+    <p />
   </ForwardRef>
   <ForwardRef(ModalFooter)>
     <Button
@@ -68,11 +58,7 @@ exports[`should use provided delete text for title and button 1`] = `
     <p>
       The 'Doomed Report' Report will be permanently deleted.
     </p>
-    <p>
-      <b>
-        Warning: This action cannot be undone.
-      </b>
-    </p>
+    <p />
   </ForwardRef>
   <ForwardRef(ModalFooter)>
     <Button

@@ -18,14 +18,14 @@ import {
 import {Folder} from '@carbon/icons-react';
 
 import {t} from 'translation';
-import {EntityListEntity, GenericEntity} from 'types';
+import {EntityListEntity} from 'types';
 
 import {formatRole} from './formatters';
 
 import './CollectionHeader.scss';
 
 interface CollectionHeaderProps {
-  collection: GenericEntity | null;
+  collection: EntityListEntity | null;
   isLoading?: boolean;
   onEditStart: () => void;
   onCopy: (collection: EntityListEntity) => void;

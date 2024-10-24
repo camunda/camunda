@@ -6,10 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {del, get, post, put} from 'request';
+import {get, post, put} from 'request';
 import {track} from 'tracking';
 
 import {createEventName} from './entityService.tsx';
+export {deleteEntity} from './entityService.tsx';
 
 export async function loadEntity(type, id, query) {
   const response = await get(`api/${type}/` + id, query);
@@ -30,12 +31,6 @@ export async function copyReport(id) {
 export async function updateEntity(type, id, data, options = {}) {
   const response = await put(`api/${type}/${id}`, data, options);
   track(createEventName('update', type), {entityId: id});
-  return response;
-}
-
-export async function deleteEntity(type, id) {
-  const response = await del(`api/${type}/${id}`, {force: true});
-  track(createEventName('delete', type), {entityId: id});
   return response;
 }
 

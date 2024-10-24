@@ -6,14 +6,22 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React from 'react';
+import {runAllEffects} from '__mocks__/react';
 import {shallow} from 'enzyme';
 
 import {Modal} from 'components';
 import {showError} from 'notifications';
 import {deleteEntity} from 'services';
+import {useErrorHandling} from 'hooks';
+import {EntityListEntity} from 'types';
 
-import DeleterWithErrorHandling from './Deleter';
+import Deleter from './Deleter';
+
+jest.mock('hooks', () => ({
+  useErrorHandling: jest
+    .fn()
+    .mockReturnValue({mightFail: jest.fn().mockImplementation((data, cb) => cb(data))}),
+}));
 
 jest.mock('services', () => ({
   ...jest.requireActual('services'),
@@ -24,31 +32,21 @@ jest.mock('notifications', () => ({
   showError: jest.fn(),
 }));
 
-const Deleter = DeleterWithErrorHandling.WrappedComponent;
+const entity = {id: 'entityId', name: 'Doomed Report', entityType: 'report'} as EntityListEntity;
 
 const props = {
+  entity,
   type: 'report',
-  mightFail: (promise, cb) => cb(promise),
   onClose: jest.fn(),
   onDelete: jest.fn(),
 };
 
-const entity = {id: 'entityId', name: 'Doomed Report', entityType: 'report'};
-function setupRef(node) {
-  node.instance().cancelButton = {current: {focus: () => {}}};
-}
-
-it('should not render anything when no entity is set', () => {
-  const node = shallow(<Deleter {...props} entity={null} />);
-
-  expect(node).toMatchSnapshot();
+beforeEach(() => {
+  jest.clearAllMocks();
 });
 
 it('should show the confirmation modal when entity is set', () => {
   const node = shallow(<Deleter {...props} />);
-  setupRef(node);
-
-  node.setProps({entity});
 
   expect(node).toMatchSnapshot();
 });
@@ -58,36 +56,27 @@ it('should allow to check for and display conflicts', () => {
     .fn()
     .mockReturnValue({conflictedItems: [{id: 'conflict1', type: 'dashboard', name: 'conflict1'}]});
 
-  const node = shallow(<Deleter {...props} checkConflicts={conflictChecker} />);
-  setupRef(node);
-
-  node.setProps({entity});
+  shallow(<Deleter {...props} checkConflicts={conflictChecker} />);
+  runAllEffects();
 
   expect(conflictChecker).toHaveBeenCalled();
 });
 
-it('should show an error message if conflict checking goes wrong', () => {
+it('should show an error message if conflict checking goes wrong', async () => {
   const conflictChecker = jest.fn().mockReturnValue({conflictedItems: ['conflict1', 'conflict2']});
+  (useErrorHandling as jest.Mock).mockReturnValueOnce({
+    mightFail: (_req: unknown, _res: unknown, err: (err: string) => void) =>
+      err('everything broke'),
+  });
 
-  const node = shallow(
-    <Deleter
-      {...props}
-      checkConflicts={conflictChecker}
-      mightFail={(_promise, _cb, error) => error('Everything broke')}
-    />
-  );
-  setupRef(node);
+  shallow(<Deleter {...props} checkConflicts={conflictChecker} />);
+  runAllEffects();
 
-  node.setProps({entity});
-
-  expect(showError).toHaveBeenCalledWith('Everything broke');
+  expect(showError).toHaveBeenCalledWith('everything broke');
 });
 
 it('should delete the entity', () => {
   const node = shallow(<Deleter {...props} />);
-  setupRef(node);
-
-  node.setProps({entity});
 
   node.find(Modal).find('.confirm').simulate('click');
 
@@ -96,12 +85,9 @@ it('should delete the entity', () => {
 
 it('should accept a custom delete executor', () => {
   const spy = jest.fn();
-  deleteEntity.mockClear();
+  (deleteEntity as jest.Mock).mockClear();
 
   const node = shallow(<Deleter {...props} deleteEntity={spy} />);
-  setupRef(node);
-
-  node.setProps({entity});
 
   node.find(Modal).find('.confirm').simulate('click');
 
@@ -110,24 +96,21 @@ it('should accept a custom delete executor', () => {
 });
 
 it('should show an error message if deletion goes wrong', () => {
-  const node = shallow(
-    <Deleter {...props} mightFail={(_promise, _cb, error) => error('Deleting failed')} />
-  );
-  setupRef(node);
+  (useErrorHandling as jest.Mock).mockReturnValueOnce({
+    mightFail: (_req: unknown, _res: unknown, err: (err: string) => void) => err('Deleting failed'),
+  });
 
-  node.setProps({entity});
+  const node = shallow(<Deleter {...props} />);
+
   node.find(Modal).find('.confirm').simulate('click');
 
   expect(showError).toHaveBeenCalledWith('Deleting failed');
 });
 
-it('should call the close handler', () => {
+it('should call the close handler', async () => {
   const spy = jest.fn();
-
   const node = shallow(<Deleter {...props} onClose={spy} />);
-  setupRef(node);
-
-  node.setProps({entity});
+  runAllEffects();
 
   node.find(Modal).find('.confirm').simulate('click');
 
@@ -136,27 +119,18 @@ it('should call the close handler', () => {
 
 it('should accept a custom name formatter', () => {
   const node = shallow(<Deleter {...props} getName={() => 'cool name'} />);
-  setupRef(node);
-
-  node.setProps({entity});
 
   expect(node.find(Modal.Content)).toMatchSnapshot();
 });
 
 it('should use provided delete text for title and button', () => {
   const node = shallow(<Deleter {...props} deleteText="Remove entity" />);
-  setupRef(node);
-
-  node.setProps({entity});
 
   expect(node).toMatchSnapshot();
 });
 
 it('should use the provided delete button text', () => {
   const node = shallow(<Deleter {...props} deleteText="Remove entity" deleteButtonText="Delete" />);
-  setupRef(node);
-
-  node.setProps({entity});
 
   expect(node.find('.confirm')).toIncludeText('Delete');
 });
@@ -165,17 +139,13 @@ it('should invoke onConflict if the conflict response is a boolean true', () => 
   const conflictChecker = jest.fn().mockReturnValue(true);
   const spy = jest.fn();
 
-  const node = shallow(<Deleter {...props} onConflict={spy} checkConflicts={conflictChecker} />);
-
-  node.setProps({entity});
+  shallow(<Deleter {...props} onConflict={spy} checkConflicts={conflictChecker} />);
+  runAllEffects();
 
   expect(spy).toHaveBeenCalled();
 });
 
 it('should not show the undo warning if the reversableAction prop is set to true', () => {
   const node = shallow(<Deleter {...props} isReversableAction />);
-  setupRef(node);
-  node.setProps({entity});
-
   expect(node.find(Modal.Content).text()).not.toMatch('This action cannot be undone.');
 });
