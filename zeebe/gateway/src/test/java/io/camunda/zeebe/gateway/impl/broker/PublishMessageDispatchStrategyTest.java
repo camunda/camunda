@@ -15,6 +15,7 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -55,7 +56,7 @@ final class PublishMessageDispatchStrategyTest {
 
     // when -- Routing state is available in cluster configuration
     final var routingState =
-        new RoutingState(1, Set.of(1, 2, 3), new HashMod(messagePartitionCount));
+        new RoutingState(1, new AllPartitions(3), new HashMod(messagePartitionCount));
     final var clusterConfiguration =
         new ClusterConfiguration(
             1, Map.of(), Optional.empty(), Optional.empty(), Optional.of(routingState));

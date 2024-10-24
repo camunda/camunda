@@ -261,16 +261,16 @@ public class GcpDocumentStoreTest {
   void getDocumentLinkShouldSucceed() throws MalformedURLException {
     // given
     final var documentId = "documentId";
-    final var durationInSeconds = 60L;
+    final var durationInMillis = 60 * 1000L;
     final var blob = mock(Blob.class);
 
     when(storage.get(BUCKET_NAME, documentId)).thenReturn(blob);
-    when(blob.signUrl(durationInSeconds, TimeUnit.SECONDS))
+    when(blob.signUrl(durationInMillis, TimeUnit.MILLISECONDS))
         .thenReturn(URI.create("http://localhost").toURL());
 
     // when
     final var documentOperationResponse =
-        gcpDocumentStore.createLink(documentId, durationInSeconds).join();
+        gcpDocumentStore.createLink(documentId, durationInMillis).join();
 
     // then
     assertThat(documentOperationResponse).isNotNull();

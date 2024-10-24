@@ -9,6 +9,7 @@ package io.camunda.service;
 
 import io.camunda.document.api.DocumentCreationRequest;
 import io.camunda.document.api.DocumentError;
+import io.camunda.document.api.DocumentError.StoreDoesNotExist;
 import io.camunda.document.api.DocumentLink;
 import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.document.api.DocumentStoreRecord;
@@ -16,24 +17,32 @@ import io.camunda.document.store.SimpleDocumentStoreRegistry;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.util.Either;
 import java.io.InputStream;
-import java.time.ZonedDateTime;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
 public class DocumentServices extends ApiServices<DocumentServices> {
 
-  private final SimpleDocumentStoreRegistry registry = new SimpleDocumentStoreRegistry();
+  private final SimpleDocumentStoreRegistry registry;
+
+  public DocumentServices(
+      final BrokerClient brokerClient, final SecurityConfiguration securityConfiguration) {
+    this(brokerClient, securityConfiguration, null, new SimpleDocumentStoreRegistry());
+  }
 
   public DocumentServices(
       final BrokerClient brokerClient,
       final SecurityConfiguration securityConfiguration,
-      final Authentication authentication) {
+      final Authentication authentication,
+      final SimpleDocumentStoreRegistry registry) {
     super(brokerClient, securityConfiguration, authentication);
+    this.registry = registry;
   }
 
   @Override
   public DocumentServices withAuthentication(final Authentication authentication) {
-    return new DocumentServices(brokerClient, securityConfiguration, authentication);
+    return new DocumentServices(brokerClient, securityConfiguration, authentication, registry);
   }
 
   public CompletableFuture<DocumentReferenceResponse> createDocument(
@@ -43,77 +52,68 @@ public class DocumentServices extends ApiServices<DocumentServices> {
         new DocumentCreationRequest(
             request.documentId, request.contentInputStream, request.metadata);
 
-    final DocumentStoreRecord storeRecord = getDocumentStore(request.storeId);
-    return storeRecord
-        .instance()
-        .createDocument(storeRequest)
-        .thenApply(
-            result -> {
-              if (result.isLeft()) {
-                throw new DocumentException("Failed to create document", result.getLeft());
-              } else {
-                return new DocumentReferenceResponse(
-                    result.get().documentId(), storeRecord.storeId(), result.get().metadata());
-              }
-            });
+    return getDocumentStore(request.storeId)
+        .thenCompose(
+            storeRecord ->
+                storeRecord
+                    .instance()
+                    .createDocument(storeRequest)
+                    .thenApply(this::handleResponse)
+                    .thenApply(
+                        result ->
+                            new DocumentReferenceResponse(
+                                result.documentId(), storeRecord.storeId(), result.metadata())));
   }
 
   public InputStream getDocumentContent(final String documentId, final String storeId) {
 
-    final DocumentStoreRecord storeRecord = getDocumentStore(storeId);
-    return storeRecord
-        .instance()
-        .getDocument(documentId)
-        .thenApply(
-            result -> {
-              if (result.isLeft()) {
-                throw new DocumentException("Failed to get document", result.getLeft());
-              } else {
-                return result.get();
-              }
-            })
+    return getDocumentStore(storeId)
+        .thenCompose(storeRecord -> storeRecord.instance().getDocument(documentId))
+        .thenApply(this::handleResponse)
         .join();
   }
 
   public CompletableFuture<Void> deleteDocument(final String documentId, final String storeId) {
 
-    final DocumentStoreRecord storeRecord = getDocumentStore(storeId);
-    return storeRecord
-        .instance()
-        .deleteDocument(documentId)
-        .thenAccept(
-            result -> {
-              if (result.isLeft()) {
-                throw new DocumentException("Failed to delete document", result.getLeft());
-              }
-            });
+    return getDocumentStore(storeId)
+        .thenCompose(
+            storeRecord ->
+                storeRecord.instance().deleteDocument(documentId).thenAccept(this::handleResponse));
   }
 
   public CompletableFuture<DocumentLink> createLink(
       final String documentId, final String storeId, final DocumentLinkParams params) {
 
-    final DocumentStoreRecord storeRecord = getDocumentStore(storeId);
-    final long ttl =
-        params.expiresAt().toInstant().getEpochSecond()
-            - ZonedDateTime.now().toInstant().getEpochSecond();
-    return storeRecord
-        .instance()
-        .createLink(documentId, ttl)
-        .thenApply(
-            result -> {
-              if (result.isLeft()) {
-                throw new DocumentException("Failed to create link", result.getLeft());
-              } else {
-                return result.get();
-              }
-            });
+    final long ttl = params.timeToLive().toMillis();
+
+    return getDocumentStore(storeId)
+        .thenCompose(
+            documentStoreRecord ->
+                documentStoreRecord
+                    .instance()
+                    .createLink(documentId, ttl)
+                    .thenApply(this::handleResponse));
   }
 
-  private DocumentStoreRecord getDocumentStore(final String id) {
-    if (id == null) {
-      return registry.getDefaultDocumentStore();
+  private CompletableFuture<DocumentStoreRecord> getDocumentStore(final String id) {
+    final DocumentStoreRecord storeRecord;
+    try {
+      if (id == null) {
+        storeRecord = registry.getDefaultDocumentStore();
+      } else {
+        storeRecord = registry.getDocumentStore(id);
+      }
+      return CompletableFuture.completedStage(storeRecord).toCompletableFuture();
+    } catch (final IllegalArgumentException e) {
+      return CompletableFuture.failedFuture(new DocumentException(new StoreDoesNotExist(id)));
+    }
+  }
+
+  private <T> T handleResponse(final Either<DocumentError, T> response) {
+    if (response.isLeft()) {
+      throw new DocumentException(response.getLeft());
     } else {
-      return registry.getDocumentStore(id);
+      return response.get();
     }
   }
 
@@ -126,18 +126,13 @@ public class DocumentServices extends ApiServices<DocumentServices> {
   public record DocumentReferenceResponse(
       String documentId, String storeId, DocumentMetadataModel metadata) {}
 
-  public record DocumentLinkParams(ZonedDateTime expiresAt) {}
+  public record DocumentLinkParams(Duration timeToLive) {}
 
   public static class DocumentException extends RuntimeException {
 
     private final DocumentError documentError;
 
-    public DocumentException(final String message, final DocumentError error) {
-      documentError = error;
-    }
-
-    public DocumentException(
-        final String message, final DocumentError error, final Throwable cause) {
+    public DocumentException(final DocumentError error) {
       documentError = error;
     }
 

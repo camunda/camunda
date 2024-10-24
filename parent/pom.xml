@@ -102,7 +102,7 @@
     <version.dmn-scala>1.10.0</version.dmn-scala>
     <version.rest-assured>5.5.0</version.rest-assured>
     <version.spring>6.1.13</version.spring>
-    <version.spring-security>6.3.3</version.spring-security>
+    <version.spring-security>6.3.4</version.spring-security>
     <version.spring-boot>3.3.4</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.6.2</version.kryo>
@@ -111,7 +111,7 @@
     <version.jqwik>1.9.1</version.jqwik>
     <version.jmock>2.13.1</version.jmock>
     <version.jmh>1.37</version.jmh>
-    <version.byte-buddy>1.15.3</version.byte-buddy>
+    <version.byte-buddy>1.15.7</version.byte-buddy>
     <version.revapi>0.28.1</version.revapi>
     <version.resilience4j>2.2.0</version.resilience4j>
     <version.immutables>2.10.1</version.immutables>
@@ -226,7 +226,7 @@
     <plugin.version.shade>3.6.0</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.spotbugs>4.8.6.5</plugin.version.spotbugs>
-    <plugin.version.surefire>3.5.0</plugin.version.surefire>
+    <plugin.version.surefire>3.5.1</plugin.version.surefire>
     <plugin.version.versions>2.17.1</plugin.version.versions>
     <plugin.version.frontend-maven>1.15.1</plugin.version.frontend-maven>
     <plugin.version.maven-source>3.3.1</plugin.version.maven-source>

@@ -9,6 +9,7 @@ package io.camunda.zeebe.dynamic.config;
 
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
 import java.util.stream.IntStream;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.Assertions;
@@ -29,8 +30,13 @@ public class RoutingStateAssert extends AbstractAssert<RoutingStateAssert, Routi
   }
 
   public RoutingStateAssert hasActivatedPartitions(final int partitionCount) {
-    Assertions.assertThat(actual.activePartitions())
+    Assertions.assertThat(actual.requestHandling().activePartitions())
         .containsExactlyElementsOf(IntStream.rangeClosed(1, partitionCount).boxed().toList());
+    return this;
+  }
+
+  public RoutingStateAssert hasRequestHandling(final RequestHandling requestHandling) {
+    Assertions.assertThat(actual.requestHandling()).isEqualTo(requestHandling);
     return this;
   }
 
