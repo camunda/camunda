@@ -63,7 +63,7 @@ final class StartPartitionScaleUpApplier implements ClusterOperationApplier {
     }
 
     for (int partition = Protocol.START_PARTITION_ID;
-        partition <= desiredPartitionCount;
+        partition < Protocol.START_PARTITION_ID + desiredPartitionCount;
         partition++) {
       if (!currentClusterConfiguration.hasPartition(partition)) {
         return new Left<>(
