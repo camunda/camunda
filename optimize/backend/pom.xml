@@ -454,7 +454,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>identity-sdk</artifactId>
-      <version>8.5.6</version>
     </dependency>
 
     <dependency>
