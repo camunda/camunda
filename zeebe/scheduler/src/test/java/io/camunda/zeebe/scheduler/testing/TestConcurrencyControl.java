@@ -10,6 +10,7 @@ package io.camunda.zeebe.scheduler.testing;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.LockUtil;
 import java.time.Duration;
 import java.util.Collection;
@@ -102,6 +103,19 @@ public class TestConcurrencyControl implements ConcurrencyControl {
     // Schedule immediately
     LockUtil.withLock(lock, runnable);
     return () -> {};
+  }
+
+  @Override
+  public void submit(final Runnable action) {
+    LockUtil.withLock(lock, action);
+  }
+
+  @Override
+  public <T> ActorFuture<T> submitCallable(final Callable<T> callable) {
+    final var future = new CompletableActorFuture<T>();
+    final var result = LockUtil.withLock(lock, callable, future::completeExceptionally);
+    future.complete(result);
+    return future;
   }
 
   @Override
