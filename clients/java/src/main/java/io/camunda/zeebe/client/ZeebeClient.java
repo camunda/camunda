@@ -1275,5 +1275,5 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *  @return a builder for the request to get the variables
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
-  UserTaskVariableQuery newUserTaskVariablesRequest(long userTaskKey);
+  UserTaskVariableQuery newUserTaskVariableRequest(long userTaskKey);
 }
