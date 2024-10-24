@@ -560,7 +560,6 @@
     <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-core</artifactId>
-      <version>1.13.6</version>
     </dependency>
 
     <dependency>
