@@ -46,9 +46,7 @@ public class ScaleUpTest {
     initRoutingState();
     final var command =
         RecordToWrite.command()
-            .scale(
-                ScaleIntent.SCALE_UP,
-                new ScaleRecord().setCurrentPartitionCount(1).setDesiredPartitionCount(3));
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(3));
 
     // when
     engine.writeRecords(command);
@@ -64,9 +62,7 @@ public class ScaleUpTest {
     initRoutingState();
     final var command =
         RecordToWrite.command()
-            .scale(
-                ScaleIntent.SCALE_UP,
-                new ScaleRecord().setCurrentPartitionCount(1).setDesiredPartitionCount(3));
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(3));
 
     // when
     engine.writeRecords(command);
@@ -84,9 +80,7 @@ public class ScaleUpTest {
     // given
     final var command =
         RecordToWrite.command()
-            .scale(
-                ScaleIntent.SCALE_UP,
-                new ScaleRecord().setCurrentPartitionCount(1).setDesiredPartitionCount(3));
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(3));
 
     // when
     engine.writeRecords(command);
@@ -128,9 +122,7 @@ public class ScaleUpTest {
     initRoutingState();
     final var command =
         RecordToWrite.command()
-            .scale(
-                ScaleIntent.SCALE_UP,
-                new ScaleRecord().setCurrentPartitionCount(1).setDesiredPartitionCount(10000));
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(10000));
 
     // when
     engine.writeRecords(command);
@@ -151,9 +143,7 @@ public class ScaleUpTest {
     initRoutingState();
     final var command =
         RecordToWrite.command()
-            .scale(
-                ScaleIntent.SCALE_UP,
-                new ScaleRecord().setCurrentPartitionCount(3).setDesiredPartitionCount(1));
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(1));
 
     // when
     engine.writeRecords(command);
