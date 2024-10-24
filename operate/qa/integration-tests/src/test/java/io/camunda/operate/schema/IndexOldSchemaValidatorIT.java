@@ -22,6 +22,7 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.TestElasticsearchSchemaManager;
 import io.camunda.operate.qa.util.TestOpensearchSchemaManager;
+import io.camunda.operate.qa.util.TestSchemaManager;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchIndexOperations;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
@@ -52,7 +53,6 @@ import org.springframework.test.context.junit4.SpringRunner;
       TestOpensearchSchemaManager.class,
       RichOpenSearchClient.class,
       OpensearchConnector.class,
-      IndexDescriptor.class,
       JacksonConfig.class,
       OperateDateTimeFormatter.class,
       JacksonConfig.class,
@@ -74,6 +74,10 @@ public class IndexOldSchemaValidatorIT {
 
   @Autowired OperateProperties operateProperties;
 
+  @Autowired IndexPrefixHolder indexPrefixHolder;
+
+  @Autowired TestSchemaManager schemaManager;
+
   private String operatePrefix;
 
   private List<String> allIndexNames;
@@ -85,10 +89,9 @@ public class IndexOldSchemaValidatorIT {
 
   @Before
   public void setUp() {
-    operatePrefix =
-        DatabaseInfo.isOpensearch()
-            ? operateProperties.getOpensearch().getIndexPrefix()
-            : operateProperties.getElasticsearch().getIndexPrefix();
+    schemaManager.setIndexPrefix(indexPrefixHolder.createNewIndexPrefix());
+    operatePrefix = indexPrefixHolder.getIndexPrefix();
+
     allIndexNames =
         indexDescriptors.stream()
             .map(IndexDescriptor::getFullQualifiedName)
