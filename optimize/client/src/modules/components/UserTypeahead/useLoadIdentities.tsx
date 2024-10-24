@@ -14,7 +14,7 @@ import {Identity, searchIdentities} from './service';
 
 const debounceRequest = debouncePromise();
 
-export function useLoadIdentities({
+export default function useLoadIdentities({
   excludeGroups,
   fetchUsers,
 }: {

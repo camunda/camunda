@@ -20,7 +20,7 @@ import {
   getSelectedIdentity,
   Item,
 } from './service';
-import {useLoadIdentities} from './hooks';
+import useLoadIdentities from './useLoadIdentities';
 import {UserInputProps} from './UserTypeahead';
 
 import './MultiUserInput.scss';

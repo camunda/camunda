@@ -19,7 +19,7 @@ import {
   identityToItem,
   getSelectedIdentity,
 } from './service';
-import {useLoadIdentities} from './hooks';
+import useLoadIdentities from './useLoadIdentities';
 import {UserInputProps} from './UserTypeahead';
 
 export default function SingleUserInput({
