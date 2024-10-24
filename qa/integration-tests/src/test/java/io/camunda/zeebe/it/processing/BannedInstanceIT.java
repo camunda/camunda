@@ -17,7 +17,6 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.qa.util.actuator.BanningActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -82,10 +81,6 @@ final class BannedInstanceIT {
     client.newCancelInstanceCommand(processInstanceKey).send().join();
 
     // then
-
-    final Record<ProcessInstanceRecordValue> first =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.CANCEL).limit(1).getFirst();
-
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.CANCEL)
                 .withRecordKey(processInstanceKey)
@@ -136,6 +131,10 @@ final class BannedInstanceIT {
     // when
     actuator.ban(processInstanceKey);
     client.newCancelInstanceCommand(processInstanceKey).send().join();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.PROCESS);
 
     final long secondProcessInstanceKey =
         client
