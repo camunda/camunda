@@ -95,6 +95,13 @@ public class DbTenantState implements MutableTenantState {
   }
 
   @Override
+  public void removeEntity(final long tenantKey, final long entityKey) {
+    this.tenantKey.wrapLong(tenantKey);
+    this.entityKey.wrapLong(entityKey);
+    entityByTenantColumnFamily.deleteExisting(entityByTenantKey);
+  }
+
+  @Override
   public Optional<TenantRecord> getTenantByKey(final long tenantKey) {
     this.tenantKey.wrapLong(tenantKey);
     final PersistedTenant persistedTenant = tenantsColumnFamily.get(this.tenantKey);
