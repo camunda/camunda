@@ -61,21 +61,21 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers,
       final AuthorizationCheckBehavior authCheckBehavior) {
-    this.commandProcessors =
+    commandProcessors =
         new UserTaskCommandProcessors(
             state, keyGenerator, bpmnBehaviors, writers, authCheckBehavior);
-    this.processState = state.getProcessState();
+    processState = state.getProcessState();
     this.userTaskState = userTaskState;
-    this.elementInstanceState = state.getElementInstanceState();
-    this.eventScopeInstanceState = state.getEventScopeInstanceState();
+    elementInstanceState = state.getElementInstanceState();
+    eventScopeInstanceState = state.getEventScopeInstanceState();
 
-    this.jobBehavior = bpmnBehaviors.jobBehavior();
-    this.incidentBehavior = bpmnBehaviors.incidentBehavior();
-    this.variableBehavior = bpmnBehaviors.variableBehavior();
-    this.eventTriggerBehavior = bpmnBehaviors.eventTriggerBehavior();
+    jobBehavior = bpmnBehaviors.jobBehavior();
+    incidentBehavior = bpmnBehaviors.incidentBehavior();
+    variableBehavior = bpmnBehaviors.variableBehavior();
+    eventTriggerBehavior = bpmnBehaviors.eventTriggerBehavior();
 
-    this.rejectionWriter = writers.rejection();
-    this.responseWriter = writers.response();
+    rejectionWriter = writers.rejection();
+    responseWriter = writers.response();
   }
 
   @Override
@@ -106,7 +106,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   }
 
   private void processOperationCommand(
-      final TypedRecord<UserTaskRecord> command, UserTaskIntent intent) {
+      final TypedRecord<UserTaskRecord> command, final UserTaskIntent intent) {
     final var commandProcessor = commandProcessors.getCommandProcessor(intent);
     commandProcessor
         .validateCommand(command)
@@ -200,7 +200,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
         ExecutableUserTask.class);
   }
 
-  private ZeebeTaskListenerEventType mapIntentToEventType(UserTaskIntent intent) {
+  private ZeebeTaskListenerEventType mapIntentToEventType(final UserTaskIntent intent) {
     return switch (intent) {
       case ASSIGN, CLAIM -> ZeebeTaskListenerEventType.assignment;
       case UPDATE -> ZeebeTaskListenerEventType.update;
@@ -210,7 +210,8 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     };
   }
 
-  private ZeebeTaskListenerEventType mapLifecycleStateToEventType(LifecycleState lifecycleState) {
+  private ZeebeTaskListenerEventType mapLifecycleStateToEventType(
+      final LifecycleState lifecycleState) {
     return switch (lifecycleState) {
       case CREATING -> ZeebeTaskListenerEventType.create;
       case ASSIGNING -> ZeebeTaskListenerEventType.assignment;
@@ -223,7 +224,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     };
   }
 
-  private UserTaskIntent mapLifecycleStateToIntent(LifecycleState lifecycleState) {
+  private UserTaskIntent mapLifecycleStateToIntent(final LifecycleState lifecycleState) {
     return switch (lifecycleState) {
       case ASSIGNING -> UserTaskIntent.ASSIGN;
       case UPDATING -> UserTaskIntent.UPDATE;
