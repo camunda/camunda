@@ -26,6 +26,7 @@ import io.camunda.tasklist.zeebeimport.v870.record.value.deployment.DeployedProc
 import io.camunda.tasklist.zeebeimport.v870.record.value.deployment.FormRecordImpl;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import jakarta.annotation.PostConstruct;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -34,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -61,6 +63,17 @@ public class OpenSearchBulkProcessor extends AbstractImportBatchProcessorOpenSea
   private ObjectMapper objectMapper;
 
   @Autowired private Metrics metrics;
+
+  @Value("${ZEEBE_BROKER_EXPORTERS_CAMUNDA_CLASSNAME:}")
+  private String camundaExporterClassName;
+
+  private boolean isCamundaExporterEnabled;
+
+  @PostConstruct
+  public void init() {
+    isCamundaExporterEnabled =
+        "io.camunda.exporter.CamundaExporter".equals(camundaExporterClassName);
+  }
 
   @Override
   protected void processZeebeRecords(
@@ -96,10 +109,16 @@ public class OpenSearchBulkProcessor extends AbstractImportBatchProcessorOpenSea
           break;
         case FORM:
           // form records can be processed one by one
-          formZeebeRecordProcessor.processFormRecord(record, operations);
+          // TODO: skip form record importing when Camunda exporter is enabled
+          if (!isCamundaExporterEnabled) {
+            formZeebeRecordProcessor.processFormRecord(record, operations);
+          }
           break;
         case USER_TASK:
-          userTaskZeebeRecordProcessor.processUserTaskRecord(record, operations);
+          // TODO: skip user task record importing when Camunda exporter is enabled
+          if (!isCamundaExporterEnabled) {
+            userTaskZeebeRecordProcessor.processUserTaskRecord(record, operations);
+          }
           break;
         default:
           LOGGER.debug("Default case triggered for type {}", importValueType);

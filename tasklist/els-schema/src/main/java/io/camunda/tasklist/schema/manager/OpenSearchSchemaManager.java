@@ -20,6 +20,7 @@ import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.tasklist.schema.indices.AbstractIndexDescriptor;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.templates.TemplateDescriptor;
+import jakarta.annotation.PostConstruct;
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
@@ -57,6 +58,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
@@ -91,6 +93,17 @@ public class OpenSearchSchemaManager implements SchemaManager {
   @Autowired
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
+
+  @Value("${ZEEBE_BROKER_EXPORTERS_CAMUNDA_CLASSNAME:}")
+  private String camundaExporterClassName;
+
+  private boolean isCamundaExporterEnabled;
+
+  @PostConstruct
+  public void init() {
+    isCamundaExporterEnabled =
+        "io.camunda.exporter.CamundaExporter".equals(camundaExporterClassName);
+  }
 
   @Override
   public void createSchema() {
@@ -192,8 +205,14 @@ public class OpenSearchSchemaManager implements SchemaManager {
     for (final Map.Entry<IndexDescriptor, Set<IndexMappingProperty>> indexNewFields :
         newFields.entrySet()) {
       if (indexNewFields.getKey() instanceof TemplateDescriptor) {
-        LOGGER.info(
-            "Update template: " + ((TemplateDescriptor) indexNewFields.getKey()).getTemplateName());
+        final String templateName =
+            ((TemplateDescriptor) indexNewFields.getKey()).getTemplateName();
+        // TODO: patch to exclude tasklist-task from the schema update
+        if (isCamundaExporterEnabled && "tasklist-task".equals(templateName)) {
+          LOGGER.info("Skip update of template: " + templateName);
+          continue;
+        }
+        LOGGER.info("Update template: " + templateName);
         final TemplateDescriptor templateDescriptor = (TemplateDescriptor) indexNewFields.getKey();
         final String json = readTemplateJson(templateDescriptor.getSchemaClasspathFilename());
         final PutIndexTemplateRequest indexTemplateRequest =
@@ -376,7 +395,14 @@ public class OpenSearchSchemaManager implements SchemaManager {
   }
 
   private void createTemplates() {
-    templateDescriptors.forEach(this::createTemplate);
+    // TODO: patch to exclude tasklist-task from the schema creation
+    if (isCamundaExporterEnabled) {
+      templateDescriptors.stream()
+          .filter(descriptor -> !descriptor.getTemplateName().contains("tasklist-task"))
+          .forEach(this::createTemplate);
+    } else {
+      templateDescriptors.forEach(this::createTemplate);
+    }
   }
 
   private void createTemplate(final TemplateDescriptor templateDescriptor) {

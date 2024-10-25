@@ -20,6 +20,7 @@ import io.camunda.tasklist.schema.indices.AbstractIndexDescriptor;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.templates.TemplateDescriptor;
 import io.camunda.tasklist.util.ElasticsearchJSONUtil;
+import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -52,6 +53,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
@@ -75,6 +77,11 @@ public class ElasticsearchSchemaManager implements SchemaManager {
 
   @Autowired protected TasklistProperties tasklistProperties;
 
+  @Value("${ZEEBE_BROKER_EXPORTERS_CAMUNDA_CLASSNAME:}")
+  private String camundaExporterClassName;
+
+  private boolean isCamundaExporterEnabled;
+
   @Autowired
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
@@ -82,6 +89,12 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   @Autowired private List<AbstractIndexDescriptor> indexDescriptors;
 
   @Autowired private List<TemplateDescriptor> templateDescriptors;
+
+  @PostConstruct
+  public void init() {
+    isCamundaExporterEnabled =
+        "io.camunda.exporter.CamundaExporter".equals(camundaExporterClassName);
+  }
 
   @Override
   public void createSchema() {
@@ -137,8 +150,14 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     for (final Map.Entry<IndexDescriptor, Set<IndexMappingProperty>> indexNewFields :
         newFields.entrySet()) {
       if (indexNewFields.getKey() instanceof TemplateDescriptor) {
-        LOGGER.info(
-            "Update template: " + ((TemplateDescriptor) indexNewFields.getKey()).getTemplateName());
+        final String templateName =
+            ((TemplateDescriptor) indexNewFields.getKey()).getTemplateName();
+        // TODO: patch to exclude tasklist-task from the schema update
+        if (isCamundaExporterEnabled && "tasklist-task".equals(templateName)) {
+          LOGGER.info("Skip update of template: " + templateName);
+          continue;
+        }
+        LOGGER.info("Update template: " + templateName);
         final TemplateDescriptor templateDescriptor = (TemplateDescriptor) indexNewFields.getKey();
         final PutComposableIndexTemplateRequest request =
             prepareComposableTemplateRequest(templateDescriptor, null);
@@ -219,7 +238,14 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   }
 
   private void createTemplates() {
-    templateDescriptors.forEach(this::createTemplate);
+    // TODO: patch to exclude tasklist-task from the schema creation
+    if (isCamundaExporterEnabled) {
+      templateDescriptors.stream()
+          .filter(descriptor -> !descriptor.getTemplateName().contains("tasklist-task"))
+          .forEach(this::createTemplate);
+    } else {
+      templateDescriptors.forEach(this::createTemplate);
+    }
   }
 
   private void createIndex(
