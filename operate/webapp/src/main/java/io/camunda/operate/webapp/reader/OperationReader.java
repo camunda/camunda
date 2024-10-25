@@ -7,10 +7,10 @@
  */
 package io.camunda.operate.webapp.reader;
 
-import io.camunda.operate.entities.BatchOperationEntity;
-import io.camunda.operate.entities.OperationEntity;
-import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
+import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.util.List;
 import java.util.Map;
 

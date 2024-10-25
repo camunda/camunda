@@ -7,10 +7,10 @@
  */
 package io.camunda.operate.store;
 
-import io.camunda.operate.entities.BatchOperationEntity;
-import io.camunda.operate.entities.OperationEntity;
-import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.exceptions.PersistenceException;
+import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;

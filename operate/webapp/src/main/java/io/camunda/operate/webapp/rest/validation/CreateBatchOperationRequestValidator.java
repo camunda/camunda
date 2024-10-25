@@ -7,11 +7,11 @@
  */
 package io.camunda.operate.webapp.rest.validation;
 
-import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.MigrationPlanDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
+import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
