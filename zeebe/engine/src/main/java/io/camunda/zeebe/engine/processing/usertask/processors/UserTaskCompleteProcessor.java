@@ -86,7 +86,7 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
 
     // It's important to retrieve the user task record request metadata before appending the
     // "COMPLETED" event, as it will be cleared by the "COMPLETED" event applier
-    final var recordRequestMetadata = userTaskState.getRecordRequestMetadata(userTaskKey);
+    final var recordRequestMetadata = userTaskState.findRecordRequestMetadata(userTaskKey);
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord);
     completeElementInstance(userTaskRecord);
 

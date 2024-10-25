@@ -23,7 +23,7 @@ public interface UserTaskState {
 
   UserTaskIntermediateStateValue getIntermediateState(final long userTaskKey);
 
-  Optional<UserTaskRecordRequestMetadata> getRecordRequestMetadata(final long userTaskKey);
+  Optional<UserTaskRecordRequestMetadata> findRecordRequestMetadata(final long userTaskKey);
 
   enum LifecycleState {
     NOT_FOUND((byte) 0),
