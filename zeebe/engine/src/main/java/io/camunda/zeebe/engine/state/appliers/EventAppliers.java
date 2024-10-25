@@ -489,6 +489,10 @@ public final class EventAppliers implements EventApplier {
     register(
         TenantIntent.ENTITY_REMOVED,
         new TenantEntityRemovedApplier(state.getTenantState(), state.getUserState()));
+    register(
+        TenantIntent.DELETED,
+        new TenantDeletedApplier(
+            state.getTenantState(), state.getUserState(), state.getAuthorizationState()));
   }
 
   private void registerMappingAppliers(final MutableProcessingState state) {
