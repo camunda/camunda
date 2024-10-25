@@ -16,8 +16,6 @@ import {
   C3NavigationNavBarProps,
 } from '@camunda/camunda-composite-components';
 
-// @ts-expect-error no types yet
-import {NavItem} from 'components';
 import {showError} from 'notifications';
 import {t} from 'translation';
 import {track} from 'tracking';
@@ -55,6 +53,7 @@ export default function Header({noActions}: {noActions?: boolean}) {
     app: createAppProps(location),
     appBar: createAppBarProps(webappsLinks),
     navbar: {elements: []},
+    forwardRef: Link as React.ForwardRefExoticComponent<ComponentProps<Link>>,
   };
 
   if (!noActions) {
@@ -94,8 +93,6 @@ function createAppProps(location: {pathname: string}): C3NavigationProps['app'] 
     name: t('appName').toString(),
     ariaLabel: t('appFullName').toString(),
     routeProps: {
-      as: Link,
-      className: 'cds--header__name',
       to: '/',
       replace: location.pathname === '/',
     },
@@ -142,39 +139,24 @@ function createNavBarProps(
     {
       key: 'dashboards',
       label: t('navigation.dashboards').toString(),
-      routeProps: {
-        as: NavItem,
-        name: t('navigation.dashboards'),
-        linksTo: '/',
-        active: ['/', '/processes/', '/processes/*'],
-        breadcrumbsEntities: [{entity: 'report'}],
-      },
-      isCurrentPage: isCurrentPage(['/', '/processes/', '/processes/*'], pathname),
-    },
-    {
-      key: 'collections',
-      label: t('navigation.collections').toString(),
-      routeProps: {
-        as: NavItem,
-        name: t('navigation.collections'),
-        linksTo: '/collections',
-        active: ['/collections/', '/report/*', '/dashboard/*', '/collection/*'],
-        breadcrumbsEntities: [{entity: 'collection'}, {entity: 'dashboard'}, {entity: 'report'}],
-      },
+      routeProps: {to: '/'},
       isCurrentPage: isCurrentPage(
-        ['/collections/', '/report/*', '/dashboard/*', '/collection/*'],
+        ['/', '/processes/', '/processes/*', '/dashboard/instant/*'],
         pathname
       ),
     },
     {
+      key: 'collections',
+      label: t('navigation.collections').toString(),
+      routeProps: {to: '/collections'},
+      isCurrentPage:
+        isCurrentPage(['/collections/', '/report/*', '/dashboard/*', '/collection/*'], pathname) &&
+        !isCurrentPage(['/dashboard/instant/*'], pathname),
+    },
+    {
       key: 'analysis',
       label: t('navigation.analysis').toString(),
-      routeProps: {
-        as: NavItem,
-        name: t('navigation.analysis'),
-        linksTo: '/analysis',
-        active: ['/analysis/', '/analysis/*'],
-      },
+      routeProps: {to: '/analysis'},
       isCurrentPage: isCurrentPage(['/analysis/', '/analysis/*'], pathname),
     },
   ];

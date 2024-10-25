@@ -102,7 +102,8 @@ test('create a dashboard and reports from a template', async (t) => {
   await t.takeScreenshot('img/dashboard-viewMode-monitorFeatures.png', {fullPage: true});
   await t.maximizeWindow();
 
-  await t.click(e.collectionLink);
+  await t.click(Common.collectionsPage);
+  await t.click(Common.listItemLink('collection'));
 
   await t.expect(Common.listItem('report').visible).ok();
   await t.expect(Common.listItem('dashboard').visible).ok();
@@ -429,7 +430,8 @@ test('version selection', async (t) => {
   await u.selectView(t, 'Process instance', 'Count');
   await u.save(t);
 
-  await t.click(e.collectionLink);
+  await t.click(Common.collectionsPage);
+  await t.click(Common.listItemLink('collection'));
   await u.createNewDashboard(t);
   await u.addReportToDashboard(t, 'Number report');
   await u.save(t);

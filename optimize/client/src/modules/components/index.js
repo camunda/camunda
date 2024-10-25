@@ -24,7 +24,6 @@ export {DatePicker} from './DatePicker';
 export {ColorPicker} from './ColorPicker';
 export {EntityName} from './EntityName';
 export {EntityNameForm} from './EntityNameForm';
-export {NavItem} from './navigation';
 export {HeatmapOverlay} from './HeatmapOverlay';
 export {EntityList} from './EntityList';
 export {UserTypeahead} from './UserTypeahead';
