@@ -14,7 +14,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 
 public class RoleEntityAddedApplier implements TypedEventApplier<RoleIntent, RoleRecord> {
 
@@ -31,11 +30,14 @@ public class RoleEntityAddedApplier implements TypedEventApplier<RoleIntent, Rol
   @Override
   public void applyState(final long key, final RoleRecord value) {
     roleState.addEntity(value);
-    if (EntityType.USER.equals(value.getEntityType())) {
-      userState.addRole(value.getEntityKey(), value.getRoleKey());
-    }
-    if (EntityType.MAPPING.equals(value.getEntityType())) {
-      mappingState.addRole(value.getEntityKey(), value.getRoleKey());
+    switch (value.getEntityType()) {
+      case USER -> userState.addRole(value.getEntityKey(), value.getRoleKey());
+      case MAPPING -> mappingState.addRole(value.getEntityKey(), value.getRoleKey());
+      default ->
+          throw new IllegalStateException(
+              "Unknown or unsupported entity type: '"
+                  + value.getEntityType()
+                  + "'. Please contact support for clarification.");
     }
   }
 }
