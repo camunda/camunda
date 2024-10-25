@@ -81,10 +81,10 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   @Override
   public void processRecord(final TypedRecord<UserTaskRecord> command) {
     final UserTaskIntent intent = (UserTaskIntent) command.getIntent();
-    if (intent == UserTaskIntent.COMPLETE_TASK_LISTENER) {
-      processCompleteTaskListener(command);
-    } else {
-      processOperationCommand(command, intent);
+    switch (intent) {
+      case ASSIGN, CLAIM, COMPLETE, UPDATE -> processOperationCommand(command, intent);
+      case COMPLETE_TASK_LISTENER -> processCompleteTaskListener(command);
+      default -> throw new UnsupportedOperationException("Unexpected user task intent: " + intent);
     }
   }
 
