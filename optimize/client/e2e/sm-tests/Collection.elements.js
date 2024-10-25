@@ -10,11 +10,9 @@ import {Selector} from 'testcafe';
 
 import {overflowMenuOption, listItem} from './Common.elements';
 
-export const collectionTitle = Selector('.Collection .CollectionHeader .text');
+export const collectionTitle = Selector('.Collection h2');
 export const collectionBreadcrumb = Selector('.cds--header__menu-bar .breadcrumb');
-export const collectionContextMenu = Selector(
-  '.Collection .CollectionHeader .cds--overflow-menu__wrapper button'
-);
+export const collectionContextMenu = Selector('.Collection .cds--overflow-menu__wrapper button');
 export const editCollectionNameButton = overflowMenuOption('Edit');
 export const copyCollectionButton = overflowMenuOption('Copy');
 export const deleteCollectionButton = overflowMenuOption('Delete');

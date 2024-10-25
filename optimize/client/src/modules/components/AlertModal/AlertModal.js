@@ -296,7 +296,7 @@ export class AlertModal extends React.Component {
                     placeholder={t('alert.form.reportPlaceholder')}
                     titleText={t('alert.form.report')}
                     onChange={({selectedItem}) => {
-                      if (selectedItem) {
+                      if (selectedItem?.id) {
                         this.updateReport(selectedItem.id);
                       }
                     }}

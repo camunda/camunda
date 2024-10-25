@@ -6,17 +6,21 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
+import {runAllEffects} from 'react';
 
-import {EntityList, AlertModal} from 'components';
+import {EntityList, AlertModal, Deleter} from 'components';
 import {loadReports, loadAlerts, addAlert} from 'services';
-
-import AlertListWithErrorHandling from './AlertList';
 import {getWebhooks} from 'config';
+
+import AlertList from './AlertList';
 import CopyAlertModal from './modals/CopyAlertModal';
 
-const AlertList = AlertListWithErrorHandling.WrappedComponent;
+jest.mock('hooks', () => ({
+  useErrorHandling: jest.fn().mockImplementation(() => ({
+    mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  })),
+}));
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -62,42 +66,34 @@ jest.mock('services', () => {
 
 jest.mock('config', () => ({getWebhooks: jest.fn().mockReturnValue(['webhook1', 'webhook2'])}));
 
-const props = {
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
-};
+const props = {};
 
 it('should load existing reports', () => {
   shallow(<AlertList {...props} />);
+  runAllEffects();
 
   expect(loadReports).toHaveBeenCalled();
 });
 
 it('should load existing webhooks', () => {
   shallow(<AlertList {...props} />);
+  runAllEffects();
 
   expect(getWebhooks).toHaveBeenCalled();
 });
 
 it('should only save single number reports', async () => {
   const node = shallow(<AlertList {...props} />);
+  runAllEffects();
 
-  expect(node.state('reports').map((report) => report.id)).toEqual(['2']);
+  node.find(EntityList).prop('rows')[0].actions[0].action();
+  expect(node.find(AlertModal).prop('reports').length).toEqual(1);
 });
 
 it('should not show multi-measure reports', async () => {
-  loadAlerts.mockReturnValueOnce([]);
   loadReports.mockReturnValueOnce([
     {
       id: '1',
-      data: {
-        visualization: 'number',
-        view: {properties: ['frequency', 'duration']},
-        configuration: {aggregationTypes: [{type: 'avg', value: null}]},
-      },
-      name: 'Report 1',
-    },
-    {
-      id: '2',
       data: {
         visualization: 'number',
         view: {properties: ['duration']},
@@ -108,10 +104,10 @@ it('should not show multi-measure reports', async () => {
           ],
         },
       },
-      name: 'Report 2',
+      name: 'Report 1 - multi measure',
     },
     {
-      id: '3',
+      id: '2',
       data: {
         visualization: 'number',
         view: {properties: ['frequency']},
@@ -122,12 +118,23 @@ it('should not show multi-measure reports', async () => {
           ],
         },
       },
-      name: 'Report 3',
+      name: 'Report 2 - single measure',
+    },
+    {
+      id: '3',
+      data: {
+        visualization: 'number',
+        view: {properties: ['frequency', 'duration']},
+        configuration: {aggregationTypes: [{type: 'avg', value: null}]},
+      },
+      name: 'Report 3 - multi measure',
     },
   ]);
   const node = shallow(<AlertList {...props} />);
+  runAllEffects();
 
-  expect(node.state('reports').map((report) => report.id)).toEqual(['3']);
+  node.find(EntityList).prop('rows')[0].actions[0].action();
+  expect(node.find(AlertModal).prop('reports').length).toEqual(1);
 });
 
 it('should format durations with value and unit', async () => {
@@ -152,26 +159,29 @@ it('should format durations with value and unit', async () => {
   ]);
 
   const node = shallow(<AlertList {...props} />);
+  runAllEffects();
 
   expect(node.find(EntityList).prop('rows')[0].meta[1]).toContain('12s');
 });
 
 it('should set the loading', () => {
+  loadAlerts.mockReturnValueOnce(null);
   const node = shallow(<AlertList {...props} />);
-
-  node.setState({alerts: null}); // simulate missing response from alert query
+  runAllEffects();
 
   expect(node.find(EntityList).prop('isLoading')).toBe(true);
 });
 
 it('should load data', () => {
   shallow(<AlertList {...props} />);
+  runAllEffects();
 
   expect(loadReports).toHaveBeenCalled();
 });
 
 it('should show information about alerts', async () => {
   const node = shallow(<AlertList {...props} />);
+  runAllEffects();
 
   expect(node.find(EntityList).prop('rows')[0].name).toBe('Some Alert');
   expect(node.find(EntityList).prop('rows')[0].meta[0]).toBe('Report 2');
@@ -179,16 +189,18 @@ it('should show information about alerts', async () => {
 
 it('should show create Alert button', () => {
   const node = shallow(<AlertList {...props} />);
+  runAllEffects();
 
   expect(node.find(EntityList).prop('action')).toMatchSnapshot();
 });
 
 it('should Alert to Deleter', async () => {
   const node = shallow(<AlertList {...props} />);
+  runAllEffects();
 
   node.find(EntityList).prop('rows')[0].actions[2].action();
 
-  expect(node.state('deleting')).toEqual({
+  expect(node.find(Deleter).prop('entity')).toEqual({
     id: 'alertID',
     emails: ['test@hotmail.com'],
     name: 'Some Alert',
@@ -201,6 +213,7 @@ it('should Alert to Deleter', async () => {
 
 it('should open a modal when editing an alert', async () => {
   const node = shallow(<AlertList {...props} />);
+  runAllEffects();
 
   node.find(EntityList).prop('rows')[0].actions[0].action();
 
@@ -218,6 +231,7 @@ it('should open a modal when editing an alert', async () => {
 
 it('should invoke addAlert when copying an alert', async () => {
   const node = shallow(<AlertList {...props} />);
+  runAllEffects();
 
   node.find(EntityList).prop('rows')[0].actions[1].action();
 
@@ -248,6 +262,7 @@ it('should show warning if alert is inactive due to missing webhoook', () => {
     },
   ]);
   const node = shallow(<AlertList {...props} />);
+  runAllEffects();
 
   expect(node.find(EntityList).prop('rows')[0].warning).toBe('Alert inactive');
 });
