@@ -218,7 +218,9 @@ public class NativeUserTaskFormTest {
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
             .userTask("task")
-            .zeebeFormId(FORM_ID_1)
+            // an incident can only occur at run time if the target form ID is an expression;
+            // static IDs are already checked at deploy time
+            .zeebeFormId("=formIdVariable")
             .zeebeFormBindingType(ZeebeBindingType.deployment)
             .zeebeUserTask()
             .endEvent()
@@ -226,7 +228,12 @@ public class NativeUserTaskFormTest {
     final var deployment = ENGINE.deployment().withXmlResource(process).deploy();
 
     // when
-    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("formIdVariable", FORM_ID_1)
+            .create();
 
     // then
     assertFormIncident(

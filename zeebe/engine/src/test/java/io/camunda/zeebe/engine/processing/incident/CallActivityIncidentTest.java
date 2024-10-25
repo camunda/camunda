@@ -97,14 +97,22 @@ public final class CallActivityIncidentTest {
             .startEvent()
             .callActivity(
                 "call",
-                c -> c.zeebeProcessId(childProcessId).zeebeBindingType(ZeebeBindingType.deployment))
+                c ->
+                    // an incident can only occur at run time if the target process ID is an
+                    // expression; static IDs are already checked at deploy time
+                    c.zeebeProcessIdExpression(PROCESS_ID_VARIABLE)
+                        .zeebeBindingType(ZeebeBindingType.deployment))
             .done();
     final var deployment =
         ENGINE.deployment().withXmlResource("wf-parent.bpmn", parentProcess).deploy();
 
     // when
     final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(parentProcessId)
+            .withVariable(PROCESS_ID_VARIABLE, childProcessId)
+            .create();
 
     // then
     final Record<IncidentRecordValue> incident = getIncident(processInstanceKey);
