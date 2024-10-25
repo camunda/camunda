@@ -14,7 +14,8 @@ type ListenersDto = {
 };
 
 type ListenerPayload = {
-  flowNodeId: string;
+  flowNodeId?: string;
+  flowNodeInstanceId?: string;
   sorting?: {
     sortBy: string;
     sortOrder: 'desc' | 'asc';
