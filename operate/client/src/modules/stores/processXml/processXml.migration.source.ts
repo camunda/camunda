@@ -10,6 +10,8 @@ import {action, makeObservable, override} from 'mobx';
 import {ProcessXmlBase} from './processXml.base';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {isMigratableFlowNode} from './utils/isMigratableFlowNode';
+import {processesStore} from '../processes/processes.migration';
+import {hasParentProcess} from 'modules/bpmn-js/utils/hasParentProcess';
 
 class ProcessesXml extends ProcessXmlBase {
   constructor() {
@@ -24,6 +26,18 @@ class ProcessesXml extends ProcessXmlBase {
   get selectableFlowNodes() {
     return super.selectableFlowNodes
       .filter(isMigratableFlowNode)
+      .filter((sourceFlowNode) => {
+        const sourceBpmnProcessId =
+          processesStore.getSelectedProcessDetails().bpmnProcessId;
+
+        return (
+          sourceBpmnProcessId !== undefined &&
+          hasParentProcess({
+            flowNode: this.getFlowNode(sourceFlowNode.id),
+            bpmnProcessId: sourceBpmnProcessId,
+          })
+        );
+      })
       .map((flowNode) => {
         return {...flowNode, name: flowNode.name ?? flowNode.id};
       });
