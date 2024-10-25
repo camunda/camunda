@@ -7,10 +7,10 @@
  */
 package io.camunda.webapps.schema.descriptors.usermanagement.index;
 
-import io.camunda.webapps.schema.descriptors.usermanagement.RoleManagementIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.usermanagement.RoleIndexDescriptor;
 
-public class RoleIndex extends RoleManagementIndexDescriptor {
-  public static final String INDEX_NAME = "roles";
+public class RoleIndex extends RoleIndexDescriptor {
+  public static final String INDEX_NAME = "role";
   public static final String INDEX_VERSION = "8.7.0";
 
   public static final String ROLEKEY = "roleKey";

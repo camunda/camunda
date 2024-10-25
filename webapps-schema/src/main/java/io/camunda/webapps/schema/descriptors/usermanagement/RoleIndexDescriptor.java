@@ -7,9 +7,9 @@
  */
 package io.camunda.webapps.schema.descriptors.usermanagement;
 
-public abstract class RoleManagementIndexDescriptor extends UserManagementIndexDescriptor {
+public abstract class RoleIndexDescriptor extends UserManagementIndexDescriptor {
 
-  public RoleManagementIndexDescriptor(final String indexPrefix, final boolean isElasticsearch) {
+  public RoleIndexDescriptor(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
   }
 }
