@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.job;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.immutable.JobState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
@@ -43,20 +44,15 @@ final class JobBatchCollector {
   private final Predicate<Integer> canWriteEventOfLength;
 
   /**
-   * @param jobState the state from which jobs are collected
-   * @param variableState the state from which variables are resolved and collected
    * @param canWriteEventOfLength a predicate which should return whether the resulting {@link
    *     TypedRecord} containing the {@link JobBatchRecord} will be writable or not. The predicate
    *     takes in the size of the record, and should return true if it can write such a record, and
    *     false otherwise
    */
-  JobBatchCollector(
-      final JobState jobState,
-      final VariableState variableState,
-      final Predicate<Integer> canWriteEventOfLength) {
-    this.jobState = jobState;
+  JobBatchCollector(final ProcessingState state, final Predicate<Integer> canWriteEventOfLength) {
+    jobState = state.getJobState();
     this.canWriteEventOfLength = canWriteEventOfLength;
-    jobVariablesCollector = new JobVariablesCollector(variableState);
+    jobVariablesCollector = new JobVariablesCollector(state);
   }
 
   /**
