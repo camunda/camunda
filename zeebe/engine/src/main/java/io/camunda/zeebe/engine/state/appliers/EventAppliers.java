@@ -465,9 +465,7 @@ public final class EventAppliers implements EventApplier {
         RoleIntent.CREATED,
         new RoleCreatedApplier(state.getRoleState(), state.getAuthorizationState()));
     register(RoleIntent.UPDATED, new RoleUpdatedApplier(state.getRoleState()));
-    register(
-        RoleIntent.ENTITY_ADDED,
-        new RoleEntityAddedApplier(state.getRoleState(), state.getUserState()));
+    register(RoleIntent.ENTITY_ADDED, new RoleEntityAddedApplier(state));
     register(
         RoleIntent.ENTITY_REMOVED,
         new RoleEntityRemovedApplier(state.getRoleState(), state.getUserState()));

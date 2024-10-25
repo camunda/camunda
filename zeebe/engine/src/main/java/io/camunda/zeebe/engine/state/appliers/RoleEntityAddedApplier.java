@@ -8,6 +8,8 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
@@ -18,19 +20,22 @@ public class RoleEntityAddedApplier implements TypedEventApplier<RoleIntent, Rol
 
   private final MutableRoleState roleState;
   private final MutableUserState userState;
+  private final MutableMappingState mappingState;
 
-  public RoleEntityAddedApplier(
-      final MutableRoleState roleState, final MutableUserState userState) {
-    this.roleState = roleState;
-    this.userState = userState;
+  public RoleEntityAddedApplier(final MutableProcessingState state) {
+    roleState = state.getRoleState();
+    userState = state.getUserState();
+    mappingState = state.getMappingState();
   }
 
   @Override
   public void applyState(final long key, final RoleRecord value) {
     roleState.addEntity(value);
-    if (value.getEntityType() == EntityType.USER) {
+    if (EntityType.USER.equals(value.getEntityType())) {
       userState.addRole(value.getEntityKey(), value.getRoleKey());
     }
-    // todo add entity to mapping state when implemented
+    if (EntityType.MAPPING.equals(value.getEntityType())) {
+      mappingState.addRole(value.getEntityKey(), value.getRoleKey());
+    }
   }
 }
