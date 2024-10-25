@@ -7,4 +7,10 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
-public interface MappingState {}
+import io.camunda.zeebe.engine.state.authorization.PersistedMapping;
+import java.util.Optional;
+
+public interface MappingState {
+
+  Optional<PersistedMapping> get(final long key);
+}
