@@ -46,7 +46,7 @@ function useUploadDocuments() {
       });
       const responses = await Promise.all(requests);
 
-      if (responses.every(({response}) => response !== null)) {
+      if (responses.every(({response}) => response !== null && response.ok)) {
         const metadataMapping: [string, FileUploadMetadata[]][] = [];
 
         for (const [key, responses] of fileRequestMapping) {
