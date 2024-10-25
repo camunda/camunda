@@ -58,7 +58,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
@@ -94,15 +93,12 @@ public class OpenSearchSchemaManager implements SchemaManager {
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
 
-  @Value("${ZEEBE_BROKER_EXPORTERS_CAMUNDA_CLASSNAME:}")
-  private String camundaExporterClassName;
-
   private boolean isCamundaExporterEnabled;
 
   @PostConstruct
   public void init() {
     isCamundaExporterEnabled =
-        "io.camunda.exporter.CamundaExporter".equals(camundaExporterClassName);
+        "io.camunda.exporter.CamundaExporter".equals(tasklistProperties.getExporterClassName());
   }
 
   @Override

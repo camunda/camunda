@@ -13,6 +13,7 @@ import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.zeebe.ImportValueType;
 import io.camunda.tasklist.zeebeimport.ImportBatch;
@@ -35,7 +36,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -58,21 +58,20 @@ public class OpenSearchBulkProcessor extends AbstractImportBatchProcessorOpenSea
 
   @Autowired private UserTaskZeebeRecordProcessorOpenSearch userTaskZeebeRecordProcessor;
 
+  @Autowired private TasklistProperties tasklistProperties;
+
   @Autowired
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
 
   @Autowired private Metrics metrics;
 
-  @Value("${ZEEBE_BROKER_EXPORTERS_CAMUNDA_CLASSNAME:}")
-  private String camundaExporterClassName;
-
   private boolean isCamundaExporterEnabled;
 
   @PostConstruct
   public void init() {
     isCamundaExporterEnabled =
-        "io.camunda.exporter.CamundaExporter".equals(camundaExporterClassName);
+        "io.camunda.exporter.CamundaExporter".equals(tasklistProperties.getExporterClassName());
   }
 
   @Override

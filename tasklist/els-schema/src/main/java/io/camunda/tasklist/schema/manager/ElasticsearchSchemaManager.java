@@ -53,7 +53,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
@@ -77,9 +76,6 @@ public class ElasticsearchSchemaManager implements SchemaManager {
 
   @Autowired protected TasklistProperties tasklistProperties;
 
-  @Value("${ZEEBE_BROKER_EXPORTERS_CAMUNDA_CLASSNAME:}")
-  private String camundaExporterClassName;
-
   private boolean isCamundaExporterEnabled;
 
   @Autowired
@@ -93,7 +89,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   @PostConstruct
   public void init() {
     isCamundaExporterEnabled =
-        "io.camunda.exporter.CamundaExporter".equals(camundaExporterClassName);
+        "io.camunda.exporter.CamundaExporter".equals(tasklistProperties.getExporterClassName());
   }
 
   @Override
