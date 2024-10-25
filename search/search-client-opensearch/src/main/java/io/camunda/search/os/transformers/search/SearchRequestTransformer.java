@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch.core.SearchRequest.Builder;
 import org.opensearch.client.opensearch.core.search.SourceConfig;
 
 public final class SearchRequestTransformer
@@ -28,12 +29,15 @@ public final class SearchRequestTransformer
 
   @Override
   public SearchRequest apply(final SearchQueryRequest value) {
+    return toSearchRequestBuilder(value).build();
+  }
+
+  public Builder toSearchRequestBuilder(final SearchQueryRequest value) {
     final var sort = value.sort();
     final var searchAfter = value.searchAfter();
     final var searchQuery = value.query();
 
-    final var builder =
-        new SearchRequest.Builder().index(value.index()).from(value.from()).size(value.size());
+    final var builder = new Builder().index(value.index()).from(value.from()).size(value.size());
 
     if (searchQuery != null) {
       final var queryTransformer = getQueryTransformer();
@@ -52,8 +56,7 @@ public final class SearchRequestTransformer
     if (value.source() != null) {
       builder.source(of(value.source()));
     }
-
-    return builder.build();
+    return builder;
   }
 
   private List<SortOptions> of(final List<SearchSortOptions> values) {
