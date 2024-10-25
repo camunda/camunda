@@ -67,7 +67,9 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
 
     final var elementInstance = elementInstanceState.getInstance(elementInstanceKey);
 
-    if (elementInstance != null) {
+    if (elementInstance == null) {
+      return;
+    } else {
       switch (value.getJobKind()) {
         case EXECUTION_LISTENER:
           {
