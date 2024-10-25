@@ -118,12 +118,6 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
     }
   }
 
-  @Override
-  public Map<Integer, HealthReport> getPartitionHealth() {
-    return partitionManager.getZeebePartitions().stream()
-        .collect(Collectors.toMap(ZeebePartition::getPartitionId, ZeebePartition::getHealthReport));
-  }
-
   private CompletableFuture<PartitionStatus> getPartitionStatus(final ZeebePartition partition) {
     final CompletableFuture<PartitionStatus> partitionStatus = new CompletableFuture<>();
     final var currentRoleFuture = partition.getCurrentRole();
@@ -157,6 +151,11 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
     return partitionStatus;
   }
 
+  private Map<Integer, HealthReport> getPartitionHealth() {
+    return partitionManager.getZeebePartitions().stream()
+        .collect(Collectors.toMap(ZeebePartition::getPartitionId, ZeebePartition::getHealthReport));
+  }
+
   private void getPartitionStatus(
       final Role role,
       final ZeebePartition partition,
@@ -175,6 +174,8 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
             .map(FileBasedSnapshotId::getProcessedPosition)
             .orElse(null);
     final var clockFuture = streamProcessor.getClock();
+
+    final var partitionHealth = getPartitionHealth().get(partition.getPartitionId());
 
     actor.runOnCompletion(
         List.of(
@@ -202,7 +203,8 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
                   processorPhase,
                   exporterPhase,
                   exporterPosition,
-                  clock);
+                  clock,
+                  HealthTree.fromHealthReport(partitionHealth));
           partitionStatus.complete(status);
         });
   }

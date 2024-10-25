@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.broker.system.management;
 
-import io.camunda.zeebe.util.health.HealthReport;
 import java.util.Map;
 
 public interface BrokerAdminService {
@@ -46,6 +45,4 @@ public interface BrokerAdminService {
    * @return a map of partition id and partition status
    */
   Map<Integer, PartitionStatus> getPartitionStatus();
-
-  Map<Integer, HealthReport> getPartitionHealth();
 }
