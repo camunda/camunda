@@ -25,23 +25,15 @@ public class JobVariablesCollector {
       final Collection<DirectBuffer> requestedVariables, final JobRecord jobRecord) {
     final long elementInstanceKey = jobRecord.getElementInstanceKey();
     if (elementInstanceKey >= 0) {
-      final DirectBuffer variables = collectVariables(requestedVariables, elementInstanceKey);
+      final DirectBuffer variables;
+      if (requestedVariables.isEmpty()) {
+        variables = variableState.getVariablesAsDocument(elementInstanceKey);
+      } else {
+        variables = variableState.getVariablesAsDocument(elementInstanceKey, requestedVariables);
+      }
       jobRecord.setVariables(variables);
     } else {
       jobRecord.setVariables(DocumentValue.EMPTY_DOCUMENT);
     }
-  }
-
-  private DirectBuffer collectVariables(
-      final Collection<DirectBuffer> variableNames, final long elementInstanceKey) {
-    final DirectBuffer variables;
-
-    if (variableNames.isEmpty()) {
-      variables = variableState.getVariablesAsDocument(elementInstanceKey);
-    } else {
-      variables = variableState.getVariablesAsDocument(elementInstanceKey, variableNames);
-    }
-
-    return variables;
   }
 }
