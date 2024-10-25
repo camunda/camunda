@@ -459,6 +459,35 @@ public class TaskListenerTest {
             job -> assertThat(job.getVariables()).containsExactly(Map.entry("foo", "overwritten")));
   }
 
+  @Test
+  public void shouldProvideVariablesOfTaskCompletionFetchingOnlySpecifiedVariables() {
+    // given
+    final var processInstanceKey =
+        createProcessInstanceWithVariables(
+            createProcessWithCompleteTaskListeners(LISTENER_TYPE),
+            Map.ofEntries(Map.entry("foo", "bar"), Map.entry("bar", 123)));
+
+    // when
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .withVariables(Map.ofEntries(Map.entry("foo", "overwritten"), Map.entry("bar", 456)))
+        .complete();
+
+    // then
+    assertThat(
+            ENGINE
+                .jobs()
+                .withType(LISTENER_TYPE)
+                .withFetchVariables("foo")
+                .activate()
+                .getValue()
+                .getJobs())
+        .describedAs("Expect that only the specified variable foo is provided to the job")
+        .allSatisfy(
+            job -> assertThat(job.getVariables()).containsExactly(Map.entry("foo", "overwritten")));
+  }
+
   private void assertThatProcessInstanceCompleted(final long processInstanceKey) {
     assertThat(
             RecordingExporter.processInstanceRecords()
