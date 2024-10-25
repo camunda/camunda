@@ -1,4 +1,6 @@
-package main
+// process_tree.go
+//go:build windows
+package windows
 
 import (
 	"fmt"

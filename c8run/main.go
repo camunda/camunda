@@ -1,22 +1,18 @@
 package main
 
 import (
+	"c8run/internal/unix"
+	"c8run/internal/windows"
 	"errors"
 	"fmt"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 )
-
-type c8runSettings struct {
-	config   string
-	detached bool
-}
 
 func printHelp() {
 	optionsHelp := `Options:
@@ -28,7 +24,7 @@ func printHelp() {
 }
 
 func printStatus() {
-	endpoints, _ := os.ReadFile(".\\endpoints.txt")
+	endpoints, _ := os.ReadFile("endpoints.txt")
 	fmt.Println(string(endpoints))
 }
 
@@ -53,7 +49,7 @@ func queryElasticsearchHealth(name string, url string) {
 	fmt.Println(name + " has successfully been started.")
 }
 
-func queryCamundaHealth(name string, url string) {
+func queryCamundaHealth(c8 C8Run, name string, url string) {
 	healthy := false
 	for retries := 24; retries >= 0; retries-- {
 		fmt.Println("Waiting for " + name + " to start. " + strconv.Itoa(retries) + " retries left")
@@ -71,24 +67,17 @@ func queryCamundaHealth(name string, url string) {
 		fmt.Println("Error: " + name + " did not start!")
 		os.Exit(1)
 	}
-	operateUrl := "http://localhost:8080/operate/login"
-	openBrowserCmdString := "start " + operateUrl
-	openBrowserCmd := exec.Command("cmd", "/C", openBrowserCmdString)
-	openBrowserCmd.SysProcAttr = &syscall.SysProcAttr{
-		// CreationFlags: 0x08000000 | 0x00000200, // CREATE_NO_WINDOW, CREATE_NEW_PROCESS_GROUP : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
-	}
-	fmt.Println(name + " has successfully been started.")
-	openBrowserCmd.Run()
+	c8.OpenBrowser(name)
 	printStatus()
 }
 
-func stopProcess(pidfile string) {
+func stopProcess(c8 C8Run, pidfile string) {
 	if _, err := os.Stat(pidfile); err == nil {
 		commandPidText, _ := os.ReadFile(pidfile)
 		commandPidStripped := strings.TrimSpace(string(commandPidText))
 		commandPid, _ := strconv.Atoi(string(commandPidStripped))
 
-		for _, process := range process_tree(int(commandPid)) {
+		for _, process := range c8.GetProcessTree(int(commandPid)) {
 			process.Kill()
 		}
 		os.Remove(pidfile)
@@ -105,7 +94,7 @@ func stopProcess(pidfile string) {
 
 }
 
-func parseCommandLineOptions(args []string, settings *c8runSettings) *c8runSettings {
+func parseCommandLineOptions(args []string, settings *C8RunSettings) *C8RunSettings {
 	if len(args) == 0 {
 		return settings
 	}
@@ -131,13 +120,26 @@ func parseCommandLineOptions(args []string, settings *c8runSettings) *c8runSetti
 
 }
 
+func getC8RunPlatform() C8Run {
+	if runtime.GOOS == "windows" {
+		return &windows.WindowsC8Run{}
+	} else if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
+		return &unix.UnixC8Run{}
+	}
+	panic("Unsupported operating system")
+}
+
 func main() {
+	c8 := getC8RunPlatform()
 	baseDir, _ := os.Getwd()
 	// parentDir, _ := filepath.Dir(baseDir)
 	parentDir := baseDir
 	// deploymentDir := filepath.Join(parentDir, "configuration", "resources")
 	elasticsearchVersion := "8.13.4"
 	camundaVersion := "8.6.2"
+	if os.Getenv("CAMUNDA_VERSION") != "" {
+		camundaVersion = os.Getenv("CAMUNDA_VERSION")
+	}
 	expectedJavaVersion := 21
 
 	elasticsearchPidPath := filepath.Join(baseDir, "elasticsearch.pid")
@@ -159,32 +161,36 @@ func main() {
 
 	if os.Args[1] == "start" {
 		baseCommand = "start"
-	} else {
+	} else if os.Args[1] == "stop" {
 		baseCommand = "stop"
-	}
+	} else if os.Args[1] == "package" {
+		baseCommand = "package"
+        } else {
+                panic("Unsupported operation")
+        }
 	fmt.Print("Command: " + baseCommand + "\n")
 
-	var settings c8runSettings
+	var settings C8RunSettings
 	if len(os.Args) > 2 {
 		parseCommandLineOptions(os.Args[2:], &settings)
 	}
 
-        javaHome := os.Getenv("JAVA_HOME")
+	javaHome := os.Getenv("JAVA_HOME")
 	javaBinary := "java"
-        if javaHome != "" {
-	        javaBinary = filepath.Join(javaHome, "bin", "java")
-        }
+	if javaHome != "" {
+		javaBinary = filepath.Join(javaHome, "bin", "java")
+	}
 
 	if baseCommand == "start" {
 		javaVersion := os.Getenv("JAVA_VERSION")
 		if javaVersion == "" {
-			javaVersionCmd := exec.Command("cmd", "/C", javaBinary + " --version")
+			javaVersionCmd := c8.GetVersionCmd(javaBinary)
 			var out strings.Builder
-                        var stderr strings.Builder
+			var stderr strings.Builder
 			javaVersionCmd.Stdout = &out
 			javaVersionCmd.Stderr = &stderr
 			javaVersionCmd.Run()
-                        javaVersionOutput := out.String()
+			javaVersionOutput := out.String()
 			javaVersionOutputSplit := strings.Split(javaVersionOutput, " ")
 			if len(javaVersionOutputSplit) < 2 {
 				fmt.Println("Java needs to be installed. Please install JDK " + strconv.Itoa(expectedJavaVersion) + " or newer.")
@@ -226,17 +232,14 @@ func main() {
 			os.Exit(1)
 		}
 
-		elasticsearchCmdString := filepath.Join(parentDir, "elasticsearch-"+elasticsearchVersion, "bin", "elasticsearch.bat") + " -E xpack.ml.enabled=false -E xpack.security.enabled=false"
-		elasticsearchCmd := exec.Command("cmd", "/C", elasticsearchCmdString)
+		elasticsearchCmd := c8.GetElasticsearchCmd(elasticsearchVersion, parentDir)
 
-		elasticsearchCmd.SysProcAttr = &syscall.SysProcAttr{
-			CreationFlags: 0x08000000 | 0x00000200, // CREATE_NO_WINDOW, CREATE_NEW_PROCESS_GROUP : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
-			// CreationFlags: 0x00000008 | 0x00000200, // DETACHED_PROCESS, CREATE_NEW_PROCESS_GROUP : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
-			// CreationFlags: 0x00000010, // CREATE_NEW_CONSOLE : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
-		}
 		elasticsearchCmd.Stdout = elasticsearchLogFile
 		elasticsearchCmd.Stderr = elasticsearchLogFile
-		elasticsearchCmd.Start()
+		err = elasticsearchCmd.Start()
+		if err != nil {
+			panic(err)
+		}
 		fmt.Print("Process id ", elasticsearchCmd.Process.Pid, "\n")
 
 		elasticsearchPidFile, err := os.OpenFile(elasticsearchPidPath, os.O_RDWR|os.O_CREATE, 0644)
@@ -247,22 +250,19 @@ func main() {
 		elasticsearchPidFile.Write([]byte(strconv.Itoa(elasticsearchCmd.Process.Pid)))
 		queryElasticsearchHealth("Elasticsearch", "http://localhost:9200/_cluster/health?wait_for_status=green&wait_for_active_shards=all&wait_for_no_initializing_shards=true&timeout=120s")
 
-		connectorsCmdString := javaBinary + " -classpath " + parentDir + "\\*;" + parentDir + "\\custom_connectors\\*;" + parentDir + "\\camunda-zeebe-" + camundaVersion + "\\lib\\* io.camunda.connector.runtime.app.ConnectorRuntimeApplication --spring.config.location=" + parentDir + "\\connectors-application.properties"
-		connectorsCmd := exec.Command("cmd", "/C", connectorsCmdString)
+		connectorsCmd := c8.GetConnectorsCmd(javaBinary, parentDir, camundaVersion)
 		connectorsLogPath := filepath.Join(parentDir, "log", "connectors.log")
 		connectorsLogFile, err := os.OpenFile(connectorsLogPath, os.O_RDWR|os.O_CREATE, 0644)
 		if err != nil {
 			fmt.Print("Failed to open file: " + connectorsLogPath)
 			os.Exit(1)
 		}
-		connectorsCmd.SysProcAttr = &syscall.SysProcAttr{
-			CreationFlags: 0x08000000 | 0x00000200, // CREATE_NO_WINDOW, CREATE_NEW_PROCESS_GROUP : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
-			// CreationFlags: 0x00000008 | 0x00000200, // DETACHED_PROCESS, CREATE_NEW_PROCESS_GROUP : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
-			// CreationFlags: 0x00000010, // CREATE_NEW_CONSOLE : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
-		}
 		connectorsCmd.Stdout = connectorsLogFile
 		connectorsCmd.Stderr = connectorsLogFile
-		connectorsCmd.Start()
+		err = connectorsCmd.Start()
+		if err != nil {
+			panic(err)
+		}
 
 		connectorsPidFile, err := os.OpenFile(connectorsPidPath, os.O_RDWR|os.O_CREATE, 0644)
 		if err != nil {
@@ -276,39 +276,45 @@ func main() {
 		} else {
 			extraArgs = "--spring.config.location=" + filepath.Join(parentDir, "configuration")
 		}
-		camundaCmdString := parentDir + "\\camunda-zeebe-" + camundaVersion + "\\bin\\camunda " + extraArgs
-		fmt.Println(camundaCmdString)
-		camundaCmd := exec.Command("cmd", "/C", camundaCmdString)
+		camundaCmd := c8.GetCamundaCmd(camundaVersion, parentDir, extraArgs)
 		camundaLogPath := filepath.Join(parentDir, "log", "camunda.log")
 		camundaLogFile, err := os.OpenFile(camundaLogPath, os.O_RDWR|os.O_CREATE, 0644)
 		if err != nil {
 			fmt.Print("Failed to open file: " + camundaLogPath)
 			os.Exit(1)
 		}
-		camundaCmd.SysProcAttr = &syscall.SysProcAttr{
-			CreationFlags: 0x08000000 | 0x00000200, // CREATE_NO_WINDOW, CREATE_NEW_PROCESS_GROUP : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
-			// CreationFlags: 0x00000008 | 0x00000200, // DETACHED_PROCESS, CREATE_NEW_PROCESS_GROUP : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
-			// CreationFlags: 0x00000010, // CREATE_NEW_CONSOLE : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
-		}
 		camundaCmd.Stdout = camundaLogFile
 		camundaCmd.Stderr = camundaLogFile
-		camundaCmd.Start()
+		err = camundaCmd.Start()
+		if err != nil {
+			panic(err)
+		}
 		camundaPidFile, err := os.OpenFile(camundaPidPath, os.O_RDWR|os.O_CREATE, 0644)
 		if err != nil {
 			fmt.Print("Failed to open file: " + camundaPidPath)
 			os.Exit(1)
 		}
 		camundaPidFile.Write([]byte(strconv.Itoa(camundaCmd.Process.Pid)))
-		queryCamundaHealth("Camunda", "http://localhost:8080/operate/login")
+		queryCamundaHealth(c8, "Camunda", "http://localhost:8080/operate/login")
 	}
 
 	if baseCommand == "stop" {
-		stopProcess(elasticsearchPidPath)
+		stopProcess(c8, elasticsearchPidPath)
 		fmt.Println("Elasticsearch is stopped.")
-		stopProcess(connectorsPidPath)
+		stopProcess(c8, connectorsPidPath)
 		fmt.Println("Connectors is stopped.")
-		stopProcess(camundaPidPath)
+		stopProcess(c8, camundaPidPath)
 		fmt.Println("Camunda is stopped.")
+	}
+
+	if baseCommand == "package" {
+                if runtime.GOOS == "windows" {
+		        PackageWindows(camundaVersion, elasticsearchVersion)
+                } else if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
+		        PackageUnix(camundaVersion, elasticsearchVersion)
+                } else {
+                        panic("Unsupported system")
+                }
 	}
 
 }

@@ -30,8 +30,16 @@ jobs:
       - name: print architecture
         run: arch
 
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '>=1.23.1'
+
+      - name: Build c8run
+        run: go build
+        working-directory: ./c8run
+
       - name: make a package
-        run: ./package.sh
+        run: ./c8run package
         working-directory: ./c8run
 
       - if: ${{ matrix.os == 'macos-13' }}
@@ -100,8 +108,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '>=1.23.1'
+
+      - name: Build c8run
+        run: go build
+        working-directory: .\c8run
+
       - name: make a package
-        run: .\package.bat
+        run: .\c8run.exe package
         working-directory: .\c8run
 
 
