@@ -44,6 +44,50 @@ public class JobVariablesCollector {
       processVariables =
           variableState.getVariablesAsDocument(elementInstanceKey, requestedVariables);
     }
-    jobRecord.setVariables(processVariables);
+
+    final DirectBuffer jobVariables =
+        switch (jobRecord.getJobKind()) {
+          case BPMN_ELEMENT, EXECUTION_LISTENER -> processVariables;
+          case TASK_LISTENER -> {
+            final var taskVariablesMap = getTaskVariables(requestedVariables, elementInstanceKey);
+
+            // merge the two variables maps favoring the task variables over process variables
+            final Map<String, Object> taskListenersVariables =
+                MsgPackConverter.convertToMap(processVariables);
+            taskListenersVariables.putAll(taskVariablesMap);
+            yield BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(taskListenersVariables));
+          }
+        };
+
+    jobRecord.setVariables(jobVariables);
+  }
+
+  private Map<String, Object> getTaskVariables(
+      final Collection<DirectBuffer> requestedVariables, final long elementInstanceKey) {
+    final var elementInstance = elementInstanceState.getInstance(elementInstanceKey);
+    if (elementInstance == null) {
+      return Map.of();
+    }
+    final var userTaskIntermediateState =
+        userTaskState.getIntermediateState(elementInstance.getUserTaskKey());
+    if (userTaskIntermediateState == null) {
+      return Map.of();
+    }
+    final var taskVariables = userTaskIntermediateState.getRecord().getVariablesBuffer();
+    if (taskVariables.capacity() <= 0) {
+      return Map.of();
+    }
+    final Map<String, Object> taskVariablesMap = MsgPackConverter.convertToMap(taskVariables);
+    if (requestedVariables.isEmpty()) {
+      return taskVariablesMap;
+    }
+    final Map<String, Object> filteredTaskVariablesMap = new HashMap<>();
+    taskVariablesMap.forEach(
+        (key, value) -> {
+          if (requestedVariables.contains(BufferUtil.wrapString(key))) {
+            filteredTaskVariablesMap.put(key, value);
+          }
+        });
+    return filteredTaskVariablesMap;
   }
 }
