@@ -5,11 +5,6 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+package io.camunda.zeebe.engine.processing.deployment.transform;
 
-import {get} from 'request';
-
-export async function loadEntitiesNames(entitiesIds) {
-  const res = await get('api/entities/names', entitiesIds);
-
-  return await res.json();
-}
+public interface DeploymentResourceContext {}

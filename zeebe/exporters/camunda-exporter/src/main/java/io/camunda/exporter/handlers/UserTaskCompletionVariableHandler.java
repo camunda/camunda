@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.handlers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship;
@@ -14,32 +16,35 @@ import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoin
 import io.camunda.webapps.schema.entities.tasklist.TaskVariableEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.VariableIntent;
-import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class UserTaskVariableHandler
-    implements ExportHandler<TaskVariableEntity, VariableRecordValue> {
+public class UserTaskCompletionVariableHandler
+    implements ExportHandler<TaskVariableEntity, UserTaskRecordValue> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(UserTaskVariableHandler.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(UserTaskCompletionVariableHandler.class);
 
   private static final String ID_PATTERN = "%s-%s";
+  private static final ObjectMapper MAPPER = new ObjectMapper();
   protected final int variableSizeThreshold;
   private final String indexName;
 
-  public UserTaskVariableHandler(final String indexName, final int variableSizeThreshold) {
+  public UserTaskCompletionVariableHandler(
+      final String indexName, final int variableSizeThreshold) {
     this.indexName = indexName;
     this.variableSizeThreshold = variableSizeThreshold;
   }
 
   @Override
   public ValueType getHandledValueType() {
-    return ValueType.VARIABLE;
+    return ValueType.USER_TASK;
   }
 
   @Override
@@ -48,14 +53,24 @@ public class UserTaskVariableHandler
   }
 
   @Override
-  public boolean handlesRecord(final Record<VariableRecordValue> record) {
-    return !VariableIntent.MIGRATED.equals(record.getIntent());
+  public boolean handlesRecord(final Record<UserTaskRecordValue> record) {
+    return UserTaskIntent.COMPLETED.name().equals(record.getIntent().name())
+        && record.getValue().getVariables() != null
+        && !record.getValue().getVariables().isEmpty();
   }
 
   @Override
-  public List<String> generateIds(final Record<VariableRecordValue> record) {
-    return List.of(
-        ID_PATTERN.formatted(record.getValue().getScopeKey(), record.getValue().getName()));
+  public List<String> generateIds(final Record<UserTaskRecordValue> record) {
+    final List<String> variableIds = new ArrayList<>();
+    record
+        .getValue()
+        .getVariables()
+        .keySet()
+        .forEach(
+            variableName ->
+                variableIds.add(
+                    ID_PATTERN.formatted(record.getValue().getElementInstanceKey(), variableName)));
+    return variableIds;
   }
 
   @Override
@@ -65,33 +80,41 @@ public class UserTaskVariableHandler
 
   @Override
   public void updateEntity(
-      final Record<VariableRecordValue> record, final TaskVariableEntity entity) {
+      final Record<UserTaskRecordValue> record, final TaskVariableEntity entity) {
+    final String variableName = entity.getId().split("-")[1];
     entity
         .setPartitionId(record.getPartitionId())
         .setPosition(record.getPosition())
+        .setName(variableName)
         .setTenantId(record.getValue().getTenantId())
         .setKey(record.getKey())
         .setProcessInstanceId(record.getValue().getProcessInstanceKey())
-        .setScopeKey(record.getValue().getScopeKey())
-        .setName(record.getValue().getName());
+        .setScopeKey(record.getValue().getElementInstanceKey());
 
-    if (record.getValue().getValue().length() > variableSizeThreshold) {
-      entity.setValue(record.getValue().getValue().substring(0, variableSizeThreshold));
-      entity.setFullValue(record.getValue().getValue());
+    String variableStringValue = "";
+    final Object variableValue = record.getValue().getVariables().get(variableName);
+    try {
+      variableStringValue = MAPPER.writeValueAsString(variableValue);
+    } catch (final JsonProcessingException e) {
+      LOGGER.error(
+          String.format(
+              "Failed to parse variable '%s' value as string '%s'", variableName, variableValue),
+          e);
+    }
+
+    if (variableStringValue.length() > variableSizeThreshold) {
+      entity.setValue(variableStringValue.substring(0, variableSizeThreshold));
+      entity.setFullValue(variableStringValue);
       entity.setIsTruncated(true);
     } else {
-      entity.setValue(record.getValue().getValue());
+      entity.setValue(variableStringValue);
       entity.setFullValue(null);
       entity.setIsTruncated(false);
     }
 
     final TaskJoinRelationship joinRelationship = new TaskJoinRelationship();
     joinRelationship.setParent(entity.getScopeKey());
-    joinRelationship.setName(
-        // Whether it's a process or a task variable
-        Objects.equals(entity.getProcessInstanceId(), entity.getScopeKey())
-            ? TaskJoinRelationshipType.PROCESS_VARIABLE.getType()
-            : TaskJoinRelationshipType.TASK_VARIABLE.getType());
+    joinRelationship.setName(TaskJoinRelationshipType.TASK_VARIABLE.getType());
     entity.setJoin(joinRelationship);
   }
 
@@ -102,6 +125,7 @@ public class UserTaskVariableHandler
     updateFields.put(TaskTemplate.VARIABLE_VALUE, entity.getValue());
     updateFields.put(TaskTemplate.VARIABLE_FULL_VALUE, entity.getFullValue());
     updateFields.put(TaskTemplate.IS_TRUNCATED, entity.getIsTruncated());
+    updateFields.put(TaskTemplate.JOIN_FIELD_NAME, entity.getJoin());
 
     batchRequest.upsertWithRouting(
         indexName, entity.getId(), entity, updateFields, String.valueOf(entity.getScopeKey()));
