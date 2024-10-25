@@ -19,6 +19,10 @@ import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public class DbTenantState implements MutableTenantState {
@@ -153,5 +157,22 @@ public class DbTenantState implements MutableTenantState {
     this.tenantKey.wrapLong(tenantKey);
     this.entityKey.wrapLong(entityKey);
     return entityByTenantColumnFamily.exists(entityByTenantKey);
+  }
+
+  @Override
+  public Map<EntityType, List<Long>> getEntitiesByType(final long tenantKey) {
+    final Map<EntityType, List<Long>> entitiesMap = new HashMap<>();
+    this.tenantKey.wrapLong(tenantKey);
+
+    entityByTenantColumnFamily.whileEqualPrefix(
+        fkTenantKey,
+        (compositeKey, entityTypeValue) -> {
+          final var entityType = entityTypeValue.getEntityType();
+          final var entityKey = compositeKey.second().getValue();
+          entitiesMap.putIfAbsent(entityType, new ArrayList<>());
+          entitiesMap.get(entityType).add(entityKey);
+        });
+
+    return entitiesMap;
   }
 }
