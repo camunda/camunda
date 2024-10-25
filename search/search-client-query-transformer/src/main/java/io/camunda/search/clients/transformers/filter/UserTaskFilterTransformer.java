@@ -102,7 +102,7 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
   @Override
   public List<String> toIndices(final UserTaskFilter filter) {
     if (isCamundaExporterEnabled) {
-      return List.of("tasklist-task-8.7.0_");
+      return List.of("tasklist-task-8.5.0_");
     }
     return List.of("tasklist-list-view-8.6.0_");
   }
