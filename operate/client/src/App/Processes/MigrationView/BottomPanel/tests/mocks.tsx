@@ -159,6 +159,16 @@ const elements = {
     name: 'Error start event',
     type: 'ErrorStartEvent',
   },
+  MultiInstanceSubProcess: {
+    id: 'MultiInstanceSubProcess',
+    name: 'Multi instance sub process',
+    type: 'MultiInstanceSubProcess',
+  },
+  MultiInstanceTask: {
+    id: 'MultiInstanceTask',
+    name: 'Multi instance task',
+    type: 'MultiInstanceTask',
+  },
 };
 
 type Props = {

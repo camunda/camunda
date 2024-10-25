@@ -119,6 +119,7 @@
       <bpmn:outgoing>Flow_1lx7h0o</bpmn:outgoing>
       <bpmn:outgoing>Flow_1ggtty0</bpmn:outgoing>
       <bpmn:outgoing>Flow_030xtpk</bpmn:outgoing>
+      <bpmn:outgoing>Flow_17bv8lx</bpmn:outgoing>
     </bpmn:parallelGateway>
     <bpmn:sequenceFlow id="Flow_05ul9v8" sourceRef="Gateway_1" targetRef="TaskA" />
     <bpmn:sequenceFlow id="Flow_0jjil6z" sourceRef="Gateway_1" targetRef="TaskB" />
@@ -157,6 +158,7 @@
       <bpmn:incoming>Flow_06rofsk</bpmn:incoming>
       <bpmn:incoming>Flow_0i6qn1g</bpmn:incoming>
       <bpmn:incoming>Flow_0teqyyg</bpmn:incoming>
+      <bpmn:incoming>Flow_0hb1y3g</bpmn:incoming>
       <bpmn:outgoing>Flow_1xou7mm</bpmn:outgoing>
     </bpmn:parallelGateway>
     <bpmn:sequenceFlow id="Flow_1bvocj3" sourceRef="TimerIntermediateCatch" targetRef="Gateway_2" />
@@ -358,6 +360,37 @@
     </bpmn:subProcess>
     <bpmn:sequenceFlow id="Flow_030xtpk" sourceRef="Gateway_1" targetRef="SubProcess" />
     <bpmn:sequenceFlow id="Flow_0teqyyg" sourceRef="SubProcess" targetRef="Gateway_2" />
+    <bpmn:subProcess id="MultiInstanceSubProcess" name="Multi instance sub process">
+      <bpmn:incoming>Flow_17bv8lx</bpmn:incoming>
+      <bpmn:outgoing>Flow_0hb1y3g</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics>
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=[1,2,3,4]" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:startEvent id="Event_1b83nzw">
+        <bpmn:outgoing>Flow_00irh9p</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:endEvent id="Event_0lqkl4x">
+        <bpmn:incoming>Flow_10r7wrx</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:serviceTask id="MultiInstanceTask" name="Multi instance task">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="foo" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>Flow_00irh9p</bpmn:incoming>
+        <bpmn:outgoing>Flow_10r7wrx</bpmn:outgoing>
+        <bpmn:multiInstanceLoopCharacteristics isSequential="true">
+          <bpmn:extensionElements>
+            <zeebe:loopCharacteristics inputCollection="=[1,2,3,4]" />
+          </bpmn:extensionElements>
+        </bpmn:multiInstanceLoopCharacteristics>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="Flow_00irh9p" sourceRef="Event_1b83nzw" targetRef="MultiInstanceTask" />
+      <bpmn:sequenceFlow id="Flow_10r7wrx" sourceRef="MultiInstanceTask" targetRef="Event_0lqkl4x" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_17bv8lx" sourceRef="Gateway_1" targetRef="MultiInstanceSubProcess" />
+    <bpmn:sequenceFlow id="Flow_0hb1y3g" sourceRef="MultiInstanceSubProcess" targetRef="Gateway_2" />
   </bpmn:process>
   <bpmn:message id="Message_0so1os3" name="Message_1">
     <bpmn:extensionElements>
@@ -662,6 +695,28 @@
         <di:waypoint x="463" y="2110" />
         <di:waypoint x="640" y="2110" />
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Activity_1ms6g9k_di" bpmnElement="MultiInstanceSubProcess" isExpanded="true">
+        <dc:Bounds x="475" y="2460" width="350" height="200" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1b83nzw_di" bpmnElement="Event_1b83nzw">
+        <dc:Bounds x="515" y="2542" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0lqkl4x_di" bpmnElement="Event_0lqkl4x">
+        <dc:Bounds x="755" y="2542" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0j5j3d3_di" bpmnElement="MultiInstanceTask">
+        <dc:Bounds x="603" y="2520" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_00irh9p_di" bpmnElement="Flow_00irh9p">
+        <di:waypoint x="551" y="2560" />
+        <di:waypoint x="603" y="2560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_10r7wrx_di" bpmnElement="Flow_10r7wrx">
+        <di:waypoint x="703" y="2560" />
+        <di:waypoint x="755" y="2560" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="Event_09ic20e_di" bpmnElement="TimerNonInterrupting">
         <dc:Bounds x="452" y="1041" width="36" height="36" />
         <bpmndi:BPMNLabel>
@@ -922,6 +977,16 @@
       <bpmndi:BPMNEdge id="Flow_0teqyyg_di" bpmnElement="Flow_0teqyyg">
         <di:waypoint x="773" y="2225" />
         <di:waypoint x="1000" y="2225" />
+        <di:waypoint x="1000" y="163" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_17bv8lx_di" bpmnElement="Flow_17bv8lx">
+        <di:waypoint x="310" y="163" />
+        <di:waypoint x="310" y="2560" />
+        <di:waypoint x="475" y="2560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0hb1y3g_di" bpmnElement="Flow_0hb1y3g">
+        <di:waypoint x="825" y="2560" />
+        <di:waypoint x="1000" y="2560" />
         <di:waypoint x="1000" y="163" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
