@@ -36,4 +36,11 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=camunda
       - GF_USERS_ALLOW_SIGN_UP=false
 
+  zeebe:
+    image: camunda/zeebe:${ZEEBE_VERSION:-SNAPSHOT}
+    container_name: zeebe
+    ports:
+      - 9600:9600
+
+
 
