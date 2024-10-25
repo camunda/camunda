@@ -27,6 +27,7 @@ import io.camunda.webapps.schema.entities.operate.EventMetadataEntity;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.FlowNodeType;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskVariableEntity;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -94,10 +95,6 @@ class FlowNodeInstanceMetadataBuilderTest {
         Optional.of(
             new TaskEntity()
                 .setKey(42L)
-                /*.setVariables(
-                """
-                { "name": "Homer Simpson", "City":"Springfield" }
-                """)*/
                 .setAction("action")
                 .setAssignee("Marge")
                 .setCandidateUsers(new String[] {"Lisa", "Bart"})
@@ -115,11 +112,16 @@ class FlowNodeInstanceMetadataBuilderTest {
                         .setCorrelationKey("23-05")));
     when(userTaskReader.getUserTaskByFlowNodeInstanceKey(flowNodeInstance.getKey()))
         .thenReturn(userTask);
+    when(userTaskReader.getUserTaskCompletedVariables(flowNodeInstance.getKey()))
+        .thenReturn(
+            List.of(
+                new TaskVariableEntity().setName("name").setValue("Homer Simpson"),
+                new TaskVariableEntity().setName("City").setValue("Springfield")));
     final var metadata = (UserTaskInstanceMetadataDto) builder.buildFrom(flowNodeInstance);
     assertThat(metadata.getFlowNodeType()).isEqualTo(FlowNodeType.USER_TASK);
     assertStandardValues(metadata);
-    /*assertThat(metadata.getVariables())
-    .isEqualTo(Map.of("name", "Homer Simpson", "City", "Springfield"));*/
+    assertThat(metadata.getVariables())
+        .isEqualTo(Map.of("name", "Homer Simpson", "City", "Springfield"));
     assertThat(metadata.getAction()).isEqualTo("action");
     assertThat(metadata.getAssignee()).isEqualTo("Marge");
     assertThat(metadata.getCandidateUsers()).isEqualTo(List.of("Lisa", "Bart"));
@@ -138,10 +140,7 @@ class FlowNodeInstanceMetadataBuilderTest {
   void buildUserTaskMetadataWithInvalidVariables() {
     final var flowNodeInstance = new FlowNodeInstanceEntity().setType(FlowNodeType.USER_TASK);
     fillStandardValues(flowNodeInstance);
-    final var userTask = Optional.of(new TaskEntity().setKey(42L) /*.setVariables(
-                    """
-                    { "name": "Homer Simpson"
-                    """)*/);
+    final var userTask = Optional.of(new TaskEntity().setKey(42L));
     when(eventReader.getEventEntityByFlowNodeInstanceId(flowNodeInstance.getId()))
         .thenReturn(
             new EventEntity()

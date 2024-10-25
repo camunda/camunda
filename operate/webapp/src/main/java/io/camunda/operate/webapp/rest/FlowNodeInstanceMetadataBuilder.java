@@ -116,8 +116,7 @@ public class FlowNodeInstanceMetadataBuilder {
       final FlowNodeInstanceEntity flowNodeInstance) {
     final var userTask = userTaskReader.getUserTaskByFlowNodeInstanceKey(flowNodeInstance.getKey());
     final var event = eventReader.getEventEntityByFlowNodeInstanceId(flowNodeInstance.getId());
-    final var variables =
-        userTaskReader.getUserTaskCompletedVariables(flowNodeInstance.getProcessInstanceKey());
+    final var variables = userTaskReader.getUserTaskCompletedVariables(flowNodeInstance.getKey());
     final var result =
         new UserTaskInstanceMetadataDto(
             flowNodeInstance.getFlowNodeId(),

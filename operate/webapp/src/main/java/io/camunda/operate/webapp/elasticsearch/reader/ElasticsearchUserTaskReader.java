@@ -88,8 +88,8 @@ public class ElasticsearchUserTaskReader extends AbstractReader implements UserT
 
     final HasParentQueryBuilder hasParentQuery =
         new HasParentQueryBuilder(
-            TaskJoinRelationshipType.TASK.getType(), // Parent type as defined in your index
-            QueryBuilders.termQuery(TaskTemplate.ID, flowNodeInstanceKey), // Parent ID
+            TaskJoinRelationshipType.TASK.getType(),
+            QueryBuilders.termQuery(TaskTemplate.ID, flowNodeInstanceKey),
             false);
 
     // Make sure `name` field exists, indicating only variables are present in the result set
