@@ -56,7 +56,7 @@ public class UserStateTest {
     // then
     final var persistedUser = userState.getUser(user.getUsername());
     assertThat(persistedUser).isPresent();
-    assertThat(persistedUser.get()).isEqualTo(user);
+    assertThat(persistedUser.get().getUser()).isEqualTo(user);
   }
 
   @DisplayName("should throw an exception when creating a user with a username that already exists")
@@ -201,11 +201,11 @@ public class UserStateTest {
     assertThat(persistedUser).isNotEmpty();
     assertThat(persistedUser.get())
         .extracting(
-            UserRecord::getUserKey,
-            UserRecord::getUsername,
-            UserRecord::getName,
-            UserRecord::getEmail,
-            UserRecord::getPassword)
+            PersistedUser::getUserKey,
+            PersistedUser::getUsername,
+            PersistedUser::getName,
+            PersistedUser::getEmail,
+            PersistedUser::getPassword)
         .containsExactly(userKey, username, name, email, password);
   }
 
