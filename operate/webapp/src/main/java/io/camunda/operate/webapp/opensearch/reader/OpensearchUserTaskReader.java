@@ -7,6 +7,7 @@
  */
 package io.camunda.operate.webapp.opensearch.reader;
 
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.exists;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.matchAll;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.withTenantCheck;
@@ -16,9 +17,13 @@ import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.webapp.reader.UserTaskReader;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
 import io.camunda.webapps.schema.entities.tasklist.TaskVariableEntity;
 import java.util.List;
 import java.util.Optional;
+import org.opensearch.client.opensearch._types.query_dsl.HasParentQuery;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -53,6 +58,21 @@ public class OpensearchUserTaskReader extends OpensearchAbstractReader implement
 
   @Override
   public List<TaskVariableEntity> getUserTaskCompletedVariables(final long flowNodeInstanceKey) {
-    return List.of();
+    final Query hasParentQuery =
+        new HasParentQuery.Builder()
+            .parentType(TaskJoinRelationshipType.TASK.getType())
+            .query(term(TaskTemplate.ID, flowNodeInstanceKey))
+            .build()
+            .query();
+
+    // Make sure `name` field exists, indicating only variables are present in the result set
+    final Query existsQuery = exists(TaskTemplate.VARIABLE_NAME);
+
+    final Query combinedQuery =
+        QueryBuilders.bool().must(hasParentQuery, existsQuery).build().toQuery();
+
+    final var request =
+        searchRequestBuilder(userTaskTemplate.getAlias()).query(withTenantCheck(combinedQuery));
+    return richOpenSearchClient.doc().searchValues(request, TaskVariableEntity.class);
   }
 }

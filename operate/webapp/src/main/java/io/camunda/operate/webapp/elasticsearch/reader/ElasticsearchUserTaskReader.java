@@ -16,6 +16,7 @@ import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.reader.UserTaskReader;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
 import io.camunda.webapps.schema.entities.tasklist.TaskVariableEntity;
 import java.io.IOException;
 import java.util.List;
@@ -87,12 +88,12 @@ public class ElasticsearchUserTaskReader extends AbstractReader implements UserT
 
     final HasParentQueryBuilder hasParentQuery =
         new HasParentQueryBuilder(
-            "task", // Parent type as defined in your index
-            QueryBuilders.termQuery("id", flowNodeInstanceKey), // Parent ID
+            TaskJoinRelationshipType.TASK.getType(), // Parent type as defined in your index
+            QueryBuilders.termQuery(TaskTemplate.ID, flowNodeInstanceKey), // Parent ID
             false);
 
     // Make sure `name` field exists, indicating only variables are present in the result set
-    final ExistsQueryBuilder existsQuery = QueryBuilders.existsQuery("name");
+    final ExistsQueryBuilder existsQuery = QueryBuilders.existsQuery(TaskTemplate.VARIABLE_NAME);
 
     final BoolQueryBuilder combinedQuery =
         QueryBuilders.boolQuery().must(hasParentQuery).must(existsQuery);
