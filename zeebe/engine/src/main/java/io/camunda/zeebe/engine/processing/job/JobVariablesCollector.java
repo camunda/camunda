@@ -24,14 +24,15 @@ public class JobVariablesCollector {
   public void setJobVariables(
       final Collection<DirectBuffer> requestedVariables, final JobRecord jobRecord) {
     final long elementInstanceKey = jobRecord.getElementInstanceKey();
-    final DirectBuffer variables;
+    final DirectBuffer processVariables;
     if (elementInstanceKey < 0) {
-      variables = DocumentValue.EMPTY_DOCUMENT;
+      processVariables = DocumentValue.EMPTY_DOCUMENT;
     } else if (requestedVariables.isEmpty()) {
-      variables = variableState.getVariablesAsDocument(elementInstanceKey);
+      processVariables = variableState.getVariablesAsDocument(elementInstanceKey);
     } else {
-      variables = variableState.getVariablesAsDocument(elementInstanceKey, requestedVariables);
+      processVariables =
+          variableState.getVariablesAsDocument(elementInstanceKey, requestedVariables);
     }
-    jobRecord.setVariables(variables);
+    jobRecord.setVariables(processVariables);
   }
 }
