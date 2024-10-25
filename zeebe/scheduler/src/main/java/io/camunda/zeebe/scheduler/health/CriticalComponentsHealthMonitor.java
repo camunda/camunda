@@ -8,6 +8,7 @@
 package io.camunda.zeebe.scheduler.health;
 
 import io.camunda.zeebe.scheduler.ActorControl;
+import io.camunda.zeebe.util.health.ComponentTreeListener;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.health.HealthMonitorable;
@@ -17,6 +18,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
 
@@ -34,24 +36,33 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
 
   private final String name;
   private final Duration monitoringInterval;
+  private final ComponentTreeListener graphListener;
 
   public CriticalComponentsHealthMonitor(
-      final String name, final ActorControl actor, final Logger log) {
-    this(name, actor, log, HEALTH_MONITORING_PERIOD);
+      final String name,
+      final ActorControl actor,
+      final ComponentTreeListener healthGraphMetrics,
+      final Optional<String> parentComponent,
+      final Logger log) {
+    this(name, actor, healthGraphMetrics, parentComponent, log, HEALTH_MONITORING_PERIOD);
   }
 
   public CriticalComponentsHealthMonitor(
       final String name,
       final ActorControl actor,
+      final ComponentTreeListener graphListener,
+      final Optional<String> parentComponent,
       final Logger log,
       final Duration monitoringInterval) {
     this.name = name;
     this.actor = actor;
     this.log = log;
+    this.graphListener = graphListener;
     this.monitoringInterval = monitoringInterval;
     healthReport =
         HealthReport.unhealthy(this)
             .withMessage("Components are not yet initialized", Instant.now());
+    this.graphListener.registerNode(this, parentComponent);
   }
 
   @Override
@@ -74,6 +85,9 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
           if (monitoredComponent != null) {
             componentHealth.remove(componentName);
             monitoredComponent.component.removeFailureListener(monitoredComponent);
+            graphListener.unregisterRelationship(name, componentName);
+            graphListener.unregisterNode(monitoredComponent.component);
+            log.info("Unregistered edge {}:{}", name, componentName);
           }
         });
   }
@@ -88,6 +102,10 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
 
           component.addFailureListener(monitoredComponent);
           calculateHealth();
+          // register graphs
+          // it's safe to do it more than once
+          graphListener.registerNode(component, Optional.of(name));
+          log.info("Registered component {}:{}", componentName, component.getName());
         });
   }
 
