@@ -95,9 +95,9 @@ class DocumentAuthorizationQueryStrategyTest {
                 s.withAuthentication(a -> a.user(123L))
                     .withAuthorization(
                         a -> a.permissionType(READ).resourceType(PROCESS_DEFINITION)));
-    when(searchClient.search(any(SearchQueryRequest.class), eq(AuthorizationEntity.class)))
+    when(searchClient.findAll(any(SearchQueryRequest.class), eq(AuthorizationEntity.class)))
         .thenReturn(
-            buildSearchQueryResponse(
+            List.of(
                 new AuthorizationEntity(
                     null,
                     null,
@@ -125,8 +125,8 @@ class DocumentAuthorizationQueryStrategyTest {
                 s.withAuthentication(a -> a.user(123L))
                     .withAuthorization(
                         a -> a.permissionType(READ).resourceType(PROCESS_DEFINITION)));
-    when(searchClient.search(any(SearchQueryRequest.class), eq(AuthorizationEntity.class)))
-        .thenReturn(SearchQueryResponse.of(r -> r));
+    when(searchClient.findAll(any(SearchQueryRequest.class), eq(AuthorizationEntity.class)))
+        .thenReturn(List.of());
 
     // when
     final SearchQueryRequest result =
@@ -149,10 +149,10 @@ class DocumentAuthorizationQueryStrategyTest {
                     .withAuthorization(
                         a -> a.permissionType(READ).resourceType(PROCESS_DEFINITION)));
     final var authorizationsSearchQueryCaptor = ArgumentCaptor.forClass(SearchQueryRequest.class);
-    when(searchClient.search(
+    when(searchClient.findAll(
             authorizationsSearchQueryCaptor.capture(), eq(AuthorizationEntity.class)))
         .thenReturn(
-            buildSearchQueryResponse(
+            List.of(
                 new AuthorizationEntity(
                     null,
                     null,

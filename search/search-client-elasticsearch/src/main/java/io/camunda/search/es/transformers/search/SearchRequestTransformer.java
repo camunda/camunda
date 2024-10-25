@@ -30,6 +30,10 @@ public final class SearchRequestTransformer
 
   @Override
   public SearchRequest apply(final SearchQueryRequest value) {
+    return toSearchRequestBuilder(value).build();
+  }
+
+  public SearchRequest.Builder toSearchRequestBuilder(final SearchQueryRequest value) {
     final var sort = value.sort();
     final var searchAfter = value.searchAfter();
     final var searchQuery = value.query();
@@ -54,8 +58,7 @@ public final class SearchRequestTransformer
     if (value.source() != null) {
       builder.source(of(value.source()));
     }
-
-    return builder.build();
+    return builder;
   }
 
   private List<SortOptions> of(final List<SearchSortOptions> values) {

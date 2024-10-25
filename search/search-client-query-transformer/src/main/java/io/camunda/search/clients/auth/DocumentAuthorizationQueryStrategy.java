@@ -9,14 +9,13 @@ package io.camunda.search.clients.auth;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
+import static io.camunda.search.page.SearchQueryPage.DEFAULT_SIZE;
 import static io.camunda.security.auth.Authorization.WILDCARD;
 
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.core.RequestBuilders;
 import io.camunda.search.clients.core.SearchQueryRequest;
-import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.clients.transformers.auth.AuthorizationQueryTransformers;
 import io.camunda.search.clients.transformers.filter.FilterTransformer;
@@ -24,7 +23,6 @@ import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.query.SearchQueryBase;
-import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -96,11 +94,8 @@ public class DocumentAuthorizationQueryStrategy implements AuthorizationQueryStr
     final List<Long> ownerKeys = collectOwnerKeys(authentication);
     final var authenticationQuery =
         buildAuthorizationSearchQuery(resourceType, permissionType, ownerKeys);
-    // TODO: handle pagination
     final var authorizationEntities =
-        getSearchResultTransformer()
-            .apply(searchClient.search(authenticationQuery, AuthorizationEntity.class))
-            .items();
+        searchClient.findAll(authenticationQuery, AuthorizationEntity.class);
     return authorizationEntities.stream()
         .flatMap(
             e ->
@@ -126,7 +121,8 @@ public class DocumentAuthorizationQueryStrategy implements AuthorizationQueryStr
     return RequestBuilders.searchRequest(
         b ->
             b.index(authorizationFilterTransformer.toIndices(authorizationFilter))
-                .query(authorizationFilterTransformer.toSearchQuery(authorizationFilter)));
+                .query(authorizationFilterTransformer.toSearchQuery(authorizationFilter))
+                .size(DEFAULT_SIZE));
   }
 
   private List<Long> collectOwnerKeys(final Authentication authentication) {
@@ -142,11 +138,5 @@ public class DocumentAuthorizationQueryStrategy implements AuthorizationQueryStr
 
   private FilterTransformer<AuthorizationFilter> getAuthorizationFilterTransformer() {
     return serviceTransformers.getFilterTransformer(AuthorizationFilter.class);
-  }
-
-  private ServiceTransformer<
-          SearchQueryResponse<AuthorizationEntity>, SearchQueryResult<AuthorizationEntity>>
-      getSearchResultTransformer() {
-    return serviceTransformers.getTransformer(SearchQueryResult.class);
   }
 }

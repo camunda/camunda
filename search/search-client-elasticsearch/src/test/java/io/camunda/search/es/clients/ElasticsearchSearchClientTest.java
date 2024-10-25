@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.os.clients;
+package io.camunda.search.es.clients;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -15,26 +15,26 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.ScrollResponse;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.search.clients.core.SearchQueryRequest;
+import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import io.camunda.search.exception.SearchQueryExecutionException;
-import io.camunda.search.os.transformers.OpensearchTransformers;
 import java.io.IOException;
 import java.util.List;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.client.opensearch.core.ScrollResponse;
-import org.opensearch.client.opensearch.core.SearchRequest;
-import org.opensearch.client.opensearch.core.SearchResponse;
-import org.opensearch.client.opensearch.core.search.Hit;
 
-public class OpensearchSearchClientTest {
+class ElasticsearchSearchClientTest {
 
   private static final String SCROLL_ID = "scrollId123";
-  private OpenSearchClient client;
-  private OpensearchSearchClient searchClient;
+  private ElasticsearchClient client;
+  private ElasticsearchSearchClient searchClient;
   private SearchQueryRequest searchRequest;
   private SearchResponse<Object> searchResponse;
   private ScrollResponse<Object> scrollResponse;
@@ -42,12 +42,12 @@ public class OpensearchSearchClientTest {
 
   @BeforeEach
   void setUp() {
-    client = mock(OpenSearchClient.class);
-    searchClient = new OpensearchSearchClient(client, new OpensearchTransformers());
+    client = mock(ElasticsearchClient.class);
+    searchClient = new ElasticsearchSearchClient(client, new ElasticsearchTransformers());
     searchRequest = mock(SearchQueryRequest.class);
     when(searchRequest.size()).thenReturn(null);
     searchResponse =
-        SearchResponse.searchResponseOf(
+        SearchResponse.of(
             f ->
                 f.scrollId(SCROLL_ID)
                     .hits(
