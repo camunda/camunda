@@ -101,6 +101,13 @@ message CompleteJobRequest {
   int64 jobKey = 1;
   // a JSON document representing the variables in the current task scope
   string variables = 2;
+  // an object representing results of the completed job
+  CompleteJobOutcome result = 3;
+}
+
+message CompleteJobOutcome{
+  // a boolean representing if worker has denied the reason for the job
+  bool denied = 1;
 }
 
 message CompleteJobResponse {

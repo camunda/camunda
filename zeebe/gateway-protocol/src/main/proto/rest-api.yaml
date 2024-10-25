@@ -4002,6 +4002,16 @@ components:
           description: The variables to complete the job with.
           type: object
           nullable: true
+        result:
+          $ref: "#/components/schemas/CompleteJobOutcome"
+    CompleteJobOutcome:
+      type: object
+      description: The result of a completed job
+      properties:
+        denied:
+          type: boolean
+          description: Indicates if worker has denied the reason for the job
+          nullable: true
     JobUpdateRequest:
       type: object
       properties:
