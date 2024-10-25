@@ -21,7 +21,8 @@ public record PartitionStatus(
     Phase streamProcessorPhase,
     ExporterPhase exporterPhase,
     Long exportedPosition,
-    ClockStatus clock) {
+    ClockStatus clock,
+    HealthTree health) {
   // without the modificationType, you need to interpret the modification based on its fields, which
   // may not always be obvious
   public record ClockStatus(Instant instant, String modificationType, Modification modification) {}

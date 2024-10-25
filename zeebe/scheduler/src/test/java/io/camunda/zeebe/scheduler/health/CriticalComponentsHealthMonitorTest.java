@@ -196,7 +196,6 @@ public class CriticalComponentsHealthMonitorTest {
       parentComponents[i] = parentComponent;
       if (i > 0) {
         parentComponents[i - 1].registerComponent(parentComponent.getName(), parentComponent);
-        waitUntilAllDone();
       }
 
       for (int j = 0; j < children; j++) {
@@ -204,10 +203,10 @@ public class CriticalComponentsHealthMonitorTest {
         components[i][j] = component;
         parentComponents[i].registerComponent(component.getName(), component);
       }
-      waitUntilAllDone();
     }
     waitUntilAllDone();
     final var root = parentComponents[0];
+
     // when
     // set a child unhealthy at level +1: all its "parents" will be unhealthy
     final var unhealthyFrom = levels - 2;
@@ -215,6 +214,7 @@ public class CriticalComponentsHealthMonitorTest {
     waitUntilAllDone();
     final var report = root.getHealthReport();
     var parentAtLevel = report;
+
     // then
     for (int i = 0; i < levels; i++) {
       if (i > 0) {

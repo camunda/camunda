@@ -17,6 +17,7 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.HealthMetrics;
 import io.camunda.zeebe.broker.system.partitions.impl.RecoverablePartitionTransitionException;
 import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.health.CriticalComponentsHealthMonitor;
@@ -29,7 +30,6 @@ import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -388,8 +388,8 @@ public final class ZeebePartition extends Actor
   }
 
   private void handleUnrecoverableFailure(final Throwable error) {
-    final var instant =
-        context.getStreamClock() != null ? context.getStreamClock().instant() : Instant.now();
+    final var instant = ActorClock.current().instant();
+
     final var report = HealthReport.dead(this).withIssue(error, instant);
     healthMetrics.setDead();
     zeebePartitionHealth.onUnrecoverableFailure(error);
