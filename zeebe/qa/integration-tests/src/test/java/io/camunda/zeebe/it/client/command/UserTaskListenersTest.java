@@ -54,6 +54,7 @@ public class UserTaskListenersTest {
   @AfterEach
   void tearDown() {
     workers.forEach(JobWorker::close);
+    workers.clear();
   }
 
   @Test
