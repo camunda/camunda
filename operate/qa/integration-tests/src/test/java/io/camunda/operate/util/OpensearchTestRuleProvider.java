@@ -12,8 +12,6 @@ import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.entities.BatchOperationEntity;
-import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateOpensearchProperties;
 import io.camunda.operate.property.OperateProperties;
@@ -44,6 +42,8 @@ import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionRequire
 import io.camunda.webapps.schema.entities.operate.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operate.listview.VariableForListViewEntity;
+import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;

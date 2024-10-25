@@ -11,9 +11,6 @@ import static io.camunda.operate.util.CollectionUtil.getOrDefaultForNullValue;
 import static io.camunda.operate.util.ConversionUtils.toLongOrNull;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.entities.OperationEntity;
-import io.camunda.operate.entities.OperationState;
-import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.templates.OperationTemplate;
 import io.camunda.operate.store.ListViewStore;
@@ -24,6 +21,9 @@ import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequest
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.UserService;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.entities.operation.OperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationState;
+import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;

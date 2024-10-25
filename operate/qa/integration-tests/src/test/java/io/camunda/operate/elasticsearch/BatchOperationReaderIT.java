@@ -11,7 +11,6 @@ import static io.camunda.operate.util.TestUtil.createBatchOperationEntity;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.webapp.rest.BatchOperationRestService;
@@ -19,6 +18,7 @@ import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
 import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;

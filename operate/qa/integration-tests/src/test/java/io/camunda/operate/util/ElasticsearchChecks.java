@@ -16,7 +16,6 @@ import static org.elasticsearch.index.query.QueryBuilders.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.entities.*;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.NotFoundException;
@@ -46,6 +45,7 @@ import io.camunda.webapps.schema.entities.operate.UserTaskEntity;
 import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
+import io.camunda.webapps.schema.entities.operation.OperationState;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;

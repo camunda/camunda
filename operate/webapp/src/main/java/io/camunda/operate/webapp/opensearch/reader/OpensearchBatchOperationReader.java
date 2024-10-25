@@ -16,12 +16,12 @@ import static io.camunda.operate.util.ConversionUtils.toStringArray;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.reader.BatchOperationReader;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
 import io.camunda.operate.webapp.security.UserService;
+import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import java.util.Arrays;
 import java.util.List;
 import org.opensearch.client.opensearch._types.SortOptions;

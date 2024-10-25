@@ -15,7 +15,6 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.entities.*;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
@@ -23,6 +22,10 @@ import io.camunda.operate.schema.templates.OperationTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.OperationStore;
 import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationState;
+import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;

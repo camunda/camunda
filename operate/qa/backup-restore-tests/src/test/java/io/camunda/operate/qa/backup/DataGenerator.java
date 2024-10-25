@@ -12,7 +12,6 @@ import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTem
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.qa.util.ZeebeTestUtil;
 import io.camunda.operate.util.RetryOperation;
@@ -22,6 +21,7 @@ import io.camunda.operate.webapp.rest.dto.ProcessGroupDto;
 import io.camunda.operate.webapp.rest.dto.SequenceFlowDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;

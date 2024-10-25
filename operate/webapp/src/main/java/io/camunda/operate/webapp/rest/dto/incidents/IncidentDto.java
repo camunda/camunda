@@ -7,8 +7,6 @@
  */
 package io.camunda.operate.webapp.rest.dto.incidents;
 
-import io.camunda.operate.entities.OperationEntity;
-import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.webapp.data.IncidentDataHolder;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
@@ -16,6 +14,8 @@ import io.camunda.operate.webapp.rest.dto.OperationDto;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
 import io.camunda.operate.webapp.rest.dto.metadata.DecisionInstanceReferenceDto;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
+import io.camunda.webapps.schema.entities.operation.OperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationState;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;

@@ -14,7 +14,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
@@ -26,6 +25,7 @@ import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.zeebe.operation.ResolveIncidentHandler;
 import io.camunda.webapps.schema.entities.operate.ErrorType;
+import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;

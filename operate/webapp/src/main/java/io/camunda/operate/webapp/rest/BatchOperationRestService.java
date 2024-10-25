@@ -10,13 +10,13 @@ package io.camunda.operate.webapp.rest;
 import static io.camunda.operate.webapp.rest.BatchOperationRestService.BATCH_OPERATIONS_URL;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.webapp.InternalAPIErrorController;
 import io.camunda.operate.webapp.reader.BatchOperationReader;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.webapp.transform.DataAggregator;
+import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;

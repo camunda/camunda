@@ -9,7 +9,7 @@ package io.camunda.operate.enties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.operate.entities.OperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Test;
 
