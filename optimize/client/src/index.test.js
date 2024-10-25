@@ -8,7 +8,7 @@
 
 import fs from 'fs';
 
-const blacklistedFiles = ['setupTests.ts'];
+const blacklistedFiles = ['setupTests.ts', 'jest.polyfills.ts'];
 const blacklistedDependencies = ['@lexical/'];
 
 function getAllFilesInDirectory(dir, filelist) {

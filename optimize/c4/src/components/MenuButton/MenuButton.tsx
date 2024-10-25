@@ -28,7 +28,7 @@ interface MenuButtonProps
 	menuLabel: string
 	iconDescription?: string
 	hasIconOnly?: boolean
-	menuTarget?: HTMLElement | null
+	menuTarget?: HTMLElement
 	ariaLabel?: string
 }
 

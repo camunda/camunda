@@ -7,6 +7,7 @@
  */
 
 import {shallow} from 'enzyme';
+import {Tag} from '@carbon/react';
 
 import NodeListPreview from './NodeListPreview';
 
@@ -69,5 +70,5 @@ it('should show executing node filter', () => {
     <NodeListPreview {...props} operator={undefined} type="executingFlowNodes" />
   );
 
-  expect(node.find('.parameterName').dive().find('Text').dive()).toIncludeText('Running');
+  expect(node.find(Tag)).toIncludeText('Running');
 });
