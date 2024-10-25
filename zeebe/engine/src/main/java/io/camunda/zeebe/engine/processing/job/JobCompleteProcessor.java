@@ -69,57 +69,57 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
 
     if (elementInstance == null) {
       return;
-    } else {
-      switch (value.getJobKind()) {
-        case EXECUTION_LISTENER:
-          {
-            // to store the variable for merge, to handle concurrent commands
-            eventHandle.triggeringProcessEvent(value);
+    }
 
+    switch (value.getJobKind()) {
+      case EXECUTION_LISTENER:
+        {
+          // to store the variable for merge, to handle concurrent commands
+          eventHandle.triggeringProcessEvent(value);
+
+          commandWriter.appendFollowUpCommand(
+              elementInstanceKey,
+              ProcessInstanceIntent.COMPLETE_EXECUTION_LISTENER,
+              elementInstance.getValue());
+          return;
+        }
+      case TASK_LISTENER:
+        {
+          // to store the variable for merge, to handle concurrent commands
+          eventHandle.triggeringProcessEvent(value);
+
+          /*
+           We retrieve the intermediate user task state rather than the regular user task record
+           because the intermediate state captures the exact data provided during the original
+           user task command (e.g., COMPLETE, ASSIGN). This data includes variables, actions,
+           and other command-related details that may not yet be reflected in the persisted user
+           task record, that can be accessed via `userTaskState.getUserTask`.
+
+           When task listeners are involved, it's essential to preserve this original state
+           until all task listeners have been executed. Retrieving the intermediate state here
+           ensures that the finalization of the user task command uses the correct, unmodified
+           data as originally intended by the user. Once all task listeners have been processed
+           and the original user task command is finalized, the intermediate state is cleared.
+          */
+          final var userTask =
+              userTaskState.getIntermediateState(elementInstance.getUserTaskKey()).getRecord();
+          commandWriter.appendFollowUpCommand(
+              userTask.getUserTaskKey(), UserTaskIntent.COMPLETE_TASK_LISTENER, userTask);
+          return;
+        }
+      default:
+        {
+          final long scopeKey = elementInstance.getValue().getFlowScopeKey();
+          final ElementInstance scopeInstance = elementInstanceState.getInstance(scopeKey);
+
+          if (scopeInstance != null && scopeInstance.isActive()) {
+            eventHandle.triggeringProcessEvent(value);
             commandWriter.appendFollowUpCommand(
                 elementInstanceKey,
-                ProcessInstanceIntent.COMPLETE_EXECUTION_LISTENER,
+                ProcessInstanceIntent.COMPLETE_ELEMENT,
                 elementInstance.getValue());
-            return;
           }
-        case TASK_LISTENER:
-          {
-            // to store the variable for merge, to handle concurrent commands
-            eventHandle.triggeringProcessEvent(value);
-
-            /*
-             We retrieve the intermediate user task state rather than the regular user task record
-             because the intermediate state captures the exact data provided during the original
-             user task command (e.g., COMPLETE, ASSIGN). This data includes variables, actions,
-             and other command-related details that may not yet be reflected in the persisted user
-             task record, that can be accessed via `userTaskState.getUserTask`.
-
-             When task listeners are involved, it's essential to preserve this original state
-             until all task listeners have been executed. Retrieving the intermediate state here
-             ensures that the finalization of the user task command uses the correct, unmodified
-             data as originally intended by the user. Once all task listeners have been processed
-             and the original user task command is finalized, the intermediate state is cleared.
-            */
-            final var userTask =
-                userTaskState.getIntermediateState(elementInstance.getUserTaskKey()).getRecord();
-            commandWriter.appendFollowUpCommand(
-                userTask.getUserTaskKey(), UserTaskIntent.COMPLETE_TASK_LISTENER, userTask);
-            return;
-          }
-        default:
-          {
-            final long scopeKey = elementInstance.getValue().getFlowScopeKey();
-            final ElementInstance scopeInstance = elementInstanceState.getInstance(scopeKey);
-
-            if (scopeInstance != null && scopeInstance.isActive()) {
-              eventHandle.triggeringProcessEvent(value);
-              commandWriter.appendFollowUpCommand(
-                  elementInstanceKey,
-                  ProcessInstanceIntent.COMPLETE_ELEMENT,
-                  elementInstance.getValue());
-            }
-          }
-      }
+        }
     }
   }
 
