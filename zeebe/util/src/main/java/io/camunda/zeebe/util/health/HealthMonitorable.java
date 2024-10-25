@@ -20,7 +20,7 @@ public interface HealthMonitorable {
 
   /**
    * Used by a HealthMonitor to get the health status of this component, typically invoked
-   * periodically.
+   * periodically. Implementation should be thread safe
    *
    * @return health status
    */

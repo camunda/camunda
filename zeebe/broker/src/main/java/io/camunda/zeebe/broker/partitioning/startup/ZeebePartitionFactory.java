@@ -15,6 +15,7 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupAndTransitionContextImpl;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupContext;
@@ -138,7 +139,9 @@ public final class ZeebePartitionFactory {
       final RaftPartition raftPartition,
       final FileBasedSnapshotStore snapshotStore,
       final DynamicPartitionConfig initialPartitionConfig,
-      final MeterRegistry partitionMeterRegistry) {
+      final MeterRegistry partitionMeterRegistry,
+      final MeterRegistry brokerMeterRegistry,
+      final BrokerHealthCheckService brokerHealthCheckService) {
     final var communicationService = clusterServices.getCommunicationService();
     final var membershipService = clusterServices.getMembershipService();
     final var typedRecordProcessorsFactory = createFactory(localBroker, featureFlags);
@@ -167,7 +170,8 @@ public final class ZeebePartitionFactory {
             diskSpaceUsageMonitor,
             gatewayBrokerTransport,
             topologyManager,
-            partitionMeterRegistry);
+            partitionMeterRegistry,
+            brokerHealthCheckService);
     context.setDynamicPartitionConfig(initialPartitionConfig);
 
     final PartitionTransition newTransitionBehavior = new PartitionTransitionImpl(TRANSITION_STEPS);

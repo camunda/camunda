@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.MemberId;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.Test;
 
 public class BrokerHealthCheckServiceTest {
@@ -20,7 +21,8 @@ public class BrokerHealthCheckServiceTest {
   @Test
   public void shouldNotBeReadyHealthyOrStartedBeforePartitionManagerIsRegistered() {
     // given
-    final var healthCheckService = new BrokerHealthCheckService(member);
+    final var healthCheckService =
+        new BrokerHealthCheckService(member, new HealthTreeMetrics(new SimpleMeterRegistry()));
 
     // when
 
@@ -40,7 +42,8 @@ public class BrokerHealthCheckServiceTest {
   @Test
   public void shouldThrowIllegalStateExceptionIfStatusIsUpdatedBeforePartitionsAreKnown() {
     // given
-    final var healthCheckService = new BrokerHealthCheckService(member);
+    final var healthCheckService =
+        new BrokerHealthCheckService(member, new HealthTreeMetrics(new SimpleMeterRegistry()));
 
     // when + then
 
