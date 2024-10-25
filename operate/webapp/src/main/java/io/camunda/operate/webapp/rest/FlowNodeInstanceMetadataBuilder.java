@@ -20,7 +20,9 @@ import io.camunda.operate.webapp.rest.dto.metadata.UserTaskInstanceMetadataDto;
 import io.camunda.webapps.schema.entities.operate.EventEntity;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.FlowNodeType;
+import io.camunda.webapps.schema.entities.tasklist.TaskVariableEntity;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 import org.slf4j.Logger;
@@ -114,6 +116,8 @@ public class FlowNodeInstanceMetadataBuilder {
       final FlowNodeInstanceEntity flowNodeInstance) {
     final var userTask = userTaskReader.getUserTaskByFlowNodeInstanceKey(flowNodeInstance.getKey());
     final var event = eventReader.getEventEntityByFlowNodeInstanceId(flowNodeInstance.getId());
+    final var variables =
+        userTaskReader.getUserTaskCompletedVariables(flowNodeInstance.getProcessInstanceKey());
     final var result =
         new UserTaskInstanceMetadataDto(
             flowNodeInstance.getFlowNodeId(),
@@ -123,6 +127,11 @@ public class FlowNodeInstanceMetadataBuilder {
             flowNodeInstance.getEndDate(),
             event);
     if (userTask.isPresent()) {
+      final Map<String, Object> variablesMap = new HashMap<>();
+      for (final TaskVariableEntity v : variables) {
+        variablesMap.put(v.getName(), v.getValue());
+      }
+
       final var task = userTask.get();
       result
           .setUserTaskKey(task.getKey())
@@ -141,15 +150,8 @@ public class FlowNodeInstanceMetadataBuilder {
           .setChangedAttributes(task.getChangedAttributes())
           .setTenantId(task.getTenantId())
           .setFormKey(task.getFormKey() != null ? Long.parseLong(task.getFormKey()) : null)
-          .setExternalReference(task.getExternalFormReference());
-      // TODO Include variables
-      /*try {
-        // Parse Variables
-        result.setVariables(
-            new ObjectMapper().readValue(new StringReader(task.getVariables()), Map.class));
-      } catch (final IOException e) {
-        result.setVariables(Map.of());
-      }*/
+          .setExternalReference(task.getExternalFormReference())
+          .setVariables(variablesMap);
     }
     return result;
   }

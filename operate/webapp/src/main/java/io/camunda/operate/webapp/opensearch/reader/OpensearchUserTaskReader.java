@@ -16,6 +16,7 @@ import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.webapp.reader.UserTaskReader;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskVariableEntity;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.context.annotation.Conditional;
@@ -48,5 +49,10 @@ public class OpensearchUserTaskReader extends OpensearchAbstractReader implement
       return Optional.of(hits.hits().get(0).source());
     }
     return Optional.empty();
+  }
+
+  @Override
+  public List<TaskVariableEntity> getUserTaskCompletedVariables(final long flowNodeInstanceKey) {
+    return List.of();
   }
 }

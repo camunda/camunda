@@ -16,11 +16,16 @@ import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.reader.UserTaskReader;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskVariableEntity;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.ExistsQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.join.query.HasParentQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,5 +79,37 @@ public class ElasticsearchUserTaskReader extends AbstractReader implements UserT
       throw new OperateRuntimeException(message, e);
     }
     return Optional.empty();
+  }
+
+  @Override
+  public List<TaskVariableEntity> getUserTaskCompletedVariables(final long flowNodeInstanceKey) {
+    LOGGER.debug("Get UserTask Completed Variables by flowNodeInstanceKey {}", flowNodeInstanceKey);
+
+    final HasParentQueryBuilder hasParentQuery =
+        new HasParentQueryBuilder(
+            "task", // Parent type as defined in your index
+            QueryBuilders.termQuery("id", flowNodeInstanceKey), // Parent ID
+            false);
+
+    // Make sure `name` field exists, indicating only variables are present in the result set
+    final ExistsQueryBuilder existsQuery = QueryBuilders.existsQuery("name");
+
+    final BoolQueryBuilder combinedQuery =
+        QueryBuilders.boolQuery().must(hasParentQuery).must(existsQuery);
+    try {
+      final SearchRequest searchRequest =
+          ElasticsearchUtil.createSearchRequest(userTaskTemplate, ALL)
+              .source(new SearchSourceBuilder().query(constantScoreQuery(combinedQuery)));
+      final var hits = tenantAwareClient.search(searchRequest).getHits();
+      if (hits.getTotalHits().value > 0) {
+        return ElasticsearchUtil.mapSearchHits(
+            hits.getHits(), objectMapper, TaskVariableEntity.class);
+      }
+    } catch (final IOException e) {
+      final String message =
+          String.format("Exception occurred, while obtaining user task list: %s", e.getMessage());
+      throw new OperateRuntimeException(message, e);
+    }
+    return List.of();
   }
 }

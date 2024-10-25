@@ -8,6 +8,7 @@
 package io.camunda.operate.webapp.reader;
 
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskVariableEntity;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,4 +17,6 @@ public interface UserTaskReader {
   List<TaskEntity> getUserTasks();
 
   Optional<TaskEntity> getUserTaskByFlowNodeInstanceKey(long flowNodeInstanceKey);
+
+  List<TaskVariableEntity> getUserTaskCompletedVariables(long flowNodeInstanceKey);
 }
