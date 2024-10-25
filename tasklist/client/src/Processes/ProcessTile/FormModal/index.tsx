@@ -10,7 +10,7 @@ import {FormManager} from 'modules/formManager';
 import {useForm} from 'modules/queries/useForm';
 import type {Process} from 'modules/types';
 import {getProcessDisplayName} from 'modules/utils/getProcessDisplayName';
-import React, {useRef, useState} from 'react';
+import {useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {
   TextInputSkeleton,
