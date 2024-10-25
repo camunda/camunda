@@ -84,29 +84,38 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
     userTaskRecord.setVariables(command.getValue().getVariablesBuffer());
     userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));
 
-    // It's important to retrieve the user task record request metadata before appending the
-    // "COMPLETED" event, as it will be cleared by the "COMPLETED" event applier
-    final var recordRequestMetadata = userTaskState.findRecordRequestMetadata(userTaskKey);
-    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord);
-    completeElementInstance(userTaskRecord);
+    if (command.hasRequestMetadata()) {
+      stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord);
+      completeElementInstance(userTaskRecord);
 
-    // If the record request metadata is present, it indicates that "complete" task listeners were
-    // configured, and that the normal flow of the "COMPLETE" command was interrupted by the
-    // "COMPLETE_TASK_LISTENER" command. In this case, we need to use the `requestId` and
-    // `requestStreamId` from the persisted metadata, which refers to the original "COMPLETE"
-    // command to write the response back.
-    recordRequestMetadata.ifPresentOrElse(
-        metadata ->
-            responseWriter.writeResponse(
-                userTaskKey,
-                UserTaskIntent.COMPLETED,
-                userTaskRecord,
-                ValueType.USER_TASK,
-                metadata.getRequestId(),
-                metadata.getRequestStreamId()),
-        () ->
-            responseWriter.writeEventOnCommand(
-                userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord, command));
+      responseWriter.writeEventOnCommand(
+          userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord, command);
+    } else {
+      /*
+       * If the request metadata is not present in the received command, it indicates that
+       * "complete" task listeners were configured, and that the normal flow of the "COMPLETE"
+       * command was interrupted by the "COMPLETE_TASK_LISTENER" command.
+       * In this case, we need to use the `requestId` and `requestStreamId` from the persisted
+       * metadata, which refers to the original "COMPLETE" command, to correctly write the
+       * response back.
+       *
+       * Note: It's important to retrieve this metadata from the user task state before appending
+       * the "COMPLETED" event, as it will be cleared by the "COMPLETED" event applier.
+       */
+      final var recordRequestMetadata = userTaskState.findRecordRequestMetadata(userTaskKey);
+      stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord);
+      completeElementInstance(userTaskRecord);
+
+      recordRequestMetadata.ifPresent(
+          metadata ->
+              responseWriter.writeResponse(
+                  userTaskKey,
+                  UserTaskIntent.COMPLETED,
+                  userTaskRecord,
+                  ValueType.USER_TASK,
+                  metadata.getRequestId(),
+                  metadata.getRequestStreamId()));
+    }
   }
 
   private void completeElementInstance(final UserTaskRecord userTaskRecord) {
