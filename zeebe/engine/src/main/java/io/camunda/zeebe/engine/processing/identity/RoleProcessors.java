@@ -47,6 +47,7 @@ public class RoleProcessors {
         new RoleAddEntityProcessor(
             processingState.getRoleState(),
             processingState.getUserState(),
+            processingState.getMappingState(),
             authCheckBehavior,
             keyGenerator,
             writers,
