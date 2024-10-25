@@ -31,10 +31,9 @@ public class JobVariablesCollector {
       } else {
         variables = variableState.getVariablesAsDocument(elementInstanceKey, requestedVariables);
       }
-      jobRecord.setVariables(variables);
     } else {
       variables = DocumentValue.EMPTY_DOCUMENT;
-      jobRecord.setVariables(variables);
     }
+    jobRecord.setVariables(variables);
   }
 }
