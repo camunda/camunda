@@ -49,7 +49,14 @@ public class UserTaskCompletionVariableHandlerTest {
   void shouldHandleRecord() {
     // given
     final Record<UserTaskRecordValue> variableRecord =
-        factory.generateRecord(ValueType.USER_TASK, r -> r.withIntent(UserTaskIntent.COMPLETED));
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r ->
+                r.withIntent(UserTaskIntent.COMPLETED)
+                    .withValue(
+                        ImmutableUserTaskRecordValue.builder()
+                            .withVariables(Map.of("var", "varVal"))
+                            .build()));
 
     // when - then
     assertThat(underTest.handlesRecord(variableRecord)).isTrue();
