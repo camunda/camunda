@@ -5,12 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.entities;
 
-public enum OperationState {
-  SCHEDULED,
-  LOCKED,
-  SENT,
-  FAILED,
-  COMPLETED
-}
+import {TextDecoder, TextEncoder} from 'node:util';
+import {ReadableStream} from 'node:stream/web';
+
+Object.defineProperties(globalThis, {
+  TextDecoder: {value: TextDecoder},
+  TextEncoder: {value: TextEncoder},
+  ReadableStream: {value: ReadableStream},
+});

@@ -7,8 +7,6 @@
  */
 package io.camunda.operate.webapp.opensearch.reader;
 
-import static io.camunda.operate.entities.OperationState.LOCKED;
-import static io.camunda.operate.entities.OperationState.SCHEDULED;
 import static io.camunda.operate.schema.templates.OperationTemplate.BATCH_OPERATION_ID;
 import static io.camunda.operate.schema.templates.OperationTemplate.ID;
 import static io.camunda.operate.schema.templates.OperationTemplate.INCIDENT_KEY;
@@ -26,13 +24,11 @@ import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.QueryType.ALL;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
+import static io.camunda.webapps.schema.entities.operation.OperationState.LOCKED;
+import static io.camunda.webapps.schema.entities.operation.OperationState.SCHEDULED;
 import static org.opensearch.client.opensearch._types.SortOrder.Asc;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.entities.BatchOperationEntity;
-import io.camunda.operate.entities.OperationEntity;
-import io.camunda.operate.entities.OperationState;
-import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
 import io.camunda.operate.schema.templates.OperationTemplate;
 import io.camunda.operate.store.opensearch.dsl.AggregationDSL;
@@ -41,6 +37,10 @@ import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
 import io.camunda.operate.webapp.security.UserService;
+import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationState;
+import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;

@@ -63,7 +63,8 @@ public class UpdateTenantMultiPartitionTest {
     assertThat(
             RecordingExporter.records()
                 .withPartitionId(1)
-                .limit(record -> record.getIntent().equals(CommandDistributionIntent.FINISHED)))
+                .limitByCount(
+                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 2))
         .extracting(
             Record::getIntent,
             Record::getRecordType,
@@ -124,12 +125,12 @@ public class UpdateTenantMultiPartitionTest {
   @Test
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // when
-    final var tenantId = UUID.randomUUID().toString();
-    final var tenantKey =
-        engine.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
       interceptTenantCreateForPartition(partitionId);
     }
+    final var tenantId = UUID.randomUUID().toString();
+    final var tenantKey =
+        engine.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
     engine.tenant().updateTenant(tenantKey).withTenantId(tenantId + "-updated").update();
 
     // Increase time to trigger a redistribution

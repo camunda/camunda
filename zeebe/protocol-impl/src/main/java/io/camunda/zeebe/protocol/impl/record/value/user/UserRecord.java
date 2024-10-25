@@ -10,21 +10,13 @@ package io.camunda.zeebe.protocol.impl.record.value.user;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.LongValue;
-import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserType;
-import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public final class UserRecord extends UnifiedRecordValue implements UserRecordValue {
   private final LongProperty userKeyProp = new LongProperty("userKey", -1L);
@@ -34,21 +26,15 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
   private final StringProperty passwordProp = new StringProperty("password", "");
   private final EnumProperty<UserType> userTypeProp =
       new EnumProperty<>("userType", UserType.class, UserType.REGULAR);
-  private final ArrayProperty<LongValue> roleKeysProp =
-      new ArrayProperty<>("roleKeys", LongValue::new);
-  private final ArrayProperty<StringValue> tenantIdsProp =
-      new ArrayProperty<>("tenantIds", StringValue::new);
 
   public UserRecord() {
-    super(8);
+    super(6);
     declareProperty(userKeyProp)
         .declareProperty(usernameProp)
         .declareProperty(nameProp)
         .declareProperty(emailProp)
         .declareProperty(passwordProp)
-        .declareProperty(userTypeProp)
-        .declareProperty(roleKeysProp)
-        .declareProperty(tenantIdsProp);
+        .declareProperty(userTypeProp);
   }
 
   public void wrap(final UserRecord record) {
@@ -58,21 +44,6 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
     emailProp.setValue(record.getEmailBuffer());
     passwordProp.setValue(record.getPasswordBuffer());
     userTypeProp.setValue(record.getUserType());
-    setRoleKeysList(record.getRoleKeysList());
-    setTenantIdsList(record.getTenantIdsList());
-  }
-
-  public UserRecord copy() {
-    final var copy = new UserRecord();
-    copy.userKeyProp.setValue(getUserKey());
-    copy.usernameProp.setValue(BufferUtil.cloneBuffer(getUsernameBuffer()));
-    copy.nameProp.setValue(BufferUtil.cloneBuffer(getNameBuffer()));
-    copy.emailProp.setValue(BufferUtil.cloneBuffer(getEmailBuffer()));
-    copy.passwordProp.setValue(BufferUtil.cloneBuffer(getPasswordBuffer()));
-    copy.userTypeProp.setValue(getUserType());
-    copy.setRoleKeysList(getRoleKeysList());
-    copy.setTenantIdsList(getTenantIdsList());
-    return copy;
   }
 
   @Override
@@ -152,45 +123,6 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
 
   public UserRecord setPassword(final DirectBuffer password) {
     passwordProp.setValue(password);
-    return this;
-  }
-
-  public List<Long> getRoleKeysList() {
-    return StreamSupport.stream(roleKeysProp.spliterator(), false)
-        .map(LongValue::getValue)
-        .collect(Collectors.toList());
-  }
-
-  public UserRecord setRoleKeysList(final List<Long> roleKeys) {
-    roleKeysProp.reset();
-    roleKeys.forEach(roleKey -> roleKeysProp.add().setValue(roleKey));
-    return this;
-  }
-
-  public UserRecord addRoleKey(final long roleKey) {
-    roleKeysProp.add().setValue(roleKey);
-    return this;
-  }
-
-  public List<String> getTenantIdsList() {
-    return StreamSupport.stream(tenantIdsProp.spliterator(), false)
-        .map(StringValue::toString)
-        .collect(Collectors.toList());
-  }
-
-  public UserRecord setTenantIdsList(final List<String> tenantIds) {
-    tenantIdsProp.reset();
-    tenantIds.forEach(
-        tenantId -> {
-          final DirectBuffer buffer = new UnsafeBuffer(tenantId.getBytes());
-          tenantIdsProp.add().wrap(buffer);
-        });
-    return this;
-  }
-
-  public UserRecord addTenantId(final String tenantId) {
-    final DirectBuffer buffer = new UnsafeBuffer(tenantId.getBytes());
-    tenantIdsProp.add().wrap(buffer);
     return this;
   }
 

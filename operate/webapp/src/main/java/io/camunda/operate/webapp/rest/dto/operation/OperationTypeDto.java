@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.rest.dto.operation;
 
-import io.camunda.operate.entities.OperationType;
+import io.camunda.webapps.schema.entities.operation.OperationType;
 
 public enum OperationTypeDto {
   RESOLVE_INCIDENT,
