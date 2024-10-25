@@ -403,7 +403,7 @@ public final class StreamProcessorTest {
             () ->
                 assertThat(
                         streamPlatform.getStreamProcessor().getLastProcessedPositionAsync().join())
-                    .isEqualTo(1));
+                    .isEqualTo(3));
 
     final var logStreamReader = streamPlatform.getLogStream().newLogStreamReader();
     logStreamReader.seekToFirstEvent();
@@ -425,7 +425,7 @@ public final class StreamProcessorTest {
       final LoggedEvent followup = logStreamReader.next();
       assertThat(followup.getSourceEventPosition())
           .as("Followup records should point to source event")
-          .isEqualTo(firstRecordPosition);
+          .isEqualTo(followup.getKey() == 3 ? 3 : firstRecordPosition);
       final var followupMetadata = new RecordMetadata();
       followup.readMetadata(followupMetadata);
       assertThat(followupMetadata.getOperationReference())
@@ -479,6 +479,94 @@ public final class StreamProcessorTest {
     assertThat(logStreamReader.next().getSourceEventPosition()).isEqualTo(firstRecordPosition);
     assertThat(logStreamReader.hasNext()).isTrue();
     assertThat(logStreamReader.next().getSourceEventPosition()).isEqualTo(firstRecordPosition);
+  }
+
+  @Test
+  public void shouldTrackSourcePointerDuringBatchProcessing() {
+    // given
+    final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+
+    when(defaultRecordProcessor.process(any(), any()))
+        .thenAnswer(
+            (invocation) -> {
+              final var processingResultBuilder =
+                  (BufferedProcessingResultBuilder) invocation.getArgument(1);
+              processingResultBuilder.appendRecordReturnEither(
+                  3,
+                  Records.processInstance(3),
+                  new RecordMetadata()
+                      .recordType(RecordType.EVENT)
+                      .intent(ACTIVATE_ELEMENT)
+                      .rejectionType(RejectionType.NULL_VAL)
+                      .rejectionReason(""));
+              processingResultBuilder.appendRecordReturnEither(
+                  4,
+                  Records.processInstance(4),
+                  new RecordMetadata()
+                      .recordType(RecordType.COMMAND)
+                      .intent(COMPLETE_ELEMENT)
+                      .rejectionType(RejectionType.NULL_VAL)
+                      .rejectionReason(""));
+              processingResultBuilder.appendRecordReturnEither(
+                  5,
+                  Records.processInstance(5),
+                  new RecordMetadata()
+                      .recordType(RecordType.EVENT)
+                      .intent(ACTIVATE_ELEMENT)
+                      .rejectionType(RejectionType.NULL_VAL)
+                      .rejectionReason(""));
+              return processingResultBuilder.build();
+            })
+        .thenAnswer(
+            (invocation) -> {
+              final var processingResultBuilder =
+                  (BufferedProcessingResultBuilder) invocation.getArgument(1);
+              processingResultBuilder.appendRecordReturnEither(
+                  6,
+                  Records.processInstance(6),
+                  new RecordMetadata()
+                      .recordType(RecordType.EVENT)
+                      .intent(ACTIVATE_ELEMENT)
+                      .rejectionType(RejectionType.NULL_VAL)
+                      .rejectionReason(""));
+              return processingResultBuilder.build();
+            });
+
+    streamPlatform.startStreamProcessor();
+
+    // when
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(COMPLETE_ELEMENT, Records.processInstance(2)));
+
+    // then
+    verify(defaultRecordProcessor, TIMEOUT.times(2)).process(any(), any());
+
+    final var logStreamReader = streamPlatform.getLogStream().newLogStreamReader();
+    logStreamReader.seekToFirstEvent();
+    final var firstRecord = logStreamReader.next();
+    assertThat(firstRecord.getSourceEventPosition()).isEqualTo(-1);
+
+    await("should write follow up events")
+        .untilAsserted(() -> assertThat(logStreamReader.hasNext()).isTrue());
+    final var secondRecord = logStreamReader.next();
+    assertThat(secondRecord.getSourceEventPosition()).isEqualTo(1);
+
+    await("should write follow up events")
+        .untilAsserted(() -> assertThat(logStreamReader.hasNext()).isTrue());
+    final var thirdRecord = logStreamReader.next();
+    assertThat(thirdRecord.getSourceEventPosition()).isEqualTo(1);
+
+    await("should write follow up events")
+        .untilAsserted(() -> assertThat(logStreamReader.hasNext()).isTrue());
+    final var fourthRecord = logStreamReader.next();
+    assertThat(fourthRecord.getSourceEventPosition()).isEqualTo(1);
+
+    await("should write follow up events")
+        .untilAsserted(() -> assertThat(logStreamReader.hasNext()).isTrue());
+    final var fifthRecord = logStreamReader.next();
+    assertThat(fifthRecord.getSourceEventPosition()).isEqualTo(3);
+
+    assertThat(logStreamReader.hasNext()).isFalse();
   }
 
   @Test

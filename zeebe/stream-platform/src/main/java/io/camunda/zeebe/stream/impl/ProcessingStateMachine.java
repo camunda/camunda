@@ -38,6 +38,7 @@ import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache;
 import io.camunda.zeebe.stream.api.state.MutableLastProcessedPositionState;
+import io.camunda.zeebe.stream.impl.ProcessingStateMachine.BatchProcessingStepResult.IndexedCommand;
 import io.camunda.zeebe.stream.impl.metrics.ProcessingMetrics;
 import io.camunda.zeebe.stream.impl.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
@@ -55,6 +56,7 @@ import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.function.BooleanSupplier;
+import org.agrona.collections.MutableInteger;
 import org.slf4j.Logger;
 
 /**
@@ -62,11 +64,11 @@ import org.slf4j.Logger;
  *
  * <pre>
  *
- * +------------------+            +--------------------+
- * |                  |            |                    |      exception
- * | tryToReadNextRecord() |----------->|  processCommand()  |------------------+
- * |                  |            |                    |                  v
- * +------------------+            +--------------------+            +---------------+
+ * +------------------------+            +--------------------+
+ * |                        |            |                    |      exception
+ * |  tryToReadNextRecord() |----------->|  processCommand()  |------------------+
+ * |                        |            |                    |                  v
+ * +------------------------+            +--------------------+      +---------------+
  *           ^                             |                         |               |------+
  *           |                             |         +-------------->|   onError()   |      | exception
  *           |                             |         |  exception    |               |<-----+
@@ -200,7 +202,6 @@ public final class ProcessingStateMachine {
     processingFilter =
         new MetadataEventFilter(
                 recordMetadata -> recordMetadata.getRecordType() == RecordType.COMMAND)
-            .and(record -> !record.shouldSkipProcessing())
             .and(context.processingFilter());
     clock = context.getClock();
   }
@@ -241,7 +242,14 @@ public final class ProcessingStateMachine {
       currentRecord = logStreamReader.next();
 
       if (processingFilter.applies(currentRecord)) {
-        processCommand(currentRecord);
+        if (currentRecord.shouldSkipProcessing()) {
+          // we already processed this command, just update the last processed position but
+          // otherwise skip it.
+          lastSuccessfulProcessedRecordPosition = currentRecord.getPosition();
+          skipRecord();
+        } else {
+          processCommand(currentRecord);
+        }
       } else {
         skipRecord();
       }
@@ -348,6 +356,7 @@ public final class ProcessingStateMachine {
     final var processingResultBuilder =
         new BufferedProcessingResultBuilder(
             logStreamWriter::canWriteEvents, initialCommand.getOperationReference());
+    final var currentSourceIndex = -1;
     var lastProcessingResultSize = 0;
 
     // It might be that we reached the batch size limit during processing a command.
@@ -359,12 +368,12 @@ public final class ProcessingStateMachine {
     processedCommandsCount = 0;
     pendingWrites = new ArrayList<>();
     pendingResponses = Collections.newSetFromMap(new IdentityHashMap<>(2));
-    final var pendingCommands = new ArrayDeque<TypedRecord<?>>();
-    pendingCommands.addLast(initialCommand);
+    final var pendingCommands = new ArrayDeque<IndexedCommand>();
+    pendingCommands.addLast(new IndexedCommand(-1, initialCommand));
 
     while (!pendingCommands.isEmpty() && processedCommandsCount < currentProcessingBatchLimit) {
-
-      final var command = pendingCommands.removeFirst();
+      final var indexedCommand = pendingCommands.removeFirst();
+      final var command = indexedCommand.command();
 
       currentProcessor =
           recordProcessors.stream()
@@ -372,6 +381,7 @@ public final class ProcessingStateMachine {
               .findFirst()
               .orElseThrow(() -> NoSuchProcessorException.forRecord(command));
 
+      processingResultBuilder.setCurrentSourceIndex(indexedCommand.index);
       currentProcessingResult = currentProcessor.process(command, processingResultBuilder);
 
       final BatchProcessingStepResult batchProcessingStepResult =
@@ -410,8 +420,9 @@ public final class ProcessingStateMachine {
       final int currentBatchSize,
       final int currentProcessingBatchLimit) {
 
-    final var commandsToProcess = new ArrayList<TypedRecord<?>>();
+    final var commandsToProcess = new ArrayList<IndexedCommand>();
     final var toWriteEntries = new ArrayList<LogAppendEntry>();
+    final MutableInteger index = new MutableInteger(lastProcessingResultSize);
 
     processingResult.getRecordBatch().entries().stream()
         .skip(lastProcessingResultSize) // because the result builder is reused
@@ -422,14 +433,17 @@ public final class ProcessingStateMachine {
               if (entry.recordMetadata().getRecordType() == RecordType.COMMAND
                   && potentialBatchSize < currentProcessingBatchLimit) {
                 commandsToProcess.add(
-                    new UnwrittenRecord(
-                        entry.key(),
-                        context.getPartitionId(),
-                        entry.recordValue(),
-                        entry.recordMetadata()));
+                    new IndexedCommand(
+                        index.get(),
+                        new UnwrittenRecord(
+                            entry.key(),
+                            context.getPartitionId(),
+                            entry.recordValue(),
+                            entry.recordMetadata())));
                 toWriteEntry = LogAppendEntry.ofProcessed(entry);
               }
               toWriteEntries.add(toWriteEntry);
+              index.increment();
             });
 
     return new BatchProcessingStepResult(commandsToProcess, toWriteEntries);
@@ -774,8 +788,9 @@ public final class ProcessingStateMachine {
     processingMetrics.errorHandlingPhase(errorHandlingPhase);
   }
 
-  private record BatchProcessingStepResult(
-      List<TypedRecord<?>> toProcess, List<LogAppendEntry> toWrite) {}
+  record BatchProcessingStepResult(List<IndexedCommand> toProcess, List<LogAppendEntry> toWrite) {
+    record IndexedCommand(int index, TypedRecord<?> command) {}
+  }
 
   @FunctionalInterface
   private interface NextProcessingStep {
