@@ -129,6 +129,26 @@ const elements = {
     name: 'EventBasedGateway',
     type: 'eventBasedGateway',
   },
+  SignalIntermediateCatch: {
+    id: 'SignalIntermediateCatch',
+    name: 'Signal intermediate catch',
+    type: 'signalIntermediateCatch',
+  },
+  SignalBoundaryEvent: {
+    id: 'SignalBoundaryEvent',
+    name: 'Signal boundary event',
+    type: 'signalBoundaryEvent',
+  },
+  SignalEventSubProcess: {
+    id: 'SignalEventSubProcess',
+    name: 'Signal event sub process',
+    type: 'signalEventSubProcess',
+  },
+  SignalStartEvent: {
+    id: 'SignalStartEvent',
+    name: 'Signal start event',
+    type: 'signalStartEvent',
+  },
 };
 
 type Props = {
