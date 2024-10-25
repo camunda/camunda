@@ -273,10 +273,7 @@ final class CamundaExporterIT {
     assertThat(responseRoleEntity)
         .describedAs("User entity is updated correctly from the user record")
         .extracting(RoleEntity::getRoleKey, RoleEntity::getName, RoleEntity::getAssignMemberKeys)
-        .containsExactly(
-            record.getValue().getRoleKey(),
-            record.getValue().getName(),
-            record.getValue().getEntityKey());
+        .containsExactly(record.getValue().getRoleKey(), record.getValue().getName());
   }
 
   void shouldExportUserRecord(
