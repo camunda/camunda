@@ -5,16 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.entities;
+package io.camunda.webapps.schema.entities.operation;
 
-public enum OperationType {
-  RESOLVE_INCIDENT,
-  CANCEL_PROCESS_INSTANCE,
-  DELETE_PROCESS_INSTANCE,
-  ADD_VARIABLE,
-  UPDATE_VARIABLE,
-  MODIFY_PROCESS_INSTANCE,
-  DELETE_DECISION_DEFINITION,
-  DELETE_PROCESS_DEFINITION,
-  MIGRATE_PROCESS_INSTANCE
+public enum OperationState {
+  SCHEDULED,
+  LOCKED,
+  SENT,
+  FAILED,
+  COMPLETED
 }

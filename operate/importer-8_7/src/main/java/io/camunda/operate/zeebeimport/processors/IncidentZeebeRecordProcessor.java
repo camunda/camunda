@@ -13,7 +13,6 @@ import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTem
 import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.PROCESS_DEFINITION_KEY;
 
-import io.camunda.operate.entities.*;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.BatchRequest;
@@ -28,6 +27,7 @@ import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentState;
 import io.camunda.webapps.schema.entities.operate.post.PostImporterActionType;
 import io.camunda.webapps.schema.entities.operate.post.PostImporterQueueEntity;
+import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;

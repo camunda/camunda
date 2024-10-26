@@ -7,9 +7,6 @@
  */
 package io.camunda.operate.zeebeimport.post.opensearch;
 
-import static io.camunda.operate.entities.OperationState.COMPLETED;
-import static io.camunda.operate.entities.OperationState.SENT;
-import static io.camunda.operate.entities.OperationType.DELETE_PROCESS_INSTANCE;
 import static io.camunda.operate.store.opensearch.client.sync.OpenSearchRetryOperation.UPDATE_RETRY_COUNT;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
@@ -21,6 +18,9 @@ import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTem
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.JOIN_RELATION;
 import static io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate.*;
 import static io.camunda.webapps.schema.entities.operate.IncidentState.ACTIVE;
+import static io.camunda.webapps.schema.entities.operation.OperationState.COMPLETED;
+import static io.camunda.webapps.schema.entities.operation.OperationState.SENT;
+import static io.camunda.webapps.schema.entities.operation.OperationType.DELETE_PROCESS_INSTANCE;
 import static java.util.stream.Collectors.toMap;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 

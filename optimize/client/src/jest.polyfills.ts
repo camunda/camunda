@@ -6,10 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {get} from 'request';
+import {TextDecoder, TextEncoder} from 'node:util';
+import {ReadableStream} from 'node:stream/web';
 
-export async function loadEntitiesNames(entitiesIds) {
-  const res = await get('api/entities/names', entitiesIds);
-
-  return await res.json();
-}
+Object.defineProperties(globalThis, {
+  TextDecoder: {value: TextDecoder},
+  TextEncoder: {value: TextEncoder},
+  ReadableStream: {value: ReadableStream},
+});

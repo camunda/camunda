@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.deployment.model.validation.BpmnDeploymentBindingValidator;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
@@ -25,11 +26,10 @@ import io.camunda.zeebe.util.FeatureFlags;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.InstantSource;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
@@ -111,25 +111,41 @@ public final class DeploymentTransformer {
 
     // step 1: only validate the resources and add their metadata to the deployment record (no event
     // records are being written yet)
+    final var bpmnResources = new ArrayList<BpmnResource>();
     while (resourceIterator.hasNext()) {
       final DeploymentResource deploymentResource = resourceIterator.next();
-      success &=
-          transformResource(
-              deploymentEvent,
-              errors,
-              deploymentResource,
-              transformer -> transformer::createMetadata);
+      if (isBpmnResource(deploymentResource)) {
+        final var context = new BpmnElementsWithDeploymentBinding();
+        bpmnResources.add(new BpmnResource(deploymentResource, context));
+        success &= createMetadata(deploymentResource, deploymentEvent, context, errors);
+      } else {
+        success &=
+            createMetadata(
+                deploymentResource, deploymentEvent, new DeploymentResourceContext() {}, errors);
+      }
+    }
+
+    // intermediate step (for BPMN resources only): validate process elements that use deployment
+    // binding (all linked resources must be part of the current deployment)
+    if (success && !bpmnResources.isEmpty()) {
+      final var validator = new BpmnDeploymentBindingValidator(deploymentEvent);
+      for (final var bpmnResource : bpmnResources) {
+        final var validationError = validator.validate(bpmnResource.elements);
+        if (validationError != null) {
+          success = false;
+          errors
+              .append("\n'")
+              .append(bpmnResource.resource.getResourceName())
+              .append("':\n")
+              .append(validationError);
+        }
+      }
     }
 
     // step 2: update metadata (optionally) and write actual event records
     if (success) {
       for (final DeploymentResource deploymentResource : deploymentEvent.resources()) {
-        success &=
-            transformResource(
-                deploymentEvent,
-                errors,
-                deploymentResource,
-                transformer -> transformer::writeRecords);
+        success &= writeRecords(deploymentResource, deploymentEvent, errors);
       }
     }
 
@@ -145,20 +161,21 @@ public final class DeploymentTransformer {
     return Either.right(null);
   }
 
-  private boolean transformResource(
-      final DeploymentRecord deploymentEvent,
-      final StringBuilder errors,
+  private boolean isBpmnResource(final DeploymentResource resource) {
+    return resource.getResourceName().endsWith(".bpmn")
+        || resource.getResourceName().endsWith(".xml");
+  }
+
+  private boolean createMetadata(
       final DeploymentResource deploymentResource,
-      final Function<
-              DeploymentResourceTransformer,
-              BiFunction<DeploymentResource, DeploymentRecord, Either<Failure, Void>>>
-          transformation) {
+      final DeploymentRecord deploymentEvent,
+      final DeploymentResourceContext context,
+      final StringBuilder errors) {
     final var resourceName = deploymentResource.getResourceName();
     final var transformer = getResourceTransformer(resourceName);
 
     try {
-      final var result =
-          transformation.apply(transformer).apply(deploymentResource, deploymentEvent);
+      final var result = transformer.createMetadata(deploymentResource, deploymentEvent, context);
 
       if (result.isRight()) {
         return true;
@@ -169,8 +186,22 @@ public final class DeploymentTransformer {
       }
 
     } catch (final RuntimeException e) {
-      LOG.error("Unexpected error while processing resource '{}'", resourceName, e);
-      errors.append("\n'").append(resourceName).append("': ").append(e.getMessage());
+      handleUnexpectedError(resourceName, e, errors);
+    }
+    return false;
+  }
+
+  private boolean writeRecords(
+      final DeploymentResource deploymentResource,
+      final DeploymentRecord deploymentEvent,
+      final StringBuilder errors) {
+    final var resourceName = deploymentResource.getResourceName();
+    final var transformer = getResourceTransformer(resourceName);
+    try {
+      transformer.writeRecords(deploymentResource, deploymentEvent);
+      return true;
+    } catch (final RuntimeException e) {
+      handleUnexpectedError(resourceName, e, errors);
     }
     return false;
   }
@@ -191,25 +222,29 @@ public final class DeploymentTransformer {
         .orElse(UNKNOWN_RESOURCE);
   }
 
+  private static void handleUnexpectedError(
+      final String resourceName, final RuntimeException exception, final StringBuilder errors) {
+    LOG.error("Unexpected error while processing resource '{}'", resourceName, exception);
+    errors.append("\n'").append(resourceName).append("': ").append(exception.getMessage());
+  }
+
   private static final class UnknownResourceTransformer implements DeploymentResourceTransformer {
 
     @Override
     public Either<Failure, Void> createMetadata(
-        final DeploymentResource resource, final DeploymentRecord deployment) {
-      return createUnknownResourceTypeFailure(resource);
-    }
-
-    @Override
-    public Either<Failure, Void> writeRecords(
-        final DeploymentResource resource, final DeploymentRecord deployment) {
-      return createUnknownResourceTypeFailure(resource);
-    }
-
-    private Either<Failure, Void> createUnknownResourceTypeFailure(
-        final DeploymentResource resource) {
+        final DeploymentResource resource,
+        final DeploymentRecord deployment,
+        final DeploymentResourceContext context) {
       final var failureMessage =
           String.format("%n'%s': unknown resource type", resource.getResourceName());
       return Either.left(new Failure(failureMessage));
     }
+
+    @Override
+    public void writeRecords(
+        final DeploymentResource resource, final DeploymentRecord deployment) {}
   }
+
+  private record BpmnResource(
+      DeploymentResource resource, BpmnElementsWithDeploymentBinding elements) {}
 }

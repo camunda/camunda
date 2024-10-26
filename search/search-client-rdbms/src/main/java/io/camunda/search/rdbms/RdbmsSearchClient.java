@@ -8,6 +8,7 @@
 package io.camunda.search.rdbms;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.read.domain.ProcessDefinitionDbQuery;
 import io.camunda.db.rdbms.read.domain.ProcessInstanceDbQuery;
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
@@ -149,7 +150,16 @@ public class RdbmsSearchClient
 
   @Override
   public SearchQueryResult<ProcessDefinitionEntity> searchProcessDefinitions(
-      final ProcessDefinitionQuery filter, final SecurityContext securityContext) {
-    return null;
+      final ProcessDefinitionQuery query, final SecurityContext securityContext) {
+    LOG.debug("[RDBMS Search Client] Search for processDefinition: {}", query);
+
+    final var searchResult =
+        rdbmsService
+            .getProcessDefinitionReader()
+            .search(
+                ProcessDefinitionDbQuery.of(
+                    b -> b.filter(query.filter()).sort(query.sort()).page(query.page())));
+
+    return new SearchQueryResult<>(searchResult.total(), searchResult.hits(), null);
   }
 }

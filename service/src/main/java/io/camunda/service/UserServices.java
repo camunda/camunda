@@ -17,6 +17,7 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserCreateRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserDeleteRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import java.util.concurrent.CompletableFuture;
@@ -62,6 +63,10 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
             .setName(request.name())
             .setEmail(request.email())
             .setPassword(request.password()));
+  }
+
+  public CompletableFuture<UserRecord> deleteUser(final long userKey) {
+    return sendBrokerRequest(new BrokerUserDeleteRequest().setUserKey(userKey).setUsername(""));
   }
 
   public record UserDTO(

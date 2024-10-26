@@ -11,7 +11,6 @@ import static io.camunda.operate.webapp.rest.dto.incidents.IncidentDto.FALLBACK_
 
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.store.FlowNodeStore;
 import io.camunda.operate.store.IncidentStore;
 import io.camunda.operate.util.TreePath;
@@ -23,6 +22,7 @@ import io.camunda.operate.webapp.rest.dto.incidents.IncidentFlowNodeDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
 import io.camunda.webapps.schema.entities.operate.ErrorType;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
+import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import java.util.*;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;

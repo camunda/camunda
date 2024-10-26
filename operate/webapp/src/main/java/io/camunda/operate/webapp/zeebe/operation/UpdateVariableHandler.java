@@ -7,11 +7,11 @@
  */
 package io.camunda.operate.webapp.zeebe.operation;
 
-import static io.camunda.operate.entities.OperationType.ADD_VARIABLE;
-import static io.camunda.operate.entities.OperationType.UPDATE_VARIABLE;
+import static io.camunda.webapps.schema.entities.operation.OperationType.ADD_VARIABLE;
+import static io.camunda.webapps.schema.entities.operation.OperationType.UPDATE_VARIABLE;
 
-import io.camunda.operate.entities.OperationEntity;
-import io.camunda.operate.entities.OperationType;
+import io.camunda.webapps.schema.entities.operation.OperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.client.api.response.SetVariablesResponse;
 import java.util.Set;
 import org.springframework.stereotype.Component;

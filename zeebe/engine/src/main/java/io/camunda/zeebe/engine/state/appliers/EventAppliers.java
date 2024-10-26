@@ -33,6 +33,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
@@ -119,6 +120,8 @@ public final class EventAppliers implements EventApplier {
     registerRoleAppliers(state);
     registerScalingAppliers(state);
     registerTenantAppliers(state);
+    registerMappingAppliers(state);
+
     return this;
   }
 
@@ -485,6 +488,15 @@ public final class EventAppliers implements EventApplier {
     register(
         TenantIntent.ENTITY_ADDED,
         new TenantEntityAddedApplier(state.getTenantState(), state.getUserState()));
+    register(
+        TenantIntent.ENTITY_REMOVED,
+        new TenantEntityRemovedApplier(state.getTenantState(), state.getUserState()));
+  }
+
+  private void registerMappingAppliers(final MutableProcessingState state) {
+    register(
+        MappingIntent.CREATED,
+        new MappingCreatedApplier(state.getMappingState(), state.getAuthorizationState()));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {

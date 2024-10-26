@@ -8,8 +8,8 @@
 package io.camunda.operate.webapp.transform;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
+import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;

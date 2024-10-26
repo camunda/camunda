@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.zeebe.operation;
 
-import io.camunda.operate.entities.OperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationEntity;
 
 public class OperationCommand implements Runnable {
 

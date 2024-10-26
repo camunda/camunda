@@ -9,7 +9,6 @@ package io.camunda.operate.webapp.rest;
 
 import static io.camunda.operate.webapp.rest.ProcessRestService.PROCESS_URL;
 
-import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.util.rest.ValidLongId;
 import io.camunda.operate.webapp.InternalAPIErrorController;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
@@ -23,6 +22,7 @@ import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;

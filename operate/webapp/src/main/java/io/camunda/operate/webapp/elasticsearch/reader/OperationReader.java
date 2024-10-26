@@ -7,8 +7,6 @@
  */
 package io.camunda.operate.webapp.elasticsearch.reader;
 
-import static io.camunda.operate.entities.OperationState.LOCKED;
-import static io.camunda.operate.entities.OperationState.SCHEDULED;
 import static io.camunda.operate.schema.templates.OperationTemplate.BATCH_OPERATION_ID;
 import static io.camunda.operate.schema.templates.OperationTemplate.BATCH_OPERATION_ID_AGGREGATION;
 import static io.camunda.operate.schema.templates.OperationTemplate.ID;
@@ -21,6 +19,8 @@ import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithOr;
+import static io.camunda.webapps.schema.entities.operation.OperationState.LOCKED;
+import static io.camunda.webapps.schema.entities.operation.OperationState.SCHEDULED;
 import static org.elasticsearch.client.Requests.searchRequest;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
@@ -29,9 +29,6 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.elasticsearch.search.builder.SearchSourceBuilder.searchSource;
 
 import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.entities.BatchOperationEntity;
-import io.camunda.operate.entities.OperationEntity;
-import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
 import io.camunda.operate.schema.templates.OperationTemplate;
@@ -40,6 +37,9 @@ import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
 import io.camunda.operate.webapp.security.UserService;
+import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
