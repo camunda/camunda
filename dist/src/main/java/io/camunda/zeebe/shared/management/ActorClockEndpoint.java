@@ -72,7 +72,7 @@ public class ActorClockEndpoint {
    * To add a relative time offset:
    *
    * <pre>{@code
-   * curl -X POST -H 'Content-Type: application/json' -d '{"offsetMilli": 250}' "http://0.0.0.0:9600/actuator/clock/pin"
+   * curl -X POST -H 'Content-Type: application/json' -d '{"offsetMilli": 250}' "http://0.0.0.0:9600/actuator/clock/add"
    * "2021-10-31T09:36:04.783Z"%
    * }</pre>
    *
