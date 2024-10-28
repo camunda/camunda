@@ -27,7 +27,7 @@ import java.util.List;
  * Default implementation to process JobCommands to reduce duplication in CommandProcessor
  * implementations.
  */
-final class DefaultJobCommandPreconditionGuard {
+public final class DefaultJobCommandPreconditionGuard {
 
   private final String intent;
   private final JobState state;

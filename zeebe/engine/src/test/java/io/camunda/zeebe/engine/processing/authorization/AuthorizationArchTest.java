@@ -30,7 +30,6 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.Au
 import io.camunda.zeebe.engine.processing.job.DefaultJobCommandPreconditionGuard;
 import io.camunda.zeebe.engine.processing.job.JobBatchActivateProcessor;
 import io.camunda.zeebe.engine.processing.job.JobCancelProcessor;
-import io.camunda.zeebe.engine.processing.job.JobFailProcessor;
 import io.camunda.zeebe.engine.processing.job.JobRecurProcessor;
 import io.camunda.zeebe.engine.processing.job.JobTimeOutProcessor;
 import io.camunda.zeebe.engine.processing.job.JobYieldProcessor;
@@ -48,16 +47,12 @@ import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionDele
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBatchActivateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBatchTerminateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateWithResultProcessor;
-import io.camunda.zeebe.engine.processing.resource.ResourceDeletionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor.CommandControl;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessorImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.timer.TimerCancelProcessor;
 import io.camunda.zeebe.engine.processing.timer.TimerTriggerProcessor;
-import io.camunda.zeebe.engine.processing.user.UserCreateProcessor;
-import io.camunda.zeebe.engine.processing.user.UserDeleteProcessor;
-import io.camunda.zeebe.engine.processing.user.UserUpdateProcessor;
 import io.camunda.zeebe.engine.processing.usertask.UserTaskProcessor;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandPreconditionChecker;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandProcessor;
@@ -124,7 +119,6 @@ public class AuthorizationArchTest {
     processors.add(CommandDistributionFinishProcessor.class);
     processors.add(JobBatchActivateProcessor.class); // TODO REMOVE THIS ONE
     processors.add(JobCancelProcessor.class);
-    processors.add(JobFailProcessor.class); // TODO REMOVE THIS ONE
     processors.add(JobRecurProcessor.class);
     processors.add(JobTimeOutProcessor.class);
     processors.add(JobYieldProcessor.class);
@@ -141,12 +135,8 @@ public class AuthorizationArchTest {
     processors.add(ProcessInstanceBatchActivateProcessor.class);
     processors.add(ProcessInstanceBatchTerminateProcessor.class);
     processors.add(ProcessInstanceCreationCreateWithResultProcessor.class);
-    processors.add(ResourceDeletionDeleteProcessor.class); // TODO REMOVE THIS ONE
     processors.add(TimerCancelProcessor.class);
     processors.add(TimerTriggerProcessor.class);
-    processors.add(UserCreateProcessor.class); // TODO REMOVE THIS ONE
-    processors.add(UserDeleteProcessor.class); // TODO REMOVE THIS ONE
-    processors.add(UserUpdateProcessor.class); // TODO REMOVE THIS ONE
     processors.add(UserTaskProcessor.class);
     return processors;
   }
