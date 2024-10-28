@@ -10,153 +10,210 @@ package io.camunda.search.filter;
 import static io.camunda.util.CollectionUtil.*;
 
 import io.camunda.util.ObjectBuilder;
+import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public record ProcessInstanceFilter(
-    List<Long> processInstanceKeys,
-    List<String> processDefinitionIds,
-    List<String> processDefinitionNames,
-    List<Integer> processDefinitionVersions,
-    List<String> processDefinitionVersionTags,
-    List<Long> processDefinitionKeys,
-    List<Long> parentProcessInstanceKeys,
-    List<Long> parentFlowNodeInstanceKeys,
-    List<String> treePaths,
-    DateValueFilter startDate,
-    DateValueFilter endDate,
-    List<String> states,
+    List<Operation<Long>> processInstanceKeys,
+    List<Operation<String>> processDefinitionIds,
+    List<Operation<String>> processDefinitionNames,
+    List<Operation<Integer>> processDefinitionVersions,
+    List<Operation<String>> processDefinitionVersionTags,
+    List<Operation<Long>> processDefinitionKeys,
+    List<Operation<Long>> parentProcessInstanceKeys,
+    List<Operation<Long>> parentFlowNodeInstanceKeys,
+    List<Operation<String>> treePaths,
+    List<Operation<OffsetDateTime>> startDate,
+    List<Operation<OffsetDateTime>> endDate,
+    List<Operation<String>> states,
     Boolean hasIncident,
-    List<String> tenantIds)
+    List<Operation<String>> tenantIds)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<ProcessInstanceFilter> {
 
-    private List<Long> processInstanceKeys;
-    private List<String> processDefinitionIds;
-    private List<String> processDefinitionNames;
-    private List<Integer> processDefinitionVersions;
-    private List<String> processDefinitionVersionTags;
-    private List<Long> processDefinitionKeys;
-    private List<Long> parentProcessInstanceKeys;
-    private List<Long> parentFlowNodeInstanceKeys;
-    private List<String> treePaths;
-    private DateValueFilter startDate;
-    private DateValueFilter endDate;
-    private List<String> states;
+    private List<Operation<Long>> processInstanceKeys;
+    private List<Operation<String>> processDefinitionIds;
+    private List<Operation<String>> processDefinitionNames;
+    private List<Operation<Integer>> processDefinitionVersions;
+    private List<Operation<String>> processDefinitionVersionTags;
+    private List<Operation<Long>> processDefinitionKeys;
+    private List<Operation<Long>> parentProcessInstanceKeys;
+    private List<Operation<Long>> parentFlowNodeInstanceKeys;
+    private List<Operation<String>> treePaths;
+    private List<Operation<OffsetDateTime>> startDate;
+    private List<Operation<OffsetDateTime>> endDate;
+    private List<Operation<String>> states;
     private Boolean hasIncident;
-    private List<String> tenantIds;
+    private List<Operation<String>> tenantIds;
 
-    public Builder processInstanceKeys(final List<Long> values) {
-      processInstanceKeys = addValuesToList(processInstanceKeys, values);
+    @SafeVarargs
+    private <T> List<Operation<T>> mapToOperationEq(final T... values) {
+      return Arrays.stream(values).map(Operation::eq).collect(Collectors.toList());
+    }
+
+    public Builder processInstanceKeys(final List<Operation<Long>> operations) {
+      processInstanceKeys = addValuesToList(processInstanceKeys, operations);
       return this;
     }
 
     public Builder processInstanceKeys(final Long... values) {
-      return processInstanceKeys(collectValuesAsList(values));
+      return processInstanceKeys(mapToOperationEq(values));
     }
 
-    public Builder processDefinitionIds(final List<String> values) {
-      processDefinitionIds = addValuesToList(processDefinitionIds, values);
+    @SafeVarargs
+    public final Builder processInstanceKeys(final Operation<Long>... operations) {
+      return processInstanceKeys(collectValuesAsList(operations));
+    }
+
+    public Builder processDefinitionIds(final List<Operation<String>> operations) {
+      processDefinitionIds = addValuesToList(processDefinitionIds, operations);
       return this;
     }
 
     public Builder processDefinitionIds(final String... values) {
-      return processDefinitionIds(collectValuesAsList(values));
+      return processDefinitionIds(mapToOperationEq(values));
     }
 
-    public Builder processDefinitionNames(final List<String> values) {
-      processDefinitionNames = addValuesToList(processDefinitionNames, values);
+    @SafeVarargs
+    public final Builder processDefinitionIds(final Operation<String>... operations) {
+      return processDefinitionIds(collectValuesAsList(operations));
+    }
+
+    public Builder processDefinitionNames(final List<Operation<String>> operations) {
+      processDefinitionNames = addValuesToList(processDefinitionNames, operations);
       return this;
     }
 
     public Builder processDefinitionNames(final String... values) {
-      return processDefinitionNames(collectValuesAsList(values));
+      return processDefinitionNames(mapToOperationEq(values));
     }
 
-    public Builder processDefinitionVersions(final List<Integer> values) {
-      processDefinitionVersions = addValuesToList(processDefinitionVersions, values);
+    @SafeVarargs
+    public final Builder processDefinitionNames(final Operation<String>... operations) {
+      return processDefinitionNames(collectValuesAsList(operations));
+    }
+
+    public Builder processDefinitionVersions(final List<Operation<Integer>> operations) {
+      processDefinitionVersions = addValuesToList(processDefinitionVersions, operations);
       return this;
     }
 
     public Builder processDefinitionVersions(final Integer... values) {
-      return processDefinitionVersions(collectValuesAsList(values));
+      return processDefinitionVersions(mapToOperationEq(values));
     }
 
-    public Builder processDefinitionVersionTags(final List<String> values) {
+    @SafeVarargs
+    public final Builder processDefinitionVersions(final Operation<Integer>... operations) {
+      return processDefinitionVersions(collectValuesAsList(operations));
+    }
+
+    public Builder processDefinitionVersionTags(final List<Operation<String>> values) {
       processDefinitionVersionTags = addValuesToList(processDefinitionVersionTags, values);
       return this;
     }
 
     public Builder processDefinitionVersionTags(final String... values) {
-      return processDefinitionVersionTags(collectValuesAsList(values));
+      return processDefinitionVersionTags(mapToOperationEq(values));
     }
 
-    public Builder processDefinitionKeys(final List<Long> values) {
-      processDefinitionKeys = addValuesToList(processDefinitionKeys, values);
+    @SafeVarargs
+    public final Builder processDefinitionVersionTags(final Operation<String>... operations) {
+      return processDefinitionVersionTags(collectValuesAsList(operations));
+    }
+
+    public Builder processDefinitionKeys(final List<Operation<Long>> operations) {
+      processDefinitionKeys = addValuesToList(processDefinitionKeys, operations);
       return this;
     }
 
-    public Builder processDefinitionKeys(final Long... values) {
-      return processDefinitionKeys(collectValuesAsList(values));
+    public Builder processDefinitionKeys(final Long processDefinitionKeys) {
+      return processDefinitionKeys(mapToOperationEq(processDefinitionKeys));
     }
 
-    public Builder parentProcessInstanceKeys(final List<Long> values) {
-      parentProcessInstanceKeys = addValuesToList(parentProcessInstanceKeys, values);
+    @SafeVarargs
+    public final Builder processDefinitionKeys(final Operation<Long>... operations) {
+      return processDefinitionKeys(collectValuesAsList(operations));
+    }
+
+    public Builder parentProcessInstanceKeys(final List<Operation<Long>> operations) {
+      parentProcessInstanceKeys = addValuesToList(parentProcessInstanceKeys, operations);
       return this;
     }
 
     public Builder parentProcessInstanceKeys(final Long... values) {
-      return parentProcessInstanceKeys(collectValuesAsList(values));
+      return parentProcessInstanceKeys(mapToOperationEq(values));
     }
 
-    public Builder parentFlowNodeInstanceKeys(final List<Long> values) {
-      parentFlowNodeInstanceKeys = addValuesToList(parentFlowNodeInstanceKeys, values);
+    @SafeVarargs
+    public final Builder parentProcessInstanceKeys(final Operation<Long>... operations) {
+      return parentProcessInstanceKeys(collectValuesAsList(operations));
+    }
+
+    public Builder parentFlowNodeInstanceKeys(final List<Operation<Long>> operations) {
+      parentFlowNodeInstanceKeys = addValuesToList(parentFlowNodeInstanceKeys, operations);
       return this;
     }
 
     public Builder parentFlowNodeInstanceKeys(final Long... values) {
-      return parentFlowNodeInstanceKeys(collectValuesAsList(values));
+      return parentFlowNodeInstanceKeys(mapToOperationEq(values));
     }
 
-    public Builder treePaths(final List<String> values) {
-      treePaths = addValuesToList(treePaths, values);
+    @SafeVarargs
+    public final Builder parentFlowNodeInstanceKeys(final Operation<Long>... operations) {
+      return parentFlowNodeInstanceKeys(collectValuesAsList(operations));
+    }
+
+    public Builder treePaths(final List<Operation<String>> operations) {
+      treePaths = addValuesToList(treePaths, operations);
       return this;
     }
 
     public Builder treePaths(final String... values) {
-      return treePaths(collectValuesAsList(values));
+      return treePaths(mapToOperationEq(values));
     }
 
-    public Builder startDate(final DateValueFilter startDate) {
-      this.startDate = startDate;
+    @SafeVarargs
+    public final Builder treePaths(final Operation<String>... operations) {
+      return treePaths(collectValuesAsList(operations));
+    }
+
+    public Builder startDate(final List<Operation<OffsetDateTime>> operations) {
+      startDate = addValuesToList(startDate, operations);
       return this;
     }
 
-    public Builder startDate(
-        final Function<DateValueFilter.Builder, ObjectBuilder<DateValueFilter>> fn) {
-      return startDate(FilterBuilders.dateValue(fn));
+    @SafeVarargs
+    public final Builder startDate(final Operation<OffsetDateTime>... operations) {
+      return startDate(List.of(operations));
     }
 
-    public Builder endDate(final DateValueFilter endDate) {
-      this.endDate = endDate;
+    public Builder endDate(final List<Operation<OffsetDateTime>> operations) {
+      endDate = addValuesToList(endDate, operations);
       return this;
     }
 
-    public Builder endDate(
-        final Function<DateValueFilter.Builder, ObjectBuilder<DateValueFilter>> fn) {
-      return endDate(FilterBuilders.dateValue(fn));
+    @SafeVarargs
+    public final Builder endDate(final Operation<OffsetDateTime>... operations) {
+      return endDate(List.of(operations));
     }
 
-    public Builder states(final List<String> values) {
-      states = addValuesToList(states, values);
+    public Builder states(final List<Operation<String>> operations) {
+      states = addValuesToList(states, operations);
       return this;
     }
 
     public Builder states(final String... values) {
-      return states(collectValuesAsList(values));
+      return states(mapToOperationEq(values));
+    }
+
+    @SafeVarargs
+    public final Builder states(final Operation<String>... operations) {
+      return states(collectValuesAsList(operations));
     }
 
     public Builder hasIncident(final Boolean value) {
@@ -164,13 +221,18 @@ public record ProcessInstanceFilter(
       return this;
     }
 
-    public Builder tenantIds(final List<String> values) {
-      tenantIds = addValuesToList(tenantIds, values);
+    public Builder tenantIds(final List<Operation<String>> operations) {
+      tenantIds = addValuesToList(tenantIds, operations);
       return this;
     }
 
     public Builder tenantIds(final String... values) {
-      return tenantIds(collectValuesAsList(values));
+      return tenantIds(mapToOperationEq(values));
+    }
+
+    @SafeVarargs
+    public final Builder tenantIds(final Operation<String>... operations) {
+      return tenantIds(collectValuesAsList(operations));
     }
 
     @Override
@@ -185,8 +247,8 @@ public record ProcessInstanceFilter(
           Objects.requireNonNullElse(parentProcessInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(parentFlowNodeInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(treePaths, Collections.emptyList()),
-          startDate,
-          endDate,
+          Objects.requireNonNullElse(startDate, Collections.emptyList()),
+          Objects.requireNonNullElse(endDate, Collections.emptyList()),
           Objects.requireNonNullElse(states, Collections.emptyList()),
           hasIncident,
           Objects.requireNonNullElse(tenantIds, Collections.emptyList()));

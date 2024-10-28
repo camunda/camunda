@@ -8,16 +8,19 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
-import static io.camunda.search.clients.query.SearchQueryBuilders.intTerms;
-import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
-import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.dateTimeOperations;
+import static io.camunda.search.clients.query.SearchQueryBuilders.intOperations;
+import static io.camunda.search.clients.query.SearchQueryBuilders.longOperations;
+import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
+import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.clients.transformers.filter.DateValueFilterTransformer.DateFieldFilter;
 import io.camunda.search.filter.DateValueFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
+import java.util.ArrayList;
 import java.util.List;
 
 public final class ProcessInstanceFilterTransformer
@@ -31,23 +34,30 @@ public final class ProcessInstanceFilterTransformer
 
   @Override
   public SearchQuery toSearchQuery(final ProcessInstanceFilter filter) {
-
-    return and(
-        getIsProcessInstanceQuery(),
-        longTerms("key", filter.processInstanceKeys()),
-        stringTerms("bpmnProcessId", filter.processDefinitionIds()),
-        stringTerms("processName", filter.processDefinitionNames()),
-        intTerms("processVersion", filter.processDefinitionVersions()),
-        stringTerms("processVersionTag", filter.processDefinitionVersionTags()),
-        longTerms("processDefinitionKey", filter.processDefinitionKeys()),
-        longTerms("parentProcessInstanceKey", filter.parentProcessInstanceKeys()),
-        longTerms("parentFlowNodeInstanceKey", filter.parentFlowNodeInstanceKeys()),
-        stringTerms("treePath", filter.treePaths()),
-        getDateQuery("startDate", filter.startDate()),
-        getDateQuery("endDate", filter.endDate()),
-        stringTerms("state", filter.states()),
-        getIncidentQuery(filter.hasIncident()),
-        stringTerms("tenantId", filter.tenantIds()));
+    final var queries = new ArrayList<SearchQuery>();
+    ofNullable(getIsProcessInstanceQuery()).ifPresent(queries::add);
+    ofNullable(longOperations("key", filter.processInstanceKeys())).ifPresent(queries::addAll);
+    ofNullable(stringOperations("bpmnProcessId", filter.processDefinitionIds()))
+        .ifPresent(queries::addAll);
+    ofNullable(stringOperations("processName", filter.processDefinitionNames()))
+        .ifPresent(queries::addAll);
+    ofNullable(intOperations("processVersion", filter.processDefinitionVersions()))
+        .ifPresent(queries::addAll);
+    ofNullable(stringOperations("processVersionTag", filter.processDefinitionVersionTags()))
+        .ifPresent(queries::addAll);
+    ofNullable(longOperations("processDefinitionKey", filter.processDefinitionKeys()))
+        .ifPresent(queries::addAll);
+    ofNullable(longOperations("parentProcessInstanceKey", filter.parentProcessInstanceKeys()))
+        .ifPresent(queries::addAll);
+    ofNullable(longOperations("parentFlowNodeInstanceKey", filter.parentFlowNodeInstanceKeys()))
+        .ifPresent(queries::addAll);
+    ofNullable(stringOperations("treePath", filter.treePaths())).ifPresent(queries::addAll);
+    ofNullable(dateTimeOperations("startDate", filter.startDate())).ifPresent(queries::add);
+    ofNullable(dateTimeOperations("endDate", filter.endDate())).ifPresent(queries::add);
+    ofNullable(stringOperations("state", filter.states())).ifPresent(queries::addAll);
+    ofNullable(getIncidentQuery(filter.hasIncident())).ifPresent(queries::add);
+    ofNullable(stringOperations("tenantId", filter.tenantIds())).ifPresent(queries::addAll);
+    return and(queries);
   }
 
   @Override

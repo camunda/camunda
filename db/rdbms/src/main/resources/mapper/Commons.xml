@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.camunda.db.rdbms.sql.Commons">
+
+  <!-- <include refid="io.camunda.db.rdbms.sql.Commons"/> -->
+  <sql id="operationCondition">
+    <choose>
+      <when test="operation.operator.name().equals('EQUALS')">
+        = #{operation.value}
+      </when>
+      <when test="operation.operator.name().equals('NOT_EQUALS')">
+        != #{operation.value}
+      </when>
+      <when test="operation.operator.name().equals('EXISTS')">
+        IS NOT NULL
+      </when>
+      <when test="operation.operator.name().equals('NOT_EXISTS')">
+        IS NULL
+      </when>
+      <when test="operation.operator.name().equals('GREATER_THAN')">
+        &gt; #{operation.value}
+      </when>
+      <when test="operation.operator.name().equals('GREATER_THAN_EQUALS')">
+        &gt;= #{operation.value}
+      </when>
+      <when test="operation.operator.name().equals('LOWER_THAN')">
+        &lt; #{operation.value}
+      </when>
+      <when test="operation.operator.name().equals('LOWER_THAN_EQUALS')">
+        &lt;= #{operation.value}
+      </when>
+      <when test="operation.operator.name().equals('IN')">
+        IN <foreach collection="operation.values" item="value" open="(" separator=", " close=")">#{value}</foreach>
+      </when>
+      <when test="operation.operator.name().equals('LIKE')">
+        LIKE #{operation.value}
+      </when>
+    </choose>
+  </sql>
+
+</mapper>
