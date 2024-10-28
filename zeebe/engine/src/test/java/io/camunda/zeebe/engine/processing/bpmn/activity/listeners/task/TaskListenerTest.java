@@ -126,6 +126,77 @@ public class TaskListenerTest {
   }
 
   @Test
+  public void shouldAssignTaskWhenAllCreateTaskListenersAreExecuted() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcessWithZeebeUserTask(
+                u ->
+                    u.zeebeAssignee("frodo")
+                        .zeebeTaskListener(l -> l.create().type(LISTENER_TYPE))
+                        .zeebeTaskListener(l -> l.assignment().type(LISTENER_TYPE + "_2"))
+                        .zeebeTaskListener(l -> l.complete().type(LISTENER_TYPE + "_3"))));
+
+    completeJobs(processInstanceKey, LISTENER_TYPE, LISTENER_TYPE + "_2");
+
+    // when
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .withVariable("foo_var", "bar")
+        .withAction("my_custom_action")
+        .complete();
+    completeJobs(processInstanceKey, LISTENER_TYPE, LISTENER_TYPE + "_2", LISTENER_TYPE + "_3");
+
+    // then
+    assertThat(
+            RecordingExporter.jobRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withJobKind(JobKind.TASK_LISTENER)
+                .withJobListenerEventType(JobListenerEventType.COMPLETE)
+                .withIntent(JobIntent.COMPLETED)
+                .limit(3))
+        .extracting(Record::getValue)
+        .extracting(JobRecordValue::getType)
+        .describedAs("Verify that all task listeners were completed in the correct sequence")
+        .containsExactly(LISTENER_TYPE, LISTENER_TYPE + "_2", LISTENER_TYPE + "_3");
+
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == UserTaskIntent.COMPLETED))
+        .extracting(Record::getIntent)
+        .describedAs(
+            "Ensure that `COMPLETE_TASK_LISTENER` events were triggered between creation, assignment, and completion events")
+        .containsSubsequence(
+            UserTaskIntent.CREATING,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.CREATED,
+            UserTaskIntent.ASSIGNING,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.ASSIGNED,
+            UserTaskIntent.COMPLETING,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.COMPLETED);
+
+    assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst())
+        .extracting(Record::getValue)
+        .describedAs(
+            "Check that the completed user task contains the correct `action` and `variables` provided with `COMPLETE` command")
+        .satisfies(
+            recordValue -> {
+              assertThat(recordValue.getAction()).isEqualTo("my_custom_action");
+              assertThat(recordValue.getVariables()).containsExactly(entry("foo_var", "bar"));
+            });
+
+    assertThatProcessInstanceCompleted(processInstanceKey);
+    assert false;
+  }
+
+  @Test
   public void shouldRetryTaskListenerWhenListenerJobFailed() {
     // given
     final long processInstanceKey =
@@ -445,6 +516,16 @@ public class TaskListenerTest {
         .done();
   }
 
+  private BpmnModelInstance createProcessWithAssignmentTaskListeners(
+      final String... listenerTypes) {
+    return createProcessWithZeebeUserTask(
+        taskBuilder -> {
+          Stream.of(listenerTypes)
+              .forEach(type -> taskBuilder.zeebeTaskListener(l -> l.assignment().type(type)));
+          return taskBuilder;
+        });
+  }
+
   private BpmnModelInstance createProcessWithCompleteTaskListeners(final String... listenerTypes) {
     return createProcessWithZeebeUserTask(
         taskBuilder -> {
@@ -468,13 +549,13 @@ public class TaskListenerTest {
         .create();
   }
 
-  private void completeJobs(long processInstanceKey, String... jobTypes) {
-    for (String jobType : jobTypes) {
+  private void completeJobs(final long processInstanceKey, final String... jobTypes) {
+    for (final String jobType : jobTypes) {
       ENGINE.job().ofInstance(processInstanceKey).withType(jobType).complete();
     }
   }
 
-  private JobRecordValue activateJob(long processInstanceKey, String jobType) {
+  private JobRecordValue activateJob(final long processInstanceKey, final String jobType) {
     return ENGINE.jobs().withType(jobType).activate().getValue().getJobs().stream()
         .filter(job -> job.getProcessInstanceKey() == processInstanceKey)
         .findFirst()

@@ -35,6 +35,8 @@ public enum JobListenerEventType {
    */
   END,
 
+  CREATE,
+
   /**
    * Represents the `complete` event for a task listener. This event type is used to indicate that
    * the listener should be triggered after a user task complete operation was invoked.

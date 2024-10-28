@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -29,6 +30,8 @@ public final class UserTaskCreatingApplier
   @Override
   public void applyState(final long key, final UserTaskRecord value) {
     userTaskState.create(value);
+    // todo: move to v2
+    userTaskState.storeIntermediateState(value, LifecycleState.CREATING);
 
     final long elementInstanceKey = value.getElementInstanceKey();
     if (elementInstanceKey > 0) {

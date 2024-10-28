@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAssignProc
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskClaimProcessor;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandProcessor;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCompleteProcessor;
+import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCreateProcessor;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskUpdateProcessor;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -46,6 +47,8 @@ public final class UserTaskCommandProcessors {
     commandToProcessor =
         new EnumMap<>(
             Map.of(
+                UserTaskIntent.CREATE,
+                new UserTaskCreateProcessor(processingState, writers, authCheckBehavior),
                 UserTaskIntent.ASSIGN,
                 new UserTaskAssignProcessor(processingState, writers, authCheckBehavior),
                 UserTaskIntent.CLAIM,

@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.PersistedForm;
 import io.camunda.zeebe.engine.state.immutable.FormState;
@@ -52,6 +53,7 @@ public final class BpmnUserTaskBehavior {
   private final HeaderEncoder headerEncoder = new HeaderEncoder(LOGGER);
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
+  private final TypedCommandWriter commandWriter;
   private final ExpressionProcessor expressionBehavior;
   private final BpmnStateBehavior stateBehavior;
   private final FormState formState;
@@ -68,6 +70,7 @@ public final class BpmnUserTaskBehavior {
       final InstantSource clock) {
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
+    commandWriter = writers.command();
     this.expressionBehavior = expressionBehavior;
     this.stateBehavior = stateBehavior;
     this.formState = formState;
@@ -143,7 +146,7 @@ public final class BpmnUserTaskBehavior {
         .setPriority(userTaskProperties.getPriority())
         .setCreationTimestamp(clock.millis());
 
-    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATING, userTaskRecord);
+    commandWriter.appendFollowUpCommand(userTaskKey, UserTaskIntent.CREATE, userTaskRecord);
     return userTaskRecord;
   }
 
