@@ -111,9 +111,16 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
       // this is a hack to correct the assignee, similar to how a create listener should be able to
       // do this eventually. as that's not yet supported, I just want to test it here
       if (intermediateCopy.getAssignee().equals("bilbo")) {
-        intermediateCopy.setAssignee("gandalf");
+        intermediateCopy.setAssignee("gandalf").setAction("drop on floor");
       } else {
-        intermediateCopy.setAssignee("frodo");
+        intermediateCopy.setAssignee("frodo").setAction("handover envelope");
+      }
+    } else if (lifecycleState.equals(LifecycleState.ASSIGNING)) {
+      final var index =
+          userTaskElementInstance.getTaskListenerIndex(ZeebeTaskListenerEventType.assignment);
+      switch (index) {
+        case 1 -> intermediateCopy.setAssignee("lady galadriel").setAction("put to the test");
+        case 2 -> intermediateCopy.setAssignee("frodo").setAction("pass test");
       }
     }
 

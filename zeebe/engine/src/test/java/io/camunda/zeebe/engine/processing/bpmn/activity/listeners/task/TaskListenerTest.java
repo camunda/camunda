@@ -137,17 +137,22 @@ public class TaskListenerTest {
                         .zeebeTaskListener(l -> l.create().type(LISTENER_TYPE))
                         .zeebeTaskListener(l -> l.create().type(LISTENER_TYPE + "_2"))
                         .zeebeTaskListener(l -> l.assignment().type(LISTENER_TYPE + "_assign"))
+                        .zeebeTaskListener(l -> l.assignment().type(LISTENER_TYPE + "_assign_2"))
                         .zeebeTaskListener(l -> l.complete().type(LISTENER_TYPE + "_complete"))));
 
     completeJobs(
-        processInstanceKey, LISTENER_TYPE, LISTENER_TYPE + "_2", LISTENER_TYPE + "_assign");
+        processInstanceKey,
+        LISTENER_TYPE,
+        LISTENER_TYPE + "_2",
+        LISTENER_TYPE + "_assign",
+        LISTENER_TYPE + "_assign_2");
 
     // when
     ENGINE
         .userTask()
         .ofInstance(processInstanceKey)
         .withVariable("foo_var", "bar")
-        .withAction("my_custom_action")
+        .withAction("cast into the fire")
         .complete();
     completeJobs(processInstanceKey, LISTENER_TYPE + "_complete");
 
@@ -158,7 +163,7 @@ public class TaskListenerTest {
                 .withJobKind(JobKind.TASK_LISTENER)
                 //                .withJobListenerEventType(JobListenerEventType.COMPLETE)
                 .withIntent(JobIntent.COMPLETED)
-                .limit(4))
+                .limit(5))
         .extracting(Record::getValue)
         .extracting(JobRecordValue::getType)
         .describedAs("Verify that all task listeners were completed in the correct sequence")
@@ -166,6 +171,7 @@ public class TaskListenerTest {
             LISTENER_TYPE,
             LISTENER_TYPE + "_2",
             LISTENER_TYPE + "_assign",
+            LISTENER_TYPE + "_assign_2",
             LISTENER_TYPE + "_complete");
 
     assertThat(
@@ -181,6 +187,7 @@ public class TaskListenerTest {
             UserTaskIntent.COMPLETE_TASK_LISTENER,
             UserTaskIntent.CREATED,
             UserTaskIntent.ASSIGNING,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
             UserTaskIntent.COMPLETE_TASK_LISTENER,
             UserTaskIntent.ASSIGNED,
             UserTaskIntent.COMPLETING,

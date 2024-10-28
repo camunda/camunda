@@ -63,7 +63,7 @@ public final class UserTaskCreateProcessor implements UserTaskCommandProcessor {
     final long userTaskKey = command.getKey();
 
     //    userTaskRecord.setAssignee(command.getValue().getAssignee());
-    userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));
+    //    userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));
 
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATED, userTaskRecord);
     responseWriter.writeEventOnCommand(
