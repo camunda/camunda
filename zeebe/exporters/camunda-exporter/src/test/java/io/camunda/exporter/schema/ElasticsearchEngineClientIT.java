@@ -121,7 +121,8 @@ public class ElasticsearchEngineClientIT {
   @Test
   void shouldRetrieveAllIndexMappingsWithImplementationAgnosticReturnType() {
     final var index =
-        SchemaTestUtil.mockIndex("index_qualified_name", "alias", "index_name", "/mappings.json");
+        SchemaTestUtil.mockIndex(
+            "index_qualified_name", "alias", "index_name", "/mappings-complex-property.json");
 
     elsEngineClient.createIndex(index, new IndexSettings());
 
@@ -134,7 +135,8 @@ public class ElasticsearchEngineClientIT {
         .containsExactlyInAnyOrder(
             new IndexMappingProperty.Builder()
                 .name("hello")
-                .typeDefinition(Map.of("type", "text"))
+                .typeDefinition(
+                    Map.of("type", "text", "index", false, "eager_global_ordinals", true))
                 .build(),
             new IndexMappingProperty.Builder()
                 .name("world")
@@ -146,7 +148,12 @@ public class ElasticsearchEngineClientIT {
   void shouldRetrieveAllIndexTemplateMappingsWithImplementationAgnosticReturnType() {
     final var template =
         SchemaTestUtil.mockIndexTemplate(
-            "index_name", "index_pattern.*", "alias", List.of(), "template_name", "/mappings.json");
+            "index_name",
+            "index_pattern.*",
+            "alias",
+            List.of(),
+            "template_name",
+            "/mappings-complex-property.json");
 
     elsEngineClient.createIndexTemplate(template, new IndexSettings(), true);
 
@@ -158,7 +165,8 @@ public class ElasticsearchEngineClientIT {
         .containsExactlyInAnyOrder(
             new IndexMappingProperty.Builder()
                 .name("hello")
-                .typeDefinition(Map.of("type", "text"))
+                .typeDefinition(
+                    Map.of("type", "text", "index", false, "eager_global_ordinals", true))
                 .build(),
             new IndexMappingProperty.Builder()
                 .name("world")
