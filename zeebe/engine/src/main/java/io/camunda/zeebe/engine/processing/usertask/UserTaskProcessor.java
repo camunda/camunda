@@ -92,31 +92,40 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   }
 
   private void processCompleteTaskListener(final TypedRecord<UserTaskRecord> command) {
+
     final var lifecycleState = userTaskState.getLifecycleState(command.getKey());
     final var userTaskIntent = mapLifecycleStateToIntent(lifecycleState);
     final var commandProcessor = commandProcessors.getCommandProcessor(userTaskIntent);
-    final var persistedRecord = userTaskState.getUserTask(command.getKey());
-    final var userTaskElement = getUserTaskElement(persistedRecord);
-    final var userTaskElementInstance = getUserTaskElementInstance(persistedRecord);
+    final var intermediateState = userTaskState.getIntermediateState(command.getKey()).getRecord();
+    final var userTaskElement = getUserTaskElement(intermediateState);
+    final var userTaskElementInstance = getUserTaskElementInstance(intermediateState);
     final var listenerEventType = mapLifecycleStateToEventType(lifecycleState);
     final var context = buildContext(userTaskElementInstance);
 
     mergeVariablesOfTaskListener(context);
 
+    final var intermediateCopy = new UserTaskRecord();
+    intermediateCopy.copyFrom(intermediateState);
+
     if (lifecycleState.equals(LifecycleState.CREATING)) {
       // this is a hack to correct the assignee, similar to how a create listener should be able to
       // do this eventually. as that's not yet supported, I just want to test it here
-      persistedRecord.setAssignee("overridden");
+      if (intermediateCopy.getAssignee().equals("bilbo")) {
+        intermediateCopy.setAssignee("gandalf");
+      } else {
+        intermediateCopy.setAssignee("frodo");
+      }
     }
 
-    if (!persistedRecord.equals(command.getValue())) {
-      stateWriter.appendFollowUpEvent(command.getKey(), UserTaskIntent.CORRECTED, persistedRecord);
+    if (!command.getValue().equals(intermediateCopy)) {
+      // the task listener has changed the state, so we need to correct it
+      stateWriter.appendFollowUpEvent(command.getKey(), UserTaskIntent.CORRECTED, intermediateCopy);
     }
 
     findNextTaskListener(listenerEventType, userTaskElement, userTaskElementInstance)
         .ifPresentOrElse(
-            listener -> createTaskListenerJob(listener, context, persistedRecord),
-            () -> commandProcessor.onFinalizeCommand(command, persistedRecord));
+            listener -> createTaskListenerJob(listener, context, intermediateCopy),
+            () -> commandProcessor.onFinalizeCommand(command, intermediateCopy));
   }
 
   private void processOperationCommand(

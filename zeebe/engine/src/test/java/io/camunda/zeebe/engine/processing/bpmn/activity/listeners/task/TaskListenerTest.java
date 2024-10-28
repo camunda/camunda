@@ -52,7 +52,8 @@ import org.junit.Test;
 
 public class TaskListenerTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  @ClassRule
+  public static final EngineRule ENGINE = EngineRule.singlePartition().maxCommandsInBatch(1);
 
   private static final String PROCESS_ID = "process";
   private static final String USER_TASK_KEY_HEADER_NAME =
@@ -132,7 +133,7 @@ public class TaskListenerTest {
         createProcessInstance(
             createProcessWithZeebeUserTask(
                 u ->
-                    u.zeebeAssignee("frodo")
+                    u.zeebeAssignee("bilbo")
                         .zeebeTaskListener(l -> l.create().type(LISTENER_TYPE))
                         .zeebeTaskListener(l -> l.create().type(LISTENER_TYPE + "_2"))
                         .zeebeTaskListener(l -> l.assignment().type(LISTENER_TYPE + "_assign"))
