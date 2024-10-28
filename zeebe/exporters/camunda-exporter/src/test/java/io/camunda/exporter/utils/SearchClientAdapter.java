@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.SchemaResourceSerializer;
 import java.io.IOException;
+import java.util.Objects;
 import org.opensearch.client.json.jackson.JacksonJsonpGenerator;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -32,11 +33,13 @@ public class SearchClientAdapter {
   private final OpenSearchClient osClient;
 
   public SearchClientAdapter(final ElasticsearchClient elsClient) {
+    Objects.requireNonNull(elsClient, "elsClient cannot be null");
     this.elsClient = elsClient;
     osClient = null;
   }
 
   public SearchClientAdapter(final OpenSearchClient osClient) {
+    Objects.requireNonNull(osClient, "osClient cannot be null");
     elsClient = null;
     this.osClient = osClient;
   }
@@ -91,75 +94,60 @@ public class SearchClientAdapter {
   }
 
   public JsonNode getIndexAsNode(final String indexName) throws IOException {
-    switch (elsClient != null ? "elsClient" : "osClient") {
-      case "elsClient" -> {
-        final var index = elsClient.indices().get(req -> req.index(indexName)).get(indexName);
-        return elsIndexToNode(index);
-      }
-      case "osClient" -> {
-        final var index = osClient.indices().get(req -> req.index(indexName)).get(indexName);
-        return opensearchIndexToNode(index);
-      }
-      default -> throw new IllegalStateException("Must instantiate client in SearchClientAdapter");
+    if (elsClient != null) {
+      final var index = elsClient.indices().get(req -> req.index(indexName)).get(indexName);
+      return elsIndexToNode(index);
+    } else if (osClient != null) {
+      final var index = osClient.indices().get(req -> req.index(indexName)).get(indexName);
+      return opensearchIndexToNode(index);
     }
+    return null;
   }
 
   public JsonNode getPolicyAsNode(final String policyName) throws IOException {
-    switch (elsClient != null ? "elsClient" : "osClient") {
-      case "elsClient" -> {
-        final var policy =
-            elsClient.ilm().getLifecycle(req -> req.name(policyName)).result().get(policyName);
+    if (elsClient != null) {
+      final var policy =
+          elsClient.ilm().getLifecycle(req -> req.name(policyName)).result().get(policyName);
 
-        return elsPolicyToNode(policy);
-      }
-      case "osClient" -> {
-        final var request =
-            Requests.builder()
-                .method("GET")
-                .endpoint("_plugins/_ism/policies/" + policyName)
-                .build();
+      return elsPolicyToNode(policy);
+    } else if (osClient != null) {
+      final var request =
+          Requests.builder().method("GET").endpoint("_plugins/_ism/policies/" + policyName).build();
 
-        return MAPPER.readTree(osClient.generic().execute(request).getBody().get().body());
-      }
-      default -> throw new IllegalStateException("Must instantiate client in SearchClientAdapter");
+      return MAPPER.readTree(osClient.generic().execute(request).getBody().get().body());
     }
+    return null;
   }
 
   public JsonNode getIndexTemplateAsNode(final String templateName) throws IOException {
-    switch (elsClient != null ? "elsClient" : "osClient") {
-      case "elsClient" -> {
-        final var template =
-            elsClient
-                .indices()
-                .getIndexTemplate(req -> req.name(templateName))
-                .indexTemplates()
-                .getFirst();
-        return elsIndexTemplateToNode(template);
-      }
-      case "osClient" -> {
-        final var template =
-            osClient
-                .indices()
-                .getIndexTemplate(req -> req.name(templateName))
-                .indexTemplates()
-                .getFirst();
+    if (elsClient != null) {
+      final var template =
+          elsClient
+              .indices()
+              .getIndexTemplate(req -> req.name(templateName))
+              .indexTemplates()
+              .getFirst();
+      return elsIndexTemplateToNode(template);
+    } else if (osClient != null) {
+      final var template =
+          osClient
+              .indices()
+              .getIndexTemplate(req -> req.name(templateName))
+              .indexTemplates()
+              .getFirst();
 
-        return opensearchIndexTemplateToNode(template);
-      }
-      default -> throw new IllegalStateException("Must instantiate client in SearchClientAdapter");
+      return opensearchIndexTemplateToNode(template);
     }
+    return null;
   }
 
   public <T> T get(final String id, final String index, final Class<T> classType)
       throws IOException {
-    switch (elsClient != null ? "elsClient" : "osClient") {
-      case "elsClient" -> {
-        return elsClient.get(r -> r.id(id).index(index), classType).source();
-      }
-      case "osClient" -> {
-        return osClient.get(r -> r.id(id).index(index), classType).source();
-      }
-      default -> throw new IllegalStateException("Must instantiate client in SearchClientAdapter");
+    if (elsClient != null) {
+      return elsClient.get(r -> r.id(id).index(index), classType).source();
+    } else if (osClient != null) {
+      return osClient.get(r -> r.id(id).index(index), classType).source();
     }
+    return null;
   }
 }
