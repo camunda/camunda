@@ -63,11 +63,11 @@ public class ProcessDefinitionServices
                 .build());
     if (result.total() < 1) {
       throw new NotFoundException(
-          String.format("Process Definition with key %d not found", processDefinitionKey));
+          String.format("Process definition with key %d not found", processDefinitionKey));
     } else if (result.total() > 1) {
       throw new CamundaSearchException(
           String.format(
-              "Found Process Definition with key %d more than once", processDefinitionKey));
+              "Found Process definition with key %d more than once", processDefinitionKey));
     } else {
       return result.items().stream().findFirst().orElseThrow();
     }

@@ -146,7 +146,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   public void shouldReturn404ForInvalidProcessDefinitionKey() {
     // given
     when(processDefinitionServices.getByKey(17L))
-        .thenThrow(new NotFoundException("Process Definition with key 17 not found"));
+        .thenThrow(new NotFoundException("Process definition with key 17 not found"));
     // when / then
     webClient
         .get()
@@ -162,7 +162,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
                       "type": "about:blank",
                       "status": 404,
                       "title": "NOT_FOUND",
-                      "detail": "Process Definition with key 17 not found"
+                      "detail": "Process definition with key 17 not found"
                     }
                 """);
 
@@ -250,7 +250,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   @Test
   public void shouldReturn404ForFormInvaliProcessKey() throws Exception {
     when(processDefinitionServices.getByKey(999L))
-        .thenThrow(new NotFoundException("Process Definition with key 999 not found"));
+        .thenThrow(new NotFoundException("Process definition with key 999 not found"));
     webClient
         .get()
         .uri(PROCESS_DEFINITION_URL + "999/form")
@@ -265,7 +265,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
               "type": "about:blank",
               "title": "NOT_FOUND",
               "status": 404,
-              "detail": "Process Definition with key 999 not found"
+              "detail": "Process definition with key 999 not found"
             }
             """);
   }
