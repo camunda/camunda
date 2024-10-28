@@ -11,6 +11,7 @@ import static io.camunda.exporter.config.ConnectionTypes.ELASTICSEARCH;
 import static io.camunda.exporter.config.ConnectionTypes.OPENSEARCH;
 import static java.util.Arrays.asList;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
@@ -27,6 +28,7 @@ import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 import org.junit.jupiter.api.extension.TestTemplateInvocationContext;
 import org.junit.jupiter.api.extension.TestTemplateInvocationContextProvider;
+import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.testcontainers.OpensearchContainer;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
@@ -37,6 +39,10 @@ public class CamundaExporterITInvocationProvider
   private final ElasticsearchContainer elsContainer =
       TestSupport.createDefeaultElasticsearchContainer();
   private final OpensearchContainer<?> osContainer = TestSupport.createDefaultOpensearchContainer();
+  private ElasticsearchClient elsClient;
+  private OpenSearchClient osClient;
+  private SearchClientAdapter elsClientAdapter;
+  private SearchClientAdapter osClientAdapter;
 
   private final List<AutoCloseable> closeables = new ArrayList<>();
 
@@ -59,6 +65,14 @@ public class CamundaExporterITInvocationProvider
     elsContainer.start();
     osContainer.start();
 
+    final var osConfig = getConfigWithConnectionDetails(OPENSEARCH);
+    osClient = new OpensearchConnector(osConfig.getConnect()).createClient();
+    osClientAdapter = new SearchClientAdapter(osClient);
+
+    final var elsConfig = getConfigWithConnectionDetails(ELASTICSEARCH);
+    elsClient = new ElasticsearchConnector(elsConfig.getConnect()).createClient();
+    elsClientAdapter = new SearchClientAdapter(elsClient);
+
     closeables.add(elsContainer);
     closeables.add(osContainer);
   }
@@ -79,13 +93,6 @@ public class CamundaExporterITInvocationProvider
   @Override
   public Stream<TestTemplateInvocationContext> provideTestTemplateInvocationContexts(
       final ExtensionContext extensionContext) {
-    final var osConfig = getConfigWithConnectionDetails(OPENSEARCH);
-    final var osClient = new OpensearchConnector(osConfig.getConnect()).createClient();
-    final var osClientAdapter = new SearchClientAdapter(osClient);
-
-    final var elsConfig = getConfigWithConnectionDetails(ELASTICSEARCH);
-    final var elsClient = new ElasticsearchConnector(elsConfig.getConnect()).createClient();
-    final var elsClientAdapter = new SearchClientAdapter(elsClient);
 
     try {
       elsClient.indices().delete(req -> req.index("*"));
@@ -96,8 +103,8 @@ public class CamundaExporterITInvocationProvider
       throw new RuntimeException("Failed to reset container data", e);
     }
     return Stream.of(
-        invocationContext(osConfig, osClientAdapter),
-        invocationContext(elsConfig, elsClientAdapter));
+        invocationContext(getConfigWithConnectionDetails(OPENSEARCH), osClientAdapter),
+        invocationContext(getConfigWithConnectionDetails(ELASTICSEARCH), elsClientAdapter));
   }
 
   private TestTemplateInvocationContext invocationContext(
