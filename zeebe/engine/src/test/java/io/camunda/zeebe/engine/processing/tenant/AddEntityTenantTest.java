@@ -54,7 +54,13 @@ public class AddEntityTenantTest {
 
     // when add user entity to tenant
     final var updatedTenant =
-        ENGINE.tenant().addEntity(tenantKey).withEntityKey(userKey).add().getValue();
+        ENGINE
+            .tenant()
+            .addEntity(tenantKey)
+            .withEntityKey(userKey)
+            .withEntityType(USER)
+            .add()
+            .getValue();
 
     // then assert that the entity was added correctly
     Assertions.assertThat(updatedTenant)

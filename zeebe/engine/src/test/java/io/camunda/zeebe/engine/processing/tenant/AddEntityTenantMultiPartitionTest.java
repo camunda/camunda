@@ -51,7 +51,12 @@ public class AddEntityTenantMultiPartitionTest {
     final var tenantId = UUID.randomUUID().toString();
     final var tenantKey =
         engine.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
-    engine.tenant().addEntity(tenantKey).withEntityKey(userKey).add();
+    engine
+        .tenant()
+        .addEntity(tenantKey)
+        .withEntityKey(userKey)
+        .withEntityType(EntityType.USER)
+        .add();
 
     // then
     assertThat(
@@ -149,7 +154,12 @@ public class AddEntityTenantMultiPartitionTest {
     final var tenantId = UUID.randomUUID().toString();
     final var tenantKey =
         engine.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
-    engine.tenant().addEntity(tenantKey).withEntityKey(userKey).add();
+    engine
+        .tenant()
+        .addEntity(tenantKey)
+        .withEntityKey(userKey)
+        .withEntityType(EntityType.USER)
+        .add();
 
     // Increase time to trigger redistribution
     engine.increaseTime(Duration.ofMinutes(1));
