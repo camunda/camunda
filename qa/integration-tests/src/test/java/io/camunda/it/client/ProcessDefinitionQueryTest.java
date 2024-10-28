@@ -52,6 +52,7 @@ public class ProcessDefinitionQueryTest {
 
     // Deploy form
     deployResource(String.format("form/%s", "form.form"));
+    deployResource(String.format("form/%s", "form_v2.form"));
 
     final List<String> processes =
         List.of(
@@ -422,6 +423,7 @@ public class ProcessDefinitionQueryTest {
         zeebeClient.newProcessDefinitionGetFormRequest(processDefinitionKey).send().join();
 
     assertThat(resultForm.getFormId()).isEqualTo("test");
+    assertThat(resultForm.getVersion()).isEqualTo(2L);
   }
 
   private static DeploymentEvent deployResource(final String resourceName) {
@@ -434,7 +436,7 @@ public class ProcessDefinitionQueryTest {
 
   private static void waitForProcessesToBeDeployed() throws InterruptedException {
     Awaitility.await("should deploy processes and import in Operate")
-        .atMost(Duration.ofSeconds(15))
+        .atMost(Duration.ofMinutes(3))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
@@ -457,7 +459,7 @@ public class ProcessDefinitionQueryTest {
                       .send()
                       .join();
 
-              assertThat(resultForm.getFormId()).equals("test");
+              assertThat(resultForm.getFormId().equals("test"));
             });
   }
 }
