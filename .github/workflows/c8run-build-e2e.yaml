@@ -38,12 +38,23 @@ jobs:
         run: bash -c 'while ! curl -s -f "http://localhost:8080/operate/login"; do sleep 5; done'
         timeout-minutes: 5
 
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/github.com/organizations/camunda NEXUS_USR;
+            secret/data/github.com/organizations/camunda NEXUS_PSW;
+
       - name: checkout e2e repo
         uses: actions/checkout@v4
         with:
           repository: camunda/c8-cross-component-e2e-tests
           ref: feat(run)-c8-run-linux-workflow
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run tests
         uses: ./.github/actions/run-tests-c8Run
