@@ -20,10 +20,9 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.PartitionUtil;
 import java.util.HashSet;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public class ScaleUpProcessor implements TypedRecordProcessor<ScaleRecord> {
   private final KeyGenerator keyGenerator;
@@ -78,12 +77,6 @@ public class ScaleUpProcessor implements TypedRecordProcessor<ScaleRecord> {
     allPartitionsInRoutingState.addAll(currentPartitionsInRoutingState);
     allPartitionsInRoutingState.addAll(desiredPartitionsInRoutingState);
 
-    final var requestedPartitions =
-        IntStream.range(
-                Protocol.START_PARTITION_ID, Protocol.START_PARTITION_ID + requestedPartitionCount)
-            .boxed()
-            .collect(Collectors.toSet());
-
     if (requestedPartitionCount < Protocol.START_PARTITION_ID) {
       return Optional.of(
           new Rejection(RejectionType.INVALID_ARGUMENT, "Partition count must be at least 1"));
@@ -95,6 +88,8 @@ public class ScaleUpProcessor implements TypedRecordProcessor<ScaleRecord> {
               RejectionType.INVALID_ARGUMENT,
               "Partition count must be at most " + Protocol.MAXIMUM_PARTITIONS));
     }
+
+    final var requestedPartitions = PartitionUtil.allPartitions(requestedPartitionCount);
 
     if (allPartitionsInRoutingState.equals(requestedPartitions)) {
       return Optional.of(
