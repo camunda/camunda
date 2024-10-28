@@ -104,12 +104,6 @@ public class ScaleUpProcessor implements TypedRecordProcessor<ScaleRecord> {
               "The desired partition count conflicts with the current state"));
     }
 
-    if (currentPartitionsInRoutingState.equals(requestedPartitions)) {
-      return Optional.of(
-          new Rejection(
-              RejectionType.ALREADY_EXISTS, "The desired partition count was already active"));
-    }
-
     if (!requestedPartitions.containsAll(currentPartitionsInRoutingState)) {
       return Optional.of(
           new Rejection(
