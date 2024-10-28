@@ -35,6 +35,7 @@ public enum JobListenerEventType {
    */
   END,
 
+  ASSIGN,
   CREATE,
 
   /**

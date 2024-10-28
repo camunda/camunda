@@ -26,5 +26,8 @@ public final class UserTaskCreatedApplier
   @Override
   public void applyState(final long key, final UserTaskRecord value) {
     userTaskState.updateUserTaskLifecycleState(key, LifecycleState.CREATED);
+
+    userTaskState.deleteIntermediateState(key);
+    userTaskState.deleteRecordRequestMetadata(key);
   }
 }

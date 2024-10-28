@@ -153,6 +153,10 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   }
 
   void storeUserTaskRecordRequestMetadata(final TypedRecord<UserTaskRecord> command) {
+    if (!command.hasRequestMetadata()) {
+      return;
+    }
+
     final var metadata =
         new UserTaskRecordRequestMetadata()
             .setIntent((UserTaskIntent) command.getIntent())

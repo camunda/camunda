@@ -7,8 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.usertask.processors;
 
+import com.google.common.base.Strings;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -21,6 +23,7 @@ public final class UserTaskCreateProcessor implements UserTaskCommandProcessor {
   private static final String DEFAULT_ACTION = "create";
 
   private final StateWriter stateWriter;
+  private final TypedCommandWriter commandWriter;
   private final TypedResponseWriter responseWriter;
 
   //  private final UserTaskCommandPreconditionChecker preconditionChecker;
@@ -30,6 +33,7 @@ public final class UserTaskCreateProcessor implements UserTaskCommandProcessor {
       final Writers writers,
       final AuthorizationCheckBehavior authCheckBehavior) {
     stateWriter = writers.state();
+    commandWriter = writers.command();
     responseWriter = writers.response();
     //    preconditionChecker =
     //        new UserTaskCommandPreconditionChecker(
@@ -58,11 +62,15 @@ public final class UserTaskCreateProcessor implements UserTaskCommandProcessor {
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
     final long userTaskKey = command.getKey();
 
-    userTaskRecord.setAssignee(command.getValue().getAssignee());
+    //    userTaskRecord.setAssignee(command.getValue().getAssignee());
     userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));
 
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATED, userTaskRecord);
     responseWriter.writeEventOnCommand(
         userTaskKey, UserTaskIntent.CREATED, userTaskRecord, command);
+
+    if (!Strings.isNullOrEmpty(command.getValue().getAssignee())) {
+      commandWriter.appendFollowUpCommand(userTaskKey, UserTaskIntent.ASSIGN, userTaskRecord);
+    }
   }
 }

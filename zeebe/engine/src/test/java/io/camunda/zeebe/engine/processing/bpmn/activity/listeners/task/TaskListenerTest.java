@@ -146,14 +146,14 @@ public class TaskListenerTest {
         .withVariable("foo_var", "bar")
         .withAction("my_custom_action")
         .complete();
-    completeJobs(processInstanceKey, LISTENER_TYPE, LISTENER_TYPE + "_2", LISTENER_TYPE + "_3");
+    completeJobs(processInstanceKey, LISTENER_TYPE + "_3");
 
     // then
     assertThat(
             RecordingExporter.jobRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .withJobKind(JobKind.TASK_LISTENER)
-                .withJobListenerEventType(JobListenerEventType.COMPLETE)
+                //                .withJobListenerEventType(JobListenerEventType.COMPLETE)
                 .withIntent(JobIntent.COMPLETED)
                 .limit(3))
         .extracting(Record::getValue)

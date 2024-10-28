@@ -30,5 +30,8 @@ public final class UserTaskAssignedApplier
     userTask.setAssignee(assignee);
     userTaskState.update(userTask);
     userTaskState.updateUserTaskLifecycleState(key, LifecycleState.CREATED);
+
+    userTaskState.deleteIntermediateState(key);
+    userTaskState.deleteRecordRequestMetadata(key);
   }
 }
