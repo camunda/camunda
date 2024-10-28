@@ -14,7 +14,8 @@ public enum ErrorType {
   UNSPECIFIED("Unspecified"),
   UNKNOWN("Unknown"),
   IO_MAPPING_ERROR("I/O mapping error"),
-  JOB_NO_RETRIES("No more retries left"),
+  JOB_NO_RETRIES("No more retries left", true),
+  EXECUTION_LISTENER_NO_RETRIES("Execution Listener no more retries left", true),
   CONDITION_ERROR("Condition error"),
   EXTRACT_VALUE_ERROR("Extract value error"),
   CALLED_ELEMENT_ERROR("Called element error"),
@@ -28,9 +29,15 @@ public enum ErrorType {
   private static final Logger LOGGER = LoggerFactory.getLogger(ErrorType.class);
 
   private final String title;
+  private final boolean resolvedViaRetries;
 
   ErrorType(final String title) {
+    this(title, false);
+  }
+
+  ErrorType(final String title, boolean resolvedViaRetries) {
     this.title = title;
+    this.resolvedViaRetries = resolvedViaRetries;
   }
 
   public static ErrorType fromZeebeErrorType(final String errorType) {
@@ -48,5 +55,9 @@ public enum ErrorType {
 
   public String getTitle() {
     return title;
+  }
+
+  public boolean isResolvedViaRetries() {
+    return resolvedViaRetries;
   }
 }
