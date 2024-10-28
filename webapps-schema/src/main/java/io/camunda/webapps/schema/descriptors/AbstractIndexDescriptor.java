@@ -26,7 +26,8 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
   @Override
   public String getFullQualifiedName() {
-    return String.format("%s-%s-%s_", getPrefixAndComponentName(), getIndexName(), getVersion());
+    return String.format(
+        "%s%s-%s-%s_", formattedIndexPrefix(), getComponentName(), getIndexName(), getVersion());
   }
 
   @Override
@@ -43,7 +44,8 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
   @Override
   public String getAllVersionsIndexNameRegexPattern() {
-    return String.format("%s-%s-\\d.*", getPrefixAndComponentName(), getIndexName());
+    return String.format(
+        "%s%s-%s-\\d.*", formattedIndexPrefix(), getComponentName(), getIndexName());
   }
 
   @Override
@@ -51,18 +53,12 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
     return "1.0.0";
   }
 
-  public String getIndexPrefix() {
-    return indexPrefix;
+  private String formattedIndexPrefix() {
+    return getIndexPrefix() != null && !getIndexPrefix().isBlank() ? getIndexPrefix() + "-" : "";
   }
 
-  private String getPrefixAndComponentName() {
-    // Cannot start index with "-" so must not append "-" for empty prefix
-    final var prefix = getIndexPrefix().isBlank() ? getIndexPrefix() : getIndexPrefix() + "-";
-
-    // Legacy descriptors have the same index prefix as component name this avoids duplication.
-    return getIndexPrefix().contains(getComponentName())
-        ? getIndexPrefix()
-        : prefix + getComponentName();
+  public String getIndexPrefix() {
+    return indexPrefix;
   }
 
   public abstract String getComponentName();
