@@ -35,9 +35,9 @@ public class TenantEntityAddedApplier implements TypedEventApplier<TenantIntent,
       case MAPPING -> mappingState.addTenant(tenant.getEntityKey(), tenant.getTenantId());
       default ->
           throw new IllegalStateException(
-              "Unknown or unsupported entity type: '"
-                  + tenant.getEntityType()
-                  + "'. Please contact support for clarification.");
+              String.format(
+                  "Expected to add entity '%d' to tenant '%s', but entities of type '%s' cannot be added to tenants",
+                  tenant.getEntityKey(), tenant.getTenantId(), tenant.getEntityType()));
     }
   }
 }
