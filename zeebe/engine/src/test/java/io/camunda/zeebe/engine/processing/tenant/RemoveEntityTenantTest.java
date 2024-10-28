@@ -25,7 +25,17 @@ public class RemoveEntityTenantTest {
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldRemoveEntityToTenant() {
+  public void shouldRemoveEntityFromTenant() {
+    final var tenantId = UUID.randomUUID().toString();
+    final var tenantKey =
+        engine
+            .tenant()
+            .newTenant()
+            .withTenantId(tenantId)
+            .withName("name")
+            .create()
+            .getValue()
+            .getTenantKey();
     final var userKey =
         engine
             .user()
@@ -35,9 +45,6 @@ public class RemoveEntityTenantTest {
             .withPassword("zabraboof")
             .create()
             .getKey();
-    final var tenantId = UUID.randomUUID().toString();
-    final var tenantKey =
-        engine.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
     engine
         .tenant()
         .addEntity(tenantKey)
@@ -62,26 +69,16 @@ public class RemoveEntityTenantTest {
 
   @Test
   public void shouldRejectIfTenantIsNotPresentEntityRemoval() {
-    // given
-    final var tenantId = UUID.randomUUID().toString();
-    final var tenantRecord = engine.tenant().newTenant().withTenantId(tenantId).create();
-
-    // when
-    final var notPresenttenantKey = 1L;
+    final var notPresentTenantKey = 1L;
     final var notPresentUpdateRecord =
-        engine.role().addEntity(notPresenttenantKey).expectRejection().add();
-
-    final var createdTenant = tenantRecord.getValue();
-    Assertions.assertThat(createdTenant)
-        .isNotNull()
-        .hasFieldOrPropertyWithValue("tenantId", tenantId);
+        engine.tenant().removeEntity(notPresentTenantKey).expectRejection().remove();
 
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to update role with key '"
-                + notPresenttenantKey
-                + "', but a role with this key does not exist.");
+            "Expected to remove entity from tenant with key '"
+                + notPresentTenantKey
+                + "', but no tenant with this key exists.");
   }
 
   @Test
@@ -109,7 +106,7 @@ public class RemoveEntityTenantTest {
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to remove entity with key '%s' from tenant with key '%s', but the entity doesn't exist."
+            "Expected to remove entity with key '%s' from tenant with key '%s', but the entity is not assigned to this tenant."
                 .formatted(1L, tenantKey));
   }
 }

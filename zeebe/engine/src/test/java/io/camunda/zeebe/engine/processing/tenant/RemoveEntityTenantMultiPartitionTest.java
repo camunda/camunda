@@ -26,6 +26,7 @@ import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -36,10 +37,12 @@ public class RemoveEntityTenantMultiPartitionTest {
   @Rule public final EngineRule engine = EngineRule.multiplePartition(PARTITION_COUNT);
   @Rule public final TestWatcher testWatcher = new RecordingExporterTestWatcher();
 
-  @Test
-  public void shouldDistributeTenantRemoveEntityCommand() {
-    // when
-    final var userKey =
+  public long userKey;
+  public long tenantKey;
+
+  @Before
+  public void before() {
+    userKey =
         engine
             .user()
             .newUser("foo")
@@ -49,7 +52,7 @@ public class RemoveEntityTenantMultiPartitionTest {
             .create()
             .getKey();
     final var tenantId = UUID.randomUUID().toString();
-    final var tenantKey =
+    tenantKey =
         engine.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
     engine
         .tenant()
@@ -63,12 +66,21 @@ public class RemoveEntityTenantMultiPartitionTest {
         .withEntityKey(userKey)
         .withEntityType(EntityType.USER)
         .remove();
+  }
 
+  @Test
+  public void shouldDistributeTenantRemoveEntityCommand() {
     assertThat(
             RecordingExporter.records()
                 .withPartitionId(1)
                 .limitByCount(
-                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 3))
+                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 4)
+                .filter(
+                    record ->
+                        record.getValueType() == ValueType.TENANT
+                            || (record.getValueType() == ValueType.COMMAND_DISTRIBUTION
+                                && ((CommandDistributionRecordValue) record.getValue()).getIntent()
+                                    == TenantIntent.REMOVE_ENTITY)))
         .extracting(
             io.camunda.zeebe.protocol.record.Record::getIntent,
             io.camunda.zeebe.protocol.record.Record::getRecordType,
@@ -106,36 +118,9 @@ public class RemoveEntityTenantMultiPartitionTest {
 
   @Test
   public void shouldDistributeInIdentityQueue() {
-    // when
-    final var userKey =
-        engine
-            .user()
-            .newUser("foo")
-            .withEmail("foo@bar")
-            .withName("Foo Bar")
-            .withPassword("zabraboof")
-            .create()
-            .getKey();
-    final var tenantId = UUID.randomUUID().toString();
-    final var tenantKey =
-        engine.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
-    engine
-        .tenant()
-        .addEntity(tenantKey)
-        .withEntityKey(userKey)
-        .withEntityType(EntityType.USER)
-        .add();
-    engine
-        .tenant()
-        .removeEntity(tenantKey)
-        .withEntityKey(userKey)
-        .withEntityType(EntityType.USER)
-        .remove();
-
-    // then
     assertThat(
             RecordingExporter.commandDistributionRecords()
-                .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 2)
+                .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 4)
                 .withIntent(CommandDistributionIntent.ENQUEUED))
         .extracting(r -> r.getValue().getQueueId())
         .containsOnly(DistributionQueue.IDENTITY.getQueueId());
@@ -147,33 +132,6 @@ public class RemoveEntityTenantMultiPartitionTest {
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
       interceptUserCreateForPartition(partitionId);
     }
-    final var userKey =
-        engine
-            .user()
-            .newUser("foo")
-            .withEmail("foo@bar")
-            .withName("Foo Bar")
-            .withPassword("zabraboof")
-            .create()
-            .getKey();
-
-    // when
-    final var tenantId = UUID.randomUUID().toString();
-    final var tenantKey =
-        engine.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
-    engine
-        .tenant()
-        .addEntity(tenantKey)
-        .withEntityKey(userKey)
-        .withEntityType(EntityType.USER)
-        .add();
-    engine
-        .tenant()
-        .removeEntity(tenantKey)
-        .withEntityKey(userKey)
-        .withEntityType(EntityType.USER)
-        .remove();
-
     // Increase time to trigger a redistribution
     engine.increaseTime(Duration.ofMinutes(1));
 
