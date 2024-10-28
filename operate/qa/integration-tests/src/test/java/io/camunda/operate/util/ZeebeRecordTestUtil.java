@@ -108,6 +108,27 @@ public abstract class ZeebeRecordTestUtil {
   }
 
   @NotNull
+  public static Record<IncidentRecordValue> createIncidentZeebeRecord(
+      final Consumer<Builder> recordBuilderFunction,
+      final Consumer<ImmutableIncidentRecordValue.Builder> recordValueBuilderFunction) {
+    final Builder<IncidentRecordValue> builder = ImmutableRecord.builder();
+    final ImmutableIncidentRecordValue.Builder valueBuilder =
+        ImmutableIncidentRecordValue.builder();
+    if (recordValueBuilderFunction != null) {
+      recordValueBuilderFunction.accept(valueBuilder);
+    }
+    builder
+        .withPartitionId(1)
+        .withTimestamp(Instant.now().toEpochMilli())
+        .withValue(valueBuilder.build())
+        .withValueType(ValueType.PROCESS_INSTANCE);
+    if (recordBuilderFunction != null) {
+      recordBuilderFunction.accept(builder);
+    }
+    return builder.build();
+  }
+
+  @NotNull
   public static Record<ProcessInstanceRecordValue> createProcessInstanceZeebeRecord(
       final Consumer<Builder> recordBuilderFunction,
       final Consumer<ImmutableProcessInstanceRecordValue.Builder> recordValueBuilderFunction) {
