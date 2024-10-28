@@ -8,18 +8,17 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
-import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 
-public final class UserTaskUpdatedApplier
+public final class UserTaskCorrectedApplier
     implements TypedEventApplier<UserTaskIntent, UserTaskRecord> {
 
   private final MutableUserTaskState userTaskState;
 
-  public UserTaskUpdatedApplier(final MutableProcessingState processingState) {
+  public UserTaskCorrectedApplier(final MutableProcessingState processingState) {
     userTaskState = processingState.getUserTaskState();
   }
 
@@ -28,7 +27,13 @@ public final class UserTaskUpdatedApplier
     final UserTaskRecord userTask = userTaskState.getUserTask(key);
     userTask.wrapChangedAttributes(value, false);
 
-    userTaskState.update(userTask);
-    userTaskState.updateUserTaskLifecycleState(key, LifecycleState.CREATED);
+    // we need to look up the intermediate state only for the lifecycle state as it's unknown here
+    // we might be able to optimize this with specific corrected intents per lifecycle state
+    // or perhaps there's another way that I don't see now.
+    final var intermediateState = userTaskState.getIntermediateState(key);
+    userTaskState.storeIntermediateState(value, intermediateState.getLifecycleState());
+
+    //    userTaskState.update(userTask);
+    //    userTaskState.updateUserTaskLifecycleState(key, LifecycleState.CREATED);
   }
 }

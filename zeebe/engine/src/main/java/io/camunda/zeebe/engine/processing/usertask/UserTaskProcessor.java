@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUse
 import io.camunda.zeebe.engine.processing.deployment.model.element.TaskListener;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -51,6 +52,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   private final VariableBehavior variableBehavior;
   private final EventTriggerBehavior eventTriggerBehavior;
 
+  private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
 
@@ -74,6 +76,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     variableBehavior = bpmnBehaviors.variableBehavior();
     eventTriggerBehavior = bpmnBehaviors.eventTriggerBehavior();
 
+    stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
   }
@@ -104,6 +107,10 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
       // this is a hack to correct the assignee, similar to how a create listener should be able to
       // do this eventually. as that's not yet supported, I just want to test it here
       persistedRecord.setAssignee("overridden");
+    }
+
+    if (!persistedRecord.equals(command.getValue())) {
+      stateWriter.appendFollowUpEvent(command.getKey(), UserTaskIntent.CORRECTED, persistedRecord);
     }
 
     findNextTaskListener(listenerEventType, userTaskElement, userTaskElementInstance)
