@@ -491,9 +491,7 @@ public final class EventAppliers implements EventApplier {
         TenantIntent.CREATED,
         new TenantCreatedApplier(state.getTenantState(), state.getAuthorizationState()));
     register(TenantIntent.UPDATED, new TenantUpdatedApplier(state.getTenantState()));
-    register(
-        TenantIntent.ENTITY_ADDED,
-        new TenantEntityAddedApplier(state.getTenantState(), state.getUserState()));
+    register(TenantIntent.ENTITY_ADDED, new TenantEntityAddedApplier(state));
     register(
         TenantIntent.ENTITY_REMOVED,
         new TenantEntityRemovedApplier(state.getTenantState(), state.getUserState()));
