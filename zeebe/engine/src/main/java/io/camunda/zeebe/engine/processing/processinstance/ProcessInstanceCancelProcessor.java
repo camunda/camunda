@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.Optional;
 
 public final class ProcessInstanceCancelProcessor
     implements TypedRecordProcessor<ProcessInstanceRecord> {
@@ -112,17 +113,24 @@ public final class ProcessInstanceCancelProcessor
     return true;
   }
 
-  private long getRootProcessInstanceKey(final long instanceKey) {
+  private long getRootProcessInstanceKey(long instanceKey) {
+    var parentInstanceKey = getParentInstanceKey(instanceKey);
+    while (parentInstanceKey.isPresent()) {
+      instanceKey = parentInstanceKey.get();
+      parentInstanceKey = getParentInstanceKey(instanceKey);
+    }
 
+    return instanceKey;
+  }
+
+  private Optional<Long> getParentInstanceKey(final long instanceKey) {
     final var instance = elementInstanceState.getInstance(instanceKey);
     if (instance != null) {
-
       final var parentProcessInstanceKey = instance.getValue().getParentProcessInstanceKey();
       if (parentProcessInstanceKey > 0) {
-
-        return getRootProcessInstanceKey(parentProcessInstanceKey);
+        return Optional.of(parentProcessInstanceKey);
       }
     }
-    return instanceKey;
+    return Optional.empty();
   }
 }
