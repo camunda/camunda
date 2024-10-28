@@ -25,18 +25,26 @@
       <dependency>
         <groupId>org.ow2.asm</groupId>
         <artifactId>asm</artifactId>
-        <version>9.7</version>
+        <version>9.6</version>
       </dependency>
       <dependency>
         <groupId>org.ow2.asm</groupId>
         <artifactId>asm-commons</artifactId>
-        <version>9.7</version>
+        <version>9.6</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
 
   <dependencies>
     <!-- Logging dependencies -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-slf4j2-impl</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+    </dependency>
 
     <!-- this is necessary. Dependency:analyze error suppressed -->
     <dependency>
@@ -188,6 +196,18 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-jetty</artifactId>
       <version>${spring.boot.version}</version>
+      <exclusions>
+        <!-- we're excluding this because it's version 9.7. In dependencyManagement
+               we're forcing this to be the 9.6 imported by jersey -->
+        <exclusion>
+          <groupId>org.ow2.asm</groupId>
+          <artifactId>asm-commons</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.ow2.asm</groupId>
+          <artifactId>asm</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
@@ -205,12 +225,6 @@
         <exclusion>
           <groupId>org.springframework.boot</groupId>
           <artifactId>spring-boot-starter-tomcat</artifactId>
-        </exclusion>
-        <exclusion>
-          <!-- we're excluding this because it's version 9.6. In dependencyManagement
-               we're forcing this to be the 9.7 imported by jetty -->
-          <groupId>org.ow2.asm</groupId>
-          <artifactId>asm-commons</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
