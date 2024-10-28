@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -70,11 +71,14 @@ public class SchemaManagerIT {
   }
 
   @BeforeEach
-  public void refresh() throws IOException {
-    elsClient.indices().delete(req -> req.index("*"));
-    elsClient.indices().deleteIndexTemplate(req -> req.name("*"));
-    osClient.indices().delete(req -> req.index(config.getIndex().getPrefix() + "*"));
-    osClient.indices().deleteIndexTemplate(req -> req.name("*"));
+  public void refresh(final TestInfo testInfo) throws IOException {
+    if (testInfo.getDisplayName().contains("elasticsearch")) {
+      elsClient.indices().delete(req -> req.index("*"));
+      elsClient.indices().deleteIndexTemplate(req -> req.name("*"));
+    } else if (testInfo.getDisplayName().contains("opensearch")) {
+      osClient.indices().delete(req -> req.index(config.getIndex().getPrefix() + "*"));
+      osClient.indices().deleteIndexTemplate(req -> req.name("*"));
+    }
     config = new ExporterConfiguration();
 
     indexTemplate =
