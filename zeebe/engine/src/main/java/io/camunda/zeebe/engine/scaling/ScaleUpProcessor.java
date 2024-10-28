@@ -101,7 +101,7 @@ public class ScaleUpProcessor implements TypedRecordProcessor<ScaleRecord> {
       return Optional.of(
           new Rejection(
               RejectionType.INVALID_STATE,
-              "The desired partition count conflicts with the current state"));
+              "The desired partition count conflicts with the current state. This should not happen, is there a concurrent scaling operation?"));
     }
 
     if (!requestedPartitions.containsAll(currentPartitionsInRoutingState)) {
