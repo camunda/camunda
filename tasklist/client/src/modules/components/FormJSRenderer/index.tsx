@@ -16,9 +16,14 @@ import {usePrefersReducedMotion} from 'modules/hooks/usePrefersReducedMotion';
 import styles from './styles.module.scss';
 import '@bpmn-io/form-js-viewer/dist/assets/form-js-base.css';
 import '@bpmn-io/form-js-carbon-styles/src/carbon-styles.scss';
+import type {FileUploadMetadata} from 'modules/mutations/useUploadDocuments';
+import set from 'lodash/set';
 
 type Props = {
   handleSubmit: (variables: Variable[]) => Promise<void>;
+  handleFileUpload?: (
+    files: Map<string, File[]>,
+  ) => Promise<Map<string, FileUploadMetadata[]>>;
   schema: string;
   data?: Record<string, unknown>;
   readOnly?: boolean;
@@ -88,6 +93,70 @@ function useScrollToError(manager: FormManager) {
   );
 }
 
+function extractFilePath(data: object, path: string = ''): Map<string, string> {
+  let paths = new Map();
+
+  if (data === null || data === undefined) {
+    return paths;
+  }
+
+  for (const [key, value] of Object.entries(data)) {
+    const itemPath = path.length === 0 ? key : `${path}.${key}`;
+
+    if (typeof value === 'string' && value.startsWith('files::')) {
+      paths.set(value, itemPath);
+      continue;
+    }
+
+    if (Array.isArray(value)) {
+      const result = value
+        .map((dynamicListItem, index) =>
+          extractFilePath(dynamicListItem, `${itemPath}[${index}]`),
+        )
+        .reduce((acc, cur) => new Map([...acc, ...cur]), new Map());
+
+      paths = new Map([...paths, ...result]);
+      continue;
+    }
+
+    if (
+      typeof value === 'object' &&
+      value !== null &&
+      Object.keys(value).length > 0
+    ) {
+      const result = extractFilePath(
+        value,
+        path.length === 0 ? key : `${itemPath}.${key}`,
+      );
+      paths = new Map([...paths, ...result]);
+      continue;
+    }
+  }
+
+  return paths;
+}
+
+function injectFileMetadataIntoData(options: {
+  data: Record<string, unknown>;
+  fileMetadata: Map<string, FileUploadMetadata[]>;
+  pathsToInject: Map<string, string>;
+}): Record<string, unknown> {
+  const {data, fileMetadata, pathsToInject} = options;
+  let result = data;
+
+  pathsToInject.forEach((filepickerPath, fileKey) => {
+    const metadata = fileMetadata.get(fileKey);
+
+    if (metadata === undefined) {
+      return;
+    }
+
+    result = set(result, filepickerPath, metadata);
+  });
+
+  return result;
+}
+
 const FormJSRenderer: React.FC<Props> = ({
   handleSubmit,
   schema,
@@ -100,6 +169,7 @@ const FormJSRenderer: React.FC<Props> = ({
   onSubmitError,
   onSubmitSuccess,
   onValidationError,
+  handleFileUpload = () => Promise.resolve(new Map()),
 }) => {
   const formManagerRef = useRef<FormManager>(new FormManager());
   const formContainerRef = useRef<HTMLDivElement | null>(null);
@@ -126,21 +196,29 @@ const FormJSRenderer: React.FC<Props> = ({
           schema,
           data,
           onImportError,
-          onSubmit: async ({data: newData, errors}) => {
+          onSubmit: async ({data: newData, errors, files = new Map()}) => {
             onSubmitStart?.();
             setInvalidFields(undefined);
             if (Object.keys(errors).length === 0) {
-              const variables = Object.entries(
-                mergeVariables(data, newData),
-              ).map(
-                ([name, value]) =>
-                  ({
-                    name,
-                    value: JSON.stringify(value),
-                  }) as Variable,
-              );
-
               try {
+                const enrichedData =
+                  files.size === 0
+                    ? newData
+                    : injectFileMetadataIntoData({
+                        data: newData,
+                        fileMetadata: await handleFileUpload(files),
+                        pathsToInject: extractFilePath(newData),
+                      });
+                const variables = Object.entries(
+                  mergeVariables(data, enrichedData),
+                ).map(
+                  ([name, value]) =>
+                    ({
+                      name,
+                      value: JSON.stringify(value),
+                    }) as Variable,
+                );
+
                 await handleSubmit(variables);
                 onSubmitSuccess?.();
               } catch (error) {
@@ -156,6 +234,7 @@ const FormJSRenderer: React.FC<Props> = ({
               if (fieldIds.length > 0) {
                 scrollToError(fieldIds[0]);
               }
+              return;
             }
           },
         });
@@ -166,6 +245,7 @@ const FormJSRenderer: React.FC<Props> = ({
   }, [
     schema,
     handleSubmit,
+    handleFileUpload,
     onRender,
     onImportError,
     onSubmitStart,
