@@ -26,6 +26,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.DecisionState;
 import io.camunda.zeebe.engine.state.immutable.FormState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
@@ -188,7 +189,10 @@ public final class DeploymentCreateProcessor
         key, DeploymentIntent.CREATED, recordWithoutResource, command);
     stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, recordWithoutResource);
 
-    distributionBehavior.withKey(key).unordered().distribute(command);
+    distributionBehavior
+        .withKey(key)
+        .inQueue(DistributionQueue.DEPLOYMENT.getQueueId())
+        .distribute(command);
   }
 
   private void processDistributedRecord(final TypedRecord<DeploymentRecord> command) {
