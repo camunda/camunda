@@ -112,7 +112,7 @@ public class ResourceDeletionDeleteProcessor
     stateWriter.appendFollowUpEvent(eventKey, ResourceDeletionIntent.DELETED, value);
     commandDistributionBehavior
         .withKey(eventKey)
-        .inQueue(DistributionQueue.DEPLOYMENT.getQueueId())
+        .inQueue(DistributionQueue.DEPLOYMENT)
         .distribute(command);
     responseWriter.writeEventOnCommand(eventKey, ResourceDeletionIntent.DELETING, value, command);
   }
