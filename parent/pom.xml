@@ -49,7 +49,7 @@
     <version.commons-codec>1.17.1</version.commons-codec>
     <version.commons-compress>1.27.1</version.commons-compress>
     <version.commons-validator>1.9.0</version.commons-validator>
-    <version.zstd-jni>1.5.6-6</version.zstd-jni>
+    <version.zstd-jni>1.5.6-7</version.zstd-jni>
     <version.commons-text>1.12.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
     <version.docker-java-api>3.4.0</version.docker-java-api>
