@@ -5239,9 +5239,9 @@ character-entities@^2.0.0:
   integrity sha512-shx7oQ0Awen/BRIdkjkvz54PnEEI/EjwXDSIZp86/KKdbafHh1Df/RYGBhn4hbe2+uKC9FnT5UCEdyPz3ai9hQ==
 
 chart.js@^4.4.0:
-  version "4.4.5"
-  resolved "https://registry.yarnpkg.com/chart.js/-/chart.js-4.4.5.tgz#6acd3dd74759e6e1e42275572eaedad3918221d1"
-  integrity sha512-CVVjg1RYTJV9OCC8WeJPMx8gsV8K6WIyIEQUE3ui4AR9Hfgls9URri6Ja3hyMVBbTF8Q2KFa19PE815gWcWhng==
+  version "4.4.6"
+  resolved "https://registry.yarnpkg.com/chart.js/-/chart.js-4.4.6.tgz#da39b84ca752298270d4c0519675c7659936abec"
+  integrity sha512-8Y406zevUPbbIBA/HRk33khEmQPk5+cxeflWE/2rx1NJsjVWMPw/9mSP9rxHP5eqi6LNoPBVMfZHxbwLSgldYA==
   dependencies:
     "@kurkle/color" "^0.3.0"
 
