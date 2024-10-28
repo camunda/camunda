@@ -15,6 +15,7 @@ public enum ErrorType {
   UNKNOWN("Unknown"),
   IO_MAPPING_ERROR("I/O mapping error"),
   JOB_NO_RETRIES("No more retries left"),
+  TASK_LISTENER_NO_RETRIES("Task Listener no more retries left"),
   CONDITION_ERROR("Condition error"),
   EXTRACT_VALUE_ERROR("Extract value error"),
   CALLED_ELEMENT_ERROR("Called element error"),
