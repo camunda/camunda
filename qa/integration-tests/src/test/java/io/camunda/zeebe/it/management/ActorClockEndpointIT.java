@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
 public class ActorClockEndpointIT {
 
   @TestZeebe
-  private static final TestCluster cluster =
+  private static final TestCluster CLUSTER =
       TestCluster.builder()
           .useRecordingExporter(true)
           .withEmbeddedGateway(true)
@@ -47,7 +47,7 @@ public class ActorClockEndpointIT {
   }
 
   private ActorClockActuator actorClockActuator() {
-    final var broker = cluster.brokers().get(MemberId.from("0"));
+    final var broker = CLUSTER.brokers().get(MemberId.from("0"));
     return ActorClockActuator.of(broker);
   }
 }
