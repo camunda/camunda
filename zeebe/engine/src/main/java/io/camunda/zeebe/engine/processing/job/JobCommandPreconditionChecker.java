@@ -7,11 +7,13 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
 
 public class JobCommandPreconditionChecker {
@@ -22,27 +24,46 @@ public class JobCommandPreconditionChecker {
       "Expected to %s job with key '%d', but it is in state '%s'";
 
   private final List<JobState.State> validStates;
+  private final JobState jobState;
   private final String intent;
 
   public JobCommandPreconditionChecker(
-      final String intent, final List<JobState.State> validStates) {
+      final JobState jobState, final String intent, final List<State> validStates) {
+    this.jobState = jobState;
     this.intent = intent;
     this.validStates = validStates;
   }
 
-  protected Either<Tuple<RejectionType, String>, Void> check(final State state, final long jobKey) {
+  protected Either<Rejection, JobRecord> check(
+      final State state, final TypedRecord<JobRecord> command) {
+
     if (validStates.contains(state)) {
-      return Either.right(null);
+      return getJob(command);
     }
 
     if (state == State.NOT_FOUND) {
       return Either.left(
-          Tuple.of(RejectionType.NOT_FOUND, String.format(NO_JOB_FOUND_MESSAGE, intent, jobKey)));
+          new Rejection(
+              RejectionType.NOT_FOUND,
+              String.format(NO_JOB_FOUND_MESSAGE, intent, command.getKey())));
     }
 
     return Either.left(
-        Tuple.of(
+        new Rejection(
             RejectionType.INVALID_STATE,
-            String.format(INVALID_JOB_STATE_MESSAGE, intent, jobKey, state)));
+            String.format(INVALID_JOB_STATE_MESSAGE, intent, command.getKey(), state)));
+  }
+
+  private Either<Rejection, JobRecord> getJob(final TypedRecord<JobRecord> command) {
+    final var job = jobState.getJob(command.getKey(), command.getAuthorizations());
+
+    if (job == null) {
+      return Either.left(
+          new Rejection(
+              RejectionType.NOT_FOUND,
+              String.format(NO_JOB_FOUND_MESSAGE, intent, command.getKey())));
+    }
+
+    return Either.right(job);
   }
 }

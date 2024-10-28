@@ -8,13 +8,17 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MAX_ERROR_MESSAGE_SIZE;
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
 import static io.camunda.zeebe.util.StringUtil.limitString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.engine.metrics.JobMetrics;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -32,10 +36,13 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.Either;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
@@ -55,6 +62,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
   private final JobBackoffChecker jobBackoffChecker;
   private final VariableBehavior variableBehavior;
   private final BpmnJobActivationBehavior jobActivationBehavior;
+  private final AuthorizationCheckBehavior authCheckBehavior;
   private final SideEffectWriter sideEffectWriter;
   private final JobCommandPreconditionChecker preconditionChecker;
   private final ElementInstanceState elementInstanceState;
@@ -66,7 +74,8 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
       final KeyGenerator keyGenerator,
       final JobMetrics jobMetrics,
       final JobBackoffChecker jobBackoffChecker,
-      final BpmnBehaviors bpmnBehaviors) {
+      final BpmnBehaviors bpmnBehaviors,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
     processState = state.getProcessState();
@@ -76,8 +85,10 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
     sideEffectWriter = writers.sideEffect();
     variableBehavior = bpmnBehaviors.variableBehavior();
     jobActivationBehavior = bpmnBehaviors.jobActivationBehavior();
+    this.authCheckBehavior = authCheckBehavior;
     preconditionChecker =
-        new JobCommandPreconditionChecker("fail", List.of(State.ACTIVATABLE, State.ACTIVATED));
+        new JobCommandPreconditionChecker(
+            jobState, "fail", List.of(State.ACTIVATABLE, State.ACTIVATED));
     this.keyGenerator = keyGenerator;
     this.jobBackoffChecker = jobBackoffChecker;
     this.jobMetrics = jobMetrics;
@@ -89,29 +100,21 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
     final JobState.State state = jobState.getState(jobKey);
 
     preconditionChecker
-        .check(state, jobKey)
+        .check(state, record)
+        .flatMap(job -> checkAuthorization(record, job))
         .ifRightOrLeft(
-            ok -> failJob(record),
-            violation -> {
-              rejectionWriter.appendRejection(record, violation.getLeft(), violation.getRight());
-              responseWriter.writeRejectionOnCommand(
-                  record, violation.getLeft(), violation.getRight());
+            failedJob -> failJob(record, failedJob),
+            rejection -> {
+              rejectionWriter.appendRejection(record, rejection.type(), rejection.reason());
+              responseWriter.writeRejectionOnCommand(record, rejection.type(), rejection.reason());
             });
   }
 
-  private void failJob(final TypedRecord<JobRecord> record) {
+  private void failJob(final TypedRecord<JobRecord> record, final JobRecord failedJob) {
     final long jobKey = record.getKey();
     final JobRecord failJobCommandRecord = record.getValue();
     final var retries = failJobCommandRecord.getRetries();
     final var retryBackOff = failJobCommandRecord.getRetryBackoff();
-
-    final JobRecord failedJob = jobState.getJob(jobKey, record.getAuthorizations());
-    if (failedJob == null) {
-      final String errorMessage = String.format(NO_JOB_FOUND_MESSAGE, jobKey);
-      rejectionWriter.appendRejection(record, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectionOnCommand(record, RejectionType.NOT_FOUND, errorMessage);
-      return;
-    }
 
     failedJob.setRetries(retries);
     failedJob.setErrorMessage(
@@ -194,5 +197,23 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
         .setCallingElementPath(treePathProperties.callingElementPath());
 
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
+  }
+
+  private Either<Rejection, JobRecord> checkAuthorization(
+      final TypedRecord<JobRecord> command, final JobRecord job) {
+    final var request =
+        new AuthorizationRequest(
+                command, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.UPDATE)
+            .addResourceId(job.getBpmnProcessId());
+
+    if (authCheckBehavior.isAuthorized(request)) {
+      return Either.right(job);
+    }
+
+    return Either.left(
+        new Rejection(
+            RejectionType.UNAUTHORIZED,
+            UNAUTHORIZED_ERROR_MESSAGE.formatted(
+                request.getPermissionType(), request.getResourceType())));
   }
 }
