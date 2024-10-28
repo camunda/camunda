@@ -1,0 +1,48 @@
+name: C8 Run Smoke Test Run on Linux
+
+on: push
+
+jobs:
+  build_c8run:
+    name: Build and run the C8Run mac package
+    runs-on: ubuntu-latest
+    steps:
+      - name: disable and stop mono-xsp4.service
+        run: |
+          sudo systemctl stop mono-xsp4.service || true
+          sudo systemctl disable mono-xsp4.service || true
+          sudo killall mono || true
+          sudo killall xsp4 || true
+
+      - name: checkout camunda repo
+        uses: actions/checkout@v4
+
+      - name: print architecture
+        run: arch
+
+      - name: make a package
+        run: ./package.sh
+        working-directory: ./camunda/c8run
+
+      - name: Linux - Run c8run
+        run: nohup ./start.sh --detached &
+        working-directory: ./camunda/c8run
+        env:
+          JAVA_HOME: /usr/lib/jvm/temurin-21-jdk-amd64
+          JAVA_VERSION: 21.0.4
+
+      - name: Sleep 2 mins
+        run: sleep 120
+
+      - name: Wait for camunda process to start
+        run: bash -c 'while ! curl -s -f "http://localhost:8080/operate/login"; do sleep 5; done'
+        timeout-minutes: 5
+
+      - name: checkout e2e repo
+        uses: actions/checkout@v4
+        with:
+          repository: camunda/c8-cross-component-e2e-tests
+          ref: feat(run)-c8-run-linux-workflow
+        
+      - name: Run tests
+        uses: ./.github/actions/run-tests-c8Run
