@@ -261,7 +261,8 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
     final var dateBefore = OffsetDateTime.of(2024, 7, 15, 10, 30, 15, 0, ZoneOffset.UTC);
     final var dateFilter = List.of(Operation.gte(dateAfter), Operation.lt(dateBefore));
     final var processInstanceFilter =
-        FilterBuilders.processInstance(f -> f.startDate(dateFilter).endDate(dateFilter));
+        FilterBuilders.processInstance(
+            f -> f.startDateOperations(dateFilter).endDateOperations(dateFilter));
 
     // when
     final var searchRequest = transformQuery(processInstanceFilter);
@@ -370,20 +371,20 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
     final var processInstanceFilter = (new ProcessInstanceFilter.Builder()).build();
 
     // then
-    assertThat(processInstanceFilter.processInstanceKeys()).isEmpty();
-    assertThat(processInstanceFilter.processDefinitionIds()).isEmpty();
-    assertThat(processInstanceFilter.processDefinitionNames()).isEmpty();
-    assertThat(processInstanceFilter.processDefinitionVersions()).isEmpty();
-    assertThat(processInstanceFilter.processDefinitionVersionTags()).isEmpty();
-    assertThat(processInstanceFilter.processDefinitionKeys()).isEmpty();
-    assertThat(processInstanceFilter.parentProcessInstanceKeys()).isEmpty();
-    assertThat(processInstanceFilter.parentFlowNodeInstanceKeys()).isEmpty();
-    assertThat(processInstanceFilter.treePaths()).isEmpty();
-    assertThat(processInstanceFilter.startDate()).isEmpty();
-    assertThat(processInstanceFilter.endDate()).isEmpty();
-    assertThat(processInstanceFilter.states()).isEmpty();
+    assertThat(processInstanceFilter.processInstanceKeyOperations()).isEmpty();
+    assertThat(processInstanceFilter.processDefinitionIdOperations()).isEmpty();
+    assertThat(processInstanceFilter.processDefinitionNameOperations()).isEmpty();
+    assertThat(processInstanceFilter.processDefinitionVersionOperations()).isEmpty();
+    assertThat(processInstanceFilter.processDefinitionVersionTagOperations()).isEmpty();
+    assertThat(processInstanceFilter.processDefinitionKeyOperations()).isEmpty();
+    assertThat(processInstanceFilter.parentProcessInstanceKeyOperations()).isEmpty();
+    assertThat(processInstanceFilter.parentFlowNodeInstanceKeyOperations()).isEmpty();
+    assertThat(processInstanceFilter.treePathOperations()).isEmpty();
+    assertThat(processInstanceFilter.startDateOperations()).isEmpty();
+    assertThat(processInstanceFilter.endDateOperations()).isEmpty();
+    assertThat(processInstanceFilter.stateOperations()).isEmpty();
     assertThat(processInstanceFilter.hasIncident()).isNull();
-    assertThat(processInstanceFilter.tenantIds()).isEmpty();
+    assertThat(processInstanceFilter.tenantIdOperations()).isEmpty();
   }
 
   private void assertIsSearchTermQuery(

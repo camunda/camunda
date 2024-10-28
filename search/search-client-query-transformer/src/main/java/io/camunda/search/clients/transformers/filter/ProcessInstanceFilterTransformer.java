@@ -16,9 +16,6 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.search.clients.transformers.ServiceTransformers;
-import io.camunda.search.clients.transformers.filter.DateValueFilterTransformer.DateFieldFilter;
-import io.camunda.search.filter.DateValueFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,37 +23,39 @@ import java.util.List;
 public final class ProcessInstanceFilterTransformer
     implements FilterTransformer<ProcessInstanceFilter> {
 
-  private final ServiceTransformers transformers;
-
-  public ProcessInstanceFilterTransformer(final ServiceTransformers transformers) {
-    this.transformers = transformers;
-  }
-
   @Override
   public SearchQuery toSearchQuery(final ProcessInstanceFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
     ofNullable(getIsProcessInstanceQuery()).ifPresent(queries::add);
-    ofNullable(longOperations("key", filter.processInstanceKeys())).ifPresent(queries::addAll);
-    ofNullable(stringOperations("bpmnProcessId", filter.processDefinitionIds()))
+    ofNullable(longOperations("key", filter.processInstanceKeyOperations()))
         .ifPresent(queries::addAll);
-    ofNullable(stringOperations("processName", filter.processDefinitionNames()))
+    ofNullable(stringOperations("bpmnProcessId", filter.processDefinitionIdOperations()))
         .ifPresent(queries::addAll);
-    ofNullable(intOperations("processVersion", filter.processDefinitionVersions()))
+    ofNullable(stringOperations("processName", filter.processDefinitionNameOperations()))
         .ifPresent(queries::addAll);
-    ofNullable(stringOperations("processVersionTag", filter.processDefinitionVersionTags()))
+    ofNullable(intOperations("processVersion", filter.processDefinitionVersionOperations()))
         .ifPresent(queries::addAll);
-    ofNullable(longOperations("processDefinitionKey", filter.processDefinitionKeys()))
+    ofNullable(
+            stringOperations("processVersionTag", filter.processDefinitionVersionTagOperations()))
         .ifPresent(queries::addAll);
-    ofNullable(longOperations("parentProcessInstanceKey", filter.parentProcessInstanceKeys()))
+    ofNullable(longOperations("processDefinitionKey", filter.processDefinitionKeyOperations()))
         .ifPresent(queries::addAll);
-    ofNullable(longOperations("parentFlowNodeInstanceKey", filter.parentFlowNodeInstanceKeys()))
+    ofNullable(
+            longOperations("parentProcessInstanceKey", filter.parentProcessInstanceKeyOperations()))
         .ifPresent(queries::addAll);
-    ofNullable(stringOperations("treePath", filter.treePaths())).ifPresent(queries::addAll);
-    ofNullable(dateTimeOperations("startDate", filter.startDate())).ifPresent(queries::add);
-    ofNullable(dateTimeOperations("endDate", filter.endDate())).ifPresent(queries::add);
-    ofNullable(stringOperations("state", filter.states())).ifPresent(queries::addAll);
+    ofNullable(
+            longOperations(
+                "parentFlowNodeInstanceKey", filter.parentFlowNodeInstanceKeyOperations()))
+        .ifPresent(queries::addAll);
+    ofNullable(stringOperations("treePath", filter.treePathOperations()))
+        .ifPresent(queries::addAll);
+    ofNullable(dateTimeOperations("startDate", filter.startDateOperations()))
+        .ifPresent(queries::add);
+    ofNullable(dateTimeOperations("endDate", filter.endDateOperations())).ifPresent(queries::add);
+    ofNullable(stringOperations("state", filter.stateOperations())).ifPresent(queries::addAll);
     ofNullable(getIncidentQuery(filter.hasIncident())).ifPresent(queries::add);
-    ofNullable(stringOperations("tenantId", filter.tenantIds())).ifPresent(queries::addAll);
+    ofNullable(stringOperations("tenantId", filter.tenantIdOperations()))
+        .ifPresent(queries::addAll);
     return and(queries);
   }
 
@@ -67,14 +66,6 @@ public final class ProcessInstanceFilterTransformer
 
   private SearchQuery getIsProcessInstanceQuery() {
     return term("joinRelation", "processInstance");
-  }
-
-  private SearchQuery getDateQuery(final String field, final DateValueFilter filter) {
-    if (filter != null) {
-      final var transformer = transformers.getFilterTransformer(DateValueFilter.class);
-      return transformer.apply(new DateFieldFilter(field, filter));
-    }
-    return null;
   }
 
   private SearchQuery getIncidentQuery(final Boolean hasIncident) {

@@ -362,46 +362,46 @@ public final class SearchQueryRequestMapper {
     if (filter != null) {
       ofNullable(filter.getProcessInstanceKey())
           .map(SearchQueryRequestMapper::mapToOperation)
-          .ifPresent(builder::processInstanceKeys);
+          .ifPresent(builder::processInstanceKeyOperations);
       ofNullable(filter.getProcessDefinitionId())
           .map(SearchQueryRequestMapper::mapToOperation)
-          .ifPresent(builder::processDefinitionIds);
+          .ifPresent(builder::processDefinitionIdOperations);
       ofNullable(filter.getProcessDefinitionName())
           .map(SearchQueryRequestMapper::mapToOperation)
-          .ifPresent(builder::processDefinitionNames);
+          .ifPresent(builder::processDefinitionNameOperations);
       ofNullable(filter.getProcessDefinitionVersion())
           .map(SearchQueryRequestMapper::mapToOperation)
-          .ifPresent(builder::processDefinitionVersions);
+          .ifPresent(builder::processDefinitionVersionOperations);
       ofNullable(filter.getProcessDefinitionVersionTag())
           .map(SearchQueryRequestMapper::mapToOperation)
-          .ifPresent(builder::processDefinitionVersionTags);
+          .ifPresent(builder::processDefinitionVersionTagOperations);
       ofNullable(filter.getProcessDefinitionKey())
           .map(SearchQueryRequestMapper::mapToOperation)
-          .ifPresent(builder::processDefinitionKeys);
+          .ifPresent(builder::processDefinitionKeyOperations);
       ofNullable(filter.getParentProcessInstanceKey())
           .map(SearchQueryRequestMapper::mapToOperation)
-          .ifPresent(builder::parentProcessInstanceKeys);
+          .ifPresent(builder::parentProcessInstanceKeyOperations);
       ofNullable(filter.getParentFlowNodeInstanceKey())
           .map(SearchQueryRequestMapper::mapToOperation)
-          .ifPresent(builder::parentFlowNodeInstanceKeys);
+          .ifPresent(builder::parentFlowNodeInstanceKeyOperations);
       ofNullable(filter.getTreePath())
           .map(SearchQueryRequestMapper::mapToOperation)
-          .ifPresent(builder::treePaths);
+          .ifPresent(builder::treePathOperations);
       ofNullable(filter.getStartDate())
           .map(SearchQueryRequestMapper::toOffsetDateTime)
           .map(f -> List.of(Operation.gte(f), Operation.lt(f)))
-          .ifPresent(builder::startDate);
+          .ifPresent(builder::startDateOperations);
       ofNullable(filter.getEndDate())
           .map(SearchQueryRequestMapper::toOffsetDateTime)
           .map(f -> List.of(Operation.gte(f), Operation.lt(f)))
-          .ifPresent(builder::endDate);
+          .ifPresent(builder::endDateOperations);
       ofNullable(filter.getState())
           .map(ProcessInstanceStateEnum::getValue)
           .ifPresent(builder::states);
       ofNullable(filter.getHasIncident()).ifPresent(builder::hasIncident);
       ofNullable(filter.getTenantId())
           .map(SearchQueryRequestMapper::mapToOperation)
-          .ifPresent(builder::tenantIds);
+          .ifPresent(builder::tenantIdOperations);
     }
 
     return builder.build();
