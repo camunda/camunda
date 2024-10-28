@@ -42,13 +42,17 @@ public class ProcessDefinitionQueryTest {
   private static TestStandaloneCamunda testStandaloneCamunda;
 
   static void initTestStandaloneCamunda() {
-    testStandaloneCamunda = new TestStandaloneCamunda();
+    testStandaloneCamunda = new TestStandaloneCamunda().withCamundaExporter();
   }
 
   @BeforeAll
   public static void beforeAll() throws InterruptedException {
 
     zeebeClient = testStandaloneCamunda.newClientBuilder().build();
+
+    // Deploy form
+    deployResource(String.format("form/%s", "form.form"));
+    deployResource(String.format("form/%s", "form_v2.form"));
 
     final List<String> processes =
         List.of(
@@ -57,7 +61,8 @@ public class ProcessDefinitionQueryTest {
             "incident_process_v1.bpmn",
             "manual_process.bpmn",
             "parent_process_v1.bpmn",
-            "child_process_v1.bpmn");
+            "child_process_v1.bpmn",
+            "process_start_form.bpmn");
     processes.forEach(
         process ->
             DEPLOYED_PROCESSES.addAll(
@@ -171,7 +176,7 @@ public class ProcessDefinitionQueryTest {
         zeebeClient.newProcessDefinitionQuery().filter(f -> f.version(version)).send().join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(6);
+    assertThat(result.items().size()).isEqualTo(7);
     assertThat(result.items().getFirst().getVersion()).isEqualTo(version);
   }
 
@@ -203,7 +208,7 @@ public class ProcessDefinitionQueryTest {
         zeebeClient.newProcessDefinitionQuery().filter(f -> f.tenantId(tenantId)).send().join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(6);
+    assertThat(result.items().size()).isEqualTo(7);
     assertThat(result.items().getFirst().getTenantId()).isEqualTo(tenantId);
   }
 
@@ -217,7 +222,7 @@ public class ProcessDefinitionQueryTest {
         zeebeClient.newProcessDefinitionQuery().filter(f -> f.versionTag(versionTag)).send().join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(6);
+    assertThat(result.items().size()).isEqualTo(7);
     assertThat(result.items().getFirst().getVersionTag()).isEqualTo(versionTag);
   }
 
@@ -239,7 +244,7 @@ public class ProcessDefinitionQueryTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(6);
+    assertThat(result.items().size()).isEqualTo(7);
     assertThat(result.items().stream().map(ProcessDefinition::getProcessDefinitionId).toList())
         .containsExactlyElementsOf(expectedProcessDefinitionIds);
   }
@@ -389,7 +394,7 @@ public class ProcessDefinitionQueryTest {
             .send()
             .join();
 
-    assertThat(resultAfter.items().size()).isEqualTo(5);
+    assertThat(resultAfter.items().size()).isEqualTo(6);
     final var keyAfter = resultAfter.items().getFirst().getProcessDefinitionKey();
     // apply searchBefore
     final var resultBefore =
@@ -402,6 +407,25 @@ public class ProcessDefinitionQueryTest {
     assertThat(resultBefore.items().getFirst().getProcessDefinitionKey()).isEqualTo(key);
   }
 
+  @Test
+  public void shouldValidateGetProcessForm() {
+    final var resultProcess =
+        zeebeClient
+            .newProcessDefinitionQuery()
+            .filter(f -> f.name("Process With Form"))
+            .send()
+            .join();
+
+    final var processDefinitionKey =
+        resultProcess.items().stream().findFirst().get().getProcessDefinitionKey();
+
+    final var resultForm =
+        zeebeClient.newProcessDefinitionGetFormRequest(processDefinitionKey).send().join();
+
+    assertThat(resultForm.getFormId()).isEqualTo("test");
+    assertThat(resultForm.getVersion()).isEqualTo(2L);
+  }
+
   private static DeploymentEvent deployResource(final String resourceName) {
     return zeebeClient
         .newDeployResourceCommand()
@@ -412,12 +436,30 @@ public class ProcessDefinitionQueryTest {
 
   private static void waitForProcessesToBeDeployed() throws InterruptedException {
     Awaitility.await("should deploy processes and import in Operate")
-        .atMost(Duration.ofSeconds(15))
+        .atMost(Duration.ofMinutes(3))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
               final var result = zeebeClient.newProcessDefinitionQuery().send().join();
               assertThat(result.items().size()).isEqualTo(DEPLOYED_PROCESSES.size());
+
+              final var processDefinitionKey =
+                  zeebeClient
+                      .newProcessDefinitionQuery()
+                      .filter(f -> f.name("Process With Form"))
+                      .send()
+                      .join()
+                      .items()
+                      .get(0)
+                      .getProcessDefinitionKey();
+
+              final var resultForm =
+                  zeebeClient
+                      .newProcessDefinitionGetFormRequest(processDefinitionKey)
+                      .send()
+                      .join();
+
+              assertThat(resultForm.getFormId().equals("test"));
             });
   }
 }
