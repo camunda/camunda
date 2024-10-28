@@ -43,6 +43,7 @@ jobs:
         with:
           repository: camunda/c8-cross-component-e2e-tests
           ref: feat(run)-c8-run-linux-workflow
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run tests
         uses: ./.github/actions/run-tests-c8Run
