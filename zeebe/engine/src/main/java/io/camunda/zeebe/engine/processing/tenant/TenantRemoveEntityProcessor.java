@@ -17,8 +17,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
-import io.camunda.zeebe.engine.state.immutable.UserState;
-import io.camunda.zeebe.engine.state.user.PersistedUser;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
@@ -26,12 +24,10 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import java.util.Optional;
 
 public class TenantRemoveEntityProcessor implements DistributedTypedRecordProcessor<TenantRecord> {
 
   private final TenantState tenantState;
-  private final UserState userState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -41,13 +37,11 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
 
   public TenantRemoveEntityProcessor(
       final TenantState tenantState,
-      final UserState userState,
       final AuthorizationCheckBehavior authCheckBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
     this.tenantState = tenantState;
-    this.userState = userState;
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -79,8 +73,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       return;
     }
 
-    final Optional<PersistedUser> user = userState.getUser(record.getEntityKey());
-    if (user.isPresent()) {
+    if (tenantState.isEntityAssignedToTenant(record.getEntityKey(), tenantKey)) {
       stateWriter.appendFollowUpEvent(tenantKey, TenantIntent.ENTITY_REMOVED, record);
       responseWriter.writeEventOnCommand(tenantKey, TenantIntent.ENTITY_REMOVED, record, command);
       distributeCommand(command);
@@ -88,7 +81,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       rejectCommand(
           command,
           RejectionType.NOT_FOUND,
-          "Expected to remove entity with key '%s' from tenant with key '%s', but the entity doesn't exist."
+          "Expected to remove entity with key '%s' from tenant with key '%s', but the entity is not assigned to this tenant."
               .formatted(record.getEntityKey(), tenantKey));
     }
   }

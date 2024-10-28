@@ -59,7 +59,6 @@ public class TenantProcessors {
             TenantIntent.REMOVE_ENTITY,
             new TenantRemoveEntityProcessor(
                 processingState.getTenantState(),
-                processingState.getUserState(),
                 authCheckBehavior,
                 keyGenerator,
                 writers,
