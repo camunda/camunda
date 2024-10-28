@@ -143,6 +143,11 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm</artifactId>
+        <version>9.7</version>
+      </dependency>
+      <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-dependencies</artifactId>
         <version>${spring-boot.version}</version>
@@ -322,7 +327,6 @@
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-codec-http</artifactId>
-      <version>${netty.version}</version>
     </dependency>
   </dependencies>
 
@@ -409,6 +413,7 @@
               <dep>org.apache.httpcomponents:httpmime</dep>
               <dep>org.awaitility:awaitility</dep>
             </ignoredUnusedDeclaredDependencies>
+            <ignoredNonTestScopedDependencies combine.children="append"></ignoredNonTestScopedDependencies>
           </configuration>
         </plugin>
         <plugin>
