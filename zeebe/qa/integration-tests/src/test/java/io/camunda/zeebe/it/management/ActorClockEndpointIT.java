@@ -21,23 +21,18 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 public class ActorClockEndpointIT {
 
-  @TestZeebe(initMethod = "initTestCluster")
-  private static TestCluster cluster;
-
-  @SuppressWarnings("unused")
-  static void initTestCluster() {
-    cluster =
-        TestCluster.builder()
-            .useRecordingExporter(true)
-            .withEmbeddedGateway(true)
-            .withBrokersCount(1)
-            .withPartitionsCount(1)
-            .withReplicationFactor(1)
-            .withBrokerConfig(
-                testStandaloneBroker ->
-                    testStandaloneBroker.withProperty("zeebe.clock.controlled", true))
-            .build();
-  }
+  @TestZeebe
+  private static TestCluster CLUSTER =
+      TestCluster.builder()
+          .useRecordingExporter(true)
+          .withEmbeddedGateway(true)
+          .withBrokersCount(1)
+          .withPartitionsCount(1)
+          .withReplicationFactor(1)
+          .withBrokerConfig(
+              testStandaloneBroker ->
+                  testStandaloneBroker.withProperty("zeebe.clock.controlled", true))
+          .build();
 
   @Test
   void shouldIncreaseActorClockTime() {
@@ -52,7 +47,7 @@ public class ActorClockEndpointIT {
   }
 
   private ActorClockActuator actorClockActuator() {
-    final var broker = cluster.brokers().get(MemberId.from("0"));
+    final var broker = CLUSTER.brokers().get(MemberId.from("0"));
     return ActorClockActuator.of(broker);
   }
 }
