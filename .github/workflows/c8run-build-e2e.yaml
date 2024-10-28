@@ -22,11 +22,11 @@ jobs:
 
       - name: make a package
         run: ./package.sh
-        working-directory: /c8run
+        working-directory: ./c8run
 
       - name: Linux - Run c8run
         run: nohup ./start.sh --detached &
-        working-directory: /c8run
+        working-directory: ./c8run
         env:
           JAVA_HOME: /usr/lib/jvm/temurin-21-jdk-amd64
           JAVA_VERSION: 21.0.4
@@ -43,6 +43,6 @@ jobs:
         with:
           repository: camunda/c8-cross-component-e2e-tests
           ref: feat(run)-c8-run-linux-workflow
-        
+
       - name: Run tests
         uses: ./.github/actions/run-tests-c8Run
