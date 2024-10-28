@@ -134,10 +134,12 @@ public class TaskListenerTest {
                 u ->
                     u.zeebeAssignee("frodo")
                         .zeebeTaskListener(l -> l.create().type(LISTENER_TYPE))
-                        .zeebeTaskListener(l -> l.assignment().type(LISTENER_TYPE + "_2"))
-                        .zeebeTaskListener(l -> l.complete().type(LISTENER_TYPE + "_3"))));
+                        .zeebeTaskListener(l -> l.create().type(LISTENER_TYPE + "_2"))
+                        .zeebeTaskListener(l -> l.assignment().type(LISTENER_TYPE + "_assign"))
+                        .zeebeTaskListener(l -> l.complete().type(LISTENER_TYPE + "_complete"))));
 
-    completeJobs(processInstanceKey, LISTENER_TYPE, LISTENER_TYPE + "_2");
+    completeJobs(
+        processInstanceKey, LISTENER_TYPE, LISTENER_TYPE + "_2", LISTENER_TYPE + "_assign");
 
     // when
     ENGINE
@@ -146,7 +148,7 @@ public class TaskListenerTest {
         .withVariable("foo_var", "bar")
         .withAction("my_custom_action")
         .complete();
-    completeJobs(processInstanceKey, LISTENER_TYPE + "_3");
+    completeJobs(processInstanceKey, LISTENER_TYPE + "_complete");
 
     // then
     assertThat(
@@ -155,11 +157,15 @@ public class TaskListenerTest {
                 .withJobKind(JobKind.TASK_LISTENER)
                 //                .withJobListenerEventType(JobListenerEventType.COMPLETE)
                 .withIntent(JobIntent.COMPLETED)
-                .limit(3))
+                .limit(4))
         .extracting(Record::getValue)
         .extracting(JobRecordValue::getType)
         .describedAs("Verify that all task listeners were completed in the correct sequence")
-        .containsExactly(LISTENER_TYPE, LISTENER_TYPE + "_2", LISTENER_TYPE + "_3");
+        .containsExactly(
+            LISTENER_TYPE,
+            LISTENER_TYPE + "_2",
+            LISTENER_TYPE + "_assign",
+            LISTENER_TYPE + "_complete");
 
     assertThat(
             RecordingExporter.userTaskRecords()
@@ -170,6 +176,7 @@ public class TaskListenerTest {
             "Ensure that `COMPLETE_TASK_LISTENER` events were triggered between creation, assignment, and completion events")
         .containsSubsequence(
             UserTaskIntent.CREATING,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
             UserTaskIntent.COMPLETE_TASK_LISTENER,
             UserTaskIntent.CREATED,
             UserTaskIntent.ASSIGNING,

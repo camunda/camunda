@@ -99,6 +99,13 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     final var context = buildContext(userTaskElementInstance);
 
     mergeVariablesOfTaskListener(context);
+
+    if (lifecycleState.equals(LifecycleState.CREATING)) {
+      // this is a hack to correct the assignee, similar to how a create listener should be able to
+      // do this eventually. as that's not yet supported, I just want to test it here
+      persistedRecord.setAssignee("overridden");
+    }
+
     findNextTaskListener(listenerEventType, userTaskElement, userTaskElementInstance)
         .ifPresentOrElse(
             listener -> createTaskListenerJob(listener, context, persistedRecord),
