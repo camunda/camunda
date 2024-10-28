@@ -73,60 +73,68 @@
     WHERE 1 = 1
     <!-- basic filters -->
     <if test="filter.processInstanceKeys != null and !filter.processInstanceKeys.isEmpty()">
-      AND PROCESS_INSTANCE_KEY IN
-      <foreach collection="filter.processInstanceKeys" item="value" open="(" separator=", " close=")">#{value}</foreach>
+      <foreach collection="filter.processInstanceKeys" item="operation">
+        AND PROCESS_INSTANCE_KEY <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
     </if>
     <if test="filter.processDefinitionIds != null and !filter.processDefinitionIds.isEmpty()">
-      AND pi.PROCESS_DEFINITION_ID IN
-      <foreach collection="filter.processDefinitionIds" item="value" open="(" separator=", " close=")">#{value}</foreach>
+      <foreach collection="filter.processDefinitionIds" item="operation">
+        AND pi.PROCESS_DEFINITION_ID <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
     </if>
     <if test="filter.processDefinitionKeys != null and !filter.processDefinitionKeys.isEmpty()">
-      AND pi.PROCESS_DEFINITION_KEY IN
-      <foreach collection="filter.processDefinitionKeys" item="value" open="(" separator=", " close=")">#{value}</foreach>
+      <foreach collection="filter.processDefinitionKeys" item="operation">
+        AND pi.PROCESS_DEFINITION_KEY <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
     </if>
     <if test="filter.parentProcessInstanceKeys != null and !filter.parentProcessInstanceKeys.isEmpty()">
-      AND PARENT_PROCESS_INSTANCE_KEY IN
-      <foreach collection="filter.parentProcessInstanceKeys" item="value" open="(" separator=", " close=")">#{value}</foreach>
+      <foreach collection="filter.parentProcessInstanceKeys" item="operation">
+        AND PARENT_PROCESS_INSTANCE_KEY <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
     </if>
     <if test="filter.parentFlowNodeInstanceKeys != null and !filter.parentFlowNodeInstanceKeys.isEmpty()">
-      AND PARENT_ELEMENT_INSTANCE_KEY IN
-      <foreach collection="filter.parentFlowNodeInstanceKeys" item="value" open="(" separator=", " close=")">#{value}</foreach>
+      <foreach collection="filter.parentFlowNodeInstanceKeys" item="operation">
+        AND PARENT_ELEMENT_INSTANCE_KEY <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
     </if>
     <if test="filter.states != null and !filter.states.isEmpty()">
-      AND pi.STATE IN
-      <foreach collection="filter.states" item="value" open="(" separator=", " close=")">#{value}</foreach>
+      <foreach collection="filter.states" item="operation">
+        AND pi.STATE <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
     </if>
     <if test="filter.tenantIds != null and !filter.tenantIds.isEmpty()">
-      AND TENANT_ID IN
-      <foreach collection="filter.tenantIds" item="value" open="(" separator=", " close=")">#{value}</foreach>
+      <foreach collection="filter.tenantIds" item="operation">
+        AND TENANT_ID <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
     </if>
 
     <!-- date filters -->
-    <if test="filter.startDate != null and filter.startDate.before != null">
-      AND START_DATE &lt; #{filter.startDate.before}
+    <if test="filter.startDate != null and !filter.startDate.isEmpty()">
+      <foreach collection="filter.startDate" item="operation">
+        AND START_DATE <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
     </if>
-    <if test="filter.startDate != null and filter.startDate.after != null">
-      AND START_DATE &gt; #{filter.startDate.after}
-    </if>
-    <if test="filter.endDate != null and filter.endDate.before != null">
-      AND END_DATE &lt; #{filter.endDate.before}
-    </if>
-    <if test="filter.endDate != null and filter.endDate.after != null">
-      AND END_DATE &gt; #{filter.endDate.after}
+    <if test="filter.endDate != null and !filter.endDate.isEmpty()">
+      <foreach collection="filter.endDate" item="operation">
+        AND END_DATE <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
     </if>
 
     <!-- process definition filters -->
     <if test="filter.processDefinitionNames != null and !filter.processDefinitionNames.isEmpty()">
-      AND pd.NAME IN
-      <foreach collection="filter.processDefinitionNames" item="value" open="(" separator=", " close=")">#{value}</foreach>
+      <foreach collection="filter.processDefinitionNames" item="operation">
+        AND pd.NAME <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
     </if>
     <if test="filter.processDefinitionVersions != null and !filter.processDefinitionVersions.isEmpty()">
-      AND pd.VERSION IN
-      <foreach collection="filter.processDefinitionVersions" item="value" open="(" separator=", " close=")">#{value}</foreach>
+      <foreach collection="filter.processDefinitionVersions" item="operation">
+        AND pd.VERSION <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
     </if>
     <if test="filter.processDefinitionVersionTags != null and !filter.processDefinitionVersionTags.isEmpty()">
-      AND pd.VERSION_TAG IN
-      <foreach collection="filter.processDefinitionVersionTags" item="value" open="(" separator=", " close=")">#{value}</foreach>
+      <foreach collection="filter.processDefinitionVersionTags" item="operation">
+        AND pd.VERSION_TAG <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
     </if>
   </sql>
 

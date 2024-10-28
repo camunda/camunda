@@ -14,6 +14,7 @@ import io.camunda.search.clients.query.SearchQueryOption;
 import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import java.time.OffsetDateTime;
@@ -40,7 +41,7 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   public void shouldQueryByProcessInstanceKey() {
     // given
     final var processInstanceFilter =
-        FilterBuilders.processInstance(f -> f.processInstanceKeys(List.of(123L)));
+        FilterBuilders.processInstance(f -> f.processInstanceKeys(123L));
     final var searchQuery =
         SearchQueryBuilders.processInstanceSearchQuery(q -> q.filter(processInstanceFilter));
 
@@ -64,7 +65,7 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   public void shouldQueryByProcessDefinitionId() {
     // given
     final var processInstanceFilter =
-        FilterBuilders.processInstance(f -> f.processDefinitionIds(List.of("bpmn")));
+        FilterBuilders.processInstance(f -> f.processDefinitionIds("bpmn"));
 
     // when
     final var searchRequest = transformQuery(processInstanceFilter);
@@ -86,7 +87,7 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   public void shouldQueryByProcessDefinitionName() {
     // given
     final var processInstanceFilter =
-        FilterBuilders.processInstance(f -> f.processDefinitionNames(List.of("Demo Process")));
+        FilterBuilders.processInstance(f -> f.processDefinitionNames("Demo Process"));
 
     // when
     final var searchRequest = transformQuery(processInstanceFilter);
@@ -110,7 +111,7 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   public void shouldQueryByProcessDefinitionVersion() {
     // given
     final var processInstanceFilter =
-        FilterBuilders.processInstance(f -> f.processDefinitionVersions(List.of(33)));
+        FilterBuilders.processInstance(f -> f.processDefinitionVersions(33));
     final var searchQuery =
         SearchQueryBuilders.processInstanceSearchQuery(q -> q.filter(processInstanceFilter));
 
@@ -134,7 +135,7 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   public void shouldQueryByProcessDefinitionVersionTag() {
     // given
     final var processInstanceFilter =
-        FilterBuilders.processInstance(f -> f.processDefinitionVersionTags(List.of("v1")));
+        FilterBuilders.processInstance(f -> f.processDefinitionVersionTags("v1"));
     final var searchQuery =
         SearchQueryBuilders.processInstanceSearchQuery(q -> q.filter(processInstanceFilter));
 
@@ -158,7 +159,7 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   public void shouldQueryByProcessDefinitionKey() {
     // given
     final var processInstanceFilter =
-        FilterBuilders.processInstance(f -> f.processDefinitionKeys(List.of(567L)));
+        FilterBuilders.processInstance(f -> f.processDefinitionKeys(567L));
     final var searchQuery =
         SearchQueryBuilders.processInstanceSearchQuery(q -> q.filter(processInstanceFilter));
 
@@ -182,7 +183,7 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   public void shouldQueryByParentProcessInstanceKey() {
     // given
     final var processInstanceFilter =
-        FilterBuilders.processInstance(f -> f.parentProcessInstanceKeys(List.of(567L)));
+        FilterBuilders.processInstance(f -> f.parentProcessInstanceKeys(567L));
     final var searchQuery =
         SearchQueryBuilders.processInstanceSearchQuery(q -> q.filter(processInstanceFilter));
 
@@ -208,7 +209,7 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   public void shouldQueryByParentFlowNodeInstanceKey() {
     // given
     final var processInstanceFilter =
-        FilterBuilders.processInstance(f -> f.parentFlowNodeInstanceKeys(List.of(567L)));
+        FilterBuilders.processInstance(f -> f.parentFlowNodeInstanceKeys(567L));
     final var searchQuery =
         SearchQueryBuilders.processInstanceSearchQuery(q -> q.filter(processInstanceFilter));
 
@@ -233,8 +234,7 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   @Test
   public void shouldQueryByTreePath() {
     // given
-    final var processInstanceFilter =
-        FilterBuilders.processInstance(f -> f.treePaths(List.of("PI_12")));
+    final var processInstanceFilter = FilterBuilders.processInstance(f -> f.treePaths("PI_12"));
     final var searchQuery =
         SearchQueryBuilders.processInstanceSearchQuery(q -> q.filter(processInstanceFilter));
 
@@ -259,12 +259,10 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
     // given
     final var dateAfter = OffsetDateTime.of(2024, 3, 12, 10, 30, 15, 0, ZoneOffset.UTC);
     final var dateBefore = OffsetDateTime.of(2024, 7, 15, 10, 30, 15, 0, ZoneOffset.UTC);
-    final var startDateFilter =
-        FilterBuilders.dateValue((d) -> d.after(dateAfter).before(dateBefore));
-    final var endDateFilter =
-        FilterBuilders.dateValue((d) -> d.after(dateAfter).before(dateBefore));
+    final var dateFilter = List.of(Operation.gte(dateAfter), Operation.lt(dateBefore));
     final var processInstanceFilter =
-        FilterBuilders.processInstance(f -> f.startDate(startDateFilter).endDate(endDateFilter));
+        FilterBuilders.processInstance(
+            f -> f.startDateOperations(dateFilter).endDateOperations(dateFilter));
 
     // when
     final var searchRequest = transformQuery(processInstanceFilter);
@@ -303,8 +301,7 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   @Test
   public void shouldQueryByState() {
     // given
-    final var processInstanceFilter =
-        FilterBuilders.processInstance(f -> f.states(List.of("ACTIVE")));
+    final var processInstanceFilter = FilterBuilders.processInstance(f -> f.states("ACTIVE"));
     final var searchQuery =
         SearchQueryBuilders.processInstanceSearchQuery(q -> q.filter(processInstanceFilter));
 
@@ -348,8 +345,7 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   @Test
   public void shouldQueryByTenantId() {
     // given
-    final var processInstanceFilter =
-        FilterBuilders.processInstance(f -> f.tenantIds(List.of("tenant")));
+    final var processInstanceFilter = FilterBuilders.processInstance(f -> f.tenantIds("tenant"));
 
     // when
     final var searchRequest = transformQuery(processInstanceFilter);
@@ -375,20 +371,20 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
     final var processInstanceFilter = (new ProcessInstanceFilter.Builder()).build();
 
     // then
-    assertThat(processInstanceFilter.processInstanceKeys()).isEmpty();
-    assertThat(processInstanceFilter.processDefinitionIds()).isEmpty();
-    assertThat(processInstanceFilter.processDefinitionNames()).isEmpty();
-    assertThat(processInstanceFilter.processDefinitionVersions()).isEmpty();
-    assertThat(processInstanceFilter.processDefinitionVersionTags()).isEmpty();
-    assertThat(processInstanceFilter.processDefinitionKeys()).isEmpty();
-    assertThat(processInstanceFilter.parentProcessInstanceKeys()).isEmpty();
-    assertThat(processInstanceFilter.parentFlowNodeInstanceKeys()).isEmpty();
-    assertThat(processInstanceFilter.treePaths()).isEmpty();
-    assertThat(processInstanceFilter.startDate()).isNull();
-    assertThat(processInstanceFilter.endDate()).isNull();
-    assertThat(processInstanceFilter.states()).isEmpty();
+    assertThat(processInstanceFilter.processInstanceKeyOperations()).isEmpty();
+    assertThat(processInstanceFilter.processDefinitionIdOperations()).isEmpty();
+    assertThat(processInstanceFilter.processDefinitionNameOperations()).isEmpty();
+    assertThat(processInstanceFilter.processDefinitionVersionOperations()).isEmpty();
+    assertThat(processInstanceFilter.processDefinitionVersionTagOperations()).isEmpty();
+    assertThat(processInstanceFilter.processDefinitionKeyOperations()).isEmpty();
+    assertThat(processInstanceFilter.parentProcessInstanceKeyOperations()).isEmpty();
+    assertThat(processInstanceFilter.parentFlowNodeInstanceKeyOperations()).isEmpty();
+    assertThat(processInstanceFilter.treePathOperations()).isEmpty();
+    assertThat(processInstanceFilter.startDateOperations()).isEmpty();
+    assertThat(processInstanceFilter.endDateOperations()).isEmpty();
+    assertThat(processInstanceFilter.stateOperations()).isEmpty();
     assertThat(processInstanceFilter.hasIncident()).isNull();
-    assertThat(processInstanceFilter.tenantIds()).isEmpty();
+    assertThat(processInstanceFilter.tenantIdOperations()).isEmpty();
   }
 
   private void assertIsSearchTermQuery(
