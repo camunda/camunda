@@ -50,9 +50,14 @@ public class DefaultExporterResourceProviderTest {
 
   static Stream<ExporterConfiguration> configProvider() {
     final var configNoPrefix = new ExporterConfiguration();
+
     final var configWithPrefix = new ExporterConfiguration();
     configWithPrefix.getIndex().setPrefix("global");
-    return Stream.of(configNoPrefix, configWithPrefix);
+
+    final var configWithComponentNameAsPrefix = new ExporterConfiguration();
+    configWithComponentNameAsPrefix.getIndex().setPrefix("operate");
+
+    return Stream.of(configNoPrefix, configWithPrefix, configWithComponentNameAsPrefix);
   }
 
   private boolean isValidIndexDescriptorName(
