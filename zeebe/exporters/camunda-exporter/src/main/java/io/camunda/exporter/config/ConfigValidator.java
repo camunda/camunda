@@ -8,6 +8,8 @@
 package io.camunda.exporter.config;
 
 import io.camunda.zeebe.exporter.api.ExporterException;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
@@ -21,8 +23,13 @@ public final class ConfigValidator {
    */
   private static final String PATTERN_MIN_AGE_FORMAT = "^[0-9]+[dhms]$";
 
+  private static final String PATTERN_DATE_INTERVAL_FORMAT = "^(?:[1-9]\\d*)([smhdwMy])$";
+
   private static final Predicate<String> CHECKER_MIN_AGE =
       Pattern.compile(PATTERN_MIN_AGE_FORMAT).asPredicate();
+
+  private static final Predicate<String> CHECK_DATE_INTERVAL =
+      Pattern.compile(PATTERN_DATE_INTERVAL_FORMAT).asPredicate();
 
   private ConfigValidator() {}
 
@@ -63,6 +70,45 @@ public final class ConfigValidator {
           String.format(
               "CamundaExporter retention minimumAge '%s' must match pattern '%s', but didn't.",
               minimumAge, PATTERN_MIN_AGE_FORMAT));
+    }
+
+    final String rolloverDateFormat = configuration.getArchiver().getRolloverDateFormat();
+    try {
+      DateTimeFormatter.ofPattern(rolloverDateFormat).withZone(ZoneId.systemDefault());
+    } catch (final IllegalArgumentException e) {
+      throw new ExporterException(
+          String.format(
+              "CamundaExporter rolloverDateFormat '%s' is not a valid date format.",
+              rolloverDateFormat));
+    }
+
+    final String rolloverInterval = configuration.getArchiver().getRolloverInterval();
+    if (rolloverInterval != null && !CHECK_DATE_INTERVAL.test(rolloverInterval)) {
+      throw new ExporterException(
+          String.format(
+              "CamundaExporter rolloverInterval '%s' must match pattern '%s', but didn't.",
+              rolloverInterval, PATTERN_DATE_INTERVAL_FORMAT));
+    }
+
+    final String waitPeriodBeforeArchiving =
+        configuration.getArchiver().getWaitPeriodBeforeArchiving();
+    if (waitPeriodBeforeArchiving != null && !CHECK_DATE_INTERVAL.test(waitPeriodBeforeArchiving)) {
+      throw new ExporterException(
+          String.format(
+              "CamundaExporter waitPeriodBeforeArchiving '%s' must match pattern '%s', but didn't.",
+              waitPeriodBeforeArchiving, PATTERN_DATE_INTERVAL_FORMAT));
+    }
+
+    final int rolloverBatchSize = configuration.getArchiver().getRolloverBatchSize();
+    if (rolloverBatchSize < 1) {
+      throw new ExporterException(
+          "CamundaExporter rolloverBatchSize must be >= 1. Current value: " + rolloverBatchSize);
+    }
+
+    final int delayBetweenRuns = configuration.getArchiver().getDelayBetweenRuns();
+    if (delayBetweenRuns < 1) {
+      throw new ExporterException(
+          "CamundaExporter delayBetweenRuns must be >= 1. Current value: " + delayBetweenRuns);
     }
   }
 }
