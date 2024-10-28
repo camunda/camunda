@@ -45,10 +45,10 @@ public class CamundaExporterITInvocationProvider
     final var config = new ExporterConfiguration();
     config.getIndex().setPrefix(CONFIG_PREFIX);
     config.getBulk().setSize(1); // force flushing on the first record
-    switch (connectionType) {
-      case ELASTICSEARCH -> config.getConnect().setUrl(elsContainer.getHttpHostAddress());
-      case OPENSEARCH -> config.getConnect().setUrl(osContainer.getHttpHostAddress());
-      default -> throw new IllegalArgumentException("Unknown connection type: " + connectionType);
+    if (connectionType == ELASTICSEARCH) {
+      config.getConnect().setUrl(elsContainer.getHttpHostAddress());
+    } else if (connectionType == OPENSEARCH) {
+      config.getConnect().setUrl(osContainer.getHttpHostAddress());
     }
     config.getConnect().setType(connectionType.getType());
     return config;
