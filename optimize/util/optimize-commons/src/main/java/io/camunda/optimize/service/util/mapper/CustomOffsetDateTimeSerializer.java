@@ -22,7 +22,7 @@ import org.slf4j.Logger;
 
 public class CustomOffsetDateTimeSerializer extends JsonSerializer<OffsetDateTime> {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(CustomOffsetDateTimeSerializer.class);
   private static final Set<String> AVAILABLE_ZONE_IDS = ZoneId.getAvailableZoneIds();
   private final DateTimeFormatter formatter;
@@ -42,7 +42,7 @@ public class CustomOffsetDateTimeSerializer extends JsonSerializer<OffsetDateTim
         final ZonedDateTime zonedDateTime = value.atZoneSameInstant(ZoneId.of(timezone));
         timeZoneAdjustedDateTime = zonedDateTime.toOffsetDateTime();
       } else {
-        log.warn(
+        LOG.warn(
             "The provided timezone [{}] not recognized. Falling back to server timezone instead.",
             timezone);
       }

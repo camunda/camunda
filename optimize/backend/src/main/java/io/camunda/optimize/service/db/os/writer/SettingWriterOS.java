@@ -32,7 +32,7 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class SettingWriterOS implements SettingsWriter {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(SettingWriterOS.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(SettingWriterOS.class);
   private final OptimizeOpenSearchClient osClient;
   private final ObjectMapper objectMapper;
 
@@ -43,12 +43,12 @@ public class SettingWriterOS implements SettingsWriter {
 
   @Override
   public void upsertSettings(final SettingsDto settingsDto) {
-    log.debug("Writing settings to OpenSearch");
+    LOG.debug("Writing settings to OpenSearch");
     final UpdateRequest.Builder<SettingsDto, Void> request = createSettingsUpsert(settingsDto);
 
     final String errorMessage = "There were errors while writing settings to OpenSearch.";
     osClient.upsert(request, SettingsDto.class, e -> errorMessage);
-    log.debug("Finished updating Optimize Settings");
+    LOG.debug("Finished updating Optimize Settings");
   }
 
   private UpdateRequest.Builder<SettingsDto, Void> createSettingsUpsert(

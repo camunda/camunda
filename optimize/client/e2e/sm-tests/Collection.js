@@ -55,7 +55,8 @@ test('create a collection and entities inside it', async (t) => {
   await addEditEntityDescription(t, description);
 
   await save(t);
-  await t.click(e.collectionBreadcrumb);
+  await t.click(Common.collectionsPage);
+  await t.click(Common.listItemLink('collection'));
 
   await t.expect(Common.listItem('dashboard').visible).ok();
   await t.expect(Common.listItem('dashboard').textContent).contains('Blank dashboard');
@@ -102,7 +103,8 @@ test('user permissions', async (t) => {
 
   await createNewDashboard(t);
   await save(t);
-  await t.click(e.collectionBreadcrumb);
+  await t.click(Common.collectionsPage);
+  await t.click(Common.listItemLink('collection'));
 
   await t.click(e.userTab);
   const managerName = await e.userName(await Common.listItem('user')).textContent;
@@ -156,7 +158,7 @@ test('user permissions', async (t) => {
   await t.click(e.logoutButton);
 
   await login(t, 'user2');
-  await t.click(e.navItem);
+  await t.click(Common.collectionsPage);
 
   await t.click(Common.listItemLink('collection'));
   await t.click(e.userTab);

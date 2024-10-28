@@ -59,23 +59,23 @@ public class CollectionScopeEntryResponseDto {
     return this.tenants;
   }
 
-  public void setId(String id) {
+  public void setId(final String id) {
     this.id = id;
   }
 
-  public void setDefinitionType(DefinitionType definitionType) {
+  public void setDefinitionType(final DefinitionType definitionType) {
     this.definitionType = definitionType;
   }
 
-  public void setDefinitionKey(String definitionKey) {
+  public void setDefinitionKey(final String definitionKey) {
     this.definitionKey = definitionKey;
   }
 
-  public void setDefinitionName(String definitionName) {
+  public void setDefinitionName(final String definitionName) {
     this.definitionName = definitionName;
   }
 
-  public void setTenants(List<TenantDto> tenants) {
+  public void setTenants(final List<TenantDto> tenants) {
     this.tenants = tenants;
   }
 

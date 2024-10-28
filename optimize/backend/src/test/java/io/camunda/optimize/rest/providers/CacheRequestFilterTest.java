@@ -30,11 +30,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class CacheRequestFilterTest {
 
-  private CacheRequestFilterFactory.CacheRequestFilter underTest;
-
   @Mock ContainerRequestContext requestContext;
-
   @Mock ContainerResponseContext responseContext;
+  private CacheRequestFilterFactory.CacheRequestFilter underTest;
 
   @BeforeEach
   public void setup() {
@@ -43,10 +41,10 @@ public class CacheRequestFilterTest {
   }
 
   @Test
-  public void filter_setsCacheControlMaxAge() {
+  public void filterSetsCacheControlMaxAge() {
     // given
     when(responseContext.getStatus()).thenReturn(Response.Status.OK.getStatusCode());
-    OffsetDateTime now = OffsetDateTime.parse("2019-04-23T18:00:00+01:00");
+    final OffsetDateTime now = OffsetDateTime.parse("2019-04-23T18:00:00+01:00");
     LocalDateUtil.setCurrentTime(now);
 
     // when
@@ -58,7 +56,7 @@ public class CacheRequestFilterTest {
   }
 
   @Test
-  public void filter_doesNotOverwritePreviousCacheControlHeaders() {
+  public void filterDoesNotOverwritePreviousCacheControlHeaders() {
     // given
     responseContext.getHeaders().putSingle(HttpHeaders.CACHE_CONTROL, CACHE_CONTROL_NO_STORE);
 
@@ -73,10 +71,10 @@ public class CacheRequestFilterTest {
 
   @ParameterizedTest
   @MethodSource("unsuccessfulResponses")
-  public void filter_isNotSetOnUnsuccessfulResponse(Response.Status errorResponse) {
+  public void filterIsNotSetOnUnsuccessfulResponse(final Response.Status errorResponse) {
     // given
     when(responseContext.getStatus()).thenReturn(errorResponse.getStatusCode());
-    OffsetDateTime now = OffsetDateTime.parse("2019-04-23T18:00:00+01:00");
+    final OffsetDateTime now = OffsetDateTime.parse("2019-04-23T18:00:00+01:00");
     LocalDateUtil.setCurrentTime(now);
 
     // when

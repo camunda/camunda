@@ -38,11 +38,11 @@ public class MeasureResponseDto<T> {
   private ResultType type;
 
   public MeasureResponseDto(
-      ViewProperty property,
-      AggregationDto aggregationType,
-      UserTaskDurationTime userTaskDurationTime,
-      T data,
-      ResultType type) {
+      final ViewProperty property,
+      final AggregationDto aggregationType,
+      final UserTaskDurationTime userTaskDurationTime,
+      final T data,
+      final ResultType type) {
     this.property = property;
     this.aggregationType = aggregationType;
     this.userTaskDurationTime = userTaskDurationTime;
@@ -72,23 +72,23 @@ public class MeasureResponseDto<T> {
     return this.type;
   }
 
-  public void setProperty(ViewProperty property) {
+  public void setProperty(final ViewProperty property) {
     this.property = property;
   }
 
-  public void setAggregationType(AggregationDto aggregationType) {
+  public void setAggregationType(final AggregationDto aggregationType) {
     this.aggregationType = aggregationType;
   }
 
-  public void setUserTaskDurationTime(UserTaskDurationTime userTaskDurationTime) {
+  public void setUserTaskDurationTime(final UserTaskDurationTime userTaskDurationTime) {
     this.userTaskDurationTime = userTaskDurationTime;
   }
 
-  public void setData(T data) {
+  public void setData(final T data) {
     this.data = data;
   }
 
-  public void setType(ResultType type) {
+  public void setType(final ResultType type) {
     this.type = type;
   }
 

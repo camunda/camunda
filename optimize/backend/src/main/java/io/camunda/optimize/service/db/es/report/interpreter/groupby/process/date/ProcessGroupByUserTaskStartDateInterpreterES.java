@@ -34,11 +34,11 @@ public class ProcessGroupByUserTaskStartDateInterpreterES
   private final ProcessViewInterpreterFacadeES viewInterpreter;
 
   public ProcessGroupByUserTaskStartDateInterpreterES(
-      DateAggregationServiceES dateAggregationService,
-      MinMaxStatsServiceES minMaxStatsService,
-      DefinitionService definitionService,
-      ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
-      ProcessViewInterpreterFacadeES viewInterpreter) {
+      final DateAggregationServiceES dateAggregationService,
+      final MinMaxStatsServiceES minMaxStatsService,
+      final DefinitionService definitionService,
+      final ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
+      final ProcessViewInterpreterFacadeES viewInterpreter) {
     this.dateAggregationService = dateAggregationService;
     this.minMaxStatsService = minMaxStatsService;
     this.definitionService = definitionService;
@@ -52,27 +52,32 @@ public class ProcessGroupByUserTaskStartDateInterpreterES
   }
 
   @Override
+  public DateAggregationServiceES getDateAggregationService() {
+    return dateAggregationService;
+  }
+
+  @Override
+  public MinMaxStatsServiceES getMinMaxStatsService() {
+    return minMaxStatsService;
+  }
+
+  @Override
   protected String getDateField() {
     return FLOW_NODE_INSTANCES + "." + FLOW_NODE_START_DATE;
   }
 
-  public DateAggregationServiceES getDateAggregationService() {
-    return this.dateAggregationService;
-  }
-
-  public MinMaxStatsServiceES getMinMaxStatsService() {
-    return this.minMaxStatsService;
-  }
-
+  @Override
   public DefinitionService getDefinitionService() {
-    return this.definitionService;
+    return definitionService;
   }
 
+  @Override
   public ProcessDistributedByInterpreterFacadeES getDistributedByInterpreter() {
-    return this.distributedByInterpreter;
+    return distributedByInterpreter;
   }
 
+  @Override
   public ProcessViewInterpreterFacadeES getViewInterpreter() {
-    return this.viewInterpreter;
+    return viewInterpreter;
   }
 }

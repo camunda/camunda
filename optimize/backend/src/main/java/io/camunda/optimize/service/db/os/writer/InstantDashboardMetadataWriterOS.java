@@ -33,7 +33,7 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class InstantDashboardMetadataWriterOS implements InstantDashboardMetadataWriter {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(InstantDashboardMetadataWriterOS.class);
   private final OptimizeOpenSearchClient osClient;
 
@@ -43,7 +43,7 @@ public class InstantDashboardMetadataWriterOS implements InstantDashboardMetadat
 
   @Override
   public void saveInstantDashboard(final InstantDashboardDataDto dashboardDataDto) {
-    log.debug("Writing new Instant preview dashboard to Opensearch");
+    LOG.debug("Writing new Instant preview dashboard to Opensearch");
     final String id = dashboardDataDto.getInstantDashboardId();
 
     final IndexRequest.Builder<InstantDashboardDataDto> requestBuilder =
@@ -59,11 +59,11 @@ public class InstantDashboardMetadataWriterOS implements InstantDashboardMetadat
       final String message =
           "Could not write Instant preview dashboard data to Opensearch. "
               + "Maybe the connection to Opensearch got lost?";
-      log.error(message);
+      LOG.error(message);
       throw new OptimizeRuntimeException(message);
     }
 
-    log.debug("Instant preview dashboard information with id [{}] has been created", id);
+    LOG.debug("Instant preview dashboard information with id [{}] has been created", id);
   }
 
   @Override
@@ -88,7 +88,7 @@ public class InstantDashboardMetadataWriterOS implements InstantDashboardMetadat
               bulkRequestBuilder.operations(
                   op -> op.delete(del -> del.index(INSTANT_DASHBOARD_INDEX_NAME).id(id))));
 
-      log.debug(
+      LOG.debug(
           "Deleting [{}] instant dashboard documents by id with bulk request.",
           dashboardIdsToBeDeleted.size());
 

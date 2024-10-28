@@ -46,10 +46,10 @@ public class DecisionGroupByOutputVariableInterpreterES
   private final DecisionViewInterpreterFacadeES viewInterpreter;
 
   public DecisionGroupByOutputVariableInterpreterES(
-      VariableAggregationServiceES variableAggregationService,
-      DefinitionService definitionService,
-      DecisionDistributedByNoneInterpreterES distributedByInterpreter,
-      DecisionViewInterpreterFacadeES viewInterpreter) {
+      final VariableAggregationServiceES variableAggregationService,
+      final DefinitionService definitionService,
+      final DecisionDistributedByNoneInterpreterES distributedByInterpreter,
+      final DecisionViewInterpreterFacadeES viewInterpreter) {
     this.variableAggregationService = variableAggregationService;
     this.definitionService = definitionService;
     this.distributedByInterpreter = distributedByInterpreter;

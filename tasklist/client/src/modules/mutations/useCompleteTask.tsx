@@ -19,7 +19,7 @@ type Payload = {
 function useCompleteTask() {
   return useMutation<Task, RequestError | Error, Payload>({
     mutationFn: async (payload) => {
-      const {response, error} = await request(api.completeTask(payload));
+      const {response, error} = await request(api.v1.completeTask(payload));
 
       if (response !== null) {
         return response.json();

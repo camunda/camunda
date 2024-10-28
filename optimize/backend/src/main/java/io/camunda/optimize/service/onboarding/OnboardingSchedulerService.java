@@ -32,7 +32,7 @@ import org.springframework.stereotype.Component;
 public class OnboardingSchedulerService extends AbstractScheduledService
     implements ConfigurationReloadable {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(OnboardingSchedulerService.class);
   private final ProcessDefinitionReader processDefinitionReader;
   private final ProcessDefinitionWriter processDefinitionWriter;
@@ -76,7 +76,7 @@ public class OnboardingSchedulerService extends AbstractScheduledService
 
   public void setUpScheduler() {
     if (configurationService.getOnboarding().isScheduleProcessOnboardingChecks()) {
-      log.info("Initializing OnboardingScheduler");
+      LOG.info("Initializing OnboardingScheduler");
       // Check no more often than every 60s, recommended 180 (3min)
       setIntervalToCheckForOnboardingDataInSeconds(
           Math.max(
@@ -88,7 +88,7 @@ public class OnboardingSchedulerService extends AbstractScheduledService
       setupOnboardingPanelNotifications();
       startOnboardingScheduling();
     } else {
-      log.info(
+      LOG.info(
           "Will not schedule checks for process onboarding state as this is disabled by configuration");
     }
   }
@@ -98,7 +98,7 @@ public class OnboardingSchedulerService extends AbstractScheduledService
       setEmailNotificationHandler(
           onboardingEmailNotificationService::sendOnboardingEmailWithErrorHandling);
     } else {
-      log.info("Onboarding emails deactivated by configuration");
+      LOG.info("Onboarding emails deactivated by configuration");
     }
   }
 
@@ -112,7 +112,7 @@ public class OnboardingSchedulerService extends AbstractScheduledService
                     .getBean(CCSaaSOnboardingPanelNotificationService.class)
                     .sendOnboardingPanelNotification(processDefKey));
       } else {
-        log.info("Onboarding panel notifications deactivated by configuration");
+        LOG.info("Onboarding panel notifications deactivated by configuration");
       }
     }
   }
@@ -139,21 +139,21 @@ public class OnboardingSchedulerService extends AbstractScheduledService
   }
 
   public synchronized void startOnboardingScheduling() {
-    log.info("Starting onboarding scheduling");
+    LOG.info("Starting onboarding scheduling");
     startScheduling();
   }
 
   @PreDestroy
   public synchronized void stopOnboardingScheduling() {
-    log.info("Stopping onboarding scheduling");
+    LOG.info("Stopping onboarding scheduling");
     stopScheduling();
   }
 
   @Override
   protected void run() {
-    log.info("Checking whether new data would trigger onboarding");
+    LOG.info("Checking whether new data would trigger onboarding");
     onboardNewProcesses();
-    log.info("Onboarding check completed");
+    LOG.info("Onboarding check completed");
   }
 
   @Override

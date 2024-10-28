@@ -24,7 +24,7 @@ public class GenericProcessExecutionPlanInterpreterES
     extends AbstractProcessExecutionPlanInterpreterES
     implements GenericProcessExecutionPlanInterpreter {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(GenericProcessExecutionPlanInterpreterES.class);
   private final ProcessDefinitionReader processDefinitionReader;
   private final OptimizeElasticsearchClient esClient;
@@ -33,11 +33,11 @@ public class GenericProcessExecutionPlanInterpreterES
   private final ProcessViewInterpreterFacadeES viewInterpreter;
 
   public GenericProcessExecutionPlanInterpreterES(
-      ProcessDefinitionReader processDefinitionReader,
-      OptimizeElasticsearchClient esClient,
-      ProcessQueryFilterEnhancerES queryFilterEnhancer,
-      ProcessGroupByInterpreterFacadeES groupByInterpreter,
-      ProcessViewInterpreterFacadeES viewInterpreter) {
+      final ProcessDefinitionReader processDefinitionReader,
+      final OptimizeElasticsearchClient esClient,
+      final ProcessQueryFilterEnhancerES queryFilterEnhancer,
+      final ProcessGroupByInterpreterFacadeES groupByInterpreter,
+      final ProcessViewInterpreterFacadeES viewInterpreter) {
     this.processDefinitionReader = processDefinitionReader;
     this.esClient = esClient;
     this.queryFilterEnhancer = queryFilterEnhancer;

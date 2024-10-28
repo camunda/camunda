@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ExternalVariableReader {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ExternalVariableReader.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ExternalVariableReader.class);
   VariableRepository variableRepository;
 
   public ExternalVariableReader(final VariableRepository variableRepository) {
@@ -26,14 +26,14 @@ public class ExternalVariableReader {
 
   public List<ExternalProcessVariableDto> getVariableUpdatesIngestedAfter(
       final Long ingestTimestamp, final int limit) {
-    log.debug(
+    LOG.debug(
         "Fetching variables that where ingested after {}", Instant.ofEpochMilli(ingestTimestamp));
 
     return variableRepository.getVariableUpdatesIngestedAfter(ingestTimestamp, limit);
   }
 
   public List<ExternalProcessVariableDto> getVariableUpdatesIngestedAt(final Long ingestTimestamp) {
-    log.debug(
+    LOG.debug(
         "Fetching variables that where ingested at {}", Instant.ofEpochMilli(ingestTimestamp));
 
     return variableRepository.getVariableUpdatesIngestedAt(ingestTimestamp);

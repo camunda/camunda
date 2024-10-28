@@ -62,6 +62,7 @@ public class IdentityDto {
     return "IdentityDto(id=" + getId() + ", type=" + getType() + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String id = "id";

@@ -22,7 +22,7 @@ import org.slf4j.Logger;
 
 public abstract class ZeebeProcessInstanceSubEntityImportService<T> implements ImportService<T> {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ZeebeProcessInstanceSubEntityImportService.class);
   protected final DatabaseImportJobExecutor databaseImportJobExecutor;
   protected final ConfigurationService configurationService;

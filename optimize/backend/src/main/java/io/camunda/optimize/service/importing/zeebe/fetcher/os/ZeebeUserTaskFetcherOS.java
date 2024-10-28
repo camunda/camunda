@@ -27,7 +27,7 @@ import org.springframework.stereotype.Component;
 public class ZeebeUserTaskFetcherOS extends AbstractZeebeRecordFetcherOS<ZeebeUserTaskRecordDto>
     implements ZeebeUserTaskFetcher {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ZeebeUserTaskFetcherOS.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ZeebeUserTaskFetcherOS.class);
 
   protected ZeebeUserTaskFetcherOS(
       final int partitionId,

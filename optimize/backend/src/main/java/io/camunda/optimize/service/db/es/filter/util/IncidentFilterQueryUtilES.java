@@ -37,15 +37,15 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class IncidentFilterQueryUtilES extends IncidentFilterQueryUtil {
+public final class IncidentFilterQueryUtilES extends IncidentFilterQueryUtil {
 
   private static final NestedDefinitionQueryBuilderES NESTED_DEFINITION_QUERY_BUILDER =
       new NestedDefinitionQueryBuilderES(
           INCIDENTS, INCIDENT_DEFINITION_KEY, INCIDENT_DEFINITION_VERSION, INCIDENT_TENANT_ID);
 
-  private static Map<
+  private static final Map<
           Class<? extends ProcessFilterDto<?>>, Function<BoolQuery.Builder, BoolQuery.Builder>>
-      incidentViewFilterInstanceQueries =
+      INCIDENT_VIEW_FILTER_INSTANCE_QUERIES =
           ImmutableMap.of(
               OpenIncidentFilterDto.class,
               IncidentFilterQueryUtilES::createOpenIncidentTermQuery,
@@ -96,16 +96,16 @@ public class IncidentFilterQueryUtilES extends IncidentFilterQueryUtil {
     final List<ProcessFilterDto<?>> viewLevelFiltersForInstanceMatch =
         filters.stream()
             .filter(filter -> FilterApplicationLevel.VIEW.equals(filter.getFilterLevel()))
-            .filter(filter -> incidentViewFilterInstanceQueries.containsKey(filter.getClass()))
+            .filter(filter -> INCIDENT_VIEW_FILTER_INSTANCE_QUERIES.containsKey(filter.getClass()))
             .collect(Collectors.toList());
     if (!viewLevelFiltersForInstanceMatch.isEmpty()) {
       final BoolQuery.Builder viewFilterInstanceQuery = new BoolQuery.Builder();
       viewLevelFiltersForInstanceMatch.forEach(
           filter ->
-              incidentViewFilterInstanceQueries
+              INCIDENT_VIEW_FILTER_INSTANCE_QUERIES
                   .get(filter.getClass())
                   .apply(viewFilterInstanceQuery));
-      NestedQuery.Builder builder = new NestedQuery.Builder();
+      final NestedQuery.Builder builder = new NestedQuery.Builder();
       builder
           .path(INCIDENTS)
           .scoreMode(ChildScoreMode.None)
@@ -116,7 +116,7 @@ public class IncidentFilterQueryUtilES extends IncidentFilterQueryUtil {
   }
 
   public static Query.Builder createResolvedIncidentTermQuery() {
-    Query.Builder builder = new Query.Builder();
+    final Query.Builder builder = new Query.Builder();
     builder.bool(b -> createResolvedIncidentTermQuery(new BoolQuery.Builder()));
     return builder;
   }

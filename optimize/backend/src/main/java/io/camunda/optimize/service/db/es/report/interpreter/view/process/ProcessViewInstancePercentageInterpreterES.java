@@ -38,7 +38,7 @@ public class ProcessViewInstancePercentageInterpreterES implements ProcessViewIn
   @Override
   public Map<String, Aggregation.Builder.ContainerBuilder> createAggregations(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    Aggregation.Builder builder = new Aggregation.Builder();
+    final Aggregation.Builder builder = new Aggregation.Builder();
     return Map.of(FREQUENCY_AGGREGATION, builder.filter(f -> f.matchAll(m -> m)));
   }
 

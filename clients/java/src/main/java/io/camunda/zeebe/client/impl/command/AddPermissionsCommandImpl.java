@@ -27,9 +27,9 @@ import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.protocol.rest.AuthorizationPatchRequest;
 import io.camunda.zeebe.client.protocol.rest.AuthorizationPatchRequest.ActionEnum;
-import io.camunda.zeebe.client.protocol.rest.AuthorizationPatchRequest.ResourceTypeEnum;
-import io.camunda.zeebe.client.protocol.rest.AuthorizationPatchRequestPermissionsInner;
-import io.camunda.zeebe.client.protocol.rest.AuthorizationPatchRequestPermissionsInner.PermissionTypeEnum;
+import io.camunda.zeebe.client.protocol.rest.PermissionDTO;
+import io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum;
+import io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -46,7 +46,7 @@ public class AddPermissionsCommandImpl
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
-  private AuthorizationPatchRequestPermissionsInner currentPermission;
+  private PermissionDTO currentPermission;
 
   public AddPermissionsCommandImpl(
       final long ownerKey, final HttpClient httpClient, final JsonMapper jsonMapper) {
@@ -67,7 +67,7 @@ public class AddPermissionsCommandImpl
   @Override
   public AddPermissionsCommandStep3 permission(final PermissionTypeEnum permissionType) {
     ArgumentUtil.ensureNotNull("permissionType", permissionType);
-    currentPermission = new AuthorizationPatchRequestPermissionsInner();
+    currentPermission = new PermissionDTO();
     currentPermission.permissionType(permissionType);
     request.addPermissionsItem(currentPermission);
     return this;

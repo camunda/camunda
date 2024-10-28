@@ -43,35 +43,35 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class SharingReaderES implements SharingReader {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(SharingReaderES.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(SharingReaderES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
 
   public SharingReaderES(
-      OptimizeElasticsearchClient esClient,
-      ConfigurationService configurationService,
-      ObjectMapper objectMapper) {
+      final OptimizeElasticsearchClient esClient,
+      final ConfigurationService configurationService,
+      final ObjectMapper objectMapper) {
     this.esClient = esClient;
     this.configurationService = configurationService;
     this.objectMapper = objectMapper;
   }
 
   @Override
-  public Optional<ReportShareRestDto> getReportShare(String shareId) {
+  public Optional<ReportShareRestDto> getReportShare(final String shareId) {
     Optional<ReportShareRestDto> result = Optional.empty();
-    log.debug("Fetching report share with id [{}]", shareId);
+    LOG.debug("Fetching report share with id [{}]", shareId);
 
-    GetResponse<ReportShareRestDto> getResponse;
+    final GetResponse<ReportShareRestDto> getResponse;
     try {
       getResponse =
           esClient.get(
               OptimizeGetRequestBuilderES.of(
                   g -> g.optimizeIndex(esClient, REPORT_SHARE_INDEX_NAME).id(shareId)),
               ReportShareRestDto.class);
-    } catch (IOException e) {
-      String reason = String.format("Could not fetch report share with id [%s]", shareId);
-      log.error(reason, e);
+    } catch (final IOException e) {
+      final String reason = String.format("Could not fetch report share with id [%s]", shareId);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
@@ -82,20 +82,20 @@ public class SharingReaderES implements SharingReader {
   }
 
   @Override
-  public Optional<DashboardShareRestDto> findDashboardShare(String shareId) {
+  public Optional<DashboardShareRestDto> findDashboardShare(final String shareId) {
     Optional<DashboardShareRestDto> result = Optional.empty();
-    log.debug("Fetching dashboard share with id [{}]", shareId);
+    LOG.debug("Fetching dashboard share with id [{}]", shareId);
 
-    GetResponse<DashboardShareRestDto> getResponse;
+    final GetResponse<DashboardShareRestDto> getResponse;
     try {
       getResponse =
           esClient.get(
               OptimizeGetRequestBuilderES.of(
                   g -> g.optimizeIndex(esClient, DASHBOARD_SHARE_INDEX_NAME).id(shareId)),
               DashboardShareRestDto.class);
-    } catch (IOException e) {
-      String reason = String.format("Could not fetch dashboard share with id [%s]", shareId);
-      log.error(reason, e);
+    } catch (final IOException e) {
+      final String reason = String.format("Could not fetch dashboard share with id [%s]", shareId);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
@@ -106,27 +106,27 @@ public class SharingReaderES implements SharingReader {
   }
 
   @Override
-  public Optional<ReportShareRestDto> findShareForReport(String reportId) {
-    log.debug("Fetching share for resource [{}]", reportId);
-    Query.Builder builder = new Query.Builder();
+  public Optional<ReportShareRestDto> findShareForReport(final String reportId) {
+    LOG.debug("Fetching share for resource [{}]", reportId);
+    final Query.Builder builder = new Query.Builder();
     builder.bool(
         b -> b.must(m -> m.term(t -> t.field(ReportShareIndex.REPORT_ID).value(reportId))));
     return findReportShareByQuery(builder);
   }
 
   @Override
-  public Optional<DashboardShareRestDto> findShareForDashboard(String dashboardId) {
-    log.debug("Fetching share for resource [{}]", dashboardId);
+  public Optional<DashboardShareRestDto> findShareForDashboard(final String dashboardId) {
+    LOG.debug("Fetching share for resource [{}]", dashboardId);
 
-    SearchResponse<DashboardShareRestDto> searchResponse =
+    final SearchResponse<DashboardShareRestDto> searchResponse =
         performSearchShareForDashboardIdRequest(dashboardId, DashboardShareRestDto.class);
     return extractDashboardShareFromResponse(dashboardId, searchResponse);
   }
 
   @Override
-  public Map<String, ReportShareRestDto> findShareForReports(List<String> reports) {
+  public Map<String, ReportShareRestDto> findShareForReports(final List<String> reports) {
 
-    Query.Builder builder = new Query.Builder();
+    final Query.Builder builder = new Query.Builder();
     builder.bool(
         b ->
             b.must(
@@ -141,8 +141,8 @@ public class SharingReaderES implements SharingReader {
   }
 
   @Override
-  public Map<String, DashboardShareRestDto> findShareForDashboards(List<String> dashboards) {
-    Query.Builder builder = new Query.Builder();
+  public Map<String, DashboardShareRestDto> findShareForDashboards(final List<String> dashboards) {
+    final Query.Builder builder = new Query.Builder();
     builder.bool(
         b ->
             b.must(
@@ -157,19 +157,19 @@ public class SharingReaderES implements SharingReader {
     return findDashboardSharesByQuery(builder);
   }
 
-  private Optional<ReportShareRestDto> findReportShareByQuery(Query.Builder query) {
+  private Optional<ReportShareRestDto> findReportShareByQuery(final Query.Builder query) {
     Optional<ReportShareRestDto> result = Optional.empty();
 
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         OptimizeSearchRequestBuilderES.of(
             s -> s.optimizeIndex(esClient, REPORT_SHARE_INDEX_NAME).query(query.build()).size(1));
 
-    SearchResponse<ReportShareRestDto> searchResponse;
+    final SearchResponse<ReportShareRestDto> searchResponse;
     try {
       searchResponse = esClient.search(searchRequest, ReportShareRestDto.class);
-    } catch (IOException e) {
-      String reason = "Was not able to fetch report share.";
-      log.error(reason, e);
+    } catch (final IOException e) {
+      final String reason = "Was not able to fetch report share.";
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
@@ -185,14 +185,14 @@ public class SharingReaderES implements SharingReader {
       return esClient
           .count(OptimizeCountRequestBuilderES.of(c -> c.optimizeIndex(esClient, indexName)))
           .count();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(
           String.format("Was not able to retrieve count for type: %s", indexName), e);
     }
   }
 
   private Optional<DashboardShareRestDto> extractDashboardShareFromResponse(
-      String dashboardId, SearchResponse<DashboardShareRestDto> searchResponse) {
+      final String dashboardId, final SearchResponse<DashboardShareRestDto> searchResponse) {
     Optional<DashboardShareRestDto> result = Optional.empty();
     if (searchResponse.hits().total().value() != 0) {
       result = Optional.of(searchResponse.hits().hits().get(0).source());
@@ -201,8 +201,8 @@ public class SharingReaderES implements SharingReader {
   }
 
   private <T> SearchResponse<T> performSearchShareForDashboardIdRequest(
-      String dashboardId, Class<T> clas) {
-    SearchRequest searchRequest =
+      final String dashboardId, final Class<T> clas) {
+    final SearchRequest searchRequest =
         OptimizeSearchRequestBuilderES.of(
             s ->
                 s.optimizeIndex(esClient, DASHBOARD_SHARE_INDEX_NAME)
@@ -218,20 +218,20 @@ public class SharingReaderES implements SharingReader {
                                                         .value(dashboardId)))))
                     .size(1));
 
-    SearchResponse<T> searchResponse;
+    final SearchResponse<T> searchResponse;
     try {
       searchResponse = esClient.search(searchRequest, clas);
-    } catch (IOException e) {
-      String reason =
+    } catch (final IOException e) {
+      final String reason =
           String.format("Was not able to fetch share for dashboard with id [%s]", dashboardId);
-      log.error(reason, e);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
     return searchResponse;
   }
 
-  private Map<String, ReportShareRestDto> findReportSharesByQuery(Query.Builder query) {
-    SearchRequest searchRequest =
+  private Map<String, ReportShareRestDto> findReportSharesByQuery(final Query.Builder query) {
+    final SearchRequest searchRequest =
         OptimizeSearchRequestBuilderES.of(
             s ->
                 s.optimizeIndex(esClient, REPORT_SHARE_INDEX_NAME)
@@ -245,15 +245,15 @@ public class SharingReaderES implements SharingReader {
                                         .getScrollTimeoutInSeconds()
                                     + "s")));
 
-    SearchResponse<ReportShareRestDto> scrollResp;
+    final SearchResponse<ReportShareRestDto> scrollResp;
     try {
       scrollResp = esClient.search(searchRequest, ReportShareRestDto.class);
-    } catch (IOException e) {
-      log.error("Was not able to retrieve report shares!", e);
+    } catch (final IOException e) {
+      LOG.error("Was not able to retrieve report shares!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve report shares!", e);
     }
 
-    List<ReportShareRestDto> reportShareDtos =
+    final List<ReportShareRestDto> reportShareDtos =
         ElasticsearchReaderUtil.retrieveAllScrollResults(
             scrollResp,
             ReportShareRestDto.class,
@@ -265,8 +265,8 @@ public class SharingReaderES implements SharingReader {
         .collect(Collectors.toMap(ReportShareRestDto::getReportId, Function.identity()));
   }
 
-  private Map<String, DashboardShareRestDto> findDashboardSharesByQuery(Query.Builder query) {
-    SearchRequest searchRequest =
+  private Map<String, DashboardShareRestDto> findDashboardSharesByQuery(final Query.Builder query) {
+    final SearchRequest searchRequest =
         OptimizeSearchRequestBuilderES.of(
             s ->
                 s.optimizeIndex(esClient, DASHBOARD_SHARE_INDEX_NAME)
@@ -280,15 +280,15 @@ public class SharingReaderES implements SharingReader {
                                         .getScrollTimeoutInSeconds()
                                     + "s")));
 
-    SearchResponse<DashboardShareRestDto> scrollResp;
+    final SearchResponse<DashboardShareRestDto> scrollResp;
     try {
       scrollResp = esClient.search(searchRequest, DashboardShareRestDto.class);
-    } catch (IOException e) {
-      log.error("Was not able to retrieve dashboard shares!", e);
+    } catch (final IOException e) {
+      LOG.error("Was not able to retrieve dashboard shares!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve dashboard shares!", e);
     }
 
-    List<DashboardShareRestDto> dashboardShareDtos =
+    final List<DashboardShareRestDto> dashboardShareDtos =
         ElasticsearchReaderUtil.retrieveAllScrollResults(
             scrollResp,
             DashboardShareRestDto.class,

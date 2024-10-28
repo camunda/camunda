@@ -18,32 +18,32 @@ import org.springframework.stereotype.Component;
 @Component
 public class ExternalProcessVariableWriter {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ExternalProcessVariableWriter.class);
-  private VariableRepository variableRepository;
-  private TaskRepository taskRepository;
+  private final VariableRepository variableRepository;
+  private final TaskRepository taskRepository;
 
   public ExternalProcessVariableWriter(
-      VariableRepository variableRepository, TaskRepository taskRepository) {
+      final VariableRepository variableRepository, final TaskRepository taskRepository) {
     this.variableRepository = variableRepository;
     this.taskRepository = taskRepository;
   }
 
   public void writeExternalProcessVariables(final List<ExternalProcessVariableDto> variables) {
     final String itemName = "external process variables";
-    log.debug("Writing {} {} to Database.", variables.size(), itemName);
+    LOG.debug("Writing {} {} to Database.", variables.size(), itemName);
     variableRepository.writeExternalProcessVariables(variables, itemName);
   }
 
   public void deleteExternalVariablesIngestedBefore(final OffsetDateTime timestamp) {
     final String deletedItemIdentifier =
         String.format("external variables with timestamp older than %s", timestamp);
-    log.info("Deleting {}", deletedItemIdentifier);
+    LOG.info("Deleting {}", deletedItemIdentifier);
     taskRepository.executeWithTaskMonitoring(
         "indices:data/write/delete/byquery",
         () ->
             variableRepository.deleteExternalVariablesIngestedBefore(
                 timestamp, deletedItemIdentifier),
-        log);
+        LOG);
   }
 }

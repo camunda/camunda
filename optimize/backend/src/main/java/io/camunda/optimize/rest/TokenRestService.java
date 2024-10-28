@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class TokenRestService {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(TokenRestService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(TokenRestService.class);
   private final Optional<CloudSaasMetaInfoService> cloudSaasMetaInfoService;
 
   public TokenRestService(final Optional<CloudSaasMetaInfoService> cloudSaasMetaInfoService) {

@@ -35,7 +35,7 @@ function useStartProcess(
     ...options,
     mutationFn: async ({bpmnProcessId, variables = [], tenantId}) => {
       const {response, error} = await request(
-        api.startProcess({
+        api.v1.startProcess({
           bpmnProcessId,
           variables,
           tenantId,

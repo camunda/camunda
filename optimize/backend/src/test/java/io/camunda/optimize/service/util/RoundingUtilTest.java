@@ -18,7 +18,7 @@ public class RoundingUtilTest {
 
   @ParameterizedTest
   @MethodSource("roundDownScenarios")
-  public void testRoundDownToNearestPowerOfTen(double input, double expectedOutput) {
+  public void testRoundDownToNearestPowerOfTen(final double input, final double expectedOutput) {
     assertThat(RoundingUtil.roundDownToNearestPowerOfTen(input)).isEqualTo(expectedOutput);
   }
 
@@ -35,7 +35,7 @@ public class RoundingUtilTest {
 
   @ParameterizedTest
   @MethodSource("roundUpScenarios")
-  public void testRoundUpToNearestPowerOfTen(double input, double expectedOutput) {
+  public void testRoundUpToNearestPowerOfTen(final double input, final double expectedOutput) {
     assertThat(RoundingUtil.roundUpToNearestPowerOfTen(input)).isEqualTo(expectedOutput);
   }
 

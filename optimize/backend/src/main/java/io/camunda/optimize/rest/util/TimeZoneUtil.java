@@ -17,10 +17,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.Set;
 import org.slf4j.Logger;
 
-public class TimeZoneUtil {
+public final class TimeZoneUtil {
 
   private static final Set<String> AVAILABLE_ZONE_IDS = ZoneId.getAvailableZoneIds();
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(TimeZoneUtil.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(TimeZoneUtil.class);
 
   private TimeZoneUtil() {}
 
@@ -29,7 +29,7 @@ public class TimeZoneUtil {
     if (AVAILABLE_ZONE_IDS.contains(headerString)) {
       return ZoneId.of(headerString);
     } else if (headerString != null) {
-      log.warn(
+      LOG.warn(
           "The provided timezone [{}] was not recognized. Falling back to server timezone [{}] instead.",
           headerString,
           ZoneId.systemDefault().getId());

@@ -45,7 +45,7 @@ public class ZeebeProcessInstanceImportService
           ProcessInstanceIntent.ELEMENT_ACTIVATING);
   private static final Set<BpmnElementType> TYPES_TO_IGNORE =
       Set.of(BpmnElementType.UNSPECIFIED, BpmnElementType.SEQUENCE_FLOW);
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ZeebeProcessInstanceImportService.class);
 
   public ZeebeProcessInstanceImportService(
@@ -84,7 +84,7 @@ public class ZeebeProcessInstanceImportService
                             Collectors.collectingAndThen(
                                 Collectors.toList(), this::createProcessInstanceForData))))
                 .values());
-    log.debug(
+    LOG.debug(
         "Processing {} fetched zeebe process instance records, of which {} are relevant to Optimize and will be imported.",
         zeebeRecords.size(),
         optimizeDtos.size());

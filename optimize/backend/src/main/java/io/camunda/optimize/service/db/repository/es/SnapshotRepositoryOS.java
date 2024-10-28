@@ -30,12 +30,12 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class SnapshotRepositoryOS implements SnapshotRepository {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(SnapshotRepositoryOS.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(SnapshotRepositoryOS.class);
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
 
   public SnapshotRepositoryOS(
-      OptimizeOpenSearchClient osClient, ConfigurationService configurationService) {
+      final OptimizeOpenSearchClient osClient, final ConfigurationService configurationService) {
     this.osClient = osClient;
     this.configurationService = configurationService;
   }
@@ -62,7 +62,7 @@ public class SnapshotRepositoryOS implements SnapshotRepository {
 
   @Override
   public void triggerSnapshot(final String snapshotName, final String[] indexNames) {
-    log.info("Triggering async snapshot {}.", snapshotName);
+    LOG.info("Triggering async snapshot {}.", snapshotName);
     osClient
         .getRichOpenSearchClient()
         .async()
@@ -89,27 +89,27 @@ public class SnapshotRepositoryOS implements SnapshotRepository {
           format(
               "Encountered an error connecting to Opensearch while attempting to delete snapshots for backupID [%s].",
               backupId);
-      log.error(reason, e);
+      LOG.error(reason, e);
     } else {
-      String reason = format("Failed to delete snapshots for backupID [%s]", backupId);
-      log.error(reason, e);
+      final String reason = format("Failed to delete snapshots for backupID [%s]", backupId);
+      LOG.error(reason, e);
     }
   }
 
   private void onSnapshotDeleted(
       final DeleteSnapshotResponse deleteSnapshotResponse, final Long backupId) {
     if (deleteSnapshotResponse.acknowledged()) {
-      String reason =
+      final String reason =
           format(
               "Request to delete all Optimize snapshots with the backupID [%d] successfully submitted",
               backupId);
-      log.info(reason);
+      LOG.info(reason);
     } else {
-      String reason =
+      final String reason =
           format(
               "Request to delete all Optimize snapshots with the backupID [%d] was not acknowledged by Opencsearch.",
               backupId);
-      log.error(reason);
+      LOG.error(reason);
     }
   }
 
@@ -119,10 +119,10 @@ public class SnapshotRepositoryOS implements SnapshotRepository {
           format(
               "Encountered an error connecting to Elasticsearch while attempting to create snapshot [%s].",
               snapshotName);
-      log.error(reason, e);
+      LOG.error(reason, e);
     } else {
       final String reason = format("Failed to take snapshot [%s]", snapshotName);
-      log.error(reason, e);
+      LOG.error(reason, e);
     }
   }
 
@@ -130,20 +130,20 @@ public class SnapshotRepositoryOS implements SnapshotRepository {
     final SnapshotInfo snapshotInfo = createSnapshotResponse.snapshot();
     switch (snapshotInfo
         .state()) { // should not be null as waitForCompletion is true on snapshot request
-      case SUCCESS -> log.info("Successfully taken snapshot [{}].", snapshotInfo.snapshot());
+      case SUCCESS -> LOG.info("Successfully taken snapshot [{}].", snapshotInfo.snapshot());
       case FAILED -> {
         final String reason =
             format(
                 "Snapshot execution failed for [%s], reason: %s",
                 snapshotInfo.snapshot(), snapshotInfo.reason());
-        log.error(reason);
+        LOG.error(reason);
       }
       default -> {
         final String reason =
             format(
                 "Snapshot status [%s] for snapshot with ID [%s]",
                 snapshotInfo.state(), snapshotInfo.snapshot());
-        log.warn(reason);
+        LOG.warn(reason);
       }
     }
   }

@@ -40,7 +40,7 @@ public class CustomerOnboardingDataImportService {
       "customer_onboarding_definition.json";
   private static final String PROCESSED_INSTANCES = "customer_onboarding_process_instances.json";
   private static final int BATCH_SIZE = 2000;
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(CustomerOnboardingDataImportService.class);
   private final ProcessDefinitionWriter processDefinitionWriter;
   private final ObjectMapper objectMapper;
@@ -49,11 +49,11 @@ public class CustomerOnboardingDataImportService {
   private final ProcessInstanceRepository processInstanceRepository;
 
   public CustomerOnboardingDataImportService(
-      ProcessDefinitionWriter processDefinitionWriter,
-      ObjectMapper objectMapper,
-      ConfigurationService configurationService,
-      ProcessInstanceWriter processInstanceWriter,
-      ProcessInstanceRepository processInstanceRepository) {
+      final ProcessDefinitionWriter processDefinitionWriter,
+      final ObjectMapper objectMapper,
+      final ConfigurationService configurationService,
+      final ProcessInstanceWriter processInstanceWriter,
+      final ProcessInstanceRepository processInstanceRepository) {
     this.processDefinitionWriter = processDefinitionWriter;
     this.objectMapper = objectMapper;
     this.configurationService = configurationService;
@@ -69,10 +69,10 @@ public class CustomerOnboardingDataImportService {
   public void importData(
       final String processInstances, final String processDefinition, final int batchSize) {
     if (configurationService.getCustomerOnboardingImport()) {
-      log.info("C8 Customer onboarding data enabled, importing data");
+      LOG.info("C8 Customer onboarding data enabled, importing data");
       importCustomerOnboardingData(processDefinition, processInstances, batchSize);
     } else {
-      log.info("C8 Customer onboarding data disabled, will not perform data import");
+      LOG.info("C8 Customer onboarding data disabled, will not perform data import");
     }
   }
 
@@ -93,20 +93,20 @@ public class CustomerOnboardingDataImportService {
                     readProcessInstanceJson(pathToProcessInstances, batchSize);
                   },
                   () ->
-                      log.error(
+                      LOG.error(
                           "Process definition data is invalid. Please check your json file."));
         } else {
-          log.error(
+          LOG.error(
               "Could not extract process definition from file in path: "
                   + CUSTOMER_ONBOARDING_DEFINITION);
         }
       } else {
-        log.error("Process definition could not be loaded. Please validate your json file.");
+        LOG.error("Process definition could not be loaded. Please validate your json file.");
       }
     } catch (final IOException e) {
-      log.error("Unable to add a process definition to database", e);
+      LOG.error("Unable to add a process definition to database", e);
     }
-    log.info("Customer onboarding data import complete");
+    LOG.info("Customer onboarding data import complete");
   }
 
   private void readProcessInstanceJson(final String pathToProcessInstances, final int batchSize) {
@@ -128,18 +128,18 @@ public class CustomerOnboardingDataImportService {
                 processInstanceDtos.add(processInstance);
               }
             } else {
-              log.error("Process instance not loaded correctly. Please check your json file.");
+              LOG.error("Process instance not loaded correctly. Please check your json file.");
             }
           }
           loadProcessInstancesToDatabase(processInstanceDtos, batchSize);
         } else {
-          log.error(
+          LOG.error(
               "Could not load Camunda Customer Onboarding Demo process instances to input stream. Please validate the process "
                   + "instance json file.");
         }
       }
     } catch (final IOException e) {
-      log.error("Could not parse Camunda Customer Onboarding Demo process instances file.", e);
+      LOG.error("Could not parse Camunda Customer Onboarding Demo process instances file.", e);
     }
   }
 

@@ -51,7 +51,9 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
 
   @Override
   public Either<Failure, Void> createMetadata(
-      final DeploymentResource resource, final DeploymentRecord deployment) {
+      final DeploymentResource resource,
+      final DeploymentRecord deployment,
+      final DeploymentResourceContext context) {
     return parseForm(resource)
         .flatMap(
             form ->
@@ -65,10 +67,9 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
   }
 
   @Override
-  public Either<Failure, Void> writeRecords(
-      final DeploymentResource resource, final DeploymentRecord deployment) {
+  public void writeRecords(final DeploymentResource resource, final DeploymentRecord deployment) {
     if (deployment.hasDuplicatesOnly()) {
-      return Either.right(null);
+      return;
     }
     final var checksum = checksumGenerator.apply(resource.getResource());
     deployment.formMetadata().stream()
@@ -90,7 +91,6 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
               }
               writeFormRecord(metadata, resource);
             });
-    return Either.right(null);
   }
 
   private Either<Failure, Form> parseForm(final DeploymentResource resource) {

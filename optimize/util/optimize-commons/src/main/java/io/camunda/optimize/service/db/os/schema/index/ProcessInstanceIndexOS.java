@@ -17,7 +17,7 @@ import org.opensearch.client.opensearch.indices.IndexSettings;
 
 public class ProcessInstanceIndexOS extends ProcessInstanceIndex<IndexSettings.Builder> {
 
-  public ProcessInstanceIndexOS(String processInstanceIndexKey) {
+  public ProcessInstanceIndexOS(final String processInstanceIndexKey) {
     super(processInstanceIndexKey);
   }
 
@@ -29,7 +29,7 @@ public class ProcessInstanceIndexOS extends ProcessInstanceIndex<IndexSettings.B
 
   @Override
   public IndexSettings.Builder getStaticSettings(
-      IndexSettings.Builder contentBuilder, ConfigurationService configurationService)
+      final IndexSettings.Builder contentBuilder, final ConfigurationService configurationService)
       throws IOException {
     return addStaticSetting(
         NUMBER_OF_SHARDS_SETTING,

@@ -16,7 +16,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepor
 import io.camunda.optimize.service.db.schema.index.DecisionInstanceIndex;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 
-public class InstanceIndexUtil {
+public final class InstanceIndexUtil {
 
   private InstanceIndexUtil() {}
 

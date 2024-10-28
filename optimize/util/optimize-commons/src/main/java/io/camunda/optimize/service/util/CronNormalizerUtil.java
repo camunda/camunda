@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.service.util;
 
-public class CronNormalizerUtil {
+public final class CronNormalizerUtil {
 
   private CronNormalizerUtil() {}
 

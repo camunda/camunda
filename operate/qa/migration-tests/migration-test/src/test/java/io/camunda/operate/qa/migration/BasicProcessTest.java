@@ -38,6 +38,7 @@ import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForLis
 import io.camunda.webapps.schema.entities.operate.listview.VariableForListViewEntity;
 import io.camunda.webapps.schema.entities.operate.post.PostImporterActionType;
 import io.camunda.webapps.schema.entities.operate.post.PostImporterQueueEntity;
+import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import java.io.IOException;
 import java.io.UncheckedIOException;

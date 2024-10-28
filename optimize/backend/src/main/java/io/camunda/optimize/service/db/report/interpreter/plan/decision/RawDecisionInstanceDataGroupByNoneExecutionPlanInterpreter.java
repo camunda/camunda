@@ -37,7 +37,7 @@ public interface RawDecisionInstanceDataGroupByNoneExecutionPlanInterpreter
   default void addNewVariablesAndDtoFieldsToTableColumnConfig(
       final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> executionContext,
       final CommandEvaluationResult<Object> result) {
-    List<RawDataDecisionInstanceDto> firstMeasureData =
+    final List<RawDataDecisionInstanceDto> firstMeasureData =
         (List<RawDataDecisionInstanceDto>) result.getFirstMeasureData();
     final List<String> variableNames =
         firstMeasureData.stream()
@@ -55,7 +55,7 @@ public interface RawDecisionInstanceDataGroupByNoneExecutionPlanInterpreter
                 .map(this::getPrefixedOutputVariableId)
                 .toList());
 
-    TableColumnDto tableColumns =
+    final TableColumnDto tableColumns =
         executionContext.getReportData().getConfiguration().getTableColumns();
     tableColumns.addNewAndRemoveUnexpectedVariableColumns(variableNames);
     tableColumns.addDtoColumns(extractAllDecisionInstanceDtoFieldKeys());

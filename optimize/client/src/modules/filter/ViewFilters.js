@@ -10,6 +10,7 @@ import {MenuItem} from '@carbon/react';
 import {MenuDropdown} from '@camunda/camunda-optimize-composite-components';
 import classNames from 'classnames';
 
+import {Select} from 'components';
 import {t} from 'translation';
 import {useUiConfig} from 'hooks';
 
@@ -28,7 +29,7 @@ export default function ViewFilters({openNewFilterModal, processDefinitionIsNotS
         label={t('common.filter.types.flowNodeStatus')}
         onClick={openNewFilterModal('flowNodeStatus')}
       />
-      <MenuItem
+      <Select.Submenu
         className={classNames({'cds--menu-item--disabled': processDefinitionIsNotSelected})}
         label={t('common.filter.types.flowNodeDate')}
       >
@@ -42,7 +43,7 @@ export default function ViewFilters({openNewFilterModal, processDefinitionIsNotS
           label={t('common.filter.types.instanceEndDate')}
           onClick={openNewFilterModal('flowNodeEndDate')}
         />
-      </MenuItem>
+      </Select.Submenu>
       <MenuItem
         label={t('common.filter.types.flowNodeDuration')}
         disabled={processDefinitionIsNotSelected}

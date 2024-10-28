@@ -37,13 +37,6 @@ import org.apache.commons.lang3.tuple.Pair;
 
 public interface ProcessDistributedByProcessInterpreter {
 
-  record ProcessBucket(
-      String procDefKey,
-      String version,
-      String tenant,
-      long docCount,
-      CompositeCommandResult.ViewResult result) {}
-
   String PROC_DEF_KEY_AGG = "processDefKeyAgg";
   String PROC_DEF_VERSION_AGG = "processDefVersionAgg";
   String TENANT_AGG = "tenantAgg";
@@ -89,8 +82,8 @@ public interface ProcessDistributedByProcessInterpreter {
   }
 
   default List<DistributedByResult> retrieveResult(
-      Map<String, List<ProcessBucket>> bucketsByDefKey,
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+      final Map<String, List<ProcessBucket>> bucketsByDefKey,
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     return context.getReportData().getDefinitions().stream()
         .map(
             definition -> {
@@ -113,7 +106,7 @@ public interface ProcessDistributedByProcessInterpreter {
     if (processBuckets.isEmpty()) {
       return emptyViewResult(context);
     }
-    List<ViewMeasure> viewMeasures = new ArrayList<>();
+    final List<ViewMeasure> viewMeasures = new ArrayList<>();
     if (context.getPlan().getView().isFrequency()) {
       final Double totalCount =
           processBuckets.stream()
@@ -122,11 +115,11 @@ public interface ProcessDistributedByProcessInterpreter {
               .sum();
       viewMeasures.add(ViewMeasure.builder().value(totalCount).build());
     } else if (context.getPlan().getView() == PROCESS_VIEW_USER_TASK_DURATION) {
-      for (UserTaskDurationTime userTaskDurationTime :
+      for (final UserTaskDurationTime userTaskDurationTime :
           context.getReportConfiguration().getUserTaskDurationTimes()) {
-        for (AggregationDto aggregationType :
+        for (final AggregationDto aggregationType :
             context.getReportConfiguration().getAggregationTypes()) {
-          Double mergedAggResult =
+          final Double mergedAggResult =
               calculateMergedAggregationResult(
                   processBuckets, aggregationType, userTaskDurationTime);
           viewMeasures.add(
@@ -138,9 +131,9 @@ public interface ProcessDistributedByProcessInterpreter {
         }
       }
     } else {
-      for (AggregationDto aggregationType :
+      for (final AggregationDto aggregationType :
           context.getReportConfiguration().getAggregationTypes()) {
-        Double mergedAggResult =
+        final Double mergedAggResult =
             calculateMergedAggregationResult(processBuckets, aggregationType, null);
         viewMeasures.add(
             ViewMeasure.builder().aggregationType(aggregationType).value(mergedAggResult).build());
@@ -153,13 +146,13 @@ public interface ProcessDistributedByProcessInterpreter {
       final List<ProcessBucket> processBuckets,
       final AggregationDto aggregationType,
       final UserTaskDurationTime userTaskDurationTime) {
-    Map<AggregationDto, List<ViewMeasure>> measuresByAggType =
+    final Map<AggregationDto, List<ViewMeasure>> measuresByAggType =
         processBuckets.stream()
             .map(ProcessBucket::result)
             .flatMap(results -> results.getViewMeasures().stream())
             .filter(measure -> measure.getUserTaskDurationTime() == userTaskDurationTime)
             .collect(Collectors.groupingBy(ViewMeasure::getAggregationType));
-    Double mergedAggResult;
+    final Double mergedAggResult;
     switch (aggregationType.getType()) {
       case MAX ->
           mergedAggResult =
@@ -256,4 +249,11 @@ public interface ProcessDistributedByProcessInterpreter {
   private boolean isProcessReport(final ExecutionContext<ProcessReportDataDto, ?> context) {
     return context.getReportData().getView().getEntity() == ProcessViewEntity.PROCESS_INSTANCE;
   }
+
+  record ProcessBucket(
+      String procDefKey,
+      String version,
+      String tenant,
+      long docCount,
+      CompositeCommandResult.ViewResult result) {}
 }

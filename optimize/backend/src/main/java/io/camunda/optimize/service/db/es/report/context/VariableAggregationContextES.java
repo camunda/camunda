@@ -18,7 +18,7 @@ public class VariableAggregationContextES extends VariableAggregationContext {
   private final BoolQuery baseQueryForMinMaxStats;
   private final Map<String, Aggregation.Builder.ContainerBuilder> subAggregations;
 
-  protected VariableAggregationContextES(VariableAggregationContextESBuilder<?, ?> b) {
+  protected VariableAggregationContextES(final VariableAggregationContextESBuilder<?, ?> b) {
     super(b);
     this.baseQueryForMinMaxStats = b.baseQueryForMinMaxStats;
     this.subAggregations = b.subAggregations;
@@ -64,12 +64,12 @@ public class VariableAggregationContextES extends VariableAggregationContext {
     private BoolQuery baseQueryForMinMaxStats;
     private Map<String, ContainerBuilder> subAggregations;
 
-    public B baseQueryForMinMaxStats(BoolQuery baseQueryForMinMaxStats) {
+    public B baseQueryForMinMaxStats(final BoolQuery baseQueryForMinMaxStats) {
       this.baseQueryForMinMaxStats = baseQueryForMinMaxStats;
       return self();
     }
 
-    public B subAggregations(Map<String, ContainerBuilder> subAggregations) {
+    public B subAggregations(final Map<String, ContainerBuilder> subAggregations) {
       this.subAggregations = subAggregations;
       return self();
     }

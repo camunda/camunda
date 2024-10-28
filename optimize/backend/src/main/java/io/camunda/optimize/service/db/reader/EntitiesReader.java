@@ -44,7 +44,7 @@ public interface EntitiesReader {
       final String locale) {
     if (reportEntity
         instanceof
-        SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
+        final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
       if (singleProcessReportDefinitionRequestDto.getData().isInstantPreviewReport()) {
         return localizationService.getLocalizationForInstantPreviewReportCode(
             locale, reportEntity.getName());

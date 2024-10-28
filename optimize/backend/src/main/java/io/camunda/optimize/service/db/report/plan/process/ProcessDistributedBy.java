@@ -31,7 +31,7 @@ public enum ProcessDistributedBy {
 
   private final ProcessReportDistributedByDto<?> dto;
 
-  private ProcessDistributedBy(ProcessReportDistributedByDto<?> dto) {
+  private ProcessDistributedBy(final ProcessReportDistributedByDto<?> dto) {
     this.dto = dto;
   }
 

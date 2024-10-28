@@ -46,7 +46,7 @@ public class ProcessDefinitionWriterOS extends AbstractProcessDefinitionWriterOS
   private static final Script MARK_AS_ONBOARDED_SCRIPT =
       OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams(
           "ctx._source.onboarded = true", Collections.emptyMap());
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ProcessDefinitionWriterOS.class);
 
   private final ConfigurationService configurationService;
@@ -61,13 +61,13 @@ public class ProcessDefinitionWriterOS extends AbstractProcessDefinitionWriterOS
 
   @Override
   public void importProcessDefinitions(final List<ProcessDefinitionOptimizeDto> procDefs) {
-    log.debug("Writing [{}] process definitions to opensearch", procDefs.size());
+    LOG.debug("Writing [{}] process definitions to opensearch", procDefs.size());
     writeProcessDefinitionInformation(procDefs);
   }
 
   @Override
   public void markDefinitionAsDeleted(final String definitionId) {
-    log.debug("Marking process definition with ID {} as deleted", definitionId);
+    LOG.debug("Marking process definition with ID {} as deleted", definitionId);
     final UpdateRequest.Builder updateReqBuilder =
         new UpdateRequest.Builder<>()
             .index(PROCESS_DEFINITION_INDEX_NAME)
@@ -123,7 +123,7 @@ public class ProcessDefinitionWriterOS extends AbstractProcessDefinitionWriterOS
               }
             });
     if (definitionsUpdated.get()) {
-      log.debug("Marked old process definitions with new deployments as deleted");
+      LOG.debug("Marked old process definitions with new deployments as deleted");
     }
     return definitionsUpdated.get();
   }
@@ -148,7 +148,7 @@ public class ProcessDefinitionWriterOS extends AbstractProcessDefinitionWriterOS
   private void writeProcessDefinitionInformation(
       final List<ProcessDefinitionOptimizeDto> procDefs) {
     final String importItemName = "process definition information";
-    log.debug("Writing [{}] {} to OpenSearch.", procDefs.size(), importItemName);
+    LOG.debug("Writing [{}] {} to OpenSearch.", procDefs.size(), importItemName);
 
     osClient.doImportBulkRequestWithList(
         importItemName,

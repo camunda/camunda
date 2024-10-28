@@ -36,12 +36,12 @@ public class ProcessGroupByAssigneeInterpreterES
   final LocalizationService localizationService;
 
   public ProcessGroupByAssigneeInterpreterES(
-      AssigneeCandidateGroupService assigneeCandidateGroupService,
-      ConfigurationService configurationService,
-      DefinitionService definitionService,
-      ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
-      ProcessViewInterpreterFacadeES viewInterpreter,
-      LocalizationService localizationService) {
+      final AssigneeCandidateGroupService assigneeCandidateGroupService,
+      final ConfigurationService configurationService,
+      final DefinitionService definitionService,
+      final ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
+      final ProcessViewInterpreterFacadeES viewInterpreter,
+      final LocalizationService localizationService) {
     this.assigneeCandidateGroupService = assigneeCandidateGroupService;
     this.configurationService = configurationService;
     this.definitionService = definitionService;

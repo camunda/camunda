@@ -30,7 +30,6 @@ import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTem
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 
 import io.camunda.operate.cache.ProcessCache;
-import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.BatchRequest;
@@ -47,6 +46,7 @@ import io.camunda.webapps.schema.entities.operate.listview.FlowNodeInstanceForLi
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
 import io.camunda.webapps.schema.entities.operate.listview.VariableForListViewEntity;
+import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;

@@ -7,7 +7,7 @@
  */
 package io.camunda.it.rdbms.db;
 
-import static io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures.createAndSaveProcessDefinition;
+import static io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures.createAndSaveProcessDefinition;
 import static io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures.createAndSaveProcessInstances;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

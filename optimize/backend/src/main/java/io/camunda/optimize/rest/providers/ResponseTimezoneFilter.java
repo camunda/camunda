@@ -28,7 +28,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ResponseTimezoneFilter implements ContainerResponseFilter {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ResponseTimezoneFilter.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ResponseTimezoneFilter.class);
 
   public ResponseTimezoneFilter() {}
 

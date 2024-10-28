@@ -57,10 +57,10 @@ public class VariableAggregationServiceOS {
   private final MinMaxStatsServiceOS minMaxStatsService;
 
   public VariableAggregationServiceOS(
-      ConfigurationService configurationService,
-      NumberVariableAggregationServiceOS numberVariableAggregationService,
-      DateAggregationServiceOS dateAggregationService,
-      MinMaxStatsServiceOS minMaxStatsService) {
+      final ConfigurationService configurationService,
+      final NumberVariableAggregationServiceOS numberVariableAggregationService,
+      final DateAggregationServiceOS dateAggregationService,
+      final MinMaxStatsServiceOS minMaxStatsService) {
     this.configurationService = configurationService;
     this.numberVariableAggregationService = numberVariableAggregationService;
     this.dateAggregationService = dateAggregationService;
@@ -182,7 +182,7 @@ public class VariableAggregationServiceOS {
   }
 
   public Map<String, Aggregate> retrieveSubAggregationFromBucketMapEntry(
-      Map.Entry<String, Map<String, Aggregate>> bucketMapEntry) {
+      final Map.Entry<String, Map<String, Aggregate>> bucketMapEntry) {
     final ReverseNestedAggregate reverseNested =
         bucketMapEntry.getValue().get(VARIABLES_INSTANCE_COUNT_AGGREGATION).reverseNested();
     if (reverseNested == null) {

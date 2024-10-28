@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.util;
 
-import io.camunda.operate.entities.OperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

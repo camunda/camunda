@@ -34,11 +34,11 @@ public class ProcessDistributedByCandidateGroupInterpreterES
   private final AssigneeCandidateGroupService assigneeCandidateGroupService;
 
   public ProcessDistributedByCandidateGroupInterpreterES(
-      ProcessViewInterpreterFacadeES viewInterpreter,
-      ConfigurationService configurationService,
-      LocalizationService localizationService,
-      DefinitionService definitionService,
-      AssigneeCandidateGroupService assigneeCandidateGroupService) {
+      final ProcessViewInterpreterFacadeES viewInterpreter,
+      final ConfigurationService configurationService,
+      final LocalizationService localizationService,
+      final DefinitionService definitionService,
+      final AssigneeCandidateGroupService assigneeCandidateGroupService) {
     this.viewInterpreter = viewInterpreter;
     this.configurationService = configurationService;
     this.localizationService = localizationService;

@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.dto.optimize.cloud.panelnotifications;
 
-public class PanelNotificationRequestDto {
+public final class PanelNotificationRequestDto {
 
   private final PanelNotificationDataDto notification;
 

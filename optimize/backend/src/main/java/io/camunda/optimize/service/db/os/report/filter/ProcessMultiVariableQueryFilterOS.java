@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
 public class ProcessMultiVariableQueryFilterOS extends AbstractProcessVariableQueryFilterOS
     implements QueryFilterOS<MultipleVariableFilterDataDto> {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ProcessMultiVariableQueryFilterOS.class);
 
   public ProcessMultiVariableQueryFilterOS() {}
@@ -44,7 +44,7 @@ public class ProcessMultiVariableQueryFilterOS extends AbstractProcessVariableQu
   private Query buildMultiVariableFilterQuery(
       final MultipleVariableFilterDataDto multipleVariableFilter,
       final FilterContext filterContext) {
-    List<Query> queries =
+    final List<Query> queries =
         multipleVariableFilter.getData().stream()
             .map(variableFilter -> createFilterQuery(variableFilter, filterContext.getTimezone()))
             .toList();

@@ -28,7 +28,7 @@ import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.NotNull;
 
 public class OptimizeWrapper {
-  private static final org.slf4j.Logger log =
+  private static final org.slf4j.Logger LOG =
       org.slf4j.LoggerFactory.getLogger(OptimizeWrapper.class);
   private final String optimizeVersion;
   private final String optimizeDirectory;
@@ -54,7 +54,7 @@ public class OptimizeWrapper {
     if (upgradeProcess != null) {
       throw new RuntimeException("Upgrade is already running, wait for it to finish.");
     }
-    log.info(
+    LOG.info(
         "Running upgrade to Optimize {} on {} with port {}...",
         optimizeVersion,
         databaseType.getId(),
@@ -78,10 +78,10 @@ public class OptimizeWrapper {
     }
     upgradeProcess.waitFor(timeoutInMinutes, MINUTES);
     if (upgradeProcess.exitValue() == 0) {
-      log.info("Successfully upgraded to Optimize {}", optimizeVersion);
+      LOG.info("Successfully upgraded to Optimize {}", optimizeVersion);
       upgradeProcess = null;
     } else {
-      log.info(
+      LOG.info(
           "Error output: {}",
           IOUtils.readLines(upgradeProcess.getErrorStream(), Charset.defaultCharset()));
       throw new Exception("Failed upgrading to Optimize " + optimizeVersion);
@@ -94,7 +94,7 @@ public class OptimizeWrapper {
       throw new RuntimeException("Already started, stop it first.");
     }
 
-    log.info("Starting Optimize {}...", optimizeVersion);
+    LOG.info("Starting Optimize {}...", optimizeVersion);
 
     final ProcessBuilder processBuilder =
         new ProcessBuilder()
@@ -108,7 +108,7 @@ public class OptimizeWrapper {
 
     try {
       final HealthClient healthClient = new HealthClient(() -> requestExecutor);
-      log.info("Waiting for Optimize {} to boot...", optimizeVersion);
+      LOG.info("Waiting for Optimize {} to boot...", optimizeVersion);
       await()
           // this delay is here for avoiding race conditions of still running initializations
           .pollDelay(20, SECONDS)
@@ -118,9 +118,9 @@ public class OptimizeWrapper {
           .until(
               healthClient::getReadiness,
               response -> Response.Status.OK.getStatusCode() == response.getStatus());
-      log.info("Optimize {} is up!", optimizeVersion);
+      LOG.info("Optimize {} is up!", optimizeVersion);
     } catch (final Exception e) {
-      log.error("Optimize did not start within 60s.");
+      LOG.error("Optimize did not start within 60s.");
       stop();
       throw e;
     }
@@ -145,11 +145,11 @@ public class OptimizeWrapper {
 
   public synchronized void stop() throws InterruptedException {
     if (process != null) {
-      log.info("Stopping Optimize {}...", optimizeVersion);
+      LOG.info("Stopping Optimize {}...", optimizeVersion);
       process.destroy();
-      log.info("Optimize process exited with code: {}", process.waitFor());
+      LOG.info("Optimize process exited with code: {}", process.waitFor());
       process = null;
-      log.info("Optimize {} was stopped.", optimizeVersion);
+      LOG.info("Optimize {} was stopped.", optimizeVersion);
     }
   }
 }

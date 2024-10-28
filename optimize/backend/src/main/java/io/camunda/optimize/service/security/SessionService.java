@@ -38,7 +38,7 @@ public class SessionService implements ConfigurationReloadable {
 
   private static final String ISSUER = "Optimize-" + Version.RAW_VERSION;
   private static final byte[] DEFAULT_SECRET_BYTES = new byte[64];
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(SessionService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(SessionService.class);
 
   static {
     new SecureRandom().nextBytes(DEFAULT_SECRET_BYTES);
@@ -73,7 +73,7 @@ public class SessionService implements ConfigurationReloadable {
       final DecodedJWT decodedJWT = jwtVerifier.verify(token);
       isValid = isStillValid(decodedJWT);
     } catch (final JWTVerificationException exception) {
-      log.error(
+      LOG.error(
           "Error while validating authentication token. Invalid signature or claims!", exception);
     }
 
@@ -103,7 +103,7 @@ public class SessionService implements ConfigurationReloadable {
     if (dynamicExpiresAtDate
         .map(date -> LocalDateUtil.getCurrentLocalDateTime().isAfter(date))
         .orElse(false)) {
-      log.debug(
+      LOG.debug(
           "Authentication token [{}] has expired at {}!",
           decodedJWT.getToken(),
           dynamicExpiresAtDate);
@@ -112,14 +112,14 @@ public class SessionService implements ConfigurationReloadable {
 
     try {
       if (terminatedSessionService.isSessionTerminated(decodedJWT.getId())) {
-        log.warn(
+        LOG.warn(
             "Authentication token [{}] of already terminated session {} was used!",
             decodedJWT.getToken(),
             decodedJWT.getId());
         isValid = false;
       }
     } catch (final OptimizeRuntimeException e) {
-      log.warn(
+      LOG.warn(
           "Failed checking if session {} is a terminated session, defaulting to handle it as not terminated",
           decodedJWT.getId(),
           e);

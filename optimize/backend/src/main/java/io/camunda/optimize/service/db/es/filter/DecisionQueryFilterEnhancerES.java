@@ -26,9 +26,9 @@ public class DecisionQueryFilterEnhancerES extends DecisionQueryFilterEnhancer
   private final DecisionOutputVariableQueryFilterES decisionOutputVariableQueryFilter;
 
   public DecisionQueryFilterEnhancerES(
-      EvaluationDateQueryFilterES evaluationDateQueryFilter,
-      DecisionInputVariableQueryFilterES decisionInputVariableQueryFilter,
-      DecisionOutputVariableQueryFilterES decisionOutputVariableQueryFilter) {
+      final EvaluationDateQueryFilterES evaluationDateQueryFilter,
+      final DecisionInputVariableQueryFilterES decisionInputVariableQueryFilter,
+      final DecisionOutputVariableQueryFilterES decisionOutputVariableQueryFilter) {
     this.evaluationDateQueryFilter = evaluationDateQueryFilter;
     this.decisionInputVariableQueryFilter = decisionInputVariableQueryFilter;
     this.decisionOutputVariableQueryFilter = decisionOutputVariableQueryFilter;

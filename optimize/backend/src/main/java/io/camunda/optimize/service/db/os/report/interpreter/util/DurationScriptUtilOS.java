@@ -24,7 +24,7 @@ import java.util.Map;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.Script;
 
-public class DurationScriptUtilOS {
+public final class DurationScriptUtilOS {
 
   private DurationScriptUtilOS() {}
 

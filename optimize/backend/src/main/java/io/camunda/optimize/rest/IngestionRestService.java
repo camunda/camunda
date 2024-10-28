@@ -35,11 +35,11 @@ public class IngestionRestService {
 
   public static final String INGESTION_PATH = "/ingestion";
   public static final String VARIABLE_SUB_PATH = "/variable";
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(IngestionRestService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(IngestionRestService.class);
 
   private final ExternalVariableService externalVariableService;
 
-  public IngestionRestService(ExternalVariableService externalVariableService) {
+  public IngestionRestService(final ExternalVariableService externalVariableService) {
     this.externalVariableService = externalVariableService;
   }
 

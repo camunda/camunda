@@ -39,16 +39,16 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class AlertWriterOS implements AlertWriter {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(AlertWriterOS.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(AlertWriterOS.class);
   private final OptimizeOpenSearchClient osClient;
 
-  public AlertWriterOS(OptimizeOpenSearchClient osClient) {
+  public AlertWriterOS(final OptimizeOpenSearchClient osClient) {
     this.osClient = osClient;
   }
 
   @Override
   public AlertDefinitionDto createAlert(final AlertDefinitionDto alertDefinitionDto) {
-    log.debug("Writing new alert to OpenSearch");
+    LOG.debug("Writing new alert to OpenSearch");
 
     final String id = IdGenerator.getNextId();
     alertDefinitionDto.setId(id);
@@ -65,18 +65,18 @@ public class AlertWriterOS implements AlertWriter {
     if (!indexResponse.result().equals(Result.Created)) {
       final String message =
           "Could not write alert to OpenSearch. Maybe the connection to OpenSearch got lost?";
-      log.error(message);
+      LOG.error(message);
       throw new OptimizeRuntimeException(message);
     }
 
-    log.debug("alert with [{}] saved to opensearch", id);
+    LOG.debug("alert with [{}] saved to opensearch", id);
 
     return alertDefinitionDto;
   }
 
   @Override
   public void updateAlert(final AlertDefinitionDto alertUpdate) {
-    log.debug("Updating alert with id [{}] in OpenSearch", alertUpdate.getId());
+    LOG.debug("Updating alert with id [{}] in OpenSearch", alertUpdate.getId());
 
     final UpdateRequest.Builder<Void, AlertDefinitionDto> requestBuilder =
         RequestDSL.<Void, AlertDefinitionDto>updateRequestBuilder(ALERT_INDEX_NAME)
@@ -90,7 +90,7 @@ public class AlertWriterOS implements AlertWriter {
             requestBuilder,
             e -> {
               final String errorMessage = "There were errors while updating alerts to OS.";
-              log.error(errorMessage, e);
+              LOG.error(errorMessage, e);
               return errorMessage + e.getMessage();
             });
 
@@ -99,14 +99,14 @@ public class AlertWriterOS implements AlertWriter {
           format(
               "Was not able to update alert with id [%s] and name [%s]. Error during the update in Opensearch.",
               alertUpdate.getId(), alertUpdate.getName());
-      log.error(errorMessage);
+      LOG.error(errorMessage);
       throw new OptimizeRuntimeException(errorMessage);
     }
   }
 
   @Override
   public void deleteAlert(final String alertId) {
-    log.debug("Deleting alert with id [{}]", alertId);
+    LOG.debug("Deleting alert with id [{}]", alertId);
     final DeleteRequest.Builder request =
         new DeleteRequest.Builder().index(ALERT_INDEX_NAME).id(alertId).refresh(Refresh.True);
 
@@ -118,7 +118,7 @@ public class AlertWriterOS implements AlertWriter {
                   format(
                       "Could not delete alert with id [%s]. Maybe Optimize is not connected to OpenSearch?",
                       alertId);
-              log.error(error, e);
+              LOG.error(error, e);
               return "There were errors while deleting alerts to OS." + e.getMessage();
             });
 
@@ -127,14 +127,14 @@ public class AlertWriterOS implements AlertWriter {
           format(
               "Could not delete alert with id [%s]. Alert does not exist. Maybe it was already deleted by someone else?",
               alertId);
-      log.error(error);
+      LOG.error(error);
       throw new NotFoundException(error);
     }
   }
 
   @Override
   public void deleteAlerts(final List<String> alertIds) {
-    log.debug("Deleting alerts with ids: {}", alertIds);
+    LOG.debug("Deleting alerts with ids: {}", alertIds);
     osClient.deleteByQuery(ids(alertIds), true, ALERT_INDEX_NAME);
   }
 
@@ -143,7 +143,7 @@ public class AlertWriterOS implements AlertWriter {
     record AlertTriggered(boolean triggered) {}
 
     try {
-      log.debug("Writing alert status for alert with id [{}] to OpenSearch", alertId);
+      LOG.debug("Writing alert status for alert with id [{}] to OpenSearch", alertId);
       final UpdateRequest.Builder<Void, AlertTriggered> request =
           new UpdateRequest.Builder<Void, AlertTriggered>()
               .index(ALERT_INDEX_NAME)
@@ -160,11 +160,11 @@ public class AlertWriterOS implements AlertWriter {
                     "Could not update status of alert with id [%s]. "
                         + "Maybe Optimize is not connected to OpenSearch?",
                     alertId);
-            log.error(errorMessage, e);
+            LOG.error(errorMessage, e);
             return "There were errors while updating status alerts to OS." + e.getMessage();
           });
     } catch (final Exception e) {
-      log.error("Can't update status of alert [{}]", alertId, e);
+      LOG.error("Can't update status of alert [{}]", alertId, e);
     }
   }
 

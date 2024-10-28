@@ -7,9 +7,9 @@
  */
 package io.camunda.operate.webapp.rest.dto;
 
-import io.camunda.operate.entities.OperationEntity;
-import io.camunda.operate.entities.OperationState;
-import io.camunda.operate.entities.OperationType;
+import io.camunda.webapps.schema.entities.operation.OperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationState;
+import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 

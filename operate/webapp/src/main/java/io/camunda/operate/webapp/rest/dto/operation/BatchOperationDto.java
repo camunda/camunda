@@ -8,8 +8,8 @@
 package io.camunda.operate.webapp.rest.dto.operation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
+import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;

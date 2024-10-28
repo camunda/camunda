@@ -29,9 +29,9 @@ import java.io.InputStream;
 import org.slf4j.Logger;
 
 /** Bunch of utility methods that might be required during upgrade operation. */
-public class UpgradeUtil {
+public final class UpgradeUtil {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(UpgradeUtil.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(UpgradeUtil.class);
 
   private UpgradeUtil() {}
 
@@ -55,7 +55,7 @@ public class UpgradeUtil {
 
   public static UpgradeExecutionDependencies createUpgradeDependenciesWithAConfigurationService(
       final DatabaseType databaseType, final ConfigurationService configurationService) {
-    OptimizeIndexNameService indexNameService =
+    final OptimizeIndexNameService indexNameService =
         new OptimizeIndexNameService(configurationService, databaseType);
     if (databaseType.equals(DatabaseType.ELASTICSEARCH)) {
       final OptimizeElasticsearchClient esClient =
@@ -77,14 +77,14 @@ public class UpgradeUtil {
           metadataService);
     } else {
       // TODO Evaluate the need for OpenSearchCustomHeaderProvider with OPT-7400
-      OptimizeOpenSearchClient osClient =
+      final OptimizeOpenSearchClient osClient =
           new OptimizeOpenSearchClient(
               OpenSearchClientBuilder.buildOpenSearchClientFromConfig(
                   configurationService, new PluginRepository()),
               OpenSearchClientBuilder.buildOpenSearchAsyncClientFromConfig(
                   configurationService, new PluginRepository()),
               indexNameService);
-      DatabaseMetadataService<OptimizeOpenSearchClient> metadataService =
+      final DatabaseMetadataService<OptimizeOpenSearchClient> metadataService =
           new OpenSearchMetadataService(OPTIMIZE_MAPPER);
       return new UpgradeExecutionDependencies(
           databaseType,
@@ -102,7 +102,7 @@ public class UpgradeUtil {
         UpgradeUtil.class.getClassLoader().getResourceAsStream(filePath)) {
       data = readFromInputStream(inputStream);
     } catch (final IOException e) {
-      log.error("can't read [{}] from classpath", filePath, e);
+      LOG.error("can't read [{}] from classpath", filePath, e);
     }
     return data;
   }

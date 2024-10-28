@@ -18,7 +18,7 @@ public enum DecisionView {
 
   private final DecisionViewDto decisionViewDto;
 
-  private DecisionView(DecisionViewDto decisionViewDto) {
+  private DecisionView(final DecisionViewDto decisionViewDto) {
     this.decisionViewDto = decisionViewDto;
   }
 

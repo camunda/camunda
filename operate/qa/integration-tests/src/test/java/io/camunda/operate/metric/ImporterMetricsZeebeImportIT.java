@@ -12,8 +12,6 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 
 import io.camunda.operate.Metrics;
-import io.camunda.operate.entities.OperationState;
-import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.management.ModelMetricProvider;
 import io.camunda.operate.metric.ImporterMetricsZeebeImportIT.ManagementPropertyRemoval;
 import io.camunda.operate.util.MetricAssert;
@@ -21,6 +19,8 @@ import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.webapp.zeebe.operation.CancelProcessInstanceHandler;
 import io.camunda.operate.webapp.zeebe.operation.ResolveIncidentHandler;
 import io.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
+import io.camunda.webapps.schema.entities.operation.OperationState;
+import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.HashMap;

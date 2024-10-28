@@ -54,35 +54,35 @@ public class ExternalProcessVariableDto implements OptimizeDto {
     return this.serializationDataFormat;
   }
 
-  public void setVariableId(String variableId) {
+  public void setVariableId(final String variableId) {
     this.variableId = variableId;
   }
 
-  public void setVariableName(String variableName) {
+  public void setVariableName(final String variableName) {
     this.variableName = variableName;
   }
 
-  public void setVariableValue(String variableValue) {
+  public void setVariableValue(final String variableValue) {
     this.variableValue = variableValue;
   }
 
-  public void setVariableType(VariableType variableType) {
+  public void setVariableType(final VariableType variableType) {
     this.variableType = variableType;
   }
 
-  public void setIngestionTimestamp(Long ingestionTimestamp) {
+  public void setIngestionTimestamp(final Long ingestionTimestamp) {
     this.ingestionTimestamp = ingestionTimestamp;
   }
 
-  public void setProcessInstanceId(String processInstanceId) {
+  public void setProcessInstanceId(final String processInstanceId) {
     this.processInstanceId = processInstanceId;
   }
 
-  public void setProcessDefinitionKey(String processDefinitionKey) {
+  public void setProcessDefinitionKey(final String processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
   }
 
-  public void setSerializationDataFormat(String serializationDataFormat) {
+  public void setSerializationDataFormat(final String serializationDataFormat) {
     this.serializationDataFormat = serializationDataFormat;
   }
 
@@ -118,6 +118,7 @@ public class ExternalProcessVariableDto implements OptimizeDto {
         + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String variableId = "variableId";

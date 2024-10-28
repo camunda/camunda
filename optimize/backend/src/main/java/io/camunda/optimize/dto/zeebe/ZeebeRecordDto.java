@@ -244,6 +244,7 @@ public abstract class ZeebeRecordDto<VALUE extends RecordValue, INTENT extends I
         + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String position = "position";

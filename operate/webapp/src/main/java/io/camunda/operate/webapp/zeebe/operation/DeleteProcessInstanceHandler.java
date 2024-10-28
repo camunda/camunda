@@ -7,16 +7,16 @@
  */
 package io.camunda.operate.webapp.zeebe.operation;
 
-import static io.camunda.operate.entities.OperationType.DELETE_PROCESS_INSTANCE;
+import static io.camunda.webapps.schema.entities.operation.OperationType.DELETE_PROCESS_INSTANCE;
 
-import io.camunda.operate.entities.OperationEntity;
-import io.camunda.operate.entities.OperationState;
-import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.OperationsManager;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.writer.ProcessInstanceWriter;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.operation.OperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationState;
+import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;

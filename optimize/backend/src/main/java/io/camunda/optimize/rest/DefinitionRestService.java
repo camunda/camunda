@@ -55,7 +55,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 @Component
 public class DefinitionRestService {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DefinitionRestService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(DefinitionRestService.class);
   private final DefinitionService definitionService;
   private final CollectionScopeService collectionScopeService;
   private final SessionService sessionService;
@@ -132,7 +132,7 @@ public class DefinitionRestService {
               final String reason =
                   String.format(
                       "Was not able to find definition for type [%s] and key [%s].", type, key);
-              log.error(reason);
+              LOG.error(reason);
               return new NotFoundException(reason);
             });
   }
@@ -161,7 +161,7 @@ public class DefinitionRestService {
           String.format(
               "Was not able to find definition version for type [%s] and key [%s] in scope of collection [%s].",
               type, key, collectionId);
-      log.error(reason);
+      LOG.error(reason);
       throw new NotFoundException(reason);
     }
 
@@ -272,7 +272,7 @@ public class DefinitionRestService {
           String.format(
               "Was not able to find definition tenants for type [%s], key [%s], versions [%s] in scope of collection [%s].",
               type, definitionKey, versions, scopeCollectionId);
-      log.error(reason);
+      LOG.error(reason);
       throw new NotFoundException(reason);
     }
     return tenants.stream()
@@ -300,7 +300,7 @@ public class DefinitionRestService {
             "Could not find xml for [%s] definition with key [%s] and version [%s]. "
                 + "It is possible that it hasn't been imported yet.",
             type, key, version);
-    log.error(notFoundErrorMessage);
+    LOG.error(notFoundErrorMessage);
     throw new NotFoundException(notFoundErrorMessage);
   }
 }

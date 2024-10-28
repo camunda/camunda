@@ -31,8 +31,8 @@ public class ExecutionPlanInterpreterFacade {
   private final DecisionExecutionPlanInterpreterFacade decisionExecutionPlanInterpreterFacade;
 
   public ExecutionPlanInterpreterFacade(
-      ProcessExecutionPlanInterpreterFacade processExecutionPlanInterpreterFacade,
-      DecisionExecutionPlanInterpreterFacade decisionExecutionPlanInterpreterFacade) {
+      final ProcessExecutionPlanInterpreterFacade processExecutionPlanInterpreterFacade,
+      final DecisionExecutionPlanInterpreterFacade decisionExecutionPlanInterpreterFacade) {
     this.processExecutionPlanInterpreterFacade = processExecutionPlanInterpreterFacade;
     this.decisionExecutionPlanInterpreterFacade = decisionExecutionPlanInterpreterFacade;
   }
@@ -42,8 +42,9 @@ public class ExecutionPlanInterpreterFacade {
     if (context.getPlan() instanceof DecisionExecutionPlan) {
       if (context.getReportData() instanceof DecisionReportDataDto) {
         @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
-        ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> decisionExecutionContext =
-            (ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan>) context;
+        final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan>
+            decisionExecutionContext =
+                (ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan>) context;
         return decisionExecutionPlanInterpreterFacade.interpret(decisionExecutionContext);
       }
     }
@@ -51,7 +52,7 @@ public class ExecutionPlanInterpreterFacade {
     if (context.getPlan() instanceof ProcessExecutionPlan) {
       if (context.getReportData() instanceof ProcessReportDataDto) {
         @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
-        ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> processExecutionContext =
+        final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> processExecutionContext =
             (ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan>) context;
         return processExecutionPlanInterpreterFacade.interpret(processExecutionContext);
       }
@@ -61,11 +62,11 @@ public class ExecutionPlanInterpreterFacade {
         format("No interpreter registred for plan=%s, context=%s", context.getPlan(), context));
   }
 
-  public Optional<MinMaxStatDto> getGroupByMinMaxStats(ExecutionContext context) {
+  public Optional<MinMaxStatDto> getGroupByMinMaxStats(final ExecutionContext context) {
     if (context.getPlan() instanceof ProcessExecutionPlan) {
       if (context.getReportData() instanceof ProcessReportDataDto) {
         @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
-        ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> processExecutionContext =
+        final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> processExecutionContext =
             (ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan>) context;
         return processExecutionPlanInterpreterFacade.getGroupByMinMaxStats(processExecutionContext);
       }

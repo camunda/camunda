@@ -59,7 +59,7 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
       return;
     }
 
-    final var updatedUser = overlayUser(persistedUser.get(), command.getValue());
+    final var updatedUser = overlayUser(persistedUser.get().getUser(), command.getValue());
 
     stateWriter.appendFollowUpEvent(userKey, UserIntent.UPDATED, updatedUser);
     responseWriter.writeEventOnCommand(userKey, UserIntent.UPDATED, updatedUser, command);

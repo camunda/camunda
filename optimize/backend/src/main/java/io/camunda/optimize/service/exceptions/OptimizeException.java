@@ -13,11 +13,11 @@ public class OptimizeException extends Exception {
     super();
   }
 
-  public OptimizeException(String detailedErrorMessage) {
+  public OptimizeException(final String detailedErrorMessage) {
     super(detailedErrorMessage);
   }
 
-  public OptimizeException(String detailedErrorMessage, Exception e) {
+  public OptimizeException(final String detailedErrorMessage, final Exception e) {
     super(detailedErrorMessage, e);
   }
 

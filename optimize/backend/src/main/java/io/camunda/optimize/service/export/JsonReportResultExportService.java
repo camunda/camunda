@@ -25,7 +25,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class JsonReportResultExportService {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(JsonReportResultExportService.class);
   private final PlainReportEvaluationHandler reportEvaluationHandler;
   private final ReportService reportService;
@@ -39,7 +39,7 @@ public class JsonReportResultExportService {
 
   public PaginatedDataExportDto getJsonForEvaluatedReportResult(
       final String reportId, final ZoneId timezone, final PaginationDto paginationInfo) {
-    log.info("Exporting provided report " + reportId + " as JSON.");
+    LOG.info("Exporting provided report " + reportId + " as JSON.");
     final ReportDefinitionDto<ReportDataDto> reportData =
         reportService.getReportDefinition(reportId);
     final ReportDataDto unevaluatedReportData = reportData.getData();
@@ -69,7 +69,7 @@ public class JsonReportResultExportService {
             "All records are delivered in this response regardless of the set limit, since "
                 + "result pagination is only supported for raw data reports.");
       }
-      log.info("Report " + reportId + " exported successfully as JSON.");
+      LOG.info("Report " + reportId + " exported successfully as JSON.");
       return resultAsJson;
     } else {
       throw new BadRequestException("Combined reports cannot be exported as Json");

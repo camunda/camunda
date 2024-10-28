@@ -49,10 +49,10 @@ public class ProcessGroupByFlowNodeInterpreterES extends AbstractGroupByFlowNode
   private final DefinitionService definitionService;
 
   public ProcessGroupByFlowNodeInterpreterES(
-      ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
-      ProcessViewInterpreterFacadeES viewInterpreter,
-      ConfigurationService configurationService,
-      DefinitionService definitionService) {
+      final ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
+      final ProcessViewInterpreterFacadeES viewInterpreter,
+      final ConfigurationService configurationService,
+      final DefinitionService definitionService) {
     this.distributedByInterpreter = distributedByInterpreter;
     this.viewInterpreter = viewInterpreter;
     this.configurationService = configurationService;

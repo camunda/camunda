@@ -29,15 +29,15 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class SettingsReaderES implements SettingsReader {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(SettingsReaderES.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(SettingsReaderES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
   private final ConfigurationService configurationService;
 
   public SettingsReaderES(
-      OptimizeElasticsearchClient esClient,
-      ObjectMapper objectMapper,
-      ConfigurationService configurationService) {
+      final OptimizeElasticsearchClient esClient,
+      final ObjectMapper objectMapper,
+      final ConfigurationService configurationService) {
     this.esClient = esClient;
     this.objectMapper = objectMapper;
     this.configurationService = configurationService;
@@ -45,7 +45,7 @@ public class SettingsReaderES implements SettingsReader {
 
   @Override
   public Optional<SettingsDto> getSettings() {
-    log.debug("Fetching Optimize Settings");
+    LOG.debug("Fetching Optimize Settings");
 
     SettingsDto result = null;
     try {
@@ -60,9 +60,9 @@ public class SettingsReaderES implements SettingsReader {
           result.setSharingEnabled(configurationService.getSharingEnabled());
         }
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String errorMessage = "There was an error while reading settings.";
-      log.error(errorMessage, e);
+      LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
 

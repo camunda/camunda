@@ -15,7 +15,7 @@ public class OpenSearchSyncOperation extends OpenSearchOperation {
   protected OpenSearchClient openSearchClient;
 
   public OpenSearchSyncOperation(
-      OpenSearchClient openSearchClient, final OptimizeIndexNameService indexNameService) {
+      final OpenSearchClient openSearchClient, final OptimizeIndexNameService indexNameService) {
     super(indexNameService);
     this.openSearchClient = openSearchClient;
   }

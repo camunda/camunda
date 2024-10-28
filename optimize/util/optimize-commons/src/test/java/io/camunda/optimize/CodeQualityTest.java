@@ -16,6 +16,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 public class CodeQualityTest {
+
   @Test
   public void testNoLombokUsed() {
     File thisFilePath = null;
@@ -28,11 +29,11 @@ public class CodeQualityTest {
                   .getLocation()
                   .toURI()
                   .getPath());
-    } catch (URISyntaxException e) {
+    } catch (final URISyntaxException e) {
       throw new OptimizeRuntimeException(e);
     }
 
-    File optimizeDirectory =
+    final File optimizeDirectory =
         thisFilePath // test-classes
             .getParentFile() // target
             .getParentFile() // optimize-commons
@@ -42,7 +43,7 @@ public class CodeQualityTest {
     checkForForbiddenAnnotations(optimizeDirectory);
   }
 
-  private static void checkForForbiddenAnnotations(File currentDirectory) {
+  private static void checkForForbiddenAnnotations(final File currentDirectory) {
     final String[] forbiddenStrings = {
       "@NoArgsConstructor",
       "@AllArgsConstructor",
@@ -66,13 +67,13 @@ public class CodeQualityTest {
       return;
     }
 
-    String currentDirectoryName = currentDirectory.getName();
-    if (currentDirectoryName.equals(".") || currentDirectoryName.equals("..")) {
+    final String currentDirectoryName = currentDirectory.getName();
+    if (".".equals(currentDirectoryName) || "..".equals(currentDirectoryName)) {
       return;
     }
 
-    File[] entries = currentDirectory.listFiles();
-    for (File entry : entries) {
+    final File[] entries = currentDirectory.listFiles();
+    for (final File entry : entries) {
       if (entry.isDirectory()) {
         checkForForbiddenAnnotations(entry);
       } else if (!entry.getName().endsWith("CodeQualityTest.java")
@@ -80,11 +81,11 @@ public class CodeQualityTest {
         String fileContent = null;
         try {
           fileContent = new String(Files.readAllBytes(entry.toPath()));
-        } catch (IOException e) {
+        } catch (final IOException e) {
           throw new OptimizeRuntimeException(e);
         }
 
-        for (String forbiddenString : forbiddenStrings) {
+        for (final String forbiddenString : forbiddenStrings) {
           if (fileContent.contains(forbiddenString)) {
             Assertions.fail(
                 "file "

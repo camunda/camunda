@@ -20,7 +20,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-public class DecisionVariableHelper {
+public final class DecisionVariableHelper {
 
   private static final List<VariableType> MULTIVALUE_TYPE_FIELDS =
       Collections.unmodifiableList(

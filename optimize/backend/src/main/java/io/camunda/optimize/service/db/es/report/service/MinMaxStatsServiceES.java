@@ -40,10 +40,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class MinMaxStatsServiceES extends AbstractMinMaxStatsService {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(MinMaxStatsServiceES.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(MinMaxStatsServiceES.class);
   private final OptimizeElasticsearchClient esClient;
 
-  public MinMaxStatsServiceES(OptimizeElasticsearchClient esClient) {
+  public MinMaxStatsServiceES(final OptimizeElasticsearchClient esClient) {
     this.esClient = esClient;
   }
 
@@ -133,9 +133,9 @@ public class MinMaxStatsServiceES extends AbstractMinMaxStatsService {
       final String pathForNestedStatsAgg,
       final Script script,
       final Query filterQueryToWrapStatsWith) {
-    Supplier<Map<String, Aggregation.Builder.ContainerBuilder>> supplier =
+    final Supplier<Map<String, Aggregation.Builder.ContainerBuilder>> supplier =
         () -> {
-          Aggregation.Builder.ContainerBuilder builder =
+          final Aggregation.Builder.ContainerBuilder builder =
               new Aggregation.Builder().stats(s -> s.script(script));
           Map<String, Aggregation.Builder.ContainerBuilder> statsAggregation =
               Map.of(STATS_AGGREGATION_FIRST_FIELD, builder);
@@ -177,14 +177,14 @@ public class MinMaxStatsServiceES extends AbstractMinMaxStatsService {
     final SearchResponse<?> response;
     try {
       response = esClient.search(searchRequest, Object.class);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String reason =
           String.format(
               "Could not retrieve stats for script %s on indices %s",
               script.toString(), Arrays.toString(indexNames));
-      log.error(reason, e);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
-    } catch (RuntimeException e) {
+    } catch (final RuntimeException e) {
       return returnEmptyResultIfInstanceIndexNotFound(e, indexNames);
     }
 
@@ -263,14 +263,14 @@ public class MinMaxStatsServiceES extends AbstractMinMaxStatsService {
     }
 
     if (pathForNestedStatsAgg != null) {
-      Aggregation.Builder.ContainerBuilder builder =
+      final Aggregation.Builder.ContainerBuilder builder =
           new Aggregation.Builder().nested(n -> n.path(pathForNestedStatsAgg));
       builder.aggregations(
           statsAggField1.entrySet().stream()
               .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().build())));
       statsAggField1 = Map.of(NESTED_AGGREGATION_FIRST_FIELD, builder);
 
-      Aggregation.Builder.ContainerBuilder builder1 =
+      final Aggregation.Builder.ContainerBuilder builder1 =
           new Aggregation.Builder().nested(n -> n.path(pathForNestedStatsAgg));
       builder1.aggregations(
           statsAggField2.entrySet().stream()
@@ -278,10 +278,10 @@ public class MinMaxStatsServiceES extends AbstractMinMaxStatsService {
       statsAggField2 = Map.of(NESTED_AGGREGATION_SECOND_FIELD, builder1);
     }
 
-    SearchResponse<?> response;
+    final SearchResponse<?> response;
     try {
-      Map<String, Aggregation.Builder.ContainerBuilder> finalStatsAggField = statsAggField1;
-      Map<String, Aggregation.Builder.ContainerBuilder> finalStatsAggField1 = statsAggField2;
+      final Map<String, Aggregation.Builder.ContainerBuilder> finalStatsAggField = statsAggField1;
+      final Map<String, Aggregation.Builder.ContainerBuilder> finalStatsAggField1 = statsAggField2;
       response =
           esClient.search(
               OptimizeSearchRequestBuilderES.of(
@@ -301,14 +301,14 @@ public class MinMaxStatsServiceES extends AbstractMinMaxStatsService {
                                           Map.Entry::getKey, e -> e.getValue().build())))
                           .size(0)),
               Object.class);
-    } catch (IOException e) {
-      String reason =
+    } catch (final IOException e) {
+      final String reason =
           String.format(
               "Could not retrieve stats for firstField %s and secondField %s on index %s",
               firstField, secondField, Arrays.toString(indexNames));
-      log.error(reason, e);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
-    } catch (RuntimeException e) {
+    } catch (final RuntimeException e) {
       return returnEmptyResultIfInstanceIndexNotFound(e, indexNames);
     }
     return mapCrossFieldStatAggregationsToStatDto(response);
@@ -316,7 +316,7 @@ public class MinMaxStatsServiceES extends AbstractMinMaxStatsService {
 
   private Map<String, Aggregation.Builder.ContainerBuilder> createStatsAggregation(
       final String aggregationName, final String aggregationField, final String format) {
-    Aggregation.Builder.ContainerBuilder builder =
+    final Aggregation.Builder.ContainerBuilder builder =
         new Aggregation.Builder()
             .stats(
                 s -> {

@@ -127,6 +127,7 @@ public class ProcessViewDto implements Combinable {
     return "ProcessViewDto(entity=" + getEntity() + ", properties=" + getProperties() + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String entity = "entity";

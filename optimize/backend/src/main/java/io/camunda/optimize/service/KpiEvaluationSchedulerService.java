@@ -29,7 +29,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class KpiEvaluationSchedulerService extends AbstractScheduledService {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(KpiEvaluationSchedulerService.class);
   private final ProcessOverviewWriter processOverviewWriter;
   private final DefinitionService definitionService;
@@ -54,7 +54,7 @@ public class KpiEvaluationSchedulerService extends AbstractScheduledService {
 
   @PreDestroy
   public synchronized void stopCleanupScheduling() {
-    log.info("Stopping KPI evaluation scheduler");
+    LOG.info("Stopping KPI evaluation scheduler");
     stopScheduling();
   }
 
@@ -64,7 +64,7 @@ public class KpiEvaluationSchedulerService extends AbstractScheduledService {
 
   @Override
   protected void run() {
-    log.debug("Scheduling KPI evaluation tasks for all existing processes.");
+    LOG.debug("Scheduling KPI evaluation tasks for all existing processes.");
     final List<String> processDefinitionKeys =
         definitionService.getAllDefinitionsWithTenants(PROCESS).stream()
             .map(SimpleDefinitionDto::getKey)
@@ -92,7 +92,7 @@ public class KpiEvaluationSchedulerService extends AbstractScheduledService {
 
   @Override
   public synchronized boolean startScheduling() {
-    log.info("Scheduling KPI evaluation scheduler.");
+    LOG.info("Scheduling KPI evaluation scheduler.");
     return super.startScheduling();
   }
 }

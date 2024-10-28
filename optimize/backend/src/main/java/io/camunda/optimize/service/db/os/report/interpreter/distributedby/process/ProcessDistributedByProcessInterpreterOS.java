@@ -51,9 +51,9 @@ public class ProcessDistributedByProcessInterpreterOS
   private final ProcessDefinitionReader processDefinitionReader;
 
   public ProcessDistributedByProcessInterpreterOS(
-      ProcessViewInterpreterFacadeOS viewInterpreter,
-      ConfigurationService configurationService,
-      ProcessDefinitionReader processDefinitionReader) {
+      final ProcessViewInterpreterFacadeOS viewInterpreter,
+      final ConfigurationService configurationService,
+      final ProcessDefinitionReader processDefinitionReader) {
     this.viewInterpreter = viewInterpreter;
     this.configurationService = configurationService;
     this.processDefinitionReader = processDefinitionReader;
@@ -94,10 +94,10 @@ public class ProcessDistributedByProcessInterpreterOS
 
   @Override
   public List<DistributedByResult> retrieveResult(
-      SearchResponse<RawResult> response,
-      Map<String, Aggregate> aggregations,
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    Map<String, List<ProcessBucket>> bucketsByDefKey =
+      final SearchResponse<RawResult> response,
+      final Map<String, Aggregate> aggregations,
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+    final Map<String, List<ProcessBucket>> bucketsByDefKey =
         extractBucketsByDefKey(response, aggregations, context);
     return retrieveResult(bucketsByDefKey, context);
   }
@@ -118,14 +118,14 @@ public class ProcessDistributedByProcessInterpreterOS
       final SearchResponse<RawResult> response,
       final Map<String, Aggregate> aggregations,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    Map<String, List<ProcessBucket>> bucketsByDefKey = new HashMap<>();
+    final Map<String, List<ProcessBucket>> bucketsByDefKey = new HashMap<>();
     final StringTermsAggregate procDefKeyAgg = aggregations.get(PROC_DEF_KEY_AGG).sterms();
     if (procDefKeyAgg != null) {
-      for (StringTermsBucket keyBucket : procDefKeyAgg.buckets().array()) {
+      for (final StringTermsBucket keyBucket : procDefKeyAgg.buckets().array()) {
         final StringTermsAggregate procDefVersionAgg =
             keyBucket.aggregations().get(PROC_DEF_VERSION_AGG).sterms();
         if (procDefVersionAgg != null) {
-          for (StringTermsBucket versionBucket : procDefVersionAgg.buckets().array()) {
+          for (final StringTermsBucket versionBucket : procDefVersionAgg.buckets().array()) {
             final StringTermsAggregate tenantTermsAgg =
                 versionBucket.aggregations().get(TENANT_AGG).sterms();
             if (tenantTermsAgg != null) {
@@ -156,6 +156,7 @@ public class ProcessDistributedByProcessInterpreterOS
     return this.viewInterpreter;
   }
 
+  @Override
   public ProcessDefinitionReader getProcessDefinitionReader() {
     return this.processDefinitionReader;
   }

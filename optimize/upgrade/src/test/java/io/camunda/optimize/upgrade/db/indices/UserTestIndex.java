@@ -14,7 +14,7 @@ public abstract class UserTestIndex<TBuilder> extends DefaultIndexMappingCreator
 
   private int version = 1;
 
-  public UserTestIndex(int version) {
+  public UserTestIndex(final int version) {
     this.version = version;
   }
 

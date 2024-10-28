@@ -10,7 +10,7 @@ package io.camunda.optimize.service.exceptions;
 public class OptimizeDecisionDefinitionNotFoundException
     extends OptimizeDecisionDefinitionFetchException {
 
-  public OptimizeDecisionDefinitionNotFoundException(String message) {
+  public OptimizeDecisionDefinitionNotFoundException(final String message) {
     super(message);
   }
 }

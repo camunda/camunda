@@ -18,7 +18,7 @@ public abstract class AbstractProcessGroupByInterpreterOS
     implements ProcessGroupByInterpreterOS {
   @Override
   protected String[] getIndexNames(
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     return InstanceIndexUtil.getProcessInstanceIndexAliasNames(context.getReportData());
   }
 }

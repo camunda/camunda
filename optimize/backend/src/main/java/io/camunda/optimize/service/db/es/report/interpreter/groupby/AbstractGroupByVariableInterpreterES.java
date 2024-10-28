@@ -100,7 +100,8 @@ public abstract class AbstractGroupByVariableInterpreterES<
   @Override
   public Map<String, Aggregation.Builder.ContainerBuilder> createAggregation(
       final BoolQuery boolQuery, final ExecutionContext<DATA, PLAN> context) {
-    Aggregation.Builder.ContainerBuilder builder = new Aggregation.Builder().reverseNested(r -> r);
+    final Aggregation.Builder.ContainerBuilder builder =
+        new Aggregation.Builder().reverseNested(r -> r);
     createDistributedBySubAggregations(context, boolQuery).forEach(builder::aggregations);
     final VariableAggregationContextES varAggContext =
         VariableAggregationContextES.builder()
@@ -133,7 +134,7 @@ public abstract class AbstractGroupByVariableInterpreterES<
       return Map.of();
     }
 
-    Aggregation.Builder.ContainerBuilder variableAggregation =
+    final Aggregation.Builder.ContainerBuilder variableAggregation =
         new Aggregation.Builder()
             .nested(n -> n.path(getVariablePath()))
             .aggregations(
@@ -190,13 +191,13 @@ public abstract class AbstractGroupByVariableInterpreterES<
       final ExecutionContext<DATA, PLAN> context, final BoolQuery baseQuery) {
     if (isFlownodeReport(context.getPlan())) {
       // Nest the distributed by part to ensure the aggregation is on flownode level
-      Aggregation.Builder.ContainerBuilder builder =
+      final Aggregation.Builder.ContainerBuilder builder =
           new Aggregation.Builder().nested(n -> n.path(FLOW_NODE_INSTANCES));
       builder.aggregations(
           FILTERED_FLOW_NODE_AGGREGATION,
           Aggregation.of(
               a -> {
-                Aggregation.Builder.ContainerBuilder filter =
+                final Aggregation.Builder.ContainerBuilder filter =
                     a.filter(
                         f ->
                             f.bool(
@@ -219,7 +220,7 @@ public abstract class AbstractGroupByVariableInterpreterES<
 
   private Aggregation.Builder.ContainerBuilder createUndefinedOrNullVariableAggregation(
       final ExecutionContext<DATA, PLAN> context, final BoolQuery baseQuery) {
-    Aggregation.Builder.ContainerBuilder builder =
+    final Aggregation.Builder.ContainerBuilder builder =
         new Aggregation.Builder()
             .filter(f -> f.bool(getVariableUndefinedOrNullQuery(context).build()));
     createDistributedBySubAggregations(context, baseQuery).forEach(builder::aggregations);
@@ -250,7 +251,7 @@ public abstract class AbstractGroupByVariableInterpreterES<
       variableTerms = filteredParentAgg.filter().aggregations().get(VARIABLE_HISTOGRAM_AGGREGATION);
     }
 
-    Map<String, Map<String, Aggregate>> bucketAggregations =
+    final Map<String, Map<String, Aggregate>> bucketAggregations =
         getVariableAggregationService()
             .retrieveResultBucketMap(
                 filteredParentAgg.filter(),
@@ -264,7 +265,7 @@ public abstract class AbstractGroupByVariableInterpreterES<
             context, filteredParentAgg.filter().aggregations());
 
     final List<CompositeCommandResult.GroupByResult> groupedData = new ArrayList<>();
-    for (Map.Entry<String, Map<String, Aggregate>> keyToAggregationEntry :
+    for (final Map.Entry<String, Map<String, Aggregate>> keyToAggregationEntry :
         bucketAggregations.entrySet()) {
       final List<CompositeCommandResult.DistributedByResult> distribution =
           getDistributedByInterpreter()
@@ -291,7 +292,7 @@ public abstract class AbstractGroupByVariableInterpreterES<
   }
 
   private boolean isFlownodeReport(final PLAN plan) {
-    if (plan instanceof ProcessExecutionPlan processExecutionPlan) {
+    if (plan instanceof final ProcessExecutionPlan processExecutionPlan) {
       return Set.of(PROCESS_VIEW_FLOW_NODE_DURATION, PROCESS_VIEW_FLOW_NODE_FREQUENCY)
           .contains(processExecutionPlan.getView());
     } else {
@@ -328,7 +329,7 @@ public abstract class AbstractGroupByVariableInterpreterES<
     if (nestedFlowNodeAgg == null) {
       return aggregation.aggregations(); // this is an instance report
     } else {
-      Map<String, Aggregate> flowNodeAggs =
+      final Map<String, Aggregate> flowNodeAggs =
           nestedFlowNodeAgg.nested().aggregations(); // this is a flownode report
       final FilterAggregate filteredAgg = flowNodeAggs.get(FILTERED_FLOW_NODE_AGGREGATION).filter();
       return filteredAgg.aggregations();

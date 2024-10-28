@@ -48,6 +48,15 @@ export class Diagram {
     return this.getFlowNode(flowNodeName).click();
   }
 
+  clickSubProcess(subProcessName: string) {
+    // Click on the top left corner of the sub process.
+    // This avoids clicking on child elements inside the sub process.
+    return this.getFlowNode(subProcessName).click({
+      position: {x: 5, y: 5},
+      force: true,
+    });
+  }
+
   getFlowNode(flowNodeName: string) {
     return this.diagram
       .locator('.djs-element')

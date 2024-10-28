@@ -44,7 +44,7 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class BranchAnalysisReaderES extends BranchAnalysisReader {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(BranchAnalysisReaderES.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(BranchAnalysisReaderES.class);
 
   private final OptimizeElasticsearchClient esClient;
   private final ProcessQueryFilterEnhancerES queryFilterEnhancer;
@@ -105,7 +105,7 @@ public class BranchAnalysisReaderES extends BranchAnalysisReader {
 
   private void excludeFlowNodes(
       final Set<String> flowNodeIdsToExclude, final BoolQuery.Builder query) {
-    for (String excludeFlowNodeId : flowNodeIdsToExclude) {
+    for (final String excludeFlowNodeId : flowNodeIdsToExclude) {
       query.mustNot(createMustMatchFlowNodeIdQuery(excludeFlowNodeId));
     }
   }
@@ -130,7 +130,7 @@ public class BranchAnalysisReaderES extends BranchAnalysisReader {
       final BranchAnalysisRequestDto request, final BoolQuery.Builder bool, final ZoneId timezone) {
     queryFilterEnhancer.addFilterToQuery(
         bool, request.getFilter(), FilterContext.builder().timezone(timezone).build());
-    CountRequest countRequest =
+    final CountRequest countRequest =
         OptimizeCountRequestBuilderES.of(
             b ->
                 b.optimizeIndex(
@@ -141,16 +141,16 @@ public class BranchAnalysisReaderES extends BranchAnalysisReader {
     try {
       final CountResponse countResponse = esClient.count(countRequest);
       return countResponse.count();
-    } catch (IOException e) {
-      String reason =
+    } catch (final IOException e) {
+      final String reason =
           String.format(
               "Was not able to perform branch analysis on process definition with key [%s] and versions [%s}]",
               request.getProcessDefinitionKey(), request.getProcessDefinitionVersions());
-      log.error(reason, e);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
-    } catch (ElasticsearchException e) {
+    } catch (final ElasticsearchException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
-        log.info(
+        LOG.info(
             "Was not able to perform branch analysis because the required instance index {} does not "
                 + "exist. Returning 0 instead.",
             getProcessInstanceIndexAliasName(request.getProcessDefinitionKey()));

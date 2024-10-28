@@ -39,21 +39,23 @@ public class ExceptionHelper {
   //    }
   //  }
 
-  public static <R> R withIOException(ExceptionSupplier<R> supplier) throws IOException {
+  public static <R> R withIOException(final ExceptionSupplier<R> supplier) throws IOException {
     try {
       return supplier.get();
-    } catch (OpenSearchException e) {
+    } catch (final OpenSearchException e) {
       throw e;
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new IOException(e.getMessage(), e.getCause());
     }
   }
 
   public static <R> R safe(
-      ExceptionSupplier<R> supplier, Function<Exception, String> errorMessage, Logger log) {
+      final ExceptionSupplier<R> supplier,
+      final Function<Exception, String> errorMessage,
+      final Logger log) {
     try {
       return supplier.get();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       final String message = errorMessage.apply(e);
       log.error(message, e);
       throw new OptimizeRuntimeException(message, e);

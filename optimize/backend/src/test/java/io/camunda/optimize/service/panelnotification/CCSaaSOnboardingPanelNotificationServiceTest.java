@@ -66,7 +66,7 @@ public class CCSaaSOnboardingPanelNotificationServiceTest {
     when(rootUrlGenerator.getRootUrl()).thenReturn("http://localhost:8090/" + CLUSTER_ID);
 
     // when
-    ArgumentCaptor<PanelNotificationRequestDto> actualNotification =
+    final ArgumentCaptor<PanelNotificationRequestDto> actualNotification =
         ArgumentCaptor.forClass(PanelNotificationRequestDto.class);
     underTest.sendOnboardingPanelNotification(PROCESS_KEY);
     verify(notificationClient).sendPanelNotificationToOrg(actualNotification.capture());

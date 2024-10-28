@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.service.util.configuration;
 
-public class EnvironmentPropertiesConstants {
+public final class EnvironmentPropertiesConstants {
 
   public static final String INTEGRATION_TESTS = "integrationTests";
   public static final String HTTPS_PORT_KEY = "httpsPort";

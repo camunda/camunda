@@ -37,7 +37,7 @@ public class ZeebeIncidentImportService
 
   private static final Set<IncidentIntent> INTENTS_TO_IMPORT =
       Set.of(IncidentIntent.CREATED, IncidentIntent.RESOLVED);
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ZeebeIncidentImportService.class);
 
   public ZeebeIncidentImportService(
@@ -68,7 +68,7 @@ public class ZeebeIncidentImportService
             .stream()
             .map(this::createProcessInstanceForData)
             .collect(Collectors.toList());
-    log.debug(
+    LOG.debug(
         "Processing {} fetched zeebe incident records, of which {} are relevant to Optimize and will be imported.",
         zeebeRecords.size(),
         optimizeDtos.size());

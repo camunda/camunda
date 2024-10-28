@@ -26,11 +26,11 @@ public abstract class AbstractInstanceIndex<TBuilder> extends DefaultIndexMappin
   public static final String N_GRAM_FIELD = "nGramField";
   public static final String LOWERCASE_FIELD = "lowercaseField";
 
+  private final String key;
+
   protected AbstractInstanceIndex(final String key) {
     this.key = key;
   }
-
-  private final String key;
 
   public abstract String getDefinitionKeyFieldName();
 
@@ -38,7 +38,7 @@ public abstract class AbstractInstanceIndex<TBuilder> extends DefaultIndexMappin
 
   public abstract String getTenantIdFieldName();
 
-  protected KeywordProperty.Builder addValueMultifields(KeywordProperty.Builder builder) {
+  protected KeywordProperty.Builder addValueMultifields(final KeywordProperty.Builder builder) {
     return builder
         .fields(N_GRAM_FIELD, Property.of(p -> p.text(t -> t.analyzer(LOWERCASE_NGRAM))))
         .fields(
@@ -56,7 +56,8 @@ public abstract class AbstractInstanceIndex<TBuilder> extends DefaultIndexMappin
         .fields(MULTIVALUE_FIELD_DOUBLE, Property.of(p -> p.double_(t -> t.ignoreMalformed(true))));
   }
 
+  @Override
   public String getKey() {
-    return this.key;
+    return key;
   }
 }

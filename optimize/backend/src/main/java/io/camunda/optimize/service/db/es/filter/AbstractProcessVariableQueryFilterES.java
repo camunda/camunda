@@ -47,7 +47,7 @@ import org.springframework.stereotype.Component;
 @Component
 public abstract class AbstractProcessVariableQueryFilterES extends AbstractVariableQueryFilterES {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(AbstractProcessVariableQueryFilterES.class);
 
   public AbstractProcessVariableQueryFilterES() {}
@@ -60,27 +60,27 @@ public abstract class AbstractProcessVariableQueryFilterES extends AbstractVaria
 
     switch (dto.getType()) {
       case STRING:
-        StringVariableFilterDataDto stringVarDto = (StringVariableFilterDataDto) dto;
+        final StringVariableFilterDataDto stringVarDto = (StringVariableFilterDataDto) dto;
         queryBuilder = createStringQueryBuilder(stringVarDto);
         break;
       case INTEGER:
       case DOUBLE:
       case SHORT:
       case LONG:
-        OperatorMultipleValuesVariableFilterDataDto numericVarDto =
+        final OperatorMultipleValuesVariableFilterDataDto numericVarDto =
             (OperatorMultipleValuesVariableFilterDataDto) dto;
         queryBuilder = createNumericQueryBuilder(numericVarDto);
         break;
       case DATE:
-        DateVariableFilterDataDto dateVarDto = (DateVariableFilterDataDto) dto;
+        final DateVariableFilterDataDto dateVarDto = (DateVariableFilterDataDto) dto;
         queryBuilder = createDateQueryBuilder(dateVarDto, timezone);
         break;
       case BOOLEAN:
-        BooleanVariableFilterDataDto booleanVarDto = (BooleanVariableFilterDataDto) dto;
+        final BooleanVariableFilterDataDto booleanVarDto = (BooleanVariableFilterDataDto) dto;
         queryBuilder = createBooleanQueryBuilder(booleanVarDto);
         break;
       default:
-        log.warn(
+        LOG.warn(
             "Could not filter for variables! "
                 + "Type [{}] is not supported for variable filters. Ignoring filter.",
             dto.getType());
@@ -91,11 +91,11 @@ public abstract class AbstractProcessVariableQueryFilterES extends AbstractVaria
   @Override
   protected Query.Builder createContainsOneOfTheGivenStringsQueryBuilder(
       final StringVariableFilterDataDto dto) {
-    Query.Builder containOneOfTheGivenStrings =
+    final Query.Builder containOneOfTheGivenStrings =
         createContainsOneOfTheGivenStringsQueryBuilder(dto.getName(), dto.getData().getValues());
 
     if (NOT_CONTAINS.equals(dto.getData().getOperator())) {
-      Query.Builder builder = new Query.Builder();
+      final Query.Builder builder = new Query.Builder();
       builder.bool(b -> b.mustNot(containOneOfTheGivenStrings.build()));
       return builder;
     } else {
@@ -106,7 +106,7 @@ public abstract class AbstractProcessVariableQueryFilterES extends AbstractVaria
   @Override
   protected Query.Builder createContainsOneOfTheGivenStringsQueryBuilder(
       final String variableName, final List<String> values) {
-    Query.Builder builder = new Query.Builder();
+    final Query.Builder builder = new Query.Builder();
     final BoolQuery.Builder variableFilterBuilder = new BoolQuery.Builder().minimumShouldMatch("1");
 
     values.stream()
@@ -132,8 +132,8 @@ public abstract class AbstractProcessVariableQueryFilterES extends AbstractVaria
   @Override
   protected Query.Builder createContainsGivenStringQuery(
       final String variableName, final String valueToContain) {
-    Query.Builder queryBuilder = new Query.Builder();
-    BoolQuery.Builder containsVariableString = new BoolQuery.Builder();
+    final Query.Builder queryBuilder = new Query.Builder();
+    final BoolQuery.Builder containsVariableString = new BoolQuery.Builder();
 
     containsVariableString
         .must(m -> m.term(t -> t.field(getNestedVariableNameField()).value(variableName)))
@@ -152,10 +152,10 @@ public abstract class AbstractProcessVariableQueryFilterES extends AbstractVaria
     return queryBuilder;
   }
 
-  private static Query.Builder getBuilder(String valueToContain) {
+  private static Query.Builder getBuilder(final String valueToContain) {
     final String lowerCaseValue = valueToContain.toLowerCase(Locale.ENGLISH);
 
-    Query.Builder filter = new Query.Builder();
+    final Query.Builder filter = new Query.Builder();
     if (lowerCaseValue.length() > MAX_GRAM) {
       /*
         using the slow wildcard query for uncommonly large filter strings (> 10 chars)
@@ -183,7 +183,7 @@ public abstract class AbstractProcessVariableQueryFilterES extends AbstractVaria
             dto.getName(), dto.getType(), dto.getData().getValues());
 
     if (NOT_IN.equals(dto.getData().getOperator())) {
-      Query.Builder builder = new Query.Builder();
+      final Query.Builder builder = new Query.Builder();
       builder.bool(b -> b.mustNot(variableFilterBuilder.build()));
       return builder;
     } else {
@@ -201,8 +201,8 @@ public abstract class AbstractProcessVariableQueryFilterES extends AbstractVaria
 
   private Query.Builder createEqualsOneOrMoreValuesFilterQuery(
       final String variableName, final VariableType variableType, final List<?> values) {
-    Query.Builder builder = new Query.Builder();
-    BoolQuery.Builder variableFilterBuilder = new BoolQuery.Builder().minimumShouldMatch("1");
+    final Query.Builder builder = new Query.Builder();
+    final BoolQuery.Builder variableFilterBuilder = new BoolQuery.Builder().minimumShouldMatch("1");
     final String nestedVariableNameFieldLabel = getNestedVariableNameField();
     final String nestedVariableValueFieldLabel = getVariableValueFieldForType(variableType);
 
@@ -258,18 +258,18 @@ public abstract class AbstractProcessVariableQueryFilterES extends AbstractVaria
 
   @Override
   protected Query.Builder createNumericQueryBuilder(
-      OperatorMultipleValuesVariableFilterDataDto dto) {
-    Query.Builder builder = new Query.Builder();
+      final OperatorMultipleValuesVariableFilterDataDto dto) {
+    final Query.Builder builder = new Query.Builder();
     OperatorMultipleValuesVariableFilterDataDtoUtil.validateMultipleValuesFilterDataDto(dto);
 
-    String nestedVariableValueFieldLabel = getVariableValueFieldForType(dto.getType());
+    final String nestedVariableValueFieldLabel = getVariableValueFieldForType(dto.getType());
     final OperatorMultipleValuesFilterDataDto data = dto.getData();
-    BoolQuery.Builder boolQueryBuilder = new BoolQuery.Builder();
+    final BoolQuery.Builder boolQueryBuilder = new BoolQuery.Builder();
     boolQueryBuilder
         .must(m -> m.term(t -> t.field(getNestedVariableNameField()).value(dto.getName())))
         .must(m -> m.term(t -> t.field(getNestedVariableTypeField()).value(dto.getType().getId())));
 
-    Object value = OperatorMultipleValuesVariableFilterDataDtoUtil.retrieveValue(dto);
+    final Object value = OperatorMultipleValuesVariableFilterDataDtoUtil.retrieveValue(dto);
     switch (data.getOperator()) {
       case IN:
       case NOT_IN:
@@ -340,7 +340,7 @@ public abstract class AbstractProcessVariableQueryFilterES extends AbstractVaria
         break;
       default:
         builder.nested(n -> n.path(VARIABLES).query(qq -> qq.bool(boolQueryBuilder.build())));
-        log.warn(
+        LOG.warn(
             "Could not filter for variables! Operator [{}] is not supported for type [{}]. Ignoring filter.",
             data.getOperator(),
             dto.getType());
@@ -351,7 +351,7 @@ public abstract class AbstractProcessVariableQueryFilterES extends AbstractVaria
   @Override
   protected Query.Builder createDateQueryBuilder(
       final DateVariableFilterDataDto dto, final ZoneId timezone) {
-    Query.Builder dateFilterBuilder = new Query.Builder();
+    final Query.Builder dateFilterBuilder = new Query.Builder();
     dateFilterBuilder.bool(
         bool -> {
           if (dto.getData().isIncludeUndefined()) {
@@ -385,7 +385,7 @@ public abstract class AbstractProcessVariableQueryFilterES extends AbstractVaria
               Collections.singletonList(dto.getData()),
               getVariableValueFieldForType(dto.getType()),
               timezone);
-          BoolQuery build = dateValueFilterQuery.build();
+          final BoolQuery build = dateValueFilterQuery.build();
           if (!build.filter().isEmpty()) {
             bool.should(
                 s ->

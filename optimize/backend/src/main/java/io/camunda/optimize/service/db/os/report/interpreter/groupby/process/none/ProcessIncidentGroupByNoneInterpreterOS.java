@@ -50,9 +50,9 @@ public class ProcessIncidentGroupByNoneInterpreterOS extends AbstractProcessGrou
   private final DefinitionService definitionService;
 
   public ProcessIncidentGroupByNoneInterpreterOS(
-      ProcessViewInterpreterFacadeOS viewInterpreter,
-      ProcessDistributedByInterpreterFacadeOS distributedByInterpreter,
-      DefinitionService definitionService) {
+      final ProcessViewInterpreterFacadeOS viewInterpreter,
+      final ProcessDistributedByInterpreterFacadeOS distributedByInterpreter,
+      final DefinitionService definitionService) {
     this.viewInterpreter = viewInterpreter;
     this.distributedByInterpreter = distributedByInterpreter;
     this.definitionService = definitionService;

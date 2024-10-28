@@ -21,7 +21,7 @@ import org.springframework.context.annotation.ComponentScan;
 @SpringBootApplication(exclude = {FreeMarkerAutoConfiguration.class})
 public class Main {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(Main.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(Main.class);
 
   public static void main(final String[] args) {
     final SpringApplication optimize = new SpringApplication(Main.class);

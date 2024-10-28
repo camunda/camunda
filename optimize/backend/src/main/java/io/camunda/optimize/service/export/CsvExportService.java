@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
 public class CsvExportService {
 
   public static final Integer DEFAULT_RECORD_LIMIT = 1_000;
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(CsvExportService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(CsvExportService.class);
 
   private final AuthorizationCheckReportEvaluationHandler reportEvaluationHandler;
   private final ConfigurationService configurationService;
@@ -37,7 +37,7 @@ public class CsvExportService {
 
   public Optional<byte[]> getCsvBytesForEvaluatedReportResult(
       final String userId, final String reportId, final ZoneId timezone) {
-    log.debug("Exporting report with id [{}] as csv.", reportId);
+    LOG.debug("Exporting report with id [{}] as csv.", reportId);
     try {
       final ReportEvaluationInfo evaluationInfo =
           ReportEvaluationInfo.builder(reportId)
@@ -60,17 +60,17 @@ public class CsvExportService {
           CSVUtils.mapCsvLinesToCsvBytes(
               resultAsCsv, configurationService.getCsvConfiguration().getExportCsvDelimiter()));
     } catch (final NotFoundException e) {
-      log.debug("Could not find report with id {} to export the result to csv!", reportId, e);
+      LOG.debug("Could not find report with id {} to export the result to csv!", reportId, e);
       return Optional.empty();
     } catch (final Exception e) {
-      log.error("Could not evaluate report with id {} to export the result to csv!", reportId, e);
+      LOG.error("Could not evaluate report with id {} to export the result to csv!", reportId, e);
       throw e;
     }
   }
 
   public byte[] getCsvBytesForEvaluatedReportResult(
       final String userId, final ReportDefinitionDto<?> reportDefinition, final ZoneId timezone) {
-    log.debug("Exporting provided report definition as csv.");
+    LOG.debug("Exporting provided report definition as csv.");
     try {
       final ReportEvaluationInfo evaluationInfo =
           ReportEvaluationInfo.builder(reportDefinition)
@@ -92,7 +92,7 @@ public class CsvExportService {
       return CSVUtils.mapCsvLinesToCsvBytes(
           resultAsCsv, configurationService.getCsvConfiguration().getExportCsvDelimiter());
     } catch (final Exception e) {
-      log.error("Could not evaluate report to export the result to csv!", e);
+      LOG.error("Could not evaluate report to export the result to csv!", e);
       throw e;
     }
   }

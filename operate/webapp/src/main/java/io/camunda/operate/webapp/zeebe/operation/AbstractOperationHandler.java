@@ -8,12 +8,12 @@
 package io.camunda.operate.webapp.zeebe.operation;
 
 import io.camunda.operate.Metrics;
-import io.camunda.operate.entities.OperationEntity;
-import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.OperationsManager;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
+import io.camunda.webapps.schema.entities.operation.OperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;

@@ -15,7 +15,7 @@ public enum DecisionDistributedBy {
 
   private final ProcessReportDistributedByDto<?> dto;
 
-  private DecisionDistributedBy(ProcessReportDistributedByDto<?> dto) {
+  private DecisionDistributedBy(final ProcessReportDistributedByDto<?> dto) {
     this.dto = dto;
   }
 

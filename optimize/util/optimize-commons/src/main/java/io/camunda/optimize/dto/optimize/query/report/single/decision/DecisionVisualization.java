@@ -22,8 +22,7 @@ public enum DecisionVisualization {
   BAR(BAR_VISUALIZATION),
   LINE(LINE_VISUALIZATION),
   PIE(PIE_VISUALIZATION),
-  HEAT(HEAT_VISUALIZATION),
-  ;
+  HEAT(HEAT_VISUALIZATION);
 
   private final String id;
 

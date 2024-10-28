@@ -35,7 +35,7 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class ProcessRepositoryOS implements ProcessRepository {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ProcessRepositoryOS.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ProcessRepositoryOS.class);
   private final OptimizeOpenSearchClient osClient;
   private final OptimizeIndexNameService indexNameService;
 
@@ -48,7 +48,7 @@ public class ProcessRepositoryOS implements ProcessRepository {
   @Override
   public Map<String, ProcessOverviewDto> getProcessOverviewsByKey(
       final Set<String> processDefinitionKeys) {
-    log.debug("Fetching process overviews for [{}] processes", processDefinitionKeys.size());
+    LOG.debug("Fetching process overviews for [{}] processes", processDefinitionKeys.size());
     if (processDefinitionKeys.isEmpty()) {
       return Collections.emptyMap();
     }
@@ -66,7 +66,7 @@ public class ProcessRepositoryOS implements ProcessRepository {
 
   @Override
   public Map<String, ProcessDigestResponseDto> getAllActiveProcessDigestsByKey() {
-    log.debug("Fetching all available process overviews.");
+    LOG.debug("Fetching all available process overviews.");
 
     final SearchRequest.Builder requestBuilder =
         new SearchRequest.Builder()
@@ -82,7 +82,7 @@ public class ProcessRepositoryOS implements ProcessRepository {
 
   @Override
   public Map<String, ProcessOverviewDto> getProcessOverviewsWithPendingOwnershipData() {
-    log.debug("Fetching pending process overviews");
+    LOG.debug("Fetching pending process overviews");
 
     final SearchRequest.Builder requestBuilder =
         new SearchRequest.Builder()
