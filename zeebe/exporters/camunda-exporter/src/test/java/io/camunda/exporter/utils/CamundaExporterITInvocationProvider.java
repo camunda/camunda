@@ -16,10 +16,12 @@ import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.extension.AfterAllCallback;
+import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.Extension;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -33,7 +35,10 @@ import org.opensearch.testcontainers.OpensearchContainer;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
 public class CamundaExporterITInvocationProvider
-    implements TestTemplateInvocationContextProvider, AfterAllCallback, BeforeAllCallback {
+    implements TestTemplateInvocationContextProvider,
+        AfterAllCallback,
+        BeforeAllCallback,
+        AfterEachCallback {
 
   public static final String CONFIG_PREFIX = "camunda-record";
   private final ElasticsearchContainer elsContainer =
@@ -58,6 +63,17 @@ public class CamundaExporterITInvocationProvider
     }
     config.getConnect().setType(connectionType.getType());
     return config;
+  }
+
+  @Override
+  public void afterEach(final ExtensionContext context) throws IOException {
+    if (context.getDisplayName().equals(ELASTICSEARCH.getType())) {
+      elsClient.indices().delete(req -> req.index("*"));
+      elsClient.indices().deleteIndexTemplate(req -> req.name("*"));
+    } else if (context.getDisplayName().equals(OPENSEARCH.getType())) {
+      osClient.indices().delete(req -> req.index("*"));
+      osClient.indices().deleteIndexTemplate(req -> req.name("*"));
+    }
   }
 
   @Override
@@ -94,14 +110,6 @@ public class CamundaExporterITInvocationProvider
   public Stream<TestTemplateInvocationContext> provideTestTemplateInvocationContexts(
       final ExtensionContext extensionContext) {
 
-    try {
-      elsClient.indices().delete(req -> req.index("*"));
-      elsClient.indices().deleteIndexTemplate(req -> req.name("*"));
-      osClient.indices().delete(req -> req.index("*"));
-      osClient.indices().deleteIndexTemplate(req -> req.name("*"));
-    } catch (final Exception e) {
-      throw new RuntimeException("Failed to reset container data", e);
-    }
     return Stream.of(
         invocationContext(getConfigWithConnectionDetails(OPENSEARCH), osClientAdapter),
         invocationContext(getConfigWithConnectionDetails(ELASTICSEARCH), elsClientAdapter));
