@@ -200,25 +200,25 @@ const FormJSRenderer: React.FC<Props> = ({
             onSubmitStart?.();
             setInvalidFields(undefined);
             if (Object.keys(errors).length === 0) {
-              const enrichedData =
-                files.size === 0
-                  ? newData
-                  : injectFileMetadataIntoData({
-                      data: newData,
-                      fileMetadata: await handleFileUpload(files),
-                      pathsToInject: extractFilePath(newData),
-                    });
-              const variables = Object.entries(
-                mergeVariables(data, enrichedData),
-              ).map(
-                ([name, value]) =>
-                  ({
-                    name,
-                    value: JSON.stringify(value),
-                  }) as Variable,
-              );
-
               try {
+                const enrichedData =
+                  files.size === 0
+                    ? newData
+                    : injectFileMetadataIntoData({
+                        data: newData,
+                        fileMetadata: await handleFileUpload(files),
+                        pathsToInject: extractFilePath(newData),
+                      });
+                const variables = Object.entries(
+                  mergeVariables(data, enrichedData),
+                ).map(
+                  ([name, value]) =>
+                    ({
+                      name,
+                      value: JSON.stringify(value),
+                    }) as Variable,
+                );
+
                 await handleSubmit(variables);
                 onSubmitSuccess?.();
               } catch (error) {
