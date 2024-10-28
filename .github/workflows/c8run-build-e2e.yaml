@@ -22,11 +22,11 @@ jobs:
 
       - name: make a package
         run: ./package.sh
-        working-directory: ./camunda/c8run
+        working-directory: /c8run
 
       - name: Linux - Run c8run
         run: nohup ./start.sh --detached &
-        working-directory: ./camunda/c8run
+        working-directory: /c8run
         env:
           JAVA_HOME: /usr/lib/jvm/temurin-21-jdk-amd64
           JAVA_VERSION: 21.0.4
