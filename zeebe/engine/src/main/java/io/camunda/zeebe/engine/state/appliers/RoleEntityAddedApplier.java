@@ -35,9 +35,9 @@ public class RoleEntityAddedApplier implements TypedEventApplier<RoleIntent, Rol
       case MAPPING -> mappingState.addRole(value.getEntityKey(), value.getRoleKey());
       default ->
           throw new IllegalStateException(
-              "Unknown or unsupported entity type: '"
-                  + value.getEntityType()
-                  + "'. Please contact support for clarification.");
+              String.format(
+                  "Expected to add entity '%d' to role '%d', but entities of type '%s' cannot be added to roles",
+                  value.getEntityKey(), value.getRoleKey(), value.getEntityType()));
     }
   }
 }
