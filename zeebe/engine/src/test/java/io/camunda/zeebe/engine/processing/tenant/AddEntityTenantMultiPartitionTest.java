@@ -26,21 +26,20 @@ import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
 public class AddEntityTenantMultiPartitionTest {
   private static final int PARTITION_COUNT = 3;
-  private static long userKey;
 
   @Rule public final EngineRule engine = EngineRule.multiplePartition(PARTITION_COUNT);
   @Rule public final TestWatcher testWatcher = new RecordingExporterTestWatcher();
 
-  @Before
-  public void setUp() {
-    userKey =
+  @Test
+  public void shouldDistributeTenantAddEntityCommand() {
+    // when
+    final var userKey =
         engine
             .user()
             .newUser("foo")
@@ -49,11 +48,6 @@ public class AddEntityTenantMultiPartitionTest {
             .withPassword("zabraboof")
             .create()
             .getKey();
-  }
-
-  @Test
-  public void shouldDistributeTenantAddEntityCommand() {
-    // when
     final var tenantId = UUID.randomUUID().toString();
     final var tenantKey =
         engine.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
@@ -106,6 +100,15 @@ public class AddEntityTenantMultiPartitionTest {
   @Test
   public void shouldDistributeInIdentityQueue() {
     // when
+    final var userKey =
+        engine
+            .user()
+            .newUser("foo")
+            .withEmail("foo@bar")
+            .withName("Foo Bar")
+            .withPassword("zabraboof")
+            .create()
+            .getKey();
     final var tenantId = UUID.randomUUID().toString();
     final var tenantKey =
         engine.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
@@ -128,6 +131,16 @@ public class AddEntityTenantMultiPartitionTest {
   @Test
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // given the tenant creation distribution is intercepted
+    final var userKey =
+        engine
+            .user()
+            .newUser("foo")
+            .withEmail("foo@bar")
+            .withName("Foo Bar")
+            .withPassword("zabraboof")
+            .create()
+            .getKey();
+
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
       interceptTenantCreateForPartition(partitionId); // Intercept tenant creation
     }

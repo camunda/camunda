@@ -28,18 +28,18 @@ public class ProcessVariableDto implements OptimizeDto {
   private String tenantId;
 
   public ProcessVariableDto(
-      String id,
-      String name,
-      String type,
-      List<String> value,
-      OffsetDateTime timestamp,
-      Map<String, Object> valueInfo,
-      String processDefinitionKey,
-      String processDefinitionId,
-      String processInstanceId,
-      Long version,
-      String engineAlias,
-      String tenantId) {
+      final String id,
+      final String name,
+      final String type,
+      final List<String> value,
+      final OffsetDateTime timestamp,
+      final Map<String, Object> valueInfo,
+      final String processDefinitionKey,
+      final String processDefinitionId,
+      final String processInstanceId,
+      final Long version,
+      final String engineAlias,
+      final String tenantId) {
     this.id = id;
     this.name = name;
     this.type = type;
@@ -104,51 +104,51 @@ public class ProcessVariableDto implements OptimizeDto {
     return this.tenantId;
   }
 
-  public void setId(String id) {
+  public void setId(final String id) {
     this.id = id;
   }
 
-  public void setName(String name) {
+  public void setName(final String name) {
     this.name = name;
   }
 
-  public void setType(String type) {
+  public void setType(final String type) {
     this.type = type;
   }
 
-  public void setValue(List<String> value) {
+  public void setValue(final List<String> value) {
     this.value = value;
   }
 
-  public void setTimestamp(OffsetDateTime timestamp) {
+  public void setTimestamp(final OffsetDateTime timestamp) {
     this.timestamp = timestamp;
   }
 
-  public void setValueInfo(Map<String, Object> valueInfo) {
+  public void setValueInfo(final Map<String, Object> valueInfo) {
     this.valueInfo = valueInfo;
   }
 
-  public void setProcessDefinitionKey(String processDefinitionKey) {
+  public void setProcessDefinitionKey(final String processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
   }
 
-  public void setProcessDefinitionId(String processDefinitionId) {
+  public void setProcessDefinitionId(final String processDefinitionId) {
     this.processDefinitionId = processDefinitionId;
   }
 
-  public void setProcessInstanceId(String processInstanceId) {
+  public void setProcessInstanceId(final String processInstanceId) {
     this.processInstanceId = processInstanceId;
   }
 
-  public void setVersion(Long version) {
+  public void setVersion(final Long version) {
     this.version = version;
   }
 
-  public void setEngineAlias(String engineAlias) {
+  public void setEngineAlias(final String engineAlias) {
     this.engineAlias = engineAlias;
   }
 
-  public void setTenantId(String tenantId) {
+  public void setTenantId(final String tenantId) {
     this.tenantId = tenantId;
   }
 

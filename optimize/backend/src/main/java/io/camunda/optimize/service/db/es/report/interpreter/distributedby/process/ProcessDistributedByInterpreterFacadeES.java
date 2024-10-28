@@ -32,7 +32,7 @@ public class ProcessDistributedByInterpreterFacadeES
     implements ProcessDistributedByInterpreterES {
 
   public ProcessDistributedByInterpreterFacadeES(
-      List<ProcessDistributedByInterpreterES> interpreters) {
+      final List<ProcessDistributedByInterpreterES> interpreters) {
     super(interpreters, ProcessDistributedByInterpreterES::getSupportedDistributedBys);
   }
 
@@ -51,24 +51,24 @@ public class ProcessDistributedByInterpreterFacadeES
 
   @Override
   public List<DistributedByResult> retrieveResult(
-      ResponseBody<?> response,
-      Map<String, Aggregate> aggregations,
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+      final ResponseBody<?> response,
+      final Map<String, Aggregate> aggregations,
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     return interpreter(context.getPlan().getDistributedBy())
         .retrieveResult(response, aggregations, context);
   }
 
   @Override
   public List<DistributedByResult> createEmptyResult(
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     return interpreter(context.getPlan().getDistributedBy()).createEmptyResult(context);
   }
 
   @Override
   public void adjustSearchRequest(
-      SearchRequest.Builder searchRequestBuilder,
-      BoolQuery.Builder baseQueryBuilder,
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+      final SearchRequest.Builder searchRequestBuilder,
+      final BoolQuery.Builder baseQueryBuilder,
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     interpreter(context.getPlan().getDistributedBy())
         .adjustSearchRequest(searchRequestBuilder, baseQueryBuilder, context);
   }

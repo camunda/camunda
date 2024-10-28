@@ -101,6 +101,7 @@ public class ProcessOverviewResponseDto {
         + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String processDefinitionName = "processDefinitionName";

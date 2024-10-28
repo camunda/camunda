@@ -19,27 +19,27 @@ public class DateAggregationContextOS extends DateAggregationContext {
   private final DecisionQueryFilterEnhancerOS decisionQueryFilterEnhancer;
   private final ProcessQueryFilterEnhancerOS processQueryFilterEnhancer;
 
-  protected DateAggregationContextOS(DateAggregationContextOSBuilder<?, ?> b) {
+  protected DateAggregationContextOS(final DateAggregationContextOSBuilder<?, ?> b) {
     super(b);
-    this.subAggregations = b.subAggregations;
+    subAggregations = b.subAggregations;
     if (subAggregations == null) {
       throw new IllegalArgumentException("subAggregations cannot be null");
     }
 
-    this.decisionQueryFilterEnhancer = b.decisionQueryFilterEnhancer;
-    this.processQueryFilterEnhancer = b.processQueryFilterEnhancer;
+    decisionQueryFilterEnhancer = b.decisionQueryFilterEnhancer;
+    processQueryFilterEnhancer = b.processQueryFilterEnhancer;
   }
 
   public Map<String, Aggregation> getSubAggregations() {
-    return this.subAggregations;
+    return subAggregations;
   }
 
   public DecisionQueryFilterEnhancerOS getDecisionQueryFilterEnhancer() {
-    return this.decisionQueryFilterEnhancer;
+    return decisionQueryFilterEnhancer;
   }
 
   public ProcessQueryFilterEnhancerOS getProcessQueryFilterEnhancer() {
-    return this.processQueryFilterEnhancer;
+    return processQueryFilterEnhancer;
   }
 
   public static DateAggregationContextOSBuilder<?, ?> builder() {
@@ -54,7 +54,7 @@ public class DateAggregationContextOS extends DateAggregationContext {
     private DecisionQueryFilterEnhancerOS decisionQueryFilterEnhancer;
     private ProcessQueryFilterEnhancerOS processQueryFilterEnhancer;
 
-    public B subAggregations(Map<String, Aggregation> subAggregations) {
+    public B subAggregations(final Map<String, Aggregation> subAggregations) {
       if (subAggregations == null) {
         throw new IllegalArgumentException("subAggregations cannot be null");
       }
@@ -64,29 +64,33 @@ public class DateAggregationContextOS extends DateAggregationContext {
     }
 
     public B decisionQueryFilterEnhancer(
-        DecisionQueryFilterEnhancerOS decisionQueryFilterEnhancer) {
+        final DecisionQueryFilterEnhancerOS decisionQueryFilterEnhancer) {
       this.decisionQueryFilterEnhancer = decisionQueryFilterEnhancer;
       return self();
     }
 
-    public B processQueryFilterEnhancer(ProcessQueryFilterEnhancerOS processQueryFilterEnhancer) {
+    public B processQueryFilterEnhancer(
+        final ProcessQueryFilterEnhancerOS processQueryFilterEnhancer) {
       this.processQueryFilterEnhancer = processQueryFilterEnhancer;
       return self();
     }
 
+    @Override
     protected abstract B self();
 
+    @Override
     public abstract C build();
 
+    @Override
     public String toString() {
       return "DateAggregationContextOS.DateAggregationContextOSBuilder(super="
           + super.toString()
           + ", subAggregations="
-          + this.subAggregations
+          + subAggregations
           + ", decisionQueryFilterEnhancer="
-          + this.decisionQueryFilterEnhancer
+          + decisionQueryFilterEnhancer
           + ", processQueryFilterEnhancer="
-          + this.processQueryFilterEnhancer
+          + processQueryFilterEnhancer
           + ")";
     }
   }
@@ -97,10 +101,12 @@ public class DateAggregationContextOS extends DateAggregationContext {
 
     private DateAggregationContextOSBuilderImpl() {}
 
+    @Override
     protected DateAggregationContextOSBuilderImpl self() {
       return this;
     }
 
+    @Override
     public DateAggregationContextOS build() {
       return new DateAggregationContextOS(this);
     }

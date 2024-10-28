@@ -71,7 +71,7 @@ import java.util.stream.Stream;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.function.TriFunction;
 
-public class ModelElementFilterQueryUtilES {
+public final class ModelElementFilterQueryUtilES {
 
   private static final Map<
           Class<? extends ProcessFilterDto<?>>, Function<BoolQuery.Builder, BoolQuery.Builder>>
@@ -110,7 +110,7 @@ public class ModelElementFilterQueryUtilES {
     final List<ProcessFilterDto<?>> viewLevelFiltersForInstanceMatch =
         getViewLevelFiltersForInstanceMatch(filters);
     if (!viewLevelFiltersForInstanceMatch.isEmpty()) {
-      BoolQuery.Builder viewFilterInstanceQuery =
+      final BoolQuery.Builder viewFilterInstanceQuery =
           createFlowNodeTypeFilterQuery(filterContext.isUserTaskReport());
       viewLevelFiltersForInstanceMatch.forEach(
           filter -> {
@@ -143,7 +143,7 @@ public class ModelElementFilterQueryUtilES {
                   .apply(viewFilterInstanceQuery);
             }
           });
-      NestedQuery.Builder builder = new NestedQuery.Builder();
+      final NestedQuery.Builder builder = new NestedQuery.Builder();
       builder
           .path(FLOW_NODE_INSTANCES)
           .scoreMode(ChildScoreMode.None)
@@ -252,7 +252,7 @@ public class ModelElementFilterQueryUtilES {
       final String nestedFieldReference,
       final List<String> flowNodeIds,
       final MembershipFilterOperator operator) {
-    TermsQuery.Builder builder = new TermsQuery.Builder();
+    final TermsQuery.Builder builder = new TermsQuery.Builder();
     builder.field(nestedFieldReference);
     builder.terms(tt -> tt.value(flowNodeIds.stream().map(FieldValue::of).toList()));
     if (IN.equals(operator)) {
@@ -352,7 +352,7 @@ public class ModelElementFilterQueryUtilES {
       final ZoneId timezone,
       final BoolQuery.Builder queryBuilder,
       final String nestedDateField) {
-    Optional<RangeQuery> rangeQuery =
+    final Optional<RangeQuery> rangeQuery =
         DateFilterQueryUtilES.createRangeQuery(filterData, nestedDateField, timezone);
     rangeQuery.ifPresent(
         dateRangeQuery -> {

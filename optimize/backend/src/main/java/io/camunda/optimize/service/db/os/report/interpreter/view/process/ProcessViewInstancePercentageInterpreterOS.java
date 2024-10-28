@@ -40,15 +40,15 @@ public class ProcessViewInstancePercentageInterpreterOS implements ProcessViewIn
 
   @Override
   public Map<String, Aggregation> createAggregations(
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     return Map.of(FREQUENCY_AGGREGATION, filterAggregation(matchAll()));
   }
 
   @Override
   public ViewResult retrieveResult(
-      SearchResponse<RawResult> response,
-      Map<String, Aggregate> aggregations,
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+      final SearchResponse<RawResult> response,
+      final Map<String, Aggregate> aggregations,
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     final long unfilteredTotalInstanceCount = context.getUnfilteredTotalInstanceCount();
     if (unfilteredTotalInstanceCount == 0) {
       return createViewResult(null);
@@ -59,7 +59,7 @@ public class ProcessViewInstancePercentageInterpreterOS implements ProcessViewIn
 
   @Override
   public ViewResult createEmptyResult(
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     // for instance count the default is 0
     // see https://jira.camunda.com/browse/OPT-3336
     return createViewResult(0.);

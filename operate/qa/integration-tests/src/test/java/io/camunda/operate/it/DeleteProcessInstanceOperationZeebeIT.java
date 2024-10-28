@@ -9,10 +9,10 @@ package io.camunda.operate.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.webapp.reader.BatchOperationReader;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
+import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Test;

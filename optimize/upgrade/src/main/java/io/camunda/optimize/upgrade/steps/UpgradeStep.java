@@ -24,7 +24,7 @@ public abstract class UpgradeStep {
     this.index = index;
   }
 
-  public UpgradeStep(IndexMappingCreator index, boolean skipIndexConversion) {
+  public UpgradeStep(final IndexMappingCreator index, final boolean skipIndexConversion) {
     this.index = index;
     this.skipIndexConversion = skipIndexConversion;
   }
@@ -43,38 +43,41 @@ public abstract class UpgradeStep {
   }
 
   public IndexMappingCreator getIndex() {
-    return this.index;
+    return index;
   }
 
-  public boolean isSkipIndexConversion() {
-    return this.skipIndexConversion;
-  }
-
-  public void setIndex(IndexMappingCreator index) {
+  public void setIndex(final IndexMappingCreator index) {
     this.index = index;
   }
 
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public boolean isSkipIndexConversion() {
+    return skipIndexConversion;
+  }
+
+  public void setSkipIndexConversion(final boolean skipIndexConversion) {
+    this.skipIndexConversion = skipIndexConversion;
   }
 
   protected boolean canEqual(final Object other) {
     return other instanceof UpgradeStep;
   }
 
+  @Override
   public int hashCode() {
     return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
-  public String toString() {
-    return "UpgradeStep(index="
-        + this.getIndex()
-        + ", skipIndexConversion="
-        + this.isSkipIndexConversion()
-        + ")";
+  @Override
+  public boolean equals(final Object o) {
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
-  public void setSkipIndexConversion(boolean skipIndexConversion) {
-    this.skipIndexConversion = skipIndexConversion;
+  @Override
+  public String toString() {
+    return "UpgradeStep(index="
+        + getIndex()
+        + ", skipIndexConversion="
+        + isSkipIndexConversion()
+        + ")";
   }
 }

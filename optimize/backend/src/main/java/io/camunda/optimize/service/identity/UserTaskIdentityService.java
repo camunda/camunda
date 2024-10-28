@@ -42,7 +42,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class UserTaskIdentityService {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(UserTaskIdentityService.class);
   private final AbstractIdentityService identityService;
   // These caches hold the user/group IDs that we cannot find in the "real" identityCache and
@@ -99,7 +99,7 @@ public class UserTaskIdentityService {
       final IdentityType identityType,
       final int resultLimit) {
     if (StringUtils.isEmpty(terms)) {
-      log.debug("Searching with empty search term. Retrieving all identities for given IDs.");
+      LOG.debug("Searching with empty search term. Retrieving all identities for given IDs.");
       return new IdentitySearchResultResponseDto(
           getIdentitiesByIdOrReturnDefaultDto(
               new HashSet<>(identityIds), identityType, resultLimit));
@@ -150,14 +150,14 @@ public class UserTaskIdentityService {
     return Optional.ofNullable(externalUserTaskAssignees.getIfPresent(id))
         .orElseGet(
             () -> {
-              log.debug(
+              LOG.debug(
                   "No user found in external user cache for ID [{}]. Looking up in identityService instead.",
                   id);
               return identityService
                   .getUserById(id)
                   .orElseGet(
                       () -> {
-                        log.debug(
+                        LOG.debug(
                             "No user found in identityService for ID [{}]. Adding to external user cache.",
                             id);
                         externalUserTaskAssignees.put(id, new UserDto(id));
@@ -169,14 +169,14 @@ public class UserTaskIdentityService {
   private List<IdentityWithMetadataResponseDto> getUsersByIdAndAddToCacheIfNotFound(
       Set<String> ids, final int resultLimit) {
     ids = ids.stream().sorted().limit(resultLimit).collect(toSet());
-    log.debug("Attempting to retrieve users from external user cache for IDs [{}].", ids);
+    LOG.debug("Attempting to retrieve users from external user cache for IDs [{}].", ids);
     // first check if any IDs are already known as external users
     final Map<String, UserDto> externalUsers = externalUserTaskAssignees.getAllPresent(ids);
     final List<IdentityWithMetadataResponseDto> result = new ArrayList<>(externalUsers.values());
     // then attempt to retrieve the rest from the real user cache
     ids.removeAll(externalUsers.keySet());
     if (!ids.isEmpty() && externalUsers.size() < resultLimit) {
-      log.debug(
+      LOG.debug(
           "No users found in external user cache for IDs [{}]. Attempting to retrieve from identityService instead.",
           ids);
       final List<IdentityWithMetadataResponseDto> existingUsers = identityService.getUsersById(ids);
@@ -196,14 +196,14 @@ public class UserTaskIdentityService {
     return Optional.ofNullable(externalUserTaskCandidateGroups.getIfPresent(id))
         .orElseGet(
             () -> {
-              log.debug(
+              LOG.debug(
                   "No group found in external group cache for ID [{}]. Looking up in identityService instead.",
                   id);
               return identityService
                   .getGroupById(id)
                   .orElseGet(
                       () -> {
-                        log.debug(
+                        LOG.debug(
                             "No group found in identityService for ID [{}]. Adding to external group cache.",
                             id);
                         externalUserTaskCandidateGroups.put(id, new GroupDto(id));
@@ -215,14 +215,14 @@ public class UserTaskIdentityService {
   private List<IdentityWithMetadataResponseDto> getGroupsByIdAndAddToCacheIfNotFound(
       Set<String> ids, final int resultLimit) {
     ids = ids.stream().sorted().limit(resultLimit).collect(toSet());
-    log.debug("Attempting to retrieve groups from external group cache for IDs [{}].", ids);
+    LOG.debug("Attempting to retrieve groups from external group cache for IDs [{}].", ids);
     // first check if any IDs are already known as external groups
     final Map<String, GroupDto> externalGroups = externalUserTaskCandidateGroups.getAllPresent(ids);
     final List<IdentityWithMetadataResponseDto> result = new ArrayList<>(externalGroups.values());
     // then attempt to retrieve the rest from the real group cache
     ids.removeAll(externalGroups.keySet());
     if (!ids.isEmpty() && result.size() < resultLimit) {
-      log.debug(
+      LOG.debug(
           "No groups found in external group cache for IDs [{}]. Attempting to retrieve from identityService instead.",
           ids);
       final List<IdentityWithMetadataResponseDto> existingGroups =
@@ -243,7 +243,7 @@ public class UserTaskIdentityService {
       final int resultLimit) {
     if (GROUP == identityType) {
       // Group search is not yet available in cloud, so only check/add to the external group cache
-      log.debug(
+      LOG.debug(
           "Searching for groups in external group cache for IDs [{}] and searchterm [{}].",
           identityIds,
           terms);
@@ -262,7 +262,7 @@ public class UserTaskIdentityService {
               .limit(resultLimit)
               .toList());
     } else {
-      log.debug(
+      LOG.debug(
           "Searching for users in external user cache for IDs [{}] and searchterm [{}].",
           identityIds,
           terms);
@@ -276,7 +276,7 @@ public class UserTaskIdentityService {
               .limit(resultLimit)
               .collect(toList());
       if (!identityIds.isEmpty() && result.size() < resultLimit) {
-        log.debug(
+        LOG.debug(
             "Searching for users in identityService for IDs [{}] and searchterm [{}].",
             identityIds,
             terms);

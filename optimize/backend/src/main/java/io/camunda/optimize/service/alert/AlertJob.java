@@ -44,7 +44,7 @@ public class AlertJob implements Job {
 
   private static final String HTTP_PREFIX = "http://";
   private static final String HTTPS_PREFIX = "https://";
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(AlertJob.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(AlertJob.class);
 
   private final ConfigurationService configurationService;
   private final List<AlertNotificationService> notificationServices;
@@ -72,7 +72,7 @@ public class AlertJob implements Job {
   public void execute(final JobExecutionContext jobExecutionContext) {
     final JobDataMap dataMap = jobExecutionContext.getJobDetail().getJobDataMap();
     final String alertId = dataMap.getString("alertId");
-    log.debug("Executing status check for alert [{}]", alertId);
+    LOG.debug("Executing status check for alert [{}]", alertId);
 
     final AlertDefinitionDto alert =
         alertReader
@@ -109,7 +109,7 @@ public class AlertJob implements Job {
         jobExecutionContext.setResult(handleAlertResolved(alert, reportDefinition, reportResult));
       }
     } catch (final Exception e) {
-      log.error(
+      LOG.error(
           "Error while processing alert [{}] for report [{}]", alertId, alert.getReportId(), e);
     }
   }
@@ -183,7 +183,7 @@ public class AlertJob implements Job {
       try {
         notificationService.notify(notification);
       } catch (final Exception e) {
-        log.error(
+        LOG.error(
             "Exception thrown while trying to send notification: {}",
             notificationService.getNotificationDescription(),
             e);

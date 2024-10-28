@@ -37,7 +37,7 @@ import org.springframework.stereotype.Component;
 @Conditional(CCSaaSCondition.class)
 public class MixpanelClient {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(MixpanelClient.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(MixpanelClient.class);
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
   private final CloseableHttpClient httpClient;
@@ -106,7 +106,7 @@ public class MixpanelClient {
                 "Mixpanel import was not successful, error: %s", mixpanelResponse.getError()));
       }
     } catch (final IOException e) {
-      log.warn("Could not parse response from Mixpanel.", e);
+      LOG.warn("Could not parse response from Mixpanel.", e);
     }
   }
 

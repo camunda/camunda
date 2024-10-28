@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class DecisionVariableReader {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DecisionVariableReader.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(DecisionVariableReader.class);
   private final DecisionDefinitionReader decisionDefinitionReader;
   private final VariableRepository variableRepository;
 
@@ -38,7 +38,7 @@ public class DecisionVariableReader {
       final List<String> decisionDefinitionVersions,
       final List<String> tenantIds) {
     if (decisionDefinitionVersions == null || decisionDefinitionVersions.isEmpty()) {
-      log.debug(
+      LOG.debug(
           "Cannot fetch output variable values for decision definition with missing versions.");
       return Collections.emptyList();
     }
@@ -90,12 +90,12 @@ public class DecisionVariableReader {
   public List<String> getInputVariableValues(final DecisionVariableValueRequestDto requestDto) {
     if (requestDto.getDecisionDefinitionVersions() == null
         || requestDto.getDecisionDefinitionVersions().isEmpty()) {
-      log.debug(
+      LOG.debug(
           "Cannot fetch input variable values for decision definition with missing versions.");
       return Collections.emptyList();
     }
 
-    log.debug(
+    LOG.debug(
         "Fetching input variable values for decision definition with key [{}] and versions [{}]",
         requestDto.getDecisionDefinitionKey(),
         requestDto.getDecisionDefinitionVersions());
@@ -106,12 +106,12 @@ public class DecisionVariableReader {
   public List<String> getOutputVariableValues(final DecisionVariableValueRequestDto requestDto) {
     if (requestDto.getDecisionDefinitionVersions() == null
         || requestDto.getDecisionDefinitionVersions().isEmpty()) {
-      log.debug(
+      LOG.debug(
           "Cannot fetch output variable values for decision definition with missing versions.");
       return Collections.emptyList();
     }
 
-    log.debug(
+    LOG.debug(
         "Fetching output variable values for decision definition with key [{}] and versions [{}]",
         requestDto.getDecisionDefinitionKey(),
         requestDto.getDecisionDefinitionVersions());

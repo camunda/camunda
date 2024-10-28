@@ -9,7 +9,7 @@ package io.camunda.optimize.service.exceptions;
 
 public class OptimizeNotSpecifiedDatabaseTypeException extends OptimizeRuntimeException {
 
-  public OptimizeNotSpecifiedDatabaseTypeException(String message) {
+  public OptimizeNotSpecifiedDatabaseTypeException(final String message) {
     super(message);
   }
 }

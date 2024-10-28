@@ -7,6 +7,8 @@
  */
 
 import {shallow} from 'enzyme';
+import {Tag} from '@carbon/react';
+
 import CollectionHeader from './CollectionHeader';
 
 const collection = {
@@ -64,7 +66,7 @@ it('should render the collection name', () => {
 it('should render the collection role', () => {
   const node = shallow(<CollectionHeader {...props} />);
 
-  expect(node.find('Tag').dive().find('Text').dive().text()).toBe('Manager');
+  expect(node.find(Tag)).toIncludeText('Manager');
 });
 
 it('should render loading state', () => {

@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 public interface ProcessExecutionPlanInterpreter
     extends ExecutionPlanInterpreter<ProcessReportDataDto, ProcessExecutionPlan>,
         HasGroupByMinMaxStats<ProcessReportDataDto, ProcessExecutionPlan> {
+
   // Instance date filters should also reduce the total count (baseline) considered for report
   // evaluation
   static final List<Class<? extends ProcessFilterDto<?>>> FILTERS_AFFECTING_BASELINE =
@@ -35,7 +36,7 @@ public interface ProcessExecutionPlanInterpreter
           FlowNodeEndDateFilterDto.class);
 
   default Map<String, List<ProcessFilterDto<?>>> getInstanceLevelDateFiltersByDefinitionKey(
-      ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     return context.getReportData().groupFiltersByDefinitionIdentifier().entrySet().stream()
         .collect(
             Collectors.toMap(

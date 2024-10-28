@@ -28,7 +28,7 @@ public abstract class DatabaseMetadataService<CLIENT extends DatabaseClient> {
   protected static final String ERROR_MESSAGE_READING_METADATA_DOC =
       "Failed retrieving the Optimize metadata document from database!";
   protected static final String CURRENT_OPTIMIZE_VERSION = Version.VERSION;
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(DatabaseMetadataService.class);
 
   protected final ObjectMapper objectMapper;
@@ -98,10 +98,10 @@ public abstract class DatabaseMetadataService<CLIENT extends DatabaseClient> {
     params.put("newInstallationId", newInstallationId);
     String scriptString =
         """
-                    if (ctx._source.$type == null) {
-                       ctx._source.$type = params.newInstallationId;
-                    }
-                    """
+            if (ctx._source.$type == null) {
+               ctx._source.$type = params.newInstallationId;
+            }
+            """
             .replace("$type", MetadataDto.Fields.installationId.name());
 
     if (!StringUtils.isBlank(newSchemaVersion)) {

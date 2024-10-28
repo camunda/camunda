@@ -161,7 +161,7 @@ public class ProcessFilterBuilder {
     return InstancesContainingUserTasksFilterBuilder.construct(this);
   }
 
-  void addFilter(ProcessFilterDto<?> result) {
+  void addFilter(final ProcessFilterDto<?> result) {
     filters.add(result);
   }
 

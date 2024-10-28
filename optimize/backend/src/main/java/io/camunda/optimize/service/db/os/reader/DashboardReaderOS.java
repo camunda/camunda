@@ -36,7 +36,7 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class DashboardReaderOS implements DashboardReader {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DashboardReaderOS.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(DashboardReaderOS.class);
   private final OptimizeOpenSearchClient osClient;
 
   public DashboardReaderOS(final OptimizeOpenSearchClient osClient) {
@@ -54,7 +54,7 @@ public class DashboardReaderOS implements DashboardReader {
 
   @Override
   public Optional<DashboardDefinitionRestDto> getDashboard(final String dashboardId) {
-    log.debug("Fetching dashboard with id [{}]", dashboardId);
+    LOG.debug("Fetching dashboard with id [{}]", dashboardId);
     final GetRequest.Builder getRequest =
         new GetRequest.Builder().index(DASHBOARD_INDEX_NAME).id(dashboardId);
 
@@ -72,7 +72,7 @@ public class DashboardReaderOS implements DashboardReader {
 
   @Override
   public List<DashboardDefinitionRestDto> getDashboards(final Set<String> dashboardIds) {
-    log.debug("Fetching dashboards with IDs {}", dashboardIds);
+    LOG.debug("Fetching dashboards with IDs {}", dashboardIds);
     final String[] dashboardIdsAsArray = dashboardIds.toArray(new String[0]);
 
     final SearchRequest.Builder requestBuilder =
@@ -92,7 +92,7 @@ public class DashboardReaderOS implements DashboardReader {
 
   @Override
   public List<DashboardDefinitionRestDto> getDashboardsForCollection(final String collectionId) {
-    log.debug("Fetching dashboards using collection with id {}", collectionId);
+    LOG.debug("Fetching dashboards using collection with id {}", collectionId);
 
     final SearchRequest.Builder requestBuilder =
         new SearchRequest.Builder()
@@ -110,7 +110,7 @@ public class DashboardReaderOS implements DashboardReader {
 
   @Override
   public List<DashboardDefinitionRestDto> getDashboardsForReport(final String reportId) {
-    log.debug("Fetching dashboards using report with id {}", reportId);
+    LOG.debug("Fetching dashboards using report with id {}", reportId);
 
     final Query getCombinedReportsBySimpleReportIdQuery =
         new BoolQuery.Builder()

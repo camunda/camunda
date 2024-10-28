@@ -121,7 +121,7 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class VariableRepositoryES implements VariableRepository {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(VariableRepositoryES.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(VariableRepositoryES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
   private final ConfigurationService configurationService;
@@ -132,14 +132,14 @@ public class VariableRepositoryES implements VariableRepository {
   private final TaskRepositoryES taskRepositoryES;
 
   public VariableRepositoryES(
-      OptimizeElasticsearchClient esClient,
-      ObjectMapper objectMapper,
-      ConfigurationService configurationService,
-      DateTimeFormatter dateTimeFormatter,
-      DecisionDefinitionReader decisionDefinitionReader,
-      ProcessQueryFilterEnhancerES processQueryFilterEnhancer,
-      ProcessDefinitionReader processDefinitionReader,
-      TaskRepositoryES taskRepositoryES) {
+      final OptimizeElasticsearchClient esClient,
+      final ObjectMapper objectMapper,
+      final ConfigurationService configurationService,
+      final DateTimeFormatter dateTimeFormatter,
+      final DecisionDefinitionReader decisionDefinitionReader,
+      final ProcessQueryFilterEnhancerES processQueryFilterEnhancer,
+      final ProcessDefinitionReader processDefinitionReader,
+      final TaskRepositoryES taskRepositoryES) {
     this.esClient = esClient;
     this.objectMapper = objectMapper;
     this.configurationService = configurationService;
@@ -213,7 +213,7 @@ public class VariableRepositoryES implements VariableRepository {
           String.format(
               "Was not able to update the variable labels for the process definition with id: [%s]",
               definitionVariableLabelsDto.getDefinitionKey());
-      log.error(errorMessage, e);
+      LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     } catch (final ElasticsearchException e) {
       final String errorMessage =
@@ -221,7 +221,7 @@ public class VariableRepositoryES implements VariableRepository {
               "Was not able to update the variable labels for the process definition with id: [%s] due to an Elasticsearch"
                   + " exception",
               definitionVariableLabelsDto.getDefinitionKey());
-      log.error(errorMessage, e);
+      LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
   }
@@ -241,7 +241,7 @@ public class VariableRepositoryES implements VariableRepository {
       final String errorMessage =
           String.format(
               "Could not delete variable label document with id [%s]. ", processDefinitionKey);
-      log.error(errorMessage, e);
+      LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
   }
@@ -307,7 +307,7 @@ public class VariableRepositoryES implements VariableRepository {
           String.format(
               "There was an error while fetching documents from the variable label index with keys %s.",
               processDefinitionKeys);
-      log.error(errorMessage, e);
+      LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
   }
@@ -353,7 +353,7 @@ public class VariableRepositoryES implements VariableRepository {
                           .sort(ss -> ss.field(f -> f.field(TIMESTAMP).order(SortOrder.Asc)))),
               VariableUpdateInstanceDto.class);
     } catch (final IOException e) {
-      log.error("Was not able to retrieve variable instance updates!", e);
+      LOG.error("Was not able to retrieve variable instance updates!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve variable instance updates!", e);
     }
 
@@ -409,7 +409,7 @@ public class VariableRepositoryES implements VariableRepository {
 
   @Override
   public List<ExternalProcessVariableDto> getVariableUpdatesIngestedAfter(
-      final Long ingestTimestamp, int limit) {
+      final Long ingestTimestamp, final int limit) {
     return getPageOfVariablesSortedByIngestionTimestamp(
         Query.of(q -> q.range(r -> r.field(INGESTION_TIMESTAMP).gt(JsonData.of(ingestTimestamp)))),
         limit);
@@ -460,11 +460,11 @@ public class VariableRepositoryES implements VariableRepository {
           String.format(
               "Was not able to fetch values for variable [%s] with type [%s] ",
               requestDto.getVariableId(), requestDto.getVariableType());
-      log.error(reason, e);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     } catch (final ElasticsearchException e) {
       if (isInstanceIndexNotFoundException(DECISION, e)) {
-        log.info(
+        LOG.info(
             "Was not able to fetch variable values because no instance index with alias {} exists. "
                 + "Returning empty list.",
             getDecisionInstanceIndexAliasName(requestDto.getDecisionDefinitionKey()));
@@ -514,7 +514,7 @@ public class VariableRepositoryES implements VariableRepository {
       final Supplier<BoolQuery.Builder> baseQueryBuilderSupplier,
       final Map<String, DefinitionVariableLabelsDto> definitionLabelsDtos) {
 
-    String[] indicesToTarget =
+    final String[] indicesToTarget =
         processDefinitionKeysToTarget.stream()
             .map(InstanceIndexUtil::getProcessInstanceIndexAliasName)
             .toArray(String[]::new);
@@ -583,7 +583,7 @@ public class VariableRepositoryES implements VariableRepository {
                                                               return c;
                                                             })))))));
 
-    List<ProcessVariableNameResponseDto> variableNames = new ArrayList<>();
+    final List<ProcessVariableNameResponseDto> variableNames = new ArrayList<>();
     ElasticsearchCompositeAggregationScroller.create()
         .setEsClient(esClient)
         .setSearchRequest(aggregationRequestWithAfterKeys.apply(null))
@@ -635,16 +635,16 @@ public class VariableRepositoryES implements VariableRepository {
       final Map<String, Aggregate> aggregations = searchResponse.aggregations();
 
       return extractVariableValues(aggregations, requestDto);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String reason =
           String.format(
               "Was not able to fetch values for variable [%s] with type [%s] ",
               requestDto.getName(), requestDto.getType().getId());
-      log.error(sanitizeLogMessage(reason), e);
+      LOG.error(sanitizeLogMessage(reason), e);
       throw new OptimizeRuntimeException(reason, e);
-    } catch (ElasticsearchException e) {
+    } catch (final ElasticsearchException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
-        log.info(
+        LOG.info(
             "Was not able to fetch variable values because no instance indices exist. Returning empty list.");
         return Collections.emptyList();
       }
@@ -685,13 +685,13 @@ public class VariableRepositoryES implements VariableRepository {
     final NestedAggregate variablesFromType = aggregations.get(variableFieldLabel).nested();
     final FilterAggregate filteredVariables =
         variablesFromType.aggregations().get(FILTERED_VARIABLES_AGGREGATION).filter();
-    List<String> allValues = new ArrayList<>();
+    final List<String> allValues = new ArrayList<>();
     final Aggregate aggregate = filteredVariables.aggregations().get(VALUE_AGGREGATION);
 
     if (aggregate.isLterms()) {
       final LongTermsAggregate valueTerms =
           filteredVariables.aggregations().get(VALUE_AGGREGATION).lterms();
-      for (LongTermsBucket valueBucket : valueTerms.buckets().array()) {
+      for (final LongTermsBucket valueBucket : valueTerms.buckets().array()) {
         allValues.add(
             String.valueOf(
                 valueBucket.keyAsString() != null ? valueBucket.keyAsString() : valueBucket.key()));
@@ -699,13 +699,13 @@ public class VariableRepositoryES implements VariableRepository {
     } else if (aggregate.isSterms()) {
       final StringTermsAggregate valueTerms =
           filteredVariables.aggregations().get(VALUE_AGGREGATION).sterms();
-      for (StringTermsBucket valueBucket : valueTerms.buckets().array()) {
+      for (final StringTermsBucket valueBucket : valueTerms.buckets().array()) {
         allValues.add(valueBucket.key().stringValue());
       }
     } else if (aggregate.isDterms()) {
       final DoubleTermsAggregate valueTerms =
           filteredVariables.aggregations().get(VALUE_AGGREGATION).dterms();
-      for (DoubleTermsBucket valueBucket : valueTerms.buckets().array()) {
+      for (final DoubleTermsBucket valueBucket : valueTerms.buckets().array()) {
         allValues.add(Double.toString(valueBucket.key()));
       }
     }
@@ -803,8 +803,8 @@ public class VariableRepositoryES implements VariableRepository {
       final VariableType variableType,
       final String valueFilter,
       final BoolQuery.Builder filterQueryBuilder) {
-    boolean isStringVariable = VariableType.STRING.equals(variableType);
-    boolean valueFilterIsConfigured = valueFilter != null && !valueFilter.isEmpty();
+    final boolean isStringVariable = VariableType.STRING.equals(variableType);
+    final boolean valueFilterIsConfigured = valueFilter != null && !valueFilter.isEmpty();
     if (isStringVariable && valueFilterIsConfigured) {
       final String lowerCaseValue = valueFilter.toLowerCase(Locale.ENGLISH);
       filterQueryBuilder.must(

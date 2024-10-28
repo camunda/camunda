@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class VariableUpdateInstanceReader {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(VariableUpdateInstanceReader.class);
   private final VariableRepository variableRepository;
 
@@ -28,7 +28,7 @@ public class VariableUpdateInstanceReader {
 
   public List<VariableUpdateInstanceDto> getVariableInstanceUpdatesForProcessInstanceIds(
       final Set<String> processInstanceIds) {
-    log.debug(
+    LOG.debug(
         "Fetching variable instance updates for [{}] process instances", processInstanceIds.size());
 
     if (processInstanceIds.isEmpty()) {

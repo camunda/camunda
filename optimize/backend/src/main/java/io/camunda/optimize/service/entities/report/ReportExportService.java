@@ -29,7 +29,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ReportExportService {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ReportExportService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ReportExportService.class);
   private final ReportReader reportReader;
   private final ReportAuthorizationService reportAuthorizationService;
   private final AuthorizedCollectionService authorizedCollectionService;
@@ -44,7 +44,7 @@ public class ReportExportService {
   }
 
   public List<ReportDefinitionExportDto> getReportExportDtos(final Set<String> reportIds) {
-    log.debug("Exporting all reports with IDs {} for export via API.", reportIds);
+    LOG.debug("Exporting all reports with IDs {} for export via API.", reportIds);
     final List<ReportDefinitionDto<?>> reportDefinitions =
         retrieveReportDefinitionsOrFailIfMissing(reportIds);
     return reportDefinitions.stream()
@@ -54,7 +54,7 @@ public class ReportExportService {
 
   public List<ReportDefinitionExportDto> getReportExportDtosAsUser(
       final String userId, final Set<String> reportIds) {
-    log.debug("Exporting all reports with IDs {} as user {}.", reportIds, userId);
+    LOG.debug("Exporting all reports with IDs {} as user {}.", reportIds, userId);
     final List<ReportDefinitionDto<?>> reportDefinitions =
         retrieveReportDefinitionsOrFailIfMissing(reportIds);
     validateReportAuthorizationsOrFail(userId, reportDefinitions);

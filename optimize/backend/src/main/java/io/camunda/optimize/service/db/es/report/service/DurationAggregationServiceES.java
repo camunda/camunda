@@ -56,8 +56,8 @@ public class DurationAggregationServiceES extends DurationAggregationService {
   private final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
 
   public DurationAggregationServiceES(
-      MinMaxStatsServiceES minMaxStatsService,
-      ProcessDistributedByInterpreterFacadeES distributedByInterpreter) {
+      final MinMaxStatsServiceES minMaxStatsService,
+      final ProcessDistributedByInterpreterFacadeES distributedByInterpreter) {
     this.minMaxStatsService = minMaxStatsService;
     this.distributedByInterpreter = distributedByInterpreter;
   }
@@ -139,7 +139,8 @@ public class DurationAggregationServiceES extends DurationAggregationService {
             .map(aggregations -> aggregations.get(DURATION_HISTOGRAM_AGGREGATION).histogram());
 
     if (histogramAggregationResult.isPresent()) {
-      for (HistogramBucket durationBucket : histogramAggregationResult.get().buckets().array()) {
+      for (final HistogramBucket durationBucket :
+          histogramAggregationResult.get().buckets().array()) {
         final List<CompositeCommandResult.DistributedByResult> distributions =
             distributedByInterpreter.retrieveResult(
                 response, durationBucket.aggregations(), context);

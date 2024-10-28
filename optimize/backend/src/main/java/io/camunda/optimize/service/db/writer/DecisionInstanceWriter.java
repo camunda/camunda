@@ -25,7 +25,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class DecisionInstanceWriter {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DecisionInstanceWriter.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(DecisionInstanceWriter.class);
   private final IndexRepository indexRepository;
   private final TaskRepository taskRepository;
   private final Repository repository;
@@ -44,7 +44,7 @@ public class DecisionInstanceWriter {
 
   public void importDecisionInstances(final List<DecisionInstanceDto> decisionInstanceDtos) {
     final String importItemName = "decision instances";
-    log.debug("Writing [{}] {} to Database.", decisionInstanceDtos.size(), importItemName);
+    LOG.debug("Writing [{}] {} to Database.", decisionInstanceDtos.size(), importItemName);
     final Set<String> decisionDefinitionKeys =
         decisionInstanceDtos.stream()
             .map(DecisionInstanceDto::getDecisionDefinitionKey)
@@ -57,7 +57,7 @@ public class DecisionInstanceWriter {
   public void deleteDecisionInstancesByDefinitionKeyAndEvaluationDateOlderThan(
       final String decisionDefinitionKey, final OffsetDateTime evaluationDate) {
     if (!indexRepository.indexExists(DECISION_INSTANCE_INDEX, decisionDefinitionKey)) {
-      log.info(
+      LOG.info(
           "Aborting deletion of instances of definition with key {} because no instances exist for this definition.",
           decisionDefinitionKey);
       return;
@@ -68,6 +68,6 @@ public class DecisionInstanceWriter {
             decisionInstanceRepository
                 .deleteDecisionInstancesByDefinitionKeyAndEvaluationDateOlderThan(
                     decisionDefinitionKey, evaluationDate),
-        log);
+        LOG);
   }
 }

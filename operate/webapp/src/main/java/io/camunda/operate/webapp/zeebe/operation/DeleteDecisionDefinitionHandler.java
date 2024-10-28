@@ -7,13 +7,13 @@
  */
 package io.camunda.operate.webapp.zeebe.operation;
 
-import io.camunda.operate.entities.OperationEntity;
-import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.OperationsManager;
 import io.camunda.operate.webapp.reader.DecisionReader;
 import io.camunda.operate.webapp.writer.DecisionWriter;
 import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
+import io.camunda.webapps.schema.entities.operation.OperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

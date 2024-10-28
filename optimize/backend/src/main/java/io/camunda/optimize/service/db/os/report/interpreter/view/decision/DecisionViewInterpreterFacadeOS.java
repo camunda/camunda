@@ -45,26 +45,26 @@ public class DecisionViewInterpreterFacadeOS
 
   @Override
   public ViewProperty getViewProperty(
-      ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
+      final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
     return interpreter(context.getPlan().getView()).getViewProperty(context);
   }
 
   @Override
   public ViewResult createEmptyResult(
-      ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
+      final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
     return interpreter(context.getPlan().getView()).createEmptyResult(context);
   }
 
   public Map<String, Aggregation> createAggregations(
-      ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
+      final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
     return interpreter(context.getPlan().getView()).createAggregations(context);
   }
 
   @Override
   public ViewResult retrieveResult(
-      SearchResponse<RawResult> response,
-      Map<String, Aggregate> aggregations,
-      ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
+      final SearchResponse<RawResult> response,
+      final Map<String, Aggregate> aggregations,
+      final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
     return interpreter(context.getPlan().getView()).retrieveResult(response, aggregations, context);
   }
 

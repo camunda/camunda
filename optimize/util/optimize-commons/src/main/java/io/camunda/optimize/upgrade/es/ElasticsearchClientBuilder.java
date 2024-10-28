@@ -52,7 +52,7 @@ public class ElasticsearchClientBuilder {
   private static final String HTTPS = "https";
   private static TransportOptions transportOptions;
 
-  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchClientBuilder.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchClientBuilder.class);
 
   public static ElasticsearchClient build(
       final ConfigurationService configurationService,
@@ -74,7 +74,7 @@ public class ElasticsearchClientBuilder {
         extractPluginConfigs(configurationService.getElasticSearchConfiguration());
     pluginRepository.load(plugins);
     if (configurationService.getElasticSearchConfiguration().getSecuritySSLEnabled()) {
-      logger.info("Setting up https rest client connection");
+      LOGGER.info("Setting up https rest client connection");
       final RestClientBuilder builder =
           buildDefaultRestClient(
               configurationService, HTTPS, pluginRepository.asRequestInterceptor());
@@ -103,7 +103,7 @@ public class ElasticsearchClientBuilder {
       }
       return builder.build();
     } else {
-      logger.info("Setting up http rest client connection");
+      LOGGER.info("Setting up http rest client connection");
       return buildDefaultRestClient(
               configurationService, HTTP, pluginRepository.asRequestInterceptor())
           .build();
@@ -193,7 +193,7 @@ public class ElasticsearchClientBuilder {
               configurationService.getElasticSearchConfiguration().getSecurityUsername(),
               configurationService.getElasticSearchConfiguration().getSecurityPassword()));
     } else {
-      logger.debug(
+      LOGGER.debug(
           "Elasticsearch username and password not provided, skipping connection credential setup.");
     }
     return Optional.ofNullable(credentialsProvider);
@@ -252,7 +252,7 @@ public class ElasticsearchClientBuilder {
 
       if (bis.available() > 0) {
         cert = cf.generateCertificate(bis);
-        logger.debug("Found certificate: {}", cert);
+        LOGGER.debug("Found certificate: {}", cert);
       } else {
         throw new OptimizeConfigurationException(
             "Could not load certificate from file, file is empty. File: " + certificatePath);
@@ -263,7 +263,7 @@ public class ElasticsearchClientBuilder {
 
   private static ElasticsearchClient getElasticsearchClient(
       final RestClient builder, final ObjectMapper objectMapper) {
-    logger.info("Finished setting up HTTP rest client connection.");
+    LOGGER.info("Finished setting up HTTP rest client connection.");
     return new ElasticsearchClient(
         new RestClientTransport(builder, new JacksonJsonpMapper(objectMapper)), transportOptions);
   }

@@ -17,6 +17,7 @@ import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
@@ -29,6 +30,7 @@ import io.camunda.search.query.FormQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
@@ -45,6 +47,7 @@ public class SearchClients
         IncidentSearchClient,
         ProcessDefinitionSearchClient,
         ProcessInstanceSearchClient,
+        RoleSearchClient,
         UserTaskSearchClient,
         UserSearchClient,
         VariableSearchClient {
@@ -128,6 +131,14 @@ public class SearchClients
     final var executor =
         new SearchClientBasedQueryExecutor(searchClient, transformers, securityContext);
     return executor.search(filter, ProcessInstanceEntity.class);
+  }
+
+  @Override
+  public SearchQueryResult<RoleEntity> searchRoles(
+      final RoleQuery filter, final SecurityContext securityContext) {
+    final var executor =
+        new SearchClientBasedQueryExecutor(searchClient, transformers, securityContext);
+    return executor.search(filter, RoleEntity.class);
   }
 
   @Override

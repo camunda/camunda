@@ -231,9 +231,10 @@ public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionE
   }
 
   public ReportDefinitionDtoBuilder<D, ?, ?> toBuilder() {
-    return new ReportDefinitionDtoBuilderImpl<D>().$fillValuesFrom(this);
+    return new ReportDefinitionDtoBuilderImpl<D>().fillValuesFrom(this);
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String id = "id";
@@ -325,7 +326,7 @@ public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionE
       return self();
     }
 
-    private static <D extends ReportDataDto> void $fillValuesFromInstanceIntoBuilder(
+    private static <D extends ReportDataDto> void fillValuesFromInstanceIntoBuilder(
         final ReportDefinitionDto<D> instance, final ReportDefinitionDtoBuilder<D, ?, ?> b) {
       b.id(instance.id);
       b.name(instance.name);
@@ -340,8 +341,8 @@ public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionE
       b.reportType(instance.reportType);
     }
 
-    protected B $fillValuesFrom(final C instance) {
-      ReportDefinitionDtoBuilder.$fillValuesFromInstanceIntoBuilder(instance, this);
+    protected B fillValuesFrom(final C instance) {
+      ReportDefinitionDtoBuilder.fillValuesFromInstanceIntoBuilder(instance, this);
       return self();
     }
 

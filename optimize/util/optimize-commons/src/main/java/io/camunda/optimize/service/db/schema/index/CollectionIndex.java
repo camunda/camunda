@@ -57,7 +57,7 @@ public abstract class CollectionIndex<TBuilder> extends DefaultIndexMappingCreat
                 p -> p.boolean_(k -> k)));
   }
 
-  private TypeMapping.Builder addDataField(TypeMapping.Builder xContentBuilder) {
+  private TypeMapping.Builder addDataField(final TypeMapping.Builder xContentBuilder) {
     return xContentBuilder.properties(
         DATA,
         p ->

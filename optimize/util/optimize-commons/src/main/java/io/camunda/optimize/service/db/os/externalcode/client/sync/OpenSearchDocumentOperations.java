@@ -69,7 +69,7 @@ import org.slf4j.Logger;
 public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
 
   public static final String SCROLL_KEEP_ALIVE_MS = "60000ms";
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(OpenSearchDocumentOperations.class);
 
   public OpenSearchDocumentOperations(
@@ -94,7 +94,7 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
       try {
         openSearchClient.clearScroll(clearScrollRequest(scrollId));
       } catch (final Exception e) {
-        log.warn("Error occurred when clearing the scroll with id [{}]", scrollId);
+        LOG.warn("Error occurred when clearing the scroll with id [{}]", scrollId);
       }
     }
   }
@@ -134,7 +134,7 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
       final Consumer<HitsMetadata<R>> hitsMetadataConsumer,
       final Class<R> clazz)
       throws IOException {
-    SearchResponse<R> response = openSearchClient.search(request, clazz);
+    final SearchResponse<R> response = openSearchClient.search(request, clazz);
     return scrollWith(
         request, response, hitsConsumer, hitsMetadataConsumer, clazz, Integer.MAX_VALUE);
   }
@@ -379,11 +379,11 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
       return response.found() ? Optional.ofNullable(response.source()) : Optional.empty();
     } catch (final OpenSearchException | IOException e) {
       if (openSearchClient._transport() instanceof AwsSdk2Transport
-          && e instanceof OpenSearchException osException
+          && e instanceof final OpenSearchException osException
           && isAwsNotFoundException(osException)) {
         return Optional.empty();
       } else {
-        log.error(e.getMessage());
+        LOG.error(e.getMessage());
         throw new OptimizeRuntimeException(e.getMessage());
       }
     }
@@ -417,12 +417,12 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
     if (status == null) {
       final String message =
           String.format("Could not delete any record from the indexes [%s]", listIndexes);
-      log.error(message);
+      LOG.error(message);
       throw new OptimizeRuntimeException(message);
     } else {
       final String message =
           String.format("Deleted [%s] records from the indexes [%s]", status, listIndexes);
-      log.debug(message);
+      LOG.debug(message);
       return status;
     }
   }
@@ -445,12 +445,12 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
 
     if (status == null) {
       final String message = String.format("Could not update any record from the [%s]", index);
-      log.error(message);
+      LOG.error(message);
       throw new OptimizeRuntimeException(message);
     } else {
       final String message =
           String.format("Updated [%s] records from the index [%s]", status, index);
-      log.debug(message);
+      LOG.debug(message);
       return status;
     }
   }
@@ -534,7 +534,7 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
             .build();
       } else {
         final String message = errorMessageSupplier.apply(e);
-        log.error(message, e);
+        LOG.error(message, e);
         throw new OptimizeRuntimeException(message, e);
       }
     }

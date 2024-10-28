@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.rest.queryparam;
 
-public class QueryParamUtil {
+public final class QueryParamUtil {
 
   private QueryParamUtil() {}
 

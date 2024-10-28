@@ -14,7 +14,7 @@ import org.slf4j.Logger;
 
 public class Upgrade86to87PlanFactory implements UpgradePlanFactory {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(Upgrade86to87PlanFactory.class);
 
   @Override
@@ -26,6 +26,6 @@ public class Upgrade86to87PlanFactory implements UpgradePlanFactory {
 
   @Override
   public void logErrorMessage(final String message) {
-    log.error(message);
+    LOG.error(message);
   }
 }

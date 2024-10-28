@@ -9,11 +9,11 @@ package io.camunda.optimize.service.exceptions;
 
 public class DataGenerationException extends RuntimeException {
 
-  public DataGenerationException(String detailedErrorMessage) {
+  public DataGenerationException(final String detailedErrorMessage) {
     super(detailedErrorMessage);
   }
 
-  public DataGenerationException(String detailedErrorMessage, Throwable e) {
+  public DataGenerationException(final String detailedErrorMessage, final Throwable e) {
     super(detailedErrorMessage, e);
   }
 }

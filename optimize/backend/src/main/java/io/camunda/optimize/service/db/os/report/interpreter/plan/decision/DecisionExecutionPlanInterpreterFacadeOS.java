@@ -27,7 +27,7 @@ public class DecisionExecutionPlanInterpreterFacadeOS
     implements DecisionExecutionPlanInterpreterFacade {
 
   public DecisionExecutionPlanInterpreterFacadeOS(
-      List<DecisionExecutionPlanInterpreter> interpreters) {
+      final List<DecisionExecutionPlanInterpreter> interpreters) {
     super(interpreters, DecisionExecutionPlanInterpreter::getSupportedExecutionPlans);
   }
 

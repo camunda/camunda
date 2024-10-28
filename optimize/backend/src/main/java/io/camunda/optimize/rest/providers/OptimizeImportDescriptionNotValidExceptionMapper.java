@@ -22,7 +22,7 @@ public class OptimizeImportDescriptionNotValidExceptionMapper
     implements ExceptionMapper<OptimizeImportDescriptionNotValidException> {
 
   public static final String ERROR_CODE = "importDescriptionInvalid";
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(OptimizeImportDescriptionNotValidExceptionMapper.class);
 
   private final LocalizationService localizationService;
@@ -34,7 +34,7 @@ public class OptimizeImportDescriptionNotValidExceptionMapper
 
   @Override
   public Response toResponse(final OptimizeImportDescriptionNotValidException exception) {
-    log.info("Mapping OptimizeImportDescriptionNotValidException");
+    LOG.info("Mapping OptimizeImportDescriptionNotValidException");
 
     return Response.status(Response.Status.BAD_REQUEST)
         .type(MediaType.APPLICATION_JSON_TYPE)

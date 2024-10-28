@@ -102,6 +102,7 @@ public abstract class IdentityCacheConfiguration {
         + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String includeUserMetaData = "includeUserMetaData";

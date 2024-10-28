@@ -44,7 +44,7 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class SharingReaderOS implements SharingReader {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(SharingReaderOS.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(SharingReaderOS.class);
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
 
@@ -56,7 +56,7 @@ public class SharingReaderOS implements SharingReader {
 
   @Override
   public Optional<ReportShareRestDto> getReportShare(final String shareId) {
-    log.debug("Fetching report share with id [{}]", shareId);
+    LOG.debug("Fetching report share with id [{}]", shareId);
     final GetRequest.Builder getReqBuilder =
         new GetRequest.Builder().index(REPORT_SHARE_INDEX_NAME).id(shareId);
 
@@ -73,7 +73,7 @@ public class SharingReaderOS implements SharingReader {
 
   @Override
   public Optional<DashboardShareRestDto> findDashboardShare(final String shareId) {
-    log.debug("Fetching dashboard share with id [{}]", shareId);
+    LOG.debug("Fetching dashboard share with id [{}]", shareId);
     final GetRequest.Builder getReqBuilder =
         new GetRequest.Builder().index(DASHBOARD_SHARE_INDEX_NAME).id(shareId);
 
@@ -90,7 +90,7 @@ public class SharingReaderOS implements SharingReader {
 
   @Override
   public Optional<ReportShareRestDto> findShareForReport(final String reportId) {
-    log.debug("Fetching share for resource [{}]", reportId);
+    LOG.debug("Fetching share for resource [{}]", reportId);
     final BoolQuery.Builder boolQueryBuilder =
         new BoolQuery.Builder().must(QueryDSL.term(ReportShareIndex.REPORT_ID, reportId));
     return findReportShareByQuery(boolQueryBuilder.build());
@@ -98,7 +98,7 @@ public class SharingReaderOS implements SharingReader {
 
   @Override
   public Optional<DashboardShareRestDto> findShareForDashboard(final String dashboardId) {
-    log.debug("Fetching share for resource [{}]", dashboardId);
+    LOG.debug("Fetching share for resource [{}]", dashboardId);
     final SearchResponse<DashboardShareRestDto> searchResponse =
         performSearchShareForDashboardIdRequest(dashboardId);
     final List<DashboardShareRestDto> results =
@@ -201,7 +201,7 @@ public class SharingReaderOS implements SharingReader {
     try {
       scrollResp = osClient.retrieveAllScrollResults(searchReqBuilder, responseType);
     } catch (final IOException e) {
-      log.error(errorMessage, e);
+      LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
     return OpensearchReaderUtil.extractAggregatedResponseValues(scrollResp);

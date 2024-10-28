@@ -53,10 +53,10 @@ public class ProcessGroupByUserTaskInterpreterES extends AbstractGroupByUserTask
   private final ProcessViewInterpreterFacadeES viewInterpreter;
 
   public ProcessGroupByUserTaskInterpreterES(
-      ConfigurationService configurationService,
-      DefinitionService definitionService,
-      ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
-      ProcessViewInterpreterFacadeES viewInterpreter) {
+      final ConfigurationService configurationService,
+      final DefinitionService definitionService,
+      final ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
+      final ProcessViewInterpreterFacadeES viewInterpreter) {
     this.configurationService = configurationService;
     this.definitionService = definitionService;
     this.distributedByInterpreter = distributedByInterpreter;

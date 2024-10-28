@@ -76,17 +76,17 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class EntitiesReaderOS implements EntitiesReader {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(EntitiesReaderOS.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(EntitiesReaderOS.class);
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
   private final OptimizeIndexNameService optimizeIndexNameService;
   private final LocalizationService localizationService;
 
   public EntitiesReaderOS(
-      OptimizeOpenSearchClient osClient,
-      ConfigurationService configurationService,
-      OptimizeIndexNameService optimizeIndexNameService,
-      LocalizationService localizationService) {
+      final OptimizeOpenSearchClient osClient,
+      final ConfigurationService configurationService,
+      final OptimizeIndexNameService optimizeIndexNameService,
+      final LocalizationService localizationService) {
     this.osClient = osClient;
     this.configurationService = configurationService;
     this.optimizeIndexNameService = optimizeIndexNameService;
@@ -100,7 +100,7 @@ public class EntitiesReaderOS implements EntitiesReader {
 
   @Override
   public List<CollectionEntity> getAllPrivateEntitiesForOwnerId(final String ownerId) {
-    log.debug("Fetching all available entities for user [{}]", ownerId);
+    LOG.debug("Fetching all available entities for user [{}]", ownerId);
 
     final BoolQuery.Builder query =
         new BoolQuery.Builder()
@@ -157,7 +157,7 @@ public class EntitiesReaderOS implements EntitiesReader {
     try {
       scrollResp = osClient.retrieveAllScrollResults(requestBuilder, CollectionEntity.class);
     } catch (final IOException e) {
-      log.error("Was not able to retrieve private entities!", e);
+      LOG.error("Was not able to retrieve private entities!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve private entities!", e);
     }
 
@@ -169,7 +169,7 @@ public class EntitiesReaderOS implements EntitiesReader {
       final List<? extends BaseCollectionDefinitionDto<?>> collections) {
     final List<String> collectionIds =
         collections.stream().map(BaseCollectionDefinitionDto::getId).toList();
-    log.debug("Counting all available entities for collection ids [{}]", collectionIds);
+    LOG.debug("Counting all available entities for collection ids [{}]", collectionIds);
 
     if (collections.isEmpty()) {
       return new HashMap<>();
@@ -206,7 +206,7 @@ public class EntitiesReaderOS implements EntitiesReader {
 
   @Override
   public List<CollectionEntity> getAllEntitiesForCollection(final String collectionId) {
-    log.debug("Fetching all available entities for collection [{}]", collectionId);
+    LOG.debug("Fetching all available entities for collection [{}]", collectionId);
     final SearchRequest.Builder requestBuilder =
         createReportAndDashboardSearchRequest()
             .size(LIST_FETCH_LIMIT)
@@ -222,7 +222,7 @@ public class EntitiesReaderOS implements EntitiesReader {
     try {
       scrollResp = osClient.retrieveAllScrollResults(requestBuilder, CollectionEntity.class);
     } catch (final IOException e) {
-      log.error("Was not able to retrieve collection entities!", e);
+      LOG.error("Was not able to retrieve collection entities!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve entities!", e);
     }
 
@@ -232,7 +232,7 @@ public class EntitiesReaderOS implements EntitiesReader {
   @Override
   public Optional<EntityNameResponseDto> getEntityNames(
       final EntityNameRequestDto requestDto, final String locale) {
-    log.debug(
+    LOG.debug(
         String.format("Performing get entity names search request %s", requestDto.toString()));
     final MgetResponse<CollectionEntity> multiGetItemResponse =
         runGetEntityNamesRequest(requestDto);

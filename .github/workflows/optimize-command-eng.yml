@@ -124,7 +124,7 @@ jobs:
           fi
 
           # Validate 'start' command
-          if [ "${{ steps.parse-args.outputs.arg1 }}" == 'reject' ]; then
+          if [ "${{ steps.parse-args.outputs.arg1 }}" == 'start' ]; then
             # Check if the issue is in the correct status
             if [ "$project_status" != 'Global Backlog' ] ||
                [ "$project_status" != 'Ready' ] ||

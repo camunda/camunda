@@ -139,7 +139,7 @@ public abstract class AbstractProcessGroupByProcessInstanceDateInterpreterES
     final Optional<Map<String, Aggregate>> unwrappedLimitedAggregations =
         unwrapFilterLimitedAggregations(aggregations);
     if (unwrappedLimitedAggregations.isPresent()) {
-      Map<String, Map<String, Aggregate>> keyToAggregationMap =
+      final Map<String, Map<String, Aggregate>> keyToAggregationMap =
           getDateAggregationService()
               .mapDateAggregationsToKeyAggregationMap(
                   unwrappedLimitedAggregations.get(), context.getTimezone());

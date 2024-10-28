@@ -10,16 +10,16 @@ package io.camunda.optimize.dto.optimize.query.report.single.process.filter.util
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.SuspendedInstancesOnlyFilterDto;
 
-public class SuspendedInstancesOnlyFilterBuilder {
+public final class SuspendedInstancesOnlyFilterBuilder {
 
-  private ProcessFilterBuilder filterBuilder;
+  private final ProcessFilterBuilder filterBuilder;
   private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
 
-  private SuspendedInstancesOnlyFilterBuilder(ProcessFilterBuilder filterBuilder) {
+  private SuspendedInstancesOnlyFilterBuilder(final ProcessFilterBuilder filterBuilder) {
     this.filterBuilder = filterBuilder;
   }
 
-  static SuspendedInstancesOnlyFilterBuilder construct(ProcessFilterBuilder filterBuilder) {
+  static SuspendedInstancesOnlyFilterBuilder construct(final ProcessFilterBuilder filterBuilder) {
     return new SuspendedInstancesOnlyFilterBuilder(filterBuilder);
   }
 

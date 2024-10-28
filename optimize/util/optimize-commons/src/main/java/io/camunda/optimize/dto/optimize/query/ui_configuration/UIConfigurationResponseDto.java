@@ -39,27 +39,27 @@ public class UIConfigurationResponseDto {
   private OnboardingResponseDto onboarding = new OnboardingResponseDto();
 
   public UIConfigurationResponseDto(
-      boolean emailEnabled,
-      boolean sharingEnabled,
-      boolean tenantsAvailable,
-      boolean userSearchAvailable,
-      boolean userTaskAssigneeAnalyticsEnabled,
-      String optimizeVersion,
-      String optimizeDocsVersion,
-      boolean isEnterpriseMode,
-      OptimizeProfile optimizeProfile,
-      Map<String, WebappsEndpointDto> webappsEndpoints,
-      Map<AppName, String> webappsLinks,
-      String notificationsUrl,
-      List<String> webhooks,
-      boolean logoutHidden,
-      int maxNumDataSourcesForReport,
-      Integer exportCsvLimit,
-      DatabaseType optimizeDatabase,
-      boolean validLicense,
-      String licenseType,
-      MixpanelConfigResponseDto mixpanel,
-      OnboardingResponseDto onboarding) {
+      final boolean emailEnabled,
+      final boolean sharingEnabled,
+      final boolean tenantsAvailable,
+      final boolean userSearchAvailable,
+      final boolean userTaskAssigneeAnalyticsEnabled,
+      final String optimizeVersion,
+      final String optimizeDocsVersion,
+      final boolean isEnterpriseMode,
+      final OptimizeProfile optimizeProfile,
+      final Map<String, WebappsEndpointDto> webappsEndpoints,
+      final Map<AppName, String> webappsLinks,
+      final String notificationsUrl,
+      final List<String> webhooks,
+      final boolean logoutHidden,
+      final int maxNumDataSourcesForReport,
+      final Integer exportCsvLimit,
+      final DatabaseType optimizeDatabase,
+      final boolean validLicense,
+      final String licenseType,
+      final MixpanelConfigResponseDto mixpanel,
+      final OnboardingResponseDto onboarding) {
     this.emailEnabled = emailEnabled;
     this.sharingEnabled = sharingEnabled;
     this.tenantsAvailable = tenantsAvailable;
@@ -169,87 +169,87 @@ public class UIConfigurationResponseDto {
     return this.onboarding;
   }
 
-  public void setEmailEnabled(boolean emailEnabled) {
+  public void setEmailEnabled(final boolean emailEnabled) {
     this.emailEnabled = emailEnabled;
   }
 
-  public void setSharingEnabled(boolean sharingEnabled) {
+  public void setSharingEnabled(final boolean sharingEnabled) {
     this.sharingEnabled = sharingEnabled;
   }
 
-  public void setTenantsAvailable(boolean tenantsAvailable) {
+  public void setTenantsAvailable(final boolean tenantsAvailable) {
     this.tenantsAvailable = tenantsAvailable;
   }
 
-  public void setUserSearchAvailable(boolean userSearchAvailable) {
+  public void setUserSearchAvailable(final boolean userSearchAvailable) {
     this.userSearchAvailable = userSearchAvailable;
   }
 
-  public void setUserTaskAssigneeAnalyticsEnabled(boolean userTaskAssigneeAnalyticsEnabled) {
+  public void setUserTaskAssigneeAnalyticsEnabled(final boolean userTaskAssigneeAnalyticsEnabled) {
     this.userTaskAssigneeAnalyticsEnabled = userTaskAssigneeAnalyticsEnabled;
   }
 
-  public void setOptimizeVersion(String optimizeVersion) {
+  public void setOptimizeVersion(final String optimizeVersion) {
     this.optimizeVersion = optimizeVersion;
   }
 
-  public void setOptimizeDocsVersion(String optimizeDocsVersion) {
+  public void setOptimizeDocsVersion(final String optimizeDocsVersion) {
     this.optimizeDocsVersion = optimizeDocsVersion;
   }
 
-  public void setEnterpriseMode(boolean isEnterpriseMode) {
+  public void setEnterpriseMode(final boolean isEnterpriseMode) {
     this.isEnterpriseMode = isEnterpriseMode;
   }
 
-  public void setOptimizeProfile(OptimizeProfile optimizeProfile) {
+  public void setOptimizeProfile(final OptimizeProfile optimizeProfile) {
     this.optimizeProfile = optimizeProfile;
   }
 
-  public void setWebappsEndpoints(Map<String, WebappsEndpointDto> webappsEndpoints) {
+  public void setWebappsEndpoints(final Map<String, WebappsEndpointDto> webappsEndpoints) {
     this.webappsEndpoints = webappsEndpoints;
   }
 
-  public void setWebappsLinks(Map<AppName, String> webappsLinks) {
+  public void setWebappsLinks(final Map<AppName, String> webappsLinks) {
     this.webappsLinks = webappsLinks;
   }
 
-  public void setNotificationsUrl(String notificationsUrl) {
+  public void setNotificationsUrl(final String notificationsUrl) {
     this.notificationsUrl = notificationsUrl;
   }
 
-  public void setWebhooks(List<String> webhooks) {
+  public void setWebhooks(final List<String> webhooks) {
     this.webhooks = webhooks;
   }
 
-  public void setLogoutHidden(boolean logoutHidden) {
+  public void setLogoutHidden(final boolean logoutHidden) {
     this.logoutHidden = logoutHidden;
   }
 
-  public void setMaxNumDataSourcesForReport(int maxNumDataSourcesForReport) {
+  public void setMaxNumDataSourcesForReport(final int maxNumDataSourcesForReport) {
     this.maxNumDataSourcesForReport = maxNumDataSourcesForReport;
   }
 
-  public void setExportCsvLimit(Integer exportCsvLimit) {
+  public void setExportCsvLimit(final Integer exportCsvLimit) {
     this.exportCsvLimit = exportCsvLimit;
   }
 
-  public void setOptimizeDatabase(DatabaseType optimizeDatabase) {
+  public void setOptimizeDatabase(final DatabaseType optimizeDatabase) {
     this.optimizeDatabase = optimizeDatabase;
   }
 
-  public void setValidLicense(boolean validLicense) {
+  public void setValidLicense(final boolean validLicense) {
     this.validLicense = validLicense;
   }
 
-  public void setLicenseType(String licenseType) {
+  public void setLicenseType(final String licenseType) {
     this.licenseType = licenseType;
   }
 
-  public void setMixpanel(MixpanelConfigResponseDto mixpanel) {
+  public void setMixpanel(final MixpanelConfigResponseDto mixpanel) {
     this.mixpanel = mixpanel;
   }
 
-  public void setOnboarding(OnboardingResponseDto onboarding) {
+  public void setOnboarding(final OnboardingResponseDto onboarding) {
     this.onboarding = onboarding;
   }
 

@@ -28,7 +28,7 @@ public class ZeebeProcessDefinitionFetcherOS
     extends AbstractZeebeRecordFetcherOS<ZeebeProcessDefinitionRecordDto>
     implements ZeebeProcessDefinitionFetcher {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ZeebeProcessDefinitionFetcherOS.class);
 
   public ZeebeProcessDefinitionFetcherOS(

@@ -33,7 +33,7 @@ import org.springframework.stereotype.Component;
 @Conditional(CCSaaSCondition.class)
 public class CCSaaSNotificationClient extends AbstractCCSaaSClient {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(CCSaaSNotificationClient.class);
   private TokenResponseDto accessToken;
   private Instant tokenExpires = Instant.now();
@@ -48,7 +48,7 @@ public class CCSaaSNotificationClient extends AbstractCCSaaSClient {
   }
 
   public void sendPanelNotificationToOrg(final PanelNotificationRequestDto notificationRequestDto) {
-    log.info(
+    LOG.info(
         "Sending org notification [{}].", notificationRequestDto.getNotification().getUniqueId());
     try {
       final HttpPost request =

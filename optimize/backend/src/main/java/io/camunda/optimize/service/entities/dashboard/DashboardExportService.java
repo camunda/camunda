@@ -30,7 +30,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class DashboardExportService {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DashboardExportService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(DashboardExportService.class);
   private final DashboardService dashboardService;
   private final ReportExportService reportExportService;
   private final AuthorizedCollectionService collectionService;
@@ -45,7 +45,7 @@ public class DashboardExportService {
   }
 
   public List<OptimizeEntityExportDto> getCompleteDashboardExport(final Set<String> dashboardIds) {
-    log.debug("Exporting dashboards with IDs {} via API.", dashboardIds);
+    LOG.debug("Exporting dashboards with IDs {} via API.", dashboardIds);
     final List<DashboardDefinitionRestDto> dashboards =
         retrieveDashboardDefinitionsOrFailIfMissing(dashboardIds);
     final List<ReportDefinitionDto<?>> reports =
@@ -62,7 +62,7 @@ public class DashboardExportService {
 
   public List<OptimizeEntityExportDto> getCompleteDashboardExport(
       final String userId, final String dashboardId) {
-    log.debug("Exporting dashboard with ID {} as user {}.", dashboardId, userId);
+    LOG.debug("Exporting dashboard with ID {} as user {}.", dashboardId, userId);
     final List<DashboardDefinitionRestDto> dashboards =
         retrieveDashboardDefinitionsOrFailIfMissing(Set.of(dashboardId));
     validateUserAuthorizedToAccessDashboardsOrFail(userId, dashboards);

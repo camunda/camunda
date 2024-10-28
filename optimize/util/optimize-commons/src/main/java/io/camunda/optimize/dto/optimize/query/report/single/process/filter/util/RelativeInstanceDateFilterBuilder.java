@@ -16,33 +16,33 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.filter.Insta
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceStartDateFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 
-public class RelativeInstanceDateFilterBuilder {
+public final class RelativeInstanceDateFilterBuilder {
 
-  private ProcessFilterBuilder filterBuilder;
+  private final ProcessFilterBuilder filterBuilder;
   private RelativeDateFilterStartDto start;
   private String type;
   private FilterApplicationLevel filterLevel = FilterApplicationLevel.INSTANCE;
 
-  private RelativeInstanceDateFilterBuilder(ProcessFilterBuilder filterBuilder) {
+  private RelativeInstanceDateFilterBuilder(final ProcessFilterBuilder filterBuilder) {
     this.filterBuilder = filterBuilder;
   }
 
-  static RelativeInstanceDateFilterBuilder startDate(ProcessFilterBuilder filterBuilder) {
-    RelativeInstanceDateFilterBuilder builder =
+  static RelativeInstanceDateFilterBuilder startDate(final ProcessFilterBuilder filterBuilder) {
+    final RelativeInstanceDateFilterBuilder builder =
         new RelativeInstanceDateFilterBuilder(filterBuilder);
     builder.type = "startDate";
     return builder;
   }
 
-  static RelativeInstanceDateFilterBuilder endDate(ProcessFilterBuilder filterBuilder) {
-    RelativeInstanceDateFilterBuilder builder =
+  static RelativeInstanceDateFilterBuilder endDate(final ProcessFilterBuilder filterBuilder) {
+    final RelativeInstanceDateFilterBuilder builder =
         new RelativeInstanceDateFilterBuilder(filterBuilder);
     builder.type = "endDate";
     return builder;
   }
 
-  public RelativeInstanceDateFilterBuilder start(Long value, DateUnit unit) {
-    this.start = new RelativeDateFilterStartDto(value, unit);
+  public RelativeInstanceDateFilterBuilder start(final Long value, final DateUnit unit) {
+    start = new RelativeDateFilterStartDto(value, unit);
     return this;
   }
 
@@ -52,8 +52,8 @@ public class RelativeInstanceDateFilterBuilder {
   }
 
   public ProcessFilterBuilder add() {
-    ProcessFilterDto<DateFilterDataDto<?>> filterDto =
-        type.equals("endDate") ? new InstanceEndDateFilterDto() : new InstanceStartDateFilterDto();
+    final ProcessFilterDto<DateFilterDataDto<?>> filterDto =
+        "endDate".equals(type) ? new InstanceEndDateFilterDto() : new InstanceStartDateFilterDto();
     filterDto.setData(new RelativeDateFilterDataDto(start));
     filterDto.setFilterLevel(filterLevel);
     filterBuilder.addFilter(filterDto);

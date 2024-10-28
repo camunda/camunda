@@ -43,18 +43,18 @@ import org.springframework.stereotype.Component;
 public class ProcessGroupByFlowNodeDurationInterpreterES
     extends AbstractGroupByFlowNodeInterpreterES {
 
+  final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
+  final ProcessViewInterpreterFacadeES viewInterpreter;
   private final MinMaxStatsServiceES minMaxStatsService;
   private final DefinitionService definitionService;
-  final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
   private final DurationAggregationServiceES durationAggregationService;
-  final ProcessViewInterpreterFacadeES viewInterpreter;
 
   public ProcessGroupByFlowNodeDurationInterpreterES(
-      MinMaxStatsServiceES minMaxStatsService,
-      DefinitionService definitionService,
-      ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
-      DurationAggregationServiceES durationAggregationService,
-      ProcessViewInterpreterFacadeES viewInterpreter) {
+      final MinMaxStatsServiceES minMaxStatsService,
+      final DefinitionService definitionService,
+      final ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
+      final DurationAggregationServiceES durationAggregationService,
+      final ProcessViewInterpreterFacadeES viewInterpreter) {
     this.minMaxStatsService = minMaxStatsService;
     this.definitionService = definitionService;
     this.distributedByInterpreter = distributedByInterpreter;
@@ -79,6 +79,13 @@ public class ProcessGroupByFlowNodeDurationInterpreterES
   }
 
   @Override
+  public Optional<MinMaxStatDto> getMinMaxStats(
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
+      final Query baseQuery) {
+    return Optional.of(retrieveMinMaxDurationStats(context, baseQuery));
+  }
+
+  @Override
   public void addQueryResult(
       final CompositeCommandResult compositeCommandResult,
       final ResponseBody<?> response,
@@ -98,10 +105,13 @@ public class ProcessGroupByFlowNodeDurationInterpreterES
   }
 
   @Override
-  public Optional<MinMaxStatDto> getMinMaxStats(
-      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
-      final Query baseQuery) {
-    return Optional.of(retrieveMinMaxDurationStats(context, baseQuery));
+  public ProcessDistributedByInterpreterFacadeES getDistributedByInterpreter() {
+    return distributedByInterpreter;
+  }
+
+  @Override
+  public ProcessViewInterpreterFacadeES getViewInterpreter() {
+    return viewInterpreter;
   }
 
   private MinMaxStatDto retrieveMinMaxDurationStats(
@@ -118,15 +128,8 @@ public class ProcessGroupByFlowNodeDurationInterpreterES
         FLOW_NODE_INSTANCES + "." + FLOW_NODE_START_DATE);
   }
 
+  @Override
   public DefinitionService getDefinitionService() {
-    return this.definitionService;
-  }
-
-  public ProcessDistributedByInterpreterFacadeES getDistributedByInterpreter() {
-    return this.distributedByInterpreter;
-  }
-
-  public ProcessViewInterpreterFacadeES getViewInterpreter() {
-    return this.viewInterpreter;
+    return definitionService;
   }
 }

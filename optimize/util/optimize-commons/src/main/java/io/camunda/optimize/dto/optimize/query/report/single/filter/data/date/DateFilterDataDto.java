@@ -69,23 +69,23 @@ public abstract class DateFilterDataDto<START> implements FilterDataDto {
     return this.excludeUndefined;
   }
 
-  public void setType(DateFilterType type) {
+  public void setType(final DateFilterType type) {
     this.type = type;
   }
 
-  public void setStart(START start) {
+  public void setStart(final START start) {
     this.start = start;
   }
 
-  public void setEnd(OffsetDateTime end) {
+  public void setEnd(final OffsetDateTime end) {
     this.end = end;
   }
 
-  public void setIncludeUndefined(boolean includeUndefined) {
+  public void setIncludeUndefined(final boolean includeUndefined) {
     this.includeUndefined = includeUndefined;
   }
 
-  public void setExcludeUndefined(boolean excludeUndefined) {
+  public void setExcludeUndefined(final boolean excludeUndefined) {
     this.excludeUndefined = excludeUndefined;
   }
 
@@ -101,6 +101,7 @@ public abstract class DateFilterDataDto<START> implements FilterDataDto {
     return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String type = "type";

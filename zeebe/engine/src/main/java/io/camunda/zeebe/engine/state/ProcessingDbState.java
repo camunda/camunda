@@ -13,6 +13,7 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.authorization.DbAuthorizationState;
+import io.camunda.zeebe.engine.state.authorization.DbMappingState;
 import io.camunda.zeebe.engine.state.authorization.DbRoleState;
 import io.camunda.zeebe.engine.state.clock.DbClockState;
 import io.camunda.zeebe.engine.state.compensation.DbCompensationSubscriptionState;
@@ -48,6 +49,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableFormState;
 import io.camunda.zeebe.engine.state.mutable.MutableIncidentState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
+import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageCorrelationState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
@@ -110,6 +112,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableRoutingState routingState;
   private final MutableTenantState tenantState;
   private final MutableRoleState roleState;
+  private final MutableMappingState mappingState;
 
   private final int partitionId;
 
@@ -160,6 +163,7 @@ public class ProcessingDbState implements MutableProcessingState {
     routingState = new DbRoutingState(zeebeDb, transactionContext);
     roleState = new DbRoleState(zeebeDb, transactionContext);
     tenantState = new DbTenantState(zeebeDb, transactionContext);
+    mappingState = new DbMappingState(zeebeDb, transactionContext);
   }
 
   @Override
@@ -303,6 +307,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableTenantState getTenantState() {
     return tenantState;
+  }
+
+  @Override
+  public MutableMappingState getMappingState() {
+    return mappingState;
   }
 
   @Override

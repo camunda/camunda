@@ -22,7 +22,7 @@ public class OptimizeImportIncorrectIndexVersionExceptionMapper
     implements ExceptionMapper<OptimizeImportIncorrectIndexVersionException> {
 
   public static final String ERROR_CODE = "importIndexVersionMismatch";
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(OptimizeImportIncorrectIndexVersionExceptionMapper.class);
 
   private final LocalizationService localizationService;
@@ -34,7 +34,7 @@ public class OptimizeImportIncorrectIndexVersionExceptionMapper
 
   @Override
   public Response toResponse(final OptimizeImportIncorrectIndexVersionException exception) {
-    log.info("Mapping OptimizeImportIncorrectIndexVersionException");
+    LOG.info("Mapping OptimizeImportIncorrectIndexVersionException");
 
     return Response.status(Response.Status.BAD_REQUEST)
         .type(MediaType.APPLICATION_JSON_TYPE)

@@ -61,7 +61,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ReportImportService {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ReportImportService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ReportImportService.class);
   private final ReportService reportService;
   private final ReportWriter reportWriter;
   private final DefinitionService definitionService;

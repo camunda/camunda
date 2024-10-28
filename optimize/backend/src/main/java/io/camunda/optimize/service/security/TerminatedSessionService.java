@@ -26,7 +26,7 @@ import org.springframework.stereotype.Component;
 public class TerminatedSessionService extends AbstractScheduledService {
 
   private static final int CLEANUP_INTERVAL_HOURS = 8;
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(TerminatedSessionService.class);
 
   private final TerminatedUserSessionReader terminatedUserSessionReader;
@@ -73,7 +73,7 @@ public class TerminatedSessionService extends AbstractScheduledService {
   }
 
   public void cleanup() {
-    log.debug("Cleaning up terminated user sessions.");
+    LOG.debug("Cleaning up terminated user sessions.");
     terminatedUserSessionWriter.deleteTerminatedUserSessionsOlderThan(
         LocalDateUtil.getCurrentDateTime()
             .minus(

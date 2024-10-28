@@ -85,6 +85,7 @@ public class DashboardDefinitionRestDto extends BaseDashboardDefinitionDto
     return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String tiles = "tiles";

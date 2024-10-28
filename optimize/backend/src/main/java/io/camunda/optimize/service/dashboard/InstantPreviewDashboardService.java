@@ -64,7 +64,7 @@ public class InstantPreviewDashboardService {
   public static final String ALTTEXT_FIELD = "altText";
   public static final String TYPE_FIELD = "type";
   public static final String TYPE_IMAGE_VALUE = "image";
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(InstantPreviewDashboardService.class);
   protected final ConfigurationService configurationService;
   private final DashboardService dashboardService;
@@ -107,7 +107,7 @@ public class InstantPreviewDashboardService {
     if (dashboardId.isPresent()) {
       return dashboardService.getDashboardDefinition(dashboardId.get(), userId);
     } else {
-      log.info(
+      LOG.info(
           "Instant preview dashboard for process definition [{}] and template [{}} does not exist yet, creating "
               + "it!",
           processDefinitionKey,
@@ -224,7 +224,7 @@ public class InstantPreviewDashboardService {
                                       List.of(ALL_VERSIONS),
                                       processDefinition.getTenantIds())));
                     }),
-        () -> log.warn("Could not retrieve process definition data for {}", processDefinitionKey));
+        () -> LOG.warn("Could not retrieve process definition data for {}", processDefinitionKey));
 
     exportDtos.stream()
         .filter(DashboardDefinitionExportDto.class::isInstance)
@@ -314,10 +314,10 @@ public class InstantPreviewDashboardService {
         templateChecksums.put(dashboardJsonTemplateFilename, checksum);
         return Optional.of(valueToBeReturned);
       } else {
-        log.error("Could not read dashboard template from " + fullyQualifiedPath);
+        LOG.error("Could not read dashboard template from " + fullyQualifiedPath);
       }
     } catch (final IOException e) {
-      log.error("Could not read dashboard template from " + fullyQualifiedPath, e);
+      LOG.error("Could not read dashboard template from " + fullyQualifiedPath, e);
     }
     return Optional.empty();
   }
@@ -346,7 +346,7 @@ public class InstantPreviewDashboardService {
       // all possible exceptions here so that Optimize doesn't crash if anything goes wrong with the
       // template checks,
       // since any error is not critical and would not hinder optimize in functioning properly
-      log.error("There was an error deleting data from an outdated Instant preview dashboard", e);
+      LOG.error("There was an error deleting data from an outdated Instant preview dashboard", e);
     }
   }
 
@@ -364,7 +364,7 @@ public class InstantPreviewDashboardService {
       try {
         fileChecksums.add(getChecksumCRC32(templateInputStream, 8192));
       } catch (final IOException e) {
-        log.error("Could not generate checksum for template [{}]", currentTemplate);
+        LOG.error("Could not generate checksum for template [{}]", currentTemplate);
       }
       currentTemplate = incrementFileName(currentTemplate);
       templateInputStream =

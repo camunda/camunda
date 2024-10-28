@@ -28,7 +28,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class EngineDataProcessCleanupService extends CleanupService {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(EngineDataProcessCleanupService.class);
   private final ConfigurationService configurationService;
   private final ProcessDefinitionReader processDefinitionReader;
@@ -68,7 +68,7 @@ public class EngineDataProcessCleanupService extends CleanupService {
             .getAllProcessSpecificConfigurationKeys());
     int i = 1;
     for (final String currentProcessDefinitionKey : allOptimizeProcessDefinitionKeys) {
-      log.info("Process History Cleanup step {}/{}", i, allOptimizeProcessDefinitionKeys.size());
+      LOG.info("Process History Cleanup step {}/{}", i, allOptimizeProcessDefinitionKeys.size());
       performCleanupForProcessKey(startTime, currentProcessDefinitionKey);
       i++;
     }
@@ -80,7 +80,7 @@ public class EngineDataProcessCleanupService extends CleanupService {
         getCleanupConfiguration()
             .getProcessDefinitionCleanupConfigurationForKey(currentProcessDefinitionKey);
 
-    log.info(
+    LOG.info(
         "Performing cleanup on process instances for processDefinitionKey: {}, with ttl: {} and mode:{}",
         currentProcessDefinitionKey,
         cleanupConfigurationForKey.getTtl(),
@@ -99,7 +99,7 @@ public class EngineDataProcessCleanupService extends CleanupService {
             "Unsupported cleanup mode " + cleanupConfigurationForKey.getCleanupMode());
     }
 
-    log.info(
+    LOG.info(
         "Finished cleanup on process instances for processDefinitionKey: {}, with ttl: {} and mode:{}",
         currentProcessDefinitionKey,
         cleanupConfigurationForKey.getTtl(),

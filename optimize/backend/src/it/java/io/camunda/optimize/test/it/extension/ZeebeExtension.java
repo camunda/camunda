@@ -48,7 +48,7 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
   private static final String ZEEBE_CONFIG_PATH = "zeebe/zeebe-application.yml";
   private static final String ZEEBE_VERSION =
       IntegrationTestConfigurationUtil.getZeebeDockerVersion();
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ZeebeExtension.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ZeebeExtension.class);
 
   private ZeebeContainer zeebeContainer;
   private ZeebeClient zeebeClient;

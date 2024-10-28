@@ -35,12 +35,12 @@ public class ProcessGroupByProcessInstanceEndDateInterpreterES
   private final ProcessViewInterpreterFacadeES viewInterpreter;
 
   public ProcessGroupByProcessInstanceEndDateInterpreterES(
-      ConfigurationService configurationService,
-      DateAggregationServiceES dateAggregationService,
-      MinMaxStatsServiceES minMaxStatsService,
-      ProcessQueryFilterEnhancerES queryFilterEnhancer,
-      ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
-      ProcessViewInterpreterFacadeES viewInterpreter) {
+      final ConfigurationService configurationService,
+      final DateAggregationServiceES dateAggregationService,
+      final MinMaxStatsServiceES minMaxStatsService,
+      final ProcessQueryFilterEnhancerES queryFilterEnhancer,
+      final ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
+      final ProcessViewInterpreterFacadeES viewInterpreter) {
     this.configurationService = configurationService;
     this.dateAggregationService = dateAggregationService;
     this.minMaxStatsService = minMaxStatsService;

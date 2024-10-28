@@ -31,16 +31,16 @@ import org.springframework.stereotype.Component;
 @Component
 public class ExecutionPlanExtractor {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ExecutionPlanExtractor.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ExecutionPlanExtractor.class);
   final ApplicationContext applicationContext;
   final ConfigurationService configurationService;
-  private final ObjectMapper objectMapper;
   final Map<String, ExecutionPlan> executionPlans = new HashMap<>();
+  private final ObjectMapper objectMapper;
 
   public ExecutionPlanExtractor(
-      ApplicationContext applicationContext,
-      ConfigurationService configurationService,
-      ObjectMapper objectMapper) {
+      final ApplicationContext applicationContext,
+      final ConfigurationService configurationService,
+      final ObjectMapper objectMapper) {
     this.applicationContext = applicationContext;
     this.configurationService = configurationService;
     this.objectMapper = objectMapper;
@@ -72,10 +72,10 @@ public class ExecutionPlanExtractor {
   }
 
   private <R extends ReportDefinitionDto<?>> OptimizeValidationException unsupportedError(
-      String commandKey, R reportDefinition) {
+      final String commandKey, final R reportDefinition) {
     // Error should contain the report Name
     try {
-      log.warn(
+      LOG.warn(
           format(
               """
                   The following settings combination of the report data is not supported in Optimize (commandKey=%s):
@@ -83,8 +83,8 @@ public class ExecutionPlanExtractor {
                   Therefore returning error result.""",
               commandKey),
           objectMapper.writeValueAsString(reportDefinition));
-    } catch (JsonProcessingException e) {
-      log.error("Failed to serialize report definition!", e);
+    } catch (final JsonProcessingException e) {
+      LOG.error("Failed to serialize report definition!", e);
     }
     throw new OptimizeValidationException(
         "This combination of the settings of the report builder is not supported!");

@@ -134,6 +134,7 @@ public class AlertCreationRequestDto {
   }
 
   // needed to allow inheritance of field name constants
+  @SuppressWarnings("checkstyle:ConstantName")
   public static class Fields {
 
     public static final String name = "name";

@@ -35,7 +35,7 @@ public class AuthorizedCollectionService {
       "User [%s] is not authorized to edit/delete collection [%s].";
   private static final String RESOURCE_EDIT_NOT_AUTHORIZED_MESSAGE =
       "User [%s] does not have the role to add/edit collection [%s] resources.";
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(AuthorizedCollectionService.class);
 
   private final CollectionReader collectionReader;
@@ -116,7 +116,7 @@ public class AuthorizedCollectionService {
         collectionReader.getCollection(collectionId);
 
     if (collectionDefinition.isEmpty()) {
-      log.error(
+      LOG.error(
           "Was not able to retrieve collection with id [{}] from Elasticsearch.", collectionId);
       throw new NotFoundException(
           "Collection does not exist! Tried to retrieve collection with id " + collectionId);

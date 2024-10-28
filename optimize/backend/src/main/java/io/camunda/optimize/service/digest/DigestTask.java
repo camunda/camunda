@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Scope;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DigestTask implements Runnable {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DigestTask.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(DigestTask.class);
   private final DigestService digestService;
   private final String processDefinitionKey;
 

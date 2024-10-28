@@ -22,14 +22,14 @@ public class DashboardRelationService {
     this.referenceServices = referenceServices;
   }
 
-  public void handleDeleted(DashboardDefinitionRestDto definition) {
-    for (DashboardReferencingService referencingService : referenceServices) {
+  public void handleDeleted(final DashboardDefinitionRestDto definition) {
+    for (final DashboardReferencingService referencingService : referenceServices) {
       referencingService.handleDashboardDeleted(definition);
     }
   }
 
   public void handleUpdated(final DashboardDefinitionRestDto updateDefinition) {
-    for (DashboardReferencingService referencingService : referenceServices) {
+    for (final DashboardReferencingService referencingService : referenceServices) {
       referencingService.handleDashboardUpdated(updateDefinition);
     }
   }

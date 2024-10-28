@@ -20,6 +20,7 @@ import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.UserTaskEntity.UserTaskState;
+import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.DateValueFilter;
 import io.camunda.search.filter.DecisionDefinitionFilter;
 import io.camunda.search.filter.DecisionInstanceFilter;
@@ -35,6 +36,7 @@ import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
@@ -47,6 +49,7 @@ import io.camunda.search.query.TypedSearchQueryBuilder;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
+import io.camunda.search.sort.AuthorizationSort;
 import io.camunda.search.sort.DecisionDefinitionSort;
 import io.camunda.search.sort.DecisionInstanceSort;
 import io.camunda.search.sort.DecisionRequirementsSort;
@@ -237,7 +240,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, VariableQuery> toUserTaskVariableQuery(
-      final UserTaskVariablesSearchQueryRequest request, final List<Long> treePath) {
+      final UserTaskVariableSearchQueryRequest request, final List<Long> treePath) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.variableSearchQuery().build());
     }
@@ -827,5 +830,50 @@ public final class SearchQueryRequestMapper {
         .before(beforeDateTime.orElse(null))
         .after(afterDateTime.orElse(null))
         .build();
+  }
+
+  public static Either<ProblemDetail, AuthorizationQuery> toAuthorizationQuery(
+      final AuthorizationSearchQueryRequest request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.authorizationSearchQuery().build());
+    }
+
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        toSearchQuerySort(
+            request.getSort(),
+            SortOptionBuilders::authorization,
+            SearchQueryRequestMapper::applyAuthorizationSortField);
+    final var filter = toAuthorizationFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::authorizationSearchQuery);
+  }
+
+  private static List<String> applyAuthorizationSortField(
+      final String field, final AuthorizationSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case "ownerType" -> builder.ownerType();
+        case "ownerKey" -> builder.ownerKey();
+        case "resourceType" -> builder.resourceType();
+        case "resourceKey" -> builder.resourceKey();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
+  private static AuthorizationFilter toAuthorizationFilter(
+      final AuthorizationFilterRequest filter) {
+    return Optional.ofNullable(filter)
+        .map(
+            f ->
+                FilterBuilders.authorization()
+                    .ownerType(f.getOwnerType() == null ? null : f.getOwnerType().getValue())
+                    .ownerKey(f.getOwnerKey())
+                    .build())
+        .orElse(null);
   }
 }

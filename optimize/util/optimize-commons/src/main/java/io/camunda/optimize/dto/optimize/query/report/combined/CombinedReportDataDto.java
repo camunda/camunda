@@ -104,6 +104,7 @@ public class CombinedReportDataDto implements ReportDataDto {
         + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String configuration = "configuration";

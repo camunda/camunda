@@ -15,7 +15,7 @@ import org.slf4j.Logger;
 
 public class UpgradePlan {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(UpgradePlan.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(UpgradePlan.class);
   private final List<UpgradeStep> upgradeSteps = new ArrayList<>();
   private Semver toVersion;
   private Semver fromVersion;

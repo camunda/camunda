@@ -72,28 +72,28 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
 
   protected ProcessReportDataDto(final ProcessReportDataDtoBuilder<?, ?> b) {
     super(b);
-    if (b.filter$set) {
-      filter = b.filter$value;
+    if (b.filterSet) {
+      filter = b.filterValue;
     } else {
-      filter = $default$filter();
+      filter = defaultFilter();
     }
     view = b.view;
     groupBy = b.groupBy;
-    if (b.distributedBy$set) {
-      distributedBy = b.distributedBy$value;
+    if (b.distributedBySet) {
+      distributedBy = b.distributedByValue;
     } else {
-      distributedBy = $default$distributedBy();
+      distributedBy = defaultDistributedBy();
     }
     visualization = b.visualization;
-    if (b.managementReport$set) {
-      managementReport = b.managementReport$value;
+    if (b.managementReportSet) {
+      managementReport = b.managementReportValue;
     } else {
-      managementReport = $default$managementReport();
+      managementReport = defaultManagementReport();
     }
-    if (b.instantPreviewReport$set) {
-      instantPreviewReport = b.instantPreviewReport$value;
+    if (b.instantPreviewReportSet) {
+      instantPreviewReport = b.instantPreviewReportValue;
     } else {
-      instantPreviewReport = $default$instantPreviewReport();
+      instantPreviewReport = defaultInstantPreviewReport();
     }
   }
 
@@ -384,19 +384,19 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   }
 
   @Valid
-  private static List<ProcessFilterDto<?>> $default$filter() {
+  private static List<ProcessFilterDto<?>> defaultFilter() {
     return new ArrayList<>();
   }
 
-  private static ProcessReportDistributedByDto<?> $default$distributedBy() {
+  private static ProcessReportDistributedByDto<?> defaultDistributedBy() {
     return new ProcessReportDistributedByDto<>();
   }
 
-  private static boolean $default$managementReport() {
+  private static boolean defaultManagementReport() {
     return false;
   }
 
-  private static boolean $default$instantPreviewReport() {
+  private static boolean defaultInstantPreviewReport() {
     return false;
   }
 
@@ -404,6 +404,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     return new ProcessReportDataDtoBuilderImpl();
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String filter = "filter";
@@ -419,21 +420,21 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
           C extends ProcessReportDataDto, B extends ProcessReportDataDtoBuilder<C, B>>
       extends SingleReportDataDtoBuilder<C, B> {
 
-    private @Valid List<ProcessFilterDto<?>> filter$value;
-    private boolean filter$set;
+    private @Valid List<ProcessFilterDto<?>> filterValue;
+    private boolean filterSet;
     private ProcessViewDto view;
     private ProcessGroupByDto<?> groupBy;
-    private ProcessReportDistributedByDto<?> distributedBy$value;
-    private boolean distributedBy$set;
+    private ProcessReportDistributedByDto<?> distributedByValue;
+    private boolean distributedBySet;
     private ProcessVisualization visualization;
-    private boolean managementReport$value;
-    private boolean managementReport$set;
-    private boolean instantPreviewReport$value;
-    private boolean instantPreviewReport$set;
+    private boolean managementReportValue;
+    private boolean managementReportSet;
+    private boolean instantPreviewReportValue;
+    private boolean instantPreviewReportSet;
 
     public B filter(@Valid final List<ProcessFilterDto<?>> filter) {
-      filter$value = filter;
-      filter$set = true;
+      filterValue = filter;
+      filterSet = true;
       return self();
     }
 
@@ -448,8 +449,8 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     }
 
     public B distributedBy(final ProcessReportDistributedByDto<?> distributedBy) {
-      distributedBy$value = distributedBy;
-      distributedBy$set = true;
+      distributedByValue = distributedBy;
+      distributedBySet = true;
       return self();
     }
 
@@ -459,14 +460,14 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     }
 
     public B managementReport(final boolean managementReport) {
-      managementReport$value = managementReport;
-      managementReport$set = true;
+      managementReportValue = managementReport;
+      managementReportSet = true;
       return self();
     }
 
     public B instantPreviewReport(final boolean instantPreviewReport) {
-      instantPreviewReport$value = instantPreviewReport;
-      instantPreviewReport$set = true;
+      instantPreviewReportValue = instantPreviewReport;
+      instantPreviewReportSet = true;
       return self();
     }
 
@@ -480,20 +481,20 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     public String toString() {
       return "ProcessReportDataDto.ProcessReportDataDtoBuilder(super="
           + super.toString()
-          + ", filter$value="
-          + filter$value
+          + ", filterValue="
+          + filterValue
           + ", view="
           + view
           + ", groupBy="
           + groupBy
-          + ", distributedBy$value="
-          + distributedBy$value
+          + ", distributedByValue="
+          + distributedByValue
           + ", visualization="
           + visualization
-          + ", managementReport$value="
-          + managementReport$value
-          + ", instantPreviewReport$value="
-          + instantPreviewReport$value
+          + ", managementReportValue="
+          + managementReportValue
+          + ", instantPreviewReportValue="
+          + instantPreviewReportValue
           + ")";
     }
   }

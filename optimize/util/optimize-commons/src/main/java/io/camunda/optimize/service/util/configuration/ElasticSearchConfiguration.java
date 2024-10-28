@@ -201,27 +201,27 @@ public class ElasticSearchConfiguration {
     return this.interceptorPlugins;
   }
 
-  public void setConnection(DatabaseConnection connection) {
+  public void setConnection(final DatabaseConnection connection) {
     this.connection = connection;
   }
 
-  public void setBackup(DatabaseBackup backup) {
+  public void setBackup(final DatabaseBackup backup) {
     this.backup = backup;
   }
 
-  public void setSecurity(DatabaseSecurity security) {
+  public void setSecurity(final DatabaseSecurity security) {
     this.security = security;
   }
 
-  public void setScrollTimeoutInSeconds(int scrollTimeoutInSeconds) {
+  public void setScrollTimeoutInSeconds(final int scrollTimeoutInSeconds) {
     this.scrollTimeoutInSeconds = scrollTimeoutInSeconds;
   }
 
-  public void setSettings(DatabaseSettings settings) {
+  public void setSettings(final DatabaseSettings settings) {
     this.settings = settings;
   }
 
-  public void setInterceptorPlugins(Map<String, PluginConfiguration> interceptorPlugins) {
+  public void setInterceptorPlugins(final Map<String, PluginConfiguration> interceptorPlugins) {
     this.interceptorPlugins = interceptorPlugins;
   }
 

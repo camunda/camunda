@@ -119,6 +119,7 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
         + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String tiles = "tiles";

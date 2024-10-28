@@ -53,7 +53,7 @@ public class CCSMTokenService {
 
   // In Identity, Optimize requires users to have write access to everything
   private static final String OPTIMIZE_PERMISSION = "write:*";
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(CCSMTokenService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(CCSMTokenService.class);
 
   private final AuthCookieService authCookieService;
   private final ConfigurationService configurationService;
@@ -121,7 +121,7 @@ public class CCSMTokenService {
     // If a redirect root URL is explicitly set, we use that. Otherwise, we use the one provided
     final String authorizeUri =
         appendCallbackSubpath(getConfiguredRedirectUri().orElse(redirectUri));
-    log.trace("Authorizing with authorizeUri: {}", authorizeUri);
+    LOG.trace("Authorizing with authorizeUri: {}", authorizeUri);
     return authentication().authorizeUriBuilder(authorizeUri).build();
   }
 
@@ -133,7 +133,7 @@ public class CCSMTokenService {
         getConfiguredRedirectUri()
             .map(CCSMTokenService::appendCallbackSubpath)
             .orElse(requestContext.getUriInfo().getAbsolutePath().toString());
-    log.trace("Exchanging auth code with redirectUri: {}", redirectUri);
+    LOG.trace("Exchanging auth code with redirectUri: {}", redirectUri);
     try {
       return authentication().exchangeAuthCode(authCode, redirectUri);
     } catch (final CodeExchangeException | RestException e) {
@@ -145,10 +145,10 @@ public class CCSMTokenService {
     try {
       final DecodedJWT decodedRefreshToken = authentication().decodeJWT(refreshToken);
       final Date refreshTokenExpiresAt = decodedRefreshToken.getExpiresAt();
-      log.trace("Refresh token will expire at {}", refreshTokenExpiresAt);
+      LOG.trace("Refresh token will expire at {}", refreshTokenExpiresAt);
       return refreshTokenExpiresAt;
     } catch (final TokenDecodeException e) {
-      log.trace(
+      LOG.trace(
           "Refresh token is not a JWT and expiry date can not be determined. Error message: {}",
           e.getMessage());
       return null;
@@ -239,7 +239,7 @@ public class CCSMTokenService {
           .map(tenant -> new TenantDto(tenant.getTenantId(), tenant.getName(), ZEEBE_DATA_SOURCE))
           .toList();
     } catch (final Exception e) {
-      log.error("Could not retrieve authorized tenants from identity.", e);
+      LOG.error("Could not retrieve authorized tenants from identity.", e);
       return Collections.emptyList();
     }
   }

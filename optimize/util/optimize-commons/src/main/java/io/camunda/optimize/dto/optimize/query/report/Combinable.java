@@ -12,7 +12,7 @@ public interface Combinable {
 
   boolean isCombinable(Object o);
 
-  static <O extends Combinable> boolean isCombinable(O o1, O o2) {
+  static <O extends Combinable> boolean isCombinable(final O o1, final O o2) {
     if (o1 == null && o2 == null) {
       return true;
     } else if (o1 == null) {

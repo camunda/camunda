@@ -34,7 +34,7 @@ public class ProcessInstanceDatabaseImportJob extends DatabaseImportJob<ProcessI
   }
 
   @Override
-  protected void persistEntities(List<ProcessInstanceDto> processInstances) {
+  protected void persistEntities(final List<ProcessInstanceDto> processInstances) {
     final List<ImportRequestDto> importRequests =
         zeebeProcessInstanceWriter.generateProcessInstanceImports(
             processInstances, sourceExportIndex);

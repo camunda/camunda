@@ -31,9 +31,9 @@ public abstract class AbstractProcessDefinitionWriterES {
   protected final TaskRepositoryES taskRepositoryES;
 
   public AbstractProcessDefinitionWriterES(
-      ObjectMapper objectMapper,
-      OptimizeElasticsearchClient esClient,
-      TaskRepositoryES taskRepositoryES) {
+      final ObjectMapper objectMapper,
+      final OptimizeElasticsearchClient esClient,
+      final TaskRepositoryES taskRepositoryES) {
     this.objectMapper = objectMapper;
     this.esClient = esClient;
     this.taskRepositoryES = taskRepositoryES;
@@ -44,7 +44,7 @@ public abstract class AbstractProcessDefinitionWriterES {
   public void addImportProcessDefinitionToRequest(
       final BulkRequest.Builder bulkRequestBuilder,
       final ProcessDefinitionOptimizeDto processDefinitionDto) {
-    Script updateScript = createUpdateScript(processDefinitionDto);
+    final Script updateScript = createUpdateScript(processDefinitionDto);
     bulkRequestBuilder.operations(
         b ->
             b.update(

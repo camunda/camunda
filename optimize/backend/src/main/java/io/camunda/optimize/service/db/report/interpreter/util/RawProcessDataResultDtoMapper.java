@@ -32,7 +32,7 @@ public class RawProcessDataResultDtoMapper {
 
   public static final String OBJECT_VARIABLE_VALUE_PLACEHOLDER = "<<OBJECT_VARIABLE_VALUE>>";
   private static final String DEFAULT_VARIABLE_VALUE = "";
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(RawProcessDataResultDtoMapper.class);
 
   public List<RawDataProcessInstanceDto> mapFrom(
@@ -136,7 +136,7 @@ public class RawProcessDataResultDtoMapper {
         }
       } else {
         try {
-          log.debug(
+          LOG.debug(
               "Found variable with null name [{}]",
               objectMapper.writeValueAsString(variableInstance));
         } catch (final JsonProcessingException e) {

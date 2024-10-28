@@ -32,7 +32,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class CollectionEntityService {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(CollectionEntityService.class);
   private final AuthorizedEntitiesService authorizedEntitiesService;
   private final AuthorizedCollectionService authorizedCollectionService;

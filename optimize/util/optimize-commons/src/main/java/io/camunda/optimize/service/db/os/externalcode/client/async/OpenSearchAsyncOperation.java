@@ -15,7 +15,8 @@ public class OpenSearchAsyncOperation extends OpenSearchOperation {
   protected OpenSearchAsyncClient openSearchAsyncClient;
 
   public OpenSearchAsyncOperation(
-      OptimizeIndexNameService indexNameService, OpenSearchAsyncClient openSearchAsyncClient) {
+      final OptimizeIndexNameService indexNameService,
+      final OpenSearchAsyncClient openSearchAsyncClient) {
     super(indexNameService);
     this.openSearchAsyncClient = openSearchAsyncClient;
   }

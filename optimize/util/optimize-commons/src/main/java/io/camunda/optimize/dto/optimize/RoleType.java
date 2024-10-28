@@ -14,8 +14,7 @@ public enum RoleType {
   // note: the order matters here, the order of roles corresponds to more might
   VIEWER,
   EDITOR,
-  MANAGER,
-  ;
+  MANAGER;
 
   @JsonValue
   public String getId() {

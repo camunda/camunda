@@ -305,7 +305,7 @@ const CollapsiblePanel: React.FC = () => {
                   })}
                   direction="top"
                   flipped
-                  align="top-right"
+                  align="top-end"
                 >
                   <OverflowMenuItem
                     itemText={t('taskFilterPanelEdit')}

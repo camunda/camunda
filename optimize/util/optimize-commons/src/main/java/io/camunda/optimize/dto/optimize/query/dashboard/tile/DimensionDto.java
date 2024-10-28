@@ -54,6 +54,7 @@ public class DimensionDto {
     return "DimensionDto(width=" + getWidth() + ", height=" + getHeight() + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String width = "width";

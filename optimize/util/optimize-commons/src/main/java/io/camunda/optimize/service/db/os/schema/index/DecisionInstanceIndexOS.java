@@ -29,7 +29,7 @@ public class DecisionInstanceIndexOS extends DecisionInstanceIndex<IndexSettings
 
   @Override
   public IndexSettings.Builder getStaticSettings(
-      IndexSettings.Builder contentBuilder, ConfigurationService configurationService)
+      final IndexSettings.Builder contentBuilder, final ConfigurationService configurationService)
       throws IOException {
     return addStaticSetting(
         NUMBER_OF_SHARDS_SETTING,

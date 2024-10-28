@@ -84,8 +84,9 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class DurationOutliersReaderES implements DurationOutliersReader {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(DurationOutliersReaderES.class);
+
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
   private final ProcessDefinitionReader processDefinitionReader;
@@ -94,12 +95,12 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
   private final ConfigurationService configurationService;
 
   public DurationOutliersReaderES(
-      OptimizeElasticsearchClient esClient,
-      ObjectMapper objectMapper,
-      ProcessDefinitionReader processDefinitionReader,
-      ProcessVariableReader processVariableReader,
-      ProcessQueryFilterEnhancerES queryFilterEnhancer,
-      ConfigurationService configurationService) {
+      final OptimizeElasticsearchClient esClient,
+      final ObjectMapper objectMapper,
+      final ProcessDefinitionReader processDefinitionReader,
+      final ProcessVariableReader processVariableReader,
+      final ProcessQueryFilterEnhancerES queryFilterEnhancer,
+      final ConfigurationService configurationService) {
     this.esClient = esClient;
     this.objectMapper = objectMapper;
     this.processDefinitionReader = processDefinitionReader;
@@ -145,11 +146,11 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
     try {
       search = esClient.search(searchRequest, DurationChartEntryDto.class);
     } catch (final IOException e) {
-      log.warn("Couldn't retrieve duration chart");
+      LOG.warn("Couldn't retrieve duration chart");
       throw new OptimizeRuntimeException(e.getMessage(), e);
     } catch (final ElasticsearchException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
-        log.info(
+        LOG.info(
             "Was not able to evaluate count by duration chart because instance index with alias {} does not exist. "
                 + "Returning empty list.",
             getProcessInstanceIndexAliasName(outlierParams.getProcessDefinitionKey()));
@@ -278,11 +279,11 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
       searchResponse = esClient.search(searchRequest, Object.class);
     } catch (final IOException e) {
       final String reason = "Could not fetch data to generate Outlier Analysis Heatmap";
-      log.error(reason, e);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     } catch (final ElasticsearchException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
-        log.info(
+        LOG.info(
             "Was not able to get Flow Node outlier map because instance index with alias {} does not exist. "
                 + "Returning empty results.",
             getProcessInstanceIndexAliasName(
@@ -366,11 +367,11 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
           totalProcessInstanceCount);
 
     } catch (final IOException e) {
-      log.warn("Couldn't determine significant outlier variable terms.");
+      LOG.warn("Couldn't determine significant outlier variable terms.");
       throw new OptimizeRuntimeException(e.getMessage(), e);
     } catch (final ElasticsearchException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
-        log.info(
+        LOG.info(
             "Was not able to determine significant outlier variable terms because instance index with name {} does not "
                 + "exist. Returning empty list.",
             getProcessInstanceIndexAliasName(outlierParams.getProcessDefinitionKey()));
@@ -457,7 +458,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
       throw new OptimizeRuntimeException("Could not obtain outlier instance ids.", e);
     } catch (final ElasticsearchException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
-        log.info(
+        LOG.info(
             "Was not able to obtain outlier instance IDs because instance index with name {} does not exist. "
                 + "Returning empty list.",
             getProcessInstanceIndexAliasName(
@@ -827,7 +828,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
       throw new OptimizeRuntimeException(e.getMessage(), e);
     } catch (final ElasticsearchException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
-        log.info(
+        LOG.info(
             "Was not able to retrieve flownode outlier map because instance index with alias {} does not exist. "
                 + "Returning empty map.",
             getProcessInstanceIndexAliasName(processDefinitionParams.getProcessDefinitionKey()));
@@ -942,7 +943,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
       throw new OptimizeRuntimeException(e.getMessage(), e);
     } catch (final ElasticsearchException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
-        log.info(
+        LOG.info(
             "Was not able to determine interval because instance index {} does not exist. Returning 0.",
             getProcessInstanceIndexAliasName(processDefinitionKey));
         return 0L;

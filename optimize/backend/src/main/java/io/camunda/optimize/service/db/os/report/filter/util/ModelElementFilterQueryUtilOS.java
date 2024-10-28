@@ -72,7 +72,7 @@ import org.opensearch.client.opensearch._types.query_dsl.ChildScoreMode;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.ScriptQuery;
 
-public class ModelElementFilterQueryUtilOS {
+public final class ModelElementFilterQueryUtilOS {
 
   private static final Map<Class<? extends ProcessFilterDto<?>>, Function<Builder, Builder>>
       FLOW_NODE_STATUS_VIEW_FILTER_INSTANCE_QUERIES =
@@ -110,7 +110,7 @@ public class ModelElementFilterQueryUtilOS {
     final List<ProcessFilterDto<?>> viewLevelFiltersForInstanceMatch =
         getViewLevelFiltersForInstanceMatch(filters);
     if (!viewLevelFiltersForInstanceMatch.isEmpty()) {
-      Builder viewFilterInstanceQueryBuilder =
+      final Builder viewFilterInstanceQueryBuilder =
           createFlowNodeTypeFilterQuery(filterContext.isUserTaskReport());
       viewLevelFiltersForInstanceMatch.forEach(
           filter -> {

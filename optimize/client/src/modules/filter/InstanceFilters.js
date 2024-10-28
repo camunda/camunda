@@ -11,6 +11,7 @@ import {MenuDropdown} from '@camunda/camunda-optimize-composite-components';
 import classnames from 'classnames';
 
 import {useUiConfig} from 'hooks';
+import {Select} from 'components';
 import {t} from 'translation';
 
 export default function InstanceFilters({openNewFilterModal, processDefinitionIsNotSelected}) {
@@ -28,7 +29,7 @@ export default function InstanceFilters({openNewFilterModal, processDefinitionIs
         label={t('common.filter.types.instanceState')}
         onClick={openNewFilterModal('instanceState')}
       />
-      <MenuItem label={t('common.filter.types.date')}>
+      <Select.Submenu label={t('common.filter.types.date')}>
         <MenuItem
           label={t('common.filter.types.instanceStartDate')}
           onClick={openNewFilterModal('instanceStartDate')}
@@ -37,8 +38,8 @@ export default function InstanceFilters({openNewFilterModal, processDefinitionIs
           label={t('common.filter.types.instanceEndDate')}
           onClick={openNewFilterModal('instanceEndDate')}
         />
-      </MenuItem>
-      <MenuItem
+      </Select.Submenu>
+      <Select.Submenu
         className={classnames({'cds--menu-item--disabled': processDefinitionIsNotSelected})}
         label={t('common.filter.types.flowNodeDate')}
       >
@@ -52,8 +53,8 @@ export default function InstanceFilters({openNewFilterModal, processDefinitionIs
           label={t('common.filter.types.instanceEndDate')}
           onClick={openNewFilterModal('flowNodeEndDate')}
         />
-      </MenuItem>
-      <MenuItem label={t('common.filter.types.instanceDuration')}>
+      </Select.Submenu>
+      <Select.Submenu label={t('common.filter.types.instanceDuration')}>
         <MenuItem
           label={t('common.filter.types.instance')}
           onClick={openNewFilterModal('processInstanceDuration')}
@@ -63,7 +64,7 @@ export default function InstanceFilters({openNewFilterModal, processDefinitionIs
           onClick={openNewFilterModal('flowNodeDuration')}
           label={t('common.filter.types.flowNode')}
         />
-      </MenuItem>
+      </Select.Submenu>
       <MenuItem
         label={t('common.filter.types.flowNode')}
         disabled={processDefinitionIsNotSelected}

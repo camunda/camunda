@@ -21,11 +21,11 @@ public class TermsQueryContainer {
     termQueries = new HashMap<>();
   }
 
-  public void addTermQuery(String term, List<String> values) {
+  public void addTermQuery(final String term, final List<String> values) {
     termQueries.put(term, values);
   }
 
-  public void addTermQuery(String term, String value) {
+  public void addTermQuery(final String term, final String value) {
     termQueries.put(term, List.of(value));
   }
 
@@ -34,7 +34,7 @@ public class TermsQueryContainer {
         q ->
             q.bool(
                 b -> {
-                  for (String term : termQueries.keySet()) {
+                  for (final String term : termQueries.keySet()) {
                     b.must(
                         m ->
                             m.terms(
@@ -52,8 +52,8 @@ public class TermsQueryContainer {
   }
 
   BoolQuery toOpenSearchQuery() {
-    BoolQuery.Builder query = new BoolQuery.Builder();
-    for (String term : termQueries.keySet()) {
+    final BoolQuery.Builder query = new BoolQuery.Builder();
+    for (final String term : termQueries.keySet()) {
       query.must(QueryDSL.stringTerms(term, termQueries.get(term)));
     }
     return query.build();

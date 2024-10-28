@@ -174,6 +174,7 @@ public class KpiResultDto {
         + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String reportId = "reportId";
