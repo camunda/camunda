@@ -16,6 +16,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
+import io.camunda.zeebe.engine.state.immutable.MappingState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
@@ -31,6 +33,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
 
   private final TenantState tenantState;
   private final UserState userState;
+  private final MappingState mappingState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -39,14 +42,14 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
   private final CommandDistributionBehavior commandDistributionBehavior;
 
   public TenantAddEntityProcessor(
-      final TenantState tenantState,
-      final UserState userState,
+      final ProcessingState state,
       final AuthorizationCheckBehavior authCheckBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
-    this.tenantState = tenantState;
-    this.userState = userState;
+    tenantState = state.getTenantState();
+    userState = state.getUserState();
+    mappingState = state.getMappingState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -79,7 +82,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
     }
 
     final var entityKey = record.getEntityKey();
-    if (!isEntityPresent(entityKey, record)) {
+    if (!isEntityPresent(entityKey, record.getEntityType())) {
       rejectCommand(
           command,
           RejectionType.NOT_FOUND,
@@ -101,13 +104,13 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private boolean isEntityPresent(final long entityKey, final TenantRecord record) {
-    final var user = userState.getUser(entityKey);
-    if (user.isPresent()) {
-      record.setEntityType(EntityType.USER);
-      return true;
+  private boolean isEntityPresent(final long entityKey, final EntityType entityType) {
+    if (EntityType.USER == entityType) {
+      return userState.getUser(entityKey).isPresent();
     }
-    // For now, we're only dealing with users. Extend this logic for other entity types later.
+    if (EntityType.MAPPING == entityType) {
+      return mappingState.get(entityKey).isPresent();
+    }
     return false;
   }
 
