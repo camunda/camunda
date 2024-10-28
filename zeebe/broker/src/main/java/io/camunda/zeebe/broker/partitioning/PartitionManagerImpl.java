@@ -15,6 +15,7 @@ import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
@@ -517,38 +518,20 @@ public final class PartitionManagerImpl
   public ActorFuture<Void> initiateScaleUp(final int desiredPartitionCount) {
     final var result = concurrencyControl.<Void>createFuture();
 
-    brokerClient
-        .sendRequestWithRetry(new BrokerPartitionScaleUpRequest(desiredPartitionCount))
-        .whenComplete(
-            (response, error) -> {
-              if (error != null) {
-                result.completeExceptionally("Failed to send request", error);
-                return;
-              }
-
-              if (response.isError()) {
-                result.completeExceptionally(
-                    new RuntimeException(
-                        "Request resulted in an error: %s".formatted(response.getError())));
-                return;
-              }
-
-              if (response.isRejection()
-                  && response.getRejection().type() == RejectionType.ALREADY_EXISTS) {
-                LOGGER.debug(
-                    "Scale up request already succeeded before: {}", response.getRejection());
-                result.complete(null);
-              }
-
-              if (response.isRejection()) {
-                result.completeExceptionally(
-                    new RuntimeException(
-                        "Request was rejected: %s".formatted(response.getRejection())));
-                return;
-              }
-
-              result.complete(null);
-            });
+    brokerClient.sendRequestWithRetry(
+        new BrokerPartitionScaleUpRequest(desiredPartitionCount),
+        (key, response) -> {
+          result.complete(null);
+        },
+        error -> {
+          if (error instanceof final BrokerRejectionException rejection
+              && rejection.getRejection().type() == RejectionType.ALREADY_EXISTS) {
+            LOGGER.debug("Scale up request already succeeded before", rejection);
+            result.complete(null);
+          } else {
+            result.completeExceptionally(error);
+          }
+        });
 
     return result;
   }
