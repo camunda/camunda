@@ -55,4 +55,13 @@ public class MappingStateTest {
     // then
     assertThat(mapping).isEmpty();
   }
+
+  @Test
+  void shouldReturnEmptyIfMappingDoesNotExistByClaim() {
+    // when
+    final var mapping = mappingState.get("claimName", "claimValue");
+
+    // then
+    assertThat(mapping).isEmpty();
+  }
 }
