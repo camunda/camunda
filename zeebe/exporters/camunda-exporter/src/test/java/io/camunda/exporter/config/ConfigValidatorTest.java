@@ -72,4 +72,69 @@ public class ConfigValidatorTest {
     // when - then
     assertThatCode(() -> ConfigValidator.validate(config)).isInstanceOf(ExporterException.class);
   }
+
+  @Test
+  void shouldAssureRolloverDateFormatToBeValid() {
+    // given
+    // Should be a valid format for DateTimeFormatter. A valid date format should be for example
+    // "yyyy-MM-dd" or "dd-MM-yyyy".
+    config.getArchiver().setRolloverDateFormat("month-day-year");
+
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config))
+        .isInstanceOf(ExporterException.class)
+        .hasMessageContaining(
+            "CamundaExporter rolloverDateFormat month-day-yearis not a valid DateTimeFormatter pattern: java.lang.IllegalArgumentException:");
+  }
+
+  @Test
+  void shouldAssureRolloverIntervalToBeValid() {
+    // given
+    // Rollover interval must match pattern '%d{timeunit}', where timeunit is one of 'd', 'h',
+    // 'm', 's'. A valid rollover interval should be for example "1d" or
+    // "1h". Zero or negative time units are not allowed.
+    config.getArchiver().setRolloverInterval("1day");
+
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config))
+        .isInstanceOf(ExporterException.class)
+        .hasMessageContaining(
+            "CamundaExporter rolloverInterval '1day' must match pattern '^(?:[1-9]\\d*)([smhdwMy])$', but didn't.");
+  }
+
+  @Test
+  void shouldAssureWaitPeriodBeforeArchivingToBeValid() {
+    // given
+    // waitPeriodBeforeArchiving must match pattern '%d{timeunit}', where timeunit is one of 'd',
+    // 'h', 'm', 's'.
+    config.getArchiver().setWaitPeriodBeforeArchiving("20minutes");
+
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config))
+        .isInstanceOf(ExporterException.class)
+        .hasMessageContaining(
+            "CamundaExporter waitPeriodBeforeArchiving '20minutes' must match pattern '^(?:[1-9]\\d*)([smhdwMy])$', but didn't.");
+  }
+
+  @Test
+  void shouldForbidRolloverBatchSizeToBeLessThanOne() {
+    // given
+    config.getArchiver().setRolloverBatchSize(0);
+
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config))
+        .isInstanceOf(ExporterException.class)
+        .hasMessageContaining("CamundaExporter rolloverBatchSize must be >= 1. Current value: 0");
+  }
+
+  @Test
+  void shouldForbidDelayBetweenRunsToBeLessThanOne() {
+    // given
+    config.getArchiver().setDelayBetweenRuns(0);
+
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config))
+        .isInstanceOf(ExporterException.class)
+        .hasMessageContaining("CamundaExporter delayBetweenRuns must be >= 1. Current value: 0");
+  }
 }
