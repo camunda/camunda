@@ -20,6 +20,12 @@ concurrency:
   cancel-in-progress: true
   group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
 
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
 jobs:
   integration-tests:
     name: "[IT] RDBMS"
@@ -40,7 +46,7 @@ jobs:
       - name: Maven Test Build
         run: >
           ./mvnw -B -T1C --no-snapshot-updates
-          -D forkCount=4
+          -D forkCount=1
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks -D skipOptimize
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports

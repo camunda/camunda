@@ -65,6 +65,7 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
         value.getTenantId(),
         value.getVersionTag(),
         value.getVersion(),
-        new String(value.getResource(), StandardCharsets.UTF_8));
+        new String(value.getResource(), StandardCharsets.UTF_8),
+        processEntity.map(ProcessEntity::getFormId).orElse(null));
   }
 }
