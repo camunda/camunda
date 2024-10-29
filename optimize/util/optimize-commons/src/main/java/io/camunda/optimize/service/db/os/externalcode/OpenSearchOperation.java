@@ -98,9 +98,7 @@ public class OpenSearchOperation {
     try {
       return supplier.get();
     } catch (final OpenSearchException e) {
-      final String message =
-          "An exception has occurred when trying to execute an OpenSearch operation";
-      LOG.error(message, e);
+      // OpenSearch exceptions shall only get re-thrown since they will be logged elsewhere
       throw e;
     } catch (final Exception e) {
       final String message = errorMessage.apply(e);
