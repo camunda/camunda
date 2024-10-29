@@ -141,11 +141,25 @@ public class TaskListenerTest {
                         .zeebeTaskListener(l -> l.complete().type(LISTENER_TYPE + "_complete"))));
 
     completeJobs(
-        processInstanceKey,
-        LISTENER_TYPE,
-        LISTENER_TYPE + "_2",
-        LISTENER_TYPE + "_assign",
-        LISTENER_TYPE + "_assign_2");
+        processInstanceKey, LISTENER_TYPE, LISTENER_TYPE + "_2", LISTENER_TYPE + "_assign");
+
+    ENGINE
+        .job()
+        .withType(LISTENER_TYPE + "_assign_2")
+        .ofInstance(processInstanceKey)
+        .withRetries(0)
+        .fail();
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(LISTENER_TYPE + "_assign_2")
+        .withRetries(1)
+        .updateRetries();
+
+    ENGINE.incident().ofInstance(processInstanceKey).resolve();
+
+    completeJobs(processInstanceKey, LISTENER_TYPE + "_assign_2");
 
     // when
     ENGINE
