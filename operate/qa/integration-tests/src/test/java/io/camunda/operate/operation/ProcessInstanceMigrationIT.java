@@ -60,7 +60,7 @@ class ProcessInstanceMigrationIT extends OperateZeebeSearchAbstractIT {
                         .setTargetElementId("taskB")));
     migrateProcessInstanceHandler.setZeebeClient(zeebeContainerManager.getClient());
     migrateProcessInstanceHandler.migrate(
-        processFrom, migrationPlan, UUID.randomUUID().getMostSignificantBits());
+        processFrom, migrationPlan, String.valueOf(UUID.randomUUID().getMostSignificantBits()));
 
     // then
     // subprocesses are migrated

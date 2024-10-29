@@ -42,18 +42,16 @@ public class ResolveIncidentHandler extends AbstractOperationHandler implements 
     }
 
     if (incident.getErrorType().equals(JOB_NO_RETRIES)) {
-      zeebeClient
-          .newUpdateRetriesCommand(incident.getJobKey())
-          .retries(1)
-          .operationReference(Long.parseLong(operation.getId()))
-          .send()
-          .join();
+      final var updateRetriesJobCommand =
+          withOperationReference(
+              zeebeClient.newUpdateRetriesCommand(incident.getJobKey()).retries(1),
+              operation.getId());
+      updateRetriesJobCommand.send().join();
     }
-    zeebeClient
-        .newResolveIncidentCommand(incident.getKey())
-        .operationReference(Long.parseLong(operation.getId()))
-        .send()
-        .join();
+    final var resolveIncidentCommand =
+        withOperationReference(
+            zeebeClient.newResolveIncidentCommand(incident.getKey()), operation.getId());
+    resolveIncidentCommand.send().join();
     // mark operation as sent
     markAsSent(operation);
   }
