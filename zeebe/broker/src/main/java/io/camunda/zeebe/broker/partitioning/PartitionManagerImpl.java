@@ -14,6 +14,8 @@ import io.atomix.primitive.partition.impl.DefaultPartitionManagementService;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
@@ -27,9 +29,12 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerPartitionScaleUpRequest;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -49,7 +54,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class PartitionManagerImpl implements PartitionManager, PartitionChangeExecutor {
+public final class PartitionManagerImpl
+    implements PartitionManager, PartitionChangeExecutor, PartitionScalingChangeExecutor {
 
   public static final String GROUP_NAME = "raft-partition";
 
@@ -61,6 +67,7 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
   private final TopologyManagerImpl topologyManager;
   private final Map<Integer, Partition> partitions = new ConcurrentHashMap<>();
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
+  private final BrokerClient brokerClient;
   private final DefaultPartitionManagementService managementService;
   private final BrokerCfg brokerCfg;
   private final ZeebePartitionFactory zeebePartitionFactory;
@@ -82,12 +89,14 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
       final AtomixServerTransport gatewayBrokerTransport,
       final JobStreamer jobStreamer,
       final ClusterConfigurationService clusterConfigurationService,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      final BrokerClient brokerClient) {
     this.brokerCfg = brokerCfg;
     this.concurrencyControl = concurrencyControl;
     this.actorSchedulingService = actorSchedulingService;
     this.healthCheckService = healthCheckService;
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
+    this.brokerClient = brokerClient;
     final var featureFlags = brokerCfg.getExperimental().getFeatures().toFeatureFlags();
     this.clusterConfigurationService = clusterConfigurationService;
     // TODO: Do this as a separate step before starting the partition manager
@@ -503,5 +512,27 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
               initializeFrom);
           result.complete(null);
         });
+  }
+
+  @Override
+  public ActorFuture<Void> initiateScaleUp(final int desiredPartitionCount) {
+    final var result = concurrencyControl.<Void>createFuture();
+
+    brokerClient.sendRequestWithRetry(
+        new BrokerPartitionScaleUpRequest(desiredPartitionCount),
+        (key, response) -> {
+          result.complete(null);
+        },
+        error -> {
+          if (error instanceof final BrokerRejectionException rejection
+              && rejection.getRejection().type() == RejectionType.ALREADY_EXISTS) {
+            LOGGER.debug("Scale up request already succeeded before", rejection);
+            result.complete(null);
+          } else {
+            result.completeExceptionally(error);
+          }
+        });
+
+    return result;
   }
 }
