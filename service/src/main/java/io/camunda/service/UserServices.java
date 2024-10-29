@@ -12,48 +12,55 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserQuery;
 import io.camunda.security.auth.Authentication;
-import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.SecurityContextAware;
+import io.camunda.security.auth.SecurityContextAwareDelegate;
 import io.camunda.service.search.core.SearchQueryService;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserCreateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserDeleteRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.concurrent.CompletableFuture;
 
 public class UserServices extends SearchQueryService<UserServices, UserQuery, UserEntity> {
 
-  private final UserSearchClient userSearchClient;
+  private final SecurityContextAware<UserSearchClient> userSearchClient;
 
   public UserServices(
       final BrokerClient brokerClient,
-      final SecurityConfiguration securityConfiguration,
+      final SecurityContextProvider securityContextProvider,
       final UserSearchClient userSearchClient,
       final Authentication authentication) {
-    super(brokerClient, securityConfiguration, authentication);
+    this(
+        brokerClient,
+        securityContextProvider,
+        new SecurityContextAwareDelegate<>(userSearchClient, UserSearchClient::withSecurityContext),
+        authentication);
+  }
+
+  public UserServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final SecurityContextAware<UserSearchClient> userSearchClient,
+      final Authentication authentication) {
+    super(brokerClient, securityContextProvider, authentication);
     this.userSearchClient = userSearchClient;
   }
 
   @Override
   public SearchQueryResult<UserEntity> search(final UserQuery query) {
-    return userSearchClient.searchUsers(
-        query,
-        SecurityContext.of(
-            s ->
-                s.withAuthentication(authentication)
-                    .withAuthorizationIfEnabled(
-                        securityConfiguration.getAuthorizations().isEnabled(),
-                        a ->
-                            a.resourceType(AuthorizationResourceType.USER)
-                                .permissionType(PermissionType.READ))));
+    return securityContextProvider
+        .applySecurityContext(
+            userSearchClient, authentication, Authorization.of(a -> a.user().read()))
+        .searchUsers(query);
   }
 
   @Override
   public UserServices withAuthentication(final Authentication authentication) {
-    return new UserServices(brokerClient, securityConfiguration, userSearchClient, authentication);
+    return new UserServices(
+        brokerClient, securityContextProvider, userSearchClient, authentication);
   }
 
   public CompletableFuture<UserRecord> createUser(final UserDTO request) {

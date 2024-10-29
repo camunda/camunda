@@ -65,7 +65,7 @@ public record SecurityContext(Authentication authentication, Authorization autho
     }
 
     public Builder withoutAuthorization() {
-      authentication = null;
+      authorization = null;
       return this;
     }
 

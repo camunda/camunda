@@ -13,10 +13,11 @@ import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
-import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.entity.Permission;
+import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.SecurityContextAware;
+import io.camunda.security.auth.SecurityContextAwareDelegate;
 import io.camunda.service.search.core.SearchQueryService;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerAuthorizationPatchRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
@@ -32,35 +33,44 @@ import java.util.stream.Collectors;
 public class AuthorizationServices
     extends SearchQueryService<AuthorizationServices, AuthorizationQuery, AuthorizationEntity> {
 
-  private final AuthorizationSearchClient authorizationSearchClient;
+  private final SecurityContextAware<AuthorizationSearchClient> authorizationSearchClient;
 
   public AuthorizationServices(
       final BrokerClient brokerClient,
-      final SecurityConfiguration securityConfiguration,
+      final SecurityContextProvider securityContextProvider,
       final AuthorizationSearchClient authorizationSearchClient,
       final Authentication authentication) {
-    super(brokerClient, securityConfiguration, authentication);
+    this(
+        brokerClient,
+        securityContextProvider,
+        new SecurityContextAwareDelegate<>(
+            authorizationSearchClient, AuthorizationSearchClient::withSecurityContext),
+        authentication);
+  }
+
+  public AuthorizationServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final SecurityContextAware<AuthorizationSearchClient> authorizationSearchClient,
+      final Authentication authentication) {
+    super(brokerClient, securityContextProvider, authentication);
     this.authorizationSearchClient = authorizationSearchClient;
   }
 
   @Override
   public AuthorizationServices withAuthentication(final Authentication authentication) {
     return new AuthorizationServices(
-        brokerClient, securityConfiguration, authorizationSearchClient, authentication);
+        brokerClient, securityContextProvider, authorizationSearchClient, authentication);
   }
 
   @Override
   public SearchQueryResult<AuthorizationEntity> search(final AuthorizationQuery query) {
-    return authorizationSearchClient.searchAuthorizations(
-        query,
-        SecurityContext.of(
-            s ->
-                s.withAuthentication(authentication)
-                    .withAuthorizationIfEnabled(
-                        securityConfiguration.getAuthorizations().isEnabled(),
-                        a ->
-                            a.resourceType(AuthorizationResourceType.AUTHORIZATION)
-                                .permissionType(PermissionType.READ))));
+    return securityContextProvider
+        .applySecurityContext(
+            authorizationSearchClient,
+            authentication,
+            Authorization.of(a -> a.authorization().read()))
+        .searchAuthorizations(query);
   }
 
   public Set<String> fetchAssignedPermissions(

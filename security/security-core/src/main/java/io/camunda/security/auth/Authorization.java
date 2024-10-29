@@ -7,6 +7,16 @@
  */
 package io.camunda.security.auth;
 
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.AUTHORIZATION;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DECISION_DEFINITION;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.ROLE;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.USER;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.READ;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_INSTANCE;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_USER_TASK;
+
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.function.Function;
@@ -31,6 +41,42 @@ public record Authorization(AuthorizationResourceType resourceType, PermissionTy
     public Builder permissionType(final PermissionType permissionType) {
       this.permissionType = permissionType;
       return this;
+    }
+
+    public Builder processDefinition() {
+      return resourceType(PROCESS_DEFINITION);
+    }
+
+    public Builder decisionDefinition() {
+      return resourceType(DECISION_DEFINITION);
+    }
+
+    public Builder decisionRequirementsDefinition() {
+      return resourceType(DECISION_REQUIREMENTS_DEFINITION);
+    }
+
+    public Builder role() {
+      return resourceType(ROLE);
+    }
+
+    public Builder authorization() {
+      return resourceType(AUTHORIZATION);
+    }
+
+    public Builder user() {
+      return resourceType(USER);
+    }
+
+    public Builder read() {
+      return permissionType(READ);
+    }
+
+    public Builder readInstance() {
+      return permissionType(READ_INSTANCE);
+    }
+
+    public Builder readUserTask() {
+      return permissionType(READ_USER_TASK);
     }
 
     public Authorization build() {

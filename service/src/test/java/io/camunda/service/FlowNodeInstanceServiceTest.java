@@ -15,7 +15,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.clients.FlowNodeInstanceSearchClient;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,16 +28,19 @@ public final class FlowNodeInstanceServiceTest {
   @BeforeEach
   public void before() {
     client = mock(FlowNodeInstanceSearchClient.class);
+    when(client.withSecurityContext(any())).thenReturn(client);
+    final var securityAuthorizationHandler = mock(SecurityContextProvider.class);
+    when(securityAuthorizationHandler.applySecurityContext(any(), any(), any())).thenReturn(client);
     services =
         new FlowNodeInstanceServices(
-            mock(BrokerClient.class), new SecurityConfiguration(), client, null);
+            mock(BrokerClient.class), securityAuthorizationHandler, client, null);
   }
 
   @Test
   public void shouldReturnFlowNodeInstance() {
     // given
     final var result = mock(SearchQueryResult.class);
-    when(client.searchFlowNodeInstances(any(), any())).thenReturn(result);
+    when(client.searchFlowNodeInstances(any())).thenReturn(result);
 
     final var searchQuery = SearchQueryBuilders.flownodeInstanceSearchQuery().build();
 

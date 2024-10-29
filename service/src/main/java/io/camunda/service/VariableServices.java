@@ -16,47 +16,56 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.search.query.VariableQuery.Builder;
 import io.camunda.security.auth.Authentication;
-import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.SecurityContextAware;
+import io.camunda.security.auth.SecurityContextAwareDelegate;
 import io.camunda.service.search.core.SearchQueryService;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.function.Function;
 
 public final class VariableServices
     extends SearchQueryService<VariableServices, VariableQuery, VariableEntity> {
 
-  private final VariableSearchClient variableSearchClient;
+  private final SecurityContextAware<VariableSearchClient> variableSearchClient;
 
   public VariableServices(
       final BrokerClient brokerClient,
-      final SecurityConfiguration securityConfiguration,
+      final SecurityContextProvider securityContextProvider,
       final VariableSearchClient variableSearchClient,
       final Authentication authentication) {
-    super(brokerClient, securityConfiguration, authentication);
+    this(
+        brokerClient,
+        securityContextProvider,
+        new SecurityContextAwareDelegate<>(
+            variableSearchClient, VariableSearchClient::withSecurityContext),
+        authentication);
+  }
+
+  public VariableServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final SecurityContextAware<VariableSearchClient> variableSearchClient,
+      final Authentication authentication) {
+    super(brokerClient, securityContextProvider, authentication);
     this.variableSearchClient = variableSearchClient;
   }
 
   @Override
   public VariableServices withAuthentication(final Authentication authentication) {
     return new VariableServices(
-        brokerClient, securityConfiguration, variableSearchClient, authentication);
+        brokerClient, securityContextProvider, variableSearchClient, authentication);
   }
 
   @Override
   public SearchQueryResult<VariableEntity> search(final VariableQuery query) {
-    return variableSearchClient.searchVariables(
-        query,
-        SecurityContext.of(
-            s ->
-                s.withAuthentication(authentication)
-                    .withAuthorizationIfEnabled(
-                        securityConfiguration.getAuthorizations().isEnabled(),
-                        a ->
-                            a.resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-                                .permissionType(PermissionType.READ_INSTANCE))));
+    return securityContextProvider
+        .applySecurityContext(
+            variableSearchClient,
+            authentication,
+            Authorization.of(a -> a.processDefinition().readInstance()))
+        .searchVariables(query);
   }
 
   public SearchQueryResult<VariableEntity> search(

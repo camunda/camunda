@@ -24,7 +24,7 @@ import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,10 +40,15 @@ public final class DecisionDefinitionServiceTest {
   public void before() {
     client = mock(DecisionDefinitionSearchClient.class);
     decisionRequirementSearchClient = mock(DecisionRequirementSearchClient.class);
+    when(client.withSecurityContext(any())).thenReturn(client);
+    when(decisionRequirementSearchClient.withSecurityContext(any()))
+        .thenReturn(decisionRequirementSearchClient);
+    final var securityAuthorizationHandler = mock(SecurityContextProvider.class);
+    when(securityAuthorizationHandler.applySecurityContext(any(), any(), any())).thenReturn(client);
     services =
         new DecisionDefinitionServices(
             mock(BrokerClient.class),
-            new SecurityConfiguration(),
+            securityAuthorizationHandler,
             client,
             decisionRequirementSearchClient,
             null);
@@ -53,7 +58,7 @@ public final class DecisionDefinitionServiceTest {
   public void shouldReturnDecisionDefinition() {
     // given
     final var result = mock(SearchQueryResult.class);
-    when(client.searchDecisionDefinitions(any(), any())).thenReturn(result);
+    when(client.searchDecisionDefinitions(any())).thenReturn(result);
 
     final DecisionDefinitionQuery searchQuery =
         SearchQueryBuilders.decisionDefinitionSearchQuery().build();
@@ -71,12 +76,12 @@ public final class DecisionDefinitionServiceTest {
     // given
     final var definitionEntity = mock(DecisionDefinitionEntity.class);
     when(definitionEntity.decisionRequirementsKey()).thenReturn(42L);
-    when(client.searchDecisionDefinitions(any(), any()))
+    when(client.searchDecisionDefinitions(any()))
         .thenReturn(new SearchQueryResult<>(1, List.of(definitionEntity), null));
 
     final var requirementEntity = mock(DecisionRequirementsEntity.class);
     when(requirementEntity.xml()).thenReturn("<foo>bar</foo>");
-    when(decisionRequirementSearchClient.searchDecisionRequirements(any(), any()))
+    when(decisionRequirementSearchClient.searchDecisionRequirements(any()))
         .thenReturn(new SearchQueryResult<>(1, List.of(requirementEntity), null));
 
     // when
@@ -89,7 +94,7 @@ public final class DecisionDefinitionServiceTest {
   @Test
   public void shouldThrowNotFoundExceptionOnUnmatchedDecisionKey() {
     // given
-    when(client.searchDecisionDefinitions(any(), any()))
+    when(client.searchDecisionDefinitions(any()))
         .thenReturn(new SearchQueryResult<>(0, List.of(), null));
 
     // then
@@ -97,9 +102,9 @@ public final class DecisionDefinitionServiceTest {
         assertThrows(NotFoundException.class, () -> services.getDecisionDefinitionXml(1L));
     assertThat(exception.getMessage())
         .isEqualTo("Decision Definition with decisionKey=1 not found");
-    verify(client).searchDecisionDefinitions(any(DecisionDefinitionQuery.class), any());
+    verify(client).searchDecisionDefinitions(any(DecisionDefinitionQuery.class));
     verify(decisionRequirementSearchClient, never())
-        .searchDecisionRequirements(any(DecisionRequirementsQuery.class), any());
+        .searchDecisionRequirements(any(DecisionRequirementsQuery.class));
   }
 
   @Test
@@ -109,9 +114,9 @@ public final class DecisionDefinitionServiceTest {
     when(definitionEntity.decisionRequirementsKey()).thenReturn(1L);
     final var definitionResult = mock(SearchQueryResult.class);
     when(definitionResult.items()).thenReturn(List.of(definitionEntity));
-    when(client.searchDecisionDefinitions(any(), any()))
+    when(client.searchDecisionDefinitions(any()))
         .thenReturn(new SearchQueryResult<>(1, List.of(definitionEntity), null));
-    when(decisionRequirementSearchClient.searchDecisionRequirements(any(), any()))
+    when(decisionRequirementSearchClient.searchDecisionRequirements(any()))
         .thenReturn(new SearchQueryResult<>(0, List.of(), null));
 
     // then
@@ -128,7 +133,7 @@ public final class DecisionDefinitionServiceTest {
     when(definitionEntity.key()).thenReturn(42L);
     final var definitionResult = mock(SearchQueryResult.class);
     when(definitionResult.items()).thenReturn(List.of(definitionEntity));
-    when(client.searchDecisionDefinitions(any(), any()))
+    when(client.searchDecisionDefinitions(any()))
         .thenReturn(new SearchQueryResult(1, List.of(definitionEntity), null));
 
     // when

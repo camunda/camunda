@@ -16,9 +16,11 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.UserTaskQuery.Builder;
 import io.camunda.security.auth.Authentication;
-import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.SecurityContextAware;
+import io.camunda.security.auth.SecurityContextAwareDelegate;
 import io.camunda.service.search.core.SearchQueryService;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskAssignmentRequest;
@@ -26,8 +28,6 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskCompletionRequ
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -35,35 +35,44 @@ import java.util.function.Function;
 public final class UserTaskServices
     extends SearchQueryService<UserTaskServices, UserTaskQuery, UserTaskEntity> {
 
-  private final UserTaskSearchClient userTaskSearchClient;
+  private final SecurityContextAware<UserTaskSearchClient> userTaskSearchClient;
 
   public UserTaskServices(
       final BrokerClient brokerClient,
-      final SecurityConfiguration securityConfiguration,
+      final SecurityContextProvider securityContextProvider,
       final UserTaskSearchClient userTaskSearchClient,
       final Authentication authentication) {
-    super(brokerClient, securityConfiguration, authentication);
+    this(
+        brokerClient,
+        securityContextProvider,
+        new SecurityContextAwareDelegate<>(
+            userTaskSearchClient, UserTaskSearchClient::withSecurityContext),
+        authentication);
+  }
+
+  public UserTaskServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final SecurityContextAware<UserTaskSearchClient> userTaskSearchClient,
+      final Authentication authentication) {
+    super(brokerClient, securityContextProvider, authentication);
     this.userTaskSearchClient = userTaskSearchClient;
   }
 
   @Override
   public UserTaskServices withAuthentication(final Authentication authentication) {
     return new UserTaskServices(
-        brokerClient, securityConfiguration, userTaskSearchClient, authentication);
+        brokerClient, securityContextProvider, userTaskSearchClient, authentication);
   }
 
   @Override
   public SearchQueryResult<UserTaskEntity> search(final UserTaskQuery query) {
-    return userTaskSearchClient.searchUserTasks(
-        query,
-        SecurityContext.of(
-            s ->
-                s.withAuthentication(authentication)
-                    .withAuthorizationIfEnabled(
-                        securityConfiguration.getAuthorizations().isEnabled(),
-                        a ->
-                            a.resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-                                .permissionType(PermissionType.READ_USER_TASK))));
+    return securityContextProvider
+        .applySecurityContext(
+            userTaskSearchClient,
+            authentication,
+            Authorization.of(a -> a.processDefinition().readUserTask()))
+        .searchUserTasks(query);
   }
 
   public SearchQueryResult<UserTaskEntity> search(
