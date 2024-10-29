@@ -26,7 +26,6 @@ import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -37,12 +36,8 @@ public class RemoveEntityTenantMultiPartitionTest {
   @Rule public final EngineRule engine = EngineRule.multiplePartition(PARTITION_COUNT);
   @Rule public final TestWatcher testWatcher = new RecordingExporterTestWatcher();
 
-  public long userKey;
-  public long tenantKey;
-
-  @Before
-  public void before() {
-    userKey =
+  public void setupTenantWithUserAndRemoveEntity() {
+    final var userKey =
         engine
             .user()
             .newUser("foo")
@@ -52,7 +47,7 @@ public class RemoveEntityTenantMultiPartitionTest {
             .create()
             .getKey();
     final var tenantId = UUID.randomUUID().toString();
-    tenantKey =
+    final var tenantKey =
         engine.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
     engine
         .tenant()
@@ -70,6 +65,7 @@ public class RemoveEntityTenantMultiPartitionTest {
 
   @Test
   public void shouldDistributeTenantRemoveEntityCommand() {
+    setupTenantWithUserAndRemoveEntity();
     assertThat(
             RecordingExporter.records()
                 .withPartitionId(1)
@@ -118,6 +114,7 @@ public class RemoveEntityTenantMultiPartitionTest {
 
   @Test
   public void shouldDistributeInIdentityQueue() {
+    setupTenantWithUserAndRemoveEntity();
     assertThat(
             RecordingExporter.commandDistributionRecords()
                 .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 4)
@@ -132,6 +129,7 @@ public class RemoveEntityTenantMultiPartitionTest {
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
       interceptUserCreateForPartition(partitionId);
     }
+    setupTenantWithUserAndRemoveEntity();
     // Increase time to trigger a redistribution
     engine.increaseTime(Duration.ofMinutes(1));
 
