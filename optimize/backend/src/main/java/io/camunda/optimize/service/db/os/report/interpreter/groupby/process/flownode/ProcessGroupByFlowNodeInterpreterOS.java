@@ -5,57 +5,65 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.service.db.es.report.interpreter.groupby.process.flownode;
+package io.camunda.optimize.service.db.os.report.interpreter.groupby.process.flownode;
 
+import static io.camunda.optimize.service.db.os.externalcode.client.dsl.AggregationDSL.termAggregation;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_FLOW_NODE;
 import static io.camunda.optimize.service.db.report.result.CompositeCommandResult.GroupByResult;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 
-import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
-import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
-import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
-import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.DefinitionService;
-import io.camunda.optimize.service.db.es.report.interpreter.distributedby.process.ProcessDistributedByInterpreterFacadeES;
-import io.camunda.optimize.service.db.es.report.interpreter.view.process.ProcessViewInterpreterFacadeES;
+import io.camunda.optimize.service.db.os.report.interpreter.RawResult;
+import io.camunda.optimize.service.db.os.report.interpreter.distributedby.process.ProcessDistributedByInterpreterFacadeOS;
+import io.camunda.optimize.service.db.os.report.interpreter.view.process.ProcessViewInterpreterFacadeOS;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.groupby.flownode.ProcessGroupByFlowNodeInterpreterHelper;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
+import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.opensearch.client.opensearch._types.aggregations.Aggregation;
+import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch.core.SearchResponse;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@Conditional(ElasticSearchCondition.class)
-public class ProcessGroupByFlowNodeInterpreterES extends AbstractGroupByFlowNodeInterpreterES {
-
+@Conditional(OpenSearchCondition.class)
+public class ProcessGroupByFlowNodeInterpreterOS extends AbstractGroupByFlowNodeInterpreterOS {
   private static final String NESTED_EVENTS_AGGREGATION = "nestedEvents";
-  final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
-  final ProcessViewInterpreterFacadeES viewInterpreter;
-  private final ConfigurationService configurationService;
-  private final DefinitionService definitionService;
-  private final ProcessGroupByFlowNodeInterpreterHelper helper;
 
-  public ProcessGroupByFlowNodeInterpreterES(
-      final ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
-      final ProcessViewInterpreterFacadeES viewInterpreter,
+  private final ConfigurationService configurationService;
+  private final ProcessGroupByFlowNodeInterpreterHelper helper;
+  private final DefinitionService definitionService;
+  private final ProcessDistributedByInterpreterFacadeOS distributedByInterpreter;
+  private final ProcessViewInterpreterFacadeOS viewInterpreter;
+
+  public ProcessGroupByFlowNodeInterpreterOS(
       final ConfigurationService configurationService,
+      final ProcessGroupByFlowNodeInterpreterHelper helper,
       final DefinitionService definitionService,
-      final ProcessGroupByFlowNodeInterpreterHelper helper) {
+      final ProcessDistributedByInterpreterFacadeOS distributedByInterpreter,
+      final ProcessViewInterpreterFacadeOS viewInterpreter) {
+    super();
+    this.configurationService = configurationService;
+    this.helper = helper;
+    this.definitionService = definitionService;
     this.distributedByInterpreter = distributedByInterpreter;
     this.viewInterpreter = viewInterpreter;
-    this.configurationService = configurationService;
-    this.definitionService = definitionService;
-    this.helper = helper;
+  }
+
+  @Override
+  public DefinitionService getDefinitionService() {
+    return definitionService;
   }
 
   @Override
@@ -64,28 +72,23 @@ public class ProcessGroupByFlowNodeInterpreterES extends AbstractGroupByFlowNode
   }
 
   @Override
-  public Map<String, Aggregation.Builder.ContainerBuilder> createAggregation(
-      final BoolQuery boolQuery,
+  public Map<String, Aggregation> createAggregation(
+      final Query query,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    final Aggregation.Builder.ContainerBuilder builder =
+    final int size = configurationService.getOpenSearchConfiguration().getAggregationBucketLimit();
+    final Aggregation aggregation =
         new Aggregation.Builder()
-            .terms(
-                t ->
-                    t.size(
-                            configurationService
-                                .getElasticSearchConfiguration()
-                                .getAggregationBucketLimit())
-                        .field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID));
-    distributedByInterpreter
-        .createAggregations(context, boolQuery)
-        .forEach((k, v) -> builder.aggregations(k, v.build()));
-    return createFilteredFlowNodeAggregation(context, Map.of(NESTED_EVENTS_AGGREGATION, builder));
+            .terms(termAggregation(FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID, size))
+            .aggregations(distributedByInterpreter.createAggregations(context, query))
+            .build();
+    return createFilteredFlowNodeAggregation(
+        context, Map.of(NESTED_EVENTS_AGGREGATION, aggregation));
   }
 
   @Override
   public void addQueryResult(
       final CompositeCommandResult compositeCommandResult,
-      final ResponseBody<?> response,
+      final SearchResponse<RawResult> response,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     getFilteredFlowNodesAggregation(response)
         .map(
@@ -98,7 +101,7 @@ public class ProcessGroupByFlowNodeInterpreterES extends AbstractGroupByFlowNode
               final List<GroupByResult> groupedData = new ArrayList<>();
               for (final StringTermsBucket flowNodeBucket :
                   byFlowNodeIdAggregation.buckets().array()) {
-                final String flowNodeKey = flowNodeBucket.key().stringValue();
+                final String flowNodeKey = flowNodeBucket.key();
                 if (flowNodeNames.containsKey(flowNodeKey)) {
                   final List<CompositeCommandResult.DistributedByResult> singleResult =
                       distributedByInterpreter.retrieveResult(
@@ -120,17 +123,12 @@ public class ProcessGroupByFlowNodeInterpreterES extends AbstractGroupByFlowNode
   }
 
   @Override
-  public ProcessDistributedByInterpreterFacadeES getDistributedByInterpreter() {
+  public ProcessDistributedByInterpreterFacadeOS getDistributedByInterpreter() {
     return distributedByInterpreter;
   }
 
   @Override
-  public ProcessViewInterpreterFacadeES getViewInterpreter() {
+  public ProcessViewInterpreterFacadeOS getViewInterpreter() {
     return viewInterpreter;
-  }
-
-  @Override
-  public DefinitionService getDefinitionService() {
-    return definitionService;
   }
 }
