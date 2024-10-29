@@ -21,6 +21,8 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.function.Function;
 
 public final class DecisionRequirementsServices
@@ -48,7 +50,16 @@ public final class DecisionRequirementsServices
   public SearchQueryResult<DecisionRequirementsEntity> search(
       final DecisionRequirementsQuery query) {
     return decisionRequirementSearchClient.searchDecisionRequirements(
-        query, SecurityContext.of(s -> s.withAuthentication(authentication)));
+        query,
+        SecurityContext.of(
+            s ->
+                s.withAuthentication(authentication)
+                    .withAuthorizationIfEnabled(
+                        securityConfiguration.getAuthorizations().isEnabled(),
+                        a ->
+                            a.resourceType(
+                                    AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION)
+                                .permissionType(PermissionType.READ))));
   }
 
   public DecisionRequirementsEntity getByKey(final Long key) {

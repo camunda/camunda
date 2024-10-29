@@ -11,6 +11,7 @@ public enum PermissionType {
   CREATE,
   READ,
   READ_INSTANCE,
+  READ_USER_TASK,
   UPDATE,
   DELETE,
   DELETE_PROCESS,

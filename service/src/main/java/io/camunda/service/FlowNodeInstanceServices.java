@@ -20,6 +20,8 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.function.Function;
 
 public final class FlowNodeInstanceServices
@@ -46,7 +48,15 @@ public final class FlowNodeInstanceServices
   @Override
   public SearchQueryResult<FlowNodeInstanceEntity> search(final FlowNodeInstanceQuery query) {
     return flowNodeInstanceSearchClient.searchFlowNodeInstances(
-        query, SecurityContext.of(s -> s.withAuthentication(authentication)));
+        query,
+        SecurityContext.of(
+            s ->
+                s.withAuthentication(authentication)
+                    .withAuthorizationIfEnabled(
+                        securityConfiguration.getAuthorizations().isEnabled(),
+                        a ->
+                            a.resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+                                .permissionType(PermissionType.READ_INSTANCE))));
   }
 
   public SearchQueryResult<FlowNodeInstanceEntity> search(

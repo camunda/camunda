@@ -19,6 +19,8 @@ import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Optional;
 
 public class ProcessDefinitionServices
@@ -42,7 +44,15 @@ public class ProcessDefinitionServices
   @Override
   public SearchQueryResult<ProcessDefinitionEntity> search(final ProcessDefinitionQuery query) {
     return processDefinitionSearchClient.searchProcessDefinitions(
-        query, SecurityContext.of(s -> s.withAuthentication(authentication)));
+        query,
+        SecurityContext.of(
+            s ->
+                s.withAuthentication(authentication)
+                    .withAuthorizationIfEnabled(
+                        securityConfiguration.getAuthorizations().isEnabled(),
+                        a ->
+                            a.resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+                                .permissionType(PermissionType.READ))));
   }
 
   @Override
