@@ -1700,10 +1700,10 @@
   dependencies:
     "@types/unist" "^2"
 
-"@types/mixpanel-browser@2.50.1":
-  version "2.50.1"
-  resolved "https://registry.yarnpkg.com/@types/mixpanel-browser/-/mixpanel-browser-2.50.1.tgz#e93b8754893369bd0a9eae61ce2a45f392ca4e7f"
-  integrity sha512-Z9QnzNIZtsyhc0tvGFeaYCo2NJTGwWi8pqLMB3z/BnGUdEpr3x2qK28KKTjVH31DMbQ0IwqjNQElwJP+XpmeMQ==
+"@types/mixpanel-browser@2.50.2":
+  version "2.50.2"
+  resolved "https://registry.yarnpkg.com/@types/mixpanel-browser/-/mixpanel-browser-2.50.2.tgz#148eea1ef0970d2d915a570be674a4e48345a35d"
+  integrity sha512-Iw8cBzplUPfHoeYuasqeYwdbGTNXhN+5kFT9kU+C7zm0NtaiPpKoiuzITr2ZH9KgBsWi2MbG0FOzIg9sQepauQ==
 
 "@types/ms@*":
   version "0.7.34"
