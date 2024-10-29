@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
+import java.util.function.BiFunction;
 
 public class JobCommandPreconditionChecker {
 
@@ -26,44 +27,48 @@ public class JobCommandPreconditionChecker {
   private final List<JobState.State> validStates;
   private final JobState jobState;
   private final String intent;
+  private final List<BiFunction<TypedRecord<JobRecord>, JobRecord, Either<Rejection, JobRecord>>>
+      customChecks;
 
   public JobCommandPreconditionChecker(
       final JobState jobState, final String intent, final List<State> validStates) {
+    this(jobState, intent, validStates, List.of());
+  }
+
+  public JobCommandPreconditionChecker(
+      final JobState jobState,
+      final String intent,
+      final List<State> validStates,
+      final List<BiFunction<TypedRecord<JobRecord>, JobRecord, Either<Rejection, JobRecord>>>
+          customChecks) {
     this.jobState = jobState;
     this.intent = intent;
     this.validStates = validStates;
+    this.customChecks = customChecks;
   }
 
   protected Either<Rejection, JobRecord> check(
       final State state, final TypedRecord<JobRecord> command) {
+    final var persistedJob = jobState.getJob(command.getKey(), command.getAuthorizations());
 
-    if (validStates.contains(state)) {
-      return getJob(command);
-    }
-
-    if (state == State.NOT_FOUND) {
+    if (state == State.NOT_FOUND || persistedJob == null) {
       return Either.left(
           new Rejection(
               RejectionType.NOT_FOUND,
               String.format(NO_JOB_FOUND_MESSAGE, intent, command.getKey())));
     }
 
-    return Either.left(
-        new Rejection(
-            RejectionType.INVALID_STATE,
-            String.format(INVALID_JOB_STATE_MESSAGE, intent, command.getKey(), state)));
-  }
-
-  private Either<Rejection, JobRecord> getJob(final TypedRecord<JobRecord> command) {
-    final var job = jobState.getJob(command.getKey(), command.getAuthorizations());
-
-    if (job == null) {
+    if (!validStates.contains(state)) {
       return Either.left(
           new Rejection(
-              RejectionType.NOT_FOUND,
-              String.format(NO_JOB_FOUND_MESSAGE, intent, command.getKey())));
+              RejectionType.INVALID_STATE,
+              String.format(INVALID_JOB_STATE_MESSAGE, intent, command.getKey(), state)));
     }
 
-    return Either.right(job);
+    return customChecks.stream()
+        .map(check -> check.apply(command, persistedJob))
+        .filter(Either::isLeft)
+        .findFirst()
+        .orElse(Either.right(persistedJob));
   }
 }
