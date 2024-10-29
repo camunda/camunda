@@ -9,6 +9,7 @@ package io.camunda.operate.webapp.zeebe.operation;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
+import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2;
 import java.util.Map;
 import org.springframework.stereotype.Component;
 
@@ -38,14 +39,21 @@ public class ModifyProcessZeebeWrapper {
     return zeebeClient.newModifyProcessInstanceCommand(processInstanceKey);
   }
 
-  public void setVariablesInZeebe(final Long scopeKey, final Map<String, Object> variables) {
-    zeebeClient.newSetVariablesCommand(scopeKey).variables(variables).local(true).send().join();
+  public void setVariablesInZeebe(
+      final Long scopeKey, final Map<String, Object> variables, final long operationReference) {
+    zeebeClient
+        .newSetVariablesCommand(scopeKey)
+        .variables(variables)
+        .local(true)
+        .operationReference(operationReference)
+        .send()
+        .join();
   }
 
   public void sendModificationsToZeebe(
-      final ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2 stepCommand) {
+      final ModifyProcessInstanceCommandStep2 stepCommand, final long operationReference) {
     if (stepCommand != null) {
-      stepCommand.send().join();
+      stepCommand.operationReference(operationReference).send().join();
     }
   }
 }

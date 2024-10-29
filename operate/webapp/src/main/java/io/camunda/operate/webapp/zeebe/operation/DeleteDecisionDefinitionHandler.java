@@ -51,7 +51,11 @@ public class DeleteDecisionDefinitionHandler extends AbstractOperationHandler
         String.format(
             "Operation [%s]: Sending Zeebe delete command for decisionRequirementsKey [%s]...",
             operation.getId(), decisionRequirementsKey));
-    zeebeClient.newDeleteResourceCommand(decisionRequirementsKey).send().join();
+    zeebeClient
+        .newDeleteResourceCommand(decisionRequirementsKey)
+        .operationReference(Long.parseLong(operation.getId()))
+        .send()
+        .join();
     markAsSent(operation);
     LOGGER.info(
         String.format(

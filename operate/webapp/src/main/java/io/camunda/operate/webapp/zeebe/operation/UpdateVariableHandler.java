@@ -29,6 +29,7 @@ public class UpdateVariableHandler extends AbstractOperationHandler implements O
             .newSetVariablesCommand(operation.getScopeKey())
             .variables(updateVariableJson)
             .local(true)
+            .operationReference(Long.parseLong(operation.getId()))
             .send()
             .join();
     markAsSent(operation, response.getKey());
