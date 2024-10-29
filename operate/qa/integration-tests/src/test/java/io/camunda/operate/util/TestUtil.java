@@ -548,14 +548,14 @@ public abstract class TestUtil {
       final OperationState state,
       final String username,
       final boolean lockExpired) {
-    final OperationEntity oe = new OperationEntity();
-    oe.generateId();
-    oe.setProcessInstanceKey(processInstanceKey);
-    oe.setScopeKey(processInstanceKey);
-    oe.setProcessDefinitionKey(processDefinitionKey);
-    oe.setBpmnProcessId(bpmnProcessId);
-    oe.setIncidentKey(incidentKey);
-    oe.setVariableName(varName);
+    final OperationEntity oe =
+        new OperationEntity()
+            .setProcessInstanceKey(processInstanceKey)
+            .setScopeKey(processInstanceKey)
+            .setProcessDefinitionKey(processDefinitionKey)
+            .setBpmnProcessId(bpmnProcessId)
+            .setIncidentKey(incidentKey)
+            .setVariableName(varName);
     if (varName != null) {
       oe.setType(OperationType.UPDATE_VARIABLE);
       oe.setVariableValue(varName);

@@ -26,6 +26,10 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
 
   @JsonIgnore private Object[] sortValues;
 
+  public BatchOperationEntity() {
+    generateId();
+  }
+
   public String getName() {
     return name;
   }

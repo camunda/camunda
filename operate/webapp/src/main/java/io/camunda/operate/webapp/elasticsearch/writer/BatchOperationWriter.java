@@ -376,13 +376,13 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
             .setInstancesCount(0);
 
     // Create operation
-    final OperationEntity operationEntity = new OperationEntity();
-    operationEntity.generateId();
-    operationEntity.setDecisionDefinitionKey(decisionDefinitionKey);
-    operationEntity.setType(operationType);
-    operationEntity.setState(OperationState.SCHEDULED);
-    operationEntity.setBatchOperationId(batchOperation.getId());
-    operationEntity.setUsername(userService.getCurrentUser().getUsername());
+    final OperationEntity operationEntity =
+        new OperationEntity()
+            .setDecisionDefinitionKey(decisionDefinitionKey)
+            .setType(operationType)
+            .setState(OperationState.SCHEDULED)
+            .setBatchOperationId(batchOperation.getId())
+            .setUsername(userService.getCurrentUser().getUsername());
 
     // Create request
     try {
@@ -425,13 +425,13 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
             .setInstancesCount(0);
 
     // Create operation
-    final OperationEntity operationEntity = new OperationEntity();
-    operationEntity.generateId();
-    operationEntity.setProcessDefinitionKey(processDefinitionKey);
-    operationEntity.setType(operationType);
-    operationEntity.setState(OperationState.SCHEDULED);
-    operationEntity.setBatchOperationId(batchOperation.getId());
-    operationEntity.setUsername(userService.getCurrentUser().getUsername());
+    final OperationEntity operationEntity =
+        new OperationEntity()
+            .setProcessDefinitionKey(processDefinitionKey)
+            .setType(operationType)
+            .setState(OperationState.SCHEDULED)
+            .setBatchOperationId(batchOperation.getId())
+            .setUsername(userService.getCurrentUser().getUsername());
 
     // Create request
     try {
@@ -526,13 +526,11 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
 
   private BatchOperationEntity createBatchOperationEntity(
       final OperationType operationType, final String name) {
-    final BatchOperationEntity batchOperationEntity = new BatchOperationEntity();
-    batchOperationEntity.generateId();
-    batchOperationEntity.setType(operationType);
-    batchOperationEntity.setName(name);
-    batchOperationEntity.setStartDate(OffsetDateTime.now());
-    batchOperationEntity.setUsername(userService.getCurrentUser().getUsername());
-    return batchOperationEntity;
+    return new BatchOperationEntity()
+        .setType(operationType)
+        .setName(name)
+        .setStartDate(OffsetDateTime.now())
+        .setUsername(userService.getCurrentUser().getUsername());
   }
 
   private OperationEntity createOperationEntity(
@@ -557,17 +555,14 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
       final OperationType operationType,
       final String batchOperationId) {
 
-    final OperationEntity operationEntity = new OperationEntity();
-    operationEntity.generateId();
-    operationEntity.setProcessInstanceKey(processInstanceSource.getProcessInstanceKey());
-    operationEntity.setProcessDefinitionKey(processInstanceSource.getProcessDefinitionKey());
-    operationEntity.setBpmnProcessId(processInstanceSource.getBpmnProcessId());
-    operationEntity.setType(operationType);
-    operationEntity.setState(OperationState.SCHEDULED);
-    operationEntity.setBatchOperationId(batchOperationId);
-    operationEntity.setUsername(userService.getCurrentUser().getUsername());
-
-    return operationEntity;
+    return new OperationEntity()
+        .setProcessInstanceKey(processInstanceSource.getProcessInstanceKey())
+        .setProcessDefinitionKey(processInstanceSource.getProcessDefinitionKey())
+        .setBpmnProcessId(processInstanceSource.getBpmnProcessId())
+        .setType(operationType)
+        .setState(OperationState.SCHEDULED)
+        .setBatchOperationId(batchOperationId)
+        .setUsername(userService.getCurrentUser().getUsername());
   }
 
   private void validateTotalHits(final SearchHits hits) {

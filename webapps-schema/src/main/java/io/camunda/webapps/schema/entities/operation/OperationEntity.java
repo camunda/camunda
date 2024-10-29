@@ -42,6 +42,10 @@ public class OperationEntity extends AbstractExporterEntity<OperationEntity> {
 
   private OffsetDateTime completedDate;
 
+  public OperationEntity() {
+    generateId();
+  }
+
   public Long getProcessInstanceKey() {
     return processInstanceKey;
   }
