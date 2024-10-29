@@ -66,7 +66,6 @@ public class ProcessInstanceReaderIT extends OperateSearchAbstractIT {
         indexName, String.valueOf(processInstanceKey), processInstanceData);
 
     operationData = new OperationEntity();
-    operationData.setId("operation-1");
     operationData.setProcessInstanceKey(processInstanceData.getProcessInstanceKey());
     operationData.setUsername(userService.getCurrentUser().getUsername());
     operationData.setState(OperationState.SCHEDULED);

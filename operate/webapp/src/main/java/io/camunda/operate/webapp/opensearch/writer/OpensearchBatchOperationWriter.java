@@ -533,17 +533,14 @@ public class OpensearchBatchOperationWriter
       final OperationType operationType,
       final String batchOperationId) {
 
-    final OperationEntity operationEntity =
-        new OperationEntity()
-            .setProcessInstanceKey(processInstanceSource.getProcessInstanceKey())
-            .setProcessDefinitionKey(processInstanceSource.getProcessDefinitionKey())
-            .setBpmnProcessId(processInstanceSource.getBpmnProcessId())
-            .setType(operationType)
-            .setState(OperationState.SCHEDULED)
-            .setBatchOperationId(batchOperationId)
-            .setUsername(userService.getCurrentUser().getUsername());
-
-    return operationEntity;
+    return new OperationEntity()
+        .setProcessInstanceKey(processInstanceSource.getProcessInstanceKey())
+        .setProcessDefinitionKey(processInstanceSource.getProcessDefinitionKey())
+        .setBpmnProcessId(processInstanceSource.getBpmnProcessId())
+        .setType(operationType)
+        .setState(OperationState.SCHEDULED)
+        .setBatchOperationId(batchOperationId)
+        .setUsername(userService.getCurrentUser().getUsername());
   }
 
   private Optional<ProcessInstanceForListViewEntity> tryGetProcessInstance(
