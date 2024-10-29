@@ -143,6 +143,11 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
     return snapshotLocked;
   }
 
+  @Override
+  public boolean isReserved() {
+    return !reservations.isEmpty();
+  }
+
   void delete() {
     // the checksum, as a mark file, should be deleted first
     try {
@@ -204,10 +209,6 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
         + ", metadata="
         + metadata
         + '}';
-  }
-
-  boolean isReserved() {
-    return !reservations.isEmpty();
   }
 
   ActorFuture<Void> removeReservation(final FileBasedSnapshotReservation reservation) {

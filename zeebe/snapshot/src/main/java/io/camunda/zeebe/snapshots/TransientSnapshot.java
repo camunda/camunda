@@ -16,12 +16,12 @@ public interface TransientSnapshot extends PersistableSnapshot {
 
   /**
    * Takes a snapshot on the given path. This can be persisted later via calling {@link
-   * PersistableSnapshot#persist()}. Based on the implementation this could mean that this is writen
-   * before on a temporary folder and then moved to the valid snapshot directory.
+   * PersistableSnapshot#persist()}. Based on the implementation this could mean that this is
+   * written before on a temporary folder and then moved to the valid snapshot directory.
    *
    * @param takeSnapshot the predicate which should take the snapshot and should return true on
    *     success
-   * @return true on success, false otherwise
+   * @return a future reflecting the result of the operation
    */
   ActorFuture<Void> take(Consumer<Path> takeSnapshot);
 

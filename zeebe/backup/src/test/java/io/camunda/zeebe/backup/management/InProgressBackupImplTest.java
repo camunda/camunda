@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.management;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -28,6 +29,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,11 +46,14 @@ class InProgressBackupImplTest {
   @TempDir Path segmentsDirectory;
 
   @Mock PersistedSnapshotStore snapshotStore;
+  @Mock JournalInfoProvider metadataProvider;
   InProgressBackupImpl inProgressBackup;
   private final TestConcurrencyControl concurrencyControl = new TestConcurrencyControl();
 
   @BeforeEach
   void setup() throws IOException {
+    metadataProvider = mock();
+
     inProgressBackup =
         new InProgressBackupImpl(
             snapshotStore,
@@ -57,7 +62,7 @@ class InProgressBackupImplTest {
             1,
             concurrencyControl,
             segmentsDirectory,
-            path -> path.toString().endsWith(".log"));
+            metadataProvider);
 
     createSegmentFiles();
   }
@@ -130,6 +135,7 @@ class InProgressBackupImplTest {
     onReserve(validSnapshot, snapshotReservation);
     setAvailableSnapshots(Set.of(validSnapshot));
 
+    mockJournalProviderWithNonEmptySegments();
     final var backup = collectBackupContents();
 
     // then
@@ -161,6 +167,7 @@ class InProgressBackupImplTest {
     onReserve(latestValidSnapshot, snapshotReservation);
     setAvailableSnapshots(Set.of(oldValidSnapshot, latestValidSnapshot));
 
+    mockJournalProviderWithNonEmptySegments();
     // when
     final var backup = collectBackupContents();
 
@@ -194,6 +201,7 @@ class InProgressBackupImplTest {
     final var oldValidSnapshot = snapshotWith(1L, 5L);
     final var latestValidSnapshot = snapshotWith(2L, 6L);
 
+    mockJournalProviderWithNonEmptySegments();
     onReserve(oldValidSnapshot, snapshotReservation);
     failOnReserve(latestValidSnapshot);
 
@@ -238,6 +246,7 @@ class InProgressBackupImplTest {
     final var file1 = Files.createFile(snapshotDir.resolve("file1"));
     final var file2 = Files.createFile(snapshotDir.resolve("file2"));
 
+    mockJournalProviderWithNonEmptySegments();
     // when
     final var backup = collectBackupContents();
 
@@ -252,6 +261,7 @@ class InProgressBackupImplTest {
     // given
     setAvailableSnapshots(Set.of());
 
+    mockJournalProviderWithNonEmptySegments();
     // when
     final var backup = collectBackupContents();
 
@@ -260,17 +270,22 @@ class InProgressBackupImplTest {
   }
 
   @Test
-  void shouldCollectSegmentFiles() throws IOException {
+  void shouldUseLastSnapshotIndexToFindSegments(
+      @Mock final SnapshotReservation snapshotReservation) {
     // given
-    setAvailableSnapshots(Set.of());
+    final var firstSnapshot = snapshotWith(1L, 2L);
+    final var lastSnapshot = snapshotWith(4L, 6L);
+    setAvailableSnapshots(Set.of(firstSnapshot, lastSnapshot));
 
-    // create segment files
     final var file1 = segmentsDirectory.resolve("file1.log");
     final var file2 = segmentsDirectory.resolve("file2.log");
-
+    // create segment files
+    mockJournalProviderWith(lastSnapshot.getIndex(), Map.of(4L, file1, 49L, file2));
+    onReserve(lastSnapshot, snapshotReservation);
     // when
     final var backup = collectBackupContents();
 
+    verify(metadataProvider).getTailSegments(lastSnapshot.getIndex());
     // then
     assertThat(backup.segments().namedFiles())
         .containsExactlyInAnyOrderEntriesOf(Map.of("file1.log", file1, "file2.log", file2));
@@ -324,5 +339,14 @@ class InProgressBackupImplTest {
   private void createSegmentFiles() throws IOException {
     Files.createFile(segmentsDirectory.resolve("file1.log"));
     Files.createFile(segmentsDirectory.resolve("file2.log"));
+  }
+
+  private void mockJournalProviderWithNonEmptySegments() {
+    mockJournalProviderWith(null, Map.of(1L, segmentsDirectory.resolve("file-1.log")));
+  }
+
+  private void mockJournalProviderWith(final Long expectedIndex, final Map<Long, Path> segments) {
+    when(metadataProvider.getTailSegments(expectedIndex != null ? expectedIndex : anyLong()))
+        .thenReturn(CompletableFuture.completedFuture(segments.values()));
   }
 }
