@@ -60,6 +60,7 @@ const schemaWithNoLabels = JSON.stringify({
       key: 'fromExpression',
       id: 'field2',
       type: 'textfield',
+      label: '',
     },
     {
       key: 'button1',
@@ -135,6 +136,7 @@ const schemaWithNestedFieldsNoGroupLabels = JSON.stringify({
       type: 'group',
       id: 'group1',
       path: 'root',
+      label: '',
     },
   ],
   type: 'default',

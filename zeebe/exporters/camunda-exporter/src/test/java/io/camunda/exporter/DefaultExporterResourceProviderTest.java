@@ -11,13 +11,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.webapps.schema.descriptors.ComponentNames;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import java.util.ArrayDeque;
 import java.util.Arrays;
-import org.junit.jupiter.api.Test;
+import java.util.List;
+import java.util.stream.Stream;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class DefaultExporterResourceProviderTest {
-  @Test
-  void shouldHaveCorrectDetailsForDefaultEmptyPrefix() {
-    final var config = new ExporterConfiguration();
+  @ParameterizedTest
+  @MethodSource("configProvider")
+  void shouldHaveCorrectFullQualifiedNamesForIndexAndTemplates(final ExporterConfiguration config) {
     final var provider = new DefaultExporterResourceProvider();
 
     provider.init(config);
@@ -28,52 +34,62 @@ public class DefaultExporterResourceProviderTest {
             descriptor -> {
               final var name = descriptor.getFullQualifiedName();
               assertThat(name.matches(descriptor.getAllVersionsIndexNameRegexPattern())).isTrue();
-              assertThat(startsWithValidComponent(name)).isTrue();
+              assertThat(isValidIndexDescriptorName(descriptor, config.getIndex().getPrefix()))
+                  .isTrue();
             });
 
     provider
         .getIndexTemplateDescriptors()
         .forEach(
-            descriptor -> {
-              final var name = descriptor.getTemplateName();
-              assertThat(name.matches(descriptor.getAllVersionsIndexNameRegexPattern())).isTrue();
-              assertThat(startsWithValidComponent(name)).isTrue();
-            });
+            descriptor ->
+                assertThat(
+                        isValidIndexTemplateDescriptorName(
+                            descriptor, config.getIndex().getPrefix()))
+                    .isTrue());
   }
 
-  @Test
-  void shouldUseGivenIndexPrefixInRegexAndNameDetails() {
-    final var config = new ExporterConfiguration();
-    config.getIndex().setPrefix("global");
-    final var provider = new DefaultExporterResourceProvider();
+  static Stream<ExporterConfiguration> configProvider() {
+    final var configNoPrefix = new ExporterConfiguration();
 
-    provider.init(config);
+    final var configWithPrefix = new ExporterConfiguration();
+    configWithPrefix.getIndex().setPrefix("global");
 
-    provider
-        .getIndexDescriptors()
-        .forEach(
-            descriptor -> {
-              final var name = descriptor.getFullQualifiedName();
-              final var nameWithoutPrefix = name.substring("global-".length());
-              assertThat(name.matches(descriptor.getAllVersionsIndexNameRegexPattern())).isTrue();
-              assertThat(name.startsWith("global-")).isTrue();
-              assertThat(startsWithValidComponent(nameWithoutPrefix)).isTrue();
-            });
+    final var configWithComponentNameAsPrefix = new ExporterConfiguration();
+    configWithComponentNameAsPrefix.getIndex().setPrefix("operate");
 
-    provider
-        .getIndexTemplateDescriptors()
-        .forEach(
-            descriptor -> {
-              final var name = descriptor.getTemplateName();
-              final var nameWithoutPrefix = name.substring("global-".length());
-              assertThat(name.matches(descriptor.getAllVersionsIndexNameRegexPattern())).isTrue();
-              assertThat(name.startsWith("global-")).isTrue();
-              assertThat(startsWithValidComponent(nameWithoutPrefix)).isTrue();
-            });
+    return Stream.of(configNoPrefix, configWithPrefix, configWithComponentNameAsPrefix);
   }
 
-  private boolean startsWithValidComponent(final String str) {
+  private boolean isValidIndexDescriptorName(
+      final IndexDescriptor descriptor, final String prefix) {
+
     return Arrays.stream(ComponentNames.values())
-        .anyMatch((componentName) -> str.startsWith(componentName.toString()));
+        .map(componentName -> expectedName(descriptor, componentName.toString(), prefix) + "_")
+        .anyMatch(
+            possibleFullQualifiedName ->
+                possibleFullQualifiedName.equals(descriptor.getFullQualifiedName()));
+  }
+
+  private boolean isValidIndexTemplateDescriptorName(
+      final IndexTemplateDescriptor descriptor, final String prefix) {
+    return Arrays.stream(ComponentNames.values())
+        .map(
+            componentName ->
+                expectedName(descriptor, componentName.toString(), prefix) + "_template")
+        .anyMatch(
+            possibleTemplateName -> possibleTemplateName.equals(descriptor.getTemplateName()));
+  }
+
+  private String expectedName(
+      final IndexDescriptor descriptor, final String componentName, final String prefix) {
+    final var expectedName =
+        new ArrayDeque<>(
+            List.of(componentName, descriptor.getIndexName(), descriptor.getVersion()));
+
+    if (!prefix.isEmpty()) {
+      expectedName.addFirst(prefix);
+    }
+
+    return String.join("-", expectedName);
   }
 }

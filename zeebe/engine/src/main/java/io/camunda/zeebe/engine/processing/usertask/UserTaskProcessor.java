@@ -26,9 +26,10 @@ import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.instance.UserTaskRecordRequestMetadata;
+import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -41,7 +42,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
   private final UserTaskCommandProcessors commandProcessors;
   private final ProcessState processState;
-  private final UserTaskState userTaskState;
+  private final MutableUserTaskState userTaskState;
   private final ElementInstanceState elementInstanceState;
   private final EventScopeInstanceState eventScopeInstanceState;
 
@@ -55,34 +56,35 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
   public UserTaskProcessor(
       final ProcessingState state,
+      final MutableUserTaskState userTaskState,
       final KeyGenerator keyGenerator,
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers,
       final AuthorizationCheckBehavior authCheckBehavior) {
-    this.commandProcessors =
+    commandProcessors =
         new UserTaskCommandProcessors(
             state, keyGenerator, bpmnBehaviors, writers, authCheckBehavior);
-    this.processState = state.getProcessState();
-    this.userTaskState = state.getUserTaskState();
-    this.elementInstanceState = state.getElementInstanceState();
-    this.eventScopeInstanceState = state.getEventScopeInstanceState();
+    processState = state.getProcessState();
+    this.userTaskState = userTaskState;
+    elementInstanceState = state.getElementInstanceState();
+    eventScopeInstanceState = state.getEventScopeInstanceState();
 
-    this.jobBehavior = bpmnBehaviors.jobBehavior();
-    this.incidentBehavior = bpmnBehaviors.incidentBehavior();
-    this.variableBehavior = bpmnBehaviors.variableBehavior();
-    this.eventTriggerBehavior = bpmnBehaviors.eventTriggerBehavior();
+    jobBehavior = bpmnBehaviors.jobBehavior();
+    incidentBehavior = bpmnBehaviors.incidentBehavior();
+    variableBehavior = bpmnBehaviors.variableBehavior();
+    eventTriggerBehavior = bpmnBehaviors.eventTriggerBehavior();
 
-    this.rejectionWriter = writers.rejection();
-    this.responseWriter = writers.response();
+    rejectionWriter = writers.rejection();
+    responseWriter = writers.response();
   }
 
   @Override
   public void processRecord(final TypedRecord<UserTaskRecord> command) {
     final UserTaskIntent intent = (UserTaskIntent) command.getIntent();
-    if (intent == UserTaskIntent.COMPLETE_TASK_LISTENER) {
-      processCompleteTaskListener(command);
-    } else {
-      processOperationCommand(command, intent);
+    switch (intent) {
+      case ASSIGN, CLAIM, COMPLETE, UPDATE -> processOperationCommand(command, intent);
+      case COMPLETE_TASK_LISTENER -> processCompleteTaskListener(command);
+      default -> throw new UnsupportedOperationException("Unexpected user task intent: " + intent);
     }
   }
 
@@ -104,7 +106,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   }
 
   private void processOperationCommand(
-      final TypedRecord<UserTaskRecord> command, UserTaskIntent intent) {
+      final TypedRecord<UserTaskRecord> command, final UserTaskIntent intent) {
     final var commandProcessor = commandProcessors.getCommandProcessor(intent);
     commandProcessor
         .validateCommand(command)
@@ -127,6 +129,20 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     final var eventType = mapIntentToEventType(intent);
 
     if (userTaskElement.hasTaskListeners(eventType)) {
+      /*
+       * Store the original command's metadata (requestId, requestStreamId) before creating
+       * the first task listener job. This metadata will be used later to finalize the original
+       * command after all task listeners have been processed, ensuring that the engine can respond
+       * appropriately to the original command request.
+       *
+       * Note:
+       * Typically, persistence logic should be handled via `*Applier` classes. However, since
+       * this involves request-related data, so in the case of command reconstruction,
+       * we will have new request values anyway, so persisting these data here is acceptable.
+       * A similar approach has been used in `ProcessInstanceCreationCreateWithResultProcessor`.
+       */
+      storeUserTaskRecordRequestMetadata(command);
+
       final var listener = userTaskElement.getTaskListeners(eventType).getFirst();
       final var userTaskElementInstance = getUserTaskElementInstance(persistedRecord);
       final var context = buildContext(userTaskElementInstance);
@@ -134,6 +150,15 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     } else {
       processor.onFinalizeCommand(command, persistedRecord);
     }
+  }
+
+  void storeUserTaskRecordRequestMetadata(final TypedRecord<UserTaskRecord> command) {
+    final var metadata =
+        new UserTaskRecordRequestMetadata()
+            .setIntent((UserTaskIntent) command.getIntent())
+            .setRequestId(command.getRequestId())
+            .setRequestStreamId(command.getRequestStreamId());
+    userTaskState.storeRecordRequestMetadata(command.getValue().getUserTaskKey(), metadata);
   }
 
   private void handleCommandRejection(
@@ -175,7 +200,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
         ExecutableUserTask.class);
   }
 
-  private ZeebeTaskListenerEventType mapIntentToEventType(UserTaskIntent intent) {
+  private ZeebeTaskListenerEventType mapIntentToEventType(final UserTaskIntent intent) {
     return switch (intent) {
       case ASSIGN, CLAIM -> ZeebeTaskListenerEventType.assignment;
       case UPDATE -> ZeebeTaskListenerEventType.update;
@@ -185,7 +210,8 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     };
   }
 
-  private ZeebeTaskListenerEventType mapLifecycleStateToEventType(LifecycleState lifecycleState) {
+  private ZeebeTaskListenerEventType mapLifecycleStateToEventType(
+      final LifecycleState lifecycleState) {
     return switch (lifecycleState) {
       case CREATING -> ZeebeTaskListenerEventType.create;
       case ASSIGNING -> ZeebeTaskListenerEventType.assignment;
@@ -198,7 +224,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     };
   }
 
-  private UserTaskIntent mapLifecycleStateToIntent(LifecycleState lifecycleState) {
+  private UserTaskIntent mapLifecycleStateToIntent(final LifecycleState lifecycleState) {
     return switch (lifecycleState) {
       case ASSIGNING -> UserTaskIntent.ASSIGN;
       case UPDATING -> UserTaskIntent.UPDATE;

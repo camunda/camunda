@@ -2758,18 +2758,15 @@ final class JsonSerializableToJsonTest {
         (Supplier<ScaleRecord>) ScaleRecord::new,
         """
         {
-          "currentPartitionCount": -1,
           "desiredPartitionCount": -1
         }
         """
       },
       {
         "ScaleRecord",
-        (Supplier<ScaleRecord>)
-            () -> new ScaleRecord().setCurrentPartitionCount(3).setDesiredPartitionCount(5),
+        (Supplier<ScaleRecord>) () -> new ScaleRecord().setDesiredPartitionCount(5),
         """
         {
-         "currentPartitionCount": 3,
          "desiredPartitionCount": 5
         }
         """

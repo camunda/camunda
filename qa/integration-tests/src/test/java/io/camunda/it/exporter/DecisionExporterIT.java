@@ -9,14 +9,14 @@ package io.camunda.it.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.it.utils.CamundaExporterITInvocationProvider;
+import io.camunda.it.utils.BrokerWithCamundaExporterITInvocationProvider;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-@ExtendWith(CamundaExporterITInvocationProvider.class)
+@ExtendWith(BrokerWithCamundaExporterITInvocationProvider.class)
 final class DecisionExporterIT {
 
   @TestTemplate

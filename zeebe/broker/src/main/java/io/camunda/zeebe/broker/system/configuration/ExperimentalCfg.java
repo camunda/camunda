@@ -19,7 +19,7 @@ import org.springframework.util.unit.DataSize;
  */
 public class ExperimentalCfg implements ConfigurationEntry {
 
-  public static final int DEFAULT_MAX_APPENDS_PER_FOLLOWER = 2;
+  public static final int DEFAULT_MAX_APPENDS_PER_FOLLOWER = 6;
   public static final DataSize DEFAULT_MAX_APPEND_BATCH_SIZE = DataSize.ofKilobytes(32);
   public static final boolean DEFAULT_DISABLE_EXPLICIT_RAFT_FLUSH = false;
 

@@ -13,4 +13,6 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 public interface MutableMappingState extends MappingState {
 
   void create(final MappingRecord mappingRecord);
+
+  void addRole(final long mappingKey, final long roleKey);
 }

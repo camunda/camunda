@@ -67,6 +67,18 @@ public class DbMappingState implements MutableMappingState {
   }
 
   @Override
+  public void addRole(final long mappingKey, final long roleKey) {
+    this.mappingKey.wrapLong(mappingKey);
+    final var fkClaim = claimByKeyColumnFamily.get(this.mappingKey);
+    if (fkClaim != null) {
+      final var fkKey = fkClaim.inner();
+      final var persistedMapping = mappingColumnFamily.get(fkKey);
+      persistedMapping.addRoleKey(roleKey);
+      mappingColumnFamily.update(fkKey, persistedMapping);
+    }
+  }
+
+  @Override
   public Optional<PersistedMapping> get(final long key) {
     mappingKey.wrapLong(key);
     final var fk = claimByKeyColumnFamily.get(mappingKey);

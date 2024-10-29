@@ -12,7 +12,10 @@ import static io.camunda.util.CollectionUtil.withoutNull;
 
 import io.camunda.search.clients.query.SearchHasParentQuery.Builder;
 import io.camunda.search.clients.query.SearchMatchQuery.SearchMatchQueryOperator;
+import io.camunda.search.filter.Operation;
 import io.camunda.util.ObjectBuilder;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -20,6 +23,10 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public final class SearchQueryBuilders {
+
+  public static final String DATE_TIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ";
+  private static final DateTimeFormatter DATE_TIME_FORMATTER =
+      DateTimeFormatter.ofPattern(DATE_TIME_FORMAT);
 
   private SearchQueryBuilders() {}
 
@@ -33,6 +40,10 @@ public final class SearchQueryBuilders {
 
   private static SearchQuery mustNot(final List<SearchQuery> queries) {
     return bool().mustNot(queries).build().toSearchQuery();
+  }
+
+  private static SearchQuery mustNot(final SearchQuery... queries) {
+    return bool().mustNot(List.of(queries)).build().toSearchQuery();
   }
 
   private static SearchQuery map(
@@ -198,6 +209,14 @@ public final class SearchQueryBuilders {
     return SearchRangeQuery.of(q -> q.field(field).gt(gt)).toSearchQuery();
   }
 
+  public static <A> SearchQuery gte(final String field, final A gte) {
+    return SearchRangeQuery.of(q -> q.field(field).gte(gte)).toSearchQuery();
+  }
+
+  public static <A> SearchQuery lt(final String field, final A lt) {
+    return SearchRangeQuery.of(q -> q.field(field).lt(lt)).toSearchQuery();
+  }
+
   public static <A> SearchQuery lte(final String field, final A lte) {
     return SearchRangeQuery.of(q -> q.field(field).lte(lte)).toSearchQuery();
   }
@@ -287,6 +306,113 @@ public final class SearchQueryBuilders {
     }
   }
 
+  private static IllegalStateException unexpectedOperation(
+      final String type, final Operation<?> op) {
+    return new IllegalStateException("Unexpected %s operation: %s".formatted(type, op.operator()));
+  }
+
+  public static <C extends List<Operation<Integer>>> List<SearchQuery> intOperations(
+      final String field, final C operations) {
+    if (operations == null || operations.isEmpty()) {
+      return null;
+    } else {
+      final var searchQueries = new ArrayList<SearchQuery>();
+      operations.forEach(
+          op -> {
+            searchQueries.add(
+                switch (op.operator()) {
+                  case EQUALS -> term(field, op.value());
+                  case NOT_EQUALS -> mustNot(term(field, op.value()));
+                  case EXISTS -> exists(field);
+                  case NOT_EXISTS -> mustNot(exists(field));
+                  case GREATER_THAN -> gt(field, op.value());
+                  case GREATER_THAN_EQUALS -> gte(field, op.value());
+                  case LOWER_THAN -> lt(field, op.value());
+                  case LOWER_THAN_EQUALS -> lte(field, op.value());
+                  case IN -> intTerms(field, op.values());
+                  default -> throw unexpectedOperation("Integer", op);
+                });
+          });
+      return searchQueries;
+    }
+  }
+
+  public static <C extends List<Operation<Long>>> List<SearchQuery> longOperations(
+      final String field, final C operations) {
+    if (operations == null || operations.isEmpty()) {
+      return null;
+    } else {
+      final var searchQueries = new ArrayList<SearchQuery>();
+      operations.forEach(
+          op -> {
+            searchQueries.add(
+                switch (op.operator()) {
+                  case EQUALS -> term(field, op.value());
+                  case NOT_EQUALS -> mustNot(term(field, op.value()));
+                  case EXISTS -> exists(field);
+                  case NOT_EXISTS -> mustNot(exists(field));
+                  case GREATER_THAN -> gt(field, op.value());
+                  case GREATER_THAN_EQUALS -> gte(field, op.value());
+                  case LOWER_THAN -> lt(field, op.value());
+                  case LOWER_THAN_EQUALS -> lte(field, op.value());
+                  case IN -> longTerms(field, op.values());
+                  default -> throw unexpectedOperation("Long", op);
+                });
+          });
+      return searchQueries;
+    }
+  }
+
+  public static <C extends List<Operation<String>>> List<SearchQuery> stringOperations(
+      final String field, final C operations) {
+    if (operations == null || operations.isEmpty()) {
+      return null;
+    } else {
+      final var searchQueries = new ArrayList<SearchQuery>();
+      operations.forEach(
+          op -> {
+            searchQueries.add(
+                switch (op.operator()) {
+                  case EQUALS -> term(field, op.value());
+                  case NOT_EQUALS -> mustNot(term(field, op.value()));
+                  case EXISTS -> exists(field);
+                  case NOT_EXISTS -> mustNot(exists(field));
+                  case IN -> stringTerms(field, op.values());
+                  case LIKE -> wildcardQuery(field, op.value());
+                  default -> throw unexpectedOperation("String", op);
+                });
+          });
+      return searchQueries;
+    }
+  }
+
+  private static String formatDate(final OffsetDateTime dateTime) {
+    return DATE_TIME_FORMATTER.format(dateTime);
+  }
+
+  public static <C extends List<Operation<OffsetDateTime>>> SearchQuery dateTimeOperations(
+      final String field, final C operations) {
+    if (operations == null || operations.isEmpty()) {
+      return null;
+    } else {
+      final var b = new SearchRangeQuery.Builder().field(field).format(DATE_TIME_FORMAT);
+      operations.forEach(
+          op -> {
+            final var formatted = formatDate(op.value());
+            switch (op.operator()) {
+              case EXISTS -> exists(field);
+              case NOT_EXISTS -> mustNot(exists(field));
+              case GREATER_THAN -> b.gt(formatted);
+              case GREATER_THAN_EQUALS -> b.gte(formatted);
+              case LOWER_THAN -> b.lt(formatted);
+              case LOWER_THAN_EQUALS -> b.lte(formatted);
+              default -> throw unexpectedOperation("Date", op);
+            }
+          });
+      return b.build().toSearchQuery();
+    }
+  }
+
   public static SearchWildcardQuery.Builder wildcard() {
     return new SearchWildcardQuery.Builder();
   }
@@ -300,8 +426,8 @@ public final class SearchQueryBuilders {
     return wildcard(q -> q.field(field).value(value)).toSearchQuery();
   }
 
-  public static SearchHasParentQuery.Builder hasParent() {
-    return new SearchHasParentQuery.Builder();
+  public static Builder hasParent() {
+    return new Builder();
   }
 
   public static SearchHasParentQuery hasParent(

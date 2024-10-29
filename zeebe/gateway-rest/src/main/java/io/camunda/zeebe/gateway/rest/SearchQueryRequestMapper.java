@@ -29,6 +29,7 @@ import io.camunda.search.filter.FilterBase;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.filter.IncidentFilter;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.UserFilter;
@@ -346,29 +347,61 @@ public final class SearchQueryRequestMapper {
     return builder.build();
   }
 
+  private static <T> Operation<T> mapToOperation(final T value) {
+    return Operation.eq(value);
+  }
+
+  private static OffsetDateTime toOffsetDateTime(final String text) {
+    return StringUtils.isEmpty(text) ? null : OffsetDateTime.parse(text);
+  }
+
   private static ProcessInstanceFilter toProcessInstanceFilter(
       final ProcessInstanceFilterRequest filter) {
     final var builder = FilterBuilders.processInstance();
 
     if (filter != null) {
-      ofNullable(filter.getProcessInstanceKey()).ifPresent(builder::processInstanceKeys);
-      ofNullable(filter.getProcessDefinitionId()).ifPresent(builder::processDefinitionIds);
-      ofNullable(filter.getProcessDefinitionName()).ifPresent(builder::processDefinitionNames);
+      ofNullable(filter.getProcessInstanceKey())
+          .map(SearchQueryRequestMapper::mapToOperation)
+          .ifPresent(builder::processInstanceKeyOperations);
+      ofNullable(filter.getProcessDefinitionId())
+          .map(SearchQueryRequestMapper::mapToOperation)
+          .ifPresent(builder::processDefinitionIdOperations);
+      ofNullable(filter.getProcessDefinitionName())
+          .map(SearchQueryRequestMapper::mapToOperation)
+          .ifPresent(builder::processDefinitionNameOperations);
       ofNullable(filter.getProcessDefinitionVersion())
-          .ifPresent(builder::processDefinitionVersions);
+          .map(SearchQueryRequestMapper::mapToOperation)
+          .ifPresent(builder::processDefinitionVersionOperations);
       ofNullable(filter.getProcessDefinitionVersionTag())
-          .ifPresent(builder::processDefinitionVersionTags);
-      ofNullable(filter.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
+          .map(SearchQueryRequestMapper::mapToOperation)
+          .ifPresent(builder::processDefinitionVersionTagOperations);
+      ofNullable(filter.getProcessDefinitionKey())
+          .map(SearchQueryRequestMapper::mapToOperation)
+          .ifPresent(builder::processDefinitionKeyOperations);
       ofNullable(filter.getParentProcessInstanceKey())
-          .ifPresent(builder::parentProcessInstanceKeys);
+          .map(SearchQueryRequestMapper::mapToOperation)
+          .ifPresent(builder::parentProcessInstanceKeyOperations);
       ofNullable(filter.getParentFlowNodeInstanceKey())
-          .ifPresent(builder::parentFlowNodeInstanceKeys);
-      ofNullable(filter.getTreePath()).ifPresent(builder::treePaths);
-      ofNullable(toDateValueFilter(filter.getStartDate())).ifPresent(builder::startDate);
-      ofNullable(toDateValueFilter(filter.getEndDate())).ifPresent(builder::endDate);
-      ofNullable(filter.getState()).ifPresent(state -> builder.states(state.getValue()));
+          .map(SearchQueryRequestMapper::mapToOperation)
+          .ifPresent(builder::parentFlowNodeInstanceKeyOperations);
+      ofNullable(filter.getTreePath())
+          .map(SearchQueryRequestMapper::mapToOperation)
+          .ifPresent(builder::treePathOperations);
+      ofNullable(filter.getStartDate())
+          .map(SearchQueryRequestMapper::toOffsetDateTime)
+          .map(f -> List.of(Operation.gte(f), Operation.lt(f)))
+          .ifPresent(builder::startDateOperations);
+      ofNullable(filter.getEndDate())
+          .map(SearchQueryRequestMapper::toOffsetDateTime)
+          .map(f -> List.of(Operation.gte(f), Operation.lt(f)))
+          .ifPresent(builder::endDateOperations);
+      ofNullable(filter.getState())
+          .map(ProcessInstanceStateEnum::getValue)
+          .ifPresent(builder::states);
       ofNullable(filter.getHasIncident()).ifPresent(builder::hasIncident);
-      ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
+      ofNullable(filter.getTenantId())
+          .map(SearchQueryRequestMapper::mapToOperation)
+          .ifPresent(builder::tenantIdOperations);
     }
 
     return builder.build();
