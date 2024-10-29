@@ -50,8 +50,9 @@ public final class ProcessInstanceFilterTransformer
     ofNullable(stringOperations("treePath", filter.treePathOperations()))
         .ifPresent(queries::addAll);
     ofNullable(dateTimeOperations("startDate", filter.startDateOperations()))
-        .ifPresent(queries::add);
-    ofNullable(dateTimeOperations("endDate", filter.endDateOperations())).ifPresent(queries::add);
+        .ifPresent(queries::addAll);
+    ofNullable(dateTimeOperations("endDate", filter.endDateOperations()))
+        .ifPresent(queries::addAll);
     ofNullable(stringOperations("state", filter.stateOperations())).ifPresent(queries::addAll);
     ofNullable(getIncidentQuery(filter.hasIncident())).ifPresent(queries::add);
     ofNullable(stringOperations("tenantId", filter.tenantIdOperations()))
