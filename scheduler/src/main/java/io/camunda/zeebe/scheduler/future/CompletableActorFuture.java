@@ -281,13 +281,14 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
   }
 
   @Override
-  public ActorFuture<V> andThen(final Supplier<ActorFuture<V>> next, final Executor executor) {
+  public <U> ActorFuture<U> andThen(final Supplier<ActorFuture<U>> next, final Executor executor) {
     return andThen(ignored -> next.get(), executor);
   }
 
   @Override
-  public ActorFuture<V> andThen(final Function<V, ActorFuture<V>> next, final Executor executor) {
-    final var nextFuture = new CompletableActorFuture<V>();
+  public <U> ActorFuture<U> andThen(
+      final Function<V, ActorFuture<U>> next, final Executor executor) {
+    final var nextFuture = new CompletableActorFuture<U>();
     onComplete(
         (thisResult, thisError) -> {
           if (thisError != null) {

@@ -47,6 +47,7 @@ import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Optional;
@@ -320,5 +321,9 @@ public class RaftPartitionServer implements HealthMonitorable {
 
   public Collection<RaftMember> getMembers() {
     return server.cluster().getMembers();
+  }
+
+  public CompletableFuture<Collection<Path>> getTailSegments(final long index) {
+    return server.getContext().getTailSegments(index);
   }
 }
