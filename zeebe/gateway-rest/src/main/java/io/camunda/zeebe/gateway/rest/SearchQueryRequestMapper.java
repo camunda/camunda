@@ -867,20 +867,17 @@ public final class SearchQueryRequestMapper {
 
   public static Either<ProblemDetail, AuthorizationQuery> toAuthorizationQuery(
       final AuthorizationSearchQueryRequest request) {
-    AuthorizationSearchQueryRequest finalRequest = request;
     if (request == null) {
-      finalRequest = new AuthorizationSearchQueryRequest();
+      return Either.right(SearchQueryBuilders.authorizationSearchQuery().build());
     }
-    final var page = toSearchQueryPage(finalRequest.getPage());
-    if (finalRequest.getSort() == null || finalRequest.getSort().isEmpty()) {
-      finalRequest.setSort(List.of(new SearchQuerySortRequest().field("ownerType").order("asc")));
-    }
+
+    final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            finalRequest.getSort(),
+            request.getSort(),
             SortOptionBuilders::authorization,
             SearchQueryRequestMapper::applyAuthorizationSortField);
-    final var filter = toAuthorizationFilter(finalRequest.getFilter());
+    final var filter = toAuthorizationFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::authorizationSearchQuery);
   }
 
