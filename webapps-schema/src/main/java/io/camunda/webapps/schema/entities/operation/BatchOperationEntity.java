@@ -108,7 +108,8 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
   }
 
   public void generateId() {
-    setId(UUID.randomUUID().toString());
+    final long operationReference = UUID.randomUUID().getMostSignificantBits();
+    setId(String.valueOf(operationReference));
   }
 
   @Override
