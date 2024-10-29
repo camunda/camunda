@@ -92,10 +92,10 @@ final class BackupServiceImpl {
         backupSaved.completeExceptionally(
             new BackupAlreadyExistsException(inProgressBackup.id(), existingBackupStatus));
       }
-      default ->
+      case DOES_NOT_EXIST ->
           inProgressBackup
-              .findSegmentFiles()
-              .andThen(ok -> inProgressBackup.findValidSnapshot(), concurrencyControl)
+              .findValidSnapshot()
+              .andThen(inProgressBackup::findSegmentFiles, concurrencyControl)
               .andThen(ok -> inProgressBackup.reserveSnapshot(), concurrencyControl)
               .andThen(ok -> inProgressBackup.findSnapshotFiles(), concurrencyControl)
               .onComplete(
@@ -106,6 +106,7 @@ final class BackupServiceImpl {
                       saveBackup(inProgressBackup, backupSaved);
                     }
                   });
+      default -> LOG.warn("Invalid case on BackupStatus {}", existingBackupStatus);
     }
   }
 
