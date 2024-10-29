@@ -69,7 +69,7 @@ public class MappingCreateProcessor implements DistributedTypedRecordProcessor<M
     final var persistedMapping = mappingState.get(record.getClaimName(), record.getClaimValue());
     if (persistedMapping.isPresent()) {
       final var errorMessage =
-          "Expected to create mapping rule with claimName '%s' and claimValue '%s', but a mapping with this claim already exists."
+          "Expected to create mapping with claimName '%s' and claimValue '%s', but a mapping with this claim already exists."
               .formatted(record.getClaimName(), record.getClaimValue());
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);
