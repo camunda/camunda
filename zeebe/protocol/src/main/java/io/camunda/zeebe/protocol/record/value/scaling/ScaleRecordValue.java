@@ -22,7 +22,5 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableScaleRecordValue.Builder.class)
 public interface ScaleRecordValue extends RecordValue {
-  int getCurrentPartitionCount();
-
   int getDesiredPartitionCount();
 }

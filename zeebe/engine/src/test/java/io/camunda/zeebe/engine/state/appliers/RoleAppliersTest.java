@@ -10,10 +10,12 @@ package io.camunda.zeebe.engine.state.appliers;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
+import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
@@ -33,6 +35,7 @@ public class RoleAppliersTest {
   private MutableRoleState roleState;
   private MutableUserState userState;
   private MutableAuthorizationState authorizationState;
+  private MutableMappingState mappingState;
   private RoleDeletedApplier roleDeletedApplier;
   private RoleEntityAddedApplier roleEntityAddedApplier;
 
@@ -41,13 +44,13 @@ public class RoleAppliersTest {
     roleState = processingState.getRoleState();
     userState = processingState.getUserState();
     authorizationState = processingState.getAuthorizationState();
+    mappingState = processingState.getMappingState();
     roleDeletedApplier =
         new RoleDeletedApplier(
             processingState.getRoleState(),
             processingState.getUserState(),
             processingState.getAuthorizationState());
-    roleEntityAddedApplier =
-        new RoleEntityAddedApplier(processingState.getRoleState(), processingState.getUserState());
+    roleEntityAddedApplier = new RoleEntityAddedApplier(processingState);
   }
 
   @Test
@@ -74,6 +77,30 @@ public class RoleAppliersTest {
         .containsExactly(entityKey);
     final var persistedUser = userState.getUser(entityKey).get();
     assertThat(persistedUser.getRoleKeysList()).containsExactly(roleKey);
+  }
+
+  @Test
+  void shouldAddEntityToRoleWithTypeMapping() {
+    // given
+    final long entityKey = 1L;
+    mappingState.create(
+        new MappingRecord()
+            .setMappingKey(entityKey)
+            .setClaimName("claimName")
+            .setClaimValue("claimValue"));
+    final long roleKey = 11L;
+    final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName("foo");
+    roleState.create(roleRecord);
+    roleRecord.setEntityKey(entityKey).setEntityType(EntityType.MAPPING);
+
+    // when
+    roleEntityAddedApplier.applyState(roleKey, roleRecord);
+
+    // then
+    assertThat(roleState.getEntitiesByType(roleKey).get(EntityType.MAPPING))
+        .containsExactly(entityKey);
+    final var persistedMapping = mappingState.get(entityKey).get();
+    assertThat(persistedMapping.getRoleKeysList()).containsExactly(roleKey);
   }
 
   @Test

@@ -14,7 +14,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer.JobStream;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.immutable.VariableState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJobImpl;
@@ -48,7 +48,7 @@ public class BpmnJobActivationBehavior {
 
   public BpmnJobActivationBehavior(
       final JobStreamer jobStreamer,
-      final VariableState variableState,
+      final ProcessingState state,
       final Writers writers,
       final KeyGenerator keyGenerator,
       final JobMetrics jobMetrics,
@@ -56,7 +56,7 @@ public class BpmnJobActivationBehavior {
     this.jobStreamer = jobStreamer;
     this.keyGenerator = keyGenerator;
     this.jobMetrics = jobMetrics;
-    jobVariablesCollector = new JobVariablesCollector(variableState);
+    jobVariablesCollector = new JobVariablesCollector(state);
     stateWriter = writers.state();
     sideEffectWriter = writers.sideEffect();
     this.clock = clock;

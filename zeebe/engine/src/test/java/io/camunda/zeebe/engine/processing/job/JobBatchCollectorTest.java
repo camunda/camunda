@@ -57,8 +57,7 @@ final class JobBatchCollectorTest {
 
   @BeforeEach
   void beforeEach() {
-    collector =
-        new JobBatchCollector(state.getJobState(), state.getVariableState(), lengthEvaluator);
+    collector = new JobBatchCollector(state, lengthEvaluator);
   }
 
   @Test

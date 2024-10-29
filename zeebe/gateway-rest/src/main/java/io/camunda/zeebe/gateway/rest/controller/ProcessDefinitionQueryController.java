@@ -10,8 +10,11 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static io.camunda.zeebe.gateway.rest.Loggers.REST_LOGGER;
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.query.ProcessDefinitionQuery;
+import io.camunda.service.FormServices;
 import io.camunda.service.ProcessDefinitionServices;
+import io.camunda.zeebe.gateway.protocol.rest.FormItem;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResponse;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
@@ -34,10 +37,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class ProcessDefinitionQueryController {
 
   private final ProcessDefinitionServices processDefinitionServices;
+  private final FormServices formServices;
 
   public ProcessDefinitionQueryController(
-      final ProcessDefinitionServices processDefinitionServices) {
+      final ProcessDefinitionServices processDefinitionServices, final FormServices formServices) {
     this.processDefinitionServices = processDefinitionServices;
+    this.formServices = formServices;
   }
 
   @PostMapping(
@@ -114,6 +119,30 @@ public class ProcessDefinitionQueryController {
     } catch (final Exception e) {
       REST_LOGGER.debug("An exception occurred in getProcessDefinitionXml.", e);
       return mapErrorToResponse(e);
+    }
+  }
+
+  @GetMapping(
+      path = "/{processDefinitionKey}/form",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public ResponseEntity<FormItem> getStartProcessForm(
+      @PathVariable("processDefinitionKey") final long processDefinitionKey) {
+    try {
+      final ProcessDefinitionEntity processDefinition =
+          processDefinitionServices.getByKey(processDefinitionKey);
+
+      if (processDefinition.formId() != null) {
+        return ResponseEntity.ok()
+            .body(
+                SearchQueryResponseMapper.toFormItem(
+                    formServices.getLatestVersionByFormId(processDefinition.formId()).get()));
+      } else {
+        return ResponseEntity.noContent().build();
+      }
+    } catch (final Exception exc) {
+      final var problemDetail =
+          RestErrorMapper.mapErrorToProblem(exc, RestErrorMapper.DEFAULT_REJECTION_MAPPER);
+      return RestErrorMapper.mapProblemToResponse(problemDetail);
     }
   }
 }

@@ -9,21 +9,29 @@ package io.camunda.zeebe.engine.state.authorization;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 public class PersistedMapping extends UnpackedObject implements DbValue {
 
   private final LongProperty mappingKeyProp = new LongProperty("mappingKey", -1L);
   private final StringProperty claimNameProp = new StringProperty("claimName", "");
   private final StringProperty claimValueProp = new StringProperty("claimValue", "");
+  private final ArrayProperty<LongValue> roleKeysProp =
+      new ArrayProperty<>("roleKeys", LongValue::new);
 
   public PersistedMapping() {
-    super(3);
+    super(4);
     declareProperty(mappingKeyProp);
     declareProperty(claimNameProp);
     declareProperty(claimValueProp);
+    declareProperty(roleKeysProp);
   }
 
   public long getMappingKey() {
@@ -50,6 +58,23 @@ public class PersistedMapping extends UnpackedObject implements DbValue {
 
   public PersistedMapping setClaimValue(final String claimValue) {
     claimValueProp.setValue(claimValue);
+    return this;
+  }
+
+  public List<Long> getRoleKeysList() {
+    return StreamSupport.stream(roleKeysProp.spliterator(), false)
+        .map(LongValue::getValue)
+        .collect(Collectors.toList());
+  }
+
+  public PersistedMapping setRoleKeysList(final List<Long> roleKeys) {
+    roleKeysProp.reset();
+    roleKeys.forEach(roleKey -> roleKeysProp.add().setValue(roleKey));
+    return this;
+  }
+
+  public PersistedMapping addRoleKey(final long roleKey) {
+    roleKeysProp.add().setValue(roleKey);
     return this;
   }
 }

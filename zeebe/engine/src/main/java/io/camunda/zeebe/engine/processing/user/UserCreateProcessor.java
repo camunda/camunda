@@ -8,6 +8,8 @@
 package io.camunda.zeebe.engine.processing.user;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -19,6 +21,8 @@ import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
@@ -30,22 +34,36 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior distributionBehavior;
+  private final AuthorizationCheckBehavior authCheckBehavior;
 
   public UserCreateProcessor(
       final KeyGenerator keyGenerator,
       final ProcessingState state,
       final Writers writers,
-      final CommandDistributionBehavior distributionBehavior) {
+      final CommandDistributionBehavior distributionBehavior,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     userState = state.getUserState();
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.distributionBehavior = distributionBehavior;
+    this.authCheckBehavior = authCheckBehavior;
   }
 
   @Override
   public void processNewCommand(final TypedRecord<UserRecord> command) {
+    final var authRequest =
+        new AuthorizationRequest(command, AuthorizationResourceType.USER, PermissionType.CREATE);
+    if (!authCheckBehavior.isAuthorized(authRequest)) {
+      final var message =
+          AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE.formatted(
+              authRequest.getPermissionType(), authRequest.getResourceType());
+      rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, message);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, message);
+      return;
+    }
+
     final var username = command.getValue().getUsernameBuffer();
     final var user = userState.getUser(username);
 

@@ -26,14 +26,17 @@ public class ProcessDefinitionServices
         ProcessDefinitionServices, ProcessDefinitionQuery, ProcessDefinitionEntity> {
 
   private final ProcessDefinitionSearchClient processDefinitionSearchClient;
+  private final FormServices formServices;
 
   public ProcessDefinitionServices(
       final BrokerClient brokerClient,
       final SecurityConfiguration securityConfiguration,
       final ProcessDefinitionSearchClient processDefinitionSearchClient,
+      final FormServices formServices,
       final Authentication authentication) {
     super(brokerClient, securityConfiguration, authentication);
     this.processDefinitionSearchClient = processDefinitionSearchClient;
+    this.formServices = formServices;
   }
 
   @Override
@@ -45,7 +48,11 @@ public class ProcessDefinitionServices
   @Override
   public ProcessDefinitionServices withAuthentication(final Authentication authentication) {
     return new ProcessDefinitionServices(
-        brokerClient, securityConfiguration, processDefinitionSearchClient, authentication);
+        brokerClient,
+        securityConfiguration,
+        processDefinitionSearchClient,
+        formServices,
+        authentication);
   }
 
   public ProcessDefinitionEntity getByKey(final Long processDefinitionKey) {
@@ -56,11 +63,11 @@ public class ProcessDefinitionServices
                 .build());
     if (result.total() < 1) {
       throw new NotFoundException(
-          String.format("Process Definition with key %d not found", processDefinitionKey));
+          String.format("Process definition with key %d not found", processDefinitionKey));
     } else if (result.total() > 1) {
       throw new CamundaSearchException(
           String.format(
-              "Found Process Definition with key %d more than once", processDefinitionKey));
+              "Found Process definition with key %d more than once", processDefinitionKey));
     } else {
       return result.items().stream().findFirst().orElseThrow();
     }

@@ -13,6 +13,7 @@ import static io.camunda.exporter.utils.SearchEngineClientUtils.mapToSettings;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.camunda.exporter.SchemaResourceSerializer;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.exceptions.IndexSchemaValidationException;
 import io.camunda.exporter.exceptions.OpensearchExporterException;
@@ -31,9 +32,12 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonpDeserializer;
+import org.opensearch.client.json.jackson.JacksonJsonpGenerator;
+import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch._types.mapping.Property;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch.generic.Body;
 import org.opensearch.client.opensearch.generic.Request;
@@ -242,9 +246,21 @@ public class OpensearchEngineClient implements SearchEngineClient {
             p ->
                 new IndexMappingProperty.Builder()
                     .name(p.getKey())
-                    .typeDefinition(Map.of("type", p.getValue()._kind().jsonValue()))
+                    .typeDefinition(propertyToMap(p.getValue()))
                     .build())
         .collect(Collectors.toSet());
+  }
+
+  private Map<String, Object> propertyToMap(final Property property) {
+    try {
+      return SchemaResourceSerializer.serialize(
+          (JacksonJsonpGenerator::new),
+          (jacksonJsonpGenerator) ->
+              property.serialize(jacksonJsonpGenerator, new JacksonJsonpMapper(MAPPER)));
+    } catch (final IOException e) {
+      throw new OpensearchExporterException(
+          String.format("Failed to serialize property [%s]", property.toString()), e);
+    }
   }
 
   private Map<String, TypeMapping> getCurrentMappings(

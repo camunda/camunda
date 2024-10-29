@@ -63,7 +63,7 @@ final class RoutingInfoMigrationTest {
     // then
     final var updatedRoutingState = context.processingState().getRoutingState();
     assertThat(updatedRoutingState.isInitialized()).isTrue();
-    assertThat(updatedRoutingState.partitions()).containsExactlyInAnyOrder(1, 2, 3);
+    assertThat(updatedRoutingState.currentPartitions()).containsExactlyInAnyOrder(1, 2, 3);
     assertThat(updatedRoutingState.messageCorrelation())
         .isEqualTo(new MessageCorrelation.HashMod(3));
   }
