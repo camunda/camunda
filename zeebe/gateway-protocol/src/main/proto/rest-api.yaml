@@ -758,7 +758,7 @@ paths:
       responses:
         "200":
           description: >
-            The user task varialbes search successful response.
+            The user task variables search successful response.
           content:
             application/json:
               schema:
