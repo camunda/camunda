@@ -16,8 +16,8 @@ import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 public class JobVariablesCollector {
@@ -81,13 +81,8 @@ public class JobVariablesCollector {
     if (requestedVariables.isEmpty()) {
       return taskVariablesMap;
     }
-    final Map<String, Object> filteredTaskVariablesMap = new HashMap<>();
-    taskVariablesMap.forEach(
-        (key, value) -> {
-          if (requestedVariables.contains(BufferUtil.wrapString(key))) {
-            filteredTaskVariablesMap.put(key, value);
-          }
-        });
-    return filteredTaskVariablesMap;
+    return taskVariablesMap.entrySet().stream()
+        .filter(e -> requestedVariables.contains(BufferUtil.wrapString(e.getKey())))
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 }
