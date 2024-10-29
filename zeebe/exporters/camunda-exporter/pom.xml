@@ -19,6 +19,12 @@
 
   <name>Camunda Exporter</name>
   <dependencies>
+
+    <dependency>
+      <groupId>com.github.ben-manes.caffeine</groupId>
+      <artifactId>caffeine</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-exporter-api</artifactId>
