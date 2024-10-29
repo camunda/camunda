@@ -80,8 +80,6 @@ describe('stores/processInstancesListeners', () => {
   });
 
   it('should fetch next listeners', async () => {
-    mockFetchProcessInstanceListeners().withSuccess(mockListenerInstances);
-
     expect(processInstanceListenersStore.state.status).toBe('initial');
 
     processInstanceListenersStore.fetchListeners({
@@ -144,8 +142,6 @@ describe('stores/processInstancesListeners', () => {
   });
 
   it('should fetch previous listeners', async () => {
-    mockFetchProcessInstanceListeners().withSuccess(mockListenerInstances);
-
     expect(processInstanceListenersStore.state.status).toBe('initial');
 
     processInstanceListenersStore.fetchListeners({
