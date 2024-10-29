@@ -33,7 +33,7 @@ const Details: FC = () => {
     loading,
     reload,
   } = useApi(getUserDetails, {
-    id,
+    username: id,
   });
   const [editUser, editUserModal] = useEntityModal(EditModal, reload);
   const [deleteUser, deleteUserModal] = useEntityModal(DeleteModal, () =>

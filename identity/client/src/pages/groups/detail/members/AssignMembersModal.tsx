@@ -56,7 +56,7 @@ const AssignMembersModal: FC<
 
     const results = await Promise.all(
       selectedUsers.map(({ id }) =>
-        callAssignUser({ userId: id, groupId: group.id }),
+        callAssignUser({ userId: id!, groupId: group.id }),
       ),
     );
 

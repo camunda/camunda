@@ -5,11 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+import { EntityData } from "src/components/entityList/EntityList";
+
 export type Permission = {
   permissionType: string;
   resourceIds: string[];
 };
-export type Authorization = {
+export type Authorization = EntityData & {
   ownerKey: number;
   ownerType: string;
   resourceType: string;

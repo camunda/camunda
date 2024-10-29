@@ -31,10 +31,10 @@ type CreateUserParams = Omit<User, "id" | "key" | "enabled">;
 export const createUser: ApiDefinition<undefined, CreateUserParams> = (user) =>
   apiPost(USERS_ENDPOINT, { ...user, enabled: true });
 
-type UpdateUserParams = Omit<User, "enabled">;
+type UpdateUserParams = Omit<User, "key" | "enabled">;
 
 export const updateUser: ApiDefinition<undefined, UpdateUserParams> = (user) =>
-  apiPut(`${USERS_ENDPOINT}/${user.key}`, { ...user, enabled: true });
+  apiPut(`${USERS_ENDPOINT}/${user.id}`, { ...user, enabled: true });
 
 type DeleteUserParams = {
   id: string;
