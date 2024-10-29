@@ -61,6 +61,11 @@ public final class UserTaskCreateProcessor implements UserTaskCommandProcessor {
   public void onFinalizeCommand(
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
     final long userTaskKey = command.getKey();
+    final String assignee = userTaskRecord.getAssignee();
+
+    // ensure that the assignee is not set as part of the CREATED event as this is taken care of by
+    // the ASSIGN command.
+    userTaskRecord.setAssignee("");
 
     //    userTaskRecord.setAssignee(command.getValue().getAssignee());
     //    userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));
@@ -69,8 +74,9 @@ public final class UserTaskCreateProcessor implements UserTaskCommandProcessor {
     responseWriter.writeEventOnCommand(
         userTaskKey, UserTaskIntent.CREATED, userTaskRecord, command);
 
-    if (!Strings.isNullOrEmpty(command.getValue().getAssignee())) {
-      commandWriter.appendFollowUpCommand(userTaskKey, UserTaskIntent.ASSIGN, userTaskRecord);
+    if (!Strings.isNullOrEmpty(assignee)) {
+      commandWriter.appendFollowUpCommand(
+          userTaskKey, UserTaskIntent.ASSIGN, userTaskRecord.setAssignee(assignee));
     }
   }
 }
