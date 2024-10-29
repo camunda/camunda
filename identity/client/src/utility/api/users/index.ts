@@ -4,7 +4,7 @@ import { SearchResponse } from "src/utility/api";
 export const USERS_ENDPOINT = "/users";
 
 export type User = {
-  id: number;
+  id: string;
   key: number;
   name: string;
   username: string;
@@ -17,13 +17,14 @@ export const searchUser: ApiDefinition<SearchResponse<User>> = () =>
   apiPost(`${USERS_ENDPOINT}/search`);
 
 type GetUserParams = {
-  id: string;
+  username: string;
 };
 
-export const getUserDetails: ApiDefinition<SearchResponse<User>, GetUserParams> = ({ id }) =>
-  apiPost(`${USERS_ENDPOINT}/search`, {filter: {username: id}});
 
-type CreateUserParams = Omit<User, "id" | "enabled">;
+export const getUserDetails: ApiDefinition<SearchResponse<User>, GetUserParams> = ({ username }) =>
+  apiPost(`${USERS_ENDPOINT}/search`, {filter: {username}});
+
+type CreateUserParams = Omit<User, "id" | "key" | "enabled">;
 
 export const createUser: ApiDefinition<undefined, CreateUserParams> = (user) =>
   apiPost(USERS_ENDPOINT, { ...user, enabled: true });
@@ -31,9 +32,11 @@ export const createUser: ApiDefinition<undefined, CreateUserParams> = (user) =>
 type UpdateUserParams = Omit<User, "enabled">;
 
 export const updateUser: ApiDefinition<undefined, UpdateUserParams> = (user) =>
-  apiPut(`${USERS_ENDPOINT}/${user.id}`, { ...user, enabled: true });
+  apiPut(`${USERS_ENDPOINT}/${user.key}`, { ...user, enabled: true });
 
-type DeleteUserParams = GetUserParams;
+type DeleteUserParams = {
+    id: string;
+};
 
 export const deleteUser: ApiDefinition<undefined, DeleteUserParams> = ({
   id,
