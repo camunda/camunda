@@ -126,9 +126,7 @@ public final class ServiceTransformers {
         UserTaskFilter.class, new UserTaskFilterTransformer(mappers, isCamundaExporterEnabled));
     mappers.put(VariableValueFilter.class, new VariableValueFilterTransformer());
     mappers.put(DateValueFilter.class, new DateValueFilterTransformer());
-    mappers.put(
-        VariableFilter.class,
-        new VariableFilterTransformer(mappers, new VariableValueFilterTransformer()));
+    mappers.put(VariableFilter.class, new VariableFilterTransformer());
     mappers.put(DecisionDefinitionFilter.class, new DecisionDefinitionFilterTransformer());
     mappers.put(DecisionRequirementsFilter.class, new DecisionRequirementsFilterTransformer());
     mappers.put(DecisionInstanceFilter.class, new DecisionInstanceFilterTransformer(mappers));

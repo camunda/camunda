@@ -12,6 +12,7 @@ import static io.camunda.util.CollectionUtil.withoutNull;
 
 import io.camunda.search.clients.query.SearchHasParentQuery.Builder;
 import io.camunda.search.clients.query.SearchMatchQuery.SearchMatchQueryOperator;
+import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.filter.Operation;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
@@ -21,6 +22,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public final class SearchQueryBuilders {
 
@@ -262,6 +264,10 @@ public final class SearchQueryBuilders {
     return term((q) -> q.field(field).value(value)).toSearchQuery();
   }
 
+  public static SearchQuery term(final String field, final TypedValue value) {
+    return term((q) -> q.field(field).value(value)).toSearchQuery();
+  }
+
   public static SearchTermsQuery.Builder terms() {
     return new SearchTermsQuery.Builder();
   }
@@ -303,6 +309,19 @@ public final class SearchQueryBuilders {
       return term(field, fieldValues.get(0));
     } else {
       return SearchTermsQuery.of(q -> q.field(field).stringTerms(fieldValues)).toSearchQuery();
+    }
+  }
+
+  public static SearchQuery objectTerms(final String field, final Collection<Object> values) {
+    final var fieldValues = withoutNull(values);
+    if (fieldValues == null || fieldValues.isEmpty()) {
+      return null;
+    } else if (fieldValues.size() == 1) {
+      return term(field, TypedValue.toTypedValue(fieldValues.getFirst()));
+    } else {
+      final var typedValues =
+          fieldValues.stream().map(TypedValue::toTypedValue).collect(Collectors.toList());
+      return SearchTermsQuery.of(q -> q.field(field).terms(typedValues)).toSearchQuery();
     }
   }
 
@@ -410,6 +429,35 @@ public final class SearchQueryBuilders {
             }
           });
       return b.build().toSearchQuery();
+    }
+  }
+
+  public static <C extends List<Operation<Object>>> List<SearchQuery> variableOperations(
+      final String varName, final String varValue, final String name, final C operations) {
+    if (operations == null || operations.isEmpty()) {
+      return null;
+    } else {
+      final var searchQueries = new ArrayList<SearchQuery>();
+      searchQueries.add(term(varName, name));
+      operations.forEach(
+          op -> {
+            searchQueries.add(
+                switch (op.operator()) {
+                  case EQUALS -> term(varValue, TypedValue.toTypedValue(op.value()));
+                  case NOT_EQUALS -> mustNot(term(varValue, TypedValue.toTypedValue(op.value())));
+                  case EXISTS -> exists(varValue);
+                  case NOT_EXISTS -> mustNot(exists(varValue));
+                  case GREATER_THAN -> range(q -> q.field(varValue).gt(op.value())).toSearchQuery();
+                  case GREATER_THAN_EQUALS ->
+                      range(q -> q.field(varValue).gte(op.value())).toSearchQuery();
+                  case LOWER_THAN -> range(q -> q.field(varValue).lt(op.value())).toSearchQuery();
+                  case LOWER_THAN_EQUALS ->
+                      range(q -> q.field(varValue).lte(op.value())).toSearchQuery();
+                  case IN -> objectTerms(varValue, op.values());
+                  default -> throw unexpectedOperation("Variable", op);
+                });
+          });
+      return searchQueries;
     }
   }
 
