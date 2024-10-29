@@ -194,6 +194,12 @@ camunda-platform:
       replicaCount: 1
       persistence:
         size: 15Gi
+      nodeSelector:
+        cloud.google.com/gke-nodepool: previews
+      tolerations:
+        - key: "previews"
+          operator: "Exists"
+          effect: "NoSchedule"
 
   identity:
     env:
@@ -338,6 +344,19 @@ camunda-platform:
     contextPath: "/identity"
     # will be replaced by the preview-env-deploy workflow
     fullURL: "https://test.camunda.camunda.cloud/identity"
+    keycloak:
+      nodeSelector:
+        cloud.google.com/gke-nodepool: previews
+      tolerations:
+        - key: "previews"
+          operator: "Exists"
+          effect: "NoSchedule"
+    nodeSelector:
+      cloud.google.com/gke-nodepool: previews
+    tolerations:
+      - key: "previews"
+        operator: "Exists"
+        effect: "NoSchedule"
 
   operate:
     env:
@@ -351,6 +370,12 @@ camunda-platform:
       pullSecrets:
       - name: registry-camunda-cloud
     contextPath: "/operate"
+    nodeSelector:
+      cloud.google.com/gke-nodepool: previews
+    tolerations:
+      - key: "previews"
+        operator: "Exists"
+        effect: "NoSchedule"
 
   optimize:
     image:
@@ -361,6 +386,12 @@ camunda-platform:
       pullSecrets:
         - name: registry-camunda-cloud
     contextPath: "/optimize"
+    nodeSelector:
+      cloud.google.com/gke-nodepool: previews
+    tolerations:
+      - key: "previews"
+        operator: "Exists"
+        effect: "NoSchedule"
 
   tasklist:
     image:
@@ -371,6 +402,12 @@ camunda-platform:
       pullSecrets:
         - name: registry-camunda-cloud
     contextPath: "/tasklist"
+    nodeSelector:
+      cloud.google.com/gke-nodepool: previews
+    tolerations:
+      - key: "previews"
+        operator: "Exists"
+        effect: "NoSchedule"
 
   zeebe:
     image:
@@ -380,15 +417,47 @@ camunda-platform:
       tag: latest
       pullSecrets:
         - name: registry-camunda-cloud
+    nodeSelector:
+      cloud.google.com/gke-nodepool: previews
+    tolerations:
+      - key: "previews"
+        operator: "Exists"
+        effect: "NoSchedule"
 
   webModeler:
     contextPath: "/modeler"
+    restapi:
+      nodeSelector:
+        cloud.google.com/gke-nodepool: previews
+      tolerations:
+        - key: "previews"
+          operator: "Exists"
+          effect: "NoSchedule"
+    webapp:
+      nodeSelector:
+        cloud.google.com/gke-nodepool: previews
+      tolerations:
+        - key: "previews"
+          operator: "Exists"
+          effect: "NoSchedule"
 
   console:
     contextPath: "/console"
+    nodeSelector:
+      cloud.google.com/gke-nodepool: previews
+    tolerations:
+      - key: "previews"
+        operator: "Exists"
+        effect: "NoSchedule"
 
   connectors:
     contextPath: "/connectors"
+    nodeSelector:
+      cloud.google.com/gke-nodepool: previews
+    tolerations:
+      - key: "previews"
+        operator: "Exists"
+        effect: "NoSchedule"
 
   zeebeGateway:
     contextPath: "/zeebe"
@@ -406,6 +475,12 @@ camunda-platform:
         tls:
           enabled: true
           secretName: camunda-tls
+    nodeSelector:
+      cloud.google.com/gke-nodepool: previews
+    tolerations:
+      - key: "previews"
+        operator: "Exists"
+        effect: "NoSchedule"
 
   identityKeycloak:
     auth:
@@ -419,3 +494,10 @@ camunda-platform:
         existingSecret: postgres-secret
         secretKeys:
           userPasswordKey: password
+      primary:
+        nodeSelector:
+          cloud.google.com/gke-nodepool: previews
+        tolerations:
+          - key: "previews"
+            operator: "Exists"
+            effect: "NoSchedule"
