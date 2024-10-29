@@ -150,28 +150,34 @@ export default function MultiUserInput({
       // disable the internal sorting since we have the data sorted by default
       sortItems={(items) => items}
       initialSelectedItems={selectedUsers}
-      downshiftProps={{
-        onSelect: (item) => {
-          if (!item) {
-            return;
-          }
-
-          const userToRemove = users.find((user) => user.id === item.id);
-
-          if (userToRemove) {
-            onRemove(userToRemove.id);
-          } else {
-            addIdentity(item.id);
-          }
-        },
-      }}
       onChange={({selectedItems}) => {
+        // If no items are selected, clear the selection
         if (selectedItems.length === 0) {
           onClear();
+          return;
+        }
+
+        const removedUser = selectedUsers.find(
+          (user) => !selectedItems.some((item) => item.id === user.id)
+        );
+
+        if (removedUser) {
+          onRemove(removedUser.id);
+        }
+
+        const addedUser = selectedItems.find(
+          (item) => !selectedUsers.some((user) => user.id === item.id)
+        );
+
+        if (addedUser) {
+          addIdentity(addedUser.id);
         }
       }}
       items={getItems()}
       itemToString={(item) => {
+        if (!item) {
+          return '';
+        }
         const {label, subText, id} = item;
         return label + subText + (id || '');
       }}

@@ -97,7 +97,7 @@ it('should format user list information correctly', async () => {
   expect(item3Content.find('.subText')).not.toExist();
 });
 
-it('should invoke onAdd & onRemove when selecting/deselecting an identity', async () => {
+it('should invoke onAdd when selecting an identity', async () => {
   const testUser = {
     name: 'test',
     type: 'user',
@@ -117,7 +117,7 @@ it('should invoke onAdd & onRemove when selecting/deselecting an identity', asyn
 
   const items = node.find(FilterableMultiSelect).prop('items');
 
-  node.find(FilterableMultiSelect).prop('downshiftProps')?.onSelect(items[0]);
+  node.find(FilterableMultiSelect).simulate('change', {selectedItems: items});
   expect(spy).toHaveBeenCalledWith(testUser);
 });
 
@@ -128,32 +128,33 @@ it('should invoke onRemove when deselecting an identity', async () => {
     email: 'test@test.com',
     id: 'test',
   };
+
+  const selectedUsers = [
+    {
+      id: 'USER:test',
+      identity: testUser,
+    },
+    {
+      id: 'USER:userToRemove',
+      identity: {...testUser, id: 'userToRemove'},
+    },
+  ];
+
   (searchIdentities as jest.Mock).mockReturnValue({
     result: [testUser],
     total: 0,
   });
 
   const spy = jest.fn();
-  const node = shallow(
-    <MultiUserInput
-      {...props}
-      onRemove={spy}
-      users={[
-        {
-          id: 'USER:test',
-          identity: testUser,
-        },
-      ]}
-    />
-  );
+  const node = shallow(<MultiUserInput {...props} onRemove={spy} users={selectedUsers} />);
 
   runAllEffects();
   await flushPromises();
 
-  const items = node.find(FilterableMultiSelect).prop('items');
-
-  node.find(FilterableMultiSelect).prop('downshiftProps')?.onSelect(items[0]);
-  expect(spy).toHaveBeenCalledWith('USER:test');
+  node.find(FilterableMultiSelect).simulate('change', {
+    selectedItems: [selectedUsers[0]],
+  });
+  expect(spy).toHaveBeenCalledWith('USER:userToRemove');
 });
 
 it('should invoke onAdd when selecting an identity even if it is not in loaded identities', async () => {
@@ -163,6 +164,9 @@ it('should invoke onAdd when selecting an identity even if it is not in loaded i
   runAllEffects();
   await flushPromises();
 
-  node.find(FilterableMultiSelect).prop('downshiftProps')?.onSelect({id: 'test', label: 'test'});
-  expect(spy).toHaveBeenCalledWith({id: 'test'});
+  node.find(FilterableMultiSelect).simulate('change', {
+    selectedItems: [{id: 'testUserID'}],
+  });
+
+  expect(spy).toHaveBeenCalledWith({id: 'testUserID'});
 });

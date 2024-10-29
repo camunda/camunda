@@ -147,4 +147,11 @@ public class DbTenantState implements MutableTenantState {
 
     return Optional.of(entityTypeValue.getEntityType());
   }
+
+  @Override
+  public boolean isEntityAssignedToTenant(final long entityKey, final long tenantKey) {
+    this.tenantKey.wrapLong(tenantKey);
+    this.entityKey.wrapLong(entityKey);
+    return entityByTenantColumnFamily.exists(entityByTenantKey);
+  }
 }
