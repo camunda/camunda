@@ -11,6 +11,7 @@ import static io.camunda.exporter.schema.SchemaTestUtil.mappingsMatch;
 import static io.camunda.exporter.utils.CamundaExporterITInvocationProvider.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
@@ -21,36 +22,55 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.Streams;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.handlers.AuthorizationHandler;
+import io.camunda.exporter.handlers.DecisionHandler;
+import io.camunda.exporter.handlers.DecisionRequirementsHandler;
+import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.FlowNodeInstanceProcessInstanceHandler;
+import io.camunda.exporter.handlers.ListViewFlowNodeFromIncidentHandler;
+import io.camunda.exporter.handlers.ListViewFlowNodeFromJobHandler;
+import io.camunda.exporter.handlers.ListViewFlowNodeFromProcessInstanceHandler;
+import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHandler;
+import io.camunda.exporter.handlers.ListViewVariableFromVariableHandler;
+import io.camunda.exporter.handlers.UserHandler;
+import io.camunda.exporter.handlers.VariableHandler;
 import io.camunda.exporter.schema.SchemaTestUtil;
 import io.camunda.exporter.utils.CamundaExporterITInvocationProvider;
 import io.camunda.exporter.utils.SearchClientAdapter;
 import io.camunda.exporter.utils.TestSupport;
-import io.camunda.security.entity.Permission;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-import io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity;
-import io.camunda.webapps.schema.entities.usermanagement.UserEntity;
+import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
+import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
+import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
+import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import java.io.IOException;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestTemplate;
@@ -196,69 +216,6 @@ final class CamundaExporterIT {
   }
 
   @TestTemplate
-  void shouldExportUserRecord(
-      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
-      throws Exception {
-    // given
-    final var exporter = createExporter(Set.of(), Set.of(), config);
-
-    // when
-    final Record<UserRecordValue> record = factory.generateRecord(ValueType.USER);
-    final String recordId = String.valueOf(record.getKey());
-    exporter.export(record);
-
-    // then
-    final var responseUserEntity =
-        clientAdapter.get(
-            recordId, config.getIndex().getPrefix() + "-identity-users-8.7.0_", UserEntity.class);
-
-    assertThat(responseUserEntity)
-        .describedAs("User entity is updated correctly from the user record")
-        .extracting(
-            UserEntity::getEmail, UserEntity::getName, UserEntity::getUsername, UserEntity::getId)
-        .containsExactly(
-            record.getValue().getEmail(),
-            record.getValue().getName(),
-            record.getValue().getUsername(),
-            String.valueOf(record.getKey()));
-  }
-
-  @TestTemplate
-  void shouldExportAuthorizationRecord(
-      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
-      throws IOException {
-    // given
-    final var exporter = createExporter(Set.of(), Set.of(), config);
-
-    // when
-    final Record<AuthorizationRecordValue> record = factory.generateRecord(ValueType.AUTHORIZATION);
-    final var recordId = String.valueOf(record.getKey());
-    exporter.export(record);
-
-    // then
-    final var responseAuthorizationEntity =
-        clientAdapter.get(
-            recordId,
-            config.getIndex().getPrefix() + "-identity-authorizations-8.7.0_",
-            AuthorizationEntity.class);
-
-    assertThat(responseAuthorizationEntity)
-        .describedAs("Authorization entity is updated correctly from the authorization record")
-        .extracting(
-            AuthorizationEntity::getOwnerKey,
-            AuthorizationEntity::getOwnerType,
-            AuthorizationEntity::getResourceType,
-            AuthorizationEntity::getPermissions,
-            AuthorizationEntity::getId)
-        .containsExactly(
-            record.getValue().getOwnerKey(),
-            String.valueOf(record.getValue().getOwnerType()),
-            String.valueOf(record.getValue().getResourceType()),
-            extractPermissions(record.getValue()),
-            String.valueOf(record.getKey()));
-  }
-
-  @TestTemplate
   void shouldHaveCorrectSchemaUpdatesWithMultipleExporters(
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws Exception {
@@ -344,15 +301,6 @@ final class CamundaExporterIT {
     return config;
   }
 
-  private List<Permission> extractPermissions(final AuthorizationRecordValue record) {
-    return record.getPermissions().stream()
-        .map(
-            permissionValue ->
-                new Permission(
-                    permissionValue.getPermissionType(), permissionValue.getResourceIds()))
-        .collect(Collectors.toList());
-  }
-
   private Context getContextFromConfig(final ExporterConfiguration config) {
     return new ExporterTestContext()
         .setConfiguration(new ExporterTestConfiguration<>(config.getConnect().getType(), config));
@@ -381,5 +329,107 @@ final class CamundaExporterIT {
     when(provider.getIndexTemplateDescriptors()).thenReturn(templateDescriptors);
 
     return provider;
+  }
+
+  @Nested
+  class ExportHandlerTests {
+
+    final List<Entry<Class<?>, Function<String, ExportHandler<?, ?>>>> handlers =
+        List.of(
+            entry(UserIndex.class, UserHandler::new),
+            entry(AuthorizationIndex.class, AuthorizationHandler::new),
+            entry(DecisionIndex.class, DecisionHandler::new),
+            entry(
+                ListViewTemplate.class,
+                (indexName) -> new ListViewFlowNodeFromIncidentHandler(indexName, false)),
+            entry(
+                ListViewTemplate.class,
+                (indexName) -> new ListViewFlowNodeFromJobHandler(indexName, false)),
+            entry(
+                ListViewTemplate.class,
+                (indexName) -> new ListViewFlowNodeFromProcessInstanceHandler(indexName, false)),
+            entry(
+                ListViewTemplate.class,
+                (indexName) ->
+                    new ListViewProcessInstanceFromProcessInstanceHandler(indexName, false)),
+            entry(
+                ListViewTemplate.class,
+                (indexName) -> new ListViewVariableFromVariableHandler(indexName, false)),
+            entry(VariableTemplate.class, (indexName) -> new VariableHandler(indexName, 8191)),
+            entry(DecisionRequirementsIndex.class, DecisionRequirementsHandler::new),
+            entry(FlowNodeInstanceTemplate.class, FlowNodeInstanceProcessInstanceHandler::new));
+
+    @TestTemplate
+    void shouldHandleExportedRecords(
+        final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+        throws Exception {
+      final var isElasticsearch =
+          config.getConnect().getType().equals(ConnectionTypes.ELASTICSEARCH.getType());
+
+      final var prefix = config.getIndex().getPrefix();
+      final Set<IndexTemplateDescriptor> templates =
+          Set.of(
+              new ListViewTemplate(prefix, isElasticsearch),
+              new FlowNodeInstanceTemplate(prefix, isElasticsearch),
+              new VariableTemplate(prefix, isElasticsearch));
+      final Set<IndexDescriptor> indices =
+          Set.of(
+              new UserIndex(prefix, isElasticsearch),
+              new AuthorizationIndex(prefix, isElasticsearch),
+              new DecisionIndex(prefix, isElasticsearch),
+              new DecisionRequirementsIndex(prefix, isElasticsearch));
+      final var exporter = createExporter(indices, templates, config);
+
+      for (final var getHandler : handlers) {
+        final var handlerIndexType = getHandler.getKey();
+        final var handlerDescriptor =
+            Streams.concat(templates.stream(), indices.stream())
+                .filter(handlerIndexType::isInstance)
+                .findFirst()
+                .orElseThrow(
+                    () ->
+                        new IllegalArgumentException(
+                            String.format(
+                                "Did not pass an descriptor of type [%s] to the exporter",
+                                handlerIndexType.getSimpleName())));
+
+        final var handler = getHandler.getValue().apply(handlerDescriptor.getFullQualifiedName());
+
+        exportTest(exporter, handler, handlerDescriptor, clientAdapter);
+      }
+    }
+
+    private <S extends ExporterEntity<S>, T extends RecordValue> void exportTest(
+        final CamundaExporter exporter,
+        final ExportHandler<S, T> handler,
+        final IndexDescriptor descriptor,
+        final SearchClientAdapter clientAdapter)
+        throws Exception {
+
+      // Sometimes the factory generates records with intents that are not handled by the
+      // handler
+      Record<T> record =
+          factory.generateRecord(
+              handler.getHandledValueType(), r -> r.withTimestamp(System.currentTimeMillis()));
+      while (!handler.handlesRecord(record)) {
+        record =
+            factory.generateRecord(
+                handler.getHandledValueType(), r -> r.withTimestamp(System.currentTimeMillis()));
+      }
+      final var expectedEntity = handler.getEntityType().getDeclaredConstructor().newInstance();
+      handler.updateEntity(record, expectedEntity);
+
+      exporter.export(record);
+
+      final var responseEntity =
+          clientAdapter.get(
+              expectedEntity.getId(), descriptor.getFullQualifiedName(), handler.getEntityType());
+
+      assertThat(responseEntity)
+          .describedAs(
+              "Handler [%s] correctly handles a [%s] record",
+              handler.getClass().getSimpleName(), handler.getHandledValueType())
+          .isEqualTo(expectedEntity);
+    }
   }
 }
