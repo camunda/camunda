@@ -35,7 +35,8 @@ public class UserProcessors {
         .onCommand(
             ValueType.USER,
             UserIntent.UPDATE,
-            new UserUpdateProcessor(keyGenerator, processingState, writers, distributionBehavior))
+            new UserUpdateProcessor(
+                keyGenerator, processingState, writers, distributionBehavior, authCheckBehavior))
         .onCommand(
             ValueType.USER,
             UserIntent.DELETE,
