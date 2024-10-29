@@ -25,7 +25,8 @@
     NAME,
     TENANT_ID,
     VERSION_TAG,
-    VERSION
+    VERSION,
+    FORM_ID
     FROM PROCESS_DEFINITION
     <include refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.searchFilter"/>
     <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
@@ -120,6 +121,7 @@
       <arg column="VERSION" javaType="java.lang.Integer"/>
       <arg column="VERSION_TAG" javaType="java.lang.String"/>
       <arg column="TENANT_ID" javaType="java.lang.String"/>
+      <arg column="FORM_ID" javaType="java.lang.String"/>
     </constructor>
   </resultMap>
 
@@ -128,8 +130,8 @@
     parameterType="io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel"
     flushCache="true">
     INSERT INTO PROCESS_DEFINITION (PROCESS_DEFINITION_KEY, PROCESS_DEFINITION_ID, RESOURCE_NAME,
-                                    BPMN_XML, NAME, TENANT_ID, VERSION_TAG, VERSION)
+                                    BPMN_XML, NAME, TENANT_ID, VERSION_TAG, VERSION, FORM_ID)
     VALUES (#{processDefinitionKey}, #{processDefinitionId}, #{resourceName}, #{bpmnXml}, #{name},
-            #{tenantId}, #{versionTag}, #{version})
+            #{tenantId}, #{versionTag}, #{version}, #{formId})
   </insert>
 </mapper>
