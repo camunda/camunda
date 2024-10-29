@@ -1,10 +1,11 @@
-import { ApiDefinition, apiDelete, apiGet, apiPost, apiPut } from "../request";
+import { ApiDefinition, apiDelete, apiPost, apiPut } from "../request";
 import { SearchResponse } from "src/utility/api";
 
 export const USERS_ENDPOINT = "/users";
 
 export type User = {
-  id: string;
+  id: number;
+  key: number;
   name: string;
   username: string;
   password: string;
@@ -19,8 +20,8 @@ type GetUserParams = {
   id: string;
 };
 
-export const getUserDetails: ApiDefinition<User, GetUserParams> = ({ id }) =>
-  apiGet(`${USERS_ENDPOINT}/${id}`);
+export const getUserDetails: ApiDefinition<SearchResponse<User>, GetUserParams> = ({ id }) =>
+  apiPost(`${USERS_ENDPOINT}/search`, {filter: {username: id}});
 
 type CreateUserParams = Omit<User, "id" | "enabled">;
 

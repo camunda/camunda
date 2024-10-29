@@ -8,28 +8,28 @@ import {
 import { USERS_ENDPOINT } from "src/utility/api/users/index";
 import { Role } from "src/utility/api/roles";
 
-export type GetUserRolesParams = { id: string };
+export type GetUserRolesParams = { key: number };
 
 const path = pathBuilder(USERS_ENDPOINT);
 
 export const getUserRoles: ApiDefinition<Role[], GetUserRolesParams> = ({
-  id,
-}) => apiGet(path(id, "roles"));
+  key,
+}) => apiGet(path(key, "roles"));
 
 export type AssignUserRoleParams = GetUserRolesParams & {
   roleId: Role["id"];
 };
 
 export const assignUserRole: ApiDefinition<undefined, AssignUserRoleParams> = ({
-  id,
+  key,
   roleId,
-}) => apiPost(path(id, "roles"), { roleId: roleId });
+}) => apiPost(path(key, "roles"), { roleId: roleId });
 
 export type RemoveUserRoleParams = GetUserRolesParams & {
   roleId: Role["id"];
 };
 
 export const removeUserRole: ApiDefinition<undefined, RemoveUserRoleParams> = ({
-  id,
+  key,
   roleId,
-}) => apiDelete(path(id, "roles", roleId));
+}) => apiDelete(path(key, "roles", roleId));
