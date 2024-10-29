@@ -6,12 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 export type Permission = {
-    permissionType: string
-    resourceIds: string[];
-}
+  permissionType: string;
+  resourceIds: string[];
+};
 export type Authorization = {
-    ownerKey: number;
-    ownerType: string;
-    resourceType: string;
-    permissions: Permission[];
+  ownerKey: number;
+  ownerType: string;
+  resourceType: string;
+  permissions: Permission[];
 };

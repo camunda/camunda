@@ -39,7 +39,7 @@ const Details: FC = () => {
   const [deleteUser, deleteUserModal] = useEntityModal(DeleteModal, () =>
     navigate("..", { replace: true }),
   );
-  const user = userSearchResults!=null? userSearchResults.items[0] : null
+  const user = userSearchResults != null ? userSearchResults.items[0] : null;
   if (!loading && !user) return <NotFound />;
 
   return (
@@ -86,8 +86,10 @@ const Details: FC = () => {
               {
                 key: "authorizations",
                 label: t("Assigned Authorizations"),
-                content: user && <AuthorizationList user={user} loadingUser={loading} />,
-              }
+                content: user && (
+                  <AuthorizationList user={user} loadingUser={loading} />
+                ),
+              },
             ]}
             selectedTabKey={tab}
             path={`../${id}`}

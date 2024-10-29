@@ -12,7 +12,7 @@ import { getUserAuthorizations } from "src/utility/api/users/authorizations";
 import { DocumentationLink } from "src/components/documentation";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import { useApi } from "src/utility/api";
-import {Authorization} from "src/utility/api/authorizations";
+import { Authorization } from "src/utility/api/authorizations";
 
 type AuthorizationsListProps = {
   user: User;
@@ -31,12 +31,13 @@ const List: FC<AuthorizationsListProps> = ({ user, loadingUser }) => {
 
   const loading = loadingUser || loadingAuthorizations;
 
-  const areAuthorizationsEmpty = !authorizations || authorizations.items.length === 0;
+  const areAuthorizationsEmpty =
+    !authorizations || authorizations.items.length === 0;
 
-  const showAuthorizationDetails = (authorization: Authorization) => (console.log(authorization));
+  const showAuthorizationDetails = (authorization: Authorization) =>
+    console.log(authorization);
 
-
-    const documentationReference = (
+  const documentationReference = (
     <Translate>
       Learn more about assigning authorizations to users in our{" "}
       <DocumentationLink path="/identity/user-guide/assigning-an-authorization-to-a-user" />
@@ -49,9 +50,7 @@ const List: FC<AuthorizationsListProps> = ({ user, loadingUser }) => {
       <EntityList
         title={t("Authorizations assigned to user")}
         data={authorizations == null ? [] : authorizations.items}
-        headers={[
-          { header: t("ResourceType"), key: "resourceType" },
-        ]}
+        headers={[{ header: t("ResourceType"), key: "resourceType" }]}
         onEntityClick={showAuthorizationDetails}
         addEntityLabel="Assign authorization"
         onAddEntity={() => {}}

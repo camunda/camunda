@@ -1,6 +1,6 @@
 import { ApiDefinition, apiDelete, apiPost, apiPut } from "../request";
 import { SearchResponse } from "src/utility/api";
-import {EntityData} from "src/components/entityList/EntityList";
+import { EntityData } from "src/components/entityList/EntityList";
 
 export const USERS_ENDPOINT = "/users";
 
@@ -20,9 +20,11 @@ type GetUserParams = {
   username: string;
 };
 
-
-export const getUserDetails: ApiDefinition<SearchResponse<User>, GetUserParams> = ({ username }) =>
-  apiPost(`${USERS_ENDPOINT}/search`, {filter: {username}});
+export const getUserDetails: ApiDefinition<
+  SearchResponse<User>,
+  GetUserParams
+> = ({ username }) =>
+  apiPost(`${USERS_ENDPOINT}/search`, { filter: { username } });
 
 type CreateUserParams = Omit<User, "id" | "key" | "enabled">;
 
@@ -35,7 +37,7 @@ export const updateUser: ApiDefinition<undefined, UpdateUserParams> = (user) =>
   apiPut(`${USERS_ENDPOINT}/${user.key}`, { ...user, enabled: true });
 
 type DeleteUserParams = {
-    id: string;
+  id: string;
 };
 
 export const deleteUser: ApiDefinition<undefined, DeleteUserParams> = ({
