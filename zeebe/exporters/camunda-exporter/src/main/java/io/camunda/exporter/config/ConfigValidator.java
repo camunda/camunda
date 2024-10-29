@@ -77,9 +77,10 @@ public final class ConfigValidator {
       DateTimeFormatter.ofPattern(rolloverDateFormat).withZone(ZoneId.systemDefault());
     } catch (final IllegalArgumentException e) {
       throw new ExporterException(
-          String.format(
-              "CamundaExporter rolloverDateFormat '%s' is not a valid date format.",
-              rolloverDateFormat));
+          "CamundaExporter rolloverDateFormat "
+              + rolloverDateFormat
+              + "is not a valid DateTimeFormatter pattern: "
+              + e);
     }
 
     final String rolloverInterval = configuration.getArchiver().getRolloverInterval();

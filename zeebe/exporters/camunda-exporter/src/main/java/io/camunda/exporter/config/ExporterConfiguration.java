@@ -242,7 +242,7 @@ public class ExporterConfiguration {
     private boolean rolloverEnabled = true;
     private String rolloverDateFormat = "yyyy-MM-dd";
     private String elsRolloverDateFormat = "date";
-    private String rolloverInterval;
+    private String rolloverInterval = "1d";
     private int rolloverBatchSize = 100;
     private String waitPeriodBeforeArchiving = "1h";
     private int delayBetweenRuns = 2000;
@@ -279,7 +279,7 @@ public class ExporterConfiguration {
       this.rolloverInterval = rolloverInterval;
     }
 
-    public String getArchivingTimepoint() {
+    public String getArchivingTimePoint() {
       return "now-" + waitPeriodBeforeArchiving;
     }
 
