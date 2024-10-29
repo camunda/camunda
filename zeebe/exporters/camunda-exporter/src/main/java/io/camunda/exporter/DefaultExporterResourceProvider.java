@@ -9,6 +9,8 @@ package io.camunda.exporter;
 
 import static java.util.Map.entry;
 
+import io.camunda.exporter.adapters.ClientAdapter;
+import io.camunda.exporter.cache.ProcessCacheImpl;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.handlers.AuthorizationHandler;
@@ -81,7 +83,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   private Set<ExportHandler> exportHandlers;
 
   @Override
-  public void init(final ExporterConfiguration configuration) {
+  public void init(final ExporterConfiguration configuration, final ClientAdapter clientAdapter) {
     final var globalPrefix = configuration.getIndex().getPrefix();
     final var isElasticsearch =
         ConnectionTypes.from(configuration.getConnect().getType())
@@ -130,6 +132,12 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             AuthorizationIndex.class,
             new AuthorizationIndex(globalPrefix, isElasticsearch));
 
+    final var processCache =
+        new ProcessCacheImpl(
+            10000,
+            clientAdapter.getProcessCacheLoader(
+                indexDescriptorsMap.get(ProcessIndex.class).getFullQualifiedName()));
+
     exportHandlers =
         Set.of(
             new UserHandler(indexDescriptorsMap.get(UserIndex.class).getFullQualifiedName()),
@@ -165,7 +173,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new DecisionEvaluationHandler(
                 templateDescriptorsMap.get(DecisionInstanceTemplate.class).getFullQualifiedName()),
             new ProcessHandler(
-                indexDescriptorsMap.get(ProcessIndex.class).getFullQualifiedName(), new XMLUtil()),
+                indexDescriptorsMap.get(ProcessIndex.class).getFullQualifiedName(),
+                new XMLUtil(),
+                processCache),
             new MetricFromProcessInstanceHandler(
                 indexDescriptorsMap.get(MetricIndex.class).getFullQualifiedName()),
             new TaskCompletedMetricHandler(
