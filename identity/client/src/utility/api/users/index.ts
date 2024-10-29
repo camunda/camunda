@@ -1,10 +1,10 @@
 import { ApiDefinition, apiDelete, apiPost, apiPut } from "../request";
 import { SearchResponse } from "src/utility/api";
+import {EntityData} from "src/components/entityList/EntityList";
 
 export const USERS_ENDPOINT = "/users";
 
-export type User = {
-  id: string;
+export type User = EntityData & {
   key: number;
   name: string;
   username: string;
