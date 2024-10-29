@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.partitions;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -46,24 +47,21 @@ class ZeebePartitionHealth implements HealthMonitorable {
       return;
     }
 
+    final var instant = Instant.now();
     final var partitionTransitionHealthIssue = partitionTransition.getHealthIssue();
     if (!diskSpaceAvailable) {
-      healthReport = HealthReport.unhealthy(this).withMessage("Not enough disk space available");
+      healthReport =
+          HealthReport.unhealthy(this).withMessage("Not enough disk space available", instant);
     } else if (partitionTransitionHealthIssue != null) {
       healthReport = HealthReport.unhealthy(this).withIssue(partitionTransitionHealthIssue);
     } else if (!servicesInstalled) {
-      healthReport = HealthReport.unhealthy(this).withMessage("Services not installed");
+      healthReport = HealthReport.unhealthy(this).withMessage("Services not installed", instant);
     } else {
       healthReport = HealthReport.healthy(this);
     }
 
     if (!Objects.equals(previousStatus, healthReport)) {
-      switch (healthReport.getStatus()) {
-        case HEALTHY -> failureListeners.forEach(FailureListener::onRecovered);
-        case UNHEALTHY -> failureListeners.forEach((l) -> l.onFailure(healthReport));
-        case DEAD -> failureListeners.forEach((l) -> l.onUnrecoverableFailure(healthReport));
-        default -> {}
-      }
+      failureListeners.forEach(l -> l.onHealthReport(healthReport));
     }
   }
 
@@ -78,7 +76,7 @@ class ZeebePartitionHealth implements HealthMonitorable {
   }
 
   void onUnrecoverableFailure(final Throwable error) {
-    healthReport = HealthReport.dead(this).withIssue(error);
+    healthReport = HealthReport.dead(this).withIssue(error, Instant.now());
   }
 
   @Override

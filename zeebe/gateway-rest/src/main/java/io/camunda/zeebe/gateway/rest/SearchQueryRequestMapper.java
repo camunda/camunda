@@ -905,7 +905,7 @@ public final class SearchQueryRequestMapper {
             f ->
                 FilterBuilders.authorization()
                     .ownerType(f.getOwnerType() == null ? null : f.getOwnerType().getValue())
-                    .ownerKey(f.getOwnerKey())
+                    .ownerKeys(f.getOwnerKey())
                     .build())
         .orElse(null);
   }

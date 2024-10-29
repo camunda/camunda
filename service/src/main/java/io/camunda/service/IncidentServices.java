@@ -22,6 +22,8 @@ import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerResolveIncidentRequest;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
@@ -47,7 +49,15 @@ public class IncidentServices
   @Override
   public SearchQueryResult<IncidentEntity> search(final IncidentQuery query) {
     return incidentSearchClient.searchIncidents(
-        query, SecurityContext.of(s -> s.withAuthentication(authentication)));
+        query,
+        SecurityContext.of(
+            s ->
+                s.withAuthentication(authentication)
+                    .withAuthorizationIfEnabled(
+                        securityConfiguration.getAuthorizations().isEnabled(),
+                        a ->
+                            a.resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+                                .permissionType(PermissionType.READ_INSTANCE))));
   }
 
   @Override

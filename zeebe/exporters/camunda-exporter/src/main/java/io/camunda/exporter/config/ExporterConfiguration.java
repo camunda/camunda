@@ -17,6 +17,7 @@ public class ExporterConfiguration {
   private IndexSettings index = new IndexSettings();
   private BulkConfiguration bulk = new BulkConfiguration();
   private RetentionConfiguration retention = new RetentionConfiguration();
+  private ArchiverConfiguration archiver = new ArchiverConfiguration();
   private boolean createSchema = true;
 
   public ConnectConfiguration getConnect() {
@@ -51,6 +52,14 @@ public class ExporterConfiguration {
     this.retention = retention;
   }
 
+  public ArchiverConfiguration getArchiver() {
+    return archiver;
+  }
+
+  public void setArchiver(final ArchiverConfiguration archiver) {
+    this.archiver = archiver;
+  }
+
   public boolean isCreateSchema() {
     return createSchema;
   }
@@ -72,6 +81,8 @@ public class ExporterConfiguration {
         + retention
         + ", createSchema="
         + createSchema
+        + ", archiver="
+        + archiver
         + '}';
   }
 
@@ -224,6 +235,102 @@ public class ExporterConfiguration {
     @Override
     public String toString() {
       return "BulkConfiguration{" + "delay=" + delay + ", size=" + size + '}';
+    }
+  }
+
+  public static class ArchiverConfiguration {
+    private boolean rolloverEnabled = true;
+    private String rolloverDateFormat = "yyyy-MM-dd";
+    private String elsRolloverDateFormat = "date";
+    private String rolloverInterval = "1d";
+    private int rolloverBatchSize = 100;
+    private String waitPeriodBeforeArchiving = "1h";
+    private int delayBetweenRuns = 2000;
+
+    public boolean isRolloverEnabled() {
+      return rolloverEnabled;
+    }
+
+    public void setRolloverEnabled(final boolean rolloverEnabled) {
+      this.rolloverEnabled = rolloverEnabled;
+    }
+
+    public String getRolloverDateFormat() {
+      return rolloverDateFormat;
+    }
+
+    public void setRolloverDateFormat(final String rolloverDateFormat) {
+      this.rolloverDateFormat = rolloverDateFormat;
+    }
+
+    public String getElsRolloverDateFormat() {
+      return elsRolloverDateFormat;
+    }
+
+    public void setElsRolloverDateFormat(final String elsRolloverDateFormat) {
+      this.elsRolloverDateFormat = elsRolloverDateFormat;
+    }
+
+    public String getRolloverInterval() {
+      return rolloverInterval;
+    }
+
+    public void setRolloverInterval(final String rolloverInterval) {
+      this.rolloverInterval = rolloverInterval;
+    }
+
+    public String getArchivingTimePoint() {
+      return "now-" + waitPeriodBeforeArchiving;
+    }
+
+    public int getRolloverBatchSize() {
+      return rolloverBatchSize;
+    }
+
+    public void setRolloverBatchSize(final int rolloverBatchSize) {
+      this.rolloverBatchSize = rolloverBatchSize;
+    }
+
+    public String getWaitPeriodBeforeArchiving() {
+      return waitPeriodBeforeArchiving;
+    }
+
+    public void setWaitPeriodBeforeArchiving(final String waitPeriodBeforeArchiving) {
+      this.waitPeriodBeforeArchiving = waitPeriodBeforeArchiving;
+    }
+
+    public int getDelayBetweenRuns() {
+      return delayBetweenRuns;
+    }
+
+    public void setDelayBetweenRuns(final int delayBetweenRuns) {
+      this.delayBetweenRuns = delayBetweenRuns;
+    }
+
+    @Override
+    public String toString() {
+      return "RetentionConfiguration{"
+          + "rolloverEnabled="
+          + rolloverEnabled
+          + ", rolloverDateFormat='"
+          + rolloverDateFormat
+          + '\''
+          + ", elsRolloverDateFormat='"
+          + elsRolloverDateFormat
+          + '\''
+          + ", rolloverInterval='"
+          + rolloverInterval
+          + '\''
+          + ", rolloverBatchSize='"
+          + rolloverDateFormat
+          + '\''
+          + ", waitPeriodBeforeArchiving='"
+          + waitPeriodBeforeArchiving
+          + '\''
+          + ", delayBetweenRuns='"
+          + delayBetweenRuns
+          + '\''
+          + '}';
     }
   }
 }

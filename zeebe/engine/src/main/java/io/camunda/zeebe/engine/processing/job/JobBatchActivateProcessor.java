@@ -56,9 +56,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
-    jobBatchCollector =
-        new JobBatchCollector(
-            state.getJobState(), state.getVariableState(), stateWriter::canWriteEventOfLength);
+    jobBatchCollector = new JobBatchCollector(state, stateWriter::canWriteEventOfLength);
 
     this.keyGenerator = keyGenerator;
     this.jobMetrics = jobMetrics;

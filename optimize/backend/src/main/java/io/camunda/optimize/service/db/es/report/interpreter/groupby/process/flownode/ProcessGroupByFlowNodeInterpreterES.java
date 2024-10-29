@@ -16,14 +16,12 @@ import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch.core.search.ResponseBody;
-import io.camunda.optimize.dto.optimize.DefinitionType;
-import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.es.report.interpreter.distributedby.process.ProcessDistributedByInterpreterFacadeES;
 import io.camunda.optimize.service.db.es.report.interpreter.view.process.ProcessViewInterpreterFacadeES;
 import io.camunda.optimize.service.db.report.ExecutionContext;
+import io.camunda.optimize.service.db.report.groupby.flownode.ProcessGroupByFlowNodeInterpreterHelper;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
@@ -32,9 +30,7 @@ import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCon
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -47,16 +43,19 @@ public class ProcessGroupByFlowNodeInterpreterES extends AbstractGroupByFlowNode
   final ProcessViewInterpreterFacadeES viewInterpreter;
   private final ConfigurationService configurationService;
   private final DefinitionService definitionService;
+  private final ProcessGroupByFlowNodeInterpreterHelper helper;
 
   public ProcessGroupByFlowNodeInterpreterES(
       final ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
       final ProcessViewInterpreterFacadeES viewInterpreter,
       final ConfigurationService configurationService,
-      final DefinitionService definitionService) {
+      final DefinitionService definitionService,
+      final ProcessGroupByFlowNodeInterpreterHelper helper) {
     this.distributedByInterpreter = distributedByInterpreter;
     this.viewInterpreter = viewInterpreter;
     this.configurationService = configurationService;
     this.definitionService = definitionService;
+    this.helper = helper;
   }
 
   @Override
@@ -94,7 +93,8 @@ public class ProcessGroupByFlowNodeInterpreterES extends AbstractGroupByFlowNode
                 filteredFlowNodes.aggregations().get(NESTED_EVENTS_AGGREGATION).sterms())
         .ifPresent(
             byFlowNodeIdAggregation -> {
-              final Map<String, String> flowNodeNames = getFlowNodeNames(context.getReportData());
+              final Map<String, String> flowNodeNames =
+                  helper.getFlowNodeNames(context.getReportData());
               final List<GroupByResult> groupedData = new ArrayList<>();
               for (final StringTermsBucket flowNodeBucket :
                   byFlowNodeIdAggregation.buckets().array()) {
@@ -109,67 +109,28 @@ public class ProcessGroupByFlowNodeInterpreterES extends AbstractGroupByFlowNode
                   flowNodeNames.remove(flowNodeKey);
                 }
               }
-              addMissingGroupByKeys(flowNodeNames, groupedData, context);
-              removeHiddenModelElements(groupedData, context);
+              helper.addMissingGroupByKeys(
+                  flowNodeNames,
+                  groupedData,
+                  context,
+                  distributedByInterpreter.createEmptyResult(context));
+              helper.removeHiddenModelElements(groupedData, context);
               compositeCommandResult.setGroups(groupedData);
             });
   }
 
-  private void addMissingGroupByKeys(
-      final Map<String, String> flowNodeNames,
-      final List<GroupByResult> groupedData,
-      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    final boolean viewLevelFilterExists =
-        context.getReportData().getFilter().stream()
-            .anyMatch(filter -> FilterApplicationLevel.VIEW.equals(filter.getFilterLevel()));
-    // If a view level filter exists, the data should not be enriched as the missing data could been
-    // omitted by the filters
-    if (!viewLevelFilterExists) {
-      // If no view level filter exists, we enrich data with flow nodes that haven't been executed,
-      // but should still
-      // show up in the result
-      flowNodeNames.forEach(
-          (key, value) ->
-              groupedData.add(
-                  GroupByResult.createGroupByResult(
-                      key, value, distributedByInterpreter.createEmptyResult(context))));
-    }
-  }
-
-  private void removeHiddenModelElements(
-      final List<GroupByResult> groupedData,
-      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    if (context.getHiddenFlowNodeIds() != null && !context.getHiddenFlowNodeIds().isEmpty()) {
-      groupedData.removeIf(
-          dataPoint -> context.getHiddenFlowNodeIds().contains(dataPoint.getKey()));
-    }
-  }
-
-  private Map<String, String> getFlowNodeNames(final ProcessReportDataDto reportData) {
-    return definitionService.extractFlowNodeIdAndNames(
-        reportData.getDefinitions().stream()
-            .map(
-                definitionDto ->
-                    definitionService.getDefinition(
-                        DefinitionType.PROCESS,
-                        definitionDto.getKey(),
-                        definitionDto.getVersions(),
-                        definitionDto.getTenantIds()))
-            .filter(Optional::isPresent)
-            .map(Optional::get)
-            .map(ProcessDefinitionOptimizeDto.class::cast)
-            .collect(Collectors.toList()));
-  }
-
+  @Override
   public ProcessDistributedByInterpreterFacadeES getDistributedByInterpreter() {
-    return this.distributedByInterpreter;
+    return distributedByInterpreter;
   }
 
+  @Override
   public ProcessViewInterpreterFacadeES getViewInterpreter() {
-    return this.viewInterpreter;
+    return viewInterpreter;
   }
 
+  @Override
   public DefinitionService getDefinitionService() {
-    return this.definitionService;
+    return definitionService;
   }
 }

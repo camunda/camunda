@@ -38,7 +38,7 @@ final class DbRoutingStateTest {
 
     // then
     assertThat(routingState.isInitialized()).isTrue();
-    assertThat(routingState.partitions()).containsExactlyInAnyOrder(1, 2, 3);
+    assertThat(routingState.currentPartitions()).containsExactlyInAnyOrder(1, 2, 3);
     assertThat(routingState.messageCorrelation())
         .isEqualTo(new RoutingState.MessageCorrelation.HashMod(3));
   }
@@ -48,13 +48,13 @@ final class DbRoutingStateTest {
     // given
     final var routingState = processingState.getRoutingState();
     routingState.initializeRoutingInfo(1);
-    assertThat(routingState.partitions()).containsExactlyInAnyOrder(1);
+    assertThat(routingState.currentPartitions()).containsExactlyInAnyOrder(1);
 
     // when
     routingState.setDesiredPartitions(Set.of(1, 2, 3));
 
     // then
-    assertThat(routingState.partitions()).containsExactlyInAnyOrder(1);
+    assertThat(routingState.currentPartitions()).containsExactlyInAnyOrder(1);
     assertThat(routingState.messageCorrelation())
         .isEqualTo(new RoutingState.MessageCorrelation.HashMod(1));
 
@@ -62,7 +62,7 @@ final class DbRoutingStateTest {
     routingState.arriveAtDesiredState();
 
     // then
-    assertThat(routingState.partitions()).containsExactlyInAnyOrder(1, 2, 3);
+    assertThat(routingState.currentPartitions()).containsExactlyInAnyOrder(1, 2, 3);
     assertThat(routingState.messageCorrelation())
         .isEqualTo(new RoutingState.MessageCorrelation.HashMod(1));
   }

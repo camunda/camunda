@@ -39,4 +39,13 @@ public interface TenantState {
    *     Optional} if not
    */
   Optional<EntityType> getEntityType(final long tenantKey, final long entityKey);
+
+  /**
+   * Checks if the specified entity is assigned to the given tenant.
+   *
+   * @param entityKey the key of the entity to check
+   * @param tenantKey the key of the tenant
+   * @return true if the entity is assigned to the tenant, false otherwise
+   */
+  boolean isEntityAssignedToTenant(final long entityKey, final long tenantKey);
 }

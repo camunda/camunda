@@ -9,7 +9,7 @@ package io.camunda.it.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.it.utils.CamundaExporterITInvocationProvider;
+import io.camunda.it.utils.BrokerWithCamundaExporterITInvocationProvider;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.search.filter.UserTaskFilter;
 import io.camunda.zeebe.client.api.search.response.UserTask;
@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-@ExtendWith(CamundaExporterITInvocationProvider.class)
+@ExtendWith(BrokerWithCamundaExporterITInvocationProvider.class)
 public class UserTaskExporterIT {
 
   @TestTemplate

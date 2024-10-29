@@ -237,18 +237,18 @@
     "@codemirror/language" "^6.10.0"
     lezer-feel "^1.2.3"
 
-"@bpmn-io/form-js-carbon-styles@1.10.1":
-  version "1.10.1"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.10.1.tgz#d0af4ab33e6ca2b5d42dc44b47648766317ec985"
-  integrity sha512-UopfGHhfvmdK8p9PPRs/LezSVTUA6UoYmE2h6kRAHAMud2C1V9YjLRinWC5XTR3U5/MGI6Q4KPX9dT30Dr0E7A==
+"@bpmn-io/form-js-carbon-styles@1.11.2":
+  version "1.11.2"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.11.2.tgz#0f93eb3a0b6ec1dda63551a12338bbec46b829c6"
+  integrity sha512-W2eK3jcCN7946jhhSOigUYi8lZGU6Pwwmo1BHcYCE4Rbd4K/x+oRctuvRecRx0b6qZLVldxqMHjocMIdrqmvoA==
 
-"@bpmn-io/form-js-viewer@1.10.1":
-  version "1.10.1"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.10.1.tgz#d15f5465dd575c17e92ba3e872ec841aee2fbf3e"
-  integrity sha512-gy5D+pyM9vvwfIWac4+dcEeUuyy+M44YlB9yOYfbsuM1uXWgOXMxsYCxwyPkNL0+J1dPqHCDm6w/RIvfGeFedw==
+"@bpmn-io/form-js-viewer@1.11.2":
+  version "1.11.2"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.11.2.tgz#b3bbdaa985c0a4685de30989597af179f3909102"
+  integrity sha512-EOQ+nP4LbLpDPQRuby0qP3LAcI/WvzHDJ1aWDBG3uZciB5fya7mtnm1TG36FXAixNuyvotoAcJ6z+j4ABuT9Tw==
   dependencies:
-    "@carbon/grid" "^11.26.0"
-    big.js "^6.2.1"
+    "@carbon/grid" "^11.27.0"
+    big.js "^6.2.2"
     classnames "^2.5.1"
     didi "^10.2.2"
     dompurify "^3.1.6"
@@ -259,7 +259,7 @@
     lodash "^4.17.21"
     luxon "^3.5.0"
     marked "^14.1.2"
-    min-dash "^4.2.1"
+    min-dash "^4.2.2"
     preact "^10.5.14"
 
 "@bundled-es-modules/cookie@^2.0.0":
@@ -328,7 +328,7 @@
   dependencies:
     "@ibm/telemetry-js" "^1.5.0"
 
-"@carbon/grid@^11.26.0", "@carbon/grid@^11.28.0", "@carbon/grid@^11.29.0":
+"@carbon/grid@^11.27.0", "@carbon/grid@^11.28.0", "@carbon/grid@^11.29.0":
   version "11.29.0"
   resolved "https://registry.yarnpkg.com/@carbon/grid/-/grid-11.29.0.tgz#783bec6503f8a0812d4951a49d93677558969226"
   integrity sha512-SAJhTexN6TjbItcUczOqhzgHBGXLhvUhlTdyqj+wzUH0tqEN8g6gLp+1sn9+rL+kV4obSb/7bdSESZtwQr/tQg==
@@ -2191,7 +2191,7 @@ base64-arraybuffer@^1.0.1:
   resolved "https://registry.yarnpkg.com/base64-arraybuffer/-/base64-arraybuffer-1.0.2.tgz#1c37589a7c4b0746e34bd1feb951da2df01c1bdc"
   integrity sha512-I3yl4r9QB5ZRY3XuJVEPfc2XhZO6YweFPI+UovAzn+8/hb3oJ6lnysaFcjVpkCPfVWFUDvoZ8kmVDP7WyRtYtQ==
 
-big.js@^6.2.1:
+big.js@^6.2.2:
   version "6.2.2"
   resolved "https://registry.yarnpkg.com/big.js/-/big.js-6.2.2.tgz#be3bb9ac834558b53b099deef2a1d06ac6368e1a"
   integrity sha512-y/ie+Faknx7sZA5MfGA2xKlu0GDv8RWrXGsmlteyJQ2lvoKv9GBK/fpRMc2qlSoBAgNxrixICFCBefIq8WCQpQ==
@@ -4613,7 +4613,7 @@ mimic-response@^3.1.0:
   resolved "https://registry.yarnpkg.com/mimic-response/-/mimic-response-3.1.0.tgz#2d1d59af9c1b129815accc2c46a022a5ce1fa3c9"
   integrity sha512-z0yWI+4FDrrweS8Zmt4Ej5HdJmky15+L2e6Wgn3+iK5fWzb6T3fhNFq2+MeTRb064c6Wr4N/wv0DzQTjNzHNGQ==
 
-min-dash@^4.0.0, min-dash@^4.1.0, min-dash@^4.1.1, min-dash@^4.2.1:
+min-dash@^4.0.0, min-dash@^4.1.0, min-dash@^4.1.1, min-dash@^4.2.1, min-dash@^4.2.2:
   version "4.2.2"
   resolved "https://registry.yarnpkg.com/min-dash/-/min-dash-4.2.2.tgz#f9d3b6d5901e3a627f926013bcfd9efb2cad93a3"
   integrity sha512-qbhSYUxk6mBaF096B3JOQSumXbKWHenmT97cSpdNzgkWwGjhjhE/KZODCoDNhI2I4C9Cb6R/Q13S4BYkUSXoXQ==

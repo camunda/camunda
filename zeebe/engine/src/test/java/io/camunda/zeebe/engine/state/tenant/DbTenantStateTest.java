@@ -241,4 +241,31 @@ public class DbTenantStateTest {
     final var remainingEntityType = tenantState.getEntityType(tenantKey, entityKey2).get();
     assertThat(remainingEntityType).isEqualTo(EntityType.USER);
   }
+
+  @Test
+  void shouldVerifyEntityAssignmentToTenant() {
+    // given
+    final long tenantKey = 1L;
+    final long assignedEntityKey = 100L;
+    final long unassignedEntityKey = 200L;
+    final String tenantId = "tenant-1";
+
+    final var tenantRecord =
+        new TenantRecord().setTenantKey(tenantKey).setTenantId(tenantId).setName("Tenant One");
+
+    // Create tenant and add an assigned entity
+    tenantState.createTenant(tenantRecord);
+    tenantState.addEntity(
+        new TenantRecord()
+            .setTenantKey(tenantKey)
+            .setEntityKey(assignedEntityKey)
+            .setEntityType(EntityType.USER));
+
+    // when & then
+    // Check that the assigned entity is recognized as assigned to the tenant
+    assertThat(tenantState.isEntityAssignedToTenant(assignedEntityKey, tenantKey)).isTrue();
+
+    // Check that an unassigned entity is not recognized as assigned to the tenant
+    assertThat(tenantState.isEntityAssignedToTenant(unassignedEntityKey, tenantKey)).isFalse();
+  }
 }
