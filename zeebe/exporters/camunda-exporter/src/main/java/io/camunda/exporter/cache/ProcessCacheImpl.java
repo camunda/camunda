@@ -42,7 +42,7 @@ public class ProcessCacheImpl implements ProcessCache {
   }
 
   @Override
-  public void delete(final long processDefinitionKey) {
+  public void remove(final long processDefinitionKey) {
     cache.invalidate(processDefinitionKey);
   }
 

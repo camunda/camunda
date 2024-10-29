@@ -36,7 +36,7 @@ public interface ProcessCache {
    *
    * @param processDefinitionKey the key of the process definition to delete
    */
-  void delete(long processDefinitionKey);
+  void remove(long processDefinitionKey);
 
   /** Clear the cache. */
   void clear();
