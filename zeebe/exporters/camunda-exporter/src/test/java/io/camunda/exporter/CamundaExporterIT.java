@@ -9,6 +9,7 @@ package io.camunda.exporter;
 
 import static io.camunda.exporter.schema.SchemaTestUtil.mappingsMatch;
 import static io.camunda.exporter.utils.CamundaExporterITInvocationProvider.*;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
@@ -26,28 +27,49 @@ import com.google.common.collect.Streams;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.handlers.AuthorizationHandler;
+import io.camunda.exporter.handlers.DecisionEvaluationHandler;
 import io.camunda.exporter.handlers.DecisionHandler;
 import io.camunda.exporter.handlers.DecisionRequirementsHandler;
+import io.camunda.exporter.handlers.EventFromIncidentHandler;
+import io.camunda.exporter.handlers.EventFromJobHandler;
+import io.camunda.exporter.handlers.EventFromProcessInstanceHandler;
+import io.camunda.exporter.handlers.EventFromProcessMessageSubscriptionHandler;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.FlowNodeInstanceIncidentHandler;
 import io.camunda.exporter.handlers.FlowNodeInstanceProcessInstanceHandler;
+import io.camunda.exporter.handlers.FormHandler;
+import io.camunda.exporter.handlers.IncidentHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromIncidentHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromJobHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.ListViewVariableFromVariableHandler;
+import io.camunda.exporter.handlers.MetricFromProcessInstanceHandler;
+import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
+import io.camunda.exporter.handlers.ProcessHandler;
+import io.camunda.exporter.handlers.SequenceFlowHandler;
 import io.camunda.exporter.handlers.UserHandler;
 import io.camunda.exporter.handlers.VariableHandler;
 import io.camunda.exporter.schema.SchemaTestUtil;
 import io.camunda.exporter.utils.CamundaExporterITInvocationProvider;
 import io.camunda.exporter.utils.SearchClientAdapter;
 import io.camunda.exporter.utils.TestSupport;
+import io.camunda.exporter.utils.XMLUtil;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
+import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
+import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
 import io.camunda.webapps.schema.entities.ExporterEntity;
@@ -59,14 +81,27 @@ import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
+import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableDecisionEvaluationRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableEvaluatedDecisionValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
@@ -333,7 +368,6 @@ final class CamundaExporterIT {
 
   @Nested
   class ExportHandlerTests {
-
     final List<Entry<Class<?>, Function<String, ExportHandler<?, ?>>>> handlers =
         List.of(
             entry(UserIndex.class, UserHandler::new),
@@ -357,7 +391,24 @@ final class CamundaExporterIT {
                 (indexName) -> new ListViewVariableFromVariableHandler(indexName, false)),
             entry(VariableTemplate.class, (indexName) -> new VariableHandler(indexName, 8191)),
             entry(DecisionRequirementsIndex.class, DecisionRequirementsHandler::new),
-            entry(FlowNodeInstanceTemplate.class, FlowNodeInstanceProcessInstanceHandler::new));
+            entry(PostImporterQueueTemplate.class, PostImporterQueueFromIncidentHandler::new),
+            entry(FlowNodeInstanceTemplate.class, FlowNodeInstanceProcessInstanceHandler::new),
+            entry(FlowNodeInstanceTemplate.class, FlowNodeInstanceIncidentHandler::new),
+            entry(IncidentTemplate.class, (indexName) -> new IncidentHandler(indexName, false)),
+            entry(SequenceFlowTemplate.class, SequenceFlowHandler::new),
+            entry(DecisionInstanceTemplate.class, DecisionEvaluationHandler::new),
+            entry(ProcessIndex.class, (indexName) -> new ProcessHandler(indexName, new XMLUtil())),
+            entry(MetricIndex.class, MetricFromProcessInstanceHandler::new),
+            entry(FormIndex.class, FormHandler::new),
+            entry(
+                EventTemplate.class, (indexName) -> new EventFromIncidentHandler(indexName, false)),
+            entry(EventTemplate.class, (indexName) -> new EventFromJobHandler(indexName, false)),
+            entry(
+                EventTemplate.class,
+                (indexName) -> new EventFromProcessInstanceHandler(indexName, false)),
+            entry(
+                EventTemplate.class,
+                (indexName) -> new EventFromProcessMessageSubscriptionHandler(indexName, false)));
 
     @TestTemplate
     void shouldHandleExportedRecords(
@@ -371,13 +422,22 @@ final class CamundaExporterIT {
           Set.of(
               new ListViewTemplate(prefix, isElasticsearch),
               new FlowNodeInstanceTemplate(prefix, isElasticsearch),
-              new VariableTemplate(prefix, isElasticsearch));
+              new VariableTemplate(prefix, isElasticsearch),
+              new IncidentTemplate(prefix, isElasticsearch),
+              new SequenceFlowTemplate(prefix, isElasticsearch),
+              new PostImporterQueueTemplate(prefix, isElasticsearch),
+              new DecisionInstanceTemplate(prefix, isElasticsearch),
+              new EventTemplate(prefix, isElasticsearch));
       final Set<IndexDescriptor> indices =
           Set.of(
               new UserIndex(prefix, isElasticsearch),
               new AuthorizationIndex(prefix, isElasticsearch),
               new DecisionIndex(prefix, isElasticsearch),
-              new DecisionRequirementsIndex(prefix, isElasticsearch));
+              new DecisionRequirementsIndex(prefix, isElasticsearch),
+              new ProcessIndex(prefix, isElasticsearch),
+              new MetricIndex(prefix, isElasticsearch),
+              new FormIndex(prefix, isElasticsearch));
+
       final var exporter = createExporter(indices, templates, config);
 
       for (final var getHandler : handlers) {
@@ -395,8 +455,119 @@ final class CamundaExporterIT {
 
         final var handler = getHandler.getValue().apply(handlerDescriptor.getFullQualifiedName());
 
+        System.out.println("HANDLER = " + handler.getClass().getSimpleName());
         exportTest(exporter, handler, handlerDescriptor, clientAdapter);
       }
+    }
+
+    //    final var customHandlerRecords = Map.of(MetricFromProcessInstanceHandler.class, () ->
+    // factory.generateRecord());
+
+    private <S extends ExporterEntity<S>, T extends RecordValue> Record<T> defaultRecordGenerator(
+        final ExportHandler<S, T> handler) {
+      Record<T> record =
+          factory.generateRecord(
+              handler.getHandledValueType(), r -> r.withTimestamp(System.currentTimeMillis()));
+      var attempts = 1;
+      // Sometimes the factory generates records with intents that are not handled by the
+      // handler
+      while (!handler.handlesRecord(record)) {
+        record =
+            factory.generateRecord(
+                handler.getHandledValueType(), r -> r.withTimestamp(System.currentTimeMillis()));
+        //         use a break an error to avoid endless loops
+        if (++attempts >= 100) {
+          throw new IllegalStateException(
+              String.format(
+                  "Could not generate a record which [%s] could handle after 100 attempts",
+                  handler.getClass().getSimpleName()));
+        }
+      }
+      return record;
+    }
+
+    private <S extends ExporterEntity<S>, T extends RecordValue> Record<T> getHandlerRecord(
+        final ExportHandler<S, T> handler) {
+      //       when we generate records the .value.jobDeadline should be a valid time
+      final Map<Class<?>, Supplier<Record<T>>> customRecordGenerators =
+          Map.of(
+              EventFromJobHandler.class,
+              () -> {
+                final var jobRecordValue =
+                    ImmutableJobRecordValue.builder()
+                        .from(factory.generateObject(JobRecordValue.class))
+                        .withDeadline(System.currentTimeMillis() + 10000)
+                        .build();
+                final var record =
+                    factory.generateRecord(
+                        ValueType.JOB,
+                        r ->
+                            r.withValue(jobRecordValue)
+                                .withTimestamp(System.currentTimeMillis())
+                                .withIntent(JobIntent.CREATED));
+                return (Record<T>) record;
+              },
+              ListViewFlowNodeFromJobHandler.class,
+              () -> {
+                final var jobRecordValue =
+                    ImmutableJobRecordValue.builder()
+                        .from(factory.generateObject(JobRecordValue.class))
+                        .withDeadline(System.currentTimeMillis() + 10000)
+                        .build();
+                final var record =
+                    factory.generateRecord(
+                        ValueType.JOB,
+                        r -> r.withValue(jobRecordValue).withTimestamp(System.currentTimeMillis()));
+                return (Record<T>) record;
+              },
+              EventFromIncidentHandler.class,
+              () -> {
+                return factory.generateRecord(
+                    ValueType.INCIDENT,
+                    r ->
+                        r.withTimestamp(System.currentTimeMillis())
+                            .withIntent(IncidentIntent.RESOLVED));
+              },
+              DecisionEvaluationHandler.class,
+              () -> {
+                final ImmutableEvaluatedDecisionValue decisionValue =
+                    ImmutableEvaluatedDecisionValue.builder()
+                        .from(factory.generateObject(EvaluatedDecisionValue.class))
+                        .build();
+                final DecisionEvaluationRecordValue decisionRecordValue =
+                    ImmutableDecisionEvaluationRecordValue.builder()
+                        .from(factory.generateObject(DecisionEvaluationRecordValue.class))
+                        .withEvaluatedDecisions(List.of(decisionValue))
+                        .build();
+                final Record<DecisionEvaluationRecordValue> record =
+                    factory.generateRecord(
+                        ValueType.DECISION_EVALUATION,
+                        r ->
+                            r.withValue(decisionRecordValue)
+                                .withTimestamp(System.currentTimeMillis()));
+                return (Record<T>) record;
+              },
+              MetricFromProcessInstanceHandler.class,
+              () -> {
+                final ProcessInstanceRecordValue processInstanceRecordValue =
+                    ImmutableProcessInstanceRecordValue.builder()
+                        .from(factory.generateObject(ProcessInstanceRecordValue.class))
+                        .withParentProcessInstanceKey(-1L)
+                        .build();
+                final Record<ProcessInstanceRecordValue> processInstanceRecord =
+                    factory.generateRecord(
+                        ValueType.PROCESS_INSTANCE,
+                        r ->
+                            r.withIntent(ELEMENT_ACTIVATING)
+                                .withValue(processInstanceRecordValue)
+                                .withTimestamp(System.currentTimeMillis()));
+                return (Record<T>) processInstanceRecord;
+              });
+      //      use a spy to modify the ones we need!!!
+
+      return customRecordGenerators
+          .getOrDefault(handler.getClass(), () -> defaultRecordGenerator(handler))
+          .get();
     }
 
     private <S extends ExporterEntity<S>, T extends RecordValue> void exportTest(
@@ -404,19 +575,10 @@ final class CamundaExporterIT {
         final ExportHandler<S, T> handler,
         final IndexDescriptor descriptor,
         final SearchClientAdapter clientAdapter)
-        throws Exception {
-
-      // Sometimes the factory generates records with intents that are not handled by the
-      // handler
-      Record<T> record =
-          factory.generateRecord(
-              handler.getHandledValueType(), r -> r.withTimestamp(System.currentTimeMillis()));
-      while (!handler.handlesRecord(record)) {
-        record =
-            factory.generateRecord(
-                handler.getHandledValueType(), r -> r.withTimestamp(System.currentTimeMillis()));
-      }
-      final var expectedEntity = handler.getEntityType().getDeclaredConstructor().newInstance();
+        throws IOException {
+      final var record = getHandlerRecord(handler);
+      final var entityId = handler.generateIds(record).getFirst();
+      final var expectedEntity = handler.createNewEntity(entityId);
       handler.updateEntity(record, expectedEntity);
 
       exporter.export(record);
