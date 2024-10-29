@@ -117,7 +117,7 @@ final class TestRestorableBackupStore implements BackupStore {
             waiter ->
                 waiter.completeExceptionally(
                     new RuntimeException("Backup failed: %s".formatted(failureReason))));
-    return null;
+    return CompletableFuture.completedFuture(BackupStatusCode.FAILED);
   }
 
   @Override
@@ -125,7 +125,7 @@ final class TestRestorableBackupStore implements BackupStore {
     waiters
         .values()
         .forEach(waiter -> waiter.completeExceptionally(new RuntimeException("Store was closed")));
-    return null;
+    return CompletableFuture.completedFuture(null);
   }
 
   private NamedFileSet copyNamedFileSet(

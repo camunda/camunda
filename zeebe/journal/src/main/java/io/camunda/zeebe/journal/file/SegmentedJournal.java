@@ -24,9 +24,15 @@ import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.locks.StampedLock;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -185,6 +191,21 @@ public final class SegmentedJournal implements Journal {
   @Override
   public boolean isOpen() {
     return open;
+  }
+
+  @Override
+  public SortedMap<Long, Path> getTailSegments(final long index) {
+    final var tailSegments = segments.getTailSegments(index);
+    final var treeMap =
+        tailSegments.entrySet().stream()
+            .collect(
+                Collectors.toMap(
+                    Entry::getKey,
+                    e -> e.getValue().file().file().toPath(),
+                    (a, b) -> b,
+                    TreeMap::new));
+
+    return Collections.unmodifiableSortedMap(treeMap);
   }
 
   @Override

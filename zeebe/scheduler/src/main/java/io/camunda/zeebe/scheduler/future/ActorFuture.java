@@ -108,7 +108,7 @@ public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
    * Convenience wrapper over {@link #andThen(Function, Executor)} for the case where the next step
    * does not require the result of this future.
    */
-  ActorFuture<V> andThen(Supplier<ActorFuture<V>> next, Executor executor);
+  <U> ActorFuture<U> andThen(Supplier<ActorFuture<U>> next, Executor executor);
 
   /**
    * Similar to {@link CompletableFuture#thenCompose(Function)} in that it applies a function to the
@@ -123,5 +123,5 @@ public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
    *     this future or exceptionally if this future completes exceptionally. This future can be
    *     used for further chaining.
    */
-  ActorFuture<V> andThen(Function<V, ActorFuture<V>> next, Executor executor);
+  <U> ActorFuture<U> andThen(Function<V, ActorFuture<U>> next, Executor executor);
 }
