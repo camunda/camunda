@@ -11,9 +11,9 @@ import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.AggregationVariant;
 import io.camunda.search.clients.aggregation.SearchAggregation;
 import io.camunda.search.clients.aggregation.SearchAggregationOption;
+import io.camunda.search.clients.transformers.SearchTransfomer;
 import io.camunda.search.es.transformers.ElasticsearchTransformer;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
-import io.camunda.search.transformers.SearchTransfomer;
 
 public class SearchAggregationTransformer
     extends ElasticsearchTransformer<SearchAggregation, Aggregation> {

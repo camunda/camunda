@@ -9,7 +9,6 @@ package io.camunda.search.clients.aggregation;
 
 import static io.camunda.search.clients.aggregation.SearchAggregationBuilders.aggregation;
 
-import io.camunda.search.clients.query.SearchQuery.Builder;
 import io.camunda.util.ObjectBuilder;
 import java.util.function.Function;
 

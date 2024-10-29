@@ -9,9 +9,9 @@ package io.camunda.search.es.transformers.aggregation;
 
 import co.elastic.clients.elasticsearch._types.aggregations.AggregationVariant;
 import io.camunda.search.clients.aggregation.SearchAggregationOption;
+import io.camunda.search.clients.transformers.SearchTransfomer;
 import io.camunda.search.es.transformers.ElasticsearchTransformer;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
-import io.camunda.search.transformers.SearchTransfomer;
 
 public abstract class AggregationOptionTransformer<
         T extends SearchAggregationOption, R extends AggregationVariant>
