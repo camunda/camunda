@@ -16,7 +16,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
-import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -59,7 +58,6 @@ public class TenantAppliersTest {
     final var tenantId = UUID.randomUUID().toString();
     createTenant(tenantKey, tenantId);
     createUser(entityKey, "username");
-    authorizationState.insertOwnerTypeByKey(tenantKey, AuthorizationOwnerType.TENANT);
     // when
     associateUserWithTenant(tenantKey, tenantId, entityKey);
     // then
@@ -76,8 +74,6 @@ public class TenantAppliersTest {
     final var tenantId = UUID.randomUUID().toString();
 
     final var tenantRecord = createTenant(tenantKey, tenantId);
-    authorizationState.insertOwnerTypeByKey(tenantKey, AuthorizationOwnerType.TENANT);
-
     final long[] userKeys = {1L, 2L, 3L};
     for (final long userKey : userKeys) {
       createUser(userKey, "user" + userKey);
@@ -107,7 +103,6 @@ public class TenantAppliersTest {
     final var tenantId = UUID.randomUUID().toString();
     // Create tenant without any entities
     final TenantRecord tenantRecord = createTenant(tenantKey, tenantId);
-    authorizationState.insertOwnerTypeByKey(tenantKey, AuthorizationOwnerType.TENANT);
     // Ensure the tenant exists before deletion
     assertThat(tenantState.getTenantByKey(tenantKey)).isPresent();
     // when
@@ -128,7 +123,7 @@ public class TenantAppliersTest {
             .setTenantKey(tenantKey)
             .setTenantId(tenantId)
             .setName("Tenant-" + tenantId);
-    new TenantCreatedApplier(tenantState).applyState(tenantKey, tenantRecord);
+    new TenantCreatedApplier(tenantState, authorizationState).applyState(tenantKey, tenantRecord);
     return tenantRecord;
   }
 

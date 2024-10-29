@@ -481,7 +481,9 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerTenantAppliers(final MutableProcessingState state) {
-    register(TenantIntent.CREATED, new TenantCreatedApplier(state.getTenantState()));
+    register(
+        TenantIntent.CREATED,
+        new TenantCreatedApplier(state.getTenantState(), state.getAuthorizationState()));
     register(TenantIntent.UPDATED, new TenantUpdatedApplier(state.getTenantState()));
     register(
         TenantIntent.ENTITY_ADDED,
