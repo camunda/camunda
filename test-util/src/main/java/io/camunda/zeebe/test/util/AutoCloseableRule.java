@@ -22,8 +22,9 @@ public final class AutoCloseableRule extends ExternalResource {
 
   final List<AutoCloseable> thingsToClose = new ArrayList<>();
 
-  public void manage(final AutoCloseable closeable) {
+  public <A extends AutoCloseable> A manage(final A closeable) {
     thingsToClose.add(closeable);
+    return closeable;
   }
 
   @Override
