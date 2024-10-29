@@ -22,7 +22,6 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
-import java.util.function.BiFunction;
 
 /**
  * Default implementation to process JobCommands to reduce duplication in CommandProcessor
@@ -48,8 +47,7 @@ public final class DefaultJobCommandPreconditionGuard {
       final JobState state,
       final JobAcceptFunction acceptCommand,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final List<BiFunction<TypedRecord<JobRecord>, JobRecord, Either<Rejection, JobRecord>>>
-          customChecks) {
+      final List<JobCommandCheck> customChecks) {
     this.state = state;
     this.acceptCommand = acceptCommand;
     preconditionChecker =

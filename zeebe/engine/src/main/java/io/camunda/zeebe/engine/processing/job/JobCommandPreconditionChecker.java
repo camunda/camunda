@@ -15,7 +15,6 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
-import java.util.function.BiFunction;
 
 public class JobCommandPreconditionChecker {
 
@@ -27,8 +26,7 @@ public class JobCommandPreconditionChecker {
   private final List<JobState.State> validStates;
   private final JobState jobState;
   private final String intent;
-  private final List<BiFunction<TypedRecord<JobRecord>, JobRecord, Either<Rejection, JobRecord>>>
-      customChecks;
+  private final List<JobCommandCheck> customChecks;
 
   public JobCommandPreconditionChecker(
       final JobState jobState, final String intent, final List<State> validStates) {
@@ -39,8 +37,7 @@ public class JobCommandPreconditionChecker {
       final JobState jobState,
       final String intent,
       final List<State> validStates,
-      final List<BiFunction<TypedRecord<JobRecord>, JobRecord, Either<Rejection, JobRecord>>>
-          customChecks) {
+      final List<JobCommandCheck> customChecks) {
     this.jobState = jobState;
     this.intent = intent;
     this.validStates = validStates;
@@ -66,7 +63,7 @@ public class JobCommandPreconditionChecker {
     }
 
     return customChecks.stream()
-        .map(check -> check.apply(command, persistedJob))
+        .map(check -> check.check(command, persistedJob))
         .filter(Either::isLeft)
         .findFirst()
         .orElse(Either.right(persistedJob));
