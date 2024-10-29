@@ -927,7 +927,7 @@
         #     enabled: false
         #     minimumAge: 30d
         #     policyName: zeebe-record-retention-policy
-        #     policyDecsription: Zeebe record retention policy
+        #     policyDescription: Zeebe record retention policy
         #
         #   authentication:
         #     username: opensearch
@@ -1023,6 +1023,15 @@
         #     policyName: camunda-retention-policy
         #
         #   createSchema: true
+        #
+        #   archiver:
+        #     enabled: true
+        #     rolloverDateFormat: "yyyy-MM-dd"
+        #     elsRolloverDateFormat: "date"
+        #     rolloverInterval: "1d"
+        #     rolloverBatchSize: 100
+        #     waitPeriodBeforeArchiving: "1h"
+        #     delayBetweenRuns: 2000
 
     # processing:
       # Sets the maximum number of commands that processed within one batch.
