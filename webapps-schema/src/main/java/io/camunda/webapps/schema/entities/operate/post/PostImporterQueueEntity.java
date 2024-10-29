@@ -118,7 +118,7 @@ public class PostImporterQueueEntity extends AbstractExporterEntity<PostImporter
     return Objects.equals(key, that.key)
         && actionType == that.actionType
         && Objects.equals(intent, that.intent)
-        && Objects.equals(creationTime, that.creationTime)
+        && Objects.equals(creationTime.toEpochSecond(), that.creationTime.toEpochSecond())
         && Objects.equals(partitionId, that.partitionId)
         && Objects.equals(processInstanceKey, that.processInstanceKey)
         && Objects.equals(position, that.position);
