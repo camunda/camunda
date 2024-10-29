@@ -32,10 +32,8 @@ public final class FieldSortingTransformer
     final var orderings = value.getLeft();
     final var reverse = value.getRight();
     final var sorting = map(orderings, reverse);
-    if (sorting.isEmpty()) {
-      final var defaultSorting = getDefaultSearchSortOption(reverse);
-      sorting.add(defaultSorting);
-    }
+    final var defaultSorting = getDefaultSearchSortOption(reverse);
+    sorting.add(defaultSorting);
     return sorting;
   }
 
