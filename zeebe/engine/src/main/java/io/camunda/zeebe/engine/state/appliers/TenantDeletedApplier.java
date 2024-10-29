@@ -16,7 +16,6 @@ import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 public class TenantDeletedApplier implements TypedEventApplier<TenantIntent, TenantRecord> {
   private final MutableTenantState tenantState;
@@ -33,29 +32,21 @@ public class TenantDeletedApplier implements TypedEventApplier<TenantIntent, Ten
   }
 
   @Override
-  public void applyState(final long tenantKey, final TenantRecord value) {
-    final Optional<TenantRecord> tenantOptional = tenantState.getTenantByKey(tenantKey);
-    final var tenant =
-        tenantOptional.orElseThrow(
-            () ->
-                new IllegalStateException(
-                    "Failed to delete tenant: Tenant with key " + tenantKey + " does not exist."));
-    final var entities = tenantState.getEntitiesByType(tenantKey);
+  public void applyState(final long tenantKey, final TenantRecord tenantRecord) {
+    final String tenantId = tenantRecord.getTenantId();
+    final Map<EntityType, List<Long>> entities = tenantState.getEntitiesByType(tenantKey);
 
-    handleUserEntities(entities, tenant.getTenantId());
+    handleUserEntities(entities, tenantId);
     handleMappingEntities(entities, tenantKey);
     deleteTenantAuthorizations(tenantKey);
-    tenantState.delete(tenant);
+    tenantState.delete(tenantRecord);
   }
 
   private void handleUserEntities(
       final Map<EntityType, List<Long>> entities, final String tenantId) {
     final List<Long> userEntities = entities.get(EntityType.USER);
     if (userEntities != null) {
-      userEntities.forEach(
-          userKey -> {
-            userState.removeTenant(userKey, tenantId);
-          });
+      userEntities.forEach(userKey -> userState.removeTenant(userKey, tenantId));
     }
   }
 
@@ -66,7 +57,7 @@ public class TenantDeletedApplier implements TypedEventApplier<TenantIntent, Ten
       mappingEntities.forEach(
           mappingKey -> {
             // todo  Uncomment when the mapping state is implemented
-            // mappingState.removeTenant(mappingKey, tenantKey);
+            // mappingState.removeTenant(mappingKey, tenantId);
           });
     }
   }
