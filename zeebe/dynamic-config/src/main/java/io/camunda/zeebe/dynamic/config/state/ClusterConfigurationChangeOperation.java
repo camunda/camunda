@@ -43,6 +43,16 @@ public sealed interface ClusterConfigurationChangeOperation {
   record MemberRemoveOperation(MemberId memberId, MemberId memberToRemove)
       implements ClusterConfigurationChangeOperation {}
 
+  /**
+   * Operation to initiate partition scale up. This instructs the cluster to redistribute resources
+   * and relocate data.
+   *
+   * @param memberId the id of the member that initiates the scale up
+   * @param desiredPartitionCount the desired partition count after scaling up
+   */
+  record StartPartitionScaleUpOperation(MemberId memberId, int desiredPartitionCount)
+      implements ClusterConfigurationChangeOperation {}
+
   sealed interface PartitionChangeOperation extends ClusterConfigurationChangeOperation {
     int partitionId();
 

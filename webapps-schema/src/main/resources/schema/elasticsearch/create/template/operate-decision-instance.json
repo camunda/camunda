@@ -80,6 +80,7 @@
         "type": "keyword"
       },
       "evaluatedInputs": {
+        "type": "object",
         "properties": {
           "id": {
             "type": "keyword"
@@ -94,6 +95,7 @@
         }
       },
       "evaluatedOutputs": {
+        "type": "object",
         "properties": {
           "id": {
             "type": "keyword"

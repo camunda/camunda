@@ -29,7 +29,7 @@ public class StoreIngestedImportProgressMediator
     extends AbstractStoreIndexesImportMediator<StoreTimestampBasedImportIndexImportService>
     implements ImportMediator {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(StoreIngestedImportProgressMediator.class);
   private final ImportIndexHandlerRegistry importIndexHandlerRegistry;
 
@@ -55,7 +55,7 @@ public class StoreIngestedImportProgressMediator
 
       importService.executeImport(importIndexes, () -> importCompleted.complete(null));
     } catch (final Exception e) {
-      log.error("Could not execute import for storing ingested import information!", e);
+      LOG.error("Could not execute import for storing ingested import information!", e);
       importCompleted.complete(null);
     }
     return importCompleted;

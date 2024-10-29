@@ -57,6 +57,11 @@ public final class AuthorizationCheckBehavior {
       return true;
     }
 
+    if (!request.getCommand().hasRequestMetadata()) {
+      // The command is written by Zeebe internally. Internal Zeebe commands are always authorized
+      return true;
+    }
+
     final var userKey =
         (Long) request.getCommand().getAuthorizations().get(Authorization.AUTHORIZED_USER_KEY);
     if (userKey == null) {
@@ -133,6 +138,15 @@ public final class AuthorizationCheckBehavior {
 
     public Set<String> getResourceIds() {
       return resourceIds;
+    }
+  }
+
+  public static class UnauthorizedException extends RuntimeException {
+
+    public UnauthorizedException(final AuthorizationRequest authRequest) {
+      super(
+          UNAUTHORIZED_ERROR_MESSAGE.formatted(
+              authRequest.getPermissionType(), authRequest.getResourceType()));
     }
   }
 }

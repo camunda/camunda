@@ -23,7 +23,7 @@ public class TerminatedUserSessionReaderES extends TerminatedUserSessionReader {
 
   private final OptimizeElasticsearchClient esClient;
 
-  public TerminatedUserSessionReaderES(OptimizeElasticsearchClient esClient) {
+  public TerminatedUserSessionReaderES(final OptimizeElasticsearchClient esClient) {
     this.esClient = esClient;
   }
 

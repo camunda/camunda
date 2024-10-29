@@ -23,13 +23,13 @@ public abstract class AbstractMinMaxStatsService {
 
   protected static final String STATS_AGGREGATION_FIRST_FIELD = "statsAggField1";
   protected static final String STATS_AGGREGATION_SECOND_FIELD = "statsAggField2";
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(AbstractMinMaxStatsService.class);
 
   protected MinMaxStatDto returnEmptyResultIfInstanceIndexNotFound(
       final RuntimeException e, final String[] indexNames) {
     if (isInstanceIndexNotFoundException(e)) {
-      log.info(
+      LOG.info(
           "Could not calculate minMaxStats because at least one required instance indices from {} does not exist. "
               + "Returning min and max 0 instead.",
           Arrays.toString(indexNames));

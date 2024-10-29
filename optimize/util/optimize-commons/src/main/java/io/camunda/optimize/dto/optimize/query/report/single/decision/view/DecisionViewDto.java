@@ -65,6 +65,7 @@ public class DecisionViewDto {
     return "DecisionViewDto(properties=" + getProperties() + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String properties = "properties";

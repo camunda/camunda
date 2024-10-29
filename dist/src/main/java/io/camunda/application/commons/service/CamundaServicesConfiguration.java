@@ -7,19 +7,18 @@
  */
 package io.camunda.application.commons.service;
 
-import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.application.commons.service.ServiceSecurityConfiguration.ServiceSecurityProperties;
+import io.camunda.document.store.SimpleDocumentStoreRegistry;
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
 import io.camunda.search.clients.DecisionInstanceSearchClient;
 import io.camunda.search.clients.DecisionRequirementSearchClient;
-import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.FlowNodeInstanceSearchClient;
 import io.camunda.search.clients.FormSearchClient;
 import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
-import io.camunda.search.clients.SearchClients;
+import io.camunda.search.clients.RoleSearchClient;
 import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.clients.VariableSearchClient;
@@ -38,6 +37,7 @@ import io.camunda.service.MessageServices;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ResourceServices;
+import io.camunda.service.RoleServices;
 import io.camunda.service.SignalServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserTaskServices;
@@ -46,7 +46,6 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -89,9 +88,10 @@ public class CamundaServicesConfiguration {
   public ProcessDefinitionServices processDefinitionServices(
       final BrokerClient brokerClient,
       final ServiceSecurityProperties securityConfiguration,
-      final ProcessDefinitionSearchClient processDefinitionSearchClient) {
+      final ProcessDefinitionSearchClient processDefinitionSearchClient,
+      final FormServices formServices) {
     return new ProcessDefinitionServices(
-        brokerClient, securityConfiguration, processDefinitionSearchClient, null);
+        brokerClient, securityConfiguration, processDefinitionSearchClient, formServices, null);
   }
 
   @Bean
@@ -130,6 +130,14 @@ public class CamundaServicesConfiguration {
   }
 
   @Bean
+  public RoleServices roleServices(
+      final BrokerClient brokerClient,
+      final ServiceSecurityProperties securityConfiguration,
+      final RoleSearchClient roleSearchClient) {
+    return new RoleServices(brokerClient, securityConfiguration, roleSearchClient, null);
+  }
+
+  @Bean
   public UserServices userServices(
       final BrokerClient brokerClient,
       final ServiceSecurityProperties securityConfiguration,
@@ -162,7 +170,8 @@ public class CamundaServicesConfiguration {
   @Bean
   public DocumentServices documentServices(
       final BrokerClient brokerClient, final ServiceSecurityProperties securityConfiguration) {
-    return new DocumentServices(brokerClient, securityConfiguration, null);
+    return new DocumentServices(
+        brokerClient, securityConfiguration, null, new SimpleDocumentStoreRegistry());
   }
 
   @Bean
@@ -204,19 +213,5 @@ public class CamundaServicesConfiguration {
       final ServiceSecurityProperties securityConfiguration,
       final FormSearchClient formSearchClient) {
     return new FormServices(brokerClient, securityConfiguration, formSearchClient, null);
-  }
-
-  @Bean
-  public SearchClients searchClients(
-      final DocumentBasedSearchClient searchClient,
-      // TODO: Temporary solution to change index reference for tasklist-task
-      @Autowired(required = false) final BrokerBasedProperties brokerProperties) {
-    if (brokerProperties == null) {
-      return new SearchClients(searchClient, false);
-    }
-    final boolean isCamundaExporterEnabled =
-        brokerProperties.getExporters().values().stream()
-            .anyMatch(v -> "io.camunda.exporter.CamundaExporter".equals(v.getClassName()));
-    return new SearchClients(searchClient, isCamundaExporterEnabled);
   }
 }

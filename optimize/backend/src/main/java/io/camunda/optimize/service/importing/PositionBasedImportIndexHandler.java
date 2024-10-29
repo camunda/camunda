@@ -25,7 +25,7 @@ import org.springframework.context.annotation.Scope;
 public abstract class PositionBasedImportIndexHandler
     implements ZeebeImportIndexHandler<PositionBasedImportPage, PositionBasedImportIndexDto> {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(PositionBasedImportIndexHandler.class);
   protected ZeebeDataSourceDto dataSource;
   private OffsetDateTime lastImportExecutionTimestamp = BEGINNING_OF_TIME;
@@ -109,7 +109,7 @@ public abstract class PositionBasedImportIndexHandler
     pendingPositionOfLastEntity = position;
     pendingSequenceOfLastEntity = sequence;
     if (!hasSeenSequenceField && pendingSequenceOfLastEntity > 0) {
-      log.info(
+      LOG.info(
           "First Zeebe record with sequence field for import type {} has been imported."
               + " Zeebe records will now be fetched based on sequence.",
           getDatabaseDocID());

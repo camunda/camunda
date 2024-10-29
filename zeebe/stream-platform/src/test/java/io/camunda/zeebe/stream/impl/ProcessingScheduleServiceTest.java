@@ -415,6 +415,7 @@ class ProcessingScheduleServiceTest {
     assertThat(registry.getMeters()).isNotEmpty();
     assertThat(registry.get("zeebe.processing.scheduling.tasks").gauge().value()).isEqualTo(0);
     assertThat(registry.get("zeebe.processing.scheduling.delay").timer().count()).isEqualTo(0);
+    assertThat(registry.get("zeebe.processing.scheduling.duration").timer().count()).isEqualTo(0);
   }
 
   @Test
@@ -470,6 +471,7 @@ class ProcessingScheduleServiceTest {
     assertThat(registry.get("zeebe.processing.scheduling.delay").timer().count()).isEqualTo(1);
     assertThat(registry.get("zeebe.processing.scheduling.delay").timer().max(TimeUnit.MINUTES))
         .isCloseTo(1, Percentage.withPercentage(20));
+    assertThat(registry.get("zeebe.processing.scheduling.duration").timer().count()).isEqualTo(1);
   }
 
   /**

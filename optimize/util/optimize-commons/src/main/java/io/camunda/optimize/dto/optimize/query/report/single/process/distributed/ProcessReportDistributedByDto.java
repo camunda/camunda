@@ -101,6 +101,7 @@ public class ProcessReportDistributedByDto<VALUE extends ProcessReportDistribute
     return type.getId();
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String type = "type";

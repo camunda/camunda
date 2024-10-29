@@ -99,7 +99,7 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class DefinitionReaderOS implements DefinitionReader {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DefinitionReaderOS.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(DefinitionReaderOS.class);
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
 
@@ -362,7 +362,7 @@ public class DefinitionReaderOS implements DefinitionReader {
 
   @Override
   public String getLatestVersionToKey(final DefinitionType type, final String key) {
-    log.debug("Fetching latest [{}] definition for key [{}]", type, key);
+    LOG.debug("Fetching latest [{}] definition for key [{}]", type, key);
 
     final Script script =
         createDefaultScript(
@@ -523,7 +523,7 @@ public class DefinitionReaderOS implements DefinitionReader {
     } catch (final IOException e) {
       final String errorMsg =
           String.format("Was not able to retrieve definitions of type %s", type);
-      log.error(errorMsg, e);
+      LOG.error(errorMsg, e);
       throw new OptimizeRuntimeException(errorMsg, e);
     }
     return OpensearchReaderUtil.extractAggregatedResponseValues(
@@ -590,7 +590,7 @@ public class DefinitionReaderOS implements DefinitionReader {
         osClient.search(searchBuilder, typeClass, errorMessage);
 
     if (searchResponse.hits().total().value() == 0L) {
-      log.debug(
+      LOG.debug(
           "Could not find [{}] definition with key [{}], version [{}] and tenantId [{}]",
           type,
           definitionKey,
@@ -607,7 +607,7 @@ public class DefinitionReaderOS implements DefinitionReader {
   private <T extends DefinitionOptimizeResponseDto>
       List<T> getLatestFullyImportedDefinitionPerTenant(
           final DefinitionType type, final String key) {
-    log.debug(
+    LOG.debug(
         "Fetching latest fully imported [{}] definitions for key [{}] on each tenant", type, key);
 
     final FiltersAggregation keyFilterAgg =
@@ -677,7 +677,7 @@ public class DefinitionReaderOS implements DefinitionReader {
     final List<T> result = retrieveResultsFromLatestDefinitionPerTenant(type, searchResponse);
 
     if (result.isEmpty()) {
-      log.debug("Could not find latest [{}] definitions with key [{}]", type, key);
+      LOG.debug("Could not find latest [{}] definitions with key [{}]", type, key);
     }
     return result;
   }
@@ -937,7 +937,7 @@ public class DefinitionReaderOS implements DefinitionReader {
                 + "it was not possible to deserialize a hit from OpenSearch!"
                 + " Hit response from OpenSearch: "
                 + hit.id();
-        log.error(reason, type.getSimpleName(), e);
+        LOG.error(reason, type.getSimpleName(), e);
         throw new OptimizeRuntimeException(reason);
       }
     };

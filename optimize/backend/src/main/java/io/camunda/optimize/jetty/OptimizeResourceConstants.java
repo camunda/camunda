@@ -26,7 +26,11 @@ public class OptimizeResourceConstants implements ConfigurationReloadable {
       ImmutableList.<String>builder().add(INDEX_PAGE).add(INDEX_HTML_PAGE).build();
   public static final String ACTUATOR_PORT_PROPERTY_KEY = "management.server.port";
   public static final String ACTUATOR_PORT_DEFAULT = "8092";
+
+  @SuppressWarnings("checkstyle:StaticVariableName")
   public static String ACTUATOR_ENDPOINT;
+
+  @SuppressWarnings("checkstyle:StaticVariableName")
   public static int ACTUATOR_PORT;
 
   public OptimizeResourceConstants() {}

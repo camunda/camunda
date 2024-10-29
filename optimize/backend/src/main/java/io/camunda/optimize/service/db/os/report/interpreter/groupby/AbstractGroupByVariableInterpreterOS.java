@@ -190,7 +190,7 @@ public abstract class AbstractGroupByVariableInterpreterOS<
   }
 
   private boolean isFlownodeReport(final PLAN plan) {
-    if (plan instanceof ProcessExecutionPlan processExecutionPlan) {
+    if (plan instanceof final ProcessExecutionPlan processExecutionPlan) {
       return Set.of(PROCESS_VIEW_FLOW_NODE_DURATION, PROCESS_VIEW_FLOW_NODE_FREQUENCY)
           .contains(processExecutionPlan.getView());
     } else {
@@ -261,7 +261,7 @@ public abstract class AbstractGroupByVariableInterpreterOS<
             ? getVariableAggregationService().resultBucketMap(variablesAggregation)
             : getVariableAggregationService().resultBucketMap(histogramAggregation);
 
-    Map<String, Map<String, Aggregate>> bucketAggregations =
+    final Map<String, Map<String, Aggregate>> bucketAggregations =
         getVariableAggregationService()
             .retrieveResultBucketMap(
                 filteredParentAgg, bucketMap, getVariableType(context), context.getTimezone());
@@ -271,7 +271,7 @@ public abstract class AbstractGroupByVariableInterpreterOS<
         .enrichContextWithAllExpectedDistributedByKeys(context, filteredParentAgg.aggregations());
 
     final List<GroupByResult> groupedData = new ArrayList<>();
-    for (Map.Entry<String, Map<String, Aggregate>> keyToAggregationEntry :
+    for (final Map.Entry<String, Map<String, Aggregate>> keyToAggregationEntry :
         bucketAggregations.entrySet()) {
       final List<DistributedByResult> distribution =
           getDistributedByInterpreter()

@@ -24,12 +24,12 @@ import org.slf4j.LoggerFactory;
 public abstract class DefaultIndexMappingCreator<TBuilder>
     implements PropertiesAppender, IndexMappingCreator<TBuilder> {
 
-  private final Logger logger = LoggerFactory.getLogger(getClass());
-  private static final String DYNAMIC_MAPPINGS_VALUE_DEFAULT = "strict";
   public static final String LOWERCASE = "lowercase";
   protected static final String ANALYZER = "analyzer";
   protected static final String NORMALIZER = "normalizer";
+  private static final String DYNAMIC_MAPPINGS_VALUE_DEFAULT = "strict";
 
+  private final Logger logger = LoggerFactory.getLogger(getClass());
   private DynamicMapping dynamic = DynamicMapping.Strict;
 
   public abstract TBuilder addStaticSetting(final String key, final int value, TBuilder builder)
@@ -68,7 +68,7 @@ public abstract class DefaultIndexMappingCreator<TBuilder>
                         .pathMatch("*"))));
   }
 
-  public void setDynamic(DynamicMapping dynamic) {
+  public void setDynamic(final DynamicMapping dynamic) {
     this.dynamic = dynamic;
   }
 }

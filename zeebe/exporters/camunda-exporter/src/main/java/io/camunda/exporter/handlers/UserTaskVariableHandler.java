@@ -29,8 +29,8 @@ public class UserTaskVariableHandler
   private static final Logger LOG = LoggerFactory.getLogger(UserTaskVariableHandler.class);
 
   private static final String ID_PATTERN = "%s-%s";
+  protected final int variableSizeThreshold;
   private final String indexName;
-  private final int variableSizeThreshold;
 
   public UserTaskVariableHandler(final String indexName, final int variableSizeThreshold) {
     this.indexName = indexName;
@@ -68,6 +68,7 @@ public class UserTaskVariableHandler
       final Record<VariableRecordValue> record, final TaskVariableEntity entity) {
     entity
         .setPartitionId(record.getPartitionId())
+        .setPosition(record.getPosition())
         .setTenantId(record.getValue().getTenantId())
         .setKey(record.getKey())
         .setProcessInstanceId(record.getValue().getProcessInstanceKey())

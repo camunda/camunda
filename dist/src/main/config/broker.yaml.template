@@ -802,7 +802,7 @@
         #     enabled: false
         #     minimumAge: 30d
         #     policyName: zeebe-record-retention-policy
-        #     policyDecsription: Zeebe record retention policy
+        #     policyDescription: Zeebe record retention policy
         #
         #   authentication:
         #     username: opensearch
@@ -858,6 +858,57 @@
         #     variable: true
         #     variableDocument: true
 
+      # Camunda Exporter ----------
+      # An example configuration for the camunda exporter:
+      #
+      # These setting can also be overridden using the environment variables "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_..."
+      #
+      # camundaExporter:
+        # className: io.camunda.exporter.CamundaExporter
+        #
+        # args:
+        #   connect:
+        #     type: elasticsearch
+        #     url: http://localhost:9200
+        #     clusterName: elasticsearch
+        #     dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZZ
+        #     socketTimeout: 1000
+        #     connectTimeout: 1000
+        #     username: elastic
+        #     password: changeme
+        #     security:
+        #       enabled: false
+        #       certificatePath: /path/to/certificate
+        #       verifyHostname: true
+        #       selfSigned: false
+        #
+        #   bulk:
+        #     delay: 5
+        #     size: 1000
+        #
+        #   index:
+        #     prefix:
+        #     numberOfShards: 3
+        #     numberOfReplicas: 0
+        #     variableSizeThreshold: 8191
+        #
+        #   retention:
+        #     enabled: false
+        #     minimumAge: 30d
+        #     policyName: camunda-retention-policy
+        #
+        #   createSchema: true
+        #
+        #   archiver:
+        #     enabled: true
+        #     rolloverDateFormat: "yyyy-MM-dd"
+        #     elsRolloverDateFormat: "date"
+        #     rolloverInterval: "1d"
+        #     rolloverBatchSize: 100
+        #     waitPeriodBeforeArchiving: "1h"
+        #     delayBetweenRuns: 2000
+
+
     # processing:
       # Sets the maximum number of commands that processed within one batch.
       # The processor will process until no more follow up commands are created by the initial command
@@ -902,7 +953,7 @@
 
       # Sets the maximum of appends which are send per follower.
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_MAXAPPENDSPERFOLLOWER
-      # maxAppendsPerFollower = 2
+      # maxAppendsPerFollower = 6
 
       # Sets the maximum batch size, which is send per append request to a follower.
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_MAXAPPENDBATCHSIZE

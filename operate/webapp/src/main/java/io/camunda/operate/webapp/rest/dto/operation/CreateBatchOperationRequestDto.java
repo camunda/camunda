@@ -7,9 +7,9 @@
  */
 package io.camunda.operate.webapp.rest.dto.operation;
 
-import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
+import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.util.List;
 import java.util.Objects;
 

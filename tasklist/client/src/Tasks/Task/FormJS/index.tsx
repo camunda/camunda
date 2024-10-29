@@ -56,7 +56,8 @@ type Props = {
   id: Form['id'];
   processDefinitionKey: Form['processDefinitionKey'];
   task: Task;
-  onSubmit: (variables: Variable[]) => Promise<void>;
+  onSubmit: React.ComponentProps<typeof FormJSRenderer>['handleSubmit'];
+  onFileUpload: React.ComponentProps<typeof FormJSRenderer>['handleFileUpload'];
   onSubmitSuccess: () => void;
   onSubmitFailure: (error: Error) => void;
   user: CurrentUser;
@@ -68,6 +69,7 @@ const FormJS: React.FC<Props> = ({
   task,
   onSubmit,
   onSubmitSuccess,
+  onFileUpload,
   onSubmitFailure,
   user,
 }) => {
@@ -145,6 +147,7 @@ const FormJS: React.FC<Props> = ({
                     formManagerRef.current = formManager;
                   }}
                   handleSubmit={onSubmit}
+                  handleFileUpload={onFileUpload}
                   onImportError={() => {
                     removeFormReference();
                     notificationsStore.displayNotification({

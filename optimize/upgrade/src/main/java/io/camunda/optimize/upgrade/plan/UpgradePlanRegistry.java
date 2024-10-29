@@ -22,7 +22,7 @@ import org.slf4j.Logger;
 
 public class UpgradePlanRegistry {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(UpgradePlanRegistry.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(UpgradePlanRegistry.class);
   private final Map<Semver, UpgradePlan> upgradePlans;
 
   public UpgradePlanRegistry(final UpgradeExecutionDependencies upgradeExecutionDependencies) {
@@ -55,7 +55,7 @@ public class UpgradePlanRegistry {
                     | IllegalAccessException
                     | InvocationTargetException
                     | NoSuchMethodException e) {
-                  log.error(
+                  LOG.error(
                       "Could not instantiate {}, will skip this factory.",
                       upgradePlanFactoryClass.getName());
                   throw new UpgradeRuntimeException(

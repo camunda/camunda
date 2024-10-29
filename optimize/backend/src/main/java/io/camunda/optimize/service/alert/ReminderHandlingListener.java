@@ -19,7 +19,7 @@ import org.slf4j.Logger;
 public class ReminderHandlingListener implements JobListener {
 
   private static final String LISTENER_NAME = "alert-reminder-handler";
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ReminderHandlingListener.class);
 
   private final AlertReminderJobFactory alertReminderJobFactory;
@@ -50,11 +50,11 @@ public class ReminderHandlingListener implements JobListener {
     if (result != null && result.isStatusChanged()) {
       // create reminders if needed
       if (result.getAlert().isTriggered() && result.getAlert().getReminder() != null) {
-        log.debug("Creating reminder job for [{}]", result.getAlert().getId());
+        LOG.debug("Creating reminder job for [{}]", result.getAlert().getId());
         final JobDetail jobDetails = alertReminderJobFactory.createJobDetails(result.getAlert());
         try {
           if (context.getScheduler().checkExists(jobDetails.getKey())) {
-            log.debug(
+            LOG.debug(
                 "Skipping creating new job with key [{}] as it already exists",
                 jobDetails.getKey());
             return;
@@ -64,7 +64,7 @@ public class ReminderHandlingListener implements JobListener {
               .scheduleJob(
                   jobDetails, alertReminderJobFactory.createTrigger(result.getAlert(), jobDetails));
         } catch (final Exception e) {
-          log.error("can't schedule reminder for [{}]", result.getAlert().getId(), e);
+          LOG.error("can't schedule reminder for [{}]", result.getAlert().getId(), e);
         }
       } else {
         // remove reminders
@@ -75,7 +75,7 @@ public class ReminderHandlingListener implements JobListener {
           context.getScheduler().unscheduleJob(triggerKey);
           context.getScheduler().deleteJob(jobKey);
         } catch (final SchedulerException e) {
-          log.error("can't remove reminders for alert [{}]", result.getAlert().getId());
+          LOG.error("can't remove reminders for alert [{}]", result.getAlert().getId());
         }
       }
     }

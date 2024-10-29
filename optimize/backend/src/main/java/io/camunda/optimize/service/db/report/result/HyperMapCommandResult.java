@@ -25,7 +25,7 @@ import org.slf4j.Logger;
 
 public class HyperMapCommandResult extends CommandEvaluationResult<List<HyperMapResultEntryDto>> {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(HyperMapCommandResult.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(HyperMapCommandResult.class);
 
   public HyperMapCommandResult(
       final List<MeasureDto<List<HyperMapResultEntryDto>>> measures,
@@ -120,7 +120,7 @@ public class HyperMapCommandResult extends CommandEvaluationResult<List<HyperMap
             () -> {
               final String message =
                   "Was not able to merge single map entry to hyper map report csv";
-              log.warn(message);
+              LOG.warn(message);
               return new ArrayList<>();
             });
   }

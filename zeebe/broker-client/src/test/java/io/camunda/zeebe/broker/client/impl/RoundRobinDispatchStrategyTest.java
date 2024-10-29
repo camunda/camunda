@@ -13,6 +13,8 @@ import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.ActivePartitions;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -63,7 +65,8 @@ final class RoundRobinDispatchStrategyTest {
                 Map.of(),
                 Optional.empty(),
                 Optional.empty(),
-                Optional.of(new RoutingState(1, Set.of(1, 2), new MessageCorrelation.HashMod(2)))));
+                Optional.of(
+                    new RoutingState(1, new AllPartitions(2), new MessageCorrelation.HashMod(2)))));
 
     // when - then
     assertThat(dispatchStrategy.determinePartition(topologyManager)).isEqualTo(1);
@@ -87,7 +90,11 @@ final class RoundRobinDispatchStrategyTest {
                 Map.of(),
                 Optional.empty(),
                 Optional.empty(),
-                Optional.of(new RoutingState(1, Set.of(1, 3), new MessageCorrelation.HashMod(3)))));
+                Optional.of(
+                    new RoutingState(
+                        1,
+                        new ActivePartitions(1, Set.of(3), Set.of()),
+                        new MessageCorrelation.HashMod(3)))));
 
     // when - then
     assertThat(dispatchStrategy.determinePartition(topologyManager)).isEqualTo(1);
@@ -109,7 +116,11 @@ final class RoundRobinDispatchStrategyTest {
             Map.of(),
             Optional.empty(),
             Optional.empty(),
-            Optional.of(new RoutingState(1, Set.of(1, 3), new MessageCorrelation.HashMod(1)))));
+            Optional.of(
+                new RoutingState(
+                    1,
+                    new ActivePartitions(1, Set.of(3), Set.of()),
+                    new MessageCorrelation.HashMod(1)))));
 
     // then
     assertThat(dispatchStrategy.determinePartition(topologyManager)).isEqualTo(1);
@@ -122,7 +133,8 @@ final class RoundRobinDispatchStrategyTest {
             Map.of(),
             Optional.empty(),
             Optional.empty(),
-            Optional.of(new RoutingState(2, Set.of(1, 2, 3), new MessageCorrelation.HashMod(1)))));
+            Optional.of(
+                new RoutingState(2, new AllPartitions(3), new MessageCorrelation.HashMod(1)))));
 
     // then
     assertThat(dispatchStrategy.determinePartition(topologyManager)).isEqualTo(3);

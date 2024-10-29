@@ -41,7 +41,7 @@ public enum ProcessGroupBy {
 
   private final ProcessGroupByDto<?> dto;
 
-  private ProcessGroupBy(ProcessGroupByDto<?> dto) {
+  private ProcessGroupBy(final ProcessGroupByDto<?> dto) {
     this.dto = dto;
   }
 

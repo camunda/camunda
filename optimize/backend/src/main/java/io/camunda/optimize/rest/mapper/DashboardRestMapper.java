@@ -23,7 +23,7 @@ public class DashboardRestMapper {
 
   public static final String TEXT_FIELD = "text";
   private static final String TYPE_TEXT_VALUE = "text";
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DashboardRestMapper.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(DashboardRestMapper.class);
   private final AbstractIdentityService identityService;
   private final LocalizationService localizationService;
 

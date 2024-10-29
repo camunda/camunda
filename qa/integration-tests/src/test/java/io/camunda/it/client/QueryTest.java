@@ -81,7 +81,7 @@ class QueryTest {
         .untilAsserted(
             () -> {
               final var result = zeebeClient.newProcessInstanceQuery().send().join();
-              assertThat(result.items().size()).isEqualTo(expectedProcessInstances);
+              assertThat(result.page().totalItems()).isEqualTo(expectedProcessInstances);
             });
   }
 
@@ -93,7 +93,7 @@ class QueryTest {
         .untilAsserted(
             () -> {
               final var result = zeebeClient.newFlownodeInstanceQuery().send().join();
-              assertThat(result.items().size()).isEqualTo(expectedFlowNodeInstances);
+              assertThat(result.page().totalItems()).isEqualTo(expectedFlowNodeInstances);
             });
   }
 
@@ -105,7 +105,7 @@ class QueryTest {
         .untilAsserted(
             () -> {
               final var result = zeebeClient.newProcessDefinitionQuery().send().join();
-              assertThat(result.items().size()).isEqualTo(expectedProcessDefinitions);
+              assertThat(result.page().totalItems()).isEqualTo(expectedProcessDefinitions);
             });
   }
 
@@ -122,7 +122,7 @@ class QueryTest {
                       .filter(f -> f.hasIncident(true))
                       .send()
                       .join();
-              assertThat(result.items().size()).isEqualTo(expectedIncidents);
+              assertThat(result.page().totalItems()).isEqualTo(expectedIncidents);
             });
   }
 

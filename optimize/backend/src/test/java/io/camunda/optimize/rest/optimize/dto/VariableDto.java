@@ -28,15 +28,15 @@ public class VariableDto implements Serializable {
     return this.valueInfo;
   }
 
-  public void setType(String type) {
+  public void setType(final String type) {
     this.type = type;
   }
 
-  public void setValue(Object value) {
+  public void setValue(final Object value) {
     this.value = value;
   }
 
-  public void setValueInfo(ValueInfo valueInfo) {
+  public void setValueInfo(final ValueInfo valueInfo) {
     this.valueInfo = valueInfo;
   }
 
@@ -53,11 +53,11 @@ public class VariableDto implements Serializable {
       return this.serializationDataFormat;
     }
 
-    public void setObjectTypeName(String objectTypeName) {
+    public void setObjectTypeName(final String objectTypeName) {
       this.objectTypeName = objectTypeName;
     }
 
-    public void setSerializationDataFormat(String serializationDataFormat) {
+    public void setSerializationDataFormat(final String serializationDataFormat) {
       this.serializationDataFormat = serializationDataFormat;
     }
   }

@@ -40,6 +40,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class CloudUserTaskIdentityServiceTest {
+
   public static final String EXTERNAL_ID = "externalId";
   public static final UserDto TEST_USER_1 =
       new UserDto("123", "Donna Noble", "donna@email.com", Collections.emptyList());
@@ -61,7 +62,7 @@ public class CloudUserTaskIdentityServiceTest {
   }
 
   @Test
-  public void searchAmongIdentitiesWithIds_emptySearchTermReturnsAll_users() {
+  public void searchAmongIdentitiesWithIdsEmptySearchTermReturnsAllUsers() {
     // given
     when(identityService.getUsersById(any()))
         .thenReturn(
@@ -82,7 +83,7 @@ public class CloudUserTaskIdentityServiceTest {
   }
 
   @Test
-  public void searchAmongIdentitiesWithIds_emptySearchTermReturnsAll_groups() {
+  public void searchAmongIdentitiesWithIdsEmptySearchTermReturnsAllGroups() {
     // given
     final List<String> idsToSearchAmongst = Stream.of(EXTERNAL_ID).toList();
 
@@ -97,7 +98,7 @@ public class CloudUserTaskIdentityServiceTest {
   }
 
   @Test
-  public void searchAmongIdentitiesWithIds_withMatchInInternalCache() {
+  public void searchAmongIdentitiesWithIdsWithMatchInInternalCache() {
     // given
     when(identityService.searchForIdentitiesAsUser(any(), any(), anyInt(), anyBoolean()))
         .thenReturn(new IdentitySearchResultResponseDto(List.of(TEST_USER_1)));
@@ -116,7 +117,7 @@ public class CloudUserTaskIdentityServiceTest {
   }
 
   @Test
-  public void searchAmongIdentitiesWithIds_withMatchInExternalCache() {
+  public void searchAmongIdentitiesWithIdsWithMatchInExternalCache() {
     // given search for external user so that user is present in external cache
     when(identityService.getUserById(EXTERNAL_ID)).thenReturn(Optional.empty());
     underTest.getIdentityByIdAndType(EXTERNAL_ID, IdentityType.USER);
@@ -138,7 +139,7 @@ public class CloudUserTaskIdentityServiceTest {
   }
 
   @Test
-  public void searchAmongIdentitiesWithIds_noMatchesInInternalOrExternalCache() {
+  public void searchAmongIdentitiesWithIdsNoMatchesInInternalOrExternalCache() {
     // given
     when(identityService.searchForIdentitiesAsUser(any(), any(), anyInt(), anyBoolean()))
         .thenReturn(new IdentitySearchResultResponseDto(Collections.emptyList()));
@@ -155,7 +156,7 @@ public class CloudUserTaskIdentityServiceTest {
   }
 
   @Test
-  public void searchAmongIdentitiesWithIds_resultLimitApplied() {
+  public void searchAmongIdentitiesWithIdsResultLimitApplied() {
     // given 2 matches
     when(identityService.searchForIdentitiesAsUser(any(), any(), anyInt(), anyBoolean()))
         .thenReturn(new IdentitySearchResultResponseDto(List.of(TEST_USER_1, TEST_USER_2)));
@@ -174,7 +175,7 @@ public class CloudUserTaskIdentityServiceTest {
   }
 
   @Test
-  public void getIdentities_withMatchInInternalCache() {
+  public void getIdentitiesWithMatchInInternalCache() {
     // given
     when(identityService.getUsersById(new HashSet<>(List.of(TEST_USER_1.getId()))))
         .thenReturn(
@@ -192,7 +193,7 @@ public class CloudUserTaskIdentityServiceTest {
   }
 
   @Test
-  public void getIdentities_noMatchReturnsDefaultAndAddsToExternalCache() {
+  public void getIdentitiesNoMatchReturnsDefaultAndAddsToExternalCache() {
     // given
     when(identityService.getUsersById(Set.of(EXTERNAL_ID))).thenReturn(Collections.emptyList());
 
@@ -221,7 +222,7 @@ public class CloudUserTaskIdentityServiceTest {
   }
 
   @Test
-  public void getIdentities_oneInternalOneExternal() {
+  public void getIdentitiesOneInternalOneExternal() {
     // given
     when(identityService.getUsersById(Set.of(TEST_USER_1.getId(), EXTERNAL_ID)))
         .thenReturn(
@@ -241,7 +242,7 @@ public class CloudUserTaskIdentityServiceTest {
   }
 
   @Test
-  public void getIdentities_groupsReturnedAsDefaultAndAddedToExternalCache() {
+  public void getIdentitiesGroupsReturnedAsDefaultAndAddedToExternalCache() {
     // given
     when(identityService.getGroupsById(Set.of(EXTERNAL_ID))).thenReturn(Collections.emptyList());
 
@@ -270,7 +271,7 @@ public class CloudUserTaskIdentityServiceTest {
   }
 
   @Test
-  public void getIdentityByIdAndType_withMatchInInternalCache() {
+  public void getIdentityByIdAndTypeWithMatchInInternalCache() {
     // given
     when(identityService.getUserById(TEST_USER_1.getId())).thenReturn(Optional.of(TEST_USER_1));
 
@@ -283,7 +284,7 @@ public class CloudUserTaskIdentityServiceTest {
   }
 
   @Test
-  public void getIdentityByIdAndType_noMatchReturnsDefaultAndAddsToExternalCache() {
+  public void getIdentityByIdAndTypeNoMatchReturnsDefaultAndAddsToExternalCache() {
     // given
     when(identityService.getUserById(EXTERNAL_ID)).thenReturn(Optional.empty());
 
@@ -305,7 +306,7 @@ public class CloudUserTaskIdentityServiceTest {
   }
 
   @Test
-  public void getIdentityByIdAndType_groupReturnsDefaultAndAddsToExternalCache() {
+  public void getIdentityByIdAndTypeGroupReturnsDefaultAndAddsToExternalCache() {
     // given
     when(identityService.getGroupById(EXTERNAL_ID)).thenReturn(Optional.empty());
 

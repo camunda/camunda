@@ -21,7 +21,7 @@ import org.slf4j.Logger;
 public class OptimizeValidationExceptionMapper
     implements ExceptionMapper<OptimizeValidationException> {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(OptimizeValidationExceptionMapper.class);
   private final LocalizationService localizationService;
 
@@ -31,7 +31,7 @@ public class OptimizeValidationExceptionMapper
 
   @Override
   public Response toResponse(final OptimizeValidationException validationException) {
-    log.info("Mapping OptimizeValidationException");
+    LOG.info("Mapping OptimizeValidationException");
 
     return Response.status(Response.Status.BAD_REQUEST)
         .type(MediaType.APPLICATION_JSON_TYPE)

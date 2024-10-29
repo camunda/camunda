@@ -10,16 +10,16 @@ package io.camunda.optimize.dto.optimize.query.report.single.process.filter.util
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedFlowNodesOnlyFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 
-public class CompletedFlowNodesOnlyFilterBuilder {
+public final class CompletedFlowNodesOnlyFilterBuilder {
 
-  private ProcessFilterBuilder filterBuilder;
+  private final ProcessFilterBuilder filterBuilder;
   private FilterApplicationLevel filterLevel = FilterApplicationLevel.VIEW;
 
-  private CompletedFlowNodesOnlyFilterBuilder(ProcessFilterBuilder filterBuilder) {
+  private CompletedFlowNodesOnlyFilterBuilder(final ProcessFilterBuilder filterBuilder) {
     this.filterBuilder = filterBuilder;
   }
 
-  static CompletedFlowNodesOnlyFilterBuilder construct(ProcessFilterBuilder filterBuilder) {
+  static CompletedFlowNodesOnlyFilterBuilder construct(final ProcessFilterBuilder filterBuilder) {
     return new CompletedFlowNodesOnlyFilterBuilder(filterBuilder);
   }
 

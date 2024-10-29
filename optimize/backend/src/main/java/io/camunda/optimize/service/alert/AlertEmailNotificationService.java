@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class AlertEmailNotificationService implements AlertNotificationService {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(AlertEmailNotificationService.class);
   private final ConfigurationService configurationService;
   private final EmailService emailService;
@@ -35,7 +35,7 @@ public class AlertEmailNotificationService implements AlertNotificationService {
     }
 
     final List<String> recipients = notification.getAlert().getEmails();
-    log.info(
+    LOG.info(
         "Sending email of type {} to {} recipients for alert with ID {}",
         notification.getType(),
         recipients.size(),

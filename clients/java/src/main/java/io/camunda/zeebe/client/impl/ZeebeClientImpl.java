@@ -33,8 +33,11 @@ import io.camunda.zeebe.client.api.command.ClockResetCommandStep1;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.CorrelateMessageCommandStep1;
+import io.camunda.zeebe.client.api.command.CreateDocumentCommandStep1;
+import io.camunda.zeebe.client.api.command.CreateDocumentLinkCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateUserCommandStep1;
+import io.camunda.zeebe.client.api.command.DeleteDocumentCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
@@ -58,8 +61,10 @@ import io.camunda.zeebe.client.api.fetch.DecisionDefinitionGetXmlRequest;
 import io.camunda.zeebe.client.api.fetch.DecisionInstanceGetRequest;
 import io.camunda.zeebe.client.api.fetch.DecisionRequirementsGetRequest;
 import io.camunda.zeebe.client.api.fetch.DecisionRequirementsGetXmlRequest;
+import io.camunda.zeebe.client.api.fetch.DocumentContentGetRequest;
 import io.camunda.zeebe.client.api.fetch.FlowNodeInstanceGetRequest;
 import io.camunda.zeebe.client.api.fetch.IncidentGetRequest;
+import io.camunda.zeebe.client.api.fetch.ProcessDefinitionGetFormRequest;
 import io.camunda.zeebe.client.api.fetch.ProcessDefinitionGetRequest;
 import io.camunda.zeebe.client.api.fetch.ProcessDefinitionGetXmlRequest;
 import io.camunda.zeebe.client.api.fetch.ProcessInstanceGetRequest;
@@ -67,6 +72,7 @@ import io.camunda.zeebe.client.api.fetch.UserTaskGetFormRequest;
 import io.camunda.zeebe.client.api.fetch.UserTaskGetRequest;
 import io.camunda.zeebe.client.api.fetch.VariableGetRequest;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.api.response.DocumentReferenceResponse;
 import io.camunda.zeebe.client.api.search.query.DecisionDefinitionQuery;
 import io.camunda.zeebe.client.api.search.query.DecisionInstanceQuery;
 import io.camunda.zeebe.client.api.search.query.DecisionRequirementsQuery;
@@ -75,6 +81,7 @@ import io.camunda.zeebe.client.api.search.query.IncidentQuery;
 import io.camunda.zeebe.client.api.search.query.ProcessDefinitionQuery;
 import io.camunda.zeebe.client.api.search.query.ProcessInstanceQuery;
 import io.camunda.zeebe.client.api.search.query.UserTaskQuery;
+import io.camunda.zeebe.client.api.search.query.UserTaskVariableQuery;
 import io.camunda.zeebe.client.api.search.query.VariableQuery;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
@@ -86,8 +93,11 @@ import io.camunda.zeebe.client.impl.command.ClockPinCommandImpl;
 import io.camunda.zeebe.client.impl.command.ClockResetCommandImpl;
 import io.camunda.zeebe.client.impl.command.CompleteUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.command.CorrelateMessageCommandImpl;
+import io.camunda.zeebe.client.impl.command.CreateDocumentCommandImpl;
+import io.camunda.zeebe.client.impl.command.CreateDocumentLinkCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateProcessInstanceCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateUserCommandImpl;
+import io.camunda.zeebe.client.impl.command.DeleteDocumentCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeleteResourceCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeployProcessCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeployResourceCommandImpl;
@@ -109,8 +119,10 @@ import io.camunda.zeebe.client.impl.fetch.DecisionDefinitionGetXmlRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.DecisionInstanceGetRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.DecisionRequirementsGetRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.DecisionRequirementsGetXmlRequestImpl;
+import io.camunda.zeebe.client.impl.fetch.DocumentContentGetRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.FlowNodeInstanceGetRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.IncidentGetRequestImpl;
+import io.camunda.zeebe.client.impl.fetch.ProcessDefinitionGetFormRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.ProcessDefinitionGetRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.ProcessDefinitionGetXmlRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.ProcessInstanceGetRequestImpl;
@@ -127,6 +139,7 @@ import io.camunda.zeebe.client.impl.search.query.IncidentQueryImpl;
 import io.camunda.zeebe.client.impl.search.query.ProcessDefinitionQueryImpl;
 import io.camunda.zeebe.client.impl.search.query.ProcessInstanceQueryImpl;
 import io.camunda.zeebe.client.impl.search.query.UserTaskQueryImpl;
+import io.camunda.zeebe.client.impl.search.query.UserTaskVariableQueryImpl;
 import io.camunda.zeebe.client.impl.search.query.VariableQueryImpl;
 import io.camunda.zeebe.client.impl.util.ExecutorResource;
 import io.camunda.zeebe.client.impl.util.VersionUtil;
@@ -595,6 +608,12 @@ public final class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
+  public ProcessDefinitionGetFormRequest newProcessDefinitionGetFormRequest(
+      final long processDefinitionKey) {
+    return new ProcessDefinitionGetFormRequestImpl(httpClient, processDefinitionKey);
+  }
+
+  @Override
   public ProcessDefinitionQuery newProcessDefinitionQuery() {
     return new ProcessDefinitionQueryImpl(httpClient, jsonMapper);
   }
@@ -706,6 +725,55 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public VariableGetRequest newVariableGetRequest(final long variableKey) {
     return new VariableGetRequestImpl(httpClient, variableKey);
+  }
+
+  @Override
+  public UserTaskVariableQuery newUserTaskVariableRequest(final long userTaskKey) {
+    return new UserTaskVariableQueryImpl(httpClient, jsonMapper, userTaskKey);
+  }
+
+  public CreateDocumentCommandStep1 newCreateDocumentCommand() {
+    return new CreateDocumentCommandImpl(jsonMapper, httpClient, config);
+  }
+
+  @Override
+  public DocumentContentGetRequest newDocumentContentGetRequest(final String documentId) {
+    return new DocumentContentGetRequestImpl(httpClient, documentId, null, config);
+  }
+
+  @Override
+  public DocumentContentGetRequest newDocumentContentGetRequest(
+      final DocumentReferenceResponse documentReference) {
+    return new DocumentContentGetRequestImpl(
+        httpClient, documentReference.getDocumentId(), documentReference.getStoreId(), config);
+  }
+
+  @Override
+  public CreateDocumentLinkCommandStep1 newCreateDocumentLinkCommand(final String documentId) {
+    return new CreateDocumentLinkCommandImpl(documentId, null, jsonMapper, httpClient, config);
+  }
+
+  @Override
+  public CreateDocumentLinkCommandStep1 newCreateDocumentLinkCommand(
+      final DocumentReferenceResponse documentReference) {
+    return new CreateDocumentLinkCommandImpl(
+        documentReference.getDocumentId(),
+        documentReference.getStoreId(),
+        jsonMapper,
+        httpClient,
+        config);
+  }
+
+  @Override
+  public DeleteDocumentCommandStep1 newDeleteDocumentCommand(final String documentId) {
+    return new DeleteDocumentCommandImpl(documentId, null, httpClient, config);
+  }
+
+  @Override
+  public DeleteDocumentCommandStep1 newDeleteDocumentCommand(
+      final DocumentReferenceResponse documentReference) {
+    return new DeleteDocumentCommandImpl(
+        documentReference.getDocumentId(), documentReference.getStoreId(), httpClient, config);
   }
 
   private JobClient newJobClient() {

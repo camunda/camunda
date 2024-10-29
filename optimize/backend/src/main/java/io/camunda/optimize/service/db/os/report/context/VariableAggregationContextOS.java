@@ -17,7 +17,7 @@ public class VariableAggregationContextOS extends VariableAggregationContext {
   private final Query baseQueryForMinMaxStats;
   private final Map<String, Aggregation> subAggregations;
 
-  protected VariableAggregationContextOS(VariableAggregationContextOSBuilder<?, ?> b) {
+  protected VariableAggregationContextOS(final VariableAggregationContextOSBuilder<?, ?> b) {
     super(b);
     this.baseQueryForMinMaxStats = b.baseQueryForMinMaxStats;
     this.subAggregations = b.subAggregations;
@@ -63,12 +63,12 @@ public class VariableAggregationContextOS extends VariableAggregationContext {
     private Query baseQueryForMinMaxStats;
     private Map<String, Aggregation> subAggregations;
 
-    public B baseQueryForMinMaxStats(Query baseQueryForMinMaxStats) {
+    public B baseQueryForMinMaxStats(final Query baseQueryForMinMaxStats) {
       this.baseQueryForMinMaxStats = baseQueryForMinMaxStats;
       return self();
     }
 
-    public B subAggregations(Map<String, Aggregation> subAggregations) {
+    public B subAggregations(final Map<String, Aggregation> subAggregations) {
       this.subAggregations = subAggregations;
       return self();
     }

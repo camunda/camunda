@@ -56,11 +56,11 @@ public class ProcessGroupByProcessInstanceRunningDateInterpreterES
   private final ProcessViewInterpreterFacadeES viewInterpreter;
 
   public ProcessGroupByProcessInstanceRunningDateInterpreterES(
-      DateTimeFormatter formatter,
-      DateAggregationServiceES dateAggregationService,
-      MinMaxStatsServiceES minMaxStatsService,
-      ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
-      ProcessViewInterpreterFacadeES viewInterpreter) {
+      final DateTimeFormatter formatter,
+      final DateAggregationServiceES dateAggregationService,
+      final MinMaxStatsServiceES minMaxStatsService,
+      final ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
+      final ProcessViewInterpreterFacadeES viewInterpreter) {
     this.formatter = formatter;
     this.dateAggregationService = dateAggregationService;
     this.minMaxStatsService = minMaxStatsService;
@@ -129,12 +129,12 @@ public class ProcessGroupByProcessInstanceRunningDateInterpreterES
       final ResponseBody<?> response,
       final Map<String, Aggregate> aggregations,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    FiltersAggregate agg = aggregations.get(FILTER_LIMITED_AGGREGATION).filters();
+    final FiltersAggregate agg = aggregations.get(FILTER_LIMITED_AGGREGATION).filters();
 
-    List<CompositeCommandResult.GroupByResult> results = new ArrayList<>();
+    final List<CompositeCommandResult.GroupByResult> results = new ArrayList<>();
 
-    for (Map.Entry<String, FiltersBucket> entry : agg.buckets().keyed().entrySet()) {
-      String key = formatToCorrectTimezone(entry.getKey(), context.getTimezone(), formatter);
+    for (final Map.Entry<String, FiltersBucket> entry : agg.buckets().keyed().entrySet()) {
+      final String key = formatToCorrectTimezone(entry.getKey(), context.getTimezone(), formatter);
       final List<CompositeCommandResult.DistributedByResult> distributions =
           getDistributedByInterpreter()
               .retrieveResult(response, entry.getValue().aggregations(), context);

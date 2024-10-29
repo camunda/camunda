@@ -57,6 +57,7 @@ public abstract class DashboardFilterDto<DATA extends FilterDataDto> {
     return "DashboardFilterDto(data=" + getData() + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String data = "data";

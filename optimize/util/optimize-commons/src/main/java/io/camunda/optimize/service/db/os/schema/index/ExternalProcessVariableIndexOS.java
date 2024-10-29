@@ -26,7 +26,7 @@ public class ExternalProcessVariableIndexOS
 
   @Override
   public IndexSettings.Builder getStaticSettings(
-      IndexSettings.Builder contentBuilder, ConfigurationService configurationService)
+      final IndexSettings.Builder contentBuilder, final ConfigurationService configurationService)
       throws IOException {
     final IndexSettings.Builder result =
         super.getStaticSettings(contentBuilder, configurationService);

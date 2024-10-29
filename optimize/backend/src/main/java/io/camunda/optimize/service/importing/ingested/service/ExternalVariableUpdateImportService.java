@@ -37,7 +37,7 @@ public class ExternalVariableUpdateImportService
     implements ImportService<ExternalProcessVariableDto> {
 
   public static final long DEFAULT_VERSION = 1000L;
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ExternalVariableUpdateImportService.class);
 
   private final DatabaseImportJobExecutor databaseImportJobExecutor;
@@ -63,7 +63,7 @@ public class ExternalVariableUpdateImportService
   public void executeImport(
       final List<ExternalProcessVariableDto> pageOfExternalEntities,
       final Runnable importCompleteCallback) {
-    log.trace("Importing external variable entities...");
+    LOG.trace("Importing external variable entities...");
 
     final boolean newDataIsAvailable = !pageOfExternalEntities.isEmpty();
     if (newDataIsAvailable) {

@@ -73,13 +73,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.http.HttpEntity;
 import org.apache.http.nio.entity.NStringEntity;
 import org.jetbrains.annotations.NotNull;
@@ -128,7 +126,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   private static final String MOCKSERVER_CLIENT_KEY = "MockServer";
   private static final Map<String, OptimizeOpenSearchClient> CLIENT_CACHE = new HashMap<>();
   private static final ClientAndServer mockServerClient = initMockServer();
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(OpenSearchDatabaseTestService.class);
 
   private String opensearchDatabaseVersion;
@@ -160,9 +158,9 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   @Override
   public void beforeEach() {
     if (haveToClean) {
-      log.info("Cleaning database...");
+      LOG.info("Cleaning database...");
       cleanAndVerifyDatabase();
-      log.info("All documents have been wiped out! Database has successfully been cleaned!");
+      LOG.info("All documents have been wiped out! Database has successfully been cleaned!");
     }
   }
 
@@ -171,16 +169,16 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     // If the MockServer has been used, we reset all expectations and logs and revert to the default
     // client
     if (prefixAwareOptimizeOpenSearchClient == CLIENT_CACHE.get(MOCKSERVER_CLIENT_KEY)) {
-      log.info("Resetting all MockServer expectations and logs");
+      LOG.info("Resetting all MockServer expectations and logs");
       mockServerClient.reset();
-      log.info("No longer using OS MockServer");
+      LOG.info("No longer using OS MockServer");
       initOsClient();
     }
   }
 
   @Override
   public ClientAndServer useDBMockServer() {
-    log.info("Using OpenSearch MockServer");
+    LOG.info("Using OpenSearch MockServer");
     if (CLIENT_CACHE.containsKey(MOCKSERVER_CLIENT_KEY)) {
       prefixAwareOptimizeOpenSearchClient = CLIENT_CACHE.get(MOCKSERVER_CLIENT_KEY);
     } else {
@@ -248,7 +246,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     final GetAliasResponse aliasResponse;
     try {
       aliasResponse = getOptimizeOpenSearchClient().getAlias(aliasNameWithPrefix);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
     }
     final Map<String, IndexAliases> indexNameToAliasMap = aliasResponse.result();
@@ -284,18 +282,6 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  public Integer getCountOfCompletedInstancesWithIdsIn(final Set<Object> processInstanceIds) {
-    final Set<String> stringProcessInstanceIds =
-        processInstanceIds.stream().map(Object::toString).collect(Collectors.toSet());
-
-    return getInstanceCountWithQuery(
-        QueryDSL.and(
-            QueryDSL.exists(ProcessInstanceIndex.END_DATE),
-            QueryDSL.stringTerms(
-                ProcessInstanceIndex.PROCESS_INSTANCE_ID, stringProcessInstanceIds)));
-  }
-
-  @Override
   public void deleteAllOptimizeData() {
     try {
       getOptimizeOpenSearchClient()
@@ -306,7 +292,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  public void deleteAllDocumentsInIndex(String optimizeIndexAliasForIndex) {
+  public void deleteAllDocumentsInIndex(final String optimizeIndexAliasForIndex) {
     getOptimizeOpenSearchClient()
         .deleteByQuery(QueryDSL.matchAll(), true, optimizeIndexAliasForIndex);
   }
@@ -331,15 +317,15 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  public void insertTestDocuments(int amount, String indexName, String jsonDocument)
-      throws IOException {
+  public void insertTestDocuments(
+      final int amount, final String indexName, final String jsonDocument) throws IOException {
     getOptimizeOpenSearchClient()
         .getOpenSearchClient()
         .bulk(
             BulkRequest.of(
                 r -> {
                   for (int i = 0; i < amount; i++) {
-                    int finalI = i;
+                    final int finalI = i;
                     r.operations(
                         o ->
                             o.index(
@@ -353,7 +339,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
                                                     .readValue(
                                                         String.format(jsonDocument, finalI),
                                                         Map.class));
-                                      } catch (JsonProcessingException e) {
+                                      } catch (final JsonProcessingException e) {
                                         throw new RuntimeException(e);
                                       }
                                     })));
@@ -364,8 +350,8 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  public void performLowLevelBulkRequest(String methodName, String endpoint, String bulkPayload)
-      throws IOException {
+  public void performLowLevelBulkRequest(
+      final String methodName, final String endpoint, final String bulkPayload) throws IOException {
     final HttpEntity entity = new NStringEntity(bulkPayload, ContentType.APPLICATION_JSON);
     final Request request = new Request(methodName, endpoint);
     request.setEntity(entity);
@@ -378,7 +364,8 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   private IndexSettings createIndexSettings(
-      final IndexMappingCreator indexMappingCreator, ConfigurationService configurationService) {
+      final IndexMappingCreator indexMappingCreator,
+      final ConfigurationService configurationService) {
     try {
       return OpenSearchIndexSettingsBuilder.buildAllSettings(
           configurationService, indexMappingCreator);
@@ -388,8 +375,8 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  public Map<String, ? extends Object> getMappingFields(String indexName) throws IOException {
-    GetMappingResponse getMappingResponse =
+  public Map<String, ? extends Object> getMappingFields(final String indexName) throws IOException {
+    final GetMappingResponse getMappingResponse =
         getOptimizeOpenSearchClient().getMapping(new GetMappingRequest.Builder(), indexName);
     final Object propertiesMap =
         getMappingResponse.result().values().stream()
@@ -413,7 +400,8 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  public boolean templateExists(String optimizeIndexTemplateNameWithVersion) throws IOException {
+  public boolean templateExists(final String optimizeIndexTemplateNameWithVersion)
+      throws IOException {
     final ExistsTemplateRequest.Builder request =
         new ExistsTemplateRequest.Builder().name(optimizeIndexTemplateNameWithVersion);
     return getOptimizeOpenSearchClient()
@@ -451,19 +439,6 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  public void deleteIndicesStartingWithPrefix(final String term) {
-    final String[] indicesToDelete =
-        getOptimizeOpenSearchClient()
-            .getRichOpenSearchClient()
-            .index()
-            .getIndexNamesWithRetries(getIndexNameService().getIndexPrefix() + "-" + term + "*")
-            .toArray(String[]::new);
-    if (indicesToDelete.length > 0) {
-      deleteIndices(indicesToDelete);
-    }
-  }
-
-  @Override
   public void deleteAllZeebeRecordsForPrefix(final String zeebeRecordPrefix) {
     final GetIndexResponse allIndices =
         getOptimizeOpenSearchClient()
@@ -493,7 +468,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
               .getOpenSearchClient()
               .indices()
               .get(RequestDSL.getIndexRequestBuilder("*").ignoreUnavailable(true).build());
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
 
@@ -569,7 +544,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
           .indices()
           .exists(new ExistsRequest.Builder().index(indexName).build())
           .value();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
     }
   }
@@ -608,7 +583,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     try {
       return getOptimizeOpenSearchClient()
           .count(new String[] {expectedIndex}, queryContainer.toOpenSearchQuery());
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
     }
   }
@@ -630,7 +605,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
           .stream()
           .map(Hit::source)
           .toList();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
     }
   }
@@ -647,8 +622,8 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
 
   @Override
   public void createSnapshot(
-      String snapshotRepositoryName, String snapshotName, String[] indexNames) {
-    CreateSnapshotRequest createSnapshotRequest =
+      final String snapshotRepositoryName, final String snapshotName, final String[] indexNames) {
+    final CreateSnapshotRequest createSnapshotRequest =
         CreateSnapshotRequest.of(
             b ->
                 b.repository(snapshotRepositoryName)
@@ -660,7 +635,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
       getOptimizeOpenSearchClient()
           .triggerSnapshotAsync(createSnapshotRequest)
           .get(10, TimeUnit.SECONDS);
-    } catch (InterruptedException | ExecutionException | TimeoutException e) {
+    } catch (final InterruptedException | ExecutionException | TimeoutException e) {
       throw new OptimizeRuntimeException("Exception during creation snapshot:", e);
     }
   }
@@ -702,7 +677,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
         opensearchDatabaseVersion =
             OpenSearchClientBuilder.getCurrentOSVersion(
                 getOptimizeOpenSearchClient().getOpenSearchClient());
-      } catch (IOException e) {
+      } catch (final IOException e) {
         throw new OptimizeRuntimeException(e);
       }
     }
@@ -742,7 +717,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
                       OpenSearchIndexSettingsBuilder.buildDynamicSettings(configurationService))
                   .index(indexName)
                   .build());
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
     }
   }
@@ -771,7 +746,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  public boolean isAliasReadOnly(String readOnlyAliasForIndex) throws IOException {
+  public boolean isAliasReadOnly(final String readOnlyAliasForIndex) throws IOException {
     final GetAliasResponse aliases =
         getOptimizeOpenSearchClient()
             .getAlias(
@@ -788,7 +763,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  public void createRepoSnapshot(String snapshotRepositoryName) {
+  public void createRepoSnapshot(final String snapshotRepositoryName) {
     try {
       getOptimizeOpenSearchClient()
           .getOpenSearchClient()
@@ -799,13 +774,13 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
                       b.name(snapshotRepositoryName)
                           .settings(s -> s.location("/var/tmp"))
                           .type("fs")));
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
 
   @Override
-  public void cleanSnapshots(String snapshotRepositoryName) {
+  public void cleanSnapshots(final String snapshotRepositoryName) {
     try {
       getOptimizeOpenSearchClient()
           .getOpenSearchClient()
@@ -816,21 +791,23 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
           .getOpenSearchClient()
           .snapshot()
           .deleteRepository(DeleteRepositoryRequest.of(b -> b.name(snapshotRepositoryName)));
-    } catch (Exception e) {
-      log.warn("Delete failed, no snapshots to delete from repository {}", snapshotRepositoryName);
+    } catch (final Exception e) {
+      LOG.warn("Delete failed, no snapshots to delete from repository {}", snapshotRepositoryName);
     }
   }
 
   @Override
   public void createIndex(
-      String indexName, Map<String, Boolean> aliases, DefaultIndexMappingCreator indexMapping)
+      final String indexName,
+      final Map<String, Boolean> aliases,
+      final DefaultIndexMappingCreator indexMapping)
       throws IOException {
 
     final IndexSettings indexSettings =
         createIndexSettings(indexMapping, createConfigurationService());
 
     final HashMap<String, Alias> aliasData = new HashMap<>();
-    for (Map.Entry<String, Boolean> entry : aliases.entrySet()) {
+    for (final Map.Entry<String, Boolean> entry : aliases.entrySet()) {
       aliasData.put(entry.getKey(), new Alias.Builder().isWriteIndex(entry.getValue()).build());
     }
 
@@ -908,7 +885,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     final GetAliasResponse aliasResponse;
     try {
       aliasResponse = getOptimizeOpenSearchClient().getAlias(aliasNameWithPrefix);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
     }
     final Map<String, IndexAliases> indexNameToAliasMap = aliasResponse.result();
@@ -942,7 +919,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
       final String clientKey, final ConfigurationService configurationService) {
     final DatabaseConnectionNodeConfiguration osConfig =
         configurationService.getOpenSearchConfiguration().getFirstConnectionNode();
-    log.info(
+    LOG.info(
         "Creating OS Client with host {} and port {}", osConfig.getHost(), osConfig.getHttpPort());
     prefixAwareOptimizeOpenSearchClient =
         new OptimizeOpenSearchClient(
@@ -1005,24 +982,6 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     final SearchResponse<T> searchResponse =
         getOptimizeOpenSearchClient().search(searchReqBuilder, type, errorMessage);
     return searchResponse.hits().hits().stream().map(Hit::source).collect(Collectors.toList());
-  }
-
-  private int getInstanceCountWithQuery(final Query query) {
-    try {
-      return Long.valueOf(
-              getOptimizeOpenSearchClient()
-                  .count(new String[] {PROCESS_INSTANCE_MULTI_ALIAS}, query))
-          .intValue();
-    } catch (final IOException e) {
-      throw new OptimizeIntegrationTestException(
-          "Cannot evaluate document count for index " + PROCESS_INSTANCE_MULTI_ALIAS, e);
-    }
-  }
-
-  private Integer getVariableInstanceCountForAllProcessInstances(final Query processInstanceQuery) {
-    // TODO implement with #11121
-    throw new NotImplementedException(
-        "Not yet implemented for OpenSearch, will be implemented with issue #11121");
   }
 
   private void deleteIndexOfMapping(final IndexMappingCreator<IndexSettings.Builder> indexMapping) {

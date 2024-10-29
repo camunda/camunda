@@ -54,6 +54,7 @@ public class PositionDto {
     return "PositionDto(x=" + getX() + ", y=" + getY() + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String x = "x";

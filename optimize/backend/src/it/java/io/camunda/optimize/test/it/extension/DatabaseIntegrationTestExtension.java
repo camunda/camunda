@@ -7,29 +7,15 @@
  */
 package io.camunda.optimize.test.it.extension;
 
-import static io.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
-import static io.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_INDEX_PREFIX;
-import static io.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_MULTI_ALIAS;
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
-import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_INDEX_PREFIX;
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
-import static io.camunda.optimize.service.db.DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
-import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableMap;
-import io.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import io.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
-import io.camunda.optimize.dto.optimize.query.MetadataDto;
-import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
-import io.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import io.camunda.optimize.service.db.schema.DatabaseSchemaManager;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.db.schema.ScriptData;
-import io.camunda.optimize.service.db.schema.index.IndexMappingCreatorBuilder;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.test.it.extension.db.DatabaseTestService;
@@ -38,23 +24,16 @@ import io.camunda.optimize.test.it.extension.db.OpenSearchDatabaseTestService;
 import io.camunda.optimize.test.it.extension.db.TermsQueryContainer;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.io.IOException;
-import java.time.OffsetDateTime;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import org.apache.commons.text.StringSubstitutor;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.mockserver.integration.ClientAndServer;
-import org.slf4j.Logger;
 
 public class DatabaseIntegrationTestExtension implements BeforeEachCallback, AfterEachCallback {
 
-  private static final Logger log =
-      org.slf4j.LoggerFactory.getLogger(DatabaseIntegrationTestExtension.class);
   private final DatabaseTestService databaseTestService;
 
   public DatabaseIntegrationTestExtension(final DatabaseType databaseType) {
@@ -67,23 +46,6 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
 
   public DatabaseIntegrationTestExtension(final boolean haveToClean) {
     this(null, haveToClean);
-  }
-
-  public void cleanSnapshots(final String snapshotRepositoryName) {
-    databaseTestService.cleanSnapshots(snapshotRepositoryName);
-  }
-
-  public void createRepoSnapshot(final String snapshotRepositoryName) {
-    databaseTestService.createRepoSnapshot(snapshotRepositoryName);
-  }
-
-  public void createSnapshot(
-      final String snapshotRepositoryName, final String snapshotName, final String[] indexNames) {
-    databaseTestService.createSnapshot(snapshotRepositoryName, snapshotName, indexNames);
-  }
-
-  public DatabaseIntegrationTestExtension(final String customIndexPrefix) {
-    this(customIndexPrefix, true);
   }
 
   private DatabaseIntegrationTestExtension(
@@ -100,6 +62,19 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     }
   }
 
+  public void cleanSnapshots(final String snapshotRepositoryName) {
+    databaseTestService.cleanSnapshots(snapshotRepositoryName);
+  }
+
+  public void createRepoSnapshot(final String snapshotRepositoryName) {
+    databaseTestService.createRepoSnapshot(snapshotRepositoryName);
+  }
+
+  public void createSnapshot(
+      final String snapshotRepositoryName, final String snapshotName, final String[] indexNames) {
+    databaseTestService.createSnapshot(snapshotRepositoryName, snapshotName, indexNames);
+  }
+
   @Override
   public void beforeEach(final ExtensionContext extensionContext) {
     databaseTestService.beforeEach();
@@ -114,32 +89,8 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     return databaseTestService.useDBMockServer();
   }
 
-  public ObjectMapper getObjectMapper() {
-    return databaseTestService.getObjectMapper();
-  }
-
   public void refreshAllOptimizeIndices() {
     databaseTestService.refreshAllOptimizeIndices();
-  }
-
-  /**
-   * This class adds a document entry to the database. Thereby, the entry is added to the optimize
-   * index and the given type under the given id.
-   *
-   * <p>The object needs to be a POJO, which is then converted to json. Thus, the entry results in
-   * every object member variable name is going to be mapped to the field name in ES and every
-   * content of that variable is going to be the content of the field.
-   *
-   * @param indexName where the entry is added.
-   * @param id under which the entry is added.
-   * @param entry a POJO specifying field names and their contents.
-   */
-  public void addEntryToDatabase(final String indexName, final String id, final Object entry) {
-    databaseTestService.addEntryToDatabase(indexName, id, entry);
-  }
-
-  public void addEntriesToDatabase(final String indexName, final Map<String, Object> idToEntryMap) {
-    databaseTestService.addEntriesToDatabase(indexName, idToEntryMap);
   }
 
   public <T> List<T> getAllDocumentsOfIndexAs(final String indexName, final Class<T> type) {
@@ -150,49 +101,8 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     return databaseTestService.getDatabaseClient().getIndexNameService();
   }
 
-  public Integer getDocumentCountOf(final String indexName) {
-    return databaseTestService.getDocumentCountOf(indexName);
-  }
-
-  public void deleteAllOptimizeData() {
-    databaseTestService.deleteAllOptimizeData();
-  }
-
-  public void deleteAllDecisionInstanceIndices() {
-    databaseTestService.deleteAllIndicesContainingTerm(DECISION_INSTANCE_INDEX_PREFIX);
-  }
-
-  public void deleteAllProcessInstanceIndices() {
-    databaseTestService.deleteAllIndicesContainingTerm(PROCESS_INSTANCE_INDEX_PREFIX);
-  }
-
-  public void deleteAllSingleProcessReports() {
-    databaseTestService.deleteAllSingleProcessReports();
-  }
-
-  public void deleteTerminatedSessionsIndex() {
-    databaseTestService.deleteTerminatedSessionsIndex();
-  }
-
-  public void deleteAllVariableUpdateInstanceIndices() {
-    databaseTestService.deleteAllVariableUpdateInstanceIndices();
-  }
-
-  public void deleteAllExternalVariableIndices() {
-    databaseTestService.deleteAllExternalVariableIndices();
-  }
-
   public boolean indexExists(final String indexOrAliasName) {
     return databaseTestService.indexExistsCheckWithApplyingOptimizePrefix(indexOrAliasName);
-  }
-
-  public void cleanAndVerify() {
-    databaseTestService.cleanAndVerifyDatabase();
-  }
-
-  public List<DecisionDefinitionOptimizeDto> getAllDecisionDefinitions() {
-    return getAllDocumentsOfIndexAs(
-        DECISION_DEFINITION_INDEX_NAME, DecisionDefinitionOptimizeDto.class);
   }
 
   public List<ProcessDefinitionOptimizeDto> getAllProcessDefinitions() {
@@ -200,22 +110,8 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
         PROCESS_DEFINITION_INDEX_NAME, ProcessDefinitionOptimizeDto.class);
   }
 
-  public List<DecisionInstanceDto> getAllDecisionInstances() {
-    return getAllDocumentsOfIndexAs(DECISION_INSTANCE_MULTI_ALIAS, DecisionInstanceDto.class);
-  }
-
   public List<ProcessInstanceDto> getAllProcessInstances() {
     return getAllDocumentsOfIndexAs(PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceDto.class);
-  }
-
-  public OffsetDateTime getLastImportTimestampOfTimestampBasedImportIndex(
-      final String dbType, final String engine) {
-    return databaseTestService.getLastImportTimestampOfTimestampBasedImportIndex(dbType, engine);
-  }
-
-  public List<VariableUpdateInstanceDto> getAllStoredVariableUpdateInstanceDtos() {
-    return getAllDocumentsOfIndexAs(
-        VARIABLE_UPDATE_INSTANCE_INDEX_NAME + "_*", VariableUpdateInstanceDto.class);
   }
 
   public void deleteAllZeebeRecordsForPrefix(final String zeebeRecordPrefix) {
@@ -249,16 +145,6 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     databaseTestService.updateZeebeRecordsForPrefix(zeebeRecordPrefix, indexName, updateScript);
   }
 
-  public void updateUserTaskDurations(
-      final String processInstanceId, final String processDefinitionKey, final long duration) {
-    databaseTestService.updateUserTaskDurations(processInstanceId, processDefinitionKey, duration);
-  }
-
-  public Map<AggregationDto, Double> calculateExpectedValueGivenDurations(
-      final Number... setDuration) {
-    return databaseTestService.calculateExpectedValueGivenDurations(setDuration);
-  }
-
   public void update(final String indexName, final String entityId, final ScriptData script) {
     databaseTestService.getDatabaseClient().update(indexName, entityId, script);
   }
@@ -283,25 +169,9 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     return databaseTestService.indexExistsCheckWithoutApplyingOptimizePrefix(expectedIndex);
   }
 
-  public List<ProcessInstanceDto> getProcessInstancesById(final List<String> instanceIds) {
-    return databaseTestService.getProcessInstancesById(instanceIds);
-  }
-
-  public List<DecisionInstanceDto> getDecisionInstancesById(final List<String> instanceIds) {
-    return databaseTestService.getDecisionInstancesById(instanceIds);
-  }
-
   public <T> Optional<T> getDatabaseEntryById(
       final String indexName, final String entryId, final Class<T> type) {
     return databaseTestService.getDatabaseEntryById(indexName, entryId, type);
-  }
-
-  public void deleteProcessInstancesFromIndex(final String indexName, final String id) {
-    databaseTestService.deleteProcessInstancesFromIndex(indexName, id);
-  }
-
-  public String getDatabaseVersion() {
-    return databaseTestService.getDatabaseVersion();
   }
 
   public DatabaseType getDatabaseVendor() {
@@ -316,71 +186,10 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
         processDefinitionKey, nestedDocLimit, configurationService);
   }
 
-  public int getNestedDocumentLimit(final ConfigurationService configurationService) {
-    return databaseTestService.getNestedDocumentsLimit(configurationService);
-  }
-
-  public void createIndex(
-      final String optimizeIndexNameWithVersion, final String optimizeIndexAliasForIndex)
-      throws IOException {
-    databaseTestService.createIndex(optimizeIndexNameWithVersion, optimizeIndexAliasForIndex);
-  }
-
-  public Optional<MetadataDto> readMetadata() {
-    return databaseTestService.readMetadata();
-  }
-
-  public void createMissingIndices(
-      final IndexMappingCreatorBuilder indexMappingCreatorBuilder,
-      final Set<String> aliases,
-      final Set<String> aKey) {
-    databaseTestService.createMissingIndices(indexMappingCreatorBuilder, aliases, aKey);
-  }
-
-  public String[] getImportIndices() {
-    return databaseTestService.getImportIndices().stream()
-        .map(getIndexNameService()::getOptimizeIndexAliasForIndex)
-        .toArray(String[]::new);
-  }
-
-  public void setActivityStartDatesToNull(final String processDefinitionKey) {
-    final ScriptData scriptData =
-        new ScriptData(
-            Map.of(),
-            "for (flowNodeInstance in ctx._source.flowNodeInstances) { flowNodeInstance.startDate = null }");
-    databaseTestService.setActivityStartDatesToNull(processDefinitionKey, scriptData);
-  }
-
-  public void setUserTaskDurationToNull(
-      final String processInstanceId, final String durationFieldName) {
-    final StringSubstitutor substitutor =
-        new StringSubstitutor(
-            ImmutableMap.<String, String>builder()
-                .put("flowNodesField", FLOW_NODE_INSTANCES)
-                .put("durationFieldName", durationFieldName)
-                .build());
-
-    // @formatter:off
-    final String setDurationToNull =
-        substitutor.replace(
-            "for(flowNode in ctx._source.${flowNodesField}) {"
-                + "flowNode.${durationFieldName} = null;"
-                + "}");
-    // @formatter:on
-
-    final ScriptData updateScript = new ScriptData(Collections.emptyMap(), setDurationToNull);
-    databaseTestService.setUserTaskDurationToNull(
-        processInstanceId, durationFieldName, updateScript);
-  }
-
-  public Long getImportedActivityCount() {
-    return databaseTestService.getImportedActivityCount();
-  }
-
   public void createIndex(
       final String optimizeIndexNameWithVersion,
       final String optimizeIndexAliasForIndex,
-      DefaultIndexMappingCreator mapping)
+      final DefaultIndexMappingCreator mapping)
       throws IOException {
     createIndex(optimizeIndexNameWithVersion, optimizeIndexAliasForIndex, mapping, true);
   }
@@ -391,17 +200,18 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     return databaseTestService.getAllIndicesWithWriteAlias(aliasNameWithPrefix);
   }
 
-  public void deleteAllDocumentsInIndex(String optimizeIndexAliasForIndex) {
+  public void deleteAllDocumentsInIndex(final String optimizeIndexAliasForIndex) {
     databaseTestService.deleteAllDocumentsInIndex(optimizeIndexAliasForIndex);
   }
 
-  public void insertTestDocuments(int amount, String indexName, String documentContentAsJson)
+  public void insertTestDocuments(
+      final int amount, final String indexName, final String documentContentAsJson)
       throws IOException {
     databaseTestService.insertTestDocuments(amount, indexName, documentContentAsJson);
   }
 
-  public void performLowLevelBulkRequest(String methodName, String endpoint, String bulkPayload)
-      throws IOException {
+  public void performLowLevelBulkRequest(
+      final String methodName, final String endpoint, final String bulkPayload) throws IOException {
     databaseTestService.performLowLevelBulkRequest(methodName, endpoint, bulkPayload);
   }
 
@@ -413,15 +223,15 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     return databaseTestService.getMappingFields(indexName);
   }
 
-  public boolean indexExists(String versionedIndexName, Boolean addMappingFeatures) {
+  public boolean indexExists(final String versionedIndexName, final Boolean addMappingFeatures) {
     return databaseTestService.indexExists(versionedIndexName, addMappingFeatures);
   }
 
   public void createIndex(
       final String optimizeIndexNameWithVersion,
       final String optimizeIndexAliasForIndex,
-      DefaultIndexMappingCreator mapping,
-      Boolean isWriteIndex)
+      final DefaultIndexMappingCreator mapping,
+      final Boolean isWriteIndex)
       throws IOException {
     createIndex(
         optimizeIndexNameWithVersion, Map.of(optimizeIndexAliasForIndex, isWriteIndex), mapping);
@@ -430,16 +240,17 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
   public void createIndex(
       final String optimizeIndexNameWithVersion,
       final Map<String, Boolean> aliases,
-      DefaultIndexMappingCreator mapping)
+      final DefaultIndexMappingCreator mapping)
       throws IOException {
     databaseTestService.createIndex(optimizeIndexNameWithVersion, aliases, mapping);
   }
 
-  public boolean templateExists(String optimizeIndexTemplateNameWithVersion) throws IOException {
+  public boolean templateExists(final String optimizeIndexTemplateNameWithVersion)
+      throws IOException {
     return databaseTestService.templateExists(optimizeIndexTemplateNameWithVersion);
   }
 
-  public boolean isAliasReadOnly(String readOnlyAliasForIndex) throws IOException {
+  public boolean isAliasReadOnly(final String readOnlyAliasForIndex) throws IOException {
     return databaseTestService.isAliasReadOnly(readOnlyAliasForIndex);
   }
 }

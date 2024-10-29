@@ -33,11 +33,11 @@ import org.camunda.bpm.model.bpmn.instance.SubProcess;
 import org.camunda.bpm.model.bpmn.instance.UserTask;
 import org.slf4j.Logger;
 
-public class BpmnModelUtil {
+public final class BpmnModelUtil {
 
   public static final String BPMN_ELEMENT_ATTRIBUTE = "bpmnElement";
   public static final String IS_EXPANDED_ATTRIBUTE = "isExpanded";
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(BpmnModelUtil.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(BpmnModelUtil.class);
 
   private BpmnModelUtil() {}
 
@@ -69,7 +69,7 @@ public class BpmnModelUtil {
           .filter(Objects::nonNull)
           .findFirst();
     } catch (final Exception exc) {
-      log.warn("Failed parsing the BPMN xml.", exc);
+      LOG.warn("Failed parsing the BPMN xml.", exc);
       return Optional.empty();
     }
   }

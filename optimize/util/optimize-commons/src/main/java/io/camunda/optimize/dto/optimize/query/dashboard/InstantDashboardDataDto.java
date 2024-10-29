@@ -92,6 +92,7 @@ public class InstantDashboardDataDto {
         + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String instantDashboardId = "instantDashboardId";

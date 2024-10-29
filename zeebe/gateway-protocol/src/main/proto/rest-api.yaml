@@ -754,7 +754,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UserTaskVariablesSearchQueryRequest"
+              $ref: "#/components/schemas/UserTaskVariableSearchQueryRequest"
       responses:
         "200":
           description: >
@@ -1085,6 +1085,67 @@ paths:
         "500":
           description: >
             An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /process-definitions/{processDefinitionsKey}/form:
+    get:
+      tags:
+        - Process definition
+      operationId: getStartProcessForm
+      summary: Get start process form
+      description: |
+        Get the start form of a process.
+
+        :::note
+        This endpoint will only return linked forms. This endpoint does not support embedded forms.
+        :::
+
+        :::note
+        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
+      parameters:
+        - name: processDefinitionsKey
+          in: path
+          required: true
+          description: The process key.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: >
+            The form is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FormItem"
+        "204":
+          description: >
+            The process was found, but no form is associated with it.
+        "400":
+          description: "Bad request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "Not found"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: "Internal server error"
           content:
             application/problem+json:
               schema:
@@ -1970,6 +2031,64 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /authorizations/search:
+    post:
+      tags:
+        - Authorization
+      summary: "Query authorizations (alpha)"
+      description: |
+        Search for authorizations based on given criteria.
+
+        :::note
+        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
+      operationId: "findAuthorizations"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthorizationSearchQueryRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthorizationSearchResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "Forbidden"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "Not found"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: "Internal server error"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+
 
   /users:
     post:
@@ -2340,18 +2459,6 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: "Forbidden"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: "Not found"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
         "500":
           description: "Internal server error"
           content:
@@ -2649,7 +2756,7 @@ components:
       properties:
         filter:
           $ref: "#/components/schemas/UserTaskFilterRequest"
-    UserTaskVariablesSearchQueryRequest:
+    UserTaskVariableSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
       description: User task search query request.
@@ -3537,6 +3644,54 @@ components:
         tenantId:
           type: string
           description: The tenant ID of the decision definition.
+    PermissionTypeEnum:
+        description: Specifies the type of permissions.
+        enum:
+          - CREATE
+          - READ
+          - UPDATE
+          - DELETE
+          - DELETE_PROCESS
+          - DELETE_DRD
+          - DELETE_FORM
+    ResourceTypeEnum:
+      description: The type of resource to add/remove permissions to/from.
+      enum:
+        - AUTHORIZATION
+        - MAPPING_RULE
+        - MESSAGE
+        - BATCH
+        - APPLICATION
+        - SYSTEM
+        - TENANT
+        - DEPLOYMENT
+        - PROCESS_DEFINITION
+        - DECISION_REQUIREMENTS_DEFINITION
+        - DECISION_DEFINITION
+        - GROUP
+        - USER
+        - ROLE
+    OwnerTypeEnum:
+      description: The type of the owner of permissions.
+      enum:
+        - USER
+        - ROLE
+        - GROUP
+        - MAPPING
+        - UNSPECIFIED
+    PermissionDTO:
+      type: object
+      properties:
+        permissionType:
+          description: Specifies the type of permissions.
+          type: object
+          allOf:
+              - $ref: "#/components/schemas/PermissionTypeEnum"
+        resourceIds:
+          type: array
+          description: A list of resource IDs the permission relates to.
+          items:
+            type: string
     AuthorizationPatchRequest:
       type: object
       properties:
@@ -3547,39 +3702,66 @@ components:
             - ADD
             - REMOVE
         resourceType:
-          description: The type of resource to add/remove perissions to/from.
-          enum:
-            - AUTHORIZATION
-            - MAPPING_RULE
-            - MESSAGE
-            - BATCH
-            - APPLICATION
-            - SYSTEM
-            - TENANT
-            - DEPLOYMENT
-            - PROCESS_DEFINITION
-            - DECISION_REQUIREMENTS_DEFINITION
-            - DECISION_DEFINITION
-            - GROUP
-            - USER
-            - ROLE
+          description: The type of resource to add/remove permissions to/from.
+          type: object
+          allOf:
+             - $ref: "#/components/schemas/ResourceTypeEnum"
         permissions:
           type: array
           description: The permissions to add/remove.
           items:
-            properties:
-              permissionType:
-                description: Specifies the type of permissions.
-                enum:
-                  - CREATE
-                  - READ
-                  - UPDATE
-                  - DELETE
-              resourceIds:
-                type: array
-                description: A list of resource IDs the permission relates to.
-                items:
-                  type: string
+             $ref: "#/components/schemas/PermissionDTO"
+    AuthorizationSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      type: object
+      properties:
+        filter:
+          allOf:
+            - $ref: "#/components/schemas/AuthorizationFilterRequest"
+    AuthorizationFilterRequest:
+      type: object
+      properties:
+        ownerType:
+          description: The type of the owner of permissions.
+          type: object
+          allOf:
+            - $ref: "#/components/schemas/OwnerTypeEnum"
+        ownerKey:
+          description: The id of the owner of permissions.
+          type: integer
+          format: int64
+    AuthorizationResponse:
+      type: "object"
+      properties:
+        ownerKey:
+            description: The id of the owner of permissions.
+            type: integer
+            format: int64
+        ownerType:
+          description: The type of the owner of permissions.
+          type: object
+          allOf:
+              - $ref: "#/components/schemas/OwnerTypeEnum"
+        resourceType:
+          description: The type of resource that owner have permissions.
+          type: object
+          allOf:
+             - $ref: "#/components/schemas/ResourceTypeEnum"
+        permissions:
+          type: array
+          description: The permissions.
+          items:
+            $ref: "#/components/schemas/PermissionDTO"
+    AuthorizationSearchResponse:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuthorizationResponse"
     UserRequest:
       type: "object"
       properties:
@@ -4565,7 +4747,7 @@ components:
     DocumentReference:
       type: object
       properties:
-        documentType:
+        camunda.document.type:
           type: string
           description: Document discriminator. Always set to "camunda".
           enum:
@@ -4580,7 +4762,6 @@ components:
           $ref: "#/components/schemas/DocumentMetadata"
     DocumentMetadata:
       type: object
-      additionalProperties: true
       properties:
         contentType:
           type: string
@@ -4596,14 +4777,19 @@ components:
           type: integer
           format: int64
           description: The size of the document in bytes.
+        customProperties:
+            type: object
+            description: Custom properties of the document.
+            additionalProperties: true
+
     DocumentLinkRequest:
       type: object
       properties:
-        expiresAt:
-          type: string
-          format: date-time
-          description: The date and time when the link expires.
-          nullable: true
+        timeToLive:
+          type: integer
+          format: int64
+          description: The time-to-live of the document link in ms.
+          default: 3600000 # 1 hour
     DocumentLink:
       type: object
       properties:
@@ -5044,6 +5230,7 @@ components:
           description: The version of the form.
           type: integer
           format: int64
+
   securitySchemes:
     bearerAuth:
       type: http

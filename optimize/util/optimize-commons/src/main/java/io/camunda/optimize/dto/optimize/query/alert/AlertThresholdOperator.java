@@ -14,8 +14,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum AlertThresholdOperator {
   GREATER(ALERT_THRESHOLD_OPERATOR_GREATER),
-  LESS(ALERT_THRESHOLD_OPERATOR_LESS),
-  ;
+  LESS(ALERT_THRESHOLD_OPERATOR_LESS);
 
   private final String id;
 

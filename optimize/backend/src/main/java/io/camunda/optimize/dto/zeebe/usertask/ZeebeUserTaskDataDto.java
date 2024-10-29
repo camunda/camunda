@@ -17,7 +17,7 @@ import org.slf4j.Logger;
 
 public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ZeebeUserTaskDataDto.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ZeebeUserTaskDataDto.class);
   private long userTaskKey;
   private String assignee;
   private List<String> candidateGroupsList;
@@ -46,7 +46,7 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
     return DateFormatterUtil.getOffsetDateTimeFromIsoZoneDateTimeString(dueDate)
         .orElseGet(
             () -> {
-              log.info(
+              LOG.info(
                   "Unable to parse due date of userTask record: {}. UserTask will be imported without dueDate data.",
                   dueDate);
               return null;
@@ -138,83 +138,83 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
     return this.creationTimestamp;
   }
 
-  public void setUserTaskKey(long userTaskKey) {
+  public void setUserTaskKey(final long userTaskKey) {
     this.userTaskKey = userTaskKey;
   }
 
-  public void setAssignee(String assignee) {
+  public void setAssignee(final String assignee) {
     this.assignee = assignee;
   }
 
-  public void setCandidateGroupsList(List<String> candidateGroupsList) {
+  public void setCandidateGroupsList(final List<String> candidateGroupsList) {
     this.candidateGroupsList = candidateGroupsList;
   }
 
-  public void setCandidateUsersList(List<String> candidateUsersList) {
+  public void setCandidateUsersList(final List<String> candidateUsersList) {
     this.candidateUsersList = candidateUsersList;
   }
 
-  public void setDueDate(String dueDate) {
+  public void setDueDate(final String dueDate) {
     this.dueDate = dueDate;
   }
 
-  public void setElementId(String elementId) {
+  public void setElementId(final String elementId) {
     this.elementId = elementId;
   }
 
-  public void setElementInstanceKey(long elementInstanceKey) {
+  public void setElementInstanceKey(final long elementInstanceKey) {
     this.elementInstanceKey = elementInstanceKey;
   }
 
-  public void setBpmnProcessId(String bpmnProcessId) {
+  public void setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
   }
 
-  public void setProcessDefinitionVersion(int processDefinitionVersion) {
+  public void setProcessDefinitionVersion(final int processDefinitionVersion) {
     this.processDefinitionVersion = processDefinitionVersion;
   }
 
-  public void setProcessDefinitionKey(long processDefinitionKey) {
+  public void setProcessDefinitionKey(final long processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
   }
 
-  public void setProcessInstanceKey(long processInstanceKey) {
+  public void setProcessInstanceKey(final long processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
   }
 
-  public void setTenantId(String tenantId) {
+  public void setTenantId(final String tenantId) {
     this.tenantId = tenantId;
   }
 
-  public void setChangedAttributes(List<String> changedAttributes) {
+  public void setChangedAttributes(final List<String> changedAttributes) {
     this.changedAttributes = changedAttributes;
   }
 
-  public void setVariables(Map<String, Object> variables) {
+  public void setVariables(final Map<String, Object> variables) {
     this.variables = variables;
   }
 
-  public void setFollowUpDate(String followUpDate) {
+  public void setFollowUpDate(final String followUpDate) {
     this.followUpDate = followUpDate;
   }
 
-  public void setFormKey(long formKey) {
+  public void setFormKey(final long formKey) {
     this.formKey = formKey;
   }
 
-  public void setAction(String action) {
+  public void setAction(final String action) {
     this.action = action;
   }
 
-  public void setExternalFormReference(String externalFormReference) {
+  public void setExternalFormReference(final String externalFormReference) {
     this.externalFormReference = externalFormReference;
   }
 
-  public void setCustomHeaders(Map<String, String> customHeaders) {
+  public void setCustomHeaders(final Map<String, String> customHeaders) {
     this.customHeaders = customHeaders;
   }
 
-  public void setCreationTimestamp(long creationTimestamp) {
+  public void setCreationTimestamp(final long creationTimestamp) {
     this.creationTimestamp = creationTimestamp;
   }
 
@@ -274,6 +274,7 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
         + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String userTaskKey = "userTaskKey";

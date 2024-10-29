@@ -24,7 +24,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.UnaryOperator;
 
-public class DefinitionQueryUtilES {
+public final class DefinitionQueryUtilES {
 
   private DefinitionQueryUtilES() {}
 
@@ -78,7 +78,7 @@ public class DefinitionQueryUtilES {
       final List<String> tenantIds,
       final AbstractInstanceIndex<?> type,
       final UnaryOperator<String> getLatestVersionToKey) {
-    BoolQuery.Builder bb = new BoolQuery.Builder();
+    final BoolQuery.Builder bb = new BoolQuery.Builder();
     bb.must(
             m ->
                 m.term(

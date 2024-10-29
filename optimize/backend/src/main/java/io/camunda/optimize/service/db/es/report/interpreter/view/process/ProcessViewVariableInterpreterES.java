@@ -38,6 +38,7 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class ProcessViewVariableInterpreterES
     extends AbstractProcessViewMultiAggregationInterpreterES {
+
   private static final String NESTED_VARIABLE_AGGREGATION = "nestedVariableAggregation";
   private static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
 
@@ -51,7 +52,7 @@ public class ProcessViewVariableInterpreterES
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     final VariableViewPropertyDto variableViewDto =
         ProcessViewVariableInterpreterHelper.getVariableViewDto(context);
-    return ViewProperty.VARIABLE(variableViewDto.getName(), variableViewDto.getType());
+    return ViewProperty.variable(variableViewDto.getName(), variableViewDto.getType());
   }
 
   @Override

@@ -158,7 +158,7 @@ const VariableEditor: React.FC<Props> = ({
                       }}
                       size="sm"
                       kind="ghost"
-                      align="top-right"
+                      align="top-end"
                       leaveDelayMs={100}
                     >
                       <Popup />
@@ -262,7 +262,7 @@ const VariableEditor: React.FC<Props> = ({
                             }}
                             size="sm"
                             kind="ghost"
-                            align="top-right"
+                            align="top-end"
                             leaveDelayMs={100}
                           >
                             <Popup />
@@ -277,7 +277,7 @@ const VariableEditor: React.FC<Props> = ({
                             }}
                             size="sm"
                             kind="ghost"
-                            align="top-right"
+                            align="top-end"
                             leaveDelayMs={100}
                           >
                             <Close />

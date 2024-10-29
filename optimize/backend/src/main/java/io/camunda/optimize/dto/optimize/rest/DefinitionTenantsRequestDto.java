@@ -63,7 +63,7 @@ public class DefinitionTenantsRequestDto {
         + ")";
   }
 
-  private static List<String> $default$versions() {
+  private static List<String> defaultVersions() {
     return new ArrayList<>();
   }
 
@@ -73,15 +73,15 @@ public class DefinitionTenantsRequestDto {
 
   public static class DefinitionTenantsRequestDtoBuilder {
 
-    private List<String> versions$value;
-    private boolean versions$set;
+    private List<String> versionsValue;
+    private boolean versionsSet;
     private String filterByCollectionScope;
 
     DefinitionTenantsRequestDtoBuilder() {}
 
     public DefinitionTenantsRequestDtoBuilder versions(final List<String> versions) {
-      versions$value = versions;
-      versions$set = true;
+      versionsValue = versions;
+      versionsSet = true;
       return this;
     }
 
@@ -92,17 +92,17 @@ public class DefinitionTenantsRequestDto {
     }
 
     public DefinitionTenantsRequestDto build() {
-      List<String> versions$value = this.versions$value;
-      if (!versions$set) {
-        versions$value = DefinitionTenantsRequestDto.$default$versions();
+      List<String> versionsValue = this.versionsValue;
+      if (!versionsSet) {
+        versionsValue = DefinitionTenantsRequestDto.defaultVersions();
       }
-      return new DefinitionTenantsRequestDto(versions$value, filterByCollectionScope);
+      return new DefinitionTenantsRequestDto(versionsValue, filterByCollectionScope);
     }
 
     @Override
     public String toString() {
-      return "DefinitionTenantsRequestDto.DefinitionTenantsRequestDtoBuilder(versions$value="
-          + versions$value
+      return "DefinitionTenantsRequestDto.DefinitionTenantsRequestDtoBuilder(versionsValue="
+          + versionsValue
           + ", filterByCollectionScope="
           + filterByCollectionScope
           + ")";

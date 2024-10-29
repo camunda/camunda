@@ -22,6 +22,7 @@ import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.or;
 import static io.camunda.optimize.service.db.os.report.filter.util.DateHistogramFilterUtilOS.createDecisionDateHistogramLimitingFilter;
 import static io.camunda.optimize.service.db.os.report.filter.util.DateHistogramFilterUtilOS.createFilterBoolQueryBuilder;
+import static io.camunda.optimize.service.db.os.report.filter.util.DateHistogramFilterUtilOS.createModelElementDateHistogramLimitingFilterQueryFor;
 import static io.camunda.optimize.service.db.os.report.filter.util.DateHistogramFilterUtilOS.extendBounds;
 import static io.camunda.optimize.service.db.os.report.filter.util.DateHistogramFilterUtilOS.getExtendedBoundsFromDateFilters;
 import static io.camunda.optimize.service.db.os.report.interpreter.util.AggregateByDateUnitMapperOS.mapToCalendarInterval;
@@ -35,7 +36,6 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.filter.Insta
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceStartDateFilterDto;
 import io.camunda.optimize.service.db.os.report.context.DateAggregationContextOS;
 import io.camunda.optimize.service.db.os.report.filter.ProcessQueryFilterEnhancerOS;
-import io.camunda.optimize.service.db.os.report.interpreter.util.FilterLimitedAggregationUtilOS;
 import io.camunda.optimize.service.db.report.service.DateAggregationService;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
@@ -77,7 +77,7 @@ public class DateAggregationServiceOS extends DateAggregationService {
 
   private final DateTimeFormatter dateTimeFormatter;
 
-  public DateAggregationServiceOS(DateTimeFormatter dateTimeFormatter) {
+  public DateAggregationServiceOS(final DateTimeFormatter dateTimeFormatter) {
     this.dateTimeFormatter = dateTimeFormatter;
   }
 
@@ -94,6 +94,22 @@ public class DateAggregationServiceOS extends DateAggregationService {
               context, this::createFilterLimitedProcessDateHistogramWithSubAggregation));
     }
     return Optional.of(createFilterLimitedProcessDateHistogramWithSubAggregation(context));
+  }
+
+  public Optional<Pair<String, Aggregation>> createModelElementDateAggregation(
+      final DateAggregationContextOS context) {
+    if (context.getMinMaxStats().isEmpty()) {
+      // no instances present
+      return Optional.empty();
+    }
+
+    final Pair<String, Aggregation> agg =
+        AggregateByDateUnit.AUTOMATIC.equals(context.getAggregateByDateUnit())
+            ? createAutomaticIntervalAggregationOrFallbackToMonth(
+                context, this::createFilterLimitedModelElementDateHistogramWithSubAggregation)
+            : createFilterLimitedModelElementDateHistogramWithSubAggregation(context);
+
+    return Optional.of(agg);
   }
 
   public Optional<Pair<String, Aggregation>> createDateVariableAggregation(
@@ -164,14 +180,14 @@ public class DateAggregationServiceOS extends DateAggregationService {
       String dateTime, final ZoneId timezone, final DateTimeFormatter formatter) {
     try {
       return formatToCorrectTimezone(dateTime, timezone, formatter);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       try {
         dateTime =
             java.time.Instant.ofEpochMilli(Long.parseLong(dateTime))
                 .atZone(ZoneId.of("UTC"))
                 .format(formatter);
         return formatToCorrectTimezone(dateTime, timezone, formatter);
-      } catch (Exception e2) {
+      } catch (final Exception e2) {
         throw new OptimizeRuntimeException("Failed to parse date time: " + dateTime, e2);
       }
     }
@@ -201,8 +217,9 @@ public class DateAggregationServiceOS extends DateAggregationService {
 
   private Pair<String, Aggregation> createDateHistogramAggregation(
       final DateAggregationContextOS context,
-      Consumer<DateHistogramAggregation.Builder> dateHistogramAggregationBuilderModification) {
-    DateHistogramAggregation.Builder dateHistogramAggregationBuilder =
+      final Consumer<DateHistogramAggregation.Builder>
+          dateHistogramAggregationBuilderModification) {
+    final DateHistogramAggregation.Builder dateHistogramAggregationBuilder =
         new DateHistogramAggregation.Builder()
             .order(b -> b.key(SortOrder.Desc))
             .field(context.getDateField())
@@ -224,8 +241,8 @@ public class DateAggregationServiceOS extends DateAggregationService {
     return Pair.of(
         context.getDateAggregationName().orElse(DATE_AGGREGATION),
         new Aggregation.Builder()
-            .aggregations(context.getSubAggregations())
             .dateHistogram(dateHistogramAggregationBuilder.build())
+            .aggregations(context.getSubAggregations())
             .build());
   }
 
@@ -318,13 +335,13 @@ public class DateAggregationServiceOS extends DateAggregationService {
     do {
       // this is a do while loop to ensure there's always at least one bucket, even when min and max
       // are equal
-      ZonedDateTime nextStart = start.plus(intervalDuration);
-      boolean isLast = nextStart.isAfter(max) || nextStart.isEqual(max);
+      final ZonedDateTime nextStart = start.plus(intervalDuration);
+      final boolean isLast = nextStart.isAfter(max) || nextStart.isEqual(max);
       // plus 1 ms because the end of the range is exclusive yet we want to make sure max falls into
       // the last bucket
-      ZonedDateTime end = isLast ? nextStart.plus(1, ChronoUnit.MILLIS) : nextStart;
+      final ZonedDateTime end = isLast ? nextStart.plus(1, ChronoUnit.MILLIS) : nextStart;
 
-      DateRangeExpression range =
+      final DateRangeExpression range =
           new DateRangeExpression.Builder()
               .key(dateTimeFormatter.format(start))
               .from(fieldDateMath(dateTimeFormatter.format(start)))
@@ -365,13 +382,12 @@ public class DateAggregationServiceOS extends DateAggregationService {
     final Pair<String, Aggregation> dateHistogramAggregation =
         createDateHistogramAggregation(context, extendBoundsConsumer(context));
     final Query limitFilterQuery = createProcessDateHistogramLimitingFilterQuery(context);
-    return FilterLimitedAggregationUtilOS.wrapWithFilterLimitedParentAggregation(
-        limitFilterQuery, dateHistogramAggregation);
+    return wrapWithFilterLimitedParentAggregation(limitFilterQuery, dateHistogramAggregation);
   }
 
   private Consumer<DateHistogramAggregation.Builder> extendBoundsConsumer(
       final DateAggregationContextOS context) {
-    return (DateHistogramAggregation.Builder builder) -> {
+    return (final DateHistogramAggregation.Builder builder) -> {
       final ProcessQueryFilterEnhancerOS queryFilterEnhancer =
           context.getProcessQueryFilterEnhancer();
       final List<DateFilterDataDto<?>> dateFilters =
@@ -422,5 +438,14 @@ public class DateAggregationServiceOS extends DateAggregationService {
                     queryFilterEnhancer.getInstanceEndDateQueryFilter(),
                     context.getFilterContext());
     return filter(limitFilterQueries);
+  }
+
+  private Pair<String, Aggregation> createFilterLimitedModelElementDateHistogramWithSubAggregation(
+      final DateAggregationContextOS context) {
+    final Pair<String, Aggregation> dateHistogramAggregation =
+        createDateHistogramAggregation(context, x -> {});
+    final Query limitFilterQuery =
+        createModelElementDateHistogramLimitingFilterQueryFor(context, dateTimeFormatter);
+    return wrapWithFilterLimitedParentAggregation(limitFilterQuery, dateHistogramAggregation);
   }
 }

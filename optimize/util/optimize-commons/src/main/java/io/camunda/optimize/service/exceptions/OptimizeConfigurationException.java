@@ -13,6 +13,7 @@ import java.util.Optional;
 
 public class OptimizeConfigurationException extends OptimizeRuntimeException {
 
+  @SuppressWarnings("checkstyle:MutableException")
   private Map<String, String> deletedKeysAndDocumentationLink = Collections.emptyMap();
 
   public OptimizeConfigurationException(final String message) {

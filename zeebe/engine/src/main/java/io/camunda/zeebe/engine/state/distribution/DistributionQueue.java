@@ -8,7 +8,8 @@
 package io.camunda.zeebe.engine.state.distribution;
 
 public enum DistributionQueue {
-  IDENTITY("IDENTITY");
+  IDENTITY("IDENTITY"),
+  DEPLOYMENT("DEPLOYMENT");
 
   private final String queueId;
 

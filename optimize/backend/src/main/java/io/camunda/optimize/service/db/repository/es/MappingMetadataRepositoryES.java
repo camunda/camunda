@@ -19,17 +19,17 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class MappingMetadataRepositoryES implements MappingMetadataRepository {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(MappingMetadataRepositoryES.class);
   private final OptimizeElasticsearchClient esClient;
 
-  public MappingMetadataRepositoryES(OptimizeElasticsearchClient esClient) {
+  public MappingMetadataRepositoryES(final OptimizeElasticsearchClient esClient) {
     this.esClient = esClient;
   }
 
   @Override
   public String[] getIndexAliasesWithImportIndexFlag(final boolean isImportIndex) {
-    MappingMetadataUtilES mappingUtil = new MappingMetadataUtilES(esClient);
+    final MappingMetadataUtilES mappingUtil = new MappingMetadataUtilES(esClient);
     return mappingUtil.getAllMappings(esClient.getIndexNameService().getIndexPrefix()).stream()
         .filter(mapping -> isImportIndex == mapping.isImportIndex())
         .map(esClient.getIndexNameService()::getOptimizeIndexAliasForIndex)

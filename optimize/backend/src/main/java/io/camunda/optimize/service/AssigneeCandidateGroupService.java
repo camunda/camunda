@@ -47,7 +47,7 @@ public class AssigneeCandidateGroupService {
 
   public static final IdentityType ASSIGNEE_IDENTITY_TYPE = IdentityType.USER;
   private static final IdentityType CANDIDATE_GROUP_IDENTITY_TYPE = IdentityType.GROUP;
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(AssigneeCandidateGroupService.class);
 
   private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;

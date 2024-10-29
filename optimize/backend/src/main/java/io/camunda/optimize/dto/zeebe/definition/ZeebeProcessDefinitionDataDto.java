@@ -74,35 +74,35 @@ public class ZeebeProcessDefinitionDataDto implements ProcessMetadataValue {
     return this.versionTag;
   }
 
-  public void setResource(byte[] resource) {
+  public void setResource(final byte[] resource) {
     this.resource = resource;
   }
 
-  public void setProcessDefinitionKey(long processDefinitionKey) {
+  public void setProcessDefinitionKey(final long processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
   }
 
-  public void setVersion(int version) {
+  public void setVersion(final int version) {
     this.version = version;
   }
 
-  public void setChecksum(byte[] checksum) {
+  public void setChecksum(final byte[] checksum) {
     this.checksum = checksum;
   }
 
-  public void setResourceName(String resourceName) {
+  public void setResourceName(final String resourceName) {
     this.resourceName = resourceName;
   }
 
-  public void setBpmnProcessId(String bpmnProcessId) {
+  public void setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
   }
 
-  public void setTenantId(String tenantId) {
+  public void setTenantId(final String tenantId) {
     this.tenantId = tenantId;
   }
 
-  public void setVersionTag(String versionTag) {
+  public void setVersionTag(final String versionTag) {
     this.versionTag = versionTag;
   }
 

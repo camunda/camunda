@@ -129,6 +129,7 @@ public abstract class OptimizeEntityExportDto {
         + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String id = "id";

@@ -147,15 +147,15 @@ public interface QueryDSL {
   }
 
   static <A> Query terms(final String field, final Collection<A> values) {
-    Function<A, FieldValue> toFieldValue =
+    final Function<A, FieldValue> toFieldValue =
         (x) -> {
-          if (x instanceof String s) {
+          if (x instanceof final String s) {
             return FieldValue.of(s);
-          } else if (x instanceof Integer i) {
+          } else if (x instanceof final Integer i) {
             return FieldValue.of(i);
-          } else if (x instanceof Long l) {
+          } else if (x instanceof final Long l) {
             return FieldValue.of(l);
-          } else if (x instanceof Boolean b) {
+          } else if (x instanceof final Boolean b) {
             return FieldValue.of(b);
           } else {
             throw new OptimizeRuntimeException("Unsupported terms type: " + x.getClass());
@@ -192,7 +192,7 @@ public interface QueryDSL {
     return match(field, value, operator, FieldValue::of);
   }
 
-  static Query match(String field, String value) {
+  static Query match(final String field, final String value) {
     return match(field, value, Operator.And);
   }
 
@@ -221,7 +221,7 @@ public interface QueryDSL {
   }
 
   static Query or(final String minimumShouldMatch, final Query... queries) {
-    BoolQuery.Builder builder =
+    final BoolQuery.Builder builder =
         new Builder().should(nonNull(queries)).minimumShouldMatch(minimumShouldMatch);
     return builder.build().toQuery();
   }

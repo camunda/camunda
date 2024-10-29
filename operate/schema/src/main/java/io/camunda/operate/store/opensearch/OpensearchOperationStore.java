@@ -16,10 +16,6 @@ import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBu
 import static io.camunda.operate.util.ExceptionHelper.withPersistenceException;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.entities.BatchOperationEntity;
-import io.camunda.operate.entities.OperationEntity;
-import io.camunda.operate.entities.OperationState;
-import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
@@ -28,6 +24,10 @@ import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.OperationStore;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.store.opensearch.dsl.RequestDSL;
+import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationState;
+import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;

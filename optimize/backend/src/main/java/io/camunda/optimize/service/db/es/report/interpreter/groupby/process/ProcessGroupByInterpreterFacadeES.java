@@ -33,7 +33,7 @@ public class ProcessGroupByInterpreterFacadeES
     extends AbstractInterpreterFacade<ProcessGroupBy, ProcessGroupByInterpreterES>
     implements ProcessGroupByInterpreterES {
 
-  public ProcessGroupByInterpreterFacadeES(List<ProcessGroupByInterpreterES> interpreters) {
+  public ProcessGroupByInterpreterFacadeES(final List<ProcessGroupByInterpreterES> interpreters) {
     super(interpreters, ProcessGroupByInterpreterES::getSupportedGroupBys);
   }
 

@@ -33,7 +33,7 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class AlertReaderOS implements AlertReader {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(AlertReaderOS.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(AlertReaderOS.class);
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
 
@@ -50,7 +50,7 @@ public class AlertReaderOS implements AlertReader {
 
   @Override
   public List<AlertDefinitionDto> getStoredAlerts() {
-    log.debug("getting all stored alerts");
+    LOG.debug("getting all stored alerts");
 
     final SearchRequest.Builder requestBuilder =
         searchRequestBuilder(ALERT_INDEX_NAME).query(matchAll()).size(LIST_FETCH_LIMIT);
@@ -60,7 +60,7 @@ public class AlertReaderOS implements AlertReader {
 
   @Override
   public Optional<AlertDefinitionDto> getAlert(final String alertId) {
-    log.debug("Fetching alert with id [{}]", alertId);
+    LOG.debug("Fetching alert with id [{}]", alertId);
 
     final String errorMsg = format("Could not fetch alert with id [%s]", alertId);
     final GetResponse<AlertDefinitionDto> result =
@@ -71,7 +71,7 @@ public class AlertReaderOS implements AlertReader {
 
   @Override
   public List<AlertDefinitionDto> getAlertsForReport(final String reportId) {
-    log.debug("Fetching first {} alerts using report with id {}", LIST_FETCH_LIMIT, reportId);
+    LOG.debug("Fetching first {} alerts using report with id {}", LIST_FETCH_LIMIT, reportId);
 
     final SearchRequest.Builder requestBuilder =
         searchRequestBuilder(ALERT_INDEX_NAME)
@@ -83,7 +83,7 @@ public class AlertReaderOS implements AlertReader {
 
   @Override
   public List<AlertDefinitionDto> getAlertsForReports(final List<String> reportIds) {
-    log.debug("Fetching first {} alerts using reports with ids {}", LIST_FETCH_LIMIT, reportIds);
+    LOG.debug("Fetching first {} alerts using reports with ids {}", LIST_FETCH_LIMIT, reportIds);
 
     final SearchRequest.Builder requestBuilder =
         searchRequestBuilder(ALERT_INDEX_NAME)

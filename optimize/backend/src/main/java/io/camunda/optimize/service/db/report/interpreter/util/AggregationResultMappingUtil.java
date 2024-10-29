@@ -9,7 +9,7 @@ package io.camunda.optimize.service.db.report.interpreter.util;
 
 import java.util.Optional;
 
-public class AggregationResultMappingUtil {
+public final class AggregationResultMappingUtil {
 
   private AggregationResultMappingUtil() {}
 

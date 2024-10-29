@@ -39,7 +39,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ImportSchedulerManagerService implements ConfigurationReloadable {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ImportSchedulerManagerService.class);
   private final ImportIndexHandlerRegistry importIndexHandlerRegistry;
   private final BeanFactory beanFactory;
@@ -86,7 +86,7 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
       if (configurationService.isImportEnabled(scheduler.getDataImportSourceDto())) {
         scheduler.startImportScheduling();
       } else {
-        log.info(
+        LOG.info(
             "Import was disabled by config for import source {}.",
             scheduler.getDataImportSourceDto());
       }

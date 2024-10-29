@@ -28,7 +28,7 @@ public class OperatorMultipleValuesVariableFilterDataDtoUtil {
     }
   }
 
-  public static Object retrieveValue(OperatorMultipleValuesVariableFilterDataDto dto) {
+  public static Object retrieveValue(final OperatorMultipleValuesVariableFilterDataDto dto) {
     final String value = dto.getData().getValues().get(0);
     try {
       if (value != null) {

@@ -32,7 +32,7 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class TenantReaderOS implements TenantReader {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(TenantReaderOS.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(TenantReaderOS.class);
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
 
@@ -44,7 +44,7 @@ public class TenantReaderOS implements TenantReader {
 
   @Override
   public Set<TenantDto> getTenants() {
-    log.debug("Fetching all available tenants");
+    LOG.debug("Fetching all available tenants");
 
     final SearchRequest.Builder searchRequest =
         new SearchRequest.Builder()

@@ -26,7 +26,7 @@ public enum SnapshotState {
 
   private final boolean restorable;
 
-  SnapshotState(byte value, boolean completed, boolean restorable) {
+  SnapshotState(final byte value, final boolean completed, final boolean restorable) {
     this.value = value;
     this.completed = completed;
     this.restorable = restorable;
@@ -65,7 +65,7 @@ public enum SnapshotState {
    * @param value the state code
    * @return state
    */
-  public static SnapshotState fromValue(String value) {
+  public static SnapshotState fromValue(final String value) {
     return switch (value) {
       case "0" -> IN_PROGRESS;
       case "1" -> SUCCESS;

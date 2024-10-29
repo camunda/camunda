@@ -40,9 +40,9 @@ public class ExceptionUtil {
   }
 
   private static boolean isDbExceptionWithMessage(
-      final RuntimeException e, Function<String, Boolean> messageFilter) {
-    if (e instanceof ElasticsearchException err) {
-      ErrorCause errorCause = err.error().causedBy();
+      final RuntimeException e, final Function<String, Boolean> messageFilter) {
+    if (e instanceof final ElasticsearchException err) {
+      final ErrorCause errorCause = err.error().causedBy();
       if (errorCause != null) {
         return messageFilter.apply(errorCause.type());
       } else {
@@ -53,7 +53,7 @@ public class ExceptionUtil {
     } else if (e instanceof OptimizeRuntimeException) {
       if (e.getCause() != null) {
         if (e.getCause()
-            instanceof org.opensearch.client.transport.httpclient5.ResponseException re) {
+            instanceof final org.opensearch.client.transport.httpclient5.ResponseException re) {
           return messageFilter.apply(re.getMessage());
         }
       }

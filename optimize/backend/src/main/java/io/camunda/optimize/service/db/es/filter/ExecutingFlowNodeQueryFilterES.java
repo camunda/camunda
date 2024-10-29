@@ -38,7 +38,7 @@ public class ExecutingFlowNodeQueryFilterES
 
   private BoolQuery.Builder createFilterQueryBuilder(
       final ExecutingFlowNodeFilterDataDto flowNodeFilter) {
-    BoolQuery.Builder boolQueryBuilder = new BoolQuery.Builder();
+    final BoolQuery.Builder boolQueryBuilder = new BoolQuery.Builder();
     flowNodeFilter
         .getValues()
         .forEach(

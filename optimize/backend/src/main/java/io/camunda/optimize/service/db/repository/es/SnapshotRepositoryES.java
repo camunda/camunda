@@ -31,12 +31,12 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class SnapshotRepositoryES implements SnapshotRepository {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(SnapshotRepositoryES.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(SnapshotRepositoryES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
 
   public SnapshotRepositoryES(
-      OptimizeElasticsearchClient esClient, ConfigurationService configurationService) {
+      final OptimizeElasticsearchClient esClient, final ConfigurationService configurationService) {
     this.esClient = esClient;
     this.configurationService = configurationService;
   }
@@ -56,8 +56,8 @@ public class SnapshotRepositoryES implements SnapshotRepository {
 
   @Override
   public void triggerSnapshot(final String snapshotName, final String[] indexNames) {
-    log.info("Triggering async snapshot {}.", snapshotName);
-    CreateSnapshotRequest createSnapshotRequest =
+    LOG.info("Triggering async snapshot {}.", snapshotName);
+    final CreateSnapshotRequest createSnapshotRequest =
         CreateSnapshotRequest.of(
             b ->
                 b.repository(
@@ -82,17 +82,17 @@ public class SnapshotRepositoryES implements SnapshotRepository {
                   String.format(
                       "Encountered an error connecting to Elasticsearch while attempting to create snapshot [%s].",
                       snapshotName);
-              log.error(reason, e);
+              LOG.error(reason, e);
             } else {
               final String reason = String.format("Failed to take snapshot [%s]", snapshotName);
-              log.error(reason, e);
+              LOG.error(reason, e);
             }
           } else {
             final SnapshotInfo snapshotInfo = v.snapshot();
             switch (SnapshotState.valueOf(snapshotInfo.state())) {
               // should not be null as waitForCompletion is true on snapshot request
               case SUCCESS:
-                log.info("Successfully taken snapshot [{}].", snapshotInfo.snapshot());
+                LOG.info("Successfully taken snapshot [{}].", snapshotInfo.snapshot());
                 break;
               case FAILED:
               case INCOMPATIBLE:
@@ -100,7 +100,7 @@ public class SnapshotRepositoryES implements SnapshotRepository {
                     String.format(
                         "Snapshot execution failed for [%s], reason: %s",
                         snapshotInfo.snapshot(), snapshotInfo.reason());
-                log.error(reason);
+                LOG.error(reason);
                 break;
               case PARTIAL:
               default:
@@ -108,7 +108,7 @@ public class SnapshotRepositoryES implements SnapshotRepository {
                     String.format(
                         "Snapshot status [%s] for snapshot with ID [%s]",
                         snapshotInfo.state(), snapshotInfo.snapshot());
-                log.warn(reason);
+                LOG.warn(reason);
             }
           }
         });
@@ -124,11 +124,11 @@ public class SnapshotRepositoryES implements SnapshotRepository {
                   String.format(
                       "Encountered an error connecting to Elasticsearch while attempting to delete snapshots for backupID [%s].",
                       backupId);
-              log.error(reason, e);
+              LOG.error(reason, e);
             } else {
               final String reason =
                   String.format("Failed to delete snapshots for backupID [%s]", backupId);
-              log.error(reason, e);
+              LOG.error(reason, e);
             }
           } else {
             if (v.acknowledged()) {
@@ -136,13 +136,13 @@ public class SnapshotRepositoryES implements SnapshotRepository {
                   String.format(
                       "Request to delete all Optimize snapshots with the backupID [%d] successfully submitted",
                       backupId);
-              log.info(reason);
+              LOG.info(reason);
             } else {
               final String reason =
                   String.format(
                       "Request to delete all Optimize snapshots with the backupID [%d] was not acknowledged by Elasticsearch.",
                       backupId);
-              log.error(reason);
+              LOG.error(reason);
             }
           }
         });

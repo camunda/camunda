@@ -50,15 +50,15 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class DashboardWriterES implements DashboardWriter {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DashboardWriterES.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(DashboardWriterES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
   private final TaskRepositoryES taskRepositoryES;
 
   public DashboardWriterES(
-      OptimizeElasticsearchClient esClient,
-      ObjectMapper objectMapper,
-      TaskRepositoryES taskRepositoryES) {
+      final OptimizeElasticsearchClient esClient,
+      final ObjectMapper objectMapper,
+      final TaskRepositoryES taskRepositoryES) {
     this.esClient = esClient;
     this.objectMapper = objectMapper;
     this.taskRepositoryES = taskRepositoryES;
@@ -82,7 +82,7 @@ public class DashboardWriterES implements DashboardWriter {
       final String userId,
       final DashboardDefinitionRestDto dashboardDefinitionDto,
       final String id) {
-    log.debug("Writing new dashboard to Elasticsearch");
+    LOG.debug("Writing new dashboard to Elasticsearch");
 
     if (userId == null) {
       throw new OptimizeRuntimeException("userId is null");
@@ -125,22 +125,22 @@ public class DashboardWriterES implements DashboardWriter {
         final String message =
             "Could not write dashboard to Elasticsearch. "
                 + "Maybe the connection to Elasticsearch was lost?";
-        log.error(message);
+        LOG.error(message);
         throw new OptimizeRuntimeException(message);
       }
     } catch (final IOException e) {
       final String errorMessage = "Could not create dashboard.";
-      log.error(errorMessage, e);
+      LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
 
-    log.debug("Dashboard with id [{}] has successfully been created.", dashboardId);
+    LOG.debug("Dashboard with id [{}] has successfully been created.", dashboardId);
     return new IdResponseDto(dashboardId);
   }
 
   @Override
   public void updateDashboard(final DashboardDefinitionUpdateDto dashboard, final String id) {
-    log.debug("Updating dashboard with id [{}] in Elasticsearch", id);
+    LOG.debug("Updating dashboard with id [{}] in Elasticsearch", id);
     try {
       final UpdateResponse<DashboardDefinitionUpdateDto> updateResponse =
           esClient.update(
@@ -155,7 +155,7 @@ public class DashboardWriterES implements DashboardWriter {
               DashboardDefinitionUpdateDto.class);
 
       if (!updateResponse.shards().failures().isEmpty()) {
-        log.error(
+        LOG.error(
             "Was not able to update dashboard with id [{}] and name [{}].",
             id,
             dashboard.getName());
@@ -166,14 +166,14 @@ public class DashboardWriterES implements DashboardWriter {
           String.format(
               "Was not able to update dashboard with id [%s] and name [%s].",
               id, dashboard.getName());
-      log.error(errorMessage, e);
+      LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     } catch (final ElasticsearchException e) {
       final String errorMessage =
           String.format(
               "Was not able to update dashboard with id [%s] and name [%s]. Dashboard does not exist!",
               id, dashboard.getName());
-      log.error(errorMessage, e);
+      LOG.error(errorMessage, e);
       throw new NotFoundException(errorMessage, e);
     }
   }
@@ -181,7 +181,7 @@ public class DashboardWriterES implements DashboardWriter {
   @Override
   public void removeReportFromDashboards(final String reportId) {
     final String updateItem = String.format("report from dashboard with report ID [%s]", reportId);
-    log.info("Removing {}}.", updateItem);
+    LOG.info("Removing {}}.", updateItem);
 
     final Script removeReportFromDashboardScript =
         Script.of(
@@ -224,7 +224,7 @@ public class DashboardWriterES implements DashboardWriter {
 
   @Override
   public void deleteDashboard(final String dashboardId) {
-    log.debug("Deleting dashboard with id [{}]", dashboardId);
+    LOG.debug("Deleting dashboard with id [{}]", dashboardId);
     final DeleteResponse deleteResponse;
     try {
       deleteResponse =
@@ -236,7 +236,7 @@ public class DashboardWriterES implements DashboardWriter {
                           .refresh(Refresh.True)));
     } catch (final IOException e) {
       final String reason = String.format("Could not delete dashboard with id [%s].", dashboardId);
-      log.error(reason, e);
+      LOG.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
@@ -246,7 +246,7 @@ public class DashboardWriterES implements DashboardWriter {
               "Could not delete dashboard with id [%s]. Dashboard does not exist. "
                   + "Maybe it was already deleted by someone else?",
               dashboardId);
-      log.error(message);
+      LOG.error(message);
       throw new NotFoundException(message);
     }
   }

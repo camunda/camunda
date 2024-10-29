@@ -26,10 +26,10 @@ public interface RawProcessInstanceDataGroupByNoneExecutionPlanInterpreter {
   default void addNewVariablesAndDtoFieldsToTableColumnConfig(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> executionContext,
       final CommandEvaluationResult<Object> result) {
-    List<RawDataProcessInstanceDto> rawDataProcessInstanceDtos;
+    final List<RawDataProcessInstanceDto> rawDataProcessInstanceDtos;
     try {
       rawDataProcessInstanceDtos = (List<RawDataProcessInstanceDto>) result.getFirstMeasureData();
-    } catch (ClassCastException e) {
+    } catch (final ClassCastException e) {
       throw new OptimizeRuntimeException("Unexpected report evaluation result type", e);
     }
 
@@ -41,7 +41,7 @@ public interface RawProcessInstanceDataGroupByNoneExecutionPlanInterpreter {
             .map(varKey -> VARIABLE_PREFIX + varKey)
             .toList();
 
-    TableColumnDto tableColumns =
+    final TableColumnDto tableColumns =
         executionContext.getReportData().getConfiguration().getTableColumns();
     tableColumns.addNewAndRemoveUnexpectedVariableColumns(variableNames);
     tableColumns.addNewAndRemoveUnexpectedFlowNodeDurationColumns(

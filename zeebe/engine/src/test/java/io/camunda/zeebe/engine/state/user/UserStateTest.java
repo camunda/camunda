@@ -56,7 +56,7 @@ public class UserStateTest {
     // then
     final var persistedUser = userState.getUser(user.getUsername());
     assertThat(persistedUser).isPresent();
-    assertThat(persistedUser.get()).isEqualTo(user);
+    assertThat(persistedUser.get().getUser()).isEqualTo(user);
   }
 
   @DisplayName("should throw an exception when creating a user with a username that already exists")
@@ -201,11 +201,11 @@ public class UserStateTest {
     assertThat(persistedUser).isNotEmpty();
     assertThat(persistedUser.get())
         .extracting(
-            UserRecord::getUserKey,
-            UserRecord::getUsername,
-            UserRecord::getName,
-            UserRecord::getEmail,
-            UserRecord::getPassword)
+            PersistedUser::getUserKey,
+            PersistedUser::getUsername,
+            PersistedUser::getName,
+            PersistedUser::getEmail,
+            PersistedUser::getPassword)
         .containsExactly(userKey, username, name, email, password);
   }
 
@@ -381,6 +381,32 @@ public class UserStateTest {
     final var persistedUser = userState.getUser(userKey).get();
 
     // then
+    assertThat(persistedUser.getTenantIdsList()).isEmpty();
+  }
+
+  @Test
+  void shouldRemoveTenantFromUser() {
+    // given
+    final long userKey = 1L;
+    final var username = "username";
+    final var name = "Foo";
+    final var email = "foo@bar.com";
+    final var password = "password";
+    userState.create(
+        new UserRecord()
+            .setUserKey(userKey)
+            .setUsername(username)
+            .setName(name)
+            .setEmail(email)
+            .setPassword(password));
+    final var tenantId = "test-tenant-id";
+    userState.addTenantId(userKey, tenantId);
+
+    // when
+    userState.removeTenant(userKey, tenantId);
+
+    // then
+    final var persistedUser = userState.getUser(userKey).get();
     assertThat(persistedUser.getTenantIdsList()).isEmpty();
   }
 }

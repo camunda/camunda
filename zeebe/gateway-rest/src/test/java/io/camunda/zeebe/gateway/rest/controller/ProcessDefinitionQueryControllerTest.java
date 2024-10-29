@@ -8,15 +8,18 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.security.auth.Authentication;
+import io.camunda.service.FormServices;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
@@ -32,7 +35,6 @@ import org.springframework.http.MediaType;
     value = ProcessDefinitionQueryController.class,
     properties = "camunda.rest.query.enabled=true")
 public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
-
   static final String PROCESS_DEFINITION_URL = "/v2/process-definitions/";
   static final String PROCESS_DEFINITION_SEARCH_URL = PROCESS_DEFINITION_URL + "search";
 
@@ -45,7 +47,8 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
           "complexProcess.bpmn",
           5,
           "alpha",
-          "<default>");
+          "<default>",
+          "formId");
   static final String PROCESS_DEFINITION_ENTITY_JSON =
       """
       {
@@ -57,7 +60,6 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
           "versionTag": "alpha",
           "tenantId": "<default>"
       }""";
-
   static final String EXPECTED_SEARCH_RESPONSE =
       """
       {
@@ -93,16 +95,31 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
                       "complexProcess.bpmn",
                       5,
                       "alpha",
-                      "<default>")))
+                      "<default>",
+                      "formId")))
           .sortValues(new Object[] {"v"})
           .build();
-
+  private static final String FORM_ITEM_JSON =
+      """
+      {
+        "formKey": 0,
+        "tenantId": "tenant-1",
+        "bpmnId": "formId",
+        "schema": "schema",
+        "version": 1
+      }
+      """;
   @MockBean ProcessDefinitionServices processDefinitionServices;
+
+  @MockBean FormServices formServices;
 
   @BeforeEach
   void setupProcessDefinitionServices() {
     when(processDefinitionServices.withAuthentication(ArgumentMatchers.any(Authentication.class)))
         .thenReturn(processDefinitionServices);
+
+    when(formServices.withAuthentication(ArgumentMatchers.any(Authentication.class)))
+        .thenReturn(formServices);
   }
 
   @Test
@@ -129,7 +146,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   public void shouldReturn404ForInvalidProcessDefinitionKey() {
     // given
     when(processDefinitionServices.getByKey(17L))
-        .thenThrow(new NotFoundException("Process Definition with key 17 not found"));
+        .thenThrow(new NotFoundException("Process definition with key 17 not found"));
     // when / then
     webClient
         .get()
@@ -145,7 +162,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
                       "type": "about:blank",
                       "status": 404,
                       "title": "NOT_FOUND",
-                      "detail": "Process Definition with key 17 not found"
+                      "detail": "Process definition with key 17 not found"
                     }
                 """);
 
@@ -205,5 +222,76 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         .isNoContent();
     // Verify that the service was called with the valid key
     verify(processDefinitionServices).getProcessDefinitionXml(23L);
+  }
+
+  @Test
+  public void shouldReturnFormItemForValidFormKey() throws Exception {
+    when(processDefinitionServices.getByKey(1L))
+        .thenReturn(
+            new ProcessDefinitionEntity(
+                1L, "name", "id", "xml", "resource", 1, "tag", "tenant", "formId"));
+    when(formServices.getLatestVersionByFormId("formId"))
+        .thenReturn(Optional.of(new FormEntity("0", "tenant-1", "formId", "schema", 1L)));
+
+    webClient
+        .get()
+        .uri(PROCESS_DEFINITION_URL + "1/form")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(FORM_ITEM_JSON);
+
+    verify(processDefinitionServices, times(1)).getByKey(1L);
+    verify(formServices, times(1)).getLatestVersionByFormId("formId");
+  }
+
+  @Test
+  public void shouldReturn404ForFormInvaliProcessKey() throws Exception {
+    when(processDefinitionServices.getByKey(999L))
+        .thenThrow(new NotFoundException("Process definition with key 999 not found"));
+    webClient
+        .get()
+        .uri(PROCESS_DEFINITION_URL + "999/form")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "title": "NOT_FOUND",
+              "status": 404,
+              "detail": "Process definition with key 999 not found"
+            }
+            """);
+  }
+
+  @Test
+  public void shouldReturn500OnUnexpectedException() throws Exception {
+    when(processDefinitionServices.getByKey(1L))
+        .thenThrow(new RuntimeException("Unexpected error"));
+
+    webClient
+        .get()
+        .uri(PROCESS_DEFINITION_URL + "1/form")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .is5xxServerError()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "title": "java.lang.RuntimeException",
+              "status": 500,
+              "detail": "Unexpected error occurred during the request processing: Unexpected error",
+              "instance": "/v2/process-definitions/1/form"
+            }
+            """);
   }
 }

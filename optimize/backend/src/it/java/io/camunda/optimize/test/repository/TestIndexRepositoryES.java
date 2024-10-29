@@ -21,16 +21,16 @@ public class TestIndexRepositoryES implements TestIndexRepository {
 
   private final OptimizeElasticsearchClient esClient;
 
-  public TestIndexRepositoryES(OptimizeElasticsearchClient esClient) {
+  public TestIndexRepositoryES(final OptimizeElasticsearchClient esClient) {
     this.esClient = esClient;
   }
 
   @Override
   public Set<String> getAllIndexNames() {
-    GetIndexRequest request = GetIndexRequest.of(i -> i.index("*"));
+    final GetIndexRequest request = GetIndexRequest.of(i -> i.index("*"));
     try {
       return esClient.elasticsearchClient().indices().get(request).result().keySet();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }

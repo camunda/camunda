@@ -38,7 +38,7 @@ public class CCSaaSUserCache {
 
   private static final String ERROR_MISSING_ACCESS_TOKEN =
       "Missing user access token for service access.";
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(CCSaaSUserCache.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(CCSaaSUserCache.class);
   private final Cache<String, CloudUserDto> cloudUsersCache;
   private final CCSaaSUserClient userClient;
   private final AccountsUserAccessTokenProvider accessTokenProvider;

@@ -21,9 +21,9 @@ import java.util.stream.Collectors;
 public class UpgradeStepLogService {
 
   public void initializeOrUpdate(final SchemaUpgradeClient<?, ?> schemaUpgradeClient) {
-    if (schemaUpgradeClient instanceof SchemaUpgradeClientES esClient) {
+    if (schemaUpgradeClient instanceof final SchemaUpgradeClientES esClient) {
       esClient.createOrUpdateIndex(new UpdateLogEntryIndexES());
-    } else if (schemaUpgradeClient instanceof SchemaUpgradeClientOS osClient) {
+    } else if (schemaUpgradeClient instanceof final SchemaUpgradeClientOS osClient) {
       osClient.createOrUpdateIndex(new UpdateLogEntryIndexOS());
     }
   }

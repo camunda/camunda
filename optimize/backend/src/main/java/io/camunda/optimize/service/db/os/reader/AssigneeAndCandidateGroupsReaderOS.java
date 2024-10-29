@@ -42,18 +42,18 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class AssigneeAndCandidateGroupsReaderOS implements AssigneeAndCandidateGroupsReader {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(AssigneeAndCandidateGroupsReaderOS.class);
   private final OptimizeOpenSearchClient osClient;
 
-  public AssigneeAndCandidateGroupsReaderOS(OptimizeOpenSearchClient osClient) {
+  public AssigneeAndCandidateGroupsReaderOS(final OptimizeOpenSearchClient osClient) {
     this.osClient = osClient;
   }
 
   @Override
   public Set<String> getUserTaskFieldTerms(
       final String userTaskFieldName, final Map<String, Set<String>> definitionKeyToTenantsMap) {
-    log.debug(
+    LOG.debug(
         "Fetching {} for process definition with key and tenants [{}]",
         userTaskFieldName,
         definitionKeyToTenantsMap);
@@ -111,9 +111,9 @@ public class AssigneeAndCandidateGroupsReaderOS implements AssigneeAndCandidateG
     final CompositeAggregation assigneeCompositeAgg =
         new CompositeAggregation.Builder().sources(sources).size(resolvedBatchSize).build();
 
-    NestedAggregation nestedAgg = new Builder().path(FLOW_NODE_INSTANCES).build();
+    final NestedAggregation nestedAgg = new Builder().path(FLOW_NODE_INSTANCES).build();
 
-    Aggregation userTasksAgg =
+    final Aggregation userTasksAgg =
         AggregationDSL.withSubaggregations(
             nestedAgg,
             Collections.singletonMap(COMPOSITE_AGG, assigneeCompositeAgg._toAggregation()));

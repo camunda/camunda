@@ -38,7 +38,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ProcessVariableService {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ProcessVariableService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ProcessVariableService.class);
   private final ProcessVariableReader processVariableReader;
   private final DataSourceTenantAuthorizationService tenantAuthorizationService;
   private final ReportService reportService;

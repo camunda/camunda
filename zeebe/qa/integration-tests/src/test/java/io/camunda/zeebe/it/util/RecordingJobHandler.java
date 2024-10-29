@@ -45,6 +45,13 @@ public final class RecordingJobHandler implements JobHandler {
     return handledJobs;
   }
 
+  public ActivatedJob getHandledJob(final String jobType) {
+    return handledJobs.stream()
+        .filter(j -> j.getType().equals(jobType))
+        .findFirst()
+        .orElseThrow(() -> new IllegalStateException("No job found with type " + jobType));
+  }
+
   public void clear() {
     handledJobs.clear();
   }

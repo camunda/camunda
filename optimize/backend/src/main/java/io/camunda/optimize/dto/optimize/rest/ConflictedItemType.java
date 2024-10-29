@@ -19,6 +19,5 @@ public enum ConflictedItemType {
   @JsonProperty("collection")
   COLLECTION,
   @JsonProperty("report")
-  REPORT,
-  ;
+  REPORT;
 }

@@ -149,6 +149,26 @@ const elements = {
     name: 'Signal start event',
     type: 'signalStartEvent',
   },
+  ErrorEventSubProcess: {
+    id: 'ErrorEventSubProcess',
+    name: 'Error event sub process',
+    type: 'errorEventSubProcess',
+  },
+  ErrorStartEvent: {
+    id: 'ErrorStartEvent',
+    name: 'Error start event',
+    type: 'ErrorStartEvent',
+  },
+  MultiInstanceSubProcess: {
+    id: 'MultiInstanceSubProcess',
+    name: 'Multi instance sub process',
+    type: 'MultiInstanceSubProcess',
+  },
+  MultiInstanceTask: {
+    id: 'MultiInstanceTask',
+    name: 'Multi instance task',
+    type: 'MultiInstanceTask',
+  },
 };
 
 type Props = {

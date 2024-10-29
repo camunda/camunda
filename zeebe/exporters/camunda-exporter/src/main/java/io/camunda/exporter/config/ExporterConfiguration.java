@@ -17,8 +17,7 @@ public class ExporterConfiguration {
   private IndexSettings index = new IndexSettings();
   private BulkConfiguration bulk = new BulkConfiguration();
   private RetentionConfiguration retention = new RetentionConfiguration();
-  private Map<String, Integer> replicasByIndexName = new HashMap<>();
-  private Map<String, Integer> shardsByIndexName = new HashMap<>();
+  private ArchiverConfiguration archiver = new ArchiverConfiguration();
   private boolean createSchema = true;
 
   public ConnectConfiguration getConnect() {
@@ -53,20 +52,12 @@ public class ExporterConfiguration {
     this.retention = retention;
   }
 
-  public Map<String, Integer> getReplicasByIndexName() {
-    return replicasByIndexName;
+  public ArchiverConfiguration getArchiver() {
+    return archiver;
   }
 
-  public void setReplicasByIndexName(final Map<String, Integer> replicasByIndexName) {
-    this.replicasByIndexName = replicasByIndexName;
-  }
-
-  public Map<String, Integer> getShardsByIndexName() {
-    return shardsByIndexName;
-  }
-
-  public void setShardsByIndexName(final Map<String, Integer> shardsByIndexName) {
-    this.shardsByIndexName = shardsByIndexName;
+  public void setArchiver(final ArchiverConfiguration archiver) {
+    this.archiver = archiver;
   }
 
   public boolean isCreateSchema() {
@@ -88,12 +79,10 @@ public class ExporterConfiguration {
         + bulk
         + ", retention="
         + retention
-        + ", replicasByIndexName="
-        + replicasByIndexName
-        + ", shardsByIndexName="
-        + shardsByIndexName
         + ", createSchema="
         + createSchema
+        + ", archiver="
+        + archiver
         + '}';
   }
 
@@ -103,6 +92,10 @@ public class ExporterConfiguration {
 
     private Integer numberOfShards = 1;
     private Integer numberOfReplicas = 0;
+
+    private Map<String, Integer> replicasByIndexName = new HashMap<>();
+    private Map<String, Integer> shardsByIndexName = new HashMap<>();
+
     private Integer variableSizeThreshold = DEFAULT_VARIABLE_SIZE_THRESHOLD;
 
     public String getPrefix() {
@@ -147,7 +140,29 @@ public class ExporterConfiguration {
           + numberOfShards
           + ", numberOfReplicas="
           + numberOfReplicas
+          + ", replicasByIndexName="
+          + replicasByIndexName
+          + ", shardsByIndexName="
+          + shardsByIndexName
+          + ", variableSizeThreshold="
+          + variableSizeThreshold
           + '}';
+    }
+
+    public Map<String, Integer> getReplicasByIndexName() {
+      return replicasByIndexName;
+    }
+
+    public void setReplicasByIndexName(final Map<String, Integer> replicasByIndexName) {
+      this.replicasByIndexName = replicasByIndexName;
+    }
+
+    public Map<String, Integer> getShardsByIndexName() {
+      return shardsByIndexName;
+    }
+
+    public void setShardsByIndexName(final Map<String, Integer> shardsByIndexName) {
+      this.shardsByIndexName = shardsByIndexName;
     }
   }
 
@@ -220,6 +235,102 @@ public class ExporterConfiguration {
     @Override
     public String toString() {
       return "BulkConfiguration{" + "delay=" + delay + ", size=" + size + '}';
+    }
+  }
+
+  public static class ArchiverConfiguration {
+    private boolean rolloverEnabled = true;
+    private String rolloverDateFormat = "yyyy-MM-dd";
+    private String elsRolloverDateFormat = "date";
+    private String rolloverInterval = "1d";
+    private int rolloverBatchSize = 100;
+    private String waitPeriodBeforeArchiving = "1h";
+    private int delayBetweenRuns = 2000;
+
+    public boolean isRolloverEnabled() {
+      return rolloverEnabled;
+    }
+
+    public void setRolloverEnabled(final boolean rolloverEnabled) {
+      this.rolloverEnabled = rolloverEnabled;
+    }
+
+    public String getRolloverDateFormat() {
+      return rolloverDateFormat;
+    }
+
+    public void setRolloverDateFormat(final String rolloverDateFormat) {
+      this.rolloverDateFormat = rolloverDateFormat;
+    }
+
+    public String getElsRolloverDateFormat() {
+      return elsRolloverDateFormat;
+    }
+
+    public void setElsRolloverDateFormat(final String elsRolloverDateFormat) {
+      this.elsRolloverDateFormat = elsRolloverDateFormat;
+    }
+
+    public String getRolloverInterval() {
+      return rolloverInterval;
+    }
+
+    public void setRolloverInterval(final String rolloverInterval) {
+      this.rolloverInterval = rolloverInterval;
+    }
+
+    public String getArchivingTimePoint() {
+      return "now-" + waitPeriodBeforeArchiving;
+    }
+
+    public int getRolloverBatchSize() {
+      return rolloverBatchSize;
+    }
+
+    public void setRolloverBatchSize(final int rolloverBatchSize) {
+      this.rolloverBatchSize = rolloverBatchSize;
+    }
+
+    public String getWaitPeriodBeforeArchiving() {
+      return waitPeriodBeforeArchiving;
+    }
+
+    public void setWaitPeriodBeforeArchiving(final String waitPeriodBeforeArchiving) {
+      this.waitPeriodBeforeArchiving = waitPeriodBeforeArchiving;
+    }
+
+    public int getDelayBetweenRuns() {
+      return delayBetweenRuns;
+    }
+
+    public void setDelayBetweenRuns(final int delayBetweenRuns) {
+      this.delayBetweenRuns = delayBetweenRuns;
+    }
+
+    @Override
+    public String toString() {
+      return "RetentionConfiguration{"
+          + "rolloverEnabled="
+          + rolloverEnabled
+          + ", rolloverDateFormat='"
+          + rolloverDateFormat
+          + '\''
+          + ", elsRolloverDateFormat='"
+          + elsRolloverDateFormat
+          + '\''
+          + ", rolloverInterval='"
+          + rolloverInterval
+          + '\''
+          + ", rolloverBatchSize='"
+          + rolloverDateFormat
+          + '\''
+          + ", waitPeriodBeforeArchiving='"
+          + waitPeriodBeforeArchiving
+          + '\''
+          + ", delayBetweenRuns='"
+          + delayBetweenRuns
+          + '\''
+          + '}';
     }
   }
 }

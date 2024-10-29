@@ -12,5 +12,8 @@ public enum PermissionType {
   READ,
   READ_INSTANCE,
   UPDATE,
-  DELETE
+  DELETE,
+  DELETE_PROCESS,
+  DELETE_DRD,
+  DELETE_FORM
 }

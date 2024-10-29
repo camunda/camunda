@@ -13,7 +13,7 @@ import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import io.camunda.optimize.upgrade.service.UpgradeStepLogService;
 import io.camunda.optimize.upgrade.service.UpgradeValidationService;
 
-public class UpgradeProcedureFactory {
+public final class UpgradeProcedureFactory {
 
   private UpgradeProcedureFactory() {}
 

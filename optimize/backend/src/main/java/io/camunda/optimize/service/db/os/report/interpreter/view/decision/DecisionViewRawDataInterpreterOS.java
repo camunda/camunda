@@ -60,7 +60,7 @@ import org.springframework.stereotype.Component;
 public class DecisionViewRawDataInterpreterOS extends AbstractDecisionViewRawDataInterpreter
     implements DecisionViewInterpreterOS {
 
-  private static final Logger log =
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(DecisionViewRawDataInterpreterOS.class);
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
@@ -68,10 +68,10 @@ public class DecisionViewRawDataInterpreterOS extends AbstractDecisionViewRawDat
   private final DecisionVariableReader decisionVariableReader;
 
   public DecisionViewRawDataInterpreterOS(
-      ConfigurationService configurationService,
-      ObjectMapper objectMapper,
-      OptimizeOpenSearchClient osClient,
-      DecisionVariableReader decisionVariableReader) {
+      final ConfigurationService configurationService,
+      final ObjectMapper objectMapper,
+      final OptimizeOpenSearchClient osClient,
+      final DecisionVariableReader decisionVariableReader) {
     this.configurationService = configurationService;
     this.objectMapper = objectMapper;
     this.osClient = osClient;
@@ -116,12 +116,6 @@ public class DecisionViewRawDataInterpreterOS extends AbstractDecisionViewRawDat
   }
 
   @Override
-  public ViewResult createEmptyResult(
-      final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
-    return ViewResult.builder().rawData(new ArrayList<>()).build();
-  }
-
-  @Override
   public ViewResult retrieveResult(
       final SearchResponse<RawResult> response,
       final Map<String, Aggregate> aggs,
@@ -143,6 +137,12 @@ public class DecisionViewRawDataInterpreterOS extends AbstractDecisionViewRawDat
     return ViewResult.builder().rawData(rawData).build();
   }
 
+  @Override
+  public ViewResult createEmptyResult(
+      final ExecutionContext<DecisionReportDataDto, DecisionExecutionPlan> context) {
+    return ViewResult.builder().rawData(new ArrayList<>()).build();
+  }
+
   private List<DecisionInstanceDto> transformHits(final List<Hit<RawResult>> rawResult) {
     return rawResult.stream()
         .map(
@@ -158,7 +158,7 @@ public class DecisionViewRawDataInterpreterOS extends AbstractDecisionViewRawDat
                                 + "it was not possible to deserialize a hit from OpenSearch!"
                                 + " Hit response from OpenSearch: "
                                 + hit.source()),
-                    log))
+                    LOG))
         .toList();
   }
 
@@ -203,7 +203,7 @@ public class DecisionViewRawDataInterpreterOS extends AbstractDecisionViewRawDat
                     createSortByVariable(
                         sortByField, sortOrder, INPUT_VARIABLE_PREFIX, INPUTS, type))
             .toList();
-    List<SortOptions> sortOptions = new ArrayList<>(variableSortOptions);
+    final List<SortOptions> sortOptions = new ArrayList<>(variableSortOptions);
     // add default string field as last as it will always be present
     sortOptions.add(defaultSortOptions);
     return sortOptions;
@@ -221,7 +221,7 @@ public class DecisionViewRawDataInterpreterOS extends AbstractDecisionViewRawDat
                     createSortByVariable(
                         sortByField, sortOrder, OUTPUT_VARIABLE_PREFIX, OUTPUTS, type))
             .toList();
-    List<SortOptions> sortOptions = new ArrayList<>(variableSortOptions);
+    final List<SortOptions> sortOptions = new ArrayList<>(variableSortOptions);
     // add default string field as last as it will always be present
     sortOptions.add(defaultSortOptions);
     return sortOptions;
@@ -250,7 +250,8 @@ public class DecisionViewRawDataInterpreterOS extends AbstractDecisionViewRawDat
         .build();
   }
 
+  @Override
   public DecisionVariableReader getDecisionVariableReader() {
-    return this.decisionVariableReader;
+    return decisionVariableReader;
   }
 }

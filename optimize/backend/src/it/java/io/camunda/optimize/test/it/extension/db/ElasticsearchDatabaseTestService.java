@@ -17,7 +17,6 @@ import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_PROCESS_INS
 import static io.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil.mapHits;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
-import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX;
 import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
@@ -67,7 +66,6 @@ import co.elastic.clients.elasticsearch.snapshot.CreateSnapshotRequest;
 import co.elastic.clients.elasticsearch.snapshot.DeleteRepositoryRequest;
 import co.elastic.clients.elasticsearch.snapshot.DeleteSnapshotRequest;
 import co.elastic.clients.json.JsonData;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.Iterables;
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import io.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
@@ -115,7 +113,6 @@ import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import jakarta.ws.rs.NotFoundException;
 import java.io.IOException;
-import java.lang.module.ModuleDescriptor;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -123,12 +120,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
@@ -142,8 +137,8 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
 
   private static final String MOCKSERVER_CLIENT_KEY = "MockServer";
   private static final Map<String, OptimizeElasticsearchClient> CLIENT_CACHE = new HashMap<>();
-  private static final ClientAndServer mockServerClient = initMockServer();
-  private static final Logger log =
+  private static final ClientAndServer MOCK_SERVER_CLIENT = initMockServer();
+  private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ElasticsearchDatabaseTestService.class);
 
   private String elasticsearchDatabaseVersion;
@@ -169,9 +164,9 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   @Override
   public void beforeEach() {
     if (haveToClean) {
-      log.info("Cleaning database...");
+      LOG.info("Cleaning database...");
       cleanAndVerifyDatabase();
-      log.info("All documents have been wiped out! Database has successfully been cleaned!");
+      LOG.info("All documents have been wiped out! Database has successfully been cleaned!");
     }
   }
 
@@ -180,16 +175,16 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
     // If the MockServer has been used, we reset all expectations and logs and revert to the default
     // client
     if (optimizeElasticsearchClient == CLIENT_CACHE.get(MOCKSERVER_CLIENT_KEY)) {
-      log.info("Resetting all MockServer expectations and logs");
-      mockServerClient.reset();
-      log.info("No longer using ES MockServer");
+      LOG.info("Resetting all MockServer expectations and logs");
+      MOCK_SERVER_CLIENT.reset();
+      LOG.info("No longer using ES MockServer");
       initEsClient();
     }
   }
 
   @Override
   public ClientAndServer useDBMockServer() {
-    log.info("Using ElasticSearch MockServer");
+    LOG.info("Using ElasticSearch MockServer");
     if (CLIENT_CACHE.containsKey(MOCKSERVER_CLIENT_KEY)) {
       optimizeElasticsearchClient = CLIENT_CACHE.get(MOCKSERVER_CLIENT_KEY);
     } else {
@@ -197,10 +192,10 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
       final DatabaseConnectionNodeConfiguration esConfig =
           configurationService.getElasticSearchConfiguration().getFirstConnectionNode();
       esConfig.setHost(MockServerUtil.MOCKSERVER_HOST);
-      esConfig.setHttpPort(mockServerClient.getLocalPort());
+      esConfig.setHttpPort(MOCK_SERVER_CLIENT.getLocalPort());
       createClientAndAddToCache(MOCKSERVER_CLIENT_KEY, configurationService);
     }
-    return mockServerClient;
+    return MOCK_SERVER_CLIENT;
   }
 
   @Override
@@ -286,27 +281,6 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  public Integer getCountOfCompletedInstancesWithIdsIn(final Set<Object> processInstanceIds) {
-    return getInstanceCountWithQuery(
-        Query.of(
-            q ->
-                q.bool(
-                    b ->
-                        b.filter(
-                                f ->
-                                    f.terms(
-                                        t ->
-                                            t.field(ProcessInstanceIndex.PROCESS_INSTANCE_ID)
-                                                .terms(
-                                                    tt ->
-                                                        tt.value(
-                                                            processInstanceIds.stream()
-                                                                .map(FieldValue::of)
-                                                                .toList()))))
-                            .filter(f -> f.exists(e -> e.field(ProcessInstanceIndex.END_DATE))))));
-  }
-
-  @Override
   public void deleteAllOptimizeData() {
     try {
       getOptimizeElasticClient()
@@ -330,39 +304,12 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
           getOptimizeElasticClient().getAllIndexNames().stream()
               .filter(index -> index.contains(indexTerm))
               .toArray(String[]::new);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
     }
     if (indicesToDelete.length > 0) {
       getOptimizeElasticClient().deleteIndexByRawIndexNames(indicesToDelete);
     }
-  }
-
-  @Override
-  public List<String> getAllIndicesWithReadOnlyAlias(final String aliasNameWithPrefix) {
-    final GetAliasRequest aliasesRequest =
-        GetAliasRequest.of(
-            a -> a.index(getOptimizeElasticClient().addPrefixesToIndices(aliasNameWithPrefix)));
-    final Map<String, IndexAliases> indexNameToAliasMap;
-    try {
-      indexNameToAliasMap = getOptimizeElasticClient().getAlias(aliasesRequest).result();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-    return indexNameToAliasMap.keySet().stream()
-        .filter(
-            index ->
-                indexNameToAliasMap.get(index).aliases().entrySet().stream()
-                    .anyMatch(alias -> Boolean.FALSE.equals(alias.getValue().isWriteIndex())))
-        .toList();
-  }
-
-  @Override
-  public List<String> getImportIndices() {
-    return ElasticSearchSchemaManager.getAllNonDynamicMappings().stream()
-        .filter(IndexMappingCreator::isImportIndex)
-        .map(IndexMappingCreator::getIndexName)
-        .toList();
   }
 
   @Override
@@ -415,24 +362,6 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  public void deleteIndicesStartingWithPrefix(final String term) {
-    final String[] indicesToDelete;
-    try {
-      indicesToDelete =
-          getOptimizeElasticClient().getAllIndexNames().stream()
-              .filter(
-                  indexName ->
-                      indexName.startsWith(getIndexNameService().getIndexPrefix() + "-" + term))
-              .toArray(String[]::new);
-    } catch (IOException e) {
-      throw new OptimizeRuntimeException(e);
-    }
-    if (indicesToDelete.length > 0) {
-      getOptimizeElasticClient().deleteIndexByRawIndexNames(indicesToDelete);
-    }
-  }
-
-  @Override
   public void deleteAllZeebeRecordsForPrefix(final String zeebeRecordPrefix) {
     final String[] indicesToDelete;
     try {
@@ -446,7 +375,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
               .stream()
               .filter(indexName -> indexName.contains(zeebeRecordPrefix))
               .toArray(String[]::new);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
     }
     if (indicesToDelete.length > 1) {
@@ -471,7 +400,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                   indexName ->
                       indexName.contains(zeebeRecordPrefix) && !indexName.contains(recordsToKeep))
               .toArray(String[]::new);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
     }
     if (indicesToDelete.length > 1) {
@@ -498,7 +427,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                                               i.lang(ScriptLanguage.Painless)
                                                   .source(updateScript))))
                           .query(Query.of(q -> q.matchAll(m -> m)))));
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
     }
   }
@@ -537,7 +466,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                                                                       ZeebeRecordDto.Fields
                                                                           .position)
                                                                   .value(position))))))));
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
     }
   }
@@ -580,7 +509,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                                                                   .value(
                                                                       bpmnElementType
                                                                           .name()))))))));
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
     }
   }
@@ -607,7 +536,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                                                   .source(updateScript))))
                           .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)),
               Object.class);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
     }
   }
@@ -615,39 +544,6 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   @Override
   public boolean indexExistsCheckWithApplyingOptimizePrefix(final String indexOrAliasName) {
     return indexExists(indexOrAliasName, false);
-  }
-
-  @Override
-  public void createRepoSnapshot(final String snapshotRepositoryName) {
-    try {
-      getOptimizeElasticClient()
-          .getEsClient()
-          .snapshot()
-          .createRepository(
-              CreateRepositoryRequest.of(
-                  b ->
-                      b.name(snapshotRepositoryName)
-                          .repository(r -> r.fs(s -> s.settings(t -> t.location("/var/tmp"))))));
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  @Override
-  public void cleanSnapshots(String snapshotRepositoryName) {
-    try {
-      getOptimizeElasticClient()
-          .getEsClient()
-          .snapshot()
-          .delete(
-              DeleteSnapshotRequest.of(b -> b.repository(snapshotRepositoryName).snapshot("*")));
-      getOptimizeElasticClient()
-          .getEsClient()
-          .snapshot()
-          .deleteRepository(DeleteRepositoryRequest.of(b -> b.name(snapshotRepositoryName)));
-    } catch (Exception e) {
-      log.warn("Delete failed, no snapshots to delete from repository {}", snapshotRepositoryName);
-    }
   }
 
   @Override
@@ -659,7 +555,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
           .indices()
           .exists(ExistsRequest.of(r -> r.index(indexName)))
           .value();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
     }
   }
@@ -677,7 +573,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                               optimizeElasticsearchClient, TIMESTAMP_BASED_IMPORT_INDEX_NAME)
                           .id(DatabaseHelper.constructKey(dbType, engine))),
               TimestampBasedImportIndexDto.class);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
     }
     if (response.found()) {
@@ -718,7 +614,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                           .trackTotalHits(t -> t.enabled(true))
                           .size(100)),
               zeebeRecordClass);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
     }
     return ElasticsearchReaderUtil.mapHits(
@@ -735,7 +631,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                     .refresh(Refresh.True));
     try {
       getOptimizeElasticClient().delete(request);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
     }
   }
@@ -743,6 +639,67 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   @Override
   public DatabaseType getDatabaseVendor() {
     return DatabaseType.ELASTICSEARCH;
+  }
+
+  @Override
+  public void createSnapshot(
+      final String snapshotRepositoryName, final String snapshotName, final String[] indexNames) {
+    final CreateSnapshotRequest createSnapshotRequest =
+        CreateSnapshotRequest.of(
+            b ->
+                b.repository(snapshotRepositoryName)
+                    .snapshot(snapshotName)
+                    .indices(Arrays.stream(indexNames).toList())
+                    .includeGlobalState(false)
+                    .waitForCompletion(true));
+    try {
+      getOptimizeElasticClient()
+          .triggerSnapshotAsync(createSnapshotRequest)
+          .get(10, TimeUnit.SECONDS);
+    } catch (final InterruptedException | ExecutionException | TimeoutException e) {
+      throw new OptimizeRuntimeException("Exception during creation snapshot:", e);
+    }
+  }
+
+  @Override
+  public void createRepoSnapshot(final String snapshotRepositoryName) {
+    try {
+      getOptimizeElasticClient()
+          .getEsClient()
+          .snapshot()
+          .createRepository(
+              CreateRepositoryRequest.of(
+                  b ->
+                      b.name(snapshotRepositoryName)
+                          .repository(r -> r.fs(s -> s.settings(t -> t.location("/var/tmp"))))));
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public void cleanSnapshots(final String snapshotRepositoryName) {
+    try {
+      getOptimizeElasticClient()
+          .getEsClient()
+          .snapshot()
+          .delete(
+              DeleteSnapshotRequest.of(b -> b.repository(snapshotRepositoryName).snapshot("*")));
+      getOptimizeElasticClient()
+          .getEsClient()
+          .snapshot()
+          .deleteRepository(DeleteRepositoryRequest.of(b -> b.name(snapshotRepositoryName)));
+    } catch (final Exception e) {
+      LOG.warn("Delete failed, no snapshots to delete from repository {}", snapshotRepositoryName);
+    }
+  }
+
+  @Override
+  public List<String> getImportIndices() {
+    return ElasticSearchSchemaManager.getAllNonDynamicMappings().stream()
+        .filter(IndexMappingCreator::isImportIndex)
+        .map(IndexMappingCreator::getIndexName)
+        .toList();
   }
 
   @Override
@@ -775,7 +732,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
     final SearchResponse<T> searchResponse;
     try {
       searchResponse = getOptimizeElasticClient().search(searchRequest, type);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
     }
     for (final Hit<T> hit : searchResponse.hits().hits()) {
@@ -793,7 +750,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
     final GetResponse<T> getResponse;
     try {
       getResponse = getOptimizeElasticClient().get(getRequest, type);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
     }
     if (getResponse.found()) {
@@ -848,7 +805,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                           .settings(
                               ElasticSearchIndexSettingsBuilder.buildDynamicSettings(
                                   configurationService))));
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
     }
   }
@@ -995,7 +952,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                                                                           + ProcessInstanceIndex
                                                                               .FLOW_NODE_INSTANCE_ID))))))),
                   Object.class);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
     }
 
@@ -1013,7 +970,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
     final Map<String, IndexAliases> indexNameToAliasMap;
     try {
       indexNameToAliasMap = getOptimizeElasticClient().getAlias(aliasesRequest).result();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
     }
     return indexNameToAliasMap.keySet().stream()
@@ -1151,6 +1108,25 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
         .noneMatch(AliasDefinition::isWriteIndex);
   }
 
+  @Override
+  public List<String> getAllIndicesWithReadOnlyAlias(final String aliasNameWithPrefix) {
+    final GetAliasRequest aliasesRequest =
+        GetAliasRequest.of(
+            a -> a.index(getOptimizeElasticClient().addPrefixesToIndices(aliasNameWithPrefix)));
+    final Map<String, IndexAliases> indexNameToAliasMap;
+    try {
+      indexNameToAliasMap = getOptimizeElasticClient().getAlias(aliasesRequest).result();
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
+    return indexNameToAliasMap.keySet().stream()
+        .filter(
+            index ->
+                indexNameToAliasMap.get(index).aliases().entrySet().stream()
+                    .anyMatch(alias -> Boolean.FALSE.equals(alias.getValue().isWriteIndex())))
+        .toList();
+  }
+
   public OptimizeIndexNameService getIndexNameService() {
     return getOptimizeElasticClient().getIndexNameService();
   }
@@ -1170,35 +1146,6 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
     }
   }
 
-  @Override
-  public void createSnapshot(
-      final String snapshotRepositoryName, final String snapshotName, final String[] indexNames) {
-    CreateSnapshotRequest createSnapshotRequest =
-        CreateSnapshotRequest.of(
-            b ->
-                b.repository(snapshotRepositoryName)
-                    .snapshot(snapshotName)
-                    .indices(Arrays.stream(indexNames).toList())
-                    .includeGlobalState(false)
-                    .waitForCompletion(true));
-    try {
-      getOptimizeElasticClient()
-          .triggerSnapshotAsync(createSnapshotRequest)
-          .get(10, TimeUnit.SECONDS);
-    } catch (InterruptedException | ExecutionException | TimeoutException e) {
-      throw new OptimizeRuntimeException("Exception during creation snapshot:", e);
-    }
-  }
-
-  private boolean isDatabaseVersionGreaterThanOrEqualTo(final String dbVersion) {
-    return Stream.of(dbVersion, getDatabaseVersion())
-        .map(ModuleDescriptor.Version::parse)
-        .sorted()
-        .findFirst()
-        .map(firstVersion -> firstVersion.toString().equals(dbVersion))
-        .orElseThrow(() -> new OptimizeIntegrationTestException("Could not determine ES version"));
-  }
-
   private void initEsClient() {
     if (CLIENT_CACHE.containsKey(customIndexPrefix)) {
       optimizeElasticsearchClient = CLIENT_CACHE.get(customIndexPrefix);
@@ -1211,7 +1158,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
       final String clientKey, final ConfigurationService configurationService) {
     final DatabaseConnectionNodeConfiguration esConfig =
         configurationService.getElasticSearchConfiguration().getFirstConnectionNode();
-    log.info(
+    LOG.info(
         "Creating ES Client with host {} and port {}", esConfig.getHost(), esConfig.getHttpPort());
     optimizeElasticsearchClient =
         new OptimizeElasticsearchClient(
@@ -1259,18 +1206,10 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
     }
   }
 
-  private String writeJsonString(final Map.Entry<String, Object> idAndObject) {
-    try {
-      return OBJECT_MAPPER.writeValueAsString(idAndObject.getValue());
-    } catch (JsonProcessingException e) {
-      throw new OptimizeRuntimeException(e);
-    }
-  }
-
   private void executeBulk(final BulkRequest bulkRequest) {
     try {
       getOptimizeElasticClient().bulk(bulkRequest);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
     }
   }
@@ -1313,7 +1252,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                                 .trackTotalHits(t -> t.enabled(true))
                                 .size(100)),
                     type);
-      } catch (IOException e) {
+      } catch (final IOException e) {
         throw new OptimizeRuntimeException(e);
       }
       results.addAll(mapHits(response.hits(), type, getObjectMapper()));
@@ -1332,70 +1271,13 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                                 .trackTotalHits(t -> t.enabled(true))
                                 .size(100)),
                     type);
-      } catch (IOException e) {
+      } catch (final IOException e) {
         throw new OptimizeRuntimeException(e);
       }
       results.addAll(mapHits(response.hits(), type, getObjectMapper()));
     }
 
     return results;
-  }
-
-  private int getInstanceCountWithQuery(final Query query) {
-    try {
-      final CountResponse countResponse =
-          getOptimizeElasticClient()
-              .count(
-                  OptimizeCountRequestBuilderES.of(
-                      c ->
-                          c.optimizeIndex(getOptimizeElasticClient(), PROCESS_INSTANCE_MULTI_ALIAS)
-                              .query(query)));
-      return Long.valueOf(countResponse.count()).intValue();
-    } catch (final IOException | ElasticsearchException e) {
-      throw new OptimizeIntegrationTestException(
-          "Cannot evaluate document count for index " + PROCESS_INSTANCE_MULTI_ALIAS, e);
-    }
-  }
-
-  private Integer getVariableInstanceCountForAllProcessInstances(final Query processInstanceQuery) {
-    final SearchResponse<?> searchResponse;
-    try {
-      searchResponse =
-          getOptimizeElasticClient()
-              .search(
-                  OptimizeSearchRequestBuilderES.of(
-                      s ->
-                          s.optimizeIndex(getOptimizeElasticClient(), PROCESS_INSTANCE_MULTI_ALIAS)
-                              .query(Query.of(q -> q.matchAll(m -> m)))
-                              .size(0)
-                              .source(ss -> ss.fetch(false))
-                              .aggregations(
-                                  FLOW_NODE_INSTANCES,
-                                  Aggregation.of(
-                                      a ->
-                                          a.nested(n -> n.path(FLOW_NODE_INSTANCES))
-                                              .aggregations(
-                                                  FLOW_NODE_INSTANCES + FREQUENCY_AGGREGATION,
-                                                  Aggregation.of(
-                                                      aa ->
-                                                          aa.valueCount(
-                                                              v ->
-                                                                  v.field(
-                                                                      FLOW_NODE_INSTANCES
-                                                                          + "."
-                                                                          + ProcessInstanceIndex
-                                                                              .FLOW_NODE_INSTANCE_ID))))))),
-                  Object.class);
-    } catch (final IOException | ElasticsearchException e) {
-      throw new OptimizeIntegrationTestException(
-          "Cannot evaluate variable instance count in process instance indices.", e);
-    }
-
-    final NestedAggregate nestedAgg = searchResponse.aggregations().get(VARIABLES).nested();
-    final ValueCountAggregate countAggregator = nestedAgg.aggregations().get("count").valueCount();
-    final double totalVariableCount = countAggregator.value();
-
-    return Double.valueOf(totalVariableCount).intValue();
   }
 
   private void deleteIndexOfMapping(final IndexMappingCreator<IndexSettings.Builder> indexMapping) {

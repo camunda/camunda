@@ -7,7 +7,10 @@
  */
 package io.camunda.optimize.service.db.os.report.filter.util;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.AggregationDSL.fieldDateMath;
+import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.filter;
+import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.json;
 import static io.camunda.optimize.service.db.report.filter.util.DateHistogramFilterUtil.getMaxDateFilterOffsetDateTime;
 import static io.camunda.optimize.service.db.report.filter.util.DateHistogramFilterUtil.getMinDateFilterOffsetDateTime;
 
@@ -23,10 +26,23 @@ import java.util.Optional;
 import org.opensearch.client.opensearch._types.aggregations.ExtendedBounds;
 import org.opensearch.client.opensearch._types.aggregations.FieldDateMath;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch._types.query_dsl.RangeQuery;
 
-public class DateHistogramFilterUtilOS {
+public final class DateHistogramFilterUtilOS {
 
   private DateHistogramFilterUtilOS() {}
+
+  public static Query createModelElementDateHistogramLimitingFilterQueryFor(
+      final DateAggregationContextOS context, final DateTimeFormatter dateTimeFormatter) {
+    return filter(
+        new RangeQuery.Builder()
+            .field(context.getDateField())
+            .gte(json(dateTimeFormatter.format(context.getEarliestDate())))
+            .lte(json(dateTimeFormatter.format(context.getLatestDate())))
+            .format(OPTIMIZE_DATE_FORMAT)
+            .build()
+            .toQuery());
+  }
 
   public static List<Query> createDecisionDateHistogramLimitingFilter(
       final DateAggregationContextOS context) {

@@ -35,10 +35,10 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class TaskRepositoryES extends TaskRepository {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(TaskRepositoryES.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(TaskRepositoryES.class);
   private final OptimizeElasticsearchClient esClient;
 
-  public TaskRepositoryES(OptimizeElasticsearchClient esClient) {
+  public TaskRepositoryES(final OptimizeElasticsearchClient esClient) {
     this.esClient = esClient;
   }
 
@@ -62,7 +62,14 @@ public class TaskRepositoryES extends TaskRepository {
                             .toList())
                 .orElse(List.of()),
         e -> "Failed to fetch task progress from Elasticsearch!",
-        log);
+        LOG);
+  }
+
+  @Override
+  public TaskResponse getTaskResponse(final String taskId) throws IOException {
+    final Request request = new Request(HttpGet.METHOD_NAME, "/" + TASKS_ENDPOINT + "/" + taskId);
+    final Response response = esClient.performRequest(request);
+    return OPTIMIZE_MAPPER.readValue(response.getEntity().getContent(), TaskResponse.class);
   }
 
   public boolean tryUpdateByQueryRequest(
@@ -70,7 +77,7 @@ public class TaskRepositoryES extends TaskRepository {
       final Script updateScript,
       final Query filterQuery,
       final String... indices) {
-    log.debug("Updating {}", updateItemIdentifier);
+    LOG.debug("Updating {}", updateItemIdentifier);
     final UpdateByQueryRequest updateByQueryRequest =
         UpdateByQueryRequest.of(
             b ->
@@ -84,12 +91,12 @@ public class TaskRepositoryES extends TaskRepository {
     final String taskId;
     try {
       taskId = esClient.submitUpdateTask(updateByQueryRequest).task();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String errorMessage =
           String.format(
               "Could not create updateBy task for [%s] with query [%s]!",
               updateItemIdentifier, filterQuery);
-      log.error(errorMessage, e);
+      LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
 
@@ -97,9 +104,9 @@ public class TaskRepositoryES extends TaskRepository {
 
     try {
       final TaskResponse.Status taskStatus = getTaskResponse(taskId).getTaskStatus();
-      log.debug("Updated [{}] {}.", taskStatus.getDeleted(), updateItemIdentifier);
+      LOG.debug("Updated [{}] {}.", taskStatus.getDeleted(), updateItemIdentifier);
       return taskStatus.getUpdated() > 0L;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(
           String.format(
               "Error while trying to read Elasticsearch task status with ID: [%s]", taskId),
@@ -112,7 +119,7 @@ public class TaskRepositoryES extends TaskRepository {
       final String deletedItemIdentifier,
       final boolean refresh,
       final String... indices) {
-    log.debug("Deleting {}", deletedItemIdentifier);
+    LOG.debug("Deleting {}", deletedItemIdentifier);
 
     final DeleteByQueryRequest request =
         DeleteByQueryRequest.of(
@@ -126,12 +133,12 @@ public class TaskRepositoryES extends TaskRepository {
     final String taskId;
     try {
       taskId = esClient.submitDeleteTask(request).task();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String errorMessage =
           String.format(
               "Could not create delete task for [%s] with query [%s]!",
               deletedItemIdentifier, query);
-      log.error(errorMessage, e);
+      LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
 
@@ -139,24 +146,17 @@ public class TaskRepositoryES extends TaskRepository {
 
     try {
       final TaskResponse.Status taskStatus = getTaskResponse(taskId).getTaskStatus();
-      log.debug(
+      LOG.debug(
           "Deleted [{}] out of [{}] {}.",
           taskStatus.getDeleted(),
           taskStatus.getTotal(),
           deletedItemIdentifier);
       return taskStatus.getDeleted() > 0L;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(
           String.format(
               "Error while trying to read Elasticsearch task status with ID: [%s]", taskId),
           e);
     }
-  }
-
-  @Override
-  public TaskResponse getTaskResponse(final String taskId) throws IOException {
-    final Request request = new Request(HttpGet.METHOD_NAME, "/" + TASKS_ENDPOINT + "/" + taskId);
-    final Response response = esClient.performRequest(request);
-    return OPTIMIZE_MAPPER.readValue(response.getEntity().getContent(), TaskResponse.class);
   }
 }

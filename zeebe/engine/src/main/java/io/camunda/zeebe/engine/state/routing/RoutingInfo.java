@@ -84,7 +84,7 @@ public interface RoutingInfo {
       if (!routingState.isInitialized()) {
         return fallback.partitions();
       }
-      return routingState.partitions();
+      return routingState.currentPartitions();
     }
 
     @Override

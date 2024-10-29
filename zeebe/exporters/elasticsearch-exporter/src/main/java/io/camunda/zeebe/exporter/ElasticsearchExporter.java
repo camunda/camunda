@@ -93,20 +93,20 @@ public class ElasticsearchExporter implements Exporter {
 
   @Override
   public void close() {
+    if (client != null) {
+      try {
+        flush();
+        updateLastExportedPosition();
+      } catch (final Exception e) {
+        log.warn("Failed to flush records before closing exporter.", e);
+      }
 
-    try {
-      flush();
-      updateLastExportedPosition();
-    } catch (final Exception e) {
-      log.warn("Failed to flush records before closing exporter.", e);
+      try {
+        client.close();
+      } catch (final Exception e) {
+        log.warn("Failed to close elasticsearch client", e);
+      }
     }
-
-    try {
-      client.close();
-    } catch (final Exception e) {
-      log.warn("Failed to close elasticsearch client", e);
-    }
-
     try {
       pluginRepository.close();
     } catch (final Exception e) {

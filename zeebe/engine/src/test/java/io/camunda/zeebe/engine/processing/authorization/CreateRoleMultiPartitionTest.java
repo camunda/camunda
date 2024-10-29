@@ -99,6 +99,10 @@ public class CreateRoleMultiPartitionTest {
   @Test
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // given the user creation distribution is intercepted
+    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
+      interceptUserCreateForPartition(partitionId);
+    }
+
     engine
         .user()
         .newUser(UUID.randomUUID().toString())
@@ -106,10 +110,6 @@ public class CreateRoleMultiPartitionTest {
         .withPassword("baz")
         .withEmail("foobar@baz.com")
         .create();
-
-    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
-      interceptUserCreateForPartition(partitionId);
-    }
 
     // when
     final var name = UUID.randomUUID().toString();

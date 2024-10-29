@@ -69,6 +69,7 @@ public abstract class DataSourceDto implements OptimizeDto, Serializable {
     return "DataSourceDto(type=" + getType() + ", name=" + getName() + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String type = "type";

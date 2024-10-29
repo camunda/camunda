@@ -9,7 +9,6 @@ package io.camunda.operate.qa.backup;
 
 import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesRequest;
 
-import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.qa.util.TestContext;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
 import io.camunda.operate.util.CollectionUtil;
@@ -21,6 +20,7 @@ import io.camunda.operate.webapp.rest.dto.ProcessGroupDto;
 import io.camunda.operate.webapp.rest.dto.SequenceFlowDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
+import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.net.URI;
 import java.util.Map;
 import java.util.function.BiFunction;

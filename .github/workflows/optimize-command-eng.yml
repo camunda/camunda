@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       - name: Create URL to the run output
         id: vars
@@ -124,7 +124,7 @@ jobs:
           fi
 
           # Validate 'start' command
-          if [ "${{ steps.parse-args.outputs.arg1 }}" == 'reject' ]; then
+          if [ "${{ steps.parse-args.outputs.arg1 }}" == 'start' ]; then
             # Check if the issue is in the correct status
             if [ "$project_status" != 'Global Backlog' ] ||
                [ "$project_status" != 'Ready' ] ||

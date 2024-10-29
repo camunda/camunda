@@ -168,6 +168,7 @@ public class BaseDashboardDefinitionDto {
         + ")";
   }
 
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String id = "id";

@@ -631,7 +631,7 @@ public class RaftTest extends ConcurrentTestCase {
     }
 
     @Override
-    public void onRecovered() {}
+    public void onRecovered(final HealthReport report) {}
 
     @Override
     public void onUnrecoverableFailure(final HealthReport report) {}

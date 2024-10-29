@@ -30,7 +30,7 @@ public class DecisionGroupByInterpreterFacadeES
     extends AbstractInterpreterFacade<DecisionGroupBy, DecisionGroupByInterpreterES>
     implements DecisionGroupByInterpreterES {
 
-  public DecisionGroupByInterpreterFacadeES(List<DecisionGroupByInterpreterES> interpreters) {
+  public DecisionGroupByInterpreterFacadeES(final List<DecisionGroupByInterpreterES> interpreters) {
     super(interpreters, DecisionGroupByInterpreterES::getSupportedGroupBys);
   }
 

@@ -50,11 +50,11 @@ public class ProcessGroupByUserTaskDurationInterpreterES
   private final ProcessViewInterpreterFacadeES viewInterpreter;
 
   public ProcessGroupByUserTaskDurationInterpreterES(
-      MinMaxStatsServiceES minMaxStatsService,
-      DurationAggregationServiceES durationAggregationService,
-      DefinitionService definitionService,
-      ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
-      ProcessViewInterpreterFacadeES viewInterpreter) {
+      final MinMaxStatsServiceES minMaxStatsService,
+      final DurationAggregationServiceES durationAggregationService,
+      final DefinitionService definitionService,
+      final ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
+      final ProcessViewInterpreterFacadeES viewInterpreter) {
     this.minMaxStatsService = minMaxStatsService;
     this.durationAggregationService = durationAggregationService;
     this.definitionService = definitionService;

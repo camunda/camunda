@@ -40,7 +40,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     final UpgradePlan upgradePlan = createDeleteIndexPlan();
 
     final String versionedIndexName =
-        getIndexNameService().getOptimizeIndexNameWithVersion(TEST_INDEX_V2);
+        getIndexNameService().getOptimizeIndexNameWithVersion(testIndexV2);
     final HttpRequest indexDeleteRequest = createIndexDeleteRequest(versionedIndexName);
     dbMockServer
         // respond with this error 2 times, afterwards the request will be forwarded to elastic
@@ -56,7 +56,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     upgradeExecution.shutdown();
     try {
       assertThat(upgradeExecution.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
-    } catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
       throw new OptimizeIntegrationTestException(e);
     }
 
@@ -65,7 +65,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     // and the index is gone
     assertThat(
             databaseIntegrationTestExtension.indexExists(
-                getIndexNameService().getOptimizeIndexNameWithVersion(TEST_INDEX_V2)))
+                getIndexNameService().getOptimizeIndexNameWithVersion(testIndexV2)))
         .isFalse();
   }
 
@@ -75,7 +75,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     final UpgradePlan upgradePlan = createDeleteIndexPlan();
 
     final String versionedIndexName =
-        getIndexNameService().getOptimizeIndexNameWithVersion(TEST_INDEX_V2);
+        getIndexNameService().getOptimizeIndexNameWithVersion(testIndexV2);
     final HttpRequest indexDeleteRequest = createIndexDeleteRequest(versionedIndexName);
     dbMockServer
         // respond with a different error
@@ -91,7 +91,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     // and the index is still there
     assertThat(
             databaseIntegrationTestExtension.indexExists(
-                getIndexNameService().getOptimizeIndexNameWithVersion(TEST_INDEX_V2)))
+                getIndexNameService().getOptimizeIndexNameWithVersion(testIndexV2)))
         .isTrue();
   }
 
@@ -101,7 +101,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     final UpgradePlan upgradePlan = createUpdateIndexPlan();
 
     final String oldIndexToDeleteName =
-        getIndexNameService().getOptimizeIndexNameWithVersion(TEST_INDEX_V1);
+        getIndexNameService().getOptimizeIndexNameWithVersion(testIndexV1);
     final HttpRequest indexDeleteRequest = createIndexDeleteRequest(oldIndexToDeleteName);
     dbMockServer
         // respond with this error 2 times, afterwards the request will be forwarded to database
@@ -117,7 +117,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     upgradeExecution.shutdown();
     try {
       assertThat(upgradeExecution.awaitTermination(20, TimeUnit.SECONDS)).isTrue();
-    } catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
       throw new OptimizeIntegrationTestException(e);
     }
 
@@ -126,13 +126,13 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     // and the old index is gone
     assertThat(
             databaseIntegrationTestExtension.indexExists(
-                getIndexNameService().getOptimizeIndexNameWithVersion(TEST_INDEX_V1)))
+                getIndexNameService().getOptimizeIndexNameWithVersion(testIndexV1)))
         .isFalse();
     // and the new index exists
     assertThat(
             databaseIntegrationTestExtension.indexExists(
                 getIndexNameService()
-                    .getOptimizeIndexNameWithVersion(TEST_INDEX_WITH_UPDATED_MAPPING_V2)))
+                    .getOptimizeIndexNameWithVersion(testIndexWithUpdatedMappingV2)))
         .isTrue();
   }
 
@@ -142,7 +142,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     final UpgradePlan upgradePlan = createUpdateIndexPlan();
 
     final String oldIndexToDeleteName =
-        getIndexNameService().getOptimizeIndexNameWithVersion(TEST_INDEX_V1);
+        getIndexNameService().getOptimizeIndexNameWithVersion(testIndexV1);
     final HttpRequest indexDeleteRequest = createIndexDeleteRequest(oldIndexToDeleteName);
     dbMockServer
         // respond with a different error
@@ -158,13 +158,13 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     // and the old index is still there
     assertThat(
             databaseIntegrationTestExtension.indexExists(
-                getIndexNameService().getOptimizeIndexNameWithVersion(TEST_INDEX_V1)))
+                getIndexNameService().getOptimizeIndexNameWithVersion(testIndexV1)))
         .isTrue();
     // and the new index as well
     assertThat(
             databaseIntegrationTestExtension.indexExists(
                 getIndexNameService()
-                    .getOptimizeIndexNameWithVersion(TEST_INDEX_WITH_UPDATED_MAPPING_V2)))
+                    .getOptimizeIndexNameWithVersion(testIndexWithUpdatedMappingV2)))
         .isTrue();
   }
 
@@ -172,8 +172,8 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     return UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(applyLookupSkip(new CreateIndexStep(TEST_INDEX_V2)))
-        .addUpgradeStep(buildDeleteIndexStep(TEST_INDEX_V2))
+        .addUpgradeStep(applyLookupSkip(new CreateIndexStep(testIndexV2)))
+        .addUpgradeStep(buildDeleteIndexStep(testIndexV2))
         .build();
   }
 
@@ -181,8 +181,8 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     return UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(applyLookupSkip(new CreateIndexStep(TEST_INDEX_V1)))
-        .addUpgradeStep(buildUpdateIndexStep(TEST_INDEX_WITH_UPDATED_MAPPING_V2))
+        .addUpgradeStep(applyLookupSkip(new CreateIndexStep(testIndexV1)))
+        .addUpgradeStep(buildUpdateIndexStep(testIndexWithUpdatedMappingV2))
         .build();
   }
 
