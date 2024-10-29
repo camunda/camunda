@@ -2470,7 +2470,7 @@ paths:
     post:
       tags:
         - Authorization
-      summary: "Query a User's authorizations (alpha)"
+      summary: "Query a user's authorizations (alpha)"
       description: |
         Search for authorizations based on given criteria.
 
