@@ -88,10 +88,10 @@ public class ElasticsearchDataStoreClientTest {
     // then
     assertThat(response).isNotNull();
     assertThat(response.totalHits()).isEqualTo(789);
-    assertThat(response.get().totalHits()).isEqualTo(789);
-    assertThat(response.get().aggregations()).hasSize(1);
+    assertThat(response.totalHits()).isEqualTo(789);
+    assertThat(response.aggregations()).hasSize(1);
     assertIsAggregate(
-        response.get().aggregations().get("test-aggregate"), SearchCardinalityAggregate.class);
+        response.aggregations().get("test-aggregate"), SearchCardinalityAggregate.class);
   }
 
   private void assertIsAggregation(
