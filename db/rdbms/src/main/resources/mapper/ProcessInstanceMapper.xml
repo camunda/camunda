@@ -23,7 +23,7 @@
            pi.PARENT_PROCESS_INSTANCE_KEY,
            pi.PARENT_ELEMENT_INSTANCE_KEY,
            pi.ELEMENT_ID,
-           pi.VERSION,
+           pi.VERSION AS PROCESS_DEFINITION_VERSION,
            pd.NAME        AS PROCESS_DEFINITION_NAME,
            pd.VERSION_TAG AS PROCESS_DEFINITION_VERSION_TAG
     FROM PROCESS_INSTANCE pi
@@ -41,32 +41,31 @@
 
   <!-- default search statement for databases supporting LIMIT/OFFSET-->
   <select id="search" parameterType="io.camunda.db.rdbms.read.domain.ProcessInstanceDbQuery" resultMap="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchResultMap">
+    SELECT * FROM (
     SELECT
-      pi.PROCESS_INSTANCE_KEY,
-      pi.PROCESS_DEFINITION_ID,
-      pi.PROCESS_DEFINITION_KEY,
-      pi.STATE,
-      pi.START_DATE,
-      pi.END_DATE,
-      pi.TENANT_ID,
-      NULL as TREE_PATH,
-      NULL as INCIDENT,
-      pi.PARENT_PROCESS_INSTANCE_KEY,
-      pi.PARENT_ELEMENT_INSTANCE_KEY,
-      pi.ELEMENT_ID,
-      pi.VERSION,
-      pd.NAME AS PROCESS_DEFINITION_NAME,
-      pd.VERSION_TAG AS PROCESS_DEFINITION_VERSION_TAG
+    pi.PROCESS_INSTANCE_KEY,
+    pi.PROCESS_DEFINITION_ID,
+    pi.PROCESS_DEFINITION_KEY,
+    pi.STATE,
+    pi.START_DATE,
+    pi.END_DATE,
+    pi.TENANT_ID,
+    NULL as TREE_PATH,
+    NULL as INCIDENT,
+    pi.PARENT_PROCESS_INSTANCE_KEY,
+    pi.PARENT_ELEMENT_INSTANCE_KEY,
+    pi.ELEMENT_ID,
+    pi.VERSION PROCESS_DEFINITION_VERSION,
+    pd.NAME AS PROCESS_DEFINITION_NAME,
+    pd.VERSION_TAG AS PROCESS_DEFINITION_VERSION_TAG
     FROM PROCESS_INSTANCE pi
-        LEFT JOIN PROCESS_DEFINITION pd ON (pi.PROCESS_DEFINITION_KEY = pd.PROCESS_DEFINITION_KEY)
+    LEFT JOIN PROCESS_DEFINITION pd ON (pi.PROCESS_DEFINITION_KEY = pd.PROCESS_DEFINITION_KEY)
     <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter"/>
-    <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
-      <foreach collection="sort.orderings" open="ORDER BY " separator=", " item="item">
-        <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.processInstanceSortMapper"/>
-        ${item.order}
-      </foreach>
-    </if>
-    ${paging.after}
+    ) t
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    ORDER BY
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
   </select>
 
   <sql id="searchFilter">
@@ -138,44 +137,12 @@
     </if>
   </sql>
 
-  <sql id="processInstanceSortMapper">
-    <choose>
-      <when test='item.field == "bpmnProcessId"'>
-        pi.PROCESS_DEFINITION_ID
-      </when>
-      <when test='item.field == "processName"'>
-        pd.NAME
-      </when>
-      <when test='item.field == "processVersion"'>
-        pi.VERSION
-      </when>
-      <when test='item.field == "processVersionTag"'>
-        pd.VERSION_TAG
-      </when>
-      <when test='item.field == "processDefinitionKey"'>
-        pi.PROCESS_DEFINITION_KEY
-      </when>
-      <when test='item.field == "parentProcessInstanceKey"'>
-        pi.PARENT_PROCESS_INSTANCE_KEY
-      </when>
-      <when test='item.field == "startDate"'>
-        pi.START_DATE
-      </when>
-      <when test='item.field == "endDate"'>
-        pi.END_DATE
-      </when>
-      <when test='item.field == "tenantId"'>
-        pi.TENANT_ID
-      </when>
-    </choose>
-  </sql>
-
   <resultMap id="searchResultMap" type="io.camunda.search.entities.ProcessInstanceEntity">
     <constructor>
       <idArg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
       <arg column="PROCESS_DEFINITION_NAME" javaType="java.lang.String"/>
-      <arg column="VERSION" javaType="java.lang.Integer"/>
+      <arg column="PROCESS_DEFINITION_VERSION" javaType="java.lang.Integer"/>
       <arg column="PROCESS_DEFINITION_VERSION_TAG" javaType="java.lang.String"/>
       <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
       <arg column="PARENT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>

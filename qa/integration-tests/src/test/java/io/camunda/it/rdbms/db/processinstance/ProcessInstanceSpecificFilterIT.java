@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.rdbms.db;
+package io.camunda.it.rdbms.db.processinstance;
 
 import static io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures.createAndSaveProcessDefinition;
 import static io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures.createAndSaveProcessInstance;
@@ -14,7 +14,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.domain.ProcessInstanceDbQuery;
 import io.camunda.db.rdbms.read.service.ProcessInstanceReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
@@ -22,8 +21,7 @@ import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.ProcessInstanceFilter;
-import io.camunda.search.page.SearchQueryPage;
-import io.camunda.search.sort.ProcessInstanceSort;
+import io.camunda.search.query.ProcessInstanceQuery;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -81,17 +79,14 @@ public class ProcessInstanceSpecificFilterIT {
                     .parentProcessInstanceKey(-1L)
                     .parentElementInstanceKey(-1L)
                     .version(1)));
-
     final var searchResult =
         processInstanceReader.search(
-            new ProcessInstanceDbQuery(
-                filter,
-                ProcessInstanceSort.of(b -> b),
-                SearchQueryPage.of(b -> b.from(0).size(5))));
+            ProcessInstanceQuery.of(
+                b -> b.filter(filter).sort(s -> s).page(p -> p.from(0).size(5))));
 
     assertThat(searchResult.total()).isEqualTo(1);
-    assertThat(searchResult.hits()).hasSize(1);
-    assertThat(searchResult.hits().getFirst().key()).isEqualTo(42L);
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().getFirst().key()).isEqualTo(42L);
   }
 
   static List<ProcessInstanceFilter> shouldFindProcessInstanceWithSpecificFilterParameters() {

@@ -46,4 +46,36 @@
     </choose>
   </sql>
 
+  <sql id="keySetPageFilter">
+    <if test="page != null and page.keySetPagination != null and !page.keySetPagination.isEmpty()">
+      WHERE
+      <foreach collection="page.keySetPagination" item="keySet" open="(" separator=" OR "
+        close=")">
+        <foreach collection="keySet.entries" item="entry" open="(" separator=" AND "
+          close=")">
+            ${entry.fieldName} ${entry.operator.symbol} #{entry.fieldValue}
+        </foreach>
+      </foreach>
+    </if>
+  </sql>
+
+  <sql id="orderBy">
+    <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
+      <foreach collection="sort.orderings" open=" " separator=", " item="item">
+        ${item.column} ${item.order}
+      </foreach>
+    </if>
+  </sql>
+
+  <sql id="paging">
+    <if test="page != null">
+      <if test="page.keySetPagination == null or page.keySetPagination.isEmpty()">
+        ${paging.after}
+      </if>
+      <if test="page.keySetPagination != null and !page.keySetPagination.isEmpty()">
+        ${keysetPaging.limit}
+      </if>
+    </if>
+  </sql>
+
 </mapper>

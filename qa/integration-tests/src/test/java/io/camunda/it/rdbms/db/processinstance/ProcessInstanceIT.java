@@ -5,22 +5,21 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.rdbms.db;
+package io.camunda.it.rdbms.db.processinstance;
 
 import static io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures.createAndSaveProcessInstance;
 import static io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures.createAndSaveRandomProcessInstances;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.domain.ProcessInstanceDbQuery;
 import io.camunda.db.rdbms.read.service.ProcessInstanceReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
-import io.camunda.search.filter.ProcessInstanceFilter;
-import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.sort.ProcessInstanceSort;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -94,18 +93,17 @@ public class ProcessInstanceIT {
 
     final var searchResult =
         processInstanceReader.search(
-            new ProcessInstanceDbQuery(
-                new ProcessInstanceFilter.Builder()
-                    .processDefinitionIds("test-process-unique")
-                    .build(),
-                ProcessInstanceSort.of(b -> b),
-                SearchQueryPage.of(b -> b.from(0).size(10))));
+            ProcessInstanceQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionIds("test-process-unique"))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(10))));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(1);
-    assertThat(searchResult.hits()).hasSize(1);
+    assertThat(searchResult.items()).hasSize(1);
 
-    final var instance = searchResult.hits().getFirst();
+    final var instance = searchResult.items().getFirst();
 
     assertThat(instance.key()).isEqualTo(processInstanceKey);
     assertThat(instance.bpmnProcessId()).isEqualTo("test-process-unique");
@@ -130,41 +128,20 @@ public class ProcessInstanceIT {
 
     final var searchResult =
         processInstanceReader.search(
-            new ProcessInstanceDbQuery(
-                new ProcessInstanceFilter.Builder()
-                    .processDefinitionIds(processDefinitionId)
-                    .build(),
-                ProcessInstanceSort.of(b -> b),
-                SearchQueryPage.of(b -> b.from(0).size(5))));
+            ProcessInstanceQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionIds(processDefinitionId))
+                        .sort(s -> s.startDate().asc().processDefinitionName().asc())
+                        .page(p -> p.from(0).size(5))));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(20);
-    assertThat(searchResult.hits()).hasSize(5);
-  }
+    assertThat(searchResult.items()).hasSize(5);
 
-  @TestTemplate
-  public void shouldFindAllProcessInstancePageValuesAreNull(
-      final CamundaRdbmsTestApplication testApplication) {
-    final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
-
-    final String processDefinitionId = ProcessInstanceFixtures.nextStringId();
-    createAndSaveRandomProcessInstances(
-        rdbmsWriter, b -> b.processDefinitionId(processDefinitionId));
-
-    final var searchResult =
-        processInstanceReader.search(
-            new ProcessInstanceDbQuery(
-                new ProcessInstanceFilter.Builder()
-                    .processDefinitionIds(processDefinitionId)
-                    .build(),
-                ProcessInstanceSort.of(b -> b),
-                SearchQueryPage.of(b -> b.from(null).size(null))));
-
-    assertThat(searchResult).isNotNull();
-    assertThat(searchResult.total()).isGreaterThanOrEqualTo(20);
-    assertThat(searchResult.hits()).hasSizeGreaterThanOrEqualTo(20);
+    final var lastInstance = searchResult.items().getLast();
+    assertThat(searchResult.sortValues()).hasSize(3);
+    assertThat(searchResult.sortValues())
+        .containsExactly(lastInstance.startDate(), lastInstance.processName(), lastInstance.key());
   }
 
   @TestTemplate
@@ -192,20 +169,75 @@ public class ProcessInstanceIT {
 
     final var searchResult =
         processInstanceReader.search(
-            new ProcessInstanceDbQuery(
-                new ProcessInstanceFilter.Builder()
-                    .processInstanceKeys(processInstanceKey)
-                    .processDefinitionIds("test-process")
-                    .processDefinitionKeys(1337L)
-                    .states(ProcessInstanceState.ACTIVE.name())
-                    .parentProcessInstanceKeys(-1L)
-                    .parentFlowNodeInstanceKeys(-1L)
-                    .build(),
-                ProcessInstanceSort.of(b -> b),
-                SearchQueryPage.of(b -> b.from(0).size(5))));
+            ProcessInstanceQuery.of(
+                b ->
+                    b.filter(
+                            f ->
+                                f.processInstanceKeys(processInstanceKey)
+                                    .processDefinitionIds("test-process")
+                                    .processDefinitionKeys(1337L)
+                                    .states(ProcessInstanceState.ACTIVE.name())
+                                    .parentProcessInstanceKeys(-1L)
+                                    .parentFlowNodeInstanceKeys(-1L))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(5))));
 
     assertThat(searchResult.total()).isEqualTo(1);
-    assertThat(searchResult.hits()).hasSize(1);
-    assertThat(searchResult.hits().getFirst().key()).isEqualTo(processInstanceKey);
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().getFirst().key()).isEqualTo(processInstanceKey);
+  }
+
+  @TestTemplate
+  public void shouldFindProcessInstanceWithSearchAfter(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
+
+    final var processDefinition =
+        ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriter, b -> b);
+    createAndSaveRandomProcessInstances(
+        rdbmsWriter,
+        b ->
+            b.processDefinitionKey(processDefinition.processDefinitionKey())
+                .processDefinitionId(processDefinition.processDefinitionId()));
+    final var sort =
+        ProcessInstanceSort.of(
+            s ->
+                s.processDefinitionName()
+                    .asc()
+                    .processDefinitionVersion()
+                    .asc()
+                    .startDate()
+                    .desc());
+    final var searchResult =
+        processInstanceReader.search(
+            ProcessInstanceQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionIds(processDefinition.processDefinitionId()))
+                        .sort(sort)
+                        .page(p -> p.from(0).size(20))));
+
+    final var instanceAfter = searchResult.items().get(9);
+    final var nextPage =
+        processInstanceReader.search(
+            ProcessInstanceQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionIds(processDefinition.processDefinitionId()))
+                        .sort(sort)
+                        .page(
+                            p ->
+                                p.size(5)
+                                    .searchAfter(
+                                        new Object[] {
+                                          instanceAfter.processName(),
+                                          instanceAfter.processVersion(),
+                                          instanceAfter.startDate(),
+                                          instanceAfter.key()
+                                        }))));
+
+    assertThat(nextPage.total()).isEqualTo(20);
+    assertThat(nextPage.items()).hasSize(5);
+    assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(10, 15));
   }
 }
