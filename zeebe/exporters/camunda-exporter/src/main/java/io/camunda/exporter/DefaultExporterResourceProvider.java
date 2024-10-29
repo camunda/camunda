@@ -146,7 +146,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new DecisionHandler(
                 indexDescriptorsMap.get(DecisionIndex.class).getFullQualifiedName()),
             new ListViewProcessInstanceFromProcessInstanceHandler(
-                templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(), false),
+                templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(),
+                false,
+                processCache),
             new ListViewFlowNodeFromIncidentHandler(
                 templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(), false),
             new ListViewFlowNodeFromJobHandler(
