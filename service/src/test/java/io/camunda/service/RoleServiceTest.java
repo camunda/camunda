@@ -19,7 +19,7 @@ import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.filter.RoleFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.List;
 import org.assertj.core.util.Arrays;
@@ -34,15 +34,17 @@ public class RoleServiceTest {
   @BeforeEach
   public void before() {
     client = mock(RoleSearchClient.class);
+    when(client.withSecurityContext(any())).thenReturn(client);
     services =
-        new RoleServices(mock(BrokerClient.class), new SecurityConfiguration(), client, null);
+        new RoleServices(
+            mock(BrokerClient.class), mock(SecurityContextProvider.class), client, null);
   }
 
   @Test
   public void shouldEmptyQueryReturnRoles() {
     // given
     final var result = mock(SearchQueryResult.class);
-    when(client.searchRoles(any(), any())).thenReturn(result);
+    when(client.searchRoles(any())).thenReturn(result);
 
     final RoleFilter filter = new RoleFilter.Builder().build();
     final var searchQuery = SearchQueryBuilders.roleSearchQuery((b) -> b.filter(filter));
@@ -59,7 +61,7 @@ public class RoleServiceTest {
     // given
     final var entity = mock(RoleEntity.class);
     final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array());
-    when(client.searchRoles(any(), any())).thenReturn(result);
+    when(client.searchRoles(any())).thenReturn(result);
   }
 
   @Test
@@ -67,7 +69,7 @@ public class RoleServiceTest {
     // given
     final var entity = mock(RoleEntity.class);
     final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array());
-    when(client.searchRoles(any(), any())).thenReturn(result);
+    when(client.searchRoles(any())).thenReturn(result);
 
     // when
     final var searchQueryResult = services.getByRoleKey(1L);
@@ -80,7 +82,7 @@ public class RoleServiceTest {
   public void shouldThrownExceptionIfNotFoundByKey() {
     // given
     final var key = 100L;
-    when(client.searchRoles(any(), any())).thenReturn(new SearchQueryResult(0, List.of(), null));
+    when(client.searchRoles(any())).thenReturn(new SearchQueryResult(0, List.of(), null));
 
     // when / then
     final var exception =

@@ -13,6 +13,7 @@ import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryRequest.Builder;
 import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.util.ObjectBuilder;
+import java.util.List;
 import java.util.function.Function;
 
 public interface DocumentBasedSearchClient {
@@ -24,4 +25,6 @@ public interface DocumentBasedSearchClient {
       final Function<Builder, ObjectBuilder<SearchQueryRequest>> fn, final Class<T> documentClass) {
     return search(searchRequest(fn), documentClass);
   }
+
+  <T> List<T> findAll(final SearchQueryRequest searchRequest, final Class<T> documentClass);
 }

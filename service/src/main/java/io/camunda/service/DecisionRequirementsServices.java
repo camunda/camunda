@@ -16,9 +16,9 @@ import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
-import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.auth.Authorization;
 import io.camunda.service.search.core.SearchQueryService;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.function.Function;
@@ -31,24 +31,27 @@ public final class DecisionRequirementsServices
 
   public DecisionRequirementsServices(
       final BrokerClient brokerClient,
-      final SecurityConfiguration securityConfiguration,
+      final SecurityContextProvider securityContextProvider,
       final DecisionRequirementSearchClient decisionRequirementSearchClient,
       final Authentication authentication) {
-    super(brokerClient, securityConfiguration, authentication);
+    super(brokerClient, securityContextProvider, authentication);
     this.decisionRequirementSearchClient = decisionRequirementSearchClient;
   }
 
   @Override
   public DecisionRequirementsServices withAuthentication(final Authentication authentication) {
     return new DecisionRequirementsServices(
-        brokerClient, securityConfiguration, decisionRequirementSearchClient, authentication);
+        brokerClient, securityContextProvider, decisionRequirementSearchClient, authentication);
   }
 
   @Override
   public SearchQueryResult<DecisionRequirementsEntity> search(
       final DecisionRequirementsQuery query) {
-    return decisionRequirementSearchClient.searchDecisionRequirements(
-        query, SecurityContext.of(s -> s.withAuthentication(authentication)));
+    return decisionRequirementSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.decisionRequirementsDefinition().read())))
+        .searchDecisionRequirements(query);
   }
 
   public DecisionRequirementsEntity getByKey(final Long key) {

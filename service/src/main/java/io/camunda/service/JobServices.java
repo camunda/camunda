@@ -8,7 +8,7 @@
 package io.camunda.service;
 
 import io.camunda.security.auth.Authentication;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
@@ -29,17 +29,17 @@ public final class JobServices<T> extends ApiServices<JobServices<T>> {
 
   public JobServices(
       final BrokerClient brokerClient,
-      final SecurityConfiguration securityConfiguration,
+      final SecurityContextProvider securityContextProvider,
       final ActivateJobsHandler<T> activateJobsHandler,
       final Authentication authentication) {
-    super(brokerClient, securityConfiguration, authentication);
+    super(brokerClient, securityContextProvider, authentication);
     this.activateJobsHandler = activateJobsHandler;
   }
 
   @Override
   public JobServices<T> withAuthentication(final Authentication authentication) {
     return new JobServices<>(
-        brokerClient, securityConfiguration, activateJobsHandler, authentication);
+        brokerClient, securityContextProvider, activateJobsHandler, authentication);
   }
 
   public void activateJobs(

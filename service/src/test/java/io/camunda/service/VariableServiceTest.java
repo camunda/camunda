@@ -18,7 +18,7 @@ import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.filter.VariableFilter.Builder;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.List;
 import org.assertj.core.util.Arrays;
@@ -33,15 +33,17 @@ public class VariableServiceTest {
   @BeforeEach
   public void before() {
     client = mock(VariableSearchClient.class);
+    when(client.withSecurityContext(any())).thenReturn(client);
     services =
-        new VariableServices(mock(BrokerClient.class), new SecurityConfiguration(), client, null);
+        new VariableServices(
+            mock(BrokerClient.class), mock(SecurityContextProvider.class), client, null);
   }
 
   @Test
   public void shouldEmptyQueryReturnVariables() {
     // given
     final var result = mock(SearchQueryResult.class);
-    when(client.searchVariables(any(), any())).thenReturn(result);
+    when(client.searchVariables(any())).thenReturn(result);
 
     final VariableFilter filter = new Builder().build();
     final var searchQuery = SearchQueryBuilders.variableSearchQuery((b) -> b.filter(filter));
@@ -58,7 +60,7 @@ public class VariableServiceTest {
     // given
     final var entity = mock(VariableEntity.class);
     final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array());
-    when(client.searchVariables(any(), any())).thenReturn(result);
+    when(client.searchVariables(any())).thenReturn(result);
   }
 
   @Test
@@ -66,7 +68,7 @@ public class VariableServiceTest {
     // given
     final var entity = mock(VariableEntity.class);
     final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array());
-    when(client.searchVariables(any(), any())).thenReturn(result);
+    when(client.searchVariables(any())).thenReturn(result);
 
     // when
     final var searchQueryResult = services.getByKey(1L);

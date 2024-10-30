@@ -14,6 +14,7 @@ import io.camunda.security.auth.SecurityContext;
 
 public interface VariableSearchClient {
 
-  SearchQueryResult<VariableEntity> searchVariables(
-      VariableQuery filter, SecurityContext securityContext);
+  SearchQueryResult<VariableEntity> searchVariables(VariableQuery filter);
+
+  VariableSearchClient withSecurityContext(SecurityContext securityContext);
 }

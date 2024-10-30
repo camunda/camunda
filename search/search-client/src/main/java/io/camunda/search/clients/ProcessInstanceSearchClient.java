@@ -14,6 +14,7 @@ import io.camunda.security.auth.SecurityContext;
 
 public interface ProcessInstanceSearchClient {
 
-  SearchQueryResult<ProcessInstanceEntity> searchProcessInstances(
-      ProcessInstanceQuery query, SecurityContext securityContext);
+  SearchQueryResult<ProcessInstanceEntity> searchProcessInstances(ProcessInstanceQuery query);
+
+  ProcessInstanceSearchClient withSecurityContext(SecurityContext securityContext);
 }

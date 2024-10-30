@@ -16,6 +16,7 @@ import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 
 public record FlowNodeInstanceFilter(
     List<Long> flowNodeInstanceKeys,
@@ -30,6 +31,11 @@ public record FlowNodeInstanceFilter(
     List<Long> incidentKeys,
     List<String> tenantIds)
     implements FilterBase {
+
+  public static FlowNodeInstanceFilter of(
+      final Function<FlowNodeInstanceFilter.Builder, ObjectBuilder<FlowNodeInstanceFilter>> fn) {
+    return FilterBuilders.flowNodeInstance(fn);
+  }
 
   public static final class Builder implements ObjectBuilder<FlowNodeInstanceFilter> {
 

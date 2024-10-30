@@ -19,6 +19,10 @@ import java.util.function.Function;
  */
 public record SecurityContext(Authentication authentication, Authorization authorization) {
 
+  public boolean requiresAuthorizationChecks() {
+    return authentication != null && authorization != null;
+  }
+
   public static SecurityContext of(final Function<Builder, Builder> builderFunction) {
     return builderFunction.apply(new Builder()).build();
   }
@@ -49,20 +53,6 @@ public record SecurityContext(Authentication authentication, Authorization autho
     public Builder withAuthorization(
         final Function<Authorization.Builder, Authorization.Builder> builderFunction) {
       return withAuthorization(Authorization.of(builderFunction));
-    }
-
-    public Builder withAuthorizationIfEnabled(
-        final boolean enabled,
-        final Function<Authorization.Builder, Authorization.Builder> builderFunction) {
-      if (enabled) {
-        return withAuthorization(builderFunction);
-      }
-      return withoutAuthorization();
-    }
-
-    public Builder withoutAuthorization() {
-      authentication = null;
-      return this;
     }
 
     public SecurityContext build() {
