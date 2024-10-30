@@ -17,8 +17,6 @@ import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.UserTaskQuery.Builder;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.SecurityContextAware;
-import io.camunda.security.auth.SecurityContextAwareDelegate;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.util.ObjectBuilder;
@@ -35,25 +33,12 @@ import java.util.function.Function;
 public final class UserTaskServices
     extends SearchQueryService<UserTaskServices, UserTaskQuery, UserTaskEntity> {
 
-  private final SecurityContextAware<UserTaskSearchClient> userTaskSearchClient;
+  private final UserTaskSearchClient userTaskSearchClient;
 
   public UserTaskServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final UserTaskSearchClient userTaskSearchClient,
-      final Authentication authentication) {
-    this(
-        brokerClient,
-        securityContextProvider,
-        new SecurityContextAwareDelegate<>(
-            userTaskSearchClient, UserTaskSearchClient::withSecurityContext),
-        authentication);
-  }
-
-  public UserTaskServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final SecurityContextAware<UserTaskSearchClient> userTaskSearchClient,
       final Authentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.userTaskSearchClient = userTaskSearchClient;
@@ -67,11 +52,10 @@ public final class UserTaskServices
 
   @Override
   public SearchQueryResult<UserTaskEntity> search(final UserTaskQuery query) {
-    return securityContextProvider
-        .applySecurityContext(
-            userTaskSearchClient,
-            authentication,
-            Authorization.of(a -> a.processDefinition().readUserTask()))
+    return userTaskSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.processDefinition().readUserTask())))
         .searchUserTasks(query);
   }
 

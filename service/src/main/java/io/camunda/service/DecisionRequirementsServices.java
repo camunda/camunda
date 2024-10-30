@@ -17,8 +17,6 @@ import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.SecurityContextAware;
-import io.camunda.security.auth.SecurityContextAwareDelegate;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.util.ObjectBuilder;
@@ -29,26 +27,12 @@ public final class DecisionRequirementsServices
     extends SearchQueryService<
         DecisionRequirementsServices, DecisionRequirementsQuery, DecisionRequirementsEntity> {
 
-  private final SecurityContextAware<DecisionRequirementSearchClient>
-      decisionRequirementSearchClient;
+  private final DecisionRequirementSearchClient decisionRequirementSearchClient;
 
   public DecisionRequirementsServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final DecisionRequirementSearchClient decisionRequirementSearchClient,
-      final Authentication authentication) {
-    this(
-        brokerClient,
-        securityContextProvider,
-        new SecurityContextAwareDelegate<>(
-            decisionRequirementSearchClient, DecisionRequirementSearchClient::withSecurityContext),
-        authentication);
-  }
-
-  public DecisionRequirementsServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final SecurityContextAware<DecisionRequirementSearchClient> decisionRequirementSearchClient,
       final Authentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.decisionRequirementSearchClient = decisionRequirementSearchClient;
@@ -63,11 +47,10 @@ public final class DecisionRequirementsServices
   @Override
   public SearchQueryResult<DecisionRequirementsEntity> search(
       final DecisionRequirementsQuery query) {
-    return securityContextProvider
-        .applySecurityContext(
-            decisionRequirementSearchClient,
-            authentication,
-            Authorization.of(a -> a.decisionRequirementsDefinition().read()))
+    return decisionRequirementSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.decisionRequirementsDefinition().read())))
         .searchDecisionRequirements(query);
   }
 

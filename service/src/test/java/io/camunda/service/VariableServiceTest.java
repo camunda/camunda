@@ -34,10 +34,9 @@ public class VariableServiceTest {
   public void before() {
     client = mock(VariableSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
-    final var securityAuthorizationHandler = mock(SecurityContextProvider.class);
-    when(securityAuthorizationHandler.applySecurityContext(any(), any(), any())).thenReturn(client);
     services =
-        new VariableServices(mock(BrokerClient.class), securityAuthorizationHandler, client, null);
+        new VariableServices(
+            mock(BrokerClient.class), mock(SecurityContextProvider.class), client, null);
   }
 
   @Test

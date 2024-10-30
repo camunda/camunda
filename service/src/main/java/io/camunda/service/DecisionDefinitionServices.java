@@ -20,9 +20,6 @@ import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.auth.SecurityContextAware;
-import io.camunda.security.auth.SecurityContextAwareDelegate;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.util.ObjectBuilder;
@@ -38,31 +35,14 @@ public final class DecisionDefinitionServices
     extends SearchQueryService<
         DecisionDefinitionServices, DecisionDefinitionQuery, DecisionDefinitionEntity> {
 
-  private final SecurityContextAware<DecisionDefinitionSearchClient> decisionDefinitionSearchClient;
-  private final SecurityContextAware<DecisionRequirementSearchClient>
-      decisionRequirementSearchClient;
+  private final DecisionDefinitionSearchClient decisionDefinitionSearchClient;
+  private final DecisionRequirementSearchClient decisionRequirementSearchClient;
 
   public DecisionDefinitionServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final DecisionDefinitionSearchClient decisionDefinitionSearchClient,
       final DecisionRequirementSearchClient decisionRequirementSearchClient,
-      final Authentication authentication) {
-    this(
-        brokerClient,
-        securityContextProvider,
-        new SecurityContextAwareDelegate<>(
-            decisionDefinitionSearchClient, DecisionDefinitionSearchClient::withSecurityContext),
-        new SecurityContextAwareDelegate<>(
-            decisionRequirementSearchClient, DecisionRequirementSearchClient::withSecurityContext),
-        authentication);
-  }
-
-  public DecisionDefinitionServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final SecurityContextAware<DecisionDefinitionSearchClient> decisionDefinitionSearchClient,
-      final SecurityContextAware<DecisionRequirementSearchClient> decisionRequirementSearchClient,
       final Authentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.decisionDefinitionSearchClient = decisionDefinitionSearchClient;
@@ -81,11 +61,10 @@ public final class DecisionDefinitionServices
 
   @Override
   public SearchQueryResult<DecisionDefinitionEntity> search(final DecisionDefinitionQuery query) {
-    return securityContextProvider
-        .applySecurityContext(
-            decisionDefinitionSearchClient,
-            authentication,
-            Authorization.of(a -> a.decisionDefinition().read()))
+    return decisionDefinitionSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.decisionDefinition().read())))
         .searchDecisionDefinitions(query);
   }
 
@@ -104,7 +83,7 @@ public final class DecisionDefinitionServices
                 q.filter(f -> f.decisionRequirementsKeys(decisionRequirementsKey))
                     .resultConfig(r -> r.xml().include()));
     return decisionRequirementSearchClient
-        .withSecurityContext(SecurityContext.of(s -> s.withAuthentication(authentication)))
+        .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
         .searchDecisionRequirements(decisionRequirementsQuery)
         .items()
         .stream()

@@ -29,10 +29,9 @@ public final class IncidentServiceTest {
   public void before() {
     client = mock(IncidentSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
-    final var securityAuthorizationHandler = mock(SecurityContextProvider.class);
-    when(securityAuthorizationHandler.applySecurityContext(any(), any(), any())).thenReturn(client);
     services =
-        new IncidentServices(mock(BrokerClient.class), securityAuthorizationHandler, client, null);
+        new IncidentServices(
+            mock(BrokerClient.class), mock(SecurityContextProvider.class), client, null);
   }
 
   @Test

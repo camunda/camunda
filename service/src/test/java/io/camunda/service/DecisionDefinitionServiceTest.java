@@ -43,12 +43,10 @@ public final class DecisionDefinitionServiceTest {
     when(client.withSecurityContext(any())).thenReturn(client);
     when(decisionRequirementSearchClient.withSecurityContext(any()))
         .thenReturn(decisionRequirementSearchClient);
-    final var securityAuthorizationHandler = mock(SecurityContextProvider.class);
-    when(securityAuthorizationHandler.applySecurityContext(any(), any(), any())).thenReturn(client);
     services =
         new DecisionDefinitionServices(
             mock(BrokerClient.class),
-            securityAuthorizationHandler,
+            mock(SecurityContextProvider.class),
             client,
             decisionRequirementSearchClient,
             null);

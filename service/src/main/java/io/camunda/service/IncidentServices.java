@@ -16,8 +16,6 @@ import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.SecurityContextAware;
-import io.camunda.security.auth.SecurityContextAwareDelegate;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.util.ObjectBuilder;
@@ -30,25 +28,12 @@ import java.util.function.Function;
 public class IncidentServices
     extends SearchQueryService<IncidentServices, IncidentQuery, IncidentEntity> {
 
-  private final SecurityContextAware<IncidentSearchClient> incidentSearchClient;
+  private final IncidentSearchClient incidentSearchClient;
 
   public IncidentServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final IncidentSearchClient incidentSearchClient,
-      final Authentication authentication) {
-    this(
-        brokerClient,
-        securityContextProvider,
-        new SecurityContextAwareDelegate<>(
-            incidentSearchClient, IncidentSearchClient::withSecurityContext),
-        authentication);
-  }
-
-  public IncidentServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final SecurityContextAware<IncidentSearchClient> incidentSearchClient,
       final Authentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.incidentSearchClient = incidentSearchClient;
@@ -61,11 +46,10 @@ public class IncidentServices
 
   @Override
   public SearchQueryResult<IncidentEntity> search(final IncidentQuery query) {
-    return securityContextProvider
-        .applySecurityContext(
-            incidentSearchClient,
-            authentication,
-            Authorization.of(a -> a.processDefinition().readInstance()))
+    return incidentSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.processDefinition().readInstance())))
         .searchIncidents(query);
   }
 

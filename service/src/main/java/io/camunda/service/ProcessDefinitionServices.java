@@ -16,8 +16,6 @@ import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.SecurityContextAware;
-import io.camunda.security.auth.SecurityContextAwareDelegate;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -27,25 +25,12 @@ public class ProcessDefinitionServices
     extends SearchQueryService<
         ProcessDefinitionServices, ProcessDefinitionQuery, ProcessDefinitionEntity> {
 
-  private final SecurityContextAware<ProcessDefinitionSearchClient> processDefinitionSearchClient;
+  private final ProcessDefinitionSearchClient processDefinitionSearchClient;
 
   public ProcessDefinitionServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ProcessDefinitionSearchClient processDefinitionSearchClient,
-      final Authentication authentication) {
-    this(
-        brokerClient,
-        securityContextProvider,
-        new SecurityContextAwareDelegate<>(
-            processDefinitionSearchClient, ProcessDefinitionSearchClient::withSecurityContext),
-        authentication);
-  }
-
-  public ProcessDefinitionServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final SecurityContextAware<ProcessDefinitionSearchClient> processDefinitionSearchClient,
       final Authentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.processDefinitionSearchClient = processDefinitionSearchClient;
@@ -53,11 +38,10 @@ public class ProcessDefinitionServices
 
   @Override
   public SearchQueryResult<ProcessDefinitionEntity> search(final ProcessDefinitionQuery query) {
-    return securityContextProvider
-        .applySecurityContext(
-            processDefinitionSearchClient,
-            authentication,
-            Authorization.of(a -> a.processDefinition().read()))
+    return processDefinitionSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.processDefinition().read())))
         .searchProcessDefinitions(query);
   }
 

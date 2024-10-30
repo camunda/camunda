@@ -14,8 +14,6 @@ import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.SecurityContextAware;
-import io.camunda.security.auth.SecurityContextAwareDelegate;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -33,25 +31,12 @@ import java.util.stream.Collectors;
 public class AuthorizationServices
     extends SearchQueryService<AuthorizationServices, AuthorizationQuery, AuthorizationEntity> {
 
-  private final SecurityContextAware<AuthorizationSearchClient> authorizationSearchClient;
+  private final AuthorizationSearchClient authorizationSearchClient;
 
   public AuthorizationServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final AuthorizationSearchClient authorizationSearchClient,
-      final Authentication authentication) {
-    this(
-        brokerClient,
-        securityContextProvider,
-        new SecurityContextAwareDelegate<>(
-            authorizationSearchClient, AuthorizationSearchClient::withSecurityContext),
-        authentication);
-  }
-
-  public AuthorizationServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final SecurityContextAware<AuthorizationSearchClient> authorizationSearchClient,
       final Authentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.authorizationSearchClient = authorizationSearchClient;
@@ -65,11 +50,10 @@ public class AuthorizationServices
 
   @Override
   public SearchQueryResult<AuthorizationEntity> search(final AuthorizationQuery query) {
-    return securityContextProvider
-        .applySecurityContext(
-            authorizationSearchClient,
-            authentication,
-            Authorization.of(a -> a.authorization().read()))
+    return authorizationSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.authorization().read())))
         .searchAuthorizations(query);
   }
 

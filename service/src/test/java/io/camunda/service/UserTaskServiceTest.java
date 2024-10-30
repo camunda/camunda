@@ -34,10 +34,9 @@ public class UserTaskServiceTest {
   public void before() {
     client = mock(UserTaskSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
-    final var securityAuthorizationHandler = mock(SecurityContextProvider.class);
-    when(securityAuthorizationHandler.applySecurityContext(any(), any(), any())).thenReturn(client);
     services =
-        new UserTaskServices(mock(BrokerClient.class), securityAuthorizationHandler, client, null);
+        new UserTaskServices(
+            mock(BrokerClient.class), mock(SecurityContextProvider.class), client, null);
   }
 
   @Test

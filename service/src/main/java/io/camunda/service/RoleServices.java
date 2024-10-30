@@ -15,8 +15,6 @@ import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.SecurityContextAware;
-import io.camunda.security.auth.SecurityContextAwareDelegate;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -27,24 +25,12 @@ import java.util.concurrent.CompletableFuture;
 
 public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, RoleEntity> {
 
-  private final SecurityContextAware<RoleSearchClient> roleSearchClient;
+  private final RoleSearchClient roleSearchClient;
 
   public RoleServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final RoleSearchClient roleSearchClient,
-      final Authentication authentication) {
-    this(
-        brokerClient,
-        securityContextProvider,
-        new SecurityContextAwareDelegate<>(roleSearchClient, RoleSearchClient::withSecurityContext),
-        authentication);
-  }
-
-  public RoleServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final SecurityContextAware<RoleSearchClient> roleSearchClient,
       final Authentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.roleSearchClient = roleSearchClient;
@@ -52,9 +38,10 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
 
   @Override
   public SearchQueryResult<RoleEntity> search(final RoleQuery query) {
-    return securityContextProvider
-        .applySecurityContext(
-            roleSearchClient, authentication, Authorization.of(a -> a.role().read()))
+    return roleSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.role().read())))
         .searchRoles(query);
   }
 

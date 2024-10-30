@@ -16,8 +16,6 @@ import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.SecurityContextAware;
-import io.camunda.security.auth.SecurityContextAwareDelegate;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.util.ObjectBuilder;
@@ -28,25 +26,12 @@ public final class FlowNodeInstanceServices
     extends SearchQueryService<
         FlowNodeInstanceServices, FlowNodeInstanceQuery, FlowNodeInstanceEntity> {
 
-  private final SecurityContextAware<FlowNodeInstanceSearchClient> flowNodeInstanceSearchClient;
+  private final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient;
 
   public FlowNodeInstanceServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient,
-      final Authentication authentication) {
-    this(
-        brokerClient,
-        securityContextProvider,
-        new SecurityContextAwareDelegate<>(
-            flowNodeInstanceSearchClient, FlowNodeInstanceSearchClient::withSecurityContext),
-        authentication);
-  }
-
-  public FlowNodeInstanceServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final SecurityContextAware<FlowNodeInstanceSearchClient> flowNodeInstanceSearchClient,
       final Authentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.flowNodeInstanceSearchClient = flowNodeInstanceSearchClient;
@@ -60,11 +45,10 @@ public final class FlowNodeInstanceServices
 
   @Override
   public SearchQueryResult<FlowNodeInstanceEntity> search(final FlowNodeInstanceQuery query) {
-    return securityContextProvider
-        .applySecurityContext(
-            flowNodeInstanceSearchClient,
-            authentication,
-            Authorization.of(a -> a.processDefinition().readInstance()))
+    return flowNodeInstanceSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.processDefinition().readInstance())))
         .searchFlowNodeInstances(query);
   }
 

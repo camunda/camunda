@@ -45,10 +45,10 @@ public final class ProcessInstanceServiceTest {
     client = mock(ProcessInstanceSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
     securityConfiguration = new SecurityConfiguration();
-    final var securityAuthorizationHandler = new SecurityContextProvider(securityConfiguration);
+    final var securityContextProvider = new SecurityContextProvider(securityConfiguration);
     services =
         new ProcessInstanceServices(
-            mock(BrokerClient.class), securityAuthorizationHandler, client, null);
+            mock(BrokerClient.class), securityContextProvider, client, null);
   }
 
   @Test
@@ -154,7 +154,6 @@ public final class ProcessInstanceServiceTest {
         ArgumentCaptor.forClass(SecurityContext.class);
     verify(client).withSecurityContext(securityContextArgumentCaptor.capture());
     assertThat(securityContextArgumentCaptor.getValue())
-        .isEqualTo(
-            SecurityContext.of(s -> s.withAuthentication(authentication).withoutAuthorization()));
+        .isEqualTo(SecurityContext.of(s -> s.withAuthentication(authentication)));
   }
 }

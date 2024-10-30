@@ -40,12 +40,11 @@ public class UserServiceTest {
   public void before() {
     client = mock(UserSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
-    final var securityAuthorizationHandler = mock(SecurityContextProvider.class);
-    when(securityAuthorizationHandler.applySecurityContext(any(), any(), any())).thenReturn(client);
     brokerClient = mock(BrokerClient.class);
     authentication = mock(Authentication.class);
     userDeleteRequestArgumentCaptor = ArgumentCaptor.forClass(BrokerUserDeleteRequest.class);
-    services = new UserServices(brokerClient, securityAuthorizationHandler, client, authentication);
+    services =
+        new UserServices(brokerClient, mock(SecurityContextProvider.class), client, authentication);
   }
 
   @Test

@@ -17,8 +17,6 @@ import io.camunda.search.query.VariableQuery;
 import io.camunda.search.query.VariableQuery.Builder;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.SecurityContextAware;
-import io.camunda.security.auth.SecurityContextAwareDelegate;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.util.ObjectBuilder;
@@ -28,25 +26,12 @@ import java.util.function.Function;
 public final class VariableServices
     extends SearchQueryService<VariableServices, VariableQuery, VariableEntity> {
 
-  private final SecurityContextAware<VariableSearchClient> variableSearchClient;
+  private final VariableSearchClient variableSearchClient;
 
   public VariableServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final VariableSearchClient variableSearchClient,
-      final Authentication authentication) {
-    this(
-        brokerClient,
-        securityContextProvider,
-        new SecurityContextAwareDelegate<>(
-            variableSearchClient, VariableSearchClient::withSecurityContext),
-        authentication);
-  }
-
-  public VariableServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final SecurityContextAware<VariableSearchClient> variableSearchClient,
       final Authentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.variableSearchClient = variableSearchClient;
@@ -60,11 +45,10 @@ public final class VariableServices
 
   @Override
   public SearchQueryResult<VariableEntity> search(final VariableQuery query) {
-    return securityContextProvider
-        .applySecurityContext(
-            variableSearchClient,
-            authentication,
-            Authorization.of(a -> a.processDefinition().readInstance()))
+    return variableSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.processDefinition().readInstance())))
         .searchVariables(query);
   }
 

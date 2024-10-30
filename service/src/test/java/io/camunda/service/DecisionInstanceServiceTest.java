@@ -33,11 +33,9 @@ class DecisionInstanceServiceTest {
   public void before() {
     client = mock(DecisionInstanceSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
-    final var securityAuthorizationHandler = mock(SecurityContextProvider.class);
-    when(securityAuthorizationHandler.applySecurityContext(any(), any(), any())).thenReturn(client);
     services =
         new DecisionInstanceServices(
-            mock(BrokerClient.class), securityAuthorizationHandler, client, null);
+            mock(BrokerClient.class), mock(SecurityContextProvider.class), client, null);
   }
 
   @Test

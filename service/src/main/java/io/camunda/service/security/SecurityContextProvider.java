@@ -11,7 +11,6 @@ import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.auth.SecurityContext.Builder;
-import io.camunda.security.auth.SecurityContextAware;
 import io.camunda.security.configuration.SecurityConfiguration;
 
 public class SecurityContextProvider {
@@ -22,15 +21,17 @@ public class SecurityContextProvider {
     this.securityConfiguration = securityConfiguration;
   }
 
-  public <T> T applySecurityContext(
-      final SecurityContextAware<T> securityContextAware,
-      final Authentication authentication,
-      final Authorization authorization) {
+  public SecurityContext provideSecurityContext(
+      final Authentication authentication, final Authorization authorization) {
     final SecurityContext.Builder securityContextbuilder =
         new Builder().withAuthentication(authentication);
     if (securityConfiguration.getAuthorizations().isEnabled()) {
       securityContextbuilder.withAuthorization(authorization);
     }
-    return securityContextAware.withSecurityContext(securityContextbuilder.build());
+    return securityContextbuilder.build();
+  }
+
+  public SecurityContext provideSecurityContext(final Authentication authentication) {
+    return provideSecurityContext(authentication, null);
   }
 }

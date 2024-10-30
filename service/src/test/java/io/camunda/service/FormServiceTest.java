@@ -29,9 +29,9 @@ public final class FormServiceTest {
   public void before() {
     client = mock(FormSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
-    final var securityAuthorizationHandler = mock(SecurityContextProvider.class);
     services =
-        new FormServices(mock(BrokerClient.class), securityAuthorizationHandler, client, null);
+        new FormServices(
+            mock(BrokerClient.class), mock(SecurityContextProvider.class), client, null);
   }
 
   @Test

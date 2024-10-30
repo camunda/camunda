@@ -13,8 +13,6 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserQuery;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.SecurityContextAware;
-import io.camunda.security.auth.SecurityContextAwareDelegate;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -26,24 +24,12 @@ import java.util.concurrent.CompletableFuture;
 
 public class UserServices extends SearchQueryService<UserServices, UserQuery, UserEntity> {
 
-  private final SecurityContextAware<UserSearchClient> userSearchClient;
+  private final UserSearchClient userSearchClient;
 
   public UserServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final UserSearchClient userSearchClient,
-      final Authentication authentication) {
-    this(
-        brokerClient,
-        securityContextProvider,
-        new SecurityContextAwareDelegate<>(userSearchClient, UserSearchClient::withSecurityContext),
-        authentication);
-  }
-
-  public UserServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final SecurityContextAware<UserSearchClient> userSearchClient,
       final Authentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.userSearchClient = userSearchClient;
@@ -51,9 +37,10 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
 
   @Override
   public SearchQueryResult<UserEntity> search(final UserQuery query) {
-    return securityContextProvider
-        .applySecurityContext(
-            userSearchClient, authentication, Authorization.of(a -> a.user().read()))
+    return userSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.user().read())))
         .searchUsers(query);
   }
 
