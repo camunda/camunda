@@ -151,7 +151,8 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
     super(customIndexPrefix, haveToClean);
     initEsClient();
     setTestIndexRepository(new TestIndexRepositoryES(optimizeElasticsearchClient));
-    taskRepositoryES = new TaskRepositoryES(optimizeElasticsearchClient);
+    taskRepositoryES =
+        new TaskRepositoryES(optimizeElasticsearchClient, createConfigurationService());
   }
 
   private static ClientAndServer initMockServer() {
