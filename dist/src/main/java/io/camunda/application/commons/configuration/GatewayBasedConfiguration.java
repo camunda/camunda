@@ -20,6 +20,7 @@ import io.camunda.application.commons.configuration.GatewayBasedConfiguration.Ga
 import io.camunda.application.commons.job.JobHandlerConfiguration.ActivateJobHandlerConfiguration;
 import io.camunda.zeebe.gateway.RestApiCompositeFilter;
 import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
+import io.camunda.zeebe.gateway.impl.configuration.ExperimentalCfg;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MembershipCfg;
@@ -90,6 +91,11 @@ public final class GatewayBasedConfiguration {
   @Bean
   public MultiTenancyCfg multiTenancyCfg() {
     return properties.getMultiTenancy();
+  }
+
+  @Bean
+  public ExperimentalCfg experimentalCfg() {
+    return properties.getExperimental();
   }
 
   @Bean
