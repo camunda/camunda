@@ -7,13 +7,25 @@
  */
 package io.camunda.zeebe.engine.state.group;
 
+import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 
 public class DbGroupState implements MutableGroupState {
 
+  private final DbLong groupKey;
+  private final PersistedGroup persistedGroup = new PersistedGroup();
+  private final ColumnFamily<DbLong, PersistedGroup> groupColumnFamily;
+
   public DbGroupState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {}
+      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
+
+    groupKey = new DbLong();
+    groupColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.GROUPS, transactionContext, groupKey, persistedGroup);
+  }
 }

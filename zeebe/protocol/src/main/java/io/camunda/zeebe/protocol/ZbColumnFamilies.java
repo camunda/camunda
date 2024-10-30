@@ -211,7 +211,9 @@ public enum ZbColumnFamilies implements EnumValue {
   MAPPINGS(107),
   CLAIM_BY_KEY(108),
 
-  USER_TASK_RECORD_REQUEST_METADATA(109);
+  USER_TASK_RECORD_REQUEST_METADATA(109),
+
+  GROUPS(110);
 
   private final int value;
 
