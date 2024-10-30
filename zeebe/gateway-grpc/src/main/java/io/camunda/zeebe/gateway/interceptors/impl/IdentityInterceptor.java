@@ -21,6 +21,8 @@ import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
 import io.grpc.Status;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.RejectedExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +32,7 @@ public final class IdentityInterceptor implements ServerInterceptor {
   private static final Metadata.Key<String> AUTH_KEY =
       Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
   private final Identity identity;
+  private final IdentityTenantService tenantService;
   private final MultiTenancyCfg multiTenancy;
 
   public IdentityInterceptor(final IdentityCfg config, final MultiTenancyCfg multiTenancy) {
@@ -44,6 +47,7 @@ public final class IdentityInterceptor implements ServerInterceptor {
   public IdentityInterceptor(final Identity identity, final MultiTenancyCfg multiTenancy) {
     this.identity = identity;
     this.multiTenancy = multiTenancy;
+    tenantService = new IdentityTenantService(identity);
   }
 
   private static Identity createIdentity(final IdentityCfg config) {
@@ -97,22 +101,30 @@ public final class IdentityInterceptor implements ServerInterceptor {
 
     try {
       final List<String> authorizedTenants =
-          identity.tenants().forToken(token).stream().map(Tenant::getTenantId).toList();
+          tenantService.getTenantsForToken(token).stream().map(Tenant::getTenantId).toList();
       final var context = InterceptorUtil.setAuthorizedTenants(authorizedTenants);
       return Contexts.interceptCall(context, call, headers, next);
 
-    } catch (final RuntimeException e) {
-      LOGGER.debug(
-          "Denying call {} as the authorized tenants could not be retrieved from Identity. Error message: {}",
-          methodDescriptor.getFullMethodName(),
-          e.getMessage());
-      return deny(
-          call,
-          Status.UNAUTHENTICATED
-              .augmentDescription(
-                  "Expected Identity to provide authorized tenants, see cause for details")
-              .withCause(e));
+    } catch (final RejectedExecutionException ree) {
+      return denyTenantCallAndLog(call, Status.UNAVAILABLE, ree);
+    } catch (final RuntimeException | ExecutionException e) {
+      return denyTenantCallAndLog(call, Status.UNAUTHENTICATED, e);
     }
+  }
+
+  private <ReqT> ServerCall.Listener<ReqT> denyTenantCallAndLog(
+      final ServerCall<ReqT, ?> call, final Status status, final Throwable ex) {
+    LOGGER.debug(
+        "Denying call {} as the authorized tenants could not be retrieved from Identity. Error message: {}",
+        call.getMethodDescriptor().getFullMethodName(),
+        ex.getMessage());
+
+    return deny(
+        call,
+        status
+            .augmentDescription(
+                "Expected Identity to provide authorized tenants, see cause for details")
+            .withCause(ex));
   }
 
   private <ReqT> ServerCall.Listener<ReqT> deny(
