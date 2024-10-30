@@ -168,7 +168,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     if (operateProperties.getElasticsearch().isHealthCheckEnabled()) {
       return retryElasticsearchClient.isHealthy();
     } else {
-      LOGGER.warn("OpenSearch cluster health check is disabled.");
+      LOGGER.warn("Elasticsearch cluster health check is disabled.");
       return true;
     }
   }
