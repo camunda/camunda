@@ -8,6 +8,7 @@
 
 package io.camunda.search.es.clients;
 
+import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.time.Duration;
@@ -40,8 +41,8 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.action.support.IndicesOptions;
+import org.elasticsearch.client.ElasticsearchClient;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.*;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.common.settings.Settings;
@@ -62,7 +63,7 @@ public class RetryElasticsearchClient {
   public static final int DEFAULT_DELAY_INTERVAL_IN_SECONDS = 2;
   private static final Logger LOGGER = LoggerFactory.getLogger(RetryElasticsearchClient.class);
 
-  private final RestHighLevelClient esClient;
+  private final ElasticsearchClient esClient;
 
   private final ObjectMapper objectMapper;
 
@@ -72,7 +73,7 @@ public class RetryElasticsearchClient {
   private final int numberOfReplicas = 1;
 
   public RetryElasticsearchClient(
-      final RestHighLevelClient esClient, final ObjectMapper objectMapper) {
+      final ElasticsearchClient esClient, final ObjectMapper objectMapper) {
     this.esClient = esClient;
     this.objectMapper = objectMapper;
   }

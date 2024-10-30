@@ -13,7 +13,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.common.settings.Settings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
