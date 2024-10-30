@@ -2064,24 +2064,6 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          description: "Unauthorized"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: "Forbidden"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: "Not found"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
         "500":
           description: "Internal server error"
           content:
@@ -2470,7 +2452,7 @@ paths:
     post:
       tags:
         - Authorization
-      summary: "Query a user's authorizations (alpha)"
+      summary: "Query user authorizations (alpha)"
       description: |
         Search for authorizations based on given criteria.
 
@@ -2503,24 +2485,6 @@ paths:
                 $ref: "#/components/schemas/AuthorizationSearchResponse"
         "400":
           description: "Bad request"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          description: "Unauthorized"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: "Forbidden"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: "Not found"
           content:
             application/problem+json:
               schema:
