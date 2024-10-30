@@ -99,6 +99,13 @@ class ElasticsearchClient implements AutoCloseable {
     client.close();
   }
 
+  /**
+   * Indexes a record to the batch of records that will be sent to Elasticsearch
+   *
+   * @param record the record that will be the source of the document
+   * @param recordSequence the sequence number of the record
+   * @return true if the record was appended to the batch, false otherwise
+   */
   public boolean index(final Record<?> record, final RecordSequence recordSequence) {
     if (bulkIndexRequest.isEmpty()) {
       flushLatencyMeasurement = metrics.startFlushLatencyMeasurement();
