@@ -39,13 +39,16 @@ const VariablePanel = observer(function VariablePanel() {
   }, [processInstanceId]);
 
   useEffect(() => {
-    if (!flowNodeInstanceId) {
+    if (!flowNodeInstanceId && flowNodeId) {
       fetchListeners({
         fetchType: 'initial',
         processInstanceId: processInstanceId,
         payload: {flowNodeId},
       });
-    } else {
+    } else if (
+      flowNodeInstanceId &&
+      !flowNodeSelectionStore.isRootNodeSelected
+    ) {
       fetchListeners({
         fetchType: 'initial',
         processInstanceId: processInstanceId,

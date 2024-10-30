@@ -32,8 +32,7 @@ test.beforeAll(async ({request}) => {
     .toBe(200);
 });
 
-// @TODO: remove .skip when tests are fixed
-test.describe.skip('Process Instance Listeners', () => {
+test.describe('Process Instance Listeners', () => {
   test('Listeners tab button show/hide', async ({
     page,
     processInstancePage,
@@ -60,8 +59,7 @@ test.describe.skip('Process Instance Listeners', () => {
     await expect(page.getByText('Execution listener')).toBeVisible();
   });
 
-  // @TODO: remove skip flag when BE ticket is merged - https://github.com/camunda/camunda/issues/23942
-  test.skip('Listeners list filtered by flow node instance', async ({
+  test('Listeners list filtered by flow node instance', async ({
     page,
     processInstancePage,
   }) => {
