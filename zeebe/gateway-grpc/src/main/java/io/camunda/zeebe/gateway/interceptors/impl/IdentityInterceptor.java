@@ -11,7 +11,9 @@ import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.identity.sdk.authentication.exception.TokenVerificationException;
 import io.camunda.identity.sdk.tenants.dto.Tenant;
+import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.IdentityCfg;
+import io.camunda.zeebe.gateway.impl.configuration.IdentityRequestCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.impl.identity.IdentityTenantService;
 import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
@@ -36,19 +38,28 @@ public final class IdentityInterceptor implements ServerInterceptor {
   private final IdentityTenantService tenantService;
   private final MultiTenancyCfg multiTenancy;
 
-  public IdentityInterceptor(final IdentityCfg config, final MultiTenancyCfg multiTenancy) {
-    this(createIdentity(config), multiTenancy);
+  public IdentityInterceptor(final IdentityCfg config, final GatewayCfg gatewayCfg) {
+    this(
+        createIdentity(config),
+        gatewayCfg.getMultiTenancy(),
+        gatewayCfg.getExperimental().getIdentityRequest());
   }
 
   public IdentityInterceptor(
-      final IdentityConfiguration configuration, final MultiTenancyCfg multiTenancy) {
-    this(new Identity(configuration), multiTenancy);
+      final IdentityConfiguration configuration, final GatewayCfg gatewayCfg) {
+    this(
+        new Identity(configuration),
+        gatewayCfg.getMultiTenancy(),
+        gatewayCfg.getExperimental().getIdentityRequest());
   }
 
-  public IdentityInterceptor(final Identity identity, final MultiTenancyCfg multiTenancy) {
+  public IdentityInterceptor(
+      final Identity identity,
+      final MultiTenancyCfg multiTenancy,
+      final IdentityRequestCfg identityRequestCfg) {
     this.identity = identity;
     this.multiTenancy = multiTenancy;
-    tenantService = new IdentityTenantService(identity);
+    tenantService = new IdentityTenantService(identity, identityRequestCfg);
   }
 
   private static Identity createIdentity(final IdentityCfg config) {

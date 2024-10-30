@@ -10,6 +10,7 @@ package io.camunda.zeebe.shared.security;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.identity.sdk.tenants.dto.Tenant;
+import io.camunda.zeebe.gateway.impl.configuration.ExperimentalCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.impl.identity.IdentityTenantService;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -32,10 +33,12 @@ public final class IdentityAuthenticationManager implements AuthenticationManage
 
   @Autowired
   public IdentityAuthenticationManager(
-      final Identity identity, final MultiTenancyCfg multiTenancy) {
+      final Identity identity,
+      final MultiTenancyCfg multiTenancy,
+      final ExperimentalCfg experimentalCfg) {
     this.identity = identity;
     this.multiTenancy = multiTenancy;
-    tenantService = new IdentityTenantService(identity);
+    tenantService = new IdentityTenantService(identity, experimentalCfg.getIdentityRequest());
   }
 
   @Override
