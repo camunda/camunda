@@ -2531,10 +2531,12 @@ paths:
       description: |
         Search for user authorizations based on given criteria.
 
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
         :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        in future releases.
         :::
       operationId: "findUserAuthorizations"
       parameters:
