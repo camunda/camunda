@@ -2529,7 +2529,7 @@ paths:
         - Authorization
       summary: "Query user authorizations (alpha)"
       description: |
-        Search for authorizations based on given criteria.
+        Search for user authorizations based on given criteria.
 
         :::note
         This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
@@ -2553,19 +2553,22 @@ paths:
         required: true
       responses:
         "200":
-          description: "OK"
+          description: The user authorization search result.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthorizationSearchResponse"
         "400":
-          description: "Bad request"
+          description: >
+            The user authorization search query failed.
+            More details are provided in the response body.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: "Internal server error"
+          description: >
+            An internal error occurred while processing the request.
           content:
             application/problem+json:
               schema:
