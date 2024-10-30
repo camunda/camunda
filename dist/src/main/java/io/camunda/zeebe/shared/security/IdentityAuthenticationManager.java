@@ -10,10 +10,13 @@ package io.camunda.zeebe.shared.security;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.identity.sdk.tenants.dto.Tenant;
+import io.camunda.zeebe.gateway.impl.configuration.ExperimentalCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
+import io.camunda.zeebe.gateway.impl.identity.IdentityTenantService;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
@@ -26,13 +29,17 @@ import reactor.core.publisher.Mono;
 public final class IdentityAuthenticationManager implements ReactiveAuthenticationManager {
 
   private final Identity identity;
+  private final IdentityTenantService tenantService;
   private final MultiTenancyCfg multiTenancy;
 
   @Autowired
   public IdentityAuthenticationManager(
-      final Identity identity, final MultiTenancyCfg multiTenancy) {
+      final Identity identity,
+      final MultiTenancyCfg multiTenancy,
+      final ExperimentalCfg experimentalCfg) {
     this.identity = identity;
     this.multiTenancy = multiTenancy;
+    tenantService = new IdentityTenantService(identity, experimentalCfg.getIdentityRequest());
   }
 
   @Override
@@ -62,8 +69,8 @@ public final class IdentityAuthenticationManager implements ReactiveAuthenticati
     }
 
     try {
-      return identity.tenants().forToken(token).stream().map(Tenant::getTenantId).toList();
-    } catch (final RuntimeException e) {
+      return tenantService.getTenantsForToken(token).stream().map(Tenant::getTenantId).toList();
+    } catch (final RuntimeException | ExecutionException e) {
       throw new InternalAuthenticationServiceException(
           "Expected Identity to provide authorized tenants, see cause for details", e);
     }

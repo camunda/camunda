@@ -16,6 +16,7 @@ import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
+import io.camunda.zeebe.gateway.cmd.ConcurrentRequestException;
 import io.camunda.zeebe.msgpack.spec.MsgpackException;
 import io.netty.channel.ConnectTimeoutException;
 import java.net.ConnectException;
@@ -109,9 +110,13 @@ public class RestErrorMapper {
         REST_GATEWAY_LOGGER.debug(pnfeMsg, pnfe);
         yield createProblemDetail(
             HttpStatus.SERVICE_UNAVAILABLE, pnfeMsg, pnfe.getClass().getName());
+      case final ConcurrentRequestException cre:
+        final var creMsg = "Expected to handle REST API request, but the request was rejected";
+        REST_GATEWAY_LOGGER.debug(creMsg, cre);
+        yield createProblemDetail(HttpStatus.SERVICE_UNAVAILABLE, creMsg, cre.getClass().getName());
       default:
         REST_GATEWAY_LOGGER.error(
-            "Expected to handle REST request, but an unexpected error occurred", error);
+            "Expected to handle REST API request, but an unexpected error occurred", error);
         yield createProblemDetail(
             HttpStatus.INTERNAL_SERVER_ERROR,
             "Unexpected error occurred during the request processing: " + error.getMessage(),
