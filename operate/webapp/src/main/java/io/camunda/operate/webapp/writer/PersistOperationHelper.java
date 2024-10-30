@@ -158,15 +158,16 @@ public class PersistOperationHelper {
       final OperationType operationType,
       final String batchOperationId) {
 
-    final OperationEntity operationEntity = new OperationEntity();
-    operationEntity.generateId();
-    operationEntity.setProcessInstanceKey(processInstanceSource.getProcessInstanceKey());
-    operationEntity.setProcessDefinitionKey(processInstanceSource.getProcessDefinitionKey());
-    operationEntity.setBpmnProcessId(processInstanceSource.getBpmnProcessId());
-    operationEntity.setType(operationType);
-    operationEntity.setState(OperationState.SCHEDULED);
-    operationEntity.setBatchOperationId(batchOperationId);
-    operationEntity.setUsername(userService.getCurrentUser().getUsername());
+    final OperationEntity operationEntity =
+        new OperationEntity()
+            .withGeneratedId()
+            .setProcessInstanceKey(processInstanceSource.getProcessInstanceKey())
+            .setProcessDefinitionKey(processInstanceSource.getProcessDefinitionKey())
+            .setBpmnProcessId(processInstanceSource.getBpmnProcessId())
+            .setType(operationType)
+            .setState(OperationState.SCHEDULED)
+            .setBatchOperationId(batchOperationId)
+            .setUsername(userService.getCurrentUser().getUsername());
 
     return operationEntity;
   }
