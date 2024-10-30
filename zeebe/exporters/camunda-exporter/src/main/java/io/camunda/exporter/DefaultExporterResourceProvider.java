@@ -46,6 +46,7 @@ import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
@@ -102,7 +103,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             EventTemplate.class,
             new EventTemplate(globalPrefix, isElasticsearch),
             TaskTemplate.class,
-            new TaskTemplate(globalPrefix, isElasticsearch));
+            new TaskTemplate(globalPrefix, isElasticsearch),
+            BatchOperationTemplate.class,
+            new BatchOperationTemplate(globalPrefix, isElasticsearch));
 
     indexDescriptorsMap =
         Map.of(
