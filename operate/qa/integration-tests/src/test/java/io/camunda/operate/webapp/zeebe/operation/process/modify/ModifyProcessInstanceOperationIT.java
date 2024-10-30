@@ -65,7 +65,6 @@ public class ModifyProcessInstanceOperationIT extends OperateSearchAbstractIT {
     createBatchCommandDocument(batchOperationId);
 
     // Create operation entity to process
-    final String operationId = UUID.randomUUID().toString();
     final ModifyProcessInstanceRequestDto modifyInstructions =
         new ModifyProcessInstanceRequestDto()
             .setProcessInstanceKey(String.valueOf(MOCK_PROCESS_INSTANCE_KEY))
@@ -74,7 +73,7 @@ public class ModifyProcessInstanceOperationIT extends OperateSearchAbstractIT {
                     new Modification().setModification(Type.ADD_TOKEN).setToFlowNodeId("taskB")));
 
     final OperationEntity operation =
-        createOperationEntityDocument(batchOperationId, operationId, modifyInstructions);
+        createOperationEntityDocument(batchOperationId, modifyInstructions);
     searchContainerManager.refreshIndices("*operation*");
 
     // Test execution of the operation entity
@@ -112,7 +111,6 @@ public class ModifyProcessInstanceOperationIT extends OperateSearchAbstractIT {
     createBatchCommandDocument(batchOperationId);
 
     // Create operation entity to process
-    final String operationId = UUID.randomUUID().toString();
     final ModifyProcessInstanceRequestDto modifyInstructions =
         new ModifyProcessInstanceRequestDto()
             .setProcessInstanceKey(String.valueOf(MOCK_PROCESS_INSTANCE_KEY))
@@ -124,7 +122,7 @@ public class ModifyProcessInstanceOperationIT extends OperateSearchAbstractIT {
                         .setVariables(Map.of("taskB", List.of(Map.of("c", "d"))))));
 
     final OperationEntity operation =
-        createOperationEntityDocument(batchOperationId, operationId, modifyInstructions);
+        createOperationEntityDocument(batchOperationId, modifyInstructions);
     searchContainerManager.refreshIndices("*operation*");
 
     // Test execution of the operation entity
@@ -178,7 +176,7 @@ public class ModifyProcessInstanceOperationIT extends OperateSearchAbstractIT {
                         .setFromFlowNodeId("taskA")));
 
     final OperationEntity operation =
-        createOperationEntityDocument(batchOperationId, operationId, modifyInstructions);
+        createOperationEntityDocument(batchOperationId, modifyInstructions);
     searchContainerManager.refreshIndices("*operation*");
 
     // Test execution of the operation entity
@@ -224,7 +222,6 @@ public class ModifyProcessInstanceOperationIT extends OperateSearchAbstractIT {
     createBatchCommandDocument(batchOperationId);
 
     // Create operation entity to process
-    final String operationId = UUID.randomUUID().toString();
     final ModifyProcessInstanceRequestDto modifyInstructions =
         new ModifyProcessInstanceRequestDto()
             .setProcessInstanceKey(String.valueOf(MOCK_PROCESS_INSTANCE_KEY))
@@ -236,7 +233,7 @@ public class ModifyProcessInstanceOperationIT extends OperateSearchAbstractIT {
                         .setToFlowNodeId("taskB")));
 
     final OperationEntity operation =
-        createOperationEntityDocument(batchOperationId, operationId, modifyInstructions);
+        createOperationEntityDocument(batchOperationId, modifyInstructions);
     searchContainerManager.refreshIndices("*operation*");
 
     // Test execution of the operation entity
@@ -307,13 +304,11 @@ public class ModifyProcessInstanceOperationIT extends OperateSearchAbstractIT {
   }
 
   private OperationEntity createOperationEntityDocument(
-      final String batchOperationId,
-      final String operationId,
-      final ModifyProcessInstanceRequestDto modifyInstructions)
+      final String batchOperationId, final ModifyProcessInstanceRequestDto modifyInstructions)
       throws IOException {
     final OperationEntity operation =
         new OperationEntity()
-            .setId(operationId)
+            .withGeneratedId()
             .setProcessInstanceKey(MOCK_PROCESS_INSTANCE_KEY)
             .setProcessDefinitionKey(MOCK_PROCESS_DEFINITION_KEY)
             .setBpmnProcessId("demoProcess")
@@ -324,7 +319,7 @@ public class ModifyProcessInstanceOperationIT extends OperateSearchAbstractIT {
             .setModifyInstructions(objectMapper.writeValueAsString(modifyInstructions));
 
     testSearchRepository.createOrUpdateDocumentFromObject(
-        operationTemplate.getFullQualifiedName(), operationId, operation);
+        operationTemplate.getFullQualifiedName(), operation.getId(), operation);
 
     return operation;
   }

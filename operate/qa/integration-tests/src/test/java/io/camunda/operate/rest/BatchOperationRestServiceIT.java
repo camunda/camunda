@@ -176,49 +176,42 @@ public class BatchOperationRestServiceIT extends OperateSearchAbstractIT {
     final OperationEntity bo1op1 =
         new OperationEntity()
             .setBatchOperationId(TEST_BATCH_OP_IDS[0])
-            .setId("11")
             .setState(OperationState.COMPLETED);
     testSearchRepository.createOrUpdateDocumentFromObject(
         operationIndexName, bo1op1.getId(), bo1op1);
     final OperationEntity bo1op2 =
         new OperationEntity()
             .setBatchOperationId(TEST_BATCH_OP_IDS[0])
-            .setId("12")
             .setState(OperationState.COMPLETED);
     testSearchRepository.createOrUpdateDocumentFromObject(
         operationIndexName, bo1op2.getId(), bo1op2);
     final OperationEntity bo1op3 =
         new OperationEntity()
             .setBatchOperationId(TEST_BATCH_OP_IDS[0])
-            .setId("13")
             .setState(OperationState.COMPLETED);
     testSearchRepository.createOrUpdateDocumentFromObject(
         operationIndexName, bo1op3.getId(), bo1op3);
     final OperationEntity bo1op4 =
         new OperationEntity()
             .setBatchOperationId(TEST_BATCH_OP_IDS[0])
-            .setId("14")
             .setState(OperationState.FAILED);
     testSearchRepository.createOrUpdateDocumentFromObject(
         operationIndexName, bo1op4.getId(), bo1op4);
     final OperationEntity bo1op5 =
         new OperationEntity()
             .setBatchOperationId(TEST_BATCH_OP_IDS[0])
-            .setId("15")
             .setState(OperationState.FAILED);
     testSearchRepository.createOrUpdateDocumentFromObject(
         operationIndexName, bo1op5.getId(), bo1op5);
     final OperationEntity bo2op1 =
         new OperationEntity()
             .setBatchOperationId(TEST_BATCH_OP_IDS[1])
-            .setId("21")
             .setState(OperationState.COMPLETED);
     testSearchRepository.createOrUpdateDocumentFromObject(
         operationIndexName, bo2op1.getId(), bo2op1);
     final OperationEntity bo2op2 =
         new OperationEntity()
             .setBatchOperationId(TEST_BATCH_OP_IDS[1])
-            .setId("22")
             .setState(OperationState.COMPLETED);
     testSearchRepository.createOrUpdateDocumentFromObject(
         operationIndexName, bo2op2.getId(), bo2op2);
@@ -227,7 +220,6 @@ public class BatchOperationRestServiceIT extends OperateSearchAbstractIT {
     final OperationEntity bo3op1 =
         new OperationEntity()
             .setBatchOperationId(TEST_BATCH_OP_IDS[2])
-            .setId("31")
             .setState(OperationState.SENT);
     testSearchRepository.createOrUpdateDocumentFromObject(
         operationIndexName, bo3op1.getId(), bo3op1);
