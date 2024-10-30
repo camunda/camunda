@@ -8,6 +8,7 @@
 package io.camunda.exporter;
 
 import io.camunda.exporter.cache.ProcessCacheLoaderFactory;
+import io.camunda.exporter.cache.ProcessCacheMetrics;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
@@ -19,7 +20,8 @@ public interface ExporterResourceProvider {
 
   void init(
       ExporterConfiguration configuration,
-      final ProcessCacheLoaderFactory processCacheLoaderFactory);
+      final ProcessCacheLoaderFactory processCacheLoaderFactory,
+      final ProcessCacheMetrics processCacheMetrics);
 
   /**
    * This should return descriptors describing the desired state of all indices provided.

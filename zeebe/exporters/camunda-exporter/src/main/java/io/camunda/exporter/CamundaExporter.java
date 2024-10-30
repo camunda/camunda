@@ -24,6 +24,7 @@ import co.elastic.clients.util.VisibleForTesting;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.archiver.Archiver;
 import io.camunda.exporter.archiver.ArchiverRepository.NoopArchiverRepository;
+import io.camunda.exporter.cache.ProcessCacheMetrics;
 import io.camunda.exporter.config.ConfigValidator;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
@@ -58,6 +59,7 @@ public class CamundaExporter implements Exporter {
   private Logger logger;
   private int partitionId;
   private Archiver archiver;
+  private ProcessCacheMetrics processCacheMetrics;
 
   public CamundaExporter() {
     this(new DefaultExporterResourceProvider());
@@ -76,6 +78,7 @@ public class CamundaExporter implements Exporter {
     ConfigValidator.validate(configuration);
     context.setFilter(new CamundaExporterRecordFilter());
     metrics = new CamundaExporterMetrics(context.getMeterRegistry());
+    processCacheMetrics = new ProcessCacheMetrics(context.getMeterRegistry());
     LOG.debug("Exporter configured with {}", configuration);
   }
 
@@ -84,7 +87,7 @@ public class CamundaExporter implements Exporter {
     this.controller = controller;
     clientAdapter = ClientAdapter.of(configuration);
 
-    provider.init(configuration, clientAdapter::getProcessCacheLoader);
+    provider.init(configuration, clientAdapter::getProcessCacheLoader, processCacheMetrics);
 
     final var searchEngineClient = clientAdapter.getSearchEngineClient();
     final var schemaManager =

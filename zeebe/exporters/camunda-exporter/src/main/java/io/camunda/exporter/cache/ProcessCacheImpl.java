@@ -17,10 +17,13 @@ public class ProcessCacheImpl implements ProcessCache {
   private final LoadingCache<Long, CachedProcessEntity> cache;
 
   public ProcessCacheImpl(
-      final long maxSize, final CacheLoader<Long, CachedProcessEntity> cacheLoader) {
+      final long maxSize,
+      final CacheLoader<Long, CachedProcessEntity> cacheLoader,
+      final ProcessCacheMetrics processCacheMetrics) {
     cache =
         Caffeine.newBuilder()
             .maximumSize(maxSize)
+            .recordStats(() -> processCacheMetrics)
             .build(
                 k -> {
                   try {

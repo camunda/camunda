@@ -21,6 +21,7 @@ import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -131,13 +132,19 @@ class ProcessCacheImplIT {
 
   static ProcessCacheArgument getESProcessCache(final String indexName) {
     return new ProcessCacheArgument(
-        new ProcessCacheImpl(10, new ElasticSearchProcessCacheLoader(elsClient, indexName)),
+        new ProcessCacheImpl(
+            10,
+            new ElasticSearchProcessCacheLoader(elsClient, indexName),
+            new ProcessCacheMetrics(new SimpleMeterRegistry())),
         ProcessCacheImplIT::indexInElasticSearch);
   }
 
   static ProcessCacheArgument getOSProcessCache(final String indexName) {
     return new ProcessCacheArgument(
-        new ProcessCacheImpl(10, new OpenSearchProcessCacheLoader(osClient, indexName)),
+        new ProcessCacheImpl(
+            10,
+            new OpenSearchProcessCacheLoader(osClient, indexName),
+            new ProcessCacheMetrics(new SimpleMeterRegistry())),
         ProcessCacheImplIT::indexInOpenSearch);
   }
 
