@@ -34,6 +34,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.util.Optional;
+import org.agrona.DirectBuffer;
 
 public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
 
@@ -92,9 +93,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
       final JobRecord job) {
     jobMetrics.jobErrorThrown(job.getType());
 
-    final var serviceTaskInstanceKey = job.getElementId();
-
-    if (NO_CATCH_EVENT_FOUND.equals(serviceTaskInstanceKey)) {
+    if (NO_CATCH_EVENT_FOUND.equals(job.getElementId())) {
       raiseIncident(jobKey, job, stateWriter, foundCatchEvent.getLeft());
       return;
     }
@@ -160,12 +159,22 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
         .setBpmnProcessId(job.getBpmnProcessIdBuffer())
         .setProcessDefinitionKey(job.getProcessDefinitionKey())
         .setProcessInstanceKey(job.getProcessInstanceKey())
-        .setElementId(job.getElementIdBuffer())
+        .setElementId(getElementId(job))
         .setElementInstanceKey(job.getElementInstanceKey())
         .setTenantId(job.getTenantId())
         .setJobKey(key)
         .setVariableScopeKey(job.getElementInstanceKey());
 
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
+  }
+
+  private DirectBuffer getElementId(final JobRecord job) {
+    if (NO_CATCH_EVENT_FOUND.equals(job.getElementId())) {
+      final var elementInstance = elementInstanceState.getInstance(job.getElementInstanceKey());
+      if (elementInstance != null) {
+        return elementInstance.getValue().getElementIdBuffer();
+      }
+    }
+    return job.getElementIdBuffer();
   }
 }
