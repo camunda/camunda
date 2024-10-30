@@ -213,7 +213,8 @@ public enum ZbColumnFamilies implements EnumValue {
 
   USER_TASK_RECORD_REQUEST_METADATA(109),
 
-  GROUPS(110);
+  GROUPS(110),
+  ENTITY_BY_GROUP(111);
 
   private final int value;
 
