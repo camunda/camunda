@@ -112,10 +112,7 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
   }
 
   public void generateId() {
-    // Operation reference has to be positive and `UUID.randomUUID().getMostSignificantBits()` can
-    // generate negative values
-    final long operationReference = UUID.randomUUID().getMostSignificantBits() & Long.MAX_VALUE;
-    setId(String.valueOf(operationReference));
+    setId(UUID.randomUUID().toString());
   }
 
   @Override
