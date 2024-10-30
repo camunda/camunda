@@ -22,6 +22,8 @@ import io.camunda.zeebe.engine.state.deployment.DbDeploymentState;
 import io.camunda.zeebe.engine.state.deployment.DbFormState;
 import io.camunda.zeebe.engine.state.deployment.DbProcessState;
 import io.camunda.zeebe.engine.state.distribution.DbDistributionState;
+import io.camunda.zeebe.engine.state.group.DbGroupState;
+import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.instance.DbElementInstanceState;
@@ -47,6 +49,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableDistributionState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableFormState;
+import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
 import io.camunda.zeebe.engine.state.mutable.MutableIncidentState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
@@ -112,6 +115,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableRoutingState routingState;
   private final MutableTenantState tenantState;
   private final MutableRoleState roleState;
+  private final MutableGroupState groupState;
   private final MutableMappingState mappingState;
 
   private final int partitionId;
@@ -162,6 +166,7 @@ public class ProcessingDbState implements MutableProcessingState {
     authorizationState = new DbAuthorizationState(zeebeDb, transactionContext);
     routingState = new DbRoutingState(zeebeDb, transactionContext);
     roleState = new DbRoleState(zeebeDb, transactionContext);
+    groupState = new DbGroupState(zeebeDb, transactionContext);
     tenantState = new DbTenantState(zeebeDb, transactionContext);
     mappingState = new DbMappingState(zeebeDb, transactionContext);
   }
@@ -302,6 +307,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableRoleState getRoleState() {
     return roleState;
+  }
+
+  @Override
+  public GroupState getGroupState() {
+    return groupState;
   }
 
   @Override

@@ -72,6 +72,8 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
 
   RoleState getRoleState();
 
+  GroupState getGroupState();
+
   TenantState getTenantState();
 
   MappingState getMappingState();
