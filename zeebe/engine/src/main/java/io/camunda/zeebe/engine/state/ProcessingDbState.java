@@ -23,7 +23,6 @@ import io.camunda.zeebe.engine.state.deployment.DbFormState;
 import io.camunda.zeebe.engine.state.deployment.DbProcessState;
 import io.camunda.zeebe.engine.state.distribution.DbDistributionState;
 import io.camunda.zeebe.engine.state.group.DbGroupState;
-import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.instance.DbElementInstanceState;
@@ -310,7 +309,7 @@ public class ProcessingDbState implements MutableProcessingState {
   }
 
   @Override
-  public GroupState getGroupState() {
+  public MutableGroupState getGroupState() {
     return groupState;
   }
 

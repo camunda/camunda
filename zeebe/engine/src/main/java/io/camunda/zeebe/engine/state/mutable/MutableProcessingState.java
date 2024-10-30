@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.state.mutable;
 
-import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
@@ -92,7 +91,7 @@ public interface MutableProcessingState extends ProcessingState {
   MutableRoleState getRoleState();
 
   @Override
-  GroupState getGroupState();
+  MutableGroupState getGroupState();
 
   @Override
   MutableTenantState getTenantState();
