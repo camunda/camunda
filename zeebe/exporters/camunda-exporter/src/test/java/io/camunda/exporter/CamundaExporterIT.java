@@ -199,22 +199,28 @@ final class CamundaExporterIT {
 
   @TestTemplate
   void shouldExportRoleRecord(
-      final Callable<RoleEntity> getResponse, final Record<RoleRecordValue> record)
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws Exception {
     // given
-    CONFIG.setCreateSchema(true);
-    final var exporter = startExporter();
+    final var exporter = createExporter(Set.of(), Set.of(), config);
 
     // when
+    final Record<RoleRecordValue> record = factory.generateRecord(ValueType.ROLE);
+    final String recordId = String.valueOf(record.getKey());
     exporter.export(record);
 
     // then
-    final var responseRoleEntity = getResponse.call();
+    final var responseRoleEntity =
+        clientAdapter.get(
+            recordId, config.getIndex().getPrefix() + "-identity-roles-8.7.0_", RoleEntity.class);
 
     assertThat(responseRoleEntity)
-        .describedAs("User entity is updated correctly from the user record")
+        .describedAs("Role entity is updated correctly from the role record")
         .extracting(RoleEntity::getRoleKey, RoleEntity::getName, RoleEntity::getAssignMemberKeys)
-        .containsExactly(record.getValue().getRoleKey(), record.getValue().getName());
+        .containsExactly(
+            record.getValue().getRoleKey(),
+            record.getValue().getName(),
+            String.valueOf(record.getKey()));
   }
 
   @TestTemplate
