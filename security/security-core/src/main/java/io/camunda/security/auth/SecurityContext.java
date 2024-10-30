@@ -55,20 +55,6 @@ public record SecurityContext(Authentication authentication, Authorization autho
       return withAuthorization(Authorization.of(builderFunction));
     }
 
-    public Builder withAuthorizationIfEnabled(
-        final boolean enabled,
-        final Function<Authorization.Builder, Authorization.Builder> builderFunction) {
-      if (enabled) {
-        return withAuthorization(builderFunction);
-      }
-      return withoutAuthorization();
-    }
-
-    public Builder withoutAuthorization() {
-      authentication = null;
-      return this;
-    }
-
     public SecurityContext build() {
       return new SecurityContext(authentication, authorization);
     }

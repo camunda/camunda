@@ -14,6 +14,7 @@ import io.camunda.security.auth.SecurityContext;
 
 public interface IncidentSearchClient {
 
-  SearchQueryResult<IncidentEntity> searchIncidents(
-      IncidentQuery filter, SecurityContext securityContext);
+  SearchQueryResult<IncidentEntity> searchIncidents(IncidentQuery filter);
+
+  IncidentSearchClient withSecurityContext(SecurityContext securityContext);
 }

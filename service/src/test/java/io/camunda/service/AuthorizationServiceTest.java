@@ -16,7 +16,7 @@ import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,16 +29,17 @@ public class AuthorizationServiceTest {
   @BeforeEach
   public void before() {
     client = mock(AuthorizationSearchClient.class);
+    when(client.withSecurityContext(any())).thenReturn(client);
     services =
         new AuthorizationServices(
-            mock(BrokerClient.class), new SecurityConfiguration(), client, null);
+            mock(BrokerClient.class), mock(SecurityContextProvider.class), client, null);
   }
 
   @Test
   public void emptyQueryReturnsAllResults() {
     // given
     final var result = mock(SearchQueryResult.class);
-    when(client.searchAuthorizations(any(), any())).thenReturn(result);
+    when(client.searchAuthorizations(any())).thenReturn(result);
 
     final AuthorizationFilter filter = new AuthorizationFilter.Builder().build();
     final var searchQuery = SearchQueryBuilders.authorizationSearchQuery((b) -> b.filter(filter));

@@ -15,15 +15,13 @@ import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
-import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.auth.Authorization;
 import io.camunda.service.search.core.SearchQueryService;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerResolveIncidentRequest;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
@@ -34,10 +32,10 @@ public class IncidentServices
 
   public IncidentServices(
       final BrokerClient brokerClient,
-      final SecurityConfiguration securityConfiguration,
+      final SecurityContextProvider securityContextProvider,
       final IncidentSearchClient incidentSearchClient,
       final Authentication authentication) {
-    super(brokerClient, securityConfiguration, authentication);
+    super(brokerClient, securityContextProvider, authentication);
     this.incidentSearchClient = incidentSearchClient;
   }
 
@@ -48,22 +46,17 @@ public class IncidentServices
 
   @Override
   public SearchQueryResult<IncidentEntity> search(final IncidentQuery query) {
-    return incidentSearchClient.searchIncidents(
-        query,
-        SecurityContext.of(
-            s ->
-                s.withAuthentication(authentication)
-                    .withAuthorizationIfEnabled(
-                        securityConfiguration.getAuthorizations().isEnabled(),
-                        a ->
-                            a.resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-                                .permissionType(PermissionType.READ_INSTANCE))));
+    return incidentSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.processDefinition().readInstance())))
+        .searchIncidents(query);
   }
 
   @Override
   public IncidentServices withAuthentication(final Authentication authentication) {
     return new IncidentServices(
-        brokerClient, securityConfiguration, incidentSearchClient, authentication);
+        brokerClient, securityContextProvider, incidentSearchClient, authentication);
   }
 
   public IncidentEntity getByKey(final Long key) {

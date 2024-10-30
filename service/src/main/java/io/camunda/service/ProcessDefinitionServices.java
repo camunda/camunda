@@ -15,12 +15,10 @@ import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
-import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.auth.Authorization;
 import io.camunda.service.search.core.SearchQueryService;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Optional;
 
 public class ProcessDefinitionServices
@@ -28,41 +26,29 @@ public class ProcessDefinitionServices
         ProcessDefinitionServices, ProcessDefinitionQuery, ProcessDefinitionEntity> {
 
   private final ProcessDefinitionSearchClient processDefinitionSearchClient;
-  private final FormServices formServices;
 
   public ProcessDefinitionServices(
       final BrokerClient brokerClient,
-      final SecurityConfiguration securityConfiguration,
+      final SecurityContextProvider securityContextProvider,
       final ProcessDefinitionSearchClient processDefinitionSearchClient,
-      final FormServices formServices,
       final Authentication authentication) {
-    super(brokerClient, securityConfiguration, authentication);
+    super(brokerClient, securityContextProvider, authentication);
     this.processDefinitionSearchClient = processDefinitionSearchClient;
-    this.formServices = formServices;
   }
 
   @Override
   public SearchQueryResult<ProcessDefinitionEntity> search(final ProcessDefinitionQuery query) {
-    return processDefinitionSearchClient.searchProcessDefinitions(
-        query,
-        SecurityContext.of(
-            s ->
-                s.withAuthentication(authentication)
-                    .withAuthorizationIfEnabled(
-                        securityConfiguration.getAuthorizations().isEnabled(),
-                        a ->
-                            a.resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-                                .permissionType(PermissionType.READ))));
+    return processDefinitionSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.processDefinition().read())))
+        .searchProcessDefinitions(query);
   }
 
   @Override
   public ProcessDefinitionServices withAuthentication(final Authentication authentication) {
     return new ProcessDefinitionServices(
-        brokerClient,
-        securityConfiguration,
-        processDefinitionSearchClient,
-        formServices,
-        authentication);
+        brokerClient, securityContextProvider, processDefinitionSearchClient, authentication);
   }
 
   public ProcessDefinitionEntity getByKey(final Long processDefinitionKey) {

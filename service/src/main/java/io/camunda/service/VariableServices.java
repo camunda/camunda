@@ -16,13 +16,11 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.search.query.VariableQuery.Builder;
 import io.camunda.security.auth.Authentication;
-import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.auth.Authorization;
 import io.camunda.service.search.core.SearchQueryService;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.function.Function;
 
 public final class VariableServices
@@ -32,31 +30,26 @@ public final class VariableServices
 
   public VariableServices(
       final BrokerClient brokerClient,
-      final SecurityConfiguration securityConfiguration,
+      final SecurityContextProvider securityContextProvider,
       final VariableSearchClient variableSearchClient,
       final Authentication authentication) {
-    super(brokerClient, securityConfiguration, authentication);
+    super(brokerClient, securityContextProvider, authentication);
     this.variableSearchClient = variableSearchClient;
   }
 
   @Override
   public VariableServices withAuthentication(final Authentication authentication) {
     return new VariableServices(
-        brokerClient, securityConfiguration, variableSearchClient, authentication);
+        brokerClient, securityContextProvider, variableSearchClient, authentication);
   }
 
   @Override
   public SearchQueryResult<VariableEntity> search(final VariableQuery query) {
-    return variableSearchClient.searchVariables(
-        query,
-        SecurityContext.of(
-            s ->
-                s.withAuthentication(authentication)
-                    .withAuthorizationIfEnabled(
-                        securityConfiguration.getAuthorizations().isEnabled(),
-                        a ->
-                            a.resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-                                .permissionType(PermissionType.READ_INSTANCE))));
+    return variableSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.processDefinition().readInstance())))
+        .searchVariables(query);
   }
 
   public SearchQueryResult<VariableEntity> search(

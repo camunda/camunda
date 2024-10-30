@@ -18,8 +18,7 @@ import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,16 +32,17 @@ class DecisionInstanceServiceTest {
   @BeforeEach
   public void before() {
     client = mock(DecisionInstanceSearchClient.class);
+    when(client.withSecurityContext(any())).thenReturn(client);
     services =
         new DecisionInstanceServices(
-            mock(BrokerClient.class), new SecurityConfiguration(), client, null);
+            mock(BrokerClient.class), mock(SecurityContextProvider.class), client, null);
   }
 
   @Test
   void shouldReturnDecisionInstances() {
     // given
     final var result = mock(SearchQueryResult.class);
-    when(client.searchDecisionInstances(any(), any())).thenReturn(result);
+    when(client.searchDecisionInstances(any())).thenReturn(result);
 
     final DecisionInstanceQuery searchQuery =
         SearchQueryBuilders.decisionInstanceSearchQuery().build();
@@ -62,7 +62,7 @@ class DecisionInstanceServiceTest {
     final var result = mock(SearchQueryResult.class);
     when(result.total()).thenReturn(1L);
     when(result.items()).thenReturn(List.of(mock(DecisionInstanceEntity.class)));
-    when(client.searchDecisionInstances(any(), any())).thenReturn(result);
+    when(client.searchDecisionInstances(any())).thenReturn(result);
 
     // when
     services.getByKey(decisionInstanceKey);
@@ -71,8 +71,7 @@ class DecisionInstanceServiceTest {
     verify(client)
         .searchDecisionInstances(
             SearchQueryBuilders.decisionInstanceSearchQuery(
-                q -> q.filter(f -> f.decisionInstanceKeys(decisionInstanceKey))),
-            SecurityContext.withoutAuthentication());
+                q -> q.filter(f -> f.decisionInstanceKeys(decisionInstanceKey))));
   }
 
   @Test
@@ -97,7 +96,6 @@ class DecisionInstanceServiceTest {
                         .sort(s -> s.evaluationDate().asc())
                         .page(p -> p.size(20))
                         .resultConfig(
-                            r -> r.evaluatedInputs().exclude().evaluatedOutputs().exclude())),
-            SecurityContext.withoutAuthentication());
+                            r -> r.evaluatedInputs().exclude().evaluatedOutputs().exclude())));
   }
 }
