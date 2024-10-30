@@ -44,8 +44,8 @@ public final class OptimizeOpenSearchClientFactory {
         buildOpenSearchClientFromConfig(configurationService, pluginRepository);
     final OpenSearchAsyncClient openSearchAsyncClient =
         buildOpenSearchAsyncClientFromConfig(configurationService, pluginRepository);
-    boolean healthCheckEnabled = configurationService.getOpenSearchConfiguration()
-        .getConnection().isHealthCheckEnabled();
+    boolean healthCheckEnabled =
+        configurationService.getOpenSearchConfiguration().getConnection().isHealthCheckEnabled();
     if (healthCheckEnabled) {
       waitForOpenSearch(openSearchClient, backoffCalculator);
       LOG.info("OpenSearch cluster successfully started");
@@ -56,8 +56,8 @@ public final class OptimizeOpenSearchClientFactory {
             openSearchClient, openSearchAsyncClient, optimizeIndexNameService);
     openSearchSchemaManager.validateDatabaseMetadata(osClient);
 
-    boolean initSchemaEnabled = configurationService.getOpenSearchConfiguration()
-        .getConnection().isInitSchemaEnabled();
+    boolean initSchemaEnabled =
+        configurationService.getOpenSearchConfiguration().getConnection().isInitSchemaEnabled();
     if (initSchemaEnabled) {
       openSearchSchemaManager.initializeSchema(osClient);
     }

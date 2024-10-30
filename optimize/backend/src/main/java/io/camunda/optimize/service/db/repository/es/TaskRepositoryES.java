@@ -41,8 +41,8 @@ public class TaskRepositoryES extends TaskRepository {
   private final OptimizeElasticsearchClient esClient;
   private final ElasticSearchConfiguration configuration;
 
-  public TaskRepositoryES(final OptimizeElasticsearchClient esClient,
-      ConfigurationService configurationService) {
+  public TaskRepositoryES(
+      final OptimizeElasticsearchClient esClient, ConfigurationService configurationService) {
     this.esClient = esClient;
     this.configuration = configurationService.getElasticSearchConfiguration();
   }
@@ -145,14 +145,15 @@ public class TaskRepositoryES extends TaskRepository {
   private boolean sync(final DeleteByQueryRequest request) {
     try {
       Long deleted = esClient.submitDeleteTask(request).deleted();
-      return deleted!= null && deleted > 0L;
+      return deleted != null && deleted > 0L;
     } catch (final IOException e) {
-      throw new OptimizeRuntimeException("Error while trying to read Elasticsearch task status with ID");
+      throw new OptimizeRuntimeException(
+          "Error while trying to read Elasticsearch task status with ID");
     }
   }
 
-  private boolean async(final Query query, final String deletedItemIdentifier,
-      final DeleteByQueryRequest request) {
+  private boolean async(
+      final Query query, final String deletedItemIdentifier, final DeleteByQueryRequest request) {
     final String taskId;
     try {
       taskId = esClient.submitDeleteTask(request).task();
