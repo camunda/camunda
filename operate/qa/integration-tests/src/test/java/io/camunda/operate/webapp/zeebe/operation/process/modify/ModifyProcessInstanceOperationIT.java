@@ -308,6 +308,7 @@ public class ModifyProcessInstanceOperationIT extends OperateSearchAbstractIT {
       throws IOException {
     final OperationEntity operation =
         new OperationEntity()
+            .withGeneratedId()
             .setProcessInstanceKey(MOCK_PROCESS_INSTANCE_KEY)
             .setProcessDefinitionKey(MOCK_PROCESS_DEFINITION_KEY)
             .setBpmnProcessId("demoProcess")

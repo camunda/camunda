@@ -378,6 +378,7 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
     // Create operation
     final OperationEntity operationEntity =
         new OperationEntity()
+            .withGeneratedId()
             .setDecisionDefinitionKey(decisionDefinitionKey)
             .setType(operationType)
             .setState(OperationState.SCHEDULED)
@@ -427,6 +428,7 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
     // Create operation
     final OperationEntity operationEntity =
         new OperationEntity()
+            .withGeneratedId()
             .setProcessDefinitionKey(processDefinitionKey)
             .setType(operationType)
             .setState(OperationState.SCHEDULED)
@@ -557,6 +559,7 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
       final String batchOperationId) {
 
     return new OperationEntity()
+        .withGeneratedId()
         .setProcessInstanceKey(processInstanceSource.getProcessInstanceKey())
         .setProcessDefinitionKey(processInstanceSource.getProcessDefinitionKey())
         .setBpmnProcessId(processInstanceSource.getBpmnProcessId())

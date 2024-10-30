@@ -360,6 +360,7 @@ public class OpensearchBatchOperationWriter
     // Create operation
     final OperationEntity operationEntity =
         new OperationEntity()
+            .withGeneratedId()
             .setDecisionDefinitionKey(decisionDefinitionKey)
             .setType(operationType)
             .setState(OperationState.SCHEDULED)
@@ -400,6 +401,7 @@ public class OpensearchBatchOperationWriter
     // Create operation
     final OperationEntity operationEntity =
         new OperationEntity()
+            .withGeneratedId()
             .setProcessDefinitionKey(processDefinitionKey)
             .setType(operationType)
             .setState(OperationState.SCHEDULED)
@@ -535,6 +537,7 @@ public class OpensearchBatchOperationWriter
       final String batchOperationId) {
 
     return new OperationEntity()
+        .withGeneratedId()
         .setProcessInstanceKey(processInstanceSource.getProcessInstanceKey())
         .setProcessDefinitionKey(processInstanceSource.getProcessDefinitionKey())
         .setBpmnProcessId(processInstanceSource.getBpmnProcessId())

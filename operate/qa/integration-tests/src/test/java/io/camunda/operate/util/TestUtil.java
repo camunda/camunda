@@ -550,6 +550,7 @@ public abstract class TestUtil {
       final boolean lockExpired) {
     final OperationEntity oe =
         new OperationEntity()
+            .withGeneratedId()
             .setProcessInstanceKey(processInstanceKey)
             .setScopeKey(processInstanceKey)
             .setProcessDefinitionKey(processDefinitionKey)

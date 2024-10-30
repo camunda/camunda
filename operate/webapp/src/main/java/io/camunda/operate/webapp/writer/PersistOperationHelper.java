@@ -160,6 +160,7 @@ public class PersistOperationHelper {
 
     final OperationEntity operationEntity =
         new OperationEntity()
+            .withGeneratedId()
             .setProcessInstanceKey(processInstanceSource.getProcessInstanceKey())
             .setProcessDefinitionKey(processInstanceSource.getProcessDefinitionKey())
             .setBpmnProcessId(processInstanceSource.getBpmnProcessId())

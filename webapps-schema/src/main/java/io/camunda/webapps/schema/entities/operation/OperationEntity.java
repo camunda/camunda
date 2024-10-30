@@ -42,10 +42,6 @@ public class OperationEntity extends AbstractExporterEntity<OperationEntity> {
 
   private OffsetDateTime completedDate;
 
-  public OperationEntity() {
-    generateId();
-  }
-
   public Long getProcessInstanceKey() {
     return processInstanceKey;
   }
@@ -217,11 +213,12 @@ public class OperationEntity extends AbstractExporterEntity<OperationEntity> {
     return this;
   }
 
-  public void generateId() {
+  public OperationEntity withGeneratedId() {
     // Operation reference has to be positive and `UUID.randomUUID().getMostSignificantBits()` can
     // generate negative values
     final long operationReference = UUID.randomUUID().getMostSignificantBits() & Long.MAX_VALUE;
     setId(String.valueOf(operationReference));
+    return this;
   }
 
   @Override
