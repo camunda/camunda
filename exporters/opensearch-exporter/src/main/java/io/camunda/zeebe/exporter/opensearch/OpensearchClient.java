@@ -93,7 +93,8 @@ public class OpensearchClient implements AutoCloseable {
    *
    * @param record the record that will be the source of the document
    * @param recordSequence the sequence number of the record
-   * @return true if the record was appended to the batch, false otherwise
+   * @return true if the record was appended to the batch, false if the record is already indexed in
+   *     the batch because only one copy of the record is allowed in the batch
    */
   public boolean index(final Record<?> record, final RecordSequence recordSequence) {
     if (metrics == null) {
