@@ -106,6 +106,7 @@ public class RecordCounterTest {
     when(client.index(eq(mockRecord), any(RecordSequence.class))).thenReturn(true);
     when(client.shouldFlush()).thenReturn(false);
     exporter.export(mockRecord);
+    // the close() method is used to simulate the asynchronous flush
     exporter.close();
 
     // then the record counter should be 1
@@ -130,6 +131,7 @@ public class RecordCounterTest {
     when(client.shouldFlush()).thenReturn(false);
     exporter.export(mockRecord);
     doThrow(new ElasticsearchExporterException("failed to flush")).when(client).flush();
+    // the close() method is used to simulate the asynchronous flush
     exporter.close();
 
     // then the record counter should be empty
@@ -155,6 +157,7 @@ public class RecordCounterTest {
 
     // and the exported record is flushed asynchronously
     doNothing().when(client).flush();
+    // the close() method is used to simulate the asynchronous flush
     exporter.close();
 
     // then the record counter should be 1
@@ -183,6 +186,8 @@ public class RecordCounterTest {
         .isInstanceOf(ElasticsearchExporterException.class);
 
     // and the record export is retried
+    // when the exporter tries to index the same record multiple times in the same batch,
+    // the method returns false as it only keeps a single copy of the record in the batch.
     when(client.index(eq(mockRecord), any(RecordSequence.class))).thenReturn(false);
     doNothing().when(client).flush();
     exporter.export(mockRecord);
