@@ -13,6 +13,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.authorization.EntityTypeValue;
 import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -27,8 +28,11 @@ public class DbGroupState implements MutableGroupState {
   private final DbLong entityKey;
   private final DbCompositeKey<DbForeignKey<DbLong>, DbLong> fkGroupKeyAndEntityKey;
   private final EntityTypeValue entityTypeValue = new EntityTypeValue();
-  private ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbLong>, EntityTypeValue>
+  private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbLong>, EntityTypeValue>
       entityTypeByGroupColumnFamily;
+
+  private final DbString groupName;
+  private final ColumnFamily<DbString, DbForeignKey<DbLong>> groupByNameColumnFamily;
 
   public DbGroupState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -47,5 +51,10 @@ public class DbGroupState implements MutableGroupState {
             transactionContext,
             fkGroupKeyAndEntityKey,
             entityTypeValue);
+
+    groupName = new DbString();
+    groupByNameColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.GROUP_BY_NAME, transactionContext, groupName, fkGroupKey);
   }
 }
