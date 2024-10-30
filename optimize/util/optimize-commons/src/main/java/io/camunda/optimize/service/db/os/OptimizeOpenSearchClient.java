@@ -444,7 +444,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
 
   @Override
   public void setDefaultRequestOptions() {
-    // TODO Do nothing, will be handled with OPT-7400
+    // Do nothing, CustomerHeaderSupplier not supported for OpenSearch (see #10086)
   }
 
   @Override
