@@ -17,6 +17,8 @@ package io.camunda.zeebe.client.variable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.client.protocol.rest.LongFilterProperty;
+import io.camunda.zeebe.client.protocol.rest.VariableFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.VariableSearchQueryRequest;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import org.junit.jupiter.api.Test;
@@ -64,7 +66,7 @@ public class SearchVariableTest extends ClientRestTest {
     // then
     final VariableSearchQueryRequest request =
         gatewayService.getLastRequest(VariableSearchQueryRequest.class);
-    assertThat(request.getFilter().getScopeKey()).isEqualTo(1);
+    assertThat(request.getFilter().getScopeKey().get$Eq()).isEqualTo(1);
   }
 
   @Test
@@ -75,7 +77,26 @@ public class SearchVariableTest extends ClientRestTest {
     // then
     final VariableSearchQueryRequest request =
         gatewayService.getLastRequest(VariableSearchQueryRequest.class);
-    assertThat(request.getFilter().getProcessInstanceKey()).isEqualTo(1);
+    assertThat(request.getFilter().getProcessInstanceKey().get$Eq()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldSearchVariablesByProcessInstanceKeyLongFilter() {
+    // when
+    final LongFilterProperty filterProperty = new LongFilterProperty();
+    filterProperty.$gt(1L);
+    filterProperty.$lt(10L);
+    client.newVariableQuery().filter(f -> f.processInstanceKey(filterProperty)).send().join();
+
+    // then
+    final VariableSearchQueryRequest request =
+        gatewayService.getLastRequest(VariableSearchQueryRequest.class);
+    final VariableFilterRequest filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    final LongFilterProperty processInstanceKey = filter.getProcessInstanceKey();
+    assertThat(processInstanceKey).isNotNull();
+    assertThat(processInstanceKey.get$Gt()).isEqualTo(1);
+    assertThat(processInstanceKey.get$Lt()).isEqualTo(10);
   }
 
   @Test

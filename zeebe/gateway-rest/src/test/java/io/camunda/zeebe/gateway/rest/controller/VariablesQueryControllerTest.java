@@ -13,21 +13,35 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.search.sort.VariableSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.VariableServices;
+import io.camunda.zeebe.gateway.protocol.rest.IntegerFilterProperty;
+import io.camunda.zeebe.gateway.protocol.rest.LongFilterProperty;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.deserializer.IntegerFilterPropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.LongFilterPropertyDeserializer;
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 @WebMvcTest(value = VariableQueryController.class, properties = "camunda.rest.query.enabled=true")
 public class VariablesQueryControllerTest extends RestControllerTest {
@@ -339,5 +353,70 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                 }""");
 
     verify(variableServices).getByKey(INVALID_VARIABLE_KEY);
+  }
+
+  private static Stream<Arguments> provideAdvancedSearchParameters() {
+    final var streamBuilder = Stream.<Arguments>builder();
+
+    longOperationTestCases(
+        streamBuilder,
+        "scopeKey",
+        ops -> new VariableFilter.Builder().scopeKeyOperations(ops).build());
+    longOperationTestCases(
+        streamBuilder,
+        "processInstanceKey",
+        ops -> new VariableFilter.Builder().processInstanceKeyOperations(ops).build());
+
+    return streamBuilder.build();
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideAdvancedSearchParameters")
+  void shouldSearchVariablesWithAdvancedFilter(
+      final String filterString, final VariableFilter filter) {
+    // given
+    final var request =
+        """
+            {
+                "filter": %s
+            }"""
+            .formatted(filterString);
+    System.out.println("request = " + request);
+    when(variableServices.search(any(VariableQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
+
+    // when / then
+    webClient
+        .post()
+        .uri(VARIABLE_TASKS_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE);
+
+    verify(variableServices).search(new VariableQuery.Builder().filter(filter).build());
+  }
+
+  @TestConfiguration
+  public static class TestConfig {
+
+    @Bean
+    public ObjectMapper objectMapper() {
+      final var objectMapper = Jackson2ObjectMapperBuilder.json().build();
+
+      final var deserializers = new SimpleModule();
+      deserializers.addDeserializer(
+          LongFilterProperty.class, new LongFilterPropertyDeserializer(objectMapper));
+      deserializers.addDeserializer(
+          IntegerFilterProperty.class, new IntegerFilterPropertyDeserializer(objectMapper));
+      objectMapper.registerModule(deserializers);
+
+      return objectMapper;
+    }
   }
 }

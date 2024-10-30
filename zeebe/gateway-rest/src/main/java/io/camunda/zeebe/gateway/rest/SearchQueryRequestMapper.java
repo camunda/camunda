@@ -187,7 +187,9 @@ public final class SearchQueryRequestMapper {
           .map(SearchQueryRequestMapper::mapToOperation)
           .ifPresent(builder::evaluationDateOperations);
       ofNullable(filter.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
-      ofNullable(filter.getDecisionDefinitionKey()).ifPresent(builder::decisionDefinitionKeys);
+      ofNullable(filter.getDecisionDefinitionKey())
+          .map(SearchQueryRequestMapper::mapToOperation)
+          .ifPresent(builder::decisionDefinitionKeyOperations);
       ofNullable(filter.getDecisionDefinitionId()).ifPresent(builder::decisionDefinitionIds);
       ofNullable(filter.getDecisionDefinitionName()).ifPresent(builder::decisionDefinitionNames);
       ofNullable(filter.getDecisionDefinitionVersion())
@@ -286,8 +288,12 @@ public final class SearchQueryRequestMapper {
 
     final var builder = FilterBuilders.variable();
 
-    ofNullable(filter.getProcessInstanceKey()).ifPresent(builder::processInstanceKeys);
-    ofNullable(filter.getScopeKey()).ifPresent(builder::scopeKeys);
+    ofNullable(filter.getProcessInstanceKey())
+        .map(SearchQueryRequestMapper::mapToOperation)
+        .ifPresent(builder::processInstanceKeyOperations);
+    ofNullable(filter.getScopeKey())
+        .map(SearchQueryRequestMapper::mapToOperation)
+        .ifPresent(builder::scopeKeyOperations);
     ofNullable(filter.getVariableKey()).ifPresent(builder::variableKeys);
     ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     ofNullable(filter.getIsTruncated()).ifPresent(builder::isTruncated);
@@ -354,6 +360,72 @@ public final class SearchQueryRequestMapper {
 
   private static <T> Operation<T> mapToOperation(final T value) {
     return Operation.eq(value);
+  }
+
+  private static List<Operation<Long>> mapToOperation(final LongFilterProperty value) {
+    if (!(value instanceof final AdvancedLongFilter filter)) {
+      throw new IllegalStateException("Unexpected value instance: " + value);
+    }
+
+    final var operations = new ArrayList<Operation<Long>>();
+    if (filter.get$Eq() != null) {
+      operations.add(Operation.eq(filter.get$Eq()));
+    }
+    if (filter.get$Neq() != null) {
+      operations.add(Operation.neq(filter.get$Neq()));
+    }
+    if (filter.get$Exists() != null) {
+      operations.add(Operation.exists(filter.get$Exists()));
+    }
+    if (filter.get$Gt() != null) {
+      operations.add(Operation.gt(filter.get$Gt()));
+    }
+    if (filter.get$Gte() != null) {
+      operations.add(Operation.gte(filter.get$Gte()));
+    }
+    if (filter.get$Lt() != null) {
+      operations.add(Operation.lt(filter.get$Lt()));
+    }
+    if (filter.get$Lte() != null) {
+      operations.add(Operation.lte(filter.get$Lte()));
+    }
+    if (filter.get$In() != null && !filter.get$In().isEmpty()) {
+      operations.add(Operation.in(filter.get$In()));
+    }
+    return operations;
+  }
+
+  private static List<Operation<Integer>> mapToOperation(final IntegerFilterProperty value) {
+    if (!(value instanceof final AdvancedIntegerFilter filter)) {
+      throw new IllegalStateException("Unexpected value instance: " + value);
+    }
+
+    final var operations = new ArrayList<Operation<Integer>>();
+    if (filter.get$Eq() != null) {
+      operations.add(Operation.eq(filter.get$Eq()));
+    }
+    if (filter.get$Neq() != null) {
+      operations.add(Operation.neq(filter.get$Neq()));
+    }
+    if (filter.get$Exists() != null) {
+      operations.add(Operation.exists(filter.get$Exists()));
+    }
+    if (filter.get$Gt() != null) {
+      operations.add(Operation.gt(filter.get$Gt()));
+    }
+    if (filter.get$Gte() != null) {
+      operations.add(Operation.gte(filter.get$Gte()));
+    }
+    if (filter.get$Lt() != null) {
+      operations.add(Operation.lt(filter.get$Lt()));
+    }
+    if (filter.get$Lte() != null) {
+      operations.add(Operation.lte(filter.get$Lte()));
+    }
+    if (filter.get$In() != null && !filter.get$In().isEmpty()) {
+      operations.add(Operation.in(filter.get$In()));
+    }
+    return operations;
   }
 
   private static OffsetDateTime toOffsetDateTime(final String text) {
@@ -489,7 +561,9 @@ public final class SearchQueryRequestMapper {
               Optional.ofNullable(f.getProcessDefinitionId()).ifPresent(builder::bpmnProcessIds);
               Optional.ofNullable(f.getElementId()).ifPresent(builder::elementIds);
               Optional.ofNullable(f.getAssignee()).ifPresent(builder::assignees);
-              Optional.ofNullable(f.getPriority()).ifPresent(builder::priorities);
+              Optional.ofNullable(f.getPriority())
+                  .map(SearchQueryRequestMapper::mapToOperation)
+                  .ifPresent(builder::priorityOperations);
               Optional.ofNullable(f.getCandidateGroup()).ifPresent(builder::candidateGroups);
               Optional.ofNullable(f.getCandidateUser()).ifPresent(builder::candidateUsers);
               Optional.ofNullable(f.getProcessDefinitionKey())

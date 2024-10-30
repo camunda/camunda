@@ -8,14 +8,18 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceInputEntity;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceOutputEntity;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
@@ -23,7 +27,11 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.DecisionInstanceServices;
 import io.camunda.util.ObjectBuilder;
+import io.camunda.zeebe.gateway.protocol.rest.IntegerFilterProperty;
+import io.camunda.zeebe.gateway.protocol.rest.LongFilterProperty;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.deserializer.IntegerFilterPropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.LongFilterPropertyDeserializer;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.function.Function;
@@ -34,8 +42,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 @WebMvcTest(
     value = DecisionInstanceQueryController.class,
@@ -323,6 +334,70 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                   "detail": "Unexpected error occurred during the request processing: Something bad happened.",
                   "instance": "/v2/decision-instances/123"
                 }""");
+  }
+
+  private static Stream<Arguments> provideAdvancedSearchParameters() {
+    final var streamBuilder = Stream.<Arguments>builder();
+
+    longOperationTestCases(
+        streamBuilder,
+        "decisionDefinitionKey",
+        ops -> new DecisionInstanceFilter.Builder().decisionDefinitionKeyOperations(ops).build());
+
+    return streamBuilder.build();
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideAdvancedSearchParameters")
+  void shouldSearchVariablesWithAdvancedFilter(
+      final String filterString, final DecisionInstanceFilter filter) {
+    // given
+    final var request =
+        """
+            {
+                "filter": %s
+            }"""
+            .formatted(filterString);
+    System.out.println("request = " + request);
+    when(decisionInstanceServices.search(any(DecisionInstanceQuery.class)))
+        .thenReturn(SEARCH_QUERY_RESULT);
+    final var decisionInstanceKey = 123L;
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/decision-instances/search")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE);
+
+    verify(decisionInstanceServices)
+        .search(new DecisionInstanceQuery.Builder().filter(filter).build());
+  }
+
+  @TestConfiguration
+  public static class TestConfig {
+
+    @Bean
+    public ObjectMapper objectMapper() {
+      final var objectMapper = Jackson2ObjectMapperBuilder.json().build();
+
+      final var deserializers = new SimpleModule();
+      deserializers.addDeserializer(
+          LongFilterProperty.class, new LongFilterPropertyDeserializer(objectMapper));
+      deserializers.addDeserializer(
+          IntegerFilterProperty.class, new IntegerFilterPropertyDeserializer(objectMapper));
+      objectMapper.registerModule(deserializers);
+
+      return objectMapper;
+    }
   }
 
   private record TestArguments(

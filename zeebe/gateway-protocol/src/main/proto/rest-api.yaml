@@ -2573,9 +2573,9 @@ components:
           type: string
           description: The assignee of the user task.
         priority:
-          type: integer
-          format: int32
           description: The priority of the user task.
+          allOf:
+            - $ref: "#/components/schemas/IntegerFilterProperty"
         elementId:
           type: string
           description: The element ID of the user task.
@@ -2723,12 +2723,12 @@ components:
           type: string
         scopeKey:
           description: The key of the scope of this variable.
-          type: integer
-          format: int64
+          allOf:
+            - $ref: "#/components/schemas/LongFilterProperty"
         processInstanceKey:
           description: The key of the process instance of this variable.
-          type: integer
-          format: int64
+          allOf:
+            - $ref: "#/components/schemas/LongFilterProperty"
         tenantId:
           description: Tenant ID of this variable.
           type: string
@@ -2854,14 +2854,102 @@ components:
         filter:
           allOf:
             - $ref: "#/components/schemas/ProcessInstanceFilterRequest"
+    AdvancedIntegerFilter:
+      description: Advanced integer (int32) filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          type: integer
+          format: int32
+        $neq:
+          description: Checks for inequality with the provided value.
+          type: integer
+          format: int32
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $gt:
+          description: Greater than comparison with the provided value.
+          type: integer
+          format: int32
+        $gte:
+          description: Greater than or equal comparison with the provided value.
+          type: integer
+          format: int32
+        $lt:
+          description: Lower than comparison with the provided value.
+          type: integer
+          format: int32
+        $lte:
+          description: Lower than or equal comparison with the provided value.
+          type: integer
+          format: int32
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            type: integer
+            format: int32
+    IntegerFilterProperty:
+      description: Integer property with advanced search capabilities.
+      type: object
+      oneOf:
+        - type: integer
+          format: int32
+        - $ref: "#/components/schemas/AdvancedIntegerFilter"
+    AdvancedLongFilter:
+      description: Advanced long (int64) filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          type: integer
+          format: int64
+        $neq:
+          description: Checks for inequality with the provided value.
+          type: integer
+          format: int64
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $gt:
+          description: Greater than comparison with the provided value.
+          type: integer
+          format: int64
+        $gte:
+          description: Greater than or equal comparison with the provided value.
+          type: integer
+          format: int64
+        $lt:
+          description: Lower than comparison with the provided value.
+          type: integer
+          format: int64
+        $lte:
+          description: Lower than or equal comparison with the provided value.
+          type: integer
+          format: int64
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            type: integer
+            format: int64
+    LongFilterProperty:
+      description: Long property with advanced search capabilities.
+      type: object
+      oneOf:
+        - type: integer
+          format: int64
+        - $ref: "#/components/schemas/AdvancedLongFilter"
     ProcessInstanceFilterRequest:
       description: Process instance search filter.
       type: object
       properties:
         processInstanceKey:
-          type: integer
           description: The key of this process instance.
-          format: int64
+          allOf:
+            - $ref: "#/components/schemas/LongFilterProperty"
         processDefinitionId:
           type: string
           description: The process definition ID.
@@ -2869,24 +2957,24 @@ components:
           type: string
           description: The process definition name.
         processDefinitionVersion:
-          type: integer
           description: The process definition version.
-          format: int32
+          allOf:
+            - $ref: "#/components/schemas/IntegerFilterProperty"
         processDefinitionVersionTag:
           type: string
           description: The process definition version tag.
         processDefinitionKey:
-          type: integer
           description: The process definition key.
-          format: int64
+          allOf:
+            - $ref: "#/components/schemas/LongFilterProperty"
         parentProcessInstanceKey:
-          type: integer
           description: The parent process instance key.
-          format: int64
+          allOf:
+            - $ref: "#/components/schemas/LongFilterProperty"
         parentFlowNodeInstanceKey:
-          type: integer
           description: The parent flow node instance key.
-          format: int64
+          allOf:
+            - $ref: "#/components/schemas/LongFilterProperty"
         treePath:
           type: string
           description: The path of keys to this process instance, separated by '/'.
@@ -4355,9 +4443,9 @@ components:
           format: int64
           description: The key of the process instance.
         decisionDefinitionKey:
-          type: integer
-          format: int64
           description: The key of the decision.
+          allOf:
+            - $ref: "#/components/schemas/LongFilterProperty"
         decisionDefinitionId:
           type: string
           description: The ID of the DMN decision.
