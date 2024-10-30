@@ -15,6 +15,7 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.webapps.schema.descriptors.ComponentNames;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.List;
@@ -28,7 +29,7 @@ public class DefaultExporterResourceProviderTest {
   void shouldHaveCorrectFullQualifiedNamesForIndexAndTemplates(final ExporterConfiguration config) {
     final var provider = new DefaultExporterResourceProvider();
 
-    provider.init(config, mock(ExporterEntityCacheProvider.class));
+    provider.init(config, mock(ExporterEntityCacheProvider.class), mock(MeterRegistry.class));
 
     provider
         .getIndexDescriptors()

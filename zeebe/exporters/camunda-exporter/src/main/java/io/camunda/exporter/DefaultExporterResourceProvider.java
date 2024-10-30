@@ -9,6 +9,7 @@ package io.camunda.exporter;
 
 import static java.util.Map.entry;
 
+import io.camunda.exporter.cache.ExporterCacheMetrics;
 import io.camunda.exporter.cache.ExporterEntityCacheImpl;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ConnectionTypes;
@@ -81,6 +82,7 @@ import io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.RoleIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -101,7 +103,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   @Override
   public void init(
       final ExporterConfiguration configuration,
-      final ExporterEntityCacheProvider entityCacheProvider) {
+      final ExporterEntityCacheProvider entityCacheProvider,
+      final MeterRegistry meterRegistry) {
     final var globalPrefix = configuration.getIndex().getPrefix();
     final var isElasticsearch =
         ConnectionTypes.from(configuration.getConnect().getType())
@@ -153,13 +156,15 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
         new ExporterEntityCacheImpl<>(
             10000,
             entityCacheProvider.getProcessCacheLoader(
-                indexDescriptorsMap.get(ProcessIndex.class).getFullQualifiedName(), new XMLUtil()));
+                indexDescriptorsMap.get(ProcessIndex.class).getFullQualifiedName(), new XMLUtil()),
+            new ExporterCacheMetrics("process", meterRegistry));
 
     final var formCache =
         new ExporterEntityCacheImpl<>(
             10000,
             entityCacheProvider.getFormCacheLoader(
-                indexDescriptorsMap.get(FormIndex.class).getFullQualifiedName()));
+                indexDescriptorsMap.get(FormIndex.class).getFullQualifiedName()),
+            new ExporterCacheMetrics("form", meterRegistry));
 
     exportHandlers =
         Set.of(

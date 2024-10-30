@@ -22,6 +22,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
 
 import co.elastic.clients.util.VisibleForTesting;
 import io.camunda.exporter.adapters.ClientAdapter;
+import io.camunda.exporter.cache.ExporterCacheMetrics;
 import io.camunda.exporter.config.ConfigValidator;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
@@ -56,6 +57,7 @@ public class CamundaExporter implements Exporter {
   private CamundaExporterMetrics metrics;
   private Logger logger;
   private BackgroundTaskManager taskManager;
+  private ExporterCacheMetrics exporterCacheMetrics;
 
   public CamundaExporter() {
     this(new DefaultExporterResourceProvider());
@@ -74,7 +76,8 @@ public class CamundaExporter implements Exporter {
     context.setFilter(new CamundaExporterRecordFilter());
     metrics = new CamundaExporterMetrics(context.getMeterRegistry());
     clientAdapter = ClientAdapter.of(configuration);
-    provider.init(configuration, clientAdapter.getExporterEntityCacheProvider());
+    provider.init(
+        configuration, clientAdapter.getExporterEntityCacheProvider(), context.getMeterRegistry());
 
     taskManager =
         BackgroundTaskManager.create(

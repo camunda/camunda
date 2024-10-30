@@ -16,10 +16,14 @@ public class ExporterEntityCacheImpl<K, T> implements ExporterEntityCache<K, T> 
 
   private final LoadingCache<K, T> cache;
 
-  public ExporterEntityCacheImpl(final long maxSize, final CacheLoader<K, T> cacheLoader) {
+  public ExporterEntityCacheImpl(
+      final long maxSize,
+      final CacheLoader<K, T> cacheLoader,
+      final ExporterCacheMetrics exporterCacheMetrics) {
     cache =
         Caffeine.newBuilder()
             .maximumSize(maxSize)
+            .recordStats(() -> exporterCacheMetrics)
             .build(
                 k -> {
                   try {
