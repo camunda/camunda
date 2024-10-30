@@ -20,7 +20,7 @@ import io.camunda.zeebe.protocol.record.value.ErrorType;
 import java.util.EnumSet;
 import java.util.Set;
 
-final class IncidentResolvedApplier implements TypedEventApplier<IncidentIntent, IncidentRecord> {
+final class IncidentResolvedV1Applier implements TypedEventApplier<IncidentIntent, IncidentRecord> {
 
   private static final Set<State> RESOLVABLE_JOB_STATES =
       EnumSet.of(State.FAILED, State.ERROR_THROWN);
@@ -29,7 +29,7 @@ final class IncidentResolvedApplier implements TypedEventApplier<IncidentIntent,
   private final MutableJobState jobState;
   private final MutableElementInstanceState elementInstanceState;
 
-  public IncidentResolvedApplier(
+  public IncidentResolvedV1Applier(
       final MutableIncidentState incidentState,
       final MutableJobState jobState,
       final MutableElementInstanceState elementInstanceState) {
@@ -51,7 +51,7 @@ final class IncidentResolvedApplier implements TypedEventApplier<IncidentIntent,
       final var stateOfJob = jobState.getState(jobKey);
       if (RESOLVABLE_JOB_STATES.contains(stateOfJob)) {
         final var job = jobState.getJob(jobKey);
-        resetElementId(job, value.getElementId());
+        resetElementId(job);
         jobState.resolve(jobKey, job);
       }
     }
@@ -70,10 +70,13 @@ final class IncidentResolvedApplier implements TypedEventApplier<IncidentIntent,
    * {@link JobThrowErrorProcessor} sets the job's elementId to NO_CATCH_EVENT_FOUND for unhandled
    * error incidents. In order to completely resolve the issue, the elementId must be reset.
    */
-  private void resetElementId(final JobRecord job, final String incidentElementId) {
+  private void resetElementId(final JobRecord job) {
     if (JobThrowErrorProcessor.NO_CATCH_EVENT_FOUND.equals(job.getElementId())) {
-      // change the job object here, it will be persisted with the jobState.resolve call
-      job.setElementId(incidentElementId);
+      final var elementInstance = elementInstanceState.getInstance(job.getElementInstanceKey());
+      if (elementInstance != null) {
+        // change the job object here, it will be persisted with the jobState.resolve call
+        job.setElementId(elementInstance.getValue().getElementId());
+      }
     }
   }
 }
