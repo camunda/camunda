@@ -14,6 +14,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,6 +30,7 @@ import java.util.Collections;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 public class RecordCounterTest {
   private final OpensearchExporterConfiguration config = new OpensearchExporterConfiguration();
@@ -225,6 +228,28 @@ public class RecordCounterTest {
     assertThat(counters.get(valueType))
         .describedAs("The record counter should be 2, as we have exported the two records")
         .isEqualTo(2);
+  }
+
+  @Test
+  void shouldIncrementCounterOnFlushErrors() {
+    // given
+    exporter.configure(context);
+    exporter.open(controller);
+    final Record mockRecord = mock(Record.class);
+    when(client.shouldFlush()).thenReturn(true);
+
+    // when
+    doThrow(new OpensearchExporterException("failed to flush")).when(client).flush();
+    assertThatThrownBy(() -> exporter.export(mockRecord))
+        .isInstanceOf(OpensearchExporterException.class);
+
+    // then
+    final var recordSequenceCaptor = ArgumentCaptor.forClass(RecordSequence.class);
+    verify(client, times(1)).index(any(), recordSequenceCaptor.capture());
+    assertThat(recordSequenceCaptor.getAllValues())
+        .extracting(RecordSequence::counter)
+        .describedAs("Expect that the record counter is incremented")
+        .containsExactly(1L);
   }
 
   private Map<ValueType, Long> readMetadata() {
