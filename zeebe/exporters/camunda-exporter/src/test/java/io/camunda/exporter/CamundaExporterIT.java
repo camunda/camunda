@@ -212,7 +212,7 @@ final class CamundaExporterIT {
     // then
     final var responseRoleEntity =
         clientAdapter.get(
-            recordId, config.getIndex().getPrefix() + "-identity-roles-8.7.0_", RoleEntity.class);
+            recordId, config.getIndex().getPrefix() + "-identity-role-8.7.0_", RoleEntity.class);
 
     assertThat(responseRoleEntity)
         .describedAs("Role entity is updated correctly from the role record")
