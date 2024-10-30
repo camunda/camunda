@@ -173,7 +173,7 @@
   <update
     id="updateStateAndEndDate"
     statementType="PREPARED"
-    parameterType="hashmap"
+    parameterType="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper$EndFlowNodeDto"
     flushCache="true">
     UPDATE FLOW_NODE_INSTANCE
     SET STATE = #{state},

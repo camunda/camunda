@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.write.domain;
 
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
+import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.function.Function;
 
@@ -22,27 +23,32 @@ public record ProcessInstanceDbModel(
     Long parentProcessInstanceKey,
     Long parentElementInstanceKey,
     String elementId,
-    int version) {
+    int version)
+    implements DbModel<ProcessInstanceDbModel> {
 
+  @Override
   public ProcessInstanceDbModel copy(
-      Function<ProcessInstanceDbModelBuilder, ProcessInstanceDbModelBuilder> builderFunction) {
-    var builder = new ProcessInstanceDbModelBuilder()
-        .processInstanceKey(processInstanceKey)
-        .processInstanceKey(processInstanceKey())
-        .processDefinitionKey(processDefinitionKey)
-        .processDefinitionId(processDefinitionId)
-        .startDate(startDate)
-        .endDate(endDate)
-        .parentProcessInstanceKey(parentProcessInstanceKey)
-        .parentElementInstanceKey(parentElementInstanceKey)
-        .state(state)
-        .tenantId(tenantId)
-        .version(version);
-
-    return builderFunction.apply(builder).build();
+      final Function<ObjectBuilder<ProcessInstanceDbModel>, ObjectBuilder<ProcessInstanceDbModel>>
+          builderFunction) {
+    return builderFunction
+        .apply(
+            new ProcessInstanceDbModelBuilder()
+                .processInstanceKey(processInstanceKey)
+                .processInstanceKey(processInstanceKey())
+                .processDefinitionKey(processDefinitionKey)
+                .processDefinitionId(processDefinitionId)
+                .startDate(startDate)
+                .endDate(endDate)
+                .parentProcessInstanceKey(parentProcessInstanceKey)
+                .parentElementInstanceKey(parentElementInstanceKey)
+                .state(state)
+                .tenantId(tenantId)
+                .version(version))
+        .build();
   }
 
-  public static class ProcessInstanceDbModelBuilder {
+  public static class ProcessInstanceDbModelBuilder
+      implements ObjectBuilder<ProcessInstanceDbModel> {
 
     private Long processInstanceKey;
     private String processDefinitionId;
@@ -57,8 +63,7 @@ public record ProcessInstanceDbModel(
     private int version;
 
     // Public constructor to initialize the builder
-    public ProcessInstanceDbModelBuilder() {
-    }
+    public ProcessInstanceDbModelBuilder() {}
 
     // Builder methods for each field
     public ProcessInstanceDbModelBuilder processInstanceKey(final Long processInstanceKey) {
@@ -118,7 +123,7 @@ public record ProcessInstanceDbModel(
       return this;
     }
 
-    // Build method to create the record
+    @Override
     public ProcessInstanceDbModel build() {
       return new ProcessInstanceDbModel(
           processInstanceKey,

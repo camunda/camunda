@@ -169,7 +169,7 @@
   <update
     id="updateStateAndEndDate"
     statementType="PREPARED"
-    parameterType="io.camunda.db.rdbms.sql.ProcessInstanceMapper.EndProcessInstanceDto"
+    parameterType="io.camunda.db.rdbms.sql.ProcessInstanceMapper$EndProcessInstanceDto"
     flushCache="true">
     UPDATE PROCESS_INSTANCE p
     SET STATE    = #{state},

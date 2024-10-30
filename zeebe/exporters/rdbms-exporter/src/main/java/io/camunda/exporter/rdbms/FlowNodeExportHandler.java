@@ -61,12 +61,12 @@ public class FlowNodeExportHandler implements RdbmsExportHandler<ProcessInstance
               .build();
       flowNodeInstanceWriter.create(flowNode);
     } else if (record.getIntent() == ProcessInstanceIntent.ELEMENT_COMPLETED) {
-      flowNodeInstanceWriter.end(
+      flowNodeInstanceWriter.finish(
           record.getKey(),
           FlowNodeState.COMPLETED,
           DateUtil.toOffsetDateTime(record.getTimestamp()));
     } else if (record.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATED) {
-      flowNodeInstanceWriter.end(
+      flowNodeInstanceWriter.finish(
           record.getKey(),
           FlowNodeState.TERMINATED,
           DateUtil.toOffsetDateTime(record.getTimestamp()));

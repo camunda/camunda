@@ -9,6 +9,7 @@ package io.camunda.db.rdbms.write.domain;
 
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
+import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.function.Function;
 
@@ -25,27 +26,34 @@ public record FlowNodeInstanceDbModel(
     FlowNodeState state,
     Long incidentKey,
     Long scopeKey,
-    String tenantId) {
+    String tenantId)
+    implements Copyable<FlowNodeInstanceDbModel> {
 
+  @Override
   public FlowNodeInstanceDbModel copy(
-      final Function<FlowNodeInstanceDbModelBuilder, FlowNodeInstanceDbModelBuilder> builderFunction) {
-    return builderFunction.apply(new FlowNodeInstanceDbModelBuilder()
-        .flowNodeInstanceKey(flowNodeInstanceKey)
-        .processInstanceKey(processInstanceKey())
-        .processDefinitionKey(processDefinitionKey)
-        .processDefinitionId(processDefinitionId)
-        .startDate(startDate)
-        .endDate(endDate)
-        .flowNodeId(flowNodeId)
-        .treePath(treePath)
-        .type(type)
-        .state(state)
-        .incidentKey(incidentKey)
-        .scopeKey(scopeKey)
-        .tenantId(tenantId)).build();
+      final Function<ObjectBuilder<FlowNodeInstanceDbModel>, ObjectBuilder<FlowNodeInstanceDbModel>>
+          builderFunction) {
+    return builderFunction
+        .apply(
+            new FlowNodeInstanceDbModelBuilder()
+                .flowNodeInstanceKey(flowNodeInstanceKey)
+                .processInstanceKey(processInstanceKey())
+                .processDefinitionKey(processDefinitionKey)
+                .processDefinitionId(processDefinitionId)
+                .startDate(startDate)
+                .endDate(endDate)
+                .flowNodeId(flowNodeId)
+                .treePath(treePath)
+                .type(type)
+                .state(state)
+                .incidentKey(incidentKey)
+                .scopeKey(scopeKey)
+                .tenantId(tenantId))
+        .build();
   }
 
-  public static class FlowNodeInstanceDbModelBuilder {
+  public static class FlowNodeInstanceDbModelBuilder
+      implements ObjectBuilder<FlowNodeInstanceDbModel> {
 
     private Long flowNodeInstanceKey;
     private Long processInstanceKey;
@@ -62,8 +70,7 @@ public record FlowNodeInstanceDbModel(
     private String tenantId;
 
     // Public constructor to initialize the builder
-    public FlowNodeInstanceDbModelBuilder() {
-    }
+    public FlowNodeInstanceDbModelBuilder() {}
 
     // Builder methods for each field
     public FlowNodeInstanceDbModelBuilder flowNodeInstanceKey(final Long key) {
@@ -131,7 +138,7 @@ public record FlowNodeInstanceDbModel(
       return this;
     }
 
-    // Build method to create the record
+    @Override
     public FlowNodeInstanceDbModel build() {
       return new FlowNodeInstanceDbModel(
           flowNodeInstanceKey,

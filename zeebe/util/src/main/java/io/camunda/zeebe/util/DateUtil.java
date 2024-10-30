@@ -21,8 +21,7 @@ public final class DateUtil {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DateUtil.class);
 
-  private DateUtil() {
-  }
+  private DateUtil() {}
 
   public static OffsetDateTime toOffsetDateTime(final Instant timestamp) {
     return OffsetDateTime.ofInstant(timestamp, ZoneOffset.UTC);

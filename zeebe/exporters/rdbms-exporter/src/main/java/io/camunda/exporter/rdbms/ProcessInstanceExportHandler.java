@@ -38,12 +38,12 @@ public class ProcessInstanceExportHandler
     if (record.getIntent().equals(ProcessInstanceIntent.ELEMENT_ACTIVATING)) {
       processInstanceWriter.create(map(record));
     } else if (record.getIntent().equals(ProcessInstanceIntent.ELEMENT_COMPLETED)) {
-      processInstanceWriter.end(
+      processInstanceWriter.finish(
           value.getProcessInstanceKey(),
           ProcessInstanceState.COMPLETED,
           DateUtil.toOffsetDateTime(record.getTimestamp()));
     } else if (record.getIntent().equals(ProcessInstanceIntent.ELEMENT_TERMINATED)) {
-      processInstanceWriter.end(
+      processInstanceWriter.finish(
           value.getProcessInstanceKey(),
           ProcessInstanceState.CANCELED,
           DateUtil.toOffsetDateTime(record.getTimestamp()));
