@@ -99,14 +99,22 @@ jobs:
       - name: Start Test
         shell: bash
         run: |
-          variables=$(echo "${{ inputs.variables }}" | envsubst)
-          curl -L -X POST '${{ steps.secrets.outputs.TESTBENCH_PROD_REST_ADDRESS }}/v2/process-instances' \
-          -H "Authorization: Bearer ${{ env.access_token }}" \
-          -H 'Content-Type: application/json' \
-          -H 'Accept: application/json' \
-          --data-raw '{
-            "processDefinitionId": "${{ inputs.processId }}",
-            "variables": '"$variables"'
-          }'
+          # Substitute environment variables in the JSON payload
+          substituted_variables=$(echo '${{ inputs.variables }}' | envsubst)
+
+          # Format the JSON to ensure it’s correct
+          variables=$(echo "$substituted_variables" | jq -c .)
+
+          # Run the curl command with expanded variables
+          curl -L -X POST "${{ steps.secrets.outputs.TESTBENCH_PROD_REST_ADDRESS }}/v2/process-instances" \
+            -H "Authorization: Bearer $access_token" \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/json" \
+            --data-raw "{
+              \"processDefinitionId\": \"${{ inputs.processId }}\",
+              \"variables\": $variables
+            }"
         env:
           IMAGE: ${{ steps.build-zeebe-docker.outputs.image }}
+          access_token: ${{ env.access_token }}
+
