@@ -122,6 +122,11 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
     }
   }
 
+  @Override
+  public String getIndexName() {
+    return indexName;
+  }
+
   private static Map<String, Object> getUpdateFieldsMapByIntent(
       final String intent, final IncidentEntity incidentEntity) {
     final Map<String, Object> updateFields = new HashMap<>();

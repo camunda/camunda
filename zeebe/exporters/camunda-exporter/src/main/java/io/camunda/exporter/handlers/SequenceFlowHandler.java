@@ -72,4 +72,9 @@ public class SequenceFlowHandler
   public void flush(final SequenceFlowEntity entity, final BatchRequest batchRequest) {
     batchRequest.add(indexName, entity);
   }
+
+  @Override
+  public String getIndexName() {
+    return indexName;
+  }
 }

@@ -76,4 +76,9 @@ public class DecisionRequirementsHandler
   public void flush(final DecisionRequirementsEntity entity, final BatchRequest batchRequest) {
     batchRequest.add(indexName, entity);
   }
+
+  @Override
+  public String getIndexName() {
+    return indexName;
+  }
 }

@@ -102,4 +102,9 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
   public void flush(final ProcessEntity entity, final BatchRequest batchRequest) {
     batchRequest.add(indexName, entity);
   }
+
+  @Override
+  public String getIndexName() {
+    return indexName;
+  }
 }
