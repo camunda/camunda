@@ -49,11 +49,11 @@ final class BulkIndexRequest implements ContentProducer {
    * @param record the record that will be the source of the document
    * @param recordSequence the sequence number of the record
    */
-  void index(
+  boolean index(
       final BulkIndexAction action, final Record<?> record, final RecordSequence recordSequence) {
     // exit early in case we're retrying the last indexed record again
     if (lastIndexedMetadata != null && lastIndexedMetadata.equals(action)) {
-      return;
+      return false;
     }
 
     final byte[] source;
@@ -69,6 +69,7 @@ final class BulkIndexRequest implements ContentProducer {
     memoryUsageBytes += command.source().length;
     lastIndexedMetadata = action;
     operations.add(command);
+    return true;
   }
 
   private static byte[] serializeRecord(final Record<?> record, final RecordSequence recordSequence)
