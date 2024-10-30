@@ -18,7 +18,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import org.jetbrains.annotations.NotNull;
 
 public class IdentityTenantService {
 
@@ -44,7 +43,7 @@ public class IdentityTenantService {
             .build(
                 new CacheLoader<>() {
                   @Override
-                  public @NotNull List<Tenant> load(final @NotNull String token) {
+                  public List<Tenant> load(final String token) {
                     return getTenantsForTokenThrottled(token);
                   }
                 });
