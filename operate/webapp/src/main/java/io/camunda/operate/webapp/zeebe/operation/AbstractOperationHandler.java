@@ -150,7 +150,9 @@ public abstract class AbstractOperationHandler implements OperationHandler {
       final long operationReference = Long.parseLong(id);
       command.operationReference(operationReference);
     } catch (final NumberFormatException e) {
-      // ignore
+      LOGGER.debug(
+          "The operation reference provided is not a number: {}. Ignoring propagating it to zeebe commands.",
+          id);
     }
     return command;
   }
