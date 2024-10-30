@@ -593,7 +593,7 @@ public abstract class TestUtil {
   public static BatchOperationEntity createBatchOperationEntity(
       final OffsetDateTime startDate, final OffsetDateTime endDate, final String username) {
     return new BatchOperationEntity()
-        .setId(UUID.randomUUID().toString())
+        .withGeneratedId()
         .setStartDate(startDate)
         .setEndDate(endDate)
         .setUsername(username)

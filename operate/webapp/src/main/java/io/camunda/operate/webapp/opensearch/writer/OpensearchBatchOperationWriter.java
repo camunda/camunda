@@ -505,6 +505,7 @@ public class OpensearchBatchOperationWriter
   private BatchOperationEntity createBatchOperationEntity(
       final OperationType operationType, final String name) {
     return new BatchOperationEntity()
+        .withGeneratedId()
         .setType(operationType)
         .setName(name)
         .setStartDate(OffsetDateTime.now())

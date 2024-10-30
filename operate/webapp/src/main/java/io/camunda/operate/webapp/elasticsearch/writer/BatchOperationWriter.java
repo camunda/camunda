@@ -527,6 +527,7 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
   private BatchOperationEntity createBatchOperationEntity(
       final OperationType operationType, final String name) {
     return new BatchOperationEntity()
+        .withGeneratedId()
         .setType(operationType)
         .setName(name)
         .setStartDate(OffsetDateTime.now())

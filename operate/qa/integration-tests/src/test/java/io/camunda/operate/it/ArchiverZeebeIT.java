@@ -268,7 +268,10 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
   }
 
   private BatchOperationEntity createBatchOperationEntity(final OffsetDateTime endDate) {
-    return new BatchOperationEntity().setStartDate(endDate.minusMinutes(5)).setEndDate(endDate);
+    return new BatchOperationEntity()
+        .withGeneratedId()
+        .setStartDate(endDate.minusMinutes(5))
+        .setEndDate(endDate);
   }
 
   @Test

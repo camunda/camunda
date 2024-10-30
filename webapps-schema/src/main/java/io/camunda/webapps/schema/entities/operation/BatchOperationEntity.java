@@ -26,10 +26,6 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
 
   @JsonIgnore private Object[] sortValues;
 
-  public BatchOperationEntity() {
-    generateId();
-  }
-
   public String getName() {
     return name;
   }
@@ -111,8 +107,9 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
     return this;
   }
 
-  public void generateId() {
+  public BatchOperationEntity withGeneratedId() {
     setId(UUID.randomUUID().toString());
+    return this;
   }
 
   @Override
