@@ -335,6 +335,8 @@ import:
 # a connection to it.
 opensearch:
   connection:
+    healthCheckEnabled: ${CAMUNDA_OPTIMIZE_OPENSEARCH_HEALTHCHECK_ENABLED:true}
+    initSchemaEnabled: ${CAMUNDA_OPTIMIZE_OPENSEARCH_INIT_SCHEMA_ENABLED:true}
     # Use AWS credentials for authentication
     awsEnabled: ${CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED:false}
     # Maximum time without connection to Opensearch, Optimize should
@@ -435,6 +437,8 @@ opensearch:
 # a connection to it.
 es:
   connection:
+    healthCheckEnabled: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_HEALTHCHECK_ENABLED:true}
+    initSchemaEnabled: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_INIT_SCHEMA_ENABLED:true}
     # Maximum time without connection to Elasticsearch, Optimize should
     # wait until a timeout triggers.
     timeout: 10000

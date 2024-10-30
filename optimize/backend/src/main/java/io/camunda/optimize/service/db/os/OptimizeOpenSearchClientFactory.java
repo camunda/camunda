@@ -44,15 +44,23 @@ public final class OptimizeOpenSearchClientFactory {
         buildOpenSearchClientFromConfig(configurationService, pluginRepository);
     final OpenSearchAsyncClient openSearchAsyncClient =
         buildOpenSearchAsyncClientFromConfig(configurationService, pluginRepository);
-    waitForOpenSearch(openSearchClient, backoffCalculator);
-    LOG.info("OpenSearch cluster successfully started");
+    boolean healthCheckEnabled = configurationService.getOpenSearchConfiguration()
+        .getConnection().isHealthCheckEnabled();
+    if (healthCheckEnabled) {
+      waitForOpenSearch(openSearchClient, backoffCalculator);
+      LOG.info("OpenSearch cluster successfully started");
+    }
 
     final OptimizeOpenSearchClient osClient =
         new OptimizeOpenSearchClient(
             openSearchClient, openSearchAsyncClient, optimizeIndexNameService);
     openSearchSchemaManager.validateDatabaseMetadata(osClient);
-    openSearchSchemaManager.initializeSchema(osClient);
 
+    boolean initSchemaEnabled = configurationService.getOpenSearchConfiguration()
+        .getConnection().isInitSchemaEnabled();
+    if (initSchemaEnabled) {
+      openSearchSchemaManager.initializeSchema(osClient);
+    }
     return osClient;
   }
 

@@ -45,8 +45,13 @@ public final class OptimizeElasticsearchClientFactory {
     final ElasticsearchClient build =
         ElasticsearchClientBuilder.build(configurationService, OPTIMIZE_MAPPER, pluginRepository);
 
-    waitForElasticsearch(build, backoffCalculator, transportOptionsProvider.getTransportOptions());
-    LOG.info("Elasticsearch client has successfully been started");
+    boolean healthCheckEnabled = configurationService.getElasticSearchConfiguration()
+        .getConnection().isHealthCheckEnabled();
+    if (healthCheckEnabled) {
+      waitForElasticsearch(build, backoffCalculator,
+          transportOptionsProvider.getTransportOptions());
+      LOG.info("Elasticsearch client has successfully been started");
+    }
 
     final OptimizeElasticsearchClient prefixedClient =
         new OptimizeElasticsearchClient(
@@ -57,7 +62,12 @@ public final class OptimizeElasticsearchClientFactory {
             transportOptionsProvider);
 
     elasticSearchSchemaManager.validateDatabaseMetadata(prefixedClient);
-    elasticSearchSchemaManager.initializeSchema(prefixedClient);
+
+    boolean initSchemaEnabled = configurationService.getElasticSearchConfiguration()
+        .getConnection().isInitSchemaEnabled();
+    if (initSchemaEnabled) {
+      elasticSearchSchemaManager.initializeSchema(prefixedClient);
+    }
     return prefixedClient;
   }
 

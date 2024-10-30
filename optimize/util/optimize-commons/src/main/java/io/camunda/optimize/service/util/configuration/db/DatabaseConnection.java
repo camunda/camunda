@@ -26,6 +26,11 @@ public class DatabaseConnection {
   private ProxyConfiguration proxy;
   private Boolean awsEnabled;
 
+  /** Indicates whether optimize does a proper health check for ES/OS clusters. */
+  private boolean healthCheckEnabled = true;
+
+  private boolean initSchemaEnabled = true;
+
   public DatabaseConnection() {}
 
   public Integer getTimeout() {
@@ -95,6 +100,22 @@ public class DatabaseConnection {
 
   public int hashCode() {
     return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  }
+
+  public boolean isHealthCheckEnabled() {
+    return healthCheckEnabled;
+  }
+
+  public void setHealthCheckEnabled(final boolean healthCheckEnabled) {
+    this.healthCheckEnabled = healthCheckEnabled;
+  }
+
+  public boolean isInitSchemaEnabled() {
+    return initSchemaEnabled;
+  }
+
+  public void setInitSchemaEnabled(final boolean initSchemaEnabled) {
+    this.initSchemaEnabled = initSchemaEnabled;
   }
 
   public String toString() {

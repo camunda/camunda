@@ -19,6 +19,8 @@ import co.elastic.clients.elasticsearch.tasks.ListRequest;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.repository.TaskRepository;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import io.camunda.optimize.service.util.configuration.ElasticSearchConfiguration;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import io.camunda.optimize.upgrade.es.TaskResponse;
 import java.io.IOException;
@@ -37,9 +39,12 @@ public class TaskRepositoryES extends TaskRepository {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(TaskRepositoryES.class);
   private final OptimizeElasticsearchClient esClient;
+  private final ElasticSearchConfiguration configuration;
 
-  public TaskRepositoryES(final OptimizeElasticsearchClient esClient) {
+  public TaskRepositoryES(final OptimizeElasticsearchClient esClient,
+      ConfigurationService configurationService) {
     this.esClient = esClient;
+    this.configuration = configurationService.getElasticSearchConfiguration();
   }
 
   @Override
@@ -130,6 +135,24 @@ public class TaskRepositoryES extends TaskRepository {
                     .waitForCompletion(false)
                     .conflicts(Conflicts.Proceed));
 
+    if (configuration.getConnection().isHealthCheckEnabled()) {
+      return async(query, deletedItemIdentifier, request);
+    } else {
+      return sync(request);
+    }
+  }
+
+  private boolean sync(final DeleteByQueryRequest request) {
+    try {
+      Long deleted = esClient.submitDeleteTask(request).deleted();
+      return deleted!= null && deleted > 0L;
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException("Error while trying to read Elasticsearch task status with ID");
+    }
+  }
+
+  private boolean async(final Query query, final String deletedItemIdentifier,
+      final DeleteByQueryRequest request) {
     final String taskId;
     try {
       taskId = esClient.submitDeleteTask(request).task();
