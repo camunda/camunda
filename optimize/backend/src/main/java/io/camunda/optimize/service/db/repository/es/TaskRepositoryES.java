@@ -42,8 +42,7 @@ public class TaskRepositoryES extends TaskRepository {
   private final ElasticSearchConfiguration configuration;
 
   public TaskRepositoryES(
-      final OptimizeElasticsearchClient esClient,
-      final ConfigurationService configurationService) {
+      final OptimizeElasticsearchClient esClient, final ConfigurationService configurationService) {
     this.esClient = esClient;
     this.configuration = configurationService.getElasticSearchConfiguration();
   }
