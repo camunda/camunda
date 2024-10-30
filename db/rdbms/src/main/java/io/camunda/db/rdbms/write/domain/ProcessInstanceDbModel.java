@@ -9,6 +9,7 @@ package io.camunda.db.rdbms.write.domain;
 
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import java.time.OffsetDateTime;
+import java.util.function.Function;
 
 public record ProcessInstanceDbModel(
     Long processInstanceKey,
@@ -23,8 +24,9 @@ public record ProcessInstanceDbModel(
     String elementId,
     int version) {
 
-  public ProcessInstanceDbModelBuilder toBuilder() {
-    return new ProcessInstanceDbModelBuilder()
+  public ProcessInstanceDbModel copy(
+      Function<ProcessInstanceDbModelBuilder, ProcessInstanceDbModelBuilder> builderFunction) {
+    var builder = new ProcessInstanceDbModelBuilder()
         .processInstanceKey(processInstanceKey)
         .processInstanceKey(processInstanceKey())
         .processDefinitionKey(processDefinitionKey)
@@ -36,6 +38,8 @@ public record ProcessInstanceDbModel(
         .state(state)
         .tenantId(tenantId)
         .version(version);
+
+    return builderFunction.apply(builder).build();
   }
 
   public static class ProcessInstanceDbModelBuilder {
@@ -53,7 +57,8 @@ public record ProcessInstanceDbModel(
     private int version;
 
     // Public constructor to initialize the builder
-    public ProcessInstanceDbModelBuilder() {}
+    public ProcessInstanceDbModelBuilder() {
+    }
 
     // Builder methods for each field
     public ProcessInstanceDbModelBuilder processInstanceKey(final Long processInstanceKey) {

@@ -74,7 +74,10 @@ public class ProcessInstanceWriter {
           originalItem.id(),
           originalItem.statementId(),
           ((ProcessInstanceDbModel) originalItem.parameter())
-              .toBuilder().state(dto.state()).endDate(dto.endDate()).build());
+              .copy(b -> b
+                  .state(dto.state())
+                  .endDate(dto.endDate())
+              ));
     }
   }
 }

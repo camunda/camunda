@@ -72,7 +72,10 @@ public class FlowNodeInstanceWriter {
     public QueueItem merge(final QueueItem originalItem) {
       final var newParameter =
           ((FlowNodeInstanceDbModel) originalItem.parameter())
-              .toBuilder().state(dto.state()).endDate(dto.endDate()).build();
+              .copy(b -> b
+                  .state(dto.state())
+                  .endDate(dto.endDate())
+              );
 
       return new QueueItem(
           originalItem.contextType(), originalItem.id(), originalItem.statementId(), newParameter);

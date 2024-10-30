@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.write.domain;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import java.time.OffsetDateTime;
+import java.util.function.Function;
 
 public record FlowNodeInstanceDbModel(
     Long flowNodeInstanceKey,
@@ -26,8 +27,9 @@ public record FlowNodeInstanceDbModel(
     Long scopeKey,
     String tenantId) {
 
-  public FlowNodeInstanceDbModelBuilder toBuilder() {
-    return new FlowNodeInstanceDbModelBuilder()
+  public FlowNodeInstanceDbModel copy(
+      final Function<FlowNodeInstanceDbModelBuilder, FlowNodeInstanceDbModelBuilder> builderFunction) {
+    return builderFunction.apply(new FlowNodeInstanceDbModelBuilder()
         .flowNodeInstanceKey(flowNodeInstanceKey)
         .processInstanceKey(processInstanceKey())
         .processDefinitionKey(processDefinitionKey)
@@ -40,7 +42,7 @@ public record FlowNodeInstanceDbModel(
         .state(state)
         .incidentKey(incidentKey)
         .scopeKey(scopeKey)
-        .tenantId(tenantId);
+        .tenantId(tenantId)).build();
   }
 
   public static class FlowNodeInstanceDbModelBuilder {
@@ -60,7 +62,8 @@ public record FlowNodeInstanceDbModel(
     private String tenantId;
 
     // Public constructor to initialize the builder
-    public FlowNodeInstanceDbModelBuilder() {}
+    public FlowNodeInstanceDbModelBuilder() {
+    }
 
     // Builder methods for each field
     public FlowNodeInstanceDbModelBuilder flowNodeInstanceKey(final Long key) {
