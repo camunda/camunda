@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.interceptors.impl;
+package io.camunda.zeebe.gateway.impl.identity;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;

@@ -13,6 +13,7 @@ import io.camunda.identity.sdk.authentication.exception.TokenVerificationExcepti
 import io.camunda.identity.sdk.tenants.dto.Tenant;
 import io.camunda.zeebe.gateway.impl.configuration.IdentityCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
+import io.camunda.zeebe.gateway.impl.identity.IdentityTenantService;
 import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
 import io.grpc.Contexts;
 import io.grpc.Metadata;
