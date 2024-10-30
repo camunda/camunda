@@ -29,6 +29,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import org.slf4j.Logger;
@@ -142,18 +143,22 @@ public class RestErrorMapper {
             HttpStatus.SERVICE_UNAVAILABLE, pnfeMsg, pnfe.getClass().getName());
       case final PartitionInactiveException pie:
         final var pieMsg =
-            "Expected to handle gRPC request, but the target partition is currently inactive";
+            "Expected to handle REST API request, but the target partition is currently inactive";
         REST_GATEWAY_LOGGER.debug(pieMsg, pie);
         yield createProblemDetail(HttpStatus.SERVICE_UNAVAILABLE, pieMsg, pie.getClass().getName());
       case final NoTopologyAvailableException ntae:
         final var ntaeMsg =
-            "Expected to handle gRPC request, but the gateway does not know any partitions yet";
+            "Expected to handle REST API request, but the gateway does not know any partitions yet";
         REST_GATEWAY_LOGGER.debug(ntaeMsg, ntae);
         yield createProblemDetail(
             HttpStatus.SERVICE_UNAVAILABLE, ntaeMsg, ntae.getClass().getName());
+      case final RejectedExecutionException ree:
+        final var reeMsg = "Expected to handle REST API request, but the request was rejected";
+        REST_GATEWAY_LOGGER.debug(reeMsg, ree);
+        yield createProblemDetail(HttpStatus.SERVICE_UNAVAILABLE, reeMsg, ree.getClass().getName());
       default:
         REST_GATEWAY_LOGGER.error(
-            "Expected to handle REST request, but an unexpected error occurred", error);
+            "Expected to handle REST API request, but an unexpected error occurred", error);
         yield createProblemDetail(
             HttpStatus.INTERNAL_SERVER_ERROR,
             "Unexpected error occurred during the request processing: " + error.getMessage(),

@@ -11,9 +11,11 @@ import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.identity.sdk.tenants.dto.Tenant;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
+import io.camunda.zeebe.gateway.impl.identity.IdentityTenantService;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -25,6 +27,7 @@ import org.springframework.stereotype.Component;
 public final class IdentityAuthenticationManager implements AuthenticationManager {
 
   private final Identity identity;
+  private final IdentityTenantService tenantService;
   private final MultiTenancyCfg multiTenancy;
 
   @Autowired
@@ -32,6 +35,7 @@ public final class IdentityAuthenticationManager implements AuthenticationManage
       final Identity identity, final MultiTenancyCfg multiTenancy) {
     this.identity = identity;
     this.multiTenancy = multiTenancy;
+    tenantService = new IdentityTenantService(identity);
   }
 
   @Override
@@ -61,8 +65,8 @@ public final class IdentityAuthenticationManager implements AuthenticationManage
     }
 
     try {
-      return identity.tenants().forToken(token).stream().map(Tenant::getTenantId).toList();
-    } catch (final RuntimeException e) {
+      return tenantService.getTenantsForToken(token).stream().map(Tenant::getTenantId).toList();
+    } catch (final RuntimeException | ExecutionException e) {
       throw new InternalAuthenticationServiceException(
           "Expected Identity to provide authorized tenants, see cause for details", e);
     }
