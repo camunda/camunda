@@ -198,6 +198,7 @@ public class MultiTenancyOverIdentityHighRequestCountIT {
         .withGatewayConfig(
             gateway -> {
               gateway.getMultiTenancy().setEnabled(true);
+              gateway.getExperimental().getIdentityRequest().setEnabled(true);
               gateway.getSecurity().getAuthentication().setMode(AuthMode.IDENTITY);
             })
         .withProperty(

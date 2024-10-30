@@ -17,6 +17,7 @@ import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.GatewayGrpcService;
 import io.camunda.zeebe.gateway.ResponseMapper;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.camunda.zeebe.gateway.impl.configuration.IdentityRequestCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
@@ -88,6 +89,7 @@ public final class StubbedGateway {
     actorScheduler.submitActor(clientStreamAdapter).join();
 
     final MultiTenancyCfg multiTenancy = config.getMultiTenancy();
+    final IdentityRequestCfg identityRequestCfg = config.getExperimental().getIdentityRequest();
     final EndpointManager endpointManager =
         new EndpointManager(brokerClient, activateJobsHandler, clientStreamAdapter, multiTenancy);
     final GatewayGrpcService gatewayGrpcService = new GatewayGrpcService(endpointManager);
@@ -96,7 +98,8 @@ public final class StubbedGateway {
         InProcessServerBuilder.forName(SERVER_NAME)
             .addService(
                 ServerInterceptors.intercept(
-                    gatewayGrpcService, new IdentityInterceptor(identity, multiTenancy)));
+                    gatewayGrpcService,
+                    new IdentityInterceptor(identity, multiTenancy, identityRequestCfg)));
     server = serverBuilder.build();
     server.start();
   }
