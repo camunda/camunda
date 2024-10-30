@@ -42,7 +42,8 @@ public class TaskRepositoryES extends TaskRepository {
   private final ElasticSearchConfiguration configuration;
 
   public TaskRepositoryES(
-      final OptimizeElasticsearchClient esClient, ConfigurationService configurationService) {
+      final OptimizeElasticsearchClient esClient,
+      final ConfigurationService configurationService) {
     this.esClient = esClient;
     this.configuration = configurationService.getElasticSearchConfiguration();
   }
@@ -144,7 +145,7 @@ public class TaskRepositoryES extends TaskRepository {
 
   private boolean sync(final DeleteByQueryRequest request) {
     try {
-      Long deleted = esClient.submitDeleteTask(request).deleted();
+      final Long deleted = esClient.submitDeleteTask(request).deleted();
       return deleted != null && deleted > 0L;
     } catch (final IOException e) {
       throw new OptimizeRuntimeException(

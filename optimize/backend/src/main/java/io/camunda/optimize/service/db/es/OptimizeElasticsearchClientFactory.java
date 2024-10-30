@@ -45,7 +45,7 @@ public final class OptimizeElasticsearchClientFactory {
     final ElasticsearchClient build =
         ElasticsearchClientBuilder.build(configurationService, OPTIMIZE_MAPPER, pluginRepository);
 
-    boolean healthCheckEnabled =
+    final boolean healthCheckEnabled =
         configurationService.getElasticSearchConfiguration().getConnection().isHealthCheckEnabled();
     if (healthCheckEnabled) {
       waitForElasticsearch(
@@ -63,7 +63,7 @@ public final class OptimizeElasticsearchClientFactory {
 
     elasticSearchSchemaManager.validateDatabaseMetadata(prefixedClient);
 
-    boolean initSchemaEnabled =
+    final boolean initSchemaEnabled =
         configurationService.getElasticSearchConfiguration().getConnection().isInitSchemaEnabled();
     if (initSchemaEnabled) {
       elasticSearchSchemaManager.initializeSchema(prefixedClient);
