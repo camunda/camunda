@@ -10,6 +10,7 @@ package io.camunda.zeebe.exporter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -59,6 +60,7 @@ public class RecordCounterTest {
     when(mockRecord.getValueType()).thenReturn(valueType);
 
     // when a new record is exported
+    when(client.index(eq(mockRecord), any(RecordSequence.class))).thenReturn(true);
     when(client.shouldFlush()).thenReturn(true);
     exporter.export(mockRecord);
 
@@ -80,6 +82,7 @@ public class RecordCounterTest {
     when(mockRecord.getValueType()).thenReturn(valueType);
 
     // when a new record is exported, but the flush fails
+    when(client.index(eq(mockRecord), any(RecordSequence.class))).thenReturn(true);
     when(client.shouldFlush()).thenReturn(true);
     doThrow(new ElasticsearchExporterException("failed to flush")).when(client).flush();
     assertThatThrownBy(() -> exporter.export(mockRecord))
@@ -100,6 +103,7 @@ public class RecordCounterTest {
     when(mockRecord.getValueType()).thenReturn(valueType);
 
     // when a new record is exported, but the flush fails
+    when(client.index(eq(mockRecord), any(RecordSequence.class))).thenReturn(true);
     when(client.shouldFlush()).thenReturn(false);
     exporter.export(mockRecord);
     exporter.close();
@@ -122,6 +126,7 @@ public class RecordCounterTest {
     when(mockRecord.getValueType()).thenReturn(valueType);
 
     // when a new record is exported, but the flush fails
+    when(client.index(eq(mockRecord), any(RecordSequence.class))).thenReturn(true);
     when(client.shouldFlush()).thenReturn(false);
     exporter.export(mockRecord);
     doThrow(new ElasticsearchExporterException("failed to flush")).when(client).flush();
@@ -142,6 +147,7 @@ public class RecordCounterTest {
     when(mockRecord.getValueType()).thenReturn(valueType);
 
     // when a new record is exported, but the synchronous flush fails
+    when(client.index(eq(mockRecord), any(RecordSequence.class))).thenReturn(true);
     when(client.shouldFlush()).thenReturn(true);
     doThrow(new ElasticsearchExporterException("failed to flush")).when(client).flush();
     assertThatThrownBy(() -> exporter.export(mockRecord))
@@ -170,12 +176,14 @@ public class RecordCounterTest {
     when(mockRecord.getValueType()).thenReturn(valueType);
 
     // when a new record is exported, but the synchronous flush fails
+    when(client.index(eq(mockRecord), any(RecordSequence.class))).thenReturn(true);
     when(client.shouldFlush()).thenReturn(true);
     doThrow(new ElasticsearchExporterException("failed to flush")).when(client).flush();
     assertThatThrownBy(() -> exporter.export(mockRecord))
         .isInstanceOf(ElasticsearchExporterException.class);
 
     // and the record export is retried
+    when(client.index(eq(mockRecord), any(RecordSequence.class))).thenReturn(false);
     doNothing().when(client).flush();
     exporter.export(mockRecord);
 
@@ -199,10 +207,12 @@ public class RecordCounterTest {
     when(mockRecord2.getValueType()).thenReturn(valueType);
 
     // when a new record is exported
+    when(client.index(eq(mockRecord1), any(RecordSequence.class))).thenReturn(true);
     when(client.shouldFlush()).thenReturn(true);
     exporter.export(mockRecord1);
 
     // and another new record export is exported
+    when(client.index(eq(mockRecord2), any(RecordSequence.class))).thenReturn(true);
     exporter.export(mockRecord2);
 
     // then the record counter should be 2
