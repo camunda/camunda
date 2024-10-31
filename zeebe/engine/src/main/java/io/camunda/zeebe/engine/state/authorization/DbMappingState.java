@@ -17,6 +17,7 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
+import java.util.List;
 import java.util.Optional;
 
 public class DbMappingState implements MutableMappingState {
@@ -87,6 +88,20 @@ public class DbMappingState implements MutableMappingState {
       final var persistedMapping = mappingColumnFamily.get(claim);
       persistedMapping.addTenantId(tenantId);
       mappingColumnFamily.update(claim, persistedMapping);
+    }
+  }
+
+  @Override
+  public void removeRole(final long mappingKey, final long roleKey) {
+    this.mappingKey.wrapLong(mappingKey);
+    final var fkClaim = claimByKeyColumnFamily.get(this.mappingKey);
+    if (fkClaim != null) {
+      final var fkKey = fkClaim.inner();
+      final var persistedMapping = mappingColumnFamily.get(fkKey);
+      final List<Long> roleKeys = persistedMapping.getRoleKeysList();
+      roleKeys.remove(roleKey);
+      persistedMapping.setRoleKeysList(roleKeys);
+      mappingColumnFamily.update(fkKey, persistedMapping);
     }
   }
 
