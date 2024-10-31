@@ -44,6 +44,7 @@ import io.camunda.exporter.handlers.UserTaskHandler;
 import io.camunda.exporter.handlers.UserTaskProcessInstanceHandler;
 import io.camunda.exporter.handlers.UserTaskVariableHandler;
 import io.camunda.exporter.handlers.VariableHandler;
+import io.camunda.exporter.handlers.operation.OperationFromIncidentHandler;
 import io.camunda.exporter.handlers.operation.OperationFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.operation.OperationFromVariableDocumentHandler;
 import io.camunda.exporter.utils.XMLUtil;
@@ -210,6 +211,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new OperationFromProcessInstanceHandler(
                 templateDescriptorsMap.get(OperationTemplate.class).getFullQualifiedName()),
             new OperationFromVariableDocumentHandler(
+                templateDescriptorsMap.get(OperationTemplate.class).getFullQualifiedName()),
+            new OperationFromIncidentHandler(
                 templateDescriptorsMap.get(OperationTemplate.class).getFullQualifiedName()));
   }
 
