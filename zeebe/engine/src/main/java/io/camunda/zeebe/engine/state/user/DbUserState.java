@@ -79,7 +79,9 @@ public class DbUserState implements UserState, MutableUserState {
   public void addTenantId(final long userKey, final String tenantId) {
     this.userKey.wrapLong(userKey);
     final var persistedUser = userByUserKeyColumnFamily.get(this.userKey);
-    persistedUser.addTenantId(tenantId);
+    final var tenantIds = persistedUser.getTenantIdsList();
+    tenantIds.add(tenantId);
+    persistedUser.setTenantIdsList(tenantIds);
     userByUserKeyColumnFamily.update(this.userKey, persistedUser);
   }
 
