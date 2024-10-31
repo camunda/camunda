@@ -13,7 +13,7 @@ public class IdentityServiceCfg {
 
   private boolean enabled = false;
   private long tenantCacheTtl = 5000;
-  private long tenantCacheSize = 1000;
+  private long tenantCacheSize = 200;
   private int tenantRequestCapacity = 300;
   private long tenantRequestTimeout = 1000;
 

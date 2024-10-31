@@ -254,7 +254,7 @@ public class MultiTenancyOverIdentityHighRequestCountIT {
               .orElseThrow();
 
       final List<Callable<ZeebeFuture<ProcessInstanceEvent>>> piList = new ArrayList<>();
-      for (int i = 0; i < 500; i++) {
+      for (int i = 0; i < 1000; i++) {
         piList.add(
             () ->
                 client
