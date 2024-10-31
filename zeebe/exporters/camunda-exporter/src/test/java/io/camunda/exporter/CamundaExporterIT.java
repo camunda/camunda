@@ -36,6 +36,7 @@ import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHa
 import io.camunda.exporter.handlers.MetricFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.UserTaskProcessInstanceHandler;
 import io.camunda.exporter.schema.SchemaTestUtil;
+import io.camunda.exporter.utils.CamundaExporterHandlerITInvocationProvider;
 import io.camunda.exporter.utils.CamundaExporterITInvocationProvider;
 import io.camunda.exporter.utils.SearchClientAdapter;
 import io.camunda.exporter.utils.TestSupport;
@@ -65,6 +66,7 @@ import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -335,22 +337,17 @@ final class CamundaExporterIT {
   }
 
   @Nested
+  @ExtendWith(CamundaExporterHandlerITInvocationProvider.class)
   class ExportHandlerTests {
+
     @TestTemplate
-    void shouldHandleExportedRecords(
-        final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+    void allHandlerTestsWithInvocationProvider(
+        final CamundaExporter exporter,
+        final SearchClientAdapter clientAdapter,
+        final ExportHandler<?, ?> handler)
         throws IOException {
-      final var provider = new DefaultExporterResourceProvider();
-      provider.init(config);
 
-      final var exporter = new CamundaExporter(provider);
-      exporter.configure(getContextFromConfig(config));
-      exporter.open(new ExporterTestController());
-
-      assertThat(provider.getExportHandlers().isEmpty()).isFalse();
-      for (final var handler : provider.getExportHandlers()) {
-        exportTest(exporter, handler, clientAdapter);
-      }
+      exportTest(exporter, handler, clientAdapter);
     }
 
     private <S extends ExporterEntity<S>, T extends RecordValue> Record<T> recordGenerator(
