@@ -82,6 +82,9 @@ public class TaskRepositoryES extends TaskRepository {
       final Query filterQuery,
       final String... indices) {
     LOG.debug("Updating {}", updateItemIdentifier);
+    final boolean healthCheckEnabled =
+        configuration.getElasticSearchConfiguration().getConnection().isHealthCheckEnabled();
+
     final UpdateByQueryRequest updateByQueryRequest =
         UpdateByQueryRequest.of(
             b ->
@@ -89,9 +92,30 @@ public class TaskRepositoryES extends TaskRepository {
                     .query(filterQuery)
                     .conflicts(Conflicts.Proceed)
                     .script(updateScript)
-                    .waitForCompletion(false)
+                    .waitForCompletion(!healthCheckEnabled)
                     .refresh(true));
 
+    if (healthCheckEnabled) {
+      return asyncUpdate(updateItemIdentifier, filterQuery, updateByQueryRequest);
+    } else {
+      return syncUpdate(updateByQueryRequest);
+    }
+  }
+
+  private boolean syncUpdate(final UpdateByQueryRequest request) {
+    try {
+      final Long deleted = esClient.submitUpdateTask(request).updated();
+      return deleted != null && deleted > 0L;
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException(
+          "Error while trying to read Elasticsearch task status with ID");
+    }
+  }
+
+  private boolean asyncUpdate(
+      final String updateItemIdentifier,
+      final Query filterQuery,
+      final UpdateByQueryRequest updateByQueryRequest) {
     final String taskId;
     try {
       taskId = esClient.submitUpdateTask(updateByQueryRequest).task();
@@ -137,13 +161,13 @@ public class TaskRepositoryES extends TaskRepository {
                     .conflicts(Conflicts.Proceed));
 
     if (healthCheckEnabled) {
-      return async(query, deletedItemIdentifier, request);
+      return asyncDelete(query, deletedItemIdentifier, request);
     } else {
-      return sync(request);
+      return syncDelete(request);
     }
   }
 
-  private boolean sync(final DeleteByQueryRequest request) {
+  private boolean syncDelete(final DeleteByQueryRequest request) {
     try {
       final Long deleted = esClient.submitDeleteTask(request).deleted();
       return deleted != null && deleted > 0L;
@@ -153,7 +177,7 @@ public class TaskRepositoryES extends TaskRepository {
     }
   }
 
-  private boolean async(
+  private boolean asyncDelete(
       final Query query, final String deletedItemIdentifier, final DeleteByQueryRequest request) {
     final String taskId;
     try {
