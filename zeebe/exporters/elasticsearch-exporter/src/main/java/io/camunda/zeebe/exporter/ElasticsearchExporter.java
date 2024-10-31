@@ -125,20 +125,15 @@ public class ElasticsearchExporter implements Exporter {
     }
 
     final var recordSequence = recordCounters.getNextRecordSequence(record);
-    client.index(record, recordSequence);
+    final var isRecordIndexedToBatch = client.index(record, recordSequence);
+    if (isRecordIndexedToBatch) {
+      recordCounters.updateRecordCounters(record, recordSequence);
+    }
     lastPosition = record.getPosition();
 
     if (client.shouldFlush()) {
       flush();
-      // Update the record counters only after the flush was successful. If the synchronous flush
-      // fails then the exporter will be invoked with the same record again.
-      recordCounters.updateRecordCounters(record, recordSequence);
       updateLastExportedPosition();
-    } else {
-      // If the exporter doesn't flush synchronously then it can update the record counters
-      // immediately. If the asynchronous flush fails then it will retry only the flush operation
-      // with the records in the pending bulk request.
-      recordCounters.updateRecordCounters(record, recordSequence);
     }
   }
 

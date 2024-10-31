@@ -96,13 +96,21 @@ public class OpensearchClient implements AutoCloseable {
     client.close();
   }
 
-  public void index(final Record<?> record, final RecordSequence recordSequence) {
+  /**
+   * Indexes a record to the batch of records that will be sent to Elasticsearch
+   *
+   * @param record the record that will be the source of the document
+   * @param recordSequence the sequence number of the record
+   * @return true if the record was appended to the batch, false if the record is already indexed in
+   *     the batch because only one copy of the record is allowed in the batch
+   */
+  public boolean index(final Record<?> record, final RecordSequence recordSequence) {
     final BulkIndexAction action =
         new BulkIndexAction(
             indexRouter.indexFor(record),
             indexRouter.idFor(record),
             indexRouter.routingFor(record));
-    bulkIndexRequest.index(action, record, recordSequence);
+    return bulkIndexRequest.index(action, record, recordSequence);
   }
 
   /**
