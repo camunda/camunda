@@ -16,8 +16,8 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public class PersistedTenant extends UnpackedObject implements DbValue {
 
-  private final LongProperty tenantKeyProp = new LongProperty("tenantKey", -1L);
-  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
+  private final LongProperty tenantKeyProp = new LongProperty("tenantKey");
+  private final StringProperty tenantIdProp = new StringProperty("tenantId");
   private final StringProperty nameProp = new StringProperty("name", "");
 
   public PersistedTenant() {

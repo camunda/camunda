@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.state.authorization;
+package io.camunda.zeebe.engine.state.group;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
@@ -13,23 +13,23 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
-public class PersistedRole extends UnpackedObject implements DbValue {
+public class PersistedGroup extends UnpackedObject implements DbValue {
 
-  private final LongProperty roleKeyProp = new LongProperty("roleKey");
+  private final LongProperty groupKeyProp = new LongProperty("groupKey");
   private final StringProperty nameProp = new StringProperty("name");
 
-  public PersistedRole() {
+  public PersistedGroup() {
     super(2);
-    declareProperty(roleKeyProp);
+    declareProperty(groupKeyProp);
     declareProperty(nameProp);
   }
 
-  public long getRoleKey() {
-    return roleKeyProp.getValue();
+  public long getGroupKey() {
+    return groupKeyProp.getValue();
   }
 
-  public PersistedRole setRoleKey(final long roleKey) {
-    roleKeyProp.setValue(roleKey);
+  public PersistedGroup setGroupKey(final long groupKey) {
+    groupKeyProp.setValue(groupKey);
     return this;
   }
 
@@ -37,12 +37,8 @@ public class PersistedRole extends UnpackedObject implements DbValue {
     return BufferUtil.bufferAsString(nameProp.getValue());
   }
 
-  public PersistedRole setName(final String name) {
+  public PersistedGroup setName(final String name) {
     nameProp.setValue(name);
     return this;
-  }
-
-  public PersistedRole copy() {
-    return new PersistedRole();
   }
 }
