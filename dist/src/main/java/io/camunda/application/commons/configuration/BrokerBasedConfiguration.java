@@ -16,6 +16,7 @@ import io.camunda.application.commons.job.JobHandlerConfiguration.ActivateJobHan
 import io.camunda.zeebe.broker.clustering.ClusterConfigFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.gateway.RestApiCompositeFilter;
+import io.camunda.zeebe.gateway.impl.configuration.ExperimentalCfg;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
@@ -97,6 +98,11 @@ public final class BrokerBasedConfiguration {
   @Bean
   public MultiTenancyCfg multiTenancyCfg() {
     return properties.getGateway().getMultiTenancy();
+  }
+
+  @Bean
+  public ExperimentalCfg gatewayExperimentalCfg() {
+    return properties.getGateway().getExperimental();
   }
 
   public Duration shutdownTimeout() {
