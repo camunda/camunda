@@ -87,7 +87,7 @@ public final class DecisionInstanceFilterTransformer
     final var stringOperations =
         decisionDefinitionKeyOperations.stream()
             .map(op -> new Operation<>(op.operator(), String.valueOf(op.value())))
-            .collect(Collectors.toList());
+            .toList();
     return stringOperations("decisionDefinitionId", stringOperations);
   }
 
