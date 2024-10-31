@@ -248,6 +248,36 @@ public class DeploymentStateTest {
     assertThat(pendings).isEmpty();
   }
 
+  @Test
+  public void shouldFindNextDeployment() {
+    // given
+    final var deployment1 = createDeployment();
+    final var deployment2 = createDeployment();
+    deploymentState.storeDeploymentRecord(1, deployment1);
+    deploymentState.storeDeploymentRecord(2, deployment2);
+
+    // when
+    final var nextDeployment = deploymentState.nextDeployment(1);
+
+    // then
+    assertThat(nextDeployment).isEqualTo(deployment2);
+  }
+
+  @Test
+  public void shouldStopFindingNextDeployments() {
+    // given
+    final var deployment1 = createDeployment();
+    final var deployment2 = createDeployment();
+    deploymentState.storeDeploymentRecord(1, deployment1);
+    deploymentState.storeDeploymentRecord(2, deployment2);
+
+    // when
+    final var nextDeployment = deploymentState.nextDeployment(2);
+
+    // then
+    assertThat(nextDeployment).isNull();
+  }
+
   private DeploymentRecord createDeployment() {
     final var modelInstance =
         Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
