@@ -70,7 +70,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
@@ -370,93 +369,105 @@ final class CamundaExporterIT {
     }
 
     private <S extends ExporterEntity<S>, T extends RecordValue>
-        Supplier<Record<T>> getHandlerRecord(final ExportHandler<S, T> handler) {
+        Supplier<Record<T>> jobRecordGenerator(final ExportHandler<S, T> handler) {
+      return () ->
+          recordGenerator(
+              handler,
+              () -> {
+                final var jobRecordValue =
+                    ImmutableJobRecordValue.builder()
+                        .from(factory.generateObject(JobRecordValue.class))
+                        .withDeadline(System.currentTimeMillis() + 10000)
+                        .build();
+                return factory.generateRecord(
+                    ValueType.JOB,
+                    r ->
+                        r.withValue((T) jobRecordValue)
+                            .withTimestamp(System.currentTimeMillis())
+                            .withIntent(JobIntent.CREATED));
+              });
+    }
 
-      final Supplier<Record<T>> getJobRecord =
-          () ->
-              recordGenerator(
-                  handler,
-                  () -> {
-                    final var jobRecordValue =
-                        ImmutableJobRecordValue.builder()
-                            .from(factory.generateObject(JobRecordValue.class))
-                            .withDeadline(System.currentTimeMillis() + 10000)
-                            .build();
-                    return factory.generateRecord(
-                        ValueType.JOB,
-                        r ->
-                            r.withValue((T) jobRecordValue)
-                                .withTimestamp(System.currentTimeMillis())
-                                .withIntent(JobIntent.CREATED));
-                  });
+    private <S extends ExporterEntity<S>, T extends RecordValue>
+        Supplier<Record<T>> decisionEvalRecordGenerator(final ExportHandler<S, T> handler) {
+      return () ->
+          recordGenerator(
+              handler,
+              () -> {
+                final ImmutableEvaluatedDecisionValue decisionValue =
+                    ImmutableEvaluatedDecisionValue.builder()
+                        .from(factory.generateObject(EvaluatedDecisionValue.class))
+                        .build();
+                final DecisionEvaluationRecordValue decisionRecordValue =
+                    ImmutableDecisionEvaluationRecordValue.builder()
+                        .from(factory.generateObject(DecisionEvaluationRecordValue.class))
+                        .withEvaluatedDecisions(List.of(decisionValue))
+                        .build();
+                return factory.generateRecord(
+                    ValueType.DECISION_EVALUATION,
+                    r ->
+                        r.withValue((T) decisionRecordValue)
+                            .withTimestamp(System.currentTimeMillis()));
+              });
+    }
 
-      final Supplier<Record<T>> getDecisionEvalRecord =
-          () ->
-              recordGenerator(
-                  handler,
-                  () -> {
-                    final ImmutableEvaluatedDecisionValue decisionValue =
-                        ImmutableEvaluatedDecisionValue.builder()
-                            .from(factory.generateObject(EvaluatedDecisionValue.class))
-                            .build();
-                    final DecisionEvaluationRecordValue decisionRecordValue =
-                        ImmutableDecisionEvaluationRecordValue.builder()
-                            .from(factory.generateObject(DecisionEvaluationRecordValue.class))
-                            .withEvaluatedDecisions(List.of(decisionValue))
-                            .build();
-                    return factory.generateRecord(
-                        ValueType.DECISION_EVALUATION,
-                        r ->
-                            r.withValue((T) decisionRecordValue)
-                                .withTimestamp(System.currentTimeMillis()));
-                  });
-
-      final Function<BpmnElementType, Supplier<Record<T>>> getProcessInstanceRecord =
-          (elementType) ->
+    private <S extends ExporterEntity<S>, T extends RecordValue>
+        Supplier<Record<T>> defaultRecordGenerator(final ExportHandler<S, T> handler) {
+      return () ->
+          recordGenerator(
+              handler,
               () ->
-                  recordGenerator(
-                      handler,
-                      () -> {
-                        final ProcessInstanceRecordValue processInstanceRecordValue =
-                            ImmutableProcessInstanceRecordValue.builder()
-                                .from(factory.generateObject(ProcessInstanceRecordValue.class))
-                                .withParentProcessInstanceKey(-1L)
-                                .withBpmnElementType(elementType)
-                                .build();
-                        return factory.generateRecord(
-                            ValueType.PROCESS_INSTANCE,
-                            r ->
-                                r.withIntent(ELEMENT_ACTIVATING)
-                                    .withValue((T) processInstanceRecordValue)
-                                    .withTimestamp(System.currentTimeMillis()));
-                      });
+                  factory.generateRecord(
+                      handler.getHandledValueType(),
+                      r -> r.withTimestamp(System.currentTimeMillis())));
+    }
+
+    private <S extends ExporterEntity<S>, T extends RecordValue>
+        Supplier<Record<T>> processInstanceRecordGenerator(
+            final ExportHandler<S, T> handler, final BpmnElementType elementType) {
+      return () ->
+          recordGenerator(
+              handler,
+              () -> {
+                final ProcessInstanceRecordValue processInstanceRecordValue =
+                    ImmutableProcessInstanceRecordValue.builder()
+                        .from(factory.generateObject(ProcessInstanceRecordValue.class))
+                        .withParentProcessInstanceKey(-1L)
+                        .withBpmnElementType(elementType)
+                        .build();
+                return factory.generateRecord(
+                    ValueType.PROCESS_INSTANCE,
+                    r ->
+                        r.withIntent(ELEMENT_ACTIVATING)
+                            .withValue((T) processInstanceRecordValue)
+                            .withTimestamp(System.currentTimeMillis()));
+              });
+    }
+
+    private <S extends ExporterEntity<S>, T extends RecordValue>
+        Supplier<Record<T>> getHandlerRecord(final ExportHandler<S, T> handler) {
 
       final Map<Class<?>, Supplier<Record<T>>> customRecordGenerators =
           Map.of(
               EventFromJobHandler.class,
-              getJobRecord,
+              jobRecordGenerator(handler),
               ListViewFlowNodeFromJobHandler.class,
-              getJobRecord,
+              jobRecordGenerator(handler),
               ListViewProcessInstanceFromProcessInstanceHandler.class,
-              getProcessInstanceRecord.apply(BpmnElementType.PROCESS),
+              processInstanceRecordGenerator(handler, BpmnElementType.PROCESS),
               ListViewFlowNodeFromProcessInstanceHandler.class,
-              getProcessInstanceRecord.apply(BpmnElementType.BOUNDARY_EVENT),
+              processInstanceRecordGenerator(handler, BpmnElementType.BOUNDARY_EVENT),
               DecisionEvaluationHandler.class,
-              getDecisionEvalRecord,
+              decisionEvalRecordGenerator(handler),
               MetricFromProcessInstanceHandler.class,
-              getProcessInstanceRecord.apply(BpmnElementType.PROCESS),
+              processInstanceRecordGenerator(handler, BpmnElementType.PROCESS),
               UserTaskProcessInstanceHandler.class,
-              getProcessInstanceRecord.apply(BpmnElementType.PROCESS));
+              processInstanceRecordGenerator(handler, BpmnElementType.PROCESS));
 
-      final Supplier<Record<T>> defaultRecordGen =
-          () ->
-              recordGenerator(
-                  handler,
-                  () ->
-                      factory.generateRecord(
-                          handler.getHandledValueType(),
-                          r -> r.withTimestamp(System.currentTimeMillis())));
-      return () -> customRecordGenerators.getOrDefault(handler.getClass(), defaultRecordGen).get();
+      return () ->
+          customRecordGenerators
+              .getOrDefault(handler.getClass(), defaultRecordGenerator(handler))
+              .get();
     }
 
     private <S extends ExporterEntity<S>, T extends RecordValue> void exportTest(
