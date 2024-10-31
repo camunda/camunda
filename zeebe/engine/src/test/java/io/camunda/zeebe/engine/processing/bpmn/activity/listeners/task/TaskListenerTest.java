@@ -424,6 +424,10 @@ public class TaskListenerTest {
         .hasRejectionReason(
             TL_JOB_COMPLETION_WITH_VARS_NOT_SUPPORTED_MESSAGE.formatted(
                 result.getKey(), LISTENER_TYPE, processInstanceKey));
+
+    // complete the listener job without variables to have a completed process
+    // and prevent flakiness in other tests
+    ENGINE.job().ofInstance(processInstanceKey).withType(LISTENER_TYPE).complete();
   }
 
   private void assertThatProcessInstanceCompleted(final long processInstanceKey) {
