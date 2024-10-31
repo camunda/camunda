@@ -602,3 +602,21 @@ rules:
         then:
             function: typedEnum
         type: validation
+    no-period-in-summary:
+        category:
+            id: operations
+            name: Operations
+        description: Path summary must not include period
+        formats:
+            - oas3
+            - oas3_1
+            - oas2
+        severity: error
+        given: $.paths[*][*].summary
+        id: summaryPeriod
+        then:
+            function: pattern
+            functionOptions:
+                notMatch: ^.*\.$
+        type: validation
+  
