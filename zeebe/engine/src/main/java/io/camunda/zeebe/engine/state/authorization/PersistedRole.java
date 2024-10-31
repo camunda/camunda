@@ -15,8 +15,8 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public class PersistedRole extends UnpackedObject implements DbValue {
 
-  private final LongProperty roleKeyProp = new LongProperty("roleKey", -1L);
-  private final StringProperty nameProp = new StringProperty("name", "");
+  private final LongProperty roleKeyProp = new LongProperty("roleKey");
+  private final StringProperty nameProp = new StringProperty("name");
 
   public PersistedRole() {
     super(2);
