@@ -9,6 +9,8 @@ package io.camunda.exporter;
 
 import static java.util.Map.entry;
 
+import io.camunda.exporter.archiver.ArchiverRepository;
+import io.camunda.exporter.archiver.ArchiverRepository.NoopArchiverRepository;
 import io.camunda.exporter.cache.ProcessCacheImpl;
 import io.camunda.exporter.cache.ProcessCacheLoaderFactory;
 import io.camunda.exporter.config.ConnectionTypes;
@@ -216,8 +218,20 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   }
 
   @Override
+  public <T extends IndexTemplateDescriptor> T getIndexTemplateDescriptor(
+      final Class<T> descriptorClass) {
+    return descriptorClass.cast(templateDescriptorsMap.get(descriptorClass));
+  }
+
+  @Override
   public Set<ExportHandler> getExportHandlers() {
     // Register all handlers here
     return exportHandlers;
+  }
+
+  @Override
+  public ArchiverRepository newArchiverRepository() {
+    // TODO: return appropriate implementation
+    return new NoopArchiverRepository();
   }
 }
