@@ -83,10 +83,10 @@ public class DbMappingState implements MutableMappingState {
     this.mappingKey.wrapLong(mappingKey);
     final var fkClaim = claimByKeyColumnFamily.get(this.mappingKey);
     if (fkClaim != null) {
-      final var fkKey = fkClaim.inner();
-      final var persistedMapping = mappingColumnFamily.get(fkKey);
+      final var claim = fkClaim.inner();
+      final var persistedMapping = mappingColumnFamily.get(claim);
       persistedMapping.addTenantId(tenantId);
-      mappingColumnFamily.update(fkKey, persistedMapping);
+      mappingColumnFamily.update(claim, persistedMapping);
     }
   }
 
