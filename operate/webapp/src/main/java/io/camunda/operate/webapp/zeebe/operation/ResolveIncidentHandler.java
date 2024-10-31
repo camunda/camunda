@@ -7,9 +7,9 @@
  */
 package io.camunda.operate.webapp.zeebe.operation;
 
-import static io.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
 import static io.camunda.operate.entities.OperationType.RESOLVE_INCIDENT;
 
+import io.camunda.operate.entities.ErrorType;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationType;
@@ -41,7 +41,8 @@ public class ResolveIncidentHandler extends AbstractOperationHandler implements 
       return;
     }
 
-    if (incident.getErrorType().equals(JOB_NO_RETRIES)) {
+    final ErrorType errorType = incident.getErrorType();
+    if (errorType != null && errorType.isResolvedViaRetries()) {
       zeebeClient.newUpdateRetriesCommand(incident.getJobKey()).retries(1).send().join();
     }
     zeebeClient.newResolveIncidentCommand(incident.getKey()).send().join();
