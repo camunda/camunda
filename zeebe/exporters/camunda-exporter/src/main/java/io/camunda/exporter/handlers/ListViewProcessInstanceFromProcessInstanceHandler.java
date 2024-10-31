@@ -148,8 +148,6 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
     //              .toString();
     //      piEntity.setTreePath(treePath);
     //    }
-
-    completeOperation(record);
   }
 
   @Override
@@ -300,33 +298,6 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
     //              .toString();
     //
     //      return treePath;
-    //    }
-  }
-
-  /// TODO - because it depends on operationsManager and batchRequest
-  private void completeOperation(final Record<ProcessInstanceRecordValue> record) {
-    // TODO: Implement Operations manager for Exporter
-    // https://github.com/camunda/camunda/issues/18372
-    //
-    //    final OperationsManager operationsManager = null;
-    //    final NewElasticsearchBatchRequest batchRequest = null;
-    //    if (operationsManager == null || batchRequest == null) {
-    //      return;
-    //    }
-    //
-    //    try {
-    //      if (isProcessInstanceTerminated(record)) {
-    //        // resolve corresponding operation
-    //        operationsManager.completeOperation(
-    //            null, record.getKey(), null, OperationType.CANCEL_PROCESS_INSTANCE, batchRequest);
-    //      } else if (isProcessInstanceMigrated(record)) {
-    //        // resolve corresponding operation
-    //        operationsManager.completeOperation(
-    //            null, record.getKey(), null, OperationType.MIGRATE_PROCESS_INSTANCE,
-    // batchRequest);
-    //      }
-    //    } catch (final PersistenceException ex) {
-    //      throw new OperateRuntimeException(ex);
     //    }
   }
 
