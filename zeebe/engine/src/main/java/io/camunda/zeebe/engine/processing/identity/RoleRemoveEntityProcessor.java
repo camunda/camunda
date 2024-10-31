@@ -115,12 +115,10 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
   }
 
   private boolean isEntityPresent(final long entityKey, final EntityType entityType) {
-    if (EntityType.USER == entityType) {
-      return userState.getUser(entityKey).isPresent();
-    }
-    if (EntityType.MAPPING == entityType) {
-      return mappingState.get(entityKey).isPresent();
-    }
-    return false;
+    return switch (entityType) {
+      case USER -> userState.getUser(entityKey).isPresent();
+      case MAPPING -> mappingState.get(entityKey).isPresent();
+      default -> false;
+    };
   }
 }
