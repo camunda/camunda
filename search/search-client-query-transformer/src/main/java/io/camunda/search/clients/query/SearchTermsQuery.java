@@ -43,7 +43,7 @@ public record SearchTermsQuery(String field, List<TypedValue> values) implements
       return terms(TypedValue.of(values, TypedValue::of));
     }
 
-    private Builder terms(final List<TypedValue> values) {
+    public Builder terms(final List<TypedValue> values) {
       terms = addValuesToList(terms, values);
       return this;
     }
