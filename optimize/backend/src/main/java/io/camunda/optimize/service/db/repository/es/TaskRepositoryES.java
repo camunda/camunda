@@ -82,8 +82,11 @@ public class TaskRepositoryES extends TaskRepository {
       final Query filterQuery,
       final String... indices) {
     LOG.debug("Updating {}", updateItemIdentifier);
-    final boolean healthCheckEnabled =
-        configuration.getElasticSearchConfiguration().getConnection().isHealthCheckEnabled();
+    final boolean monitorClusterPrivilegeEnabled =
+        configuration
+            .getElasticSearchConfiguration()
+            .getConnection()
+            .isMonitorClusterPrivilegeEnabled();
 
     final UpdateByQueryRequest updateByQueryRequest =
         UpdateByQueryRequest.of(
@@ -92,10 +95,10 @@ public class TaskRepositoryES extends TaskRepository {
                     .query(filterQuery)
                     .conflicts(Conflicts.Proceed)
                     .script(updateScript)
-                    .waitForCompletion(!healthCheckEnabled)
+                    .waitForCompletion(!monitorClusterPrivilegeEnabled)
                     .refresh(true));
 
-    if (healthCheckEnabled) {
+    if (monitorClusterPrivilegeEnabled) {
       return asyncUpdate(updateItemIdentifier, filterQuery, updateByQueryRequest);
     } else {
       return syncUpdate(updateByQueryRequest);
@@ -148,8 +151,11 @@ public class TaskRepositoryES extends TaskRepository {
       final boolean refresh,
       final String... indices) {
     LOG.debug("Deleting {}", deletedItemIdentifier);
-    final boolean healthCheckEnabled =
-        configuration.getElasticSearchConfiguration().getConnection().isHealthCheckEnabled();
+    final boolean monitorClusterPrivilegeEnabled =
+        configuration
+            .getElasticSearchConfiguration()
+            .getConnection()
+            .isMonitorClusterPrivilegeEnabled();
 
     final DeleteByQueryRequest request =
         DeleteByQueryRequest.of(
@@ -157,10 +163,10 @@ public class TaskRepositoryES extends TaskRepository {
                 b.index(esClient.addPrefixesToIndices(indices))
                     .query(query)
                     .refresh(refresh)
-                    .waitForCompletion(!healthCheckEnabled)
+                    .waitForCompletion(!monitorClusterPrivilegeEnabled)
                     .conflicts(Conflicts.Proceed));
 
-    if (healthCheckEnabled) {
+    if (monitorClusterPrivilegeEnabled) {
       return asyncDelete(query, deletedItemIdentifier, request);
     } else {
       return syncDelete(request);

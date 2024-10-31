@@ -45,9 +45,12 @@ public final class OptimizeElasticsearchClientFactory {
     final ElasticsearchClient build =
         ElasticsearchClientBuilder.build(configurationService, OPTIMIZE_MAPPER, pluginRepository);
 
-    final boolean healthCheckEnabled =
-        configurationService.getElasticSearchConfiguration().getConnection().isHealthCheckEnabled();
-    if (healthCheckEnabled) {
+    final boolean monitorClusterPrivilegeEnabled =
+        configurationService
+            .getElasticSearchConfiguration()
+            .getConnection()
+            .isMonitorClusterPrivilegeEnabled();
+    if (monitorClusterPrivilegeEnabled) {
       waitForElasticsearch(
           build, backoffCalculator, transportOptionsProvider.getTransportOptions());
       LOG.info("Elasticsearch client has successfully been started");
