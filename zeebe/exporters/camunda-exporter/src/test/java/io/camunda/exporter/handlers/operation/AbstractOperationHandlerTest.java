@@ -127,4 +127,8 @@ abstract class AbstractOperationHandlerTest<R extends RecordValue> {
   protected Record<R> generateRecord(final Intent intent) {
     return factory.generateRecord(valueType, r -> r.withIntent(intent));
   }
+
+  protected Record<R> generateRecord(final Intent intent, final R value) {
+    return factory.generateRecord(valueType, r -> r.withIntent(intent).withValue(value));
+  }
 }

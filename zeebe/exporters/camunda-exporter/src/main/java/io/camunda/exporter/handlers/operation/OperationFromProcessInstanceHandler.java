@@ -19,7 +19,7 @@ import java.util.Set;
 
 public class OperationFromProcessInstanceHandler
     extends AbstractOperationHandler<ProcessInstanceRecordValue> {
-  private static final Set<Intent> ELIGIBLE_STATES = Set.of(ELEMENT_MIGRATED, ELEMENT_TERMINATED);
+  protected static final Set<Intent> ELIGIBLE_STATES = Set.of(ELEMENT_MIGRATED, ELEMENT_TERMINATED);
 
   public OperationFromProcessInstanceHandler(final String indexName) {
     super(indexName);
