@@ -66,7 +66,6 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -344,11 +343,10 @@ final class CamundaExporterIT {
       final var provider = new DefaultExporterResourceProvider();
       provider.init(config);
 
-      final var exporter =
-          createExporter(
-              new HashSet<>(provider.getIndexDescriptors()),
-              new HashSet<>(provider.getIndexTemplateDescriptors()),
-              config);
+      final var exporter = new CamundaExporter(provider);
+      exporter.configure(getContextFromConfig(config));
+      exporter.open(new ExporterTestController());
+
       assertThat(provider.getExportHandlers().isEmpty()).isFalse();
       for (final var handler : provider.getExportHandlers()) {
         exportTest(exporter, handler, clientAdapter);
