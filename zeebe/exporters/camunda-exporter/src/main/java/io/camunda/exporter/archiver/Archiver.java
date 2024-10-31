@@ -7,8 +7,11 @@
  */
 package io.camunda.exporter.archiver;
 
+import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
@@ -20,12 +23,9 @@ import javax.annotation.WillCloseWhenClosed;
 import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 
-@SuppressWarnings({"unused", "FieldCanBeLocal"}) // can be removed in the future
 public final class Archiver implements CloseableSilently {
   private final int partitionId;
   private final ArchiverRepository repository;
-  private final ArchiverConfiguration config;
-  private final CamundaExporterMetrics metrics;
   private final Logger logger;
   private final ScheduledExecutorService executor;
 
@@ -33,14 +33,10 @@ public final class Archiver implements CloseableSilently {
   Archiver(
       final int partitionId,
       final @WillCloseWhenClosed ArchiverRepository repository,
-      final ArchiverConfiguration config,
-      final CamundaExporterMetrics metrics,
       final Logger logger,
       final @WillCloseWhenClosed ScheduledExecutorService executor) {
     this.partitionId = partitionId;
     this.repository = Objects.requireNonNull(repository, "must specify a repository");
-    this.config = Objects.requireNonNull(config, "must specify configuration");
-    this.metrics = Objects.requireNonNull(metrics, "must specify metrics");
     this.logger = Objects.requireNonNull(logger, "must specify a logger");
     this.executor = Objects.requireNonNull(executor, "must specify an executor");
   }
@@ -58,20 +54,57 @@ public final class Archiver implements CloseableSilently {
         repository);
   }
 
+  private void start(final ArchiverConfiguration config, final ArchiverJob... jobs) {
+    logger.debug("Starting {} archiver jobs", jobs.length);
+    for (final ArchiverJob job : jobs) {
+      executor.submit(
+          new ReschedulingTask(
+              job, config.getRolloverBatchSize(), config.getDelayBetweenRuns(), executor, logger));
+    }
+  }
+
   public static Archiver create(
       final int partitionId,
-      final @WillCloseWhenClosed ArchiverRepository repository,
+      final String exporterId,
       final ArchiverConfiguration config,
+      final ExporterResourceProvider resourceProvider,
       final CamundaExporterMetrics metrics,
       final Logger logger) {
     final var threadFactory =
         Thread.ofPlatform()
-            .name("exporter-" + partitionId + "-background-", 0)
+            .name("exporter-" + exporterId + "-p" + partitionId + "-bg-", 0)
             .uncaughtExceptionHandler(FatalErrorHandler.uncaughtExceptionHandler(logger))
             .factory();
     final var executor = defaultExecutor(threadFactory);
+    final var repository = resourceProvider.newArchiverRepository();
+    final var archiver = new Archiver(partitionId, repository, logger, executor);
 
-    return new Archiver(partitionId, repository, config, metrics, logger, executor);
+    final var processInstanceJob =
+        createProcessInstanceJob(metrics, logger, resourceProvider, repository, executor);
+    archiver.start(config, processInstanceJob);
+
+    return archiver;
+  }
+
+  private static ProcessInstancesArchiverJob createProcessInstanceJob(
+      final CamundaExporterMetrics metrics,
+      final Logger logger,
+      final ExporterResourceProvider resourceProvider,
+      final ArchiverRepository repository,
+      final ScheduledThreadPoolExecutor executor) {
+    final var dependantTemplates =
+        resourceProvider.getIndexTemplateDescriptors().stream()
+            .filter(ProcessInstanceDependant.class::isInstance)
+            .map(ProcessInstanceDependant.class::cast)
+            .toList();
+
+    return new ProcessInstancesArchiverJob(
+        repository,
+        resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class),
+        dependantTemplates,
+        metrics,
+        logger,
+        executor);
   }
 
   private static ScheduledThreadPoolExecutor defaultExecutor(final ThreadFactory threadFactory) {
