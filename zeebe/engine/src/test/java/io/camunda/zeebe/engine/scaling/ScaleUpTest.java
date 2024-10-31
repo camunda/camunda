@@ -14,12 +14,16 @@ import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.zeebe.engine.state.mutable.MutableDeploymentState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoutingState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
+import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -179,6 +183,46 @@ public class ScaleUpTest {
               assertThat(rejection.getRejectionReason())
                   .isEqualTo("The desired partition count was already requested");
             });
+  }
+
+  @Test
+  public void shouldRedistributeDeployment() {
+    // given
+    initRoutingState();
+    final var deploymentKey1 = Protocol.encodePartitionId(1, 1);
+    final var deploymentRecord1 = new DeploymentRecord().setDeploymentKey(deploymentKey1);
+    ((MutableDeploymentState) engine.getProcessingState(1).getDeploymentState())
+        .storeDeploymentRecord(deploymentKey1, deploymentRecord1);
+    final var deploymentKey2 = Protocol.encodePartitionId(1, 5);
+    final var deploymentRecord2 = new DeploymentRecord().setDeploymentKey(deploymentKey2);
+    ((MutableDeploymentState) engine.getProcessingState(1).getDeploymentState())
+        .storeDeploymentRecord(deploymentKey2, deploymentRecord2);
+
+    final var command =
+        RecordToWrite.command()
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(3));
+
+    // when
+    engine.writeRecords(command);
+
+    // then
+    assertThat(
+            RecordingExporter.scaleRecords()
+                .limit(r -> r.getIntent() == ScaleIntent.SCALED_UP)
+                .map(Record::getIntent))
+        .containsExactly(ScaleIntent.SCALE_UP, ScaleIntent.SCALING_UP, ScaleIntent.SCALED_UP);
+    assertThat(
+            RecordingExporter.deploymentRecords(DeploymentIntent.CREATE)
+                .withPartitionId(2)
+                .map(Record::getKey)
+                .limit(2))
+        .containsExactly(deploymentKey1, deploymentKey2);
+    assertThat(
+            RecordingExporter.deploymentRecords(DeploymentIntent.CREATE)
+                .withPartitionId(3)
+                .map(Record::getKey)
+                .limit(2))
+        .containsExactly(deploymentKey1, deploymentKey2);
   }
 
   private void initRoutingState() {
