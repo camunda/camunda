@@ -16,7 +16,6 @@ import static org.awaitility.Awaitility.await;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.worker.JobHandler;
-import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.it.util.RecordingJobHandler;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
@@ -28,10 +27,7 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -47,21 +43,13 @@ public class UserTaskListenersTest {
   private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
 
   @AutoCloseResource private ZeebeClient client;
-  private List<JobWorker> workers;
 
   private ZeebeResourcesHelper resourcesHelper;
 
   @BeforeEach
   void init() {
     client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
-    workers = new ArrayList<>();
     resourcesHelper = new ZeebeResourcesHelper(client);
-  }
-
-  @AfterEach
-  void tearDown() {
-    workers.forEach(JobWorker::close);
-    workers.clear();
   }
 
   @Test
@@ -72,7 +60,7 @@ public class UserTaskListenersTest {
             t -> t.zeebeTaskListener(l -> l.complete().type("my_listener")));
 
     final JobHandler completeJobHandler = (jobClient, job) -> client.newCompleteCommand(job).send();
-    workers.add(client.newWorker().jobType("my_listener").handler(completeJobHandler).open());
+    client.newWorker().jobType("my_listener").handler(completeJobHandler).open();
 
     // when: invoke complete user task command
     final var completeUserTaskFuture =
@@ -123,7 +111,7 @@ public class UserTaskListenersTest {
             jobClient.newCompleteCommand(job.getKey()).variable("my_variable", 123).send().join();
 
     final var recordingHandler = new RecordingJobHandler(completeJobWithVariableHandler);
-    workers.add(client.newWorker().jobType(listenerType).handler(recordingHandler).open());
+    client.newWorker().jobType(listenerType).handler(recordingHandler).open();
 
     // when
     client.newUserTaskCompleteCommand(userTaskKey).send();
