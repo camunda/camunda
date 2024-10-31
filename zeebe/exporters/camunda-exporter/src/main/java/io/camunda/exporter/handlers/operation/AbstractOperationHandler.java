@@ -16,6 +16,7 @@ import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import java.time.OffsetDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -56,16 +57,11 @@ public abstract class AbstractOperationHandler<R extends RecordValue>
   @Override
   public void flush(final OperationEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    final Map<String, Object> updateFields =
-        Map.of(
-            OperationTemplate.STATE,
-            entity.getState(),
-            OperationTemplate.COMPLETED_DATE,
-            entity.getCompletedDate(),
-            OperationTemplate.LOCK_OWNER,
-            entity.getLockOwner(),
-            OperationTemplate.LOCK_EXPIRATION_TIME,
-            entity.getLockExpirationTime());
+    final Map<String, Object> updateFields = new HashMap<>();
+    updateFields.put(OperationTemplate.STATE, entity.getState());
+    updateFields.put(OperationTemplate.COMPLETED_DATE, entity.getCompletedDate());
+    updateFields.put(OperationTemplate.LOCK_OWNER, entity.getLockOwner());
+    updateFields.put(OperationTemplate.LOCK_EXPIRATION_TIME, entity.getLockExpirationTime());
 
     batchRequest.update(indexName, entity.getId(), updateFields);
   }
