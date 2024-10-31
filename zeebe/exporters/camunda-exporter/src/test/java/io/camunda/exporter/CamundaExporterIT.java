@@ -474,7 +474,7 @@ final class CamundaExporterIT {
         final SearchClientAdapter clientAdapter)
         throws IOException {
 
-      final var currentTime = OffsetDateTime.now();
+      final var currentTime = OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS);
       final var mocked = mockStatic(OffsetDateTime.class);
       mocked.when(OffsetDateTime::now).thenReturn(currentTime);
 

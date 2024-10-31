@@ -15,7 +15,6 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 public class PostImporterQueueFromIncidentHandler
@@ -70,7 +69,7 @@ public class PostImporterQueueFromIncidentHandler
         .setIntent(intent)
         .setKey(record.getKey())
         .setPosition(record.getPosition())
-        .setCreationTime(OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS))
+        .setCreationTime(OffsetDateTime.now())
         .setPartitionId(record.getPartitionId())
         .setProcessInstanceKey(recordValue.getProcessInstanceKey());
   }
