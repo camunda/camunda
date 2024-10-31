@@ -33,6 +33,7 @@ public class MappingTest {
     final var createMapping = mappingRecord.getValue();
     Assertions.assertThat(createMapping)
         .isNotNull()
+        .hasFieldOrProperty("mappingKey")
         .hasFieldOrPropertyWithValue("claimName", claimName)
         .hasFieldOrPropertyWithValue("claimValue", claimValue);
   }
@@ -42,8 +43,7 @@ public class MappingTest {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var mappingRecord =
-        engine.mapping().newMapping(claimName).withClaimValue(claimValue).create();
+    engine.mapping().newMapping(claimName).withClaimValue(claimValue).create();
 
     // when
     final var duplicatedMappingRecord =
@@ -53,12 +53,6 @@ public class MappingTest {
             .withClaimValue(claimValue)
             .expectRejection()
             .create();
-
-    final var createdRole = mappingRecord.getValue();
-    Assertions.assertThat(createdRole)
-        .isNotNull()
-        .hasFieldOrPropertyWithValue("claimName", claimName)
-        .hasFieldOrPropertyWithValue("claimValue", claimValue);
 
     assertThat(duplicatedMappingRecord)
         .hasRejectionType(RejectionType.ALREADY_EXISTS)
