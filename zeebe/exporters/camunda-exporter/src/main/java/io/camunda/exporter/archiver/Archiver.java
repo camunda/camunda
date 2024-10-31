@@ -43,6 +43,10 @@ public final class Archiver implements CloseableSilently {
 
   @Override
   public void close() {
+    // Close executor first before anything else; this will ensure any callbacks are not triggered
+    // in case we close any underlying resource (e.g. repository) and would want to perform
+    // unnecessary error handling in any of these callbacks
+    //
     // avoid calling executor.close, which will await 1d (!) until termination
     // we also don't need to wait for the jobs to fully finish, as we should be able to handle
     // partial jobs (e.g. node crash/restart)
