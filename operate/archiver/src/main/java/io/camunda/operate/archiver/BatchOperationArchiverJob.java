@@ -11,7 +11,7 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROT
 
 import io.camunda.operate.Metrics;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.templates.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

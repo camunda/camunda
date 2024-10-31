@@ -19,7 +19,6 @@ import io.camunda.operate.archiver.BatchOperationArchiverJob;
 import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
 import io.camunda.operate.exceptions.ArchiverException;
 import io.camunda.operate.metric.ImporterMetricsZeebeImportIT.ManagementPropertyRemoval;
-import io.camunda.operate.schema.templates.BatchOperationTemplate;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.MetricAssert;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
@@ -34,6 +33,7 @@ import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestD
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.operate.webapp.zeebe.operation.CancelProcessInstanceHandler;
 import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
+import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
