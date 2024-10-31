@@ -9,8 +9,8 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
+import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
@@ -49,9 +49,7 @@ public class TenantAppliersTest {
             processingState.getTenantState(),
             processingState.getUserState(),
             processingState.getAuthorizationState());
-    tenantEntityAddedApplier =
-        new TenantEntityAddedApplier(
-            processingState.getTenantState(), processingState.getUserState());
+    tenantEntityAddedApplier = new TenantEntityAddedApplier(processingState);
   }
 
   @Test
