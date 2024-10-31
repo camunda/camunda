@@ -49,6 +49,8 @@ public final class OptimizeOpenSearchClientFactory {
     if (healthCheckEnabled) {
       waitForOpenSearch(openSearchClient, backoffCalculator);
       LOG.info("OpenSearch cluster successfully started");
+    } else {
+      LOG.info("Health check disabled, not waiting for OpenSearch to start");
     }
 
     final OptimizeOpenSearchClient osClient =
@@ -60,6 +62,8 @@ public final class OptimizeOpenSearchClientFactory {
         configurationService.getOpenSearchConfiguration().getConnection().isInitSchemaEnabled();
     if (initSchemaEnabled) {
       openSearchSchemaManager.initializeSchema(osClient);
+    } else {
+      LOG.info("Schema initialization disabled, skipping");
     }
     return osClient;
   }

@@ -20,7 +20,6 @@ import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.repository.TaskRepository;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import io.camunda.optimize.service.util.configuration.ElasticSearchConfiguration;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import io.camunda.optimize.upgrade.es.TaskResponse;
 import java.io.IOException;
@@ -39,12 +38,12 @@ public class TaskRepositoryES extends TaskRepository {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(TaskRepositoryES.class);
   private final OptimizeElasticsearchClient esClient;
-  private final ElasticSearchConfiguration configuration;
+  private final ConfigurationService configuration;
 
   public TaskRepositoryES(
       final OptimizeElasticsearchClient esClient, final ConfigurationService configurationService) {
     this.esClient = esClient;
-    this.configuration = configurationService.getElasticSearchConfiguration();
+    this.configuration = configurationService;
   }
 
   @Override
@@ -125,6 +124,8 @@ public class TaskRepositoryES extends TaskRepository {
       final boolean refresh,
       final String... indices) {
     LOG.debug("Deleting {}", deletedItemIdentifier);
+    final boolean healthCheckEnabled =
+        configuration.getElasticSearchConfiguration().getConnection().isHealthCheckEnabled();
 
     final DeleteByQueryRequest request =
         DeleteByQueryRequest.of(
@@ -132,10 +133,10 @@ public class TaskRepositoryES extends TaskRepository {
                 b.index(esClient.addPrefixesToIndices(indices))
                     .query(query)
                     .refresh(refresh)
-                    .waitForCompletion(false)
+                    .waitForCompletion(!healthCheckEnabled)
                     .conflicts(Conflicts.Proceed));
 
-    if (configuration.getConnection().isHealthCheckEnabled()) {
+    if (healthCheckEnabled) {
       return async(query, deletedItemIdentifier, request);
     } else {
       return sync(request);

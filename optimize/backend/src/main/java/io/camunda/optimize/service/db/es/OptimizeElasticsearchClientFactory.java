@@ -51,6 +51,8 @@ public final class OptimizeElasticsearchClientFactory {
       waitForElasticsearch(
           build, backoffCalculator, transportOptionsProvider.getTransportOptions());
       LOG.info("Elasticsearch client has successfully been started");
+    } else {
+      LOG.info("Health check disabled, not waiting for Elasticsearch to start");
     }
 
     final OptimizeElasticsearchClient prefixedClient =
@@ -67,7 +69,10 @@ public final class OptimizeElasticsearchClientFactory {
         configurationService.getElasticSearchConfiguration().getConnection().isInitSchemaEnabled();
     if (initSchemaEnabled) {
       elasticSearchSchemaManager.initializeSchema(prefixedClient);
+    } else {
+      LOG.info("Schema initialization disabled, skipping");
     }
+
     return prefixedClient;
   }
 
