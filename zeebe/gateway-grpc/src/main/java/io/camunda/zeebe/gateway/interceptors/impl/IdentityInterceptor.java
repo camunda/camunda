@@ -11,9 +11,10 @@ import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.identity.sdk.authentication.exception.TokenVerificationException;
 import io.camunda.identity.sdk.tenants.dto.Tenant;
+import io.camunda.zeebe.gateway.cmd.ConcurrentRequestException;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.IdentityCfg;
-import io.camunda.zeebe.gateway.impl.configuration.IdentityRequestCfg;
+import io.camunda.zeebe.gateway.impl.configuration.IdentityServiceCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.impl.identity.IdentityTenantService;
 import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
@@ -25,7 +26,6 @@ import io.grpc.ServerInterceptor;
 import io.grpc.Status;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.RejectedExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,10 +56,10 @@ public final class IdentityInterceptor implements ServerInterceptor {
   public IdentityInterceptor(
       final Identity identity,
       final MultiTenancyCfg multiTenancy,
-      final IdentityRequestCfg identityRequestCfg) {
+      final IdentityServiceCfg identityServiceCfg) {
     this.identity = identity;
     this.multiTenancy = multiTenancy;
-    tenantService = new IdentityTenantService(identity, identityRequestCfg);
+    tenantService = new IdentityTenantService(identity, identityServiceCfg);
   }
 
   private static Identity createIdentity(final IdentityCfg config) {
@@ -117,8 +117,8 @@ public final class IdentityInterceptor implements ServerInterceptor {
       final var context = InterceptorUtil.setAuthorizedTenants(authorizedTenants);
       return Contexts.interceptCall(context, call, headers, next);
 
-    } catch (final RejectedExecutionException ree) {
-      return denyTenantCallAndLog(call, Status.UNAVAILABLE, ree);
+    } catch (final ConcurrentRequestException cre) {
+      return denyTenantCallAndLog(call, Status.UNAVAILABLE, cre);
     } catch (final RuntimeException | ExecutionException e) {
       return denyTenantCallAndLog(call, Status.UNAUTHENTICATED, e);
     }

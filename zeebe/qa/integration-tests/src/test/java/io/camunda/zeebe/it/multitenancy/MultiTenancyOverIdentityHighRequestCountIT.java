@@ -27,6 +27,7 @@ import io.camunda.zeebe.qa.util.testcontainers.DefaultTestContainers;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
 import io.grpc.Status;
@@ -50,7 +51,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.testcontainers.containers.GenericContainer;
@@ -232,8 +232,7 @@ public class MultiTenancyOverIdentityHighRequestCountIT {
             .done();
   }
 
-  // Regression test: https://github.com/camunda/camunda/issues/23853
-  @Test
+  @RegressionTest("https://github.com/camunda/camunda/issues/23853")
   void shouldHandleHighLoadOnIdentityTenantRequests() throws InterruptedException {
     // given
     final long processDefinitionKey;
@@ -269,8 +268,6 @@ public class MultiTenancyOverIdentityHighRequestCountIT {
       final List<Future<ZeebeFuture<ProcessInstanceEvent>>> results =
           executorService.invokeAll(piList);
 
-      Thread.sleep(10000);
-
       // then
       final var exceptionalList =
           results.stream()
@@ -285,18 +282,26 @@ public class MultiTenancyOverIdentityHighRequestCountIT {
               .map(ZeebeFuture::toCompletableFuture)
               .filter(CompletableFuture::isCompletedExceptionally)
               .map(CompletableFuture::exceptionNow)
+              .toList();
+
+      // A high number of requests will result in the
+      // Broker rejecting the requests with RESOURCE_EXHAUSTED.
+      // Assert there are request exceptions due to high load.
+      assertThat(exceptionalList).isNotEmpty();
+
+      // assert that there are no exceptions other than RESOURCE_EXHAUSTED
+      // due to the high request load
+      final var unavailableExceptionsList =
+          exceptionalList.stream()
               .filter(
                   sre ->
+                      // filter out exceptions that are RESOURCE_EXHAUSTED
                       !((StatusRuntimeException) sre)
                           .getStatus()
                           .getCode()
-                          .equals(
-                              Status.RESOURCE_EXHAUSTED
-                                  .getCode())) // A high number of requests will result in the
-              // Broker rejecting the requests with
-              // RESOURCE_EXHAUSTED
+                          .equals(Status.RESOURCE_EXHAUSTED.getCode()))
               .toList();
-      assertThat(exceptionalList).isEmpty();
+      assertThat(unavailableExceptionsList).isEmpty();
     }
   }
 

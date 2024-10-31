@@ -17,7 +17,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.exception.TokenVerificationException;
 import io.camunda.identity.sdk.tenants.dto.Tenant;
-import io.camunda.zeebe.gateway.impl.configuration.IdentityRequestCfg;
+import io.camunda.zeebe.gateway.impl.configuration.IdentityServiceCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
 import io.grpc.Context;
@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Test;
 public class IdentityInterceptorTest {
 
   private final MultiTenancyCfg multiTenancy = new MultiTenancyCfg();
-  private final IdentityRequestCfg identityRequestCfg = new IdentityRequestCfg();
+  private final IdentityServiceCfg identityServiceCfg = new IdentityServiceCfg();
 
   @Test
   public void missingTokenIsRejected() {
@@ -44,7 +44,7 @@ public class IdentityInterceptorTest {
     // when
     final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
         new CloseStatusCapturingServerCall();
-    new IdentityInterceptor(identityMock, multiTenancy, identityRequestCfg)
+    new IdentityInterceptor(identityMock, multiTenancy, identityServiceCfg)
         .interceptCall(closeStatusCapturingServerCall, new Metadata(), failingNextHandler());
 
     // then
@@ -68,7 +68,7 @@ public class IdentityInterceptorTest {
     // when
     final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
         new CloseStatusCapturingServerCall();
-    new IdentityInterceptor(identityMock, multiTenancy, identityRequestCfg)
+    new IdentityInterceptor(identityMock, multiTenancy, identityServiceCfg)
         .interceptCall(closeStatusCapturingServerCall, createAuthHeader(), failingNextHandler());
 
     // then
@@ -91,7 +91,7 @@ public class IdentityInterceptorTest {
     // when
     assertThatThrownBy(
             () ->
-                new IdentityInterceptor(identityMock, multiTenancy, identityRequestCfg)
+                new IdentityInterceptor(identityMock, multiTenancy, identityServiceCfg)
                     .interceptCall(
                         new NoopServerCall<>(), createAuthHeader(), failingNextHandler()))
         // then
@@ -107,7 +107,7 @@ public class IdentityInterceptorTest {
     // when
     final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
         new CloseStatusCapturingServerCall();
-    new IdentityInterceptor(identityMock, multiTenancy, identityRequestCfg)
+    new IdentityInterceptor(identityMock, multiTenancy, identityServiceCfg)
         .interceptCall(
             closeStatusCapturingServerCall,
             createAuthHeader(),
@@ -131,7 +131,7 @@ public class IdentityInterceptorTest {
 
     // when
     final var interceptor =
-        new IdentityInterceptor(identity, multiTenancy.setEnabled(true), identityRequestCfg);
+        new IdentityInterceptor(identity, multiTenancy.setEnabled(true), identityServiceCfg);
     interceptor.interceptCall(
         capturingServerCall,
         createAuthHeader(),
@@ -173,7 +173,7 @@ public class IdentityInterceptorTest {
 
     // when
     final var interceptor =
-        new IdentityInterceptor(identity, multiTenancy.setEnabled(false), identityRequestCfg);
+        new IdentityInterceptor(identity, multiTenancy.setEnabled(false), identityServiceCfg);
     interceptor.interceptCall(
         capturingServerCall,
         createAuthHeader(),

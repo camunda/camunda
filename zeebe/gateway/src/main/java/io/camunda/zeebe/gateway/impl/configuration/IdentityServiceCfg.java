@@ -9,7 +9,7 @@ package io.camunda.zeebe.gateway.impl.configuration;
 
 import java.util.Objects;
 
-public class IdentityRequestCfg {
+public class IdentityServiceCfg {
 
   private boolean enabled = false;
   private long tenantCacheTtl = 5000;
@@ -71,7 +71,7 @@ public class IdentityRequestCfg {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final IdentityRequestCfg that = (IdentityRequestCfg) o;
+    final IdentityServiceCfg that = (IdentityServiceCfg) o;
     return enabled == that.enabled
         && tenantCacheTtl == that.tenantCacheTtl
         && tenantCacheSize == that.tenantCacheSize

@@ -16,13 +16,13 @@ import java.util.Objects;
  */
 public class ExperimentalCfg {
 
-  private IdentityRequestCfg identityRequest = new IdentityRequestCfg();
+  private IdentityServiceCfg identityRequest = new IdentityServiceCfg();
 
-  public IdentityRequestCfg getIdentityRequest() {
+  public IdentityServiceCfg getIdentityRequest() {
     return identityRequest;
   }
 
-  public void setIdentityRequest(final IdentityRequestCfg identityRequest) {
+  public void setIdentityRequest(final IdentityServiceCfg identityRequest) {
     this.identityRequest = identityRequest;
   }
 

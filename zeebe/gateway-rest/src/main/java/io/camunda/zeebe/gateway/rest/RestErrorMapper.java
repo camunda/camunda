@@ -22,6 +22,7 @@ import io.camunda.zeebe.broker.client.api.PartitionNotFoundException;
 import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
+import io.camunda.zeebe.gateway.cmd.ConcurrentRequestException;
 import io.camunda.zeebe.msgpack.spec.MsgpackException;
 import io.netty.channel.ConnectTimeoutException;
 import java.net.ConnectException;
@@ -29,7 +30,6 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import org.slf4j.Logger;
@@ -152,10 +152,10 @@ public class RestErrorMapper {
         REST_GATEWAY_LOGGER.debug(ntaeMsg, ntae);
         yield createProblemDetail(
             HttpStatus.SERVICE_UNAVAILABLE, ntaeMsg, ntae.getClass().getName());
-      case final RejectedExecutionException ree:
-        final var reeMsg = "Expected to handle REST API request, but the request was rejected";
-        REST_GATEWAY_LOGGER.debug(reeMsg, ree);
-        yield createProblemDetail(HttpStatus.SERVICE_UNAVAILABLE, reeMsg, ree.getClass().getName());
+      case final ConcurrentRequestException cre:
+        final var creMsg = "Expected to handle REST API request, but the request was rejected";
+        REST_GATEWAY_LOGGER.debug(creMsg, cre);
+        yield createProblemDetail(HttpStatus.SERVICE_UNAVAILABLE, creMsg, cre.getClass().getName());
       default:
         REST_GATEWAY_LOGGER.error(
             "Expected to handle REST API request, but an unexpected error occurred", error);

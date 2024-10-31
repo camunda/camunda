@@ -12,10 +12,10 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.tenants.dto.Tenant;
-import io.camunda.zeebe.gateway.impl.configuration.IdentityRequestCfg;
+import io.camunda.zeebe.gateway.cmd.ConcurrentRequestException;
+import io.camunda.zeebe.gateway.impl.configuration.IdentityServiceCfg;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -28,13 +28,12 @@ public class IdentityTenantService {
   private final Identity identity;
 
   private final boolean isCachingEnabled;
-  private final long semaphoreTimeout;
-  private final RejectedExecutionException ree;
+  private final long tenantRequestTimeout;
 
-  public IdentityTenantService(final Identity identity, final IdentityRequestCfg config) {
+  public IdentityTenantService(final Identity identity, final IdentityServiceCfg config) {
     this.identity = identity;
     isCachingEnabled = config.isEnabled();
-    semaphoreTimeout = config.getTenantRequestTimeout();
+    tenantRequestTimeout = config.getTenantRequestTimeout();
     semaphore = new Semaphore(config.getTenantRequestCapacity());
     tenantCache =
         CacheBuilder.newBuilder()
@@ -47,10 +46,6 @@ public class IdentityTenantService {
                     return getTenantsForTokenThrottled(token);
                   }
                 });
-    ree =
-        new RejectedExecutionException(
-            String.format(
-                "Not able to fetch tenants from Identity in %d%s", semaphoreTimeout, TIME_UNIT));
   }
 
   public List<Tenant> getTenantsForToken(final String token) throws ExecutionException {
@@ -62,13 +57,14 @@ public class IdentityTenantService {
 
   private List<Tenant> getTenantsForTokenThrottled(final String token) {
     try {
-      if (!semaphore.tryAcquire(semaphoreTimeout, TIME_UNIT)) {
-        throw ree;
+      if (!semaphore.tryAcquire(tenantRequestTimeout, TIME_UNIT)) {
+        throw new ConcurrentRequestException(tenantRequestTimeout, TIME_UNIT);
       }
       return getTenantsForTokenInternal(token);
     } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
-      throw ree;
+      throw new RuntimeException(
+          "Expected to fetch tenants from Identity, but the request was interrupted", e);
     } finally {
       semaphore.release();
     }
