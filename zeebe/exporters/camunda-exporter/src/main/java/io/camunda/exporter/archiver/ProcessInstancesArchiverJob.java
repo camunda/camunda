@@ -46,7 +46,7 @@ public class ProcessInstancesArchiverJob implements ArchiverJob {
   }
 
   private CompletableFuture<Integer> archiveBatch(final ArchiveBatch batch) {
-    if (batch != null) {
+    if (batch != null && !(batch.ids() == null || batch.ids().isEmpty())) {
       logger.debug("Following process instances are found for archiving: {}", batch);
 
       return moveDependants(batch.finishDate(), batch.ids())
