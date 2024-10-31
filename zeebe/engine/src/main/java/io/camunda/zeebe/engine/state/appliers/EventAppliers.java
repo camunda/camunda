@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.EscalationIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
+import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
@@ -118,6 +119,7 @@ public final class EventAppliers implements EventApplier {
     registerAuthorizationAppliers(state);
     registerClockAppliers(state);
     registerRoleAppliers(state);
+    registerGroupAppliers(state);
     registerScalingAppliers(state);
     registerTenantAppliers(state);
     registerMappingAppliers(state);
@@ -477,6 +479,10 @@ public final class EventAppliers implements EventApplier {
         RoleIntent.DELETED,
         new RoleDeletedApplier(
             state.getRoleState(), state.getUserState(), state.getAuthorizationState()));
+  }
+
+  private void registerGroupAppliers(final MutableProcessingState state) {
+    register(GroupIntent.CREATED, new GroupCreatedApplier(state.getGroupState(), state.getAuthorizationState() ));
   }
 
   private void registerScalingAppliers(final MutableProcessingState state) {
