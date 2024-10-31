@@ -9,10 +9,8 @@ package io.camunda.webapps.schema.descriptors.operate.template;
 
 import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
 import io.camunda.webapps.schema.descriptors.operate.OperateTemplateDescriptor;
-import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
 
-public class BatchOperationTemplate extends OperateTemplateDescriptor
-    implements ProcessInstanceDependant, Prio3Backup {
+public class BatchOperationTemplate extends OperateTemplateDescriptor implements Prio3Backup {
 
   public static final String INDEX_NAME = "batch-operation";
 
@@ -39,7 +37,6 @@ public class BatchOperationTemplate extends OperateTemplateDescriptor
 
   @Override
   public String getVersion() {
-    // TODO: Determine what is the correct version
-    return "8.3.0";
+    return "8.1.0";
   }
 }
