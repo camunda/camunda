@@ -23,7 +23,6 @@ import io.camunda.search.filter.Operation;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public final class DecisionInstanceFilterTransformer
     implements FilterTransformer<DecisionInstanceFilter> {
