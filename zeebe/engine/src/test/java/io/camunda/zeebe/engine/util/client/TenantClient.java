@@ -70,6 +70,17 @@ public class TenantClient {
     return new TenantRemoveEntityClient(writer, tenantKey);
   }
 
+  /**
+   * Creates a new {@link TenantDeleteClient} for deleting a tenant. The client uses the internal
+   * command writer to submit the delete tenant commands.
+   *
+   * @param tenantKey the key of the tenant to be deleted
+   * @return a new instance of {@link TenantDeleteClient}
+   */
+  public TenantDeleteClient deleteTenant(final long tenantKey) {
+    return new TenantDeleteClient(writer, tenantKey);
+  }
+
   public static class TenantCreationClient {
 
     private static final Function<Long, Record<TenantRecordValue>> SUCCESS_SUPPLIER =
@@ -322,6 +333,54 @@ public class TenantClient {
     }
 
     public TenantRemoveEntityClient expectRejection() {
+      expectation = REJECTION_SUPPLIER;
+      return this;
+    }
+  }
+
+  public static class TenantDeleteClient {
+
+    private static final Function<Long, Record<TenantRecordValue>> SUCCESS_SUPPLIER =
+        (position) ->
+            RecordingExporter.tenantRecords()
+                .withIntent(TenantIntent.DELETED)
+                .withSourceRecordPosition(position)
+                .getFirst();
+
+    private static final Function<Long, Record<TenantRecordValue>> REJECTION_SUPPLIER =
+        (position) ->
+            RecordingExporter.tenantRecords()
+                .onlyCommandRejections()
+                .withIntent(TenantIntent.DELETE)
+                .withSourceRecordPosition(position)
+                .getFirst();
+
+    private final CommandWriter writer;
+    private final TenantRecord tenantRecord;
+    private Function<Long, Record<TenantRecordValue>> expectation = SUCCESS_SUPPLIER;
+
+    public TenantDeleteClient(final CommandWriter writer, final long tenantKey) {
+      this.writer = writer;
+      tenantRecord = new TenantRecord();
+      tenantRecord.setTenantKey(tenantKey);
+    }
+
+    /**
+     * Submits the delete command for the tenant and returns the resulting record.
+     *
+     * @return the deleted tenant record
+     */
+    public Record<TenantRecordValue> delete() {
+      final long position = writer.writeCommand(TenantIntent.DELETE, tenantRecord);
+      return expectation.apply(position);
+    }
+
+    /**
+     * Expects the tenant deletion to be rejected.
+     *
+     * @return this instance with rejection expectation
+     */
+    public TenantDeleteClient expectRejection() {
       expectation = REJECTION_SUPPLIER;
       return this;
     }
