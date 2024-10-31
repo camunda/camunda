@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
 import io.camunda.exporter.rdbms.RdbmsExporter;
+import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -45,7 +46,7 @@ class RdbmsExporterIT {
 
   private final ExporterTestController controller = new ExporterTestController();
 
-  private final ProtocolFactory factory = new ProtocolFactory();
+  private final ProtocolFactory factory = new ProtocolFactory(System.nanoTime());
 
   @Autowired private RdbmsService rdbmsService;
 
@@ -126,6 +127,33 @@ class RdbmsExporterIT {
     assertThat(variable.value()).isEqualTo(variableRecordValue.getValue());
   }
 
+  @Test
+  public void shouldExportFlowNode() {
+    // given
+    final var flowNodeRecord = getFlowNodeActivatingRecord(1L);
+
+    // when
+    exporter.export(flowNodeRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var key = flowNodeRecord.getKey();
+    final var flowNode = rdbmsService.getFlowNodeInstanceReader().findOne(key);
+    assertThat(flowNode).isNotEmpty();
+
+    // given
+    final var flowNodeCompleteRecord = getFlowNodeCompletedRecord(1L, key);
+
+    // when
+    exporter.export(flowNodeCompleteRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var completedFlowNode = rdbmsService.getFlowNodeInstanceReader().findOne(key);
+    assertThat(completedFlowNode).isNotEmpty();
+    assertThat(completedFlowNode.get().state()).isEqualTo(FlowNodeState.COMPLETED);
+  }
+
   private ImmutableRecord<RecordValue> getProcessInstanceStartedRecord(final Long position) {
     final Record<RecordValue> recordValueRecord =
         factory.generateRecord(ValueType.PROCESS_INSTANCE);
@@ -155,6 +183,44 @@ class RdbmsExporterIT {
         .withValue(
             ImmutableProcess.builder()
                 .from((Process) recordValueRecord.getValue())
+                .withVersion(1)
+                .build())
+        .build();
+  }
+
+  private ImmutableRecord<RecordValue> getFlowNodeActivatingRecord(final Long position) {
+    final Record<RecordValue> recordValueRecord =
+        factory.generateRecord(ValueType.PROCESS_INSTANCE);
+
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+        .withPosition(position)
+        .withTimestamp(System.currentTimeMillis())
+        .withPartitionId(1)
+        .withValue(
+            ImmutableProcessInstanceRecordValue.builder()
+                .from((ProcessInstanceRecordValue) recordValueRecord.getValue())
+                .withVersion(1)
+                .build())
+        .build();
+  }
+
+  private ImmutableRecord<RecordValue> getFlowNodeCompletedRecord(
+      final Long position, final long elementKey) {
+    final Record<RecordValue> recordValueRecord =
+        factory.generateRecord(ValueType.PROCESS_INSTANCE);
+
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withPosition(position)
+        .withTimestamp(System.currentTimeMillis())
+        .withPartitionId(1)
+        .withKey(elementKey)
+        .withValue(
+            ImmutableProcessInstanceRecordValue.builder()
+                .from((ProcessInstanceRecordValue) recordValueRecord.getValue())
                 .withVersion(1)
                 .build())
         .build();

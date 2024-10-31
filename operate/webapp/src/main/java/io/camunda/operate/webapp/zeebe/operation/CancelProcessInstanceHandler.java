@@ -43,7 +43,12 @@ public class CancelProcessInstanceHandler extends AbstractOperationHandler
               processInstance.getState()));
       return;
     }
-    zeebeClient.newCancelInstanceCommand(processInstance.getKey()).send().join();
+
+    final String id = operation.getId();
+    final var cancelInstanceCommand =
+        withOperationReference(zeebeClient.newCancelInstanceCommand(processInstance.getKey()), id);
+    cancelInstanceCommand.send().join();
+
     // mark operation as sent
     markAsSent(operation);
   }

@@ -15,6 +15,7 @@ import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.CommandWithOperationReferenceStep;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.util.Arrays;
@@ -141,5 +142,18 @@ public abstract class AbstractOperationHandler implements OperationHandler {
       LOGGER.debug("Operation {} was sent to Zeebe", operation.getId());
     }
     recordCommandMetric(operation);
+  }
+
+  protected static <T extends CommandWithOperationReferenceStep<T>> T withOperationReference(
+      final T command, final String id) {
+    try {
+      final long operationReference = Long.parseLong(id);
+      command.operationReference(operationReference);
+    } catch (final NumberFormatException e) {
+      LOGGER.debug(
+          "The operation reference provided is not a number: {}. Ignoring propagating it to zeebe commands.",
+          id);
+    }
+    return command;
   }
 }

@@ -11,6 +11,9 @@ import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL
 import static io.camunda.optimize.service.db.os.report.interpreter.util.FilterLimitedAggregationUtilOS.wrapWithFilterLimitedParentAggregation;
 import static io.camunda.optimize.service.db.os.report.interpreter.util.NumberHistogramAggregationUtilOS.generateHistogramFromScript;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.DURATION;
+import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_START_DATE;
+import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.START_DATE;
 
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
@@ -70,6 +73,21 @@ public class DurationAggregationServiceOS extends DurationAggregationService {
         durationCalculationScript,
         minMaxStats,
         this::createProcessInstanceLimitingFilterQuery);
+  }
+
+  public Optional<Pair<String, Aggregation>> createLimitedGroupByScriptedEventDurationAggregation(
+      final Query query,
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
+      final Script durationCalculationScript) {
+    final MinMaxStatDto minMaxStats =
+        minMaxStatsService.getMinMaxNumberRangeForNestedScriptedField(
+            context, query, getIndexNames(context), FLOW_NODE_INSTANCES, durationCalculationScript);
+    return createLimitedGroupByScriptedDurationAggregation(
+        context,
+        query,
+        durationCalculationScript,
+        minMaxStats,
+        this::createEventLimitingFilterQuery);
   }
 
   public List<CompositeCommandResult.GroupByResult> mapGroupByDurationResults(
@@ -162,5 +180,15 @@ public class DurationAggregationServiceOS extends DurationAggregationService {
                             .includeNull(includeNull)
                             .build())))
         .build();
+  }
+
+  private Query createEventLimitingFilterQuery(
+      final ComparisonOperator filterOperator, final double filterValueInMillis) {
+    return createLimitingFilterQuery(
+        filterOperator,
+        (long) filterValueInMillis,
+        FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION,
+        FLOW_NODE_INSTANCES + "." + FLOW_NODE_START_DATE,
+        false);
   }
 }

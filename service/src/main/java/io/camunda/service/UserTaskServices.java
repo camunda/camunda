@@ -16,9 +16,9 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.UserTaskQuery.Builder;
 import io.camunda.security.auth.Authentication;
-import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.auth.Authorization;
 import io.camunda.service.search.core.SearchQueryService;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskAssignmentRequest;
@@ -37,23 +37,26 @@ public final class UserTaskServices
 
   public UserTaskServices(
       final BrokerClient brokerClient,
-      final SecurityConfiguration securityConfiguration,
+      final SecurityContextProvider securityContextProvider,
       final UserTaskSearchClient userTaskSearchClient,
       final Authentication authentication) {
-    super(brokerClient, securityConfiguration, authentication);
+    super(brokerClient, securityContextProvider, authentication);
     this.userTaskSearchClient = userTaskSearchClient;
   }
 
   @Override
   public UserTaskServices withAuthentication(final Authentication authentication) {
     return new UserTaskServices(
-        brokerClient, securityConfiguration, userTaskSearchClient, authentication);
+        brokerClient, securityContextProvider, userTaskSearchClient, authentication);
   }
 
   @Override
   public SearchQueryResult<UserTaskEntity> search(final UserTaskQuery query) {
-    return userTaskSearchClient.searchUserTasks(
-        query, SecurityContext.of(s -> s.withAuthentication(authentication)));
+    return userTaskSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.processDefinition().readUserTask())))
+        .searchUserTasks(query);
   }
 
   public SearchQueryResult<UserTaskEntity> search(

@@ -54,24 +54,41 @@ public class SearchClients
 
   private final DocumentBasedSearchClient searchClient;
   private final ServiceTransformers transformers;
+  private final SecurityContext securityContext;
 
   public SearchClients(
       final DocumentBasedSearchClient searchClient, final boolean isCamundaExporterEnabled) {
+    this(
+        searchClient,
+        ServiceTransformers.newInstance(isCamundaExporterEnabled),
+        SecurityContext.withoutAuthentication());
+  }
+
+  private SearchClients(
+      final DocumentBasedSearchClient searchClient,
+      final ServiceTransformers transformers,
+      final SecurityContext securityContext) {
     this.searchClient = searchClient;
-    transformers = ServiceTransformers.newInstance(isCamundaExporterEnabled);
+    this.transformers = transformers;
+    this.securityContext = securityContext;
   }
 
   @Override
   public SearchQueryResult<AuthorizationEntity> searchAuthorizations(
-      final AuthorizationQuery filter, final SecurityContext securityContext) {
+      final AuthorizationQuery filter) {
     final var executor =
         new SearchClientBasedQueryExecutor(searchClient, transformers, securityContext);
     return executor.search(filter, AuthorizationEntity.class);
   }
 
   @Override
+  public SearchClients withSecurityContext(final SecurityContext securityContext) {
+    return new SearchClients(searchClient, transformers, securityContext);
+  }
+
+  @Override
   public SearchQueryResult<DecisionDefinitionEntity> searchDecisionDefinitions(
-      final DecisionDefinitionQuery filter, final SecurityContext securityContext) {
+      final DecisionDefinitionQuery filter) {
     final var executor =
         new SearchClientBasedQueryExecutor(searchClient, transformers, securityContext);
     return executor.search(filter, DecisionDefinitionEntity.class);
@@ -79,7 +96,7 @@ public class SearchClients
 
   @Override
   public SearchQueryResult<DecisionInstanceEntity> searchDecisionInstances(
-      final DecisionInstanceQuery filter, final SecurityContext securityContext) {
+      final DecisionInstanceQuery filter) {
     final var executor =
         new SearchClientBasedQueryExecutor(searchClient, transformers, securityContext);
     return executor.search(filter, DecisionInstanceEntity.class);
@@ -87,7 +104,7 @@ public class SearchClients
 
   @Override
   public SearchQueryResult<DecisionRequirementsEntity> searchDecisionRequirements(
-      final DecisionRequirementsQuery filter, final SecurityContext securityContext) {
+      final DecisionRequirementsQuery filter) {
     final var executor =
         new SearchClientBasedQueryExecutor(searchClient, transformers, securityContext);
     return executor.search(filter, DecisionRequirementsEntity.class);
@@ -95,23 +112,21 @@ public class SearchClients
 
   @Override
   public SearchQueryResult<FlowNodeInstanceEntity> searchFlowNodeInstances(
-      final FlowNodeInstanceQuery filter, final SecurityContext securityContext) {
+      final FlowNodeInstanceQuery filter) {
     final var executor =
         new SearchClientBasedQueryExecutor(searchClient, transformers, securityContext);
     return executor.search(filter, FlowNodeInstanceEntity.class);
   }
 
   @Override
-  public SearchQueryResult<FormEntity> searchForms(
-      final FormQuery filter, final SecurityContext securityContext) {
+  public SearchQueryResult<FormEntity> searchForms(final FormQuery filter) {
     final var executor =
         new SearchClientBasedQueryExecutor(searchClient, transformers, securityContext);
     return executor.search(filter, FormEntity.class);
   }
 
   @Override
-  public SearchQueryResult<IncidentEntity> searchIncidents(
-      final IncidentQuery filter, final SecurityContext securityContext) {
+  public SearchQueryResult<IncidentEntity> searchIncidents(final IncidentQuery filter) {
     final var executor =
         new SearchClientBasedQueryExecutor(searchClient, transformers, securityContext);
     return executor.search(filter, IncidentEntity.class);
@@ -119,7 +134,7 @@ public class SearchClients
 
   @Override
   public SearchQueryResult<ProcessDefinitionEntity> searchProcessDefinitions(
-      final ProcessDefinitionQuery filter, final SecurityContext securityContext) {
+      final ProcessDefinitionQuery filter) {
     final var executor =
         new SearchClientBasedQueryExecutor(searchClient, transformers, securityContext);
     return executor.search(filter, ProcessDefinitionEntity.class);
@@ -127,39 +142,35 @@ public class SearchClients
 
   @Override
   public SearchQueryResult<ProcessInstanceEntity> searchProcessInstances(
-      final ProcessInstanceQuery filter, final SecurityContext securityContext) {
+      final ProcessInstanceQuery filter) {
     final var executor =
         new SearchClientBasedQueryExecutor(searchClient, transformers, securityContext);
     return executor.search(filter, ProcessInstanceEntity.class);
   }
 
   @Override
-  public SearchQueryResult<RoleEntity> searchRoles(
-      final RoleQuery filter, final SecurityContext securityContext) {
+  public SearchQueryResult<RoleEntity> searchRoles(final RoleQuery filter) {
     final var executor =
         new SearchClientBasedQueryExecutor(searchClient, transformers, securityContext);
     return executor.search(filter, RoleEntity.class);
   }
 
   @Override
-  public SearchQueryResult<UserEntity> searchUsers(
-      final UserQuery filter, final SecurityContext securityContext) {
+  public SearchQueryResult<UserEntity> searchUsers(final UserQuery filter) {
     final var executor =
         new SearchClientBasedQueryExecutor(searchClient, transformers, securityContext);
     return executor.search(filter, UserEntity.class);
   }
 
   @Override
-  public SearchQueryResult<UserTaskEntity> searchUserTasks(
-      final UserTaskQuery filter, final SecurityContext securityContext) {
+  public SearchQueryResult<UserTaskEntity> searchUserTasks(final UserTaskQuery filter) {
     final var executor =
         new SearchClientBasedQueryExecutor(searchClient, transformers, securityContext);
     return executor.search(filter, UserTaskEntity.class);
   }
 
   @Override
-  public SearchQueryResult<VariableEntity> searchVariables(
-      final VariableQuery filter, final SecurityContext securityContext) {
+  public SearchQueryResult<VariableEntity> searchVariables(final VariableQuery filter) {
     final var executor =
         new SearchClientBasedQueryExecutor(searchClient, transformers, securityContext);
     return executor.search(filter, VariableEntity.class);

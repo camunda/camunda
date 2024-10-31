@@ -22,6 +22,8 @@ import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
 
 import co.elastic.clients.util.VisibleForTesting;
 import io.camunda.exporter.adapters.ClientAdapter;
+import io.camunda.exporter.archiver.Archiver;
+import io.camunda.exporter.archiver.ArchiverRepository.NoopArchiverRepository;
 import io.camunda.exporter.config.ConfigValidator;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
@@ -39,6 +41,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.time.Duration;
 import java.util.Set;
+import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,6 +55,9 @@ public class CamundaExporter implements Exporter {
   private long lastPosition = -1;
   private final ExporterResourceProvider provider;
   private CamundaExporterMetrics metrics;
+  private Logger logger;
+  private int partitionId;
+  private Archiver archiver;
 
   public CamundaExporter() {
     this(new DefaultExporterResourceProvider());
@@ -64,6 +70,8 @@ public class CamundaExporter implements Exporter {
 
   @Override
   public void configure(final Context context) {
+    partitionId = context.getPartitionId();
+    logger = context.getLogger();
     configuration = context.getConfiguration().instantiate(ExporterConfiguration.class);
     ConfigValidator.validate(configuration);
     provider.init(configuration);
@@ -83,6 +91,13 @@ public class CamundaExporter implements Exporter {
             provider.getIndexDescriptors(),
             provider.getIndexTemplateDescriptors(),
             configuration);
+    archiver =
+        Archiver.create(
+            partitionId,
+            new NoopArchiverRepository(),
+            configuration.getArchiver(),
+            metrics,
+            logger);
 
     schemaManager.startup();
 
@@ -112,6 +127,7 @@ public class CamundaExporter implements Exporter {
       }
     }
 
+    CloseHelper.close(error -> LOG.warn("Failed to close archiver", error), archiver);
     LOG.info("Exporter closed");
   }
 

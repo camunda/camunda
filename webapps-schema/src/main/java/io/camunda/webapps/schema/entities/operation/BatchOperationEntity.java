@@ -107,8 +107,9 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
     return this;
   }
 
-  public void generateId() {
+  public BatchOperationEntity withGeneratedId() {
     setId(UUID.randomUUID().toString());
+    return this;
   }
 
   @Override

@@ -13,10 +13,9 @@ import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
-import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.entity.Permission;
+import io.camunda.security.auth.Authorization;
 import io.camunda.service.search.core.SearchQueryService;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerAuthorizationPatchRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
@@ -36,27 +35,30 @@ public class AuthorizationServices
 
   public AuthorizationServices(
       final BrokerClient brokerClient,
-      final SecurityConfiguration securityConfiguration,
+      final SecurityContextProvider securityContextProvider,
       final AuthorizationSearchClient authorizationSearchClient,
       final Authentication authentication) {
-    super(brokerClient, securityConfiguration, authentication);
+    super(brokerClient, securityContextProvider, authentication);
     this.authorizationSearchClient = authorizationSearchClient;
   }
 
   @Override
   public AuthorizationServices withAuthentication(final Authentication authentication) {
     return new AuthorizationServices(
-        brokerClient, securityConfiguration, authorizationSearchClient, authentication);
+        brokerClient, securityContextProvider, authorizationSearchClient, authentication);
   }
 
   @Override
   public SearchQueryResult<AuthorizationEntity> search(final AuthorizationQuery query) {
-    return authorizationSearchClient.searchAuthorizations(
-        query, SecurityContext.of(s -> s.withAuthentication(authentication)));
+    return authorizationSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.authorization().read())))
+        .searchAuthorizations(query);
   }
 
   public Set<String> fetchAssignedPermissions(
-      final Long ownerId, final AuthorizationResourceType resourceType, final String resourceId) {
+      final Long ownerKey, final AuthorizationResourceType resourceType, final String resourceId) {
     final SearchQueryResult<AuthorizationEntity> result =
         search(
             SearchQueryBuilders.authorizationSearchQuery(
@@ -68,7 +70,7 @@ public class AuthorizationServices
                                         resourceId != null && !resourceId.isEmpty()
                                             ? resourceId
                                             : null)
-                                    .ownerKey(ownerId))
+                                    .ownerKeys(ownerKey))
                         .page(p -> p.size(1))));
     // TODO logic to fetch indirect authorizations via roles/groups should be added later
     return result.items().stream()

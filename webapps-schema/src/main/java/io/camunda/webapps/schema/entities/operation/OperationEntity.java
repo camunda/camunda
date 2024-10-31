@@ -73,8 +73,9 @@ public class OperationEntity extends AbstractExporterEntity<OperationEntity> {
     return decisionDefinitionKey;
   }
 
-  public void setDecisionDefinitionKey(final Long decisionDefinitionKey) {
+  public OperationEntity setDecisionDefinitionKey(final Long decisionDefinitionKey) {
     this.decisionDefinitionKey = decisionDefinitionKey;
+    return this;
   }
 
   public Long getIncidentKey() {
@@ -212,8 +213,12 @@ public class OperationEntity extends AbstractExporterEntity<OperationEntity> {
     return this;
   }
 
-  public void generateId() {
-    setId(UUID.randomUUID().toString());
+  public OperationEntity withGeneratedId() {
+    // Operation reference has to be positive and `UUID.randomUUID().getMostSignificantBits()` can
+    // generate negative values
+    final long operationReference = UUID.randomUUID().getMostSignificantBits() & Long.MAX_VALUE;
+    setId(String.valueOf(operationReference));
+    return this;
   }
 
   @Override
