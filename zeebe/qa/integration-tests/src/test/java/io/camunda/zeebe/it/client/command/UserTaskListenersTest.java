@@ -8,7 +8,6 @@
 package io.camunda.zeebe.it.client.command;
 
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
-import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -72,9 +71,8 @@ public class UserTaskListenersTest {
         resourcesHelper.createSingleUserTask(
             t -> t.zeebeTaskListener(l -> l.complete().type("my_listener")));
 
-    // open worker for `my_listener` task listener job
-    final RecordingJobHandler jbHandler = new RecordingJobHandler();
-    workers.add(client.newWorker().jobType("my_listener").handler(jbHandler).open());
+    final JobHandler completeJobHandler = (jobClient, job) -> client.newCompleteCommand(job).send();
+    workers.add(client.newWorker().jobType("my_listener").handler(completeJobHandler).open());
 
     // when: invoke complete user task command
     final var completeUserTaskFuture =
@@ -92,13 +90,6 @@ public class UserTaskListenersTest {
                   return null;
                 })
             .toCompletableFuture();
-
-    waitUntil(() -> !jbHandler.getHandledJobs().isEmpty());
-
-    final var listenerJob = jbHandler.getHandledJob("my_listener");
-
-    // complete task listener job
-    client.newCompleteCommand(listenerJob).send().join();
 
     // wait for `complete` user task command completion
     completeUserTaskFuture.join();
