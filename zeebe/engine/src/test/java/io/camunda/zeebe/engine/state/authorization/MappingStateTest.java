@@ -57,6 +57,24 @@ public class MappingStateTest {
   }
 
   @Test
+  void shouldRetrieveMappingByClaims() {
+    // given
+    final long key = 1L;
+    final String claimName = "claimName";
+    final String claimValue = "claimValue";
+    final var mapping =
+        new MappingRecord().setMappingKey(key).setClaimName(claimName).setClaimValue(claimValue);
+    mappingState.create(mapping);
+
+    // when
+    final var retrievedMapping = mappingState.get(claimName, claimValue);
+
+    // then
+    assertThat(retrievedMapping).isPresent();
+    assertThat(retrievedMapping.get().getMappingKey()).isEqualTo(key);
+  }
+
+  @Test
   void shouldReturnEmptyIfMappingDoesNotExistByClaim() {
     // when
     final var mapping = mappingState.get("claimName", "claimValue");
