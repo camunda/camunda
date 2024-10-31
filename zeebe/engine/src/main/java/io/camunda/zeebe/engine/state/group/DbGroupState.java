@@ -17,6 +17,8 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.authorization.EntityTypeValue;
 import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
+import java.util.Optional;
 
 public class DbGroupState implements MutableGroupState {
 
@@ -56,5 +58,29 @@ public class DbGroupState implements MutableGroupState {
     groupByNameColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.GROUP_BY_NAME, transactionContext, groupName, fkGroupKey);
+  }
+
+  @Override
+  public void createGroup(final long groupKey, final GroupRecord group) {
+    this.groupKey.wrapLong(groupKey);
+    groupName.wrapString(group.getName());
+    persistedGroup.wrap(group);
+
+    groupColumnFamily.insert(this.groupKey, persistedGroup);
+    groupByNameColumnFamily.insert(groupName, fkGroupKey);
+  }
+
+  @Override
+  public Optional<PersistedGroup> getGroup(final long groupKey) {
+    this.groupKey.wrapLong(groupKey);
+    final var persistedGroup = groupColumnFamily.get(this.groupKey);
+    return Optional.ofNullable(persistedGroup);
+  }
+
+  @Override
+  public Optional<Long> getGroupKeyByName(final String groupName) {
+    this.groupName.wrapString(groupName);
+    final var groupKey = groupByNameColumnFamily.get(this.groupName);
+    return Optional.ofNullable(groupKey).map(key -> key.inner().getValue());
   }
 }
