@@ -129,7 +129,7 @@ public final class ServiceTransformers {
     mappers.put(VariableFilter.class, new VariableFilterTransformer());
     mappers.put(DecisionDefinitionFilter.class, new DecisionDefinitionFilterTransformer());
     mappers.put(DecisionRequirementsFilter.class, new DecisionRequirementsFilterTransformer());
-    mappers.put(DecisionInstanceFilter.class, new DecisionInstanceFilterTransformer(mappers));
+    mappers.put(DecisionInstanceFilter.class, new DecisionInstanceFilterTransformer());
     mappers.put(UserFilter.class, new UserFilterTransformer());
     mappers.put(AuthorizationFilter.class, new AuthorizationFilterTransformer());
     mappers.put(ComparableValueFilter.class, new ComparableValueFilterTransformer());

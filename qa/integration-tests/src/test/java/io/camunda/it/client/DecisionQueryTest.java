@@ -28,6 +28,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -565,6 +567,29 @@ class DecisionQueryTest {
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
+  }
+
+  @Test
+  public void shouldRetrieveDecisionInstanceByEvaluationDate() {
+    // given
+    final var allResult =
+        zeebeClient.newDecisionInstanceQuery().page(p -> p.limit(1)).send().join();
+    final var di = allResult.items().getFirst();
+
+    // when
+    final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXX");
+    final var offsetDateTime = OffsetDateTime.parse(di.getEvaluationDate(), formatter);
+    final var result =
+        zeebeClient
+            .newDecisionInstanceQuery()
+            .filter(f -> f.evaluationDate(offsetDateTime.toString()))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getDecisionInstanceKey())
+        .isEqualTo(di.getDecisionInstanceKey());
   }
 
   @Test

@@ -4644,6 +4644,10 @@ components:
         evaluationFailure:
           type: string
           description: The evaluation failure of the decision instance.
+        evaluationDate:
+          type: string
+          description: The evaluation date of the decision instance.
+          format: date-time
         processDefinitionKey:
           type: integer
           format: int64

@@ -16,6 +16,7 @@ import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceInputEn
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceOutputEntity;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
@@ -23,6 +24,7 @@ import io.camunda.security.auth.Authentication;
 import io.camunda.service.DecisionInstanceServices;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -118,6 +120,18 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
           }
       }""",
             q -> q.filter(f -> f.decisionTypes(DecisionDefinitionType.DECISION_TABLE))),
+        new TestArguments(
+            """
+      {
+          "filter": {
+                "evaluationDate": "2024-06-05T08:29:15.027+00:00"
+          }
+      }""",
+            q ->
+                q.filter(
+                    f ->
+                        f.evaluationDateOperations(
+                            Operation.eq(OffsetDateTime.parse("2024-06-05T08:29:15.027+00:00"))))),
         new TestArguments(
             """
       {

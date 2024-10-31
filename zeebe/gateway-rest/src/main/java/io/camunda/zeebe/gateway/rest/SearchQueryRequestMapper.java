@@ -182,6 +182,10 @@ public final class SearchQueryRequestMapper {
           .map(s -> convertEnum(s, DecisionInstanceState.class))
           .ifPresent(builder::states);
       ofNullable(filter.getEvaluationFailure()).ifPresent(builder::evaluationFailures);
+      ofNullable(filter.getEvaluationDate())
+          .map(SearchQueryRequestMapper::toOffsetDateTime)
+          .map(SearchQueryRequestMapper::mapToOperation)
+          .ifPresent(builder::evaluationDateOperations);
       ofNullable(filter.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
       ofNullable(filter.getDecisionDefinitionKey()).ifPresent(builder::decisionDefinitionKeys);
       ofNullable(filter.getDecisionDefinitionId()).ifPresent(builder::decisionDefinitionIds);

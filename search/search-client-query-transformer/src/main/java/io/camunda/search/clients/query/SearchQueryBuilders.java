@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -409,26 +410,46 @@ public final class SearchQueryBuilders {
     return DATE_TIME_FORMATTER.format(dateTime);
   }
 
-  public static <C extends List<Operation<OffsetDateTime>>> SearchQuery dateTimeOperations(
+  private static SearchRangeQuery.Builder buildRangeQuery(
+      SearchRangeQuery.Builder builder,
+      final String field,
+      final Consumer<SearchRangeQuery.Builder> builderConsumer) {
+    if (builder == null) {
+      builder = new SearchRangeQuery.Builder().field(field).format(DATE_TIME_FORMAT);
+    }
+    builderConsumer.accept(builder);
+    return builder;
+  }
+
+  public static <C extends List<Operation<OffsetDateTime>>> List<SearchQuery> dateTimeOperations(
       final String field, final C operations) {
     if (operations == null || operations.isEmpty()) {
       return null;
     } else {
-      final var b = new SearchRangeQuery.Builder().field(field).format(DATE_TIME_FORMAT);
-      operations.forEach(
-          op -> {
-            final var formatted = formatDate(op.value());
-            switch (op.operator()) {
-              case EXISTS -> exists(field);
-              case NOT_EXISTS -> mustNot(exists(field));
-              case GREATER_THAN -> b.gt(formatted);
-              case GREATER_THAN_EQUALS -> b.gte(formatted);
-              case LOWER_THAN -> b.lt(formatted);
-              case LOWER_THAN_EQUALS -> b.lte(formatted);
-              default -> throw unexpectedOperation("Date", op);
-            }
-          });
-      return b.build().toSearchQuery();
+      final var queries = new ArrayList<SearchQuery>();
+      SearchRangeQuery.Builder rangeQueryBuilder = null;
+      for (final Operation<OffsetDateTime> op : operations) {
+        final var formatted = formatDate(op.value());
+        switch (op.operator()) {
+          case EQUALS -> queries.add(term(field, formatted));
+          case NOT_EQUALS -> queries.add(mustNot(term(field, formatted)));
+          case EXISTS -> queries.add(exists(field));
+          case NOT_EXISTS -> queries.add(mustNot(exists(field)));
+          case GREATER_THAN ->
+              rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.gt(formatted));
+          case GREATER_THAN_EQUALS ->
+              rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.gte(formatted));
+          case LOWER_THAN ->
+              rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.lt(formatted));
+          case LOWER_THAN_EQUALS ->
+              rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.lte(formatted));
+          default -> throw unexpectedOperation("Date", op);
+        }
+      }
+      if (rangeQueryBuilder != null) {
+        queries.add(rangeQueryBuilder.build().toSearchQuery());
+      }
+      return queries;
     }
   }
 
