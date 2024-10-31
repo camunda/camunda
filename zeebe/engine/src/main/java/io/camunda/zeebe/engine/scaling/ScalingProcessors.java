@@ -36,7 +36,7 @@ public final class ScalingProcessors {
     typedRecordProcessors.onCommand(
         ValueType.REDISTRIBUTION,
         RedistributionIntent.START,
-        new RedistributionStartProcessor(writers));
+        new RedistributionStartProcessor(redistributionBehavior, writers));
     typedRecordProcessors.onCommand(
         ValueType.REDISTRIBUTION,
         RedistributionIntent.CONTINUE,
