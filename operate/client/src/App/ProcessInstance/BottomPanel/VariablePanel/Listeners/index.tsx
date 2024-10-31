@@ -44,7 +44,7 @@ const Listeners: React.FC<Props> = observer(({listeners}) => {
             return;
           }
 
-          await processInstanceListenersStore.fetchPreviousInstances();
+          await processInstanceListenersStore.fetchPreviousListeners();
 
           if (
             processInstanceListenersStore.state?.listeners?.length ===
@@ -65,7 +65,7 @@ const Listeners: React.FC<Props> = observer(({listeners}) => {
             return;
           }
 
-          processInstanceListenersStore.fetchNextInstances();
+          processInstanceListenersStore.fetchNextListeners();
         }}
         rows={listeners?.map(
           ({listenerType, listenerKey, state, jobType, event, time}) => {

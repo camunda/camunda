@@ -100,7 +100,7 @@ describe('stores/processInstancesListeners', () => {
       ],
     });
 
-    processInstanceListenersStore.fetchNextInstances();
+    processInstanceListenersStore.fetchNextListeners();
 
     expect(processInstanceListenersStore.state.status).toBe('fetching-next');
     await waitFor(() =>
@@ -124,7 +124,7 @@ describe('stores/processInstancesListeners', () => {
       listeners: [{...instance, listenerKey: '200'}],
     });
 
-    processInstanceListenersStore.fetchNextInstances();
+    processInstanceListenersStore.fetchNextListeners();
 
     expect(processInstanceListenersStore.state.status).toBe('fetching-next');
     await waitFor(() =>
@@ -159,7 +159,7 @@ describe('stores/processInstancesListeners', () => {
       listeners: [{...instance, listenerKey: '100'}],
     });
 
-    processInstanceListenersStore.fetchPreviousInstances();
+    processInstanceListenersStore.fetchPreviousListeners();
 
     expect(processInstanceListenersStore.state.status).toBe('fetching-prev');
     await waitFor(() =>
@@ -180,7 +180,7 @@ describe('stores/processInstancesListeners', () => {
       listeners: [{...instance, listenerKey: '200'}],
     });
 
-    processInstanceListenersStore.fetchPreviousInstances();
+    processInstanceListenersStore.fetchPreviousListeners();
 
     expect(processInstanceListenersStore.state.status).toBe('fetching-prev');
     await waitFor(() =>

@@ -179,7 +179,7 @@ class ProcessInstanceListeners {
     );
   };
 
-  fetchPreviousInstances = async () => {
+  fetchPreviousListeners = async () => {
     this.startFetchingPrev();
 
     let payloadId = {};
@@ -201,7 +201,7 @@ class ProcessInstanceListeners {
     });
   };
 
-  fetchNextInstances = async () => {
+  fetchNextListeners = async () => {
     this.startFetchingNext();
 
     let payloadId = {};
