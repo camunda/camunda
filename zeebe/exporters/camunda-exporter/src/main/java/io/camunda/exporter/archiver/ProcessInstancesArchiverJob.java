@@ -70,7 +70,7 @@ public class ProcessInstancesArchiverJob implements ArchiverJob {
                     repository.moveDocuments(
                         dependant.getFullQualifiedName(),
                         dependant.getFullQualifiedName() + finishDate,
-                        ProcessInstanceDependant.PROCESS_INSTANCE_KEY,
+                        dependant.getProcessInstanceDependantField(),
                         processInstanceKeys,
                         executor))
             .toArray(CompletableFuture[]::new);

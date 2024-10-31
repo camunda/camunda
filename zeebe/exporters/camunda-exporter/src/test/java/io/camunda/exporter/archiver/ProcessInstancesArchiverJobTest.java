@@ -83,15 +83,35 @@ final class ProcessInstancesArchiverJobTest {
             new DocumentMove(
                 sequenceFlowTemplate.getFullQualifiedName(),
                 sequenceFlowTemplate.getFullQualifiedName() + "2024-01-01",
-                ProcessInstanceDependant.PROCESS_INSTANCE_KEY,
+                sequenceFlowTemplate.getProcessInstanceDependantField(),
                 List.of("1", "2", "3"),
                 executor),
             new DocumentMove(
                 decisionInstanceTemplate.getFullQualifiedName(),
                 decisionInstanceTemplate.getFullQualifiedName() + "2024-01-01",
-                ProcessInstanceDependant.PROCESS_INSTANCE_KEY,
+                decisionInstanceTemplate.getProcessInstanceDependantField(),
                 List.of("1", "2", "3"),
                 executor));
+  }
+
+  @Test
+  void shouldMoveDependantsViaCorrectField() {
+    // given
+    final var dependant = new WeirdlyNamedDependant();
+    final var job =
+        new ProcessInstancesArchiverJob(
+            repository, processInstanceTemplate, List.of(dependant), metrics, LOGGER, executor);
+    repository.batch = new ArchiveBatch("2024-01-01", List.of("1", "2", "3"));
+
+    // when
+    final var result = job.archiveNextBatch();
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ZERO).isEqualTo(3);
+    assertThat(repository.moves)
+        .contains(
+            new DocumentMove(
+                "foo_", "foo_" + "2024-01-01", "bar", List.of("1", "2", "3"), executor));
   }
 
   @Test
@@ -173,5 +193,18 @@ final class ProcessInstancesArchiverJobTest {
         String idFieldName,
         List<String> ids,
         Executor executor) {}
+  }
+
+  private static final class WeirdlyNamedDependant implements ProcessInstanceDependant {
+
+    @Override
+    public String getFullQualifiedName() {
+      return "foo_";
+    }
+
+    @Override
+    public String getProcessInstanceDependantField() {
+      return "bar";
+    }
   }
 }
