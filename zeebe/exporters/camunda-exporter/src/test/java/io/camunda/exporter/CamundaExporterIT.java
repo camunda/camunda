@@ -440,7 +440,7 @@ final class CamundaExporterIT {
     }
 
     private <S extends ExporterEntity<S>, T extends RecordValue>
-        Supplier<Record<T>> getHandlerRecord(final ExportHandler<S, T> handler) {
+        Supplier<Record<T>> getRecordWhichCanBeHandled(final ExportHandler<S, T> handler) {
 
       final Map<Class<?>, Supplier<Record<T>>> customRecordGenerators =
           Map.of(
@@ -475,7 +475,7 @@ final class CamundaExporterIT {
       final var mocked = mockStatic(OffsetDateTime.class);
       mocked.when(OffsetDateTime::now).thenReturn(currentTime);
 
-      final var record = getHandlerRecord(handler).get();
+      final var record = getRecordWhichCanBeHandled(handler).get();
       final var entityId = handler.generateIds(record).getFirst();
       final var expectedEntity = handler.createNewEntity(entityId);
       handler.updateEntity(record, expectedEntity);
