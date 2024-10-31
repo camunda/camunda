@@ -253,3 +253,34 @@
       # - id: example-interceptor
       #   className: com.acme.ExampleInterceptor
       #   jarPath: /path/to/interceptor/example-interceptor.jar
+    # experimental:
+      #   Be aware that all configuration's which are part of the experimental section
+      #   are subject to change and can be dropped at any time.
+      #   It might be that also some of them are actually dangerous so be aware when you change one of these!
+      #
+      # identityRequest:
+      #   Enables the Identity Request wrapper feature, for caching and throttling large numbers of concurrent
+      #   requests to the Identity service. This feature will cache an Identity JWT token and a list of tenant IDs
+      #   that are associated with it. The feature will also reject requests if the tenant cache is unable to reduce
+      #   the number of concurrent requests.This feature can be enabled if you start to see UNAVAILABLE errors
+      #   due to the Identity service being overloaded in your Zeebe client.
+      #
+      # enabled: false
+      #   Enables the Identity Request wrapper feature.
+      #   This setting can also be overridden using the environment variable ZEEBE_GATEWAY_EXPERIMENTAL_IDENTITYREQUEST_ENABLED.
+      #
+      # tenantCacheTtl: 5000
+      #   The time-to-live in milliseconds for each entry the tenant cache.
+      #   This setting can also be overridden using the environment variable ZEEBE_GATEWAY_EXPERIMENTAL_IDENTITYREQUEST_TENANTCACHETTL.
+      #
+      # tenantCacheSize: 200
+      #   The maximum number of entries the tenant cache can hold.
+      #   This setting can also be overridden using the environment variable ZEEBE_GATEWAY_EXPERIMENTAL_IDENTITYREQUEST_TENANTCACHESIZE.
+      #
+      # tenantRequestCapacity: 300
+      #   The maximum number of concurrent Identity requests. Additional concurrent Identity requests will be rejected after a timeout period.
+      #   This setting can also be overridden using the environment variable ZEEBE_GATEWAY_EXPERIMENTAL_IDENTITYREQUEST_TENANTREQUESTCAPACITY.
+      #
+      # tenantRequestTimeout: 1000
+      #   The timeout in milliseconds for the Identity Request wrapper feature.
+      #   This setting can also be overridden using the environment variable ZEEBE_GATEWAY_EXPERIMENTAL_IDENTITYREQUEST_TENANTREQUESTTIMEOUT.
