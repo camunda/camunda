@@ -57,6 +57,8 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.scaling.RedistributionProgress;
+import io.camunda.zeebe.protocol.impl.record.value.scaling.RedistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
@@ -2780,6 +2782,38 @@ final class JsonSerializableToJsonTest {
         """
         {
          "desiredPartitionCount": 5
+        }
+        """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////////// RedistributionRecord //////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "RedistributionRecord (empty)",
+        (Supplier<RedistributionRecord>) RedistributionRecord::new,
+        """
+        {
+          "stage": -1,
+          "progress": {
+            "deploymentKey": -1
+          }
+        }
+        """
+      },
+      {
+        "RedistributionRecord",
+        (Supplier<RedistributionRecord>)
+            () ->
+                new RedistributionRecord()
+                    .setStage(2)
+                    .setProgress(new RedistributionProgress().claimDeploymentKey(123)),
+        """
+        {
+          "stage": 2,
+          "progress": {
+            "deploymentKey": 123
+          }
         }
         """
       },

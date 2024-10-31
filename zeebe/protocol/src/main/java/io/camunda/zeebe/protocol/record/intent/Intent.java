@@ -19,6 +19,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.MESSAGE_CORRELATION;
 
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
+import io.camunda.zeebe.protocol.record.intent.scaling.RedistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import java.util.Arrays;
 import java.util.Collection;
@@ -67,6 +68,7 @@ public interface Intent {
           RoleIntent.class,
           TenantIntent.class,
           ScaleIntent.class,
+          RedistributionIntent.class,
           GroupIntent.class,
           MappingIntent.class);
   short NULL_VAL = 255;
@@ -166,6 +168,8 @@ public interface Intent {
         return TenantIntent.from(intent);
       case SCALE:
         return ScaleIntent.from(intent);
+      case REDISTRIBUTION:
+        return RedistributionIntent.from(intent);
       case GROUP:
         return GroupIntent.from(intent);
       case MAPPING:

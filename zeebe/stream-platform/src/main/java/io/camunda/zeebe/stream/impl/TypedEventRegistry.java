@@ -42,6 +42,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.scaling.RedistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
@@ -110,6 +111,7 @@ public final class TypedEventRegistry {
     registry.put(ValueType.SCALE, ScaleRecord.class);
     registry.put(ValueType.MAPPING, MappingRecord.class);
     registry.put(ValueType.GROUP, GroupRecord.class);
+    registry.put(ValueType.REDISTRIBUTION, RedistributionRecord.class);
 
     EVENT_REGISTRY = Collections.unmodifiableMap(registry);
 
