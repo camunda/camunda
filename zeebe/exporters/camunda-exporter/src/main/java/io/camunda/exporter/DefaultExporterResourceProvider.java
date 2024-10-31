@@ -34,6 +34,7 @@ import io.camunda.exporter.handlers.ListViewFlowNodeFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.ListViewVariableFromVariableHandler;
 import io.camunda.exporter.handlers.MetricFromProcessInstanceHandler;
+import io.camunda.exporter.handlers.OperationFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
 import io.camunda.exporter.handlers.ProcessHandler;
 import io.camunda.exporter.handlers.SequenceFlowHandler;
@@ -204,7 +205,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 configuration.getIndex().getVariableSizeThreshold()),
             new UserTaskCompletionVariableHandler(
                 templateDescriptorsMap.get(TaskTemplate.class).getFullQualifiedName(),
-                configuration.getIndex().getVariableSizeThreshold()));
+                configuration.getIndex().getVariableSizeThreshold()),
+            new OperationFromProcessInstanceHandler(
+                templateDescriptorsMap.get(OperationTemplate.class).getFullQualifiedName()));
   }
 
   @Override
