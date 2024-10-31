@@ -29,7 +29,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public class ScaleUpTest {
-  @Rule public final EngineRule engine = EngineRule.singlePartition();
+  @Rule public final EngineRule engine = EngineRule.multiplePartition(3);
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -140,7 +140,7 @@ public class ScaleUpTest {
   @Test
   public void shouldRejectScaleDown() {
     // given
-    ((MutableRoutingState) engine.getProcessingState().getRoutingState()).initializeRoutingInfo(2);
+    ((MutableRoutingState) engine.getProcessingState(1).getRoutingState()).initializeRoutingInfo(2);
     final var command =
         RecordToWrite.command()
             .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(1));
@@ -162,8 +162,8 @@ public class ScaleUpTest {
   @Test
   public void shouldRejectRedundantScaleUp() {
     // given - a scale up from 1 to 3 was already requested
-    ((MutableRoutingState) engine.getProcessingState().getRoutingState()).initializeRoutingInfo(1);
-    ((MutableRoutingState) engine.getProcessingState().getRoutingState())
+    ((MutableRoutingState) engine.getProcessingState(1).getRoutingState()).initializeRoutingInfo(1);
+    ((MutableRoutingState) engine.getProcessingState(1).getRoutingState())
         .setDesiredPartitions(Set.of(1, 2, 3));
 
     // when
@@ -182,6 +182,6 @@ public class ScaleUpTest {
   }
 
   private void initRoutingState() {
-    ((MutableRoutingState) engine.getProcessingState().getRoutingState()).initializeRoutingInfo(1);
+    ((MutableRoutingState) engine.getProcessingState(1).getRoutingState()).initializeRoutingInfo(1);
   }
 }
