@@ -62,7 +62,7 @@ public class RemoveEntityRoleMultiPartitionTest {
             RecordingExporter.records()
                 .withPartitionId(1)
                 .limitByCount(
-                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 3))
+                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 4))
         .extracting(
             io.camunda.zeebe.protocol.record.Record::getIntent,
             io.camunda.zeebe.protocol.record.Record::getRecordType,
