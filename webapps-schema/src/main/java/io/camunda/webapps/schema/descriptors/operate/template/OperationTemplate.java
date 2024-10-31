@@ -5,18 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.schema.templates;
+package io.camunda.webapps.schema.descriptors.operate.template;
 
-import io.camunda.operate.conditions.DatabaseInfo;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.backup.Prio3Backup;
+import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
 import io.camunda.webapps.schema.descriptors.operate.OperateTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
-import jakarta.annotation.PostConstruct;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
-@Component
 public class OperationTemplate extends OperateTemplateDescriptor
     implements ProcessInstanceDependant, Prio3Backup {
 
@@ -45,15 +39,8 @@ public class OperationTemplate extends OperateTemplateDescriptor
   public static final String BATCH_OPERATION_ID_AGGREGATION = "batchOperationIdAggregation";
   public static final String COMPLETED_DATE = "completedDate";
 
-  @Autowired private OperateProperties properties;
-
-  public OperationTemplate() {
-    super(null, false);
-  }
-
-  @PostConstruct
-  public void init() {
-    isElasticsearch = DatabaseInfo.isElasticsearch();
+  public OperationTemplate(final String indexPrefix, final boolean isElasticsearch) {
+    super(indexPrefix, isElasticsearch);
   }
 
   @Override
@@ -64,11 +51,5 @@ public class OperationTemplate extends OperateTemplateDescriptor
   @Override
   public String getVersion() {
     return "8.4.1";
-  }
-
-  @Override
-  public String getIndexPrefix() {
-    indexPrefix = properties.getIndexPrefix(DatabaseInfo.getCurrent());
-    return properties.getIndexPrefix();
   }
 }

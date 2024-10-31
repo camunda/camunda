@@ -13,10 +13,10 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import io.camunda.operate.qa.util.TestContext;
 import io.camunda.operate.qa.util.ZeebeTestUtil;
-import io.camunda.operate.schema.templates.BatchOperationTemplate;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ThreadUtil;
 import io.camunda.operate.util.rest.StatefulRestTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.client.ZeebeClient;

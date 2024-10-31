@@ -14,7 +14,6 @@ import static org.mockito.BDDMockito.given;
 
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.templates.OperationTemplate;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.DateUtil;
 import io.camunda.operate.util.OperateAbstractIT;
@@ -23,6 +22,7 @@ import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import io.camunda.operate.webapp.zeebe.operation.OperationHandler;
+import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;

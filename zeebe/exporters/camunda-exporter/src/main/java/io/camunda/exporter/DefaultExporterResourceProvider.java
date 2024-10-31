@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter;
 
+import static java.util.Map.entry;
+
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.handlers.AuthorizationHandler;
@@ -46,11 +48,13 @@ import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
@@ -84,25 +88,28 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             .equals(ConnectionTypes.ELASTICSEARCH);
 
     templateDescriptorsMap =
-        Map.of(
-            ListViewTemplate.class,
-            new ListViewTemplate(globalPrefix, isElasticsearch),
-            VariableTemplate.class,
-            new VariableTemplate(globalPrefix, isElasticsearch),
-            PostImporterQueueTemplate.class,
-            new PostImporterQueueTemplate(globalPrefix, isElasticsearch),
-            FlowNodeInstanceTemplate.class,
-            new FlowNodeInstanceTemplate(globalPrefix, isElasticsearch),
-            IncidentTemplate.class,
-            new IncidentTemplate(globalPrefix, isElasticsearch),
-            SequenceFlowTemplate.class,
-            new SequenceFlowTemplate(globalPrefix, isElasticsearch),
-            DecisionInstanceTemplate.class,
-            new DecisionInstanceTemplate(globalPrefix, isElasticsearch),
-            EventTemplate.class,
-            new EventTemplate(globalPrefix, isElasticsearch),
-            TaskTemplate.class,
-            new TaskTemplate(globalPrefix, isElasticsearch));
+        Map.ofEntries(
+            entry(ListViewTemplate.class, new ListViewTemplate(globalPrefix, isElasticsearch)),
+            entry(VariableTemplate.class, new VariableTemplate(globalPrefix, isElasticsearch)),
+            entry(
+                PostImporterQueueTemplate.class,
+                new PostImporterQueueTemplate(globalPrefix, isElasticsearch)),
+            entry(
+                FlowNodeInstanceTemplate.class,
+                new FlowNodeInstanceTemplate(globalPrefix, isElasticsearch)),
+            entry(IncidentTemplate.class, new IncidentTemplate(globalPrefix, isElasticsearch)),
+            entry(
+                SequenceFlowTemplate.class,
+                new SequenceFlowTemplate(globalPrefix, isElasticsearch)),
+            entry(
+                DecisionInstanceTemplate.class,
+                new DecisionInstanceTemplate(globalPrefix, isElasticsearch)),
+            entry(EventTemplate.class, new EventTemplate(globalPrefix, isElasticsearch)),
+            entry(TaskTemplate.class, new TaskTemplate(globalPrefix, isElasticsearch)),
+            entry(OperationTemplate.class, new OperationTemplate(globalPrefix, isElasticsearch)),
+            entry(
+                BatchOperationTemplate.class,
+                new BatchOperationTemplate(globalPrefix, isElasticsearch)));
 
     indexDescriptorsMap =
         Map.of(

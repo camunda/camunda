@@ -5,17 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.schema.templates;
+package io.camunda.webapps.schema.descriptors.operate.template;
 
-import io.camunda.operate.conditions.DatabaseInfo;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.backup.Prio3Backup;
+import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
 import io.camunda.webapps.schema.descriptors.operate.OperateTemplateDescriptor;
-import jakarta.annotation.PostConstruct;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
-@Component
 public class BatchOperationTemplate extends OperateTemplateDescriptor implements Prio3Backup {
 
   public static final String INDEX_NAME = "batch-operation";
@@ -32,21 +26,8 @@ public class BatchOperationTemplate extends OperateTemplateDescriptor implements
   public static final String FAILED_OPERATIONS_COUNT = "failedOperationsCount";
   public static final String COMPLETED_OPERATIONS_COUNT = "completedOperationsCount";
 
-  @Autowired private OperateProperties properties;
-
-  public BatchOperationTemplate() {
-    super(null, false);
-  }
-
-  @PostConstruct
-  public void init() {
-    indexPrefix = properties.getIndexPrefix(DatabaseInfo.getCurrent());
-    isElasticsearch = DatabaseInfo.isElasticsearch();
-  }
-
-  @Override
-  public String getIndexPrefix() {
-    return properties.getIndexPrefix();
+  public BatchOperationTemplate(final String indexPrefix, final boolean isElasticsearch) {
+    super(indexPrefix, isElasticsearch);
   }
 
   @Override

@@ -18,12 +18,12 @@ import static io.camunda.operate.util.ExceptionHelper.withPersistenceException;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.schema.templates.BatchOperationTemplate;
-import io.camunda.operate.schema.templates.OperationTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.OperationStore;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.store.opensearch.dsl.RequestDSL;
+import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
@@ -54,16 +54,17 @@ public class OpensearchOperationStore implements OperationStore {
   @Autowired private BeanFactory beanFactory;
 
   @Override
-  public Map<String, String> getIndexNameForAliasAndIds(String alias, Collection<String> ids) {
+  public Map<String, String> getIndexNameForAliasAndIds(
+      final String alias, final Collection<String> ids) {
     return richOpenSearchClient.doc().getIndexNames(alias, ids);
   }
 
   @Override
   public List<OperationEntity> getOperationsFor(
-      Long zeebeCommandKey,
-      Long processInstanceKey,
-      Long incidentKey,
-      OperationType operationType) {
+      final Long zeebeCommandKey,
+      final Long processInstanceKey,
+      final Long incidentKey,
+      final OperationType operationType) {
     if (processInstanceKey == null && zeebeCommandKey == null) {
       throw new OperateRuntimeException(
           "Wrong call to search for operation. Not enough parameters.");
@@ -95,7 +96,7 @@ public class OpensearchOperationStore implements OperationStore {
   }
 
   @Override
-  public String add(BatchOperationEntity batchOperationEntity) throws PersistenceException {
+  public String add(final BatchOperationEntity batchOperationEntity) throws PersistenceException {
     final var indexRequestBuilder =
         RequestDSL.<BatchOperationEntity>indexRequestBuilder(
                 batchOperationTemplate.getFullQualifiedName())
@@ -108,7 +109,7 @@ public class OpensearchOperationStore implements OperationStore {
   }
 
   @Override
-  public void update(OperationEntity operation, boolean refreshImmediately)
+  public void update(final OperationEntity operation, final boolean refreshImmediately)
       throws PersistenceException {
     final Function<Exception, String> errorMessageSupplier =
         e ->
@@ -132,7 +133,10 @@ public class OpensearchOperationStore implements OperationStore {
 
   @Override
   public void updateWithScript(
-      String index, String id, String script, Map<String, Object> parameters) {
+      final String index,
+      final String id,
+      final String script,
+      final Map<String, Object> parameters) {
     final Function<Exception, String> errorMessageSupplier =
         e ->
             String.format(
