@@ -282,26 +282,20 @@ public class MultiTenancyOverIdentityHighRequestCountIT {
               .map(ZeebeFuture::toCompletableFuture)
               .filter(CompletableFuture::isCompletedExceptionally)
               .map(CompletableFuture::exceptionNow)
-              .toList();
-
-      // A high number of requests will result in the
-      // Broker rejecting the requests with RESOURCE_EXHAUSTED.
-      // Assert there are request exceptions due to high load.
-      assertThat(exceptionalList).isNotEmpty();
-
-      // assert that there are no exceptions other than RESOURCE_EXHAUSTED
-      // due to the high request load
-      final var unavailableExceptionsList =
-          exceptionalList.stream()
               .filter(
                   sre ->
-                      // filter out exceptions that are RESOURCE_EXHAUSTED
+                      // A high number of requests may result in the
+                      // Broker rejecting the requests with RESOURCE_EXHAUSTED.
+                      // This is expected and should not be considered an error.
                       !((StatusRuntimeException) sre)
                           .getStatus()
                           .getCode()
                           .equals(Status.RESOURCE_EXHAUSTED.getCode()))
               .toList();
-      assertThat(unavailableExceptionsList).isEmpty();
+
+      // assert that there are no exceptions other than RESOURCE_EXHAUSTED
+      // due to the high request load
+      assertThat(exceptionalList).isEmpty();
     }
   }
 
