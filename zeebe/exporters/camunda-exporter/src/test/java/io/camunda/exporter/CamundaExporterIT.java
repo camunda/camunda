@@ -338,7 +338,6 @@ final class CamundaExporterIT {
 
   @Nested
   class ExportHandlerTests {
-
     @TestTemplate
     void shouldHandleExportedRecords(
         final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
@@ -351,6 +350,7 @@ final class CamundaExporterIT {
               new HashSet<>(provider.getIndexDescriptors()),
               new HashSet<>(provider.getIndexTemplateDescriptors()),
               config);
+      assertThat(provider.getExportHandlers().isEmpty()).isFalse();
       for (final var handler : provider.getExportHandlers()) {
         exportTest(exporter, handler, clientAdapter);
       }
@@ -358,6 +358,7 @@ final class CamundaExporterIT {
 
     private <S extends ExporterEntity<S>, T extends RecordValue> Record<T> recordGenerator(
         final ExportHandler<S, T> handler, final Supplier<Record<T>> createRecord) {
+      // Sometimes the factory generates record with intents that are not supported by the handler.
       for (int i = 0; i < 500; i++) {
         final var record = createRecord.get();
         if (handler.handlesRecord(record)) {
@@ -480,13 +481,11 @@ final class CamundaExporterIT {
           clientAdapter.get(
               expectedEntity.getId(), handler.getIndexName(), handler.getEntityType());
 
-      if (!responseEntity.equals(expectedEntity)) {
-        assertThat(responseEntity)
-            .describedAs(
-                "Handler [%s] correctly handles a [%s] record",
-                handler.getClass().getSimpleName(), handler.getHandledValueType())
-            .isEqualTo(expectedEntity);
-      }
+      assertThat(responseEntity)
+          .describedAs(
+              "Handler [%s] correctly handles a [%s] record",
+              handler.getClass().getSimpleName(), handler.getHandledValueType())
+          .isEqualTo(expectedEntity);
     }
   }
 }
