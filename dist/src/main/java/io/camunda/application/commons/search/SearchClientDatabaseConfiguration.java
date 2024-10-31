@@ -7,6 +7,8 @@
  */
 package io.camunda.application.commons.search;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.application.commons.search.SearchClientDatabaseConfiguration.SearchClientProperties;
 import io.camunda.db.rdbms.RdbmsService;
@@ -16,9 +18,12 @@ import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.search.es.clients.ElasticsearchSearchClient;
+import io.camunda.search.es.clients.ElasticsearchSessionDocumentClient;
+import io.camunda.search.es.clients.RetryElasticsearchClient;
 import io.camunda.search.os.clients.OpensearchSearchClient;
 import io.camunda.search.rdbms.RdbmsSearchClient;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
+import java.io.IOException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -38,11 +43,36 @@ public class SearchClientDatabaseConfiguration {
       name = "type",
       havingValue = "elasticsearch",
       matchIfMissing = true)
-  public ElasticsearchSearchClient elasticsearchSearchClient(
-      final SearchClientProperties configuration) {
+  public ElasticsearchClient elasticsearchClient(final SearchClientProperties configuration) {
     final var connector = new ElasticsearchConnector(configuration);
-    final var elasticsearch = connector.createClient();
-    return new ElasticsearchSearchClient(elasticsearch);
+    return connector.createClient();
+  }
+
+  @Bean
+  @ConditionalOnProperty(
+      prefix = "camunda.database",
+      name = "type",
+      havingValue = "elasticsearch",
+      matchIfMissing = true)
+  public ElasticsearchSearchClient elasticsearchSearchClient(
+      final ElasticsearchClient elasticsearchClient) {
+    return new ElasticsearchSearchClient(elasticsearchClient);
+  }
+
+  @Bean
+  @ConditionalOnProperty(
+      prefix = "camunda.database",
+      name = "type",
+      havingValue = "elasticsearch",
+      matchIfMissing = true)
+  public ElasticsearchSessionDocumentClient elasticsearchSessionDocumentClient(
+      final ElasticsearchClient elasticsearchClient, final ObjectMapper objectMapper)
+      throws IOException {
+    final var sessionDocumentClient =
+        new ElasticsearchSessionDocumentClient(
+            new RetryElasticsearchClient(elasticsearchClient, objectMapper));
+    sessionDocumentClient.setup();
+    return sessionDocumentClient;
   }
 
   @Bean

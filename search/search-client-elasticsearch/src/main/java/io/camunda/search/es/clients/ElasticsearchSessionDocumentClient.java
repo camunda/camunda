@@ -7,13 +7,12 @@
  */
 package io.camunda.search.es.clients;
 
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchRequest.Builder;
 import io.camunda.search.security.SessionDocumentStorageClient;
+import java.io.IOException;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Consumer;
-import org.elasticsearch.action.admin.indices.alias.Alias;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.common.settings.Settings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,22 +29,17 @@ public class ElasticsearchSessionDocumentClient implements SessionDocumentStorag
     this.client = client;
   }
 
-  public void setup() {
+  public void setup() throws IOException {
     final Map<String, Object> indexDescription =
         ElasticsearchJSONUtil.readJSONFileToMap("/camunda-web-session.json");
-    client.createIndex(
-        new CreateIndexRequest(indexName)
-            .source(indexDescription)
-            .aliases(Set.of(new Alias(indexName + "alias").writeIndex(false)))
-            .settings(
-                Settings.builder().put(NUMBER_OF_SHARDS, 1).put(NUMBER_OF_REPLICAS, 1).build()));
+    client.createIndex(indexName, indexName + "alias", 1, 1, "/camunda-web-session.json");
   }
 
   @Override
   public void consumeSessions(final Consumer<Map<String, Object>> sessionConsumer) {
     LOGGER.debug("Check for expired sessions");
-    final SearchRequest searchRequest = new SearchRequest(indexName);
-    client.doWithEachSearchResult(searchRequest, sh -> sessionConsumer.accept(sh.getSourceAsMap()));
+    final SearchRequest searchRequest = new Builder().index(indexName).build();
+    client.doWithEachSearchResult(searchRequest, sh -> sessionConsumer.accept((Map) sh.source()));
   }
 
   @Override
