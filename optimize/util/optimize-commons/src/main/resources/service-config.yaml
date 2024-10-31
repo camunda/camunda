@@ -437,8 +437,8 @@ opensearch:
 # a connection to it.
 es:
   connection:
-    healthCheckEnabled: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_HEALTHCHECK_ENABLED:false}
-    initSchemaEnabled: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_INIT_SCHEMA_ENABLED:false}
+    healthCheckEnabled: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_HEALTHCHECK_ENABLED:true}
+    initSchemaEnabled: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_INIT_SCHEMA_ENABLED:true}
     # Maximum time without connection to Elasticsearch, Optimize should
     # wait until a timeout triggers.
     timeout: 10000
