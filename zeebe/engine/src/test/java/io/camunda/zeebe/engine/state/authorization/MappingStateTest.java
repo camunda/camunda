@@ -82,4 +82,43 @@ public class MappingStateTest {
     // then
     assertThat(mapping).isEmpty();
   }
+
+  @Test
+  void shouldAddRole() {
+    // given
+    final long key = 1L;
+    final String claimName = "foo";
+    final String claimValue = "bar";
+    final var mapping =
+        new MappingRecord().setMappingKey(key).setClaimName(claimName).setClaimValue(claimValue);
+    mappingState.create(mapping);
+    final long roleKey = 1L;
+
+    // when
+    mappingState.addRole(key, roleKey);
+
+    // then
+    final var persistedMapping = mappingState.get(key).get();
+    assertThat(persistedMapping.getRoleKeysList()).containsExactly(roleKey);
+  }
+
+  @Test
+  void shouldRemoveRole() {
+    // given
+    final long key = 1L;
+    final String claimName = "foo";
+    final String claimValue = "bar";
+    final var mapping =
+        new MappingRecord().setMappingKey(key).setClaimName(claimName).setClaimValue(claimValue);
+    mappingState.create(mapping);
+    final long roleKey = 1L;
+    mappingState.addRole(key, roleKey);
+
+    // when
+    mappingState.removeRole(key, roleKey);
+
+    // then
+    final var persistedMapping = mappingState.get(key).get();
+    assertThat(persistedMapping.getRoleKeysList()).isEmpty();
+  }
 }
