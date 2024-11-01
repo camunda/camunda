@@ -326,20 +326,17 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
   }
 
   private String getProcessName(final Long processDefinitionKey, final String bpmnProcessId) {
-    final var processName =
-        processCache
-            .get(processDefinitionKey)
-            .map(CachedProcessEntity::name)
-            // If the cache does not contain the process definition then the process has been
-            // deleted from the backend. This is a special case which can happen only if there was a
-            // data loss in the backend. In that case, inorder to not block the exporter, we can
-            // return the bpmnProcessId as the process name.
-            .orElse(null);
-    if (processName == null || processName.isEmpty()) {
-      return bpmnProcessId;
-    }
-
-    return processName;
+    return processCache
+        .get(processDefinitionKey)
+        .map(CachedProcessEntity::name)
+        .map(
+            processName ->
+                processName == null || processName.isBlank() ? bpmnProcessId : processName)
+        // If the cache does not contain the process definition then the process has been
+        // deleted from the backend. This is a special case which can happen only if there was a
+        // data loss in the backend. In that case, inorder to not block the exporter, we can
+        // return the bpmnProcessId as the process name.
+        .orElse(bpmnProcessId);
   }
 
   private String getVersionTag(final long processDefinitionJey) {
