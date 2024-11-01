@@ -13,4 +13,6 @@ import java.util.Optional;
 public interface MappingState {
 
   Optional<PersistedMapping> get(final long key);
+
+  Optional<PersistedMapping> get(final String claimName, final String claimValue);
 }
