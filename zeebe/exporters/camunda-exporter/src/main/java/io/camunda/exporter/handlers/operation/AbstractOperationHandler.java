@@ -68,4 +68,9 @@ public abstract class AbstractOperationHandler<R extends RecordValue>
 
     batchRequest.update(indexName, entity.getId(), updateFields);
   }
+
+  @Override
+  public String getIndexName() {
+    return indexName;
+  }
 }
