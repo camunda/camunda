@@ -74,7 +74,6 @@ public class CamundaExporter implements Exporter {
     logger = context.getLogger();
     configuration = context.getConfiguration().instantiate(ExporterConfiguration.class);
     ConfigValidator.validate(configuration);
-    provider.init(configuration);
     context.setFilter(new CamundaExporterRecordFilter());
     metrics = new CamundaExporterMetrics(context.getMeterRegistry());
     LOG.debug("Exporter configured with {}", configuration);
@@ -84,6 +83,9 @@ public class CamundaExporter implements Exporter {
   public void open(final Controller controller) {
     this.controller = controller;
     clientAdapter = ClientAdapter.of(configuration);
+
+    provider.init(configuration, clientAdapter::getProcessCacheLoader);
+
     final var searchEngineClient = clientAdapter.getSearchEngineClient();
     final var schemaManager =
         new SchemaManager(
