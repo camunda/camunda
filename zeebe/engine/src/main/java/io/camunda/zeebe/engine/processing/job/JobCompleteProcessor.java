@@ -54,7 +54,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
             state.getJobState(),
             this::acceptCommand,
             authCheckBehavior,
-            List.of(this::checkTaskListenerVariablesNotSet));
+            List.of(this::checkVariablesNotProvidedForTaskListenerJob));
     this.jobMetrics = jobMetrics;
     this.eventHandle = eventHandle;
   }
@@ -130,7 +130,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
     }
   }
 
-  private Either<Rejection, JobRecord> checkTaskListenerVariablesNotSet(
+  private Either<Rejection, JobRecord> checkVariablesNotProvidedForTaskListenerJob(
       final TypedRecord<JobRecord> command, final JobRecord job) {
 
     if (job.getJobKind() == JobKind.TASK_LISTENER && hasVariables(command)) {
