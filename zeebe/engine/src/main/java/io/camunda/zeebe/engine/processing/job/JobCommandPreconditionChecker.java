@@ -46,26 +46,28 @@ public class JobCommandPreconditionChecker {
 
   protected Either<Rejection, JobRecord> check(
       final State state, final TypedRecord<JobRecord> command) {
-    final var persistedJob = jobState.getJob(command.getKey(), command.getAuthorizations());
+    final long jobKey = command.getKey();
+    final var storedJob = jobState.getJob(jobKey, command.getAuthorizations());
 
-    if (state == State.NOT_FOUND || persistedJob == null) {
+    if (state == State.NOT_FOUND || storedJob == null) {
       return Either.left(
-          new Rejection(
-              RejectionType.NOT_FOUND,
-              String.format(NO_JOB_FOUND_MESSAGE, intent, command.getKey())));
+          new Rejection(RejectionType.NOT_FOUND, NO_JOB_FOUND_MESSAGE.formatted(intent, jobKey)));
     }
 
     if (!validStates.contains(state)) {
       return Either.left(
           new Rejection(
               RejectionType.INVALID_STATE,
-              String.format(INVALID_JOB_STATE_MESSAGE, intent, command.getKey(), state)));
+              INVALID_JOB_STATE_MESSAGE.formatted(intent, jobKey, state)));
     }
 
+    // Evaluate custom checks on the job `command` and the `job` retrieved from `jobState`.
+    // Return the first `failure` encountered, or if all checks pass, return the `job` from
+    // `jobState` for further processing.
     return customChecks.stream()
-        .map(check -> check.check(command, persistedJob))
+        .map(check -> check.check(command, storedJob))
         .filter(Either::isLeft)
         .findFirst()
-        .orElse(Either.right(persistedJob));
+        .orElse(Either.right(storedJob));
   }
 }
