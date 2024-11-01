@@ -9,6 +9,10 @@ package io.camunda.exporter;
 
 import static java.util.Map.entry;
 
+import io.camunda.exporter.archiver.ArchiverRepository;
+import io.camunda.exporter.archiver.ArchiverRepository.NoopArchiverRepository;
+import io.camunda.exporter.cache.ProcessCacheImpl;
+import io.camunda.exporter.cache.ProcessCacheLoaderFactory;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.handlers.AuthorizationHandler;
@@ -81,7 +85,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   private Set<ExportHandler> exportHandlers;
 
   @Override
-  public void init(final ExporterConfiguration configuration) {
+  public void init(
+      final ExporterConfiguration configuration,
+      final ProcessCacheLoaderFactory processCacheLoaderFactory) {
     final var globalPrefix = configuration.getIndex().getPrefix();
     final var isElasticsearch =
         ConnectionTypes.from(configuration.getConnect().getType())
@@ -130,6 +136,12 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             AuthorizationIndex.class,
             new AuthorizationIndex(globalPrefix, isElasticsearch));
 
+    final var processCache =
+        new ProcessCacheImpl(
+            10000,
+            processCacheLoaderFactory.create(
+                indexDescriptorsMap.get(ProcessIndex.class).getFullQualifiedName()));
+
     exportHandlers =
         Set.of(
             new UserHandler(indexDescriptorsMap.get(UserIndex.class).getFullQualifiedName()),
@@ -138,7 +150,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new DecisionHandler(
                 indexDescriptorsMap.get(DecisionIndex.class).getFullQualifiedName()),
             new ListViewProcessInstanceFromProcessInstanceHandler(
-                templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(), false),
+                templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(),
+                false,
+                processCache),
             new ListViewFlowNodeFromIncidentHandler(
                 templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(), false),
             new ListViewFlowNodeFromJobHandler(
@@ -165,7 +179,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new DecisionEvaluationHandler(
                 templateDescriptorsMap.get(DecisionInstanceTemplate.class).getFullQualifiedName()),
             new ProcessHandler(
-                indexDescriptorsMap.get(ProcessIndex.class).getFullQualifiedName(), new XMLUtil()),
+                indexDescriptorsMap.get(ProcessIndex.class).getFullQualifiedName(),
+                new XMLUtil(),
+                processCache),
             new MetricFromProcessInstanceHandler(
                 indexDescriptorsMap.get(MetricIndex.class).getFullQualifiedName()),
             new TaskCompletedMetricHandler(
@@ -202,8 +218,20 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   }
 
   @Override
+  public <T extends IndexTemplateDescriptor> T getIndexTemplateDescriptor(
+      final Class<T> descriptorClass) {
+    return descriptorClass.cast(templateDescriptorsMap.get(descriptorClass));
+  }
+
+  @Override
   public Set<ExportHandler> getExportHandlers() {
     // Register all handlers here
     return exportHandlers;
+  }
+
+  @Override
+  public ArchiverRepository newArchiverRepository() {
+    // TODO: return appropriate implementation
+    return new NoopArchiverRepository();
   }
 }

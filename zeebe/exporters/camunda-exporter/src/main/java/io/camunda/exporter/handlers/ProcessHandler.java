@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.handlers;
 
+import io.camunda.exporter.cache.CachedProcessEntity;
+import io.camunda.exporter.cache.ProcessCache;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.exporter.utils.XMLUtil;
@@ -23,10 +25,13 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
 
   private final String indexName;
   private final XMLUtil xmlUtil;
+  private final ProcessCache processCache;
 
-  public ProcessHandler(final String indexName, final XMLUtil xmlUtil) {
+  public ProcessHandler(
+      final String indexName, final XMLUtil xmlUtil, final ProcessCache processCache) {
     this.indexName = indexName;
     this.xmlUtil = xmlUtil;
+    this.processCache = processCache;
   }
 
   @Override
@@ -85,10 +90,21 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
                 .setVersionTag(processEntity.getVersionTag())
                 .setFormId(processEntity.getFormId())
                 .setIsPublic(processEntity.getIsPublic()));
+
+    // update local cache so that the process info is available immediately to the process instance
+    // record handler
+    final var cachedProcessEntity =
+        new CachedProcessEntity(entity.getName(), entity.getVersionTag());
+    processCache.put(process.getProcessDefinitionKey(), cachedProcessEntity);
   }
 
   @Override
   public void flush(final ProcessEntity entity, final BatchRequest batchRequest) {
     batchRequest.add(indexName, entity);
+  }
+
+  @Override
+  public String getIndexName() {
+    return indexName;
   }
 }

@@ -138,6 +138,11 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
         indexName, entity.getId(), entity, updateFields, entity.getProcessInstanceId());
   }
 
+  @Override
+  public String getIndexName() {
+    return indexName;
+  }
+
   private Map<String, Object> getUpdatedFields(final TaskEntity entity) {
 
     final Map<String, Object> updateFields = new HashMap<>();

@@ -53,6 +53,7 @@ import io.camunda.zeebe.protocol.record.value.EscalationRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageCorrelationRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
@@ -483,6 +484,10 @@ public final class RecordingExporter implements Exporter {
 
   public static TenantRecordStream tenantRecords(final TenantIntent intent) {
     return tenantRecords().withIntent(intent);
+  }
+
+  public static MappingRecordStream mappingRecords() {
+    return new MappingRecordStream(records(ValueType.MAPPING, MappingRecordValue.class));
   }
 
   public static void autoAcknowledge(final boolean shouldAcknowledgeRecords) {

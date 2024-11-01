@@ -472,9 +472,7 @@ public final class EventAppliers implements EventApplier {
         new RoleCreatedApplier(state.getRoleState(), state.getAuthorizationState()));
     register(RoleIntent.UPDATED, new RoleUpdatedApplier(state.getRoleState()));
     register(RoleIntent.ENTITY_ADDED, new RoleEntityAddedApplier(state));
-    register(
-        RoleIntent.ENTITY_REMOVED,
-        new RoleEntityRemovedApplier(state.getRoleState(), state.getUserState()));
+    register(RoleIntent.ENTITY_REMOVED, new RoleEntityRemovedApplier(state));
     register(
         RoleIntent.DELETED,
         new RoleDeletedApplier(
@@ -491,9 +489,7 @@ public final class EventAppliers implements EventApplier {
         TenantIntent.CREATED,
         new TenantCreatedApplier(state.getTenantState(), state.getAuthorizationState()));
     register(TenantIntent.UPDATED, new TenantUpdatedApplier(state.getTenantState()));
-    register(
-        TenantIntent.ENTITY_ADDED,
-        new TenantEntityAddedApplier(state.getTenantState(), state.getUserState()));
+    register(TenantIntent.ENTITY_ADDED, new TenantEntityAddedApplier(state));
     register(
         TenantIntent.ENTITY_REMOVED,
         new TenantEntityRemovedApplier(state.getTenantState(), state.getUserState()));

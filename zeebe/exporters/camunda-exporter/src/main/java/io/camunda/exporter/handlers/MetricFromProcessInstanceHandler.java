@@ -78,4 +78,9 @@ public class MetricFromProcessInstanceHandler
   public void flush(final MetricEntity entity, final BatchRequest batchRequest) {
     batchRequest.add(indexName, entity);
   }
+
+  @Override
+  public String getIndexName() {
+    return indexName;
+  }
 }
