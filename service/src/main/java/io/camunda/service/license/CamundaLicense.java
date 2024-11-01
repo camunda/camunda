@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 public class CamundaLicense {
 
   @VisibleForTesting
-  public static final DateTimeFormatter dateFormatter =
+  public static final DateTimeFormatter DATE_TIME_FORMATTER =
       DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm'Z'").withZone(ZoneOffset.UTC);
 
   public static final String CAMUNDA_LICENSE_ENV_VAR_KEY = "CAMUNDA_LICENSE_KEY";
@@ -51,7 +51,7 @@ public class CamundaLicense {
   }
 
   public synchronized String expiresAt() {
-    return dateFormatter.format(validUntil);
+    return DATE_TIME_FORMATTER.format(validUntil);
   }
 
   public synchronized void initializeWithLicense(final String license) {
