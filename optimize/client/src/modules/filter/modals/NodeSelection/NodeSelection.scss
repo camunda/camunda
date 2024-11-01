@@ -3,6 +3,11 @@
 .NodeSelection {
   .cds--modal-container {
     height: 100%;
+
+    .filterContentContainer {
+      grid-template-rows: auto auto 1fr;
+      height: 100%;
+    }
   }
 
   .modalContent {

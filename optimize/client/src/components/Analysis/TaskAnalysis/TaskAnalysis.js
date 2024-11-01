@@ -211,7 +211,7 @@ export default function TaskAnalysis() {
           className="incompatibleFiltersWarning"
         />
       )}
-      {hasData && <h2>{t('analysis.task.result', {count: matchingInstancesCount})}</h2>}
+      {hasData && <p>{t('analysis.task.result', {count: matchingInstancesCount})}</p>}
       <div className={classnames('TaskAnalysis__diagram', {empty})}>
         {hasData && (
           <BPMNDiagram xml={xml} loading={isLoadingXml}>
@@ -229,7 +229,7 @@ export default function TaskAnalysis() {
       )}
       {hasData && (
         <>
-          <h2>{t('analysis.task.table.heading')}</h2>
+          <h4 className="subtitle">{t('analysis.task.table.heading')}</h4>
           <OutlierDetailsTable
             flowNodeNames={flowNodeNames}
             loading={isLoadingFlowNodeNames || isLoadingNodeOutliers}

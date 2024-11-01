@@ -7,7 +7,7 @@
  */
 
 import {Component} from 'react';
-import {Button} from '@carbon/react';
+import {Button, Stack} from '@carbon/react';
 import {Db2Database, Edit, TableSplit, TrashCan} from '@carbon/icons-react';
 
 import {t} from 'translation';
@@ -214,7 +214,7 @@ export default withErrorHandling(
             <Modal.Header title={t('report.saveConflict.header')} />
             <Modal.Content>
               {conflict && conflict.length > 0 && (
-                <>
+                <Stack gap={4}>
                   <p>{t('home.sources.saveConflict.header')}</p>
                   <ul className="conflictList">
                     {conflict.map(({id, name}) => (
@@ -224,7 +224,7 @@ export default withErrorHandling(
                   <p>
                     <b>{t('home.sources.saveConflict.message')}</b>
                   </p>
-                </>
+                </Stack>
               )}
             </Modal.Content>
             <Modal.Footer>

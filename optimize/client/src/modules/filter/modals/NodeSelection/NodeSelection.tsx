@@ -8,7 +8,7 @@
 
 import {useEffect, useState} from 'react';
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
-import {Button, ButtonSet} from '@carbon/react';
+import {Button, ButtonSet, Stack} from '@carbon/react';
 import classnames from 'classnames';
 
 import {
@@ -114,32 +114,34 @@ export default function NodeSelection({
           applyTo={applyTo}
           setApplyTo={setApplyTo}
         />
-        {!xml ? (
-          <Loading />
-        ) : (
-          <>
-            <p>{t('common.filter.UnselectFlowNodes')}</p>
-            <div className="diagramActions">
-              <ButtonSet>
-                <Button size="md" kind="tertiary" onClick={() => setSelectedNodes(allFlowNodes)}>
-                  {t('common.selectAll')}
-                </Button>
-                <Button size="md" kind="tertiary" onClick={() => setSelectedNodes([])}>
-                  {t('common.deselectAll')}
-                </Button>
-              </ButtonSet>
-            </div>
-            <div className="diagramContainer">
-              <BPMNDiagram xml={xml}>
-                <ClickBehavior
-                  onClick={toggleNode}
-                  selectedNodes={selectedNodes}
-                  nodeTypes={['FlowNode']}
-                />
-              </BPMNDiagram>
-            </div>
-          </>
-        )}
+        <Stack className="filterContentContainer" gap={6}>
+          {!xml ? (
+            <Loading />
+          ) : (
+            <>
+              <p>{t('common.filter.UnselectFlowNodes')}</p>
+              <div className="diagramActions">
+                <ButtonSet>
+                  <Button size="md" kind="tertiary" onClick={() => setSelectedNodes(allFlowNodes)}>
+                    {t('common.selectAll')}
+                  </Button>
+                  <Button size="md" kind="tertiary" onClick={() => setSelectedNodes([])}>
+                    {t('common.deselectAll')}
+                  </Button>
+                </ButtonSet>
+              </div>
+              <div className="diagramContainer">
+                <BPMNDiagram xml={xml}>
+                  <ClickBehavior
+                    onClick={toggleNode}
+                    selectedNodes={selectedNodes}
+                    nodeTypes={['FlowNode']}
+                  />
+                </BPMNDiagram>
+              </div>
+            </>
+          )}
+        </Stack>
       </Modal.Content>
       <Modal.Footer>
         <Button kind="secondary" className="cancel" onClick={close}>
