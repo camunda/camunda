@@ -10,7 +10,6 @@ package io.camunda.operate.archiver;
 import static io.camunda.operate.archiver.AbstractArchiverJob.DATES_AGG;
 import static io.camunda.operate.archiver.AbstractArchiverJob.INSTANCES_AGG;
 import static io.camunda.operate.schema.SchemaManager.OPERATE_DELETE_ARCHIVED_INDICES;
-import static io.camunda.operate.schema.templates.BatchOperationTemplate.END_DATE;
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.bucketSortAggregation;
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.dateHistogramAggregation;
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.topHitsAggregation;
@@ -29,15 +28,16 @@ import static io.camunda.operate.store.opensearch.dsl.RequestDSL.reindexRequestB
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.time;
 import static io.camunda.operate.util.FutureHelper.withTimer;
+import static io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate.END_DATE;
 import static java.lang.String.format;
 import static org.opensearch.client.opensearch._types.SortOrder.Asc;
 
 import io.camunda.operate.Metrics;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.templates.BatchOperationTemplate;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
+import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import java.util.List;
 import java.util.Map;

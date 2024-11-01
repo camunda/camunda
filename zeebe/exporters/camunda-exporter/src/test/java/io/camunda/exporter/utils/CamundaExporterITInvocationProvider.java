@@ -41,17 +41,16 @@ public class CamundaExporterITInvocationProvider
         AfterEachCallback {
 
   public static final String CONFIG_PREFIX = "camunda-record";
+  protected SearchClientAdapter elsClientAdapter;
+  protected SearchClientAdapter osClientAdapter;
   private final ElasticsearchContainer elsContainer =
       TestSupport.createDefeaultElasticsearchContainer();
   private final OpensearchContainer<?> osContainer = TestSupport.createDefaultOpensearchContainer();
   private ElasticsearchClient elsClient;
   private OpenSearchClient osClient;
-  private SearchClientAdapter elsClientAdapter;
-  private SearchClientAdapter osClientAdapter;
-
   private final List<AutoCloseable> closeables = new ArrayList<>();
 
-  private ExporterConfiguration getConfigWithConnectionDetails(
+  protected ExporterConfiguration getConfigWithConnectionDetails(
       final ConnectionTypes connectionType) {
     final var config = new ExporterConfiguration();
     config.getIndex().setPrefix(CONFIG_PREFIX);
@@ -115,6 +114,42 @@ public class CamundaExporterITInvocationProvider
         invocationContext(getConfigWithConnectionDetails(ELASTICSEARCH), elsClientAdapter));
   }
 
+  protected ParameterResolver exporterConfigResolver(final ExporterConfiguration config) {
+    return new ParameterResolver() {
+
+      @Override
+      public boolean supportsParameter(
+          final ParameterContext parameterCtx, final ExtensionContext extensionCtx) {
+        return parameterCtx.getParameter().getType().equals(ExporterConfiguration.class);
+      }
+
+      @Override
+      public Object resolveParameter(
+          final ParameterContext parameterCtx, final ExtensionContext extensionCtx) {
+        return config;
+      }
+    };
+  }
+
+  protected ParameterResolver clientAdapterResolver(final SearchClientAdapter clientAdapter) {
+    return new ParameterResolver() {
+
+      @Override
+      public boolean supportsParameter(
+          final ParameterContext parameterContext, final ExtensionContext extensionContext)
+          throws ParameterResolutionException {
+        return parameterContext.getParameter().getType().equals(SearchClientAdapter.class);
+      }
+
+      @Override
+      public Object resolveParameter(
+          final ParameterContext parameterContext, final ExtensionContext extensionContext)
+          throws ParameterResolutionException {
+        return clientAdapter;
+      }
+    };
+  }
+
   private TestTemplateInvocationContext invocationContext(
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter) {
     return new TestTemplateInvocationContext() {
@@ -126,37 +161,7 @@ public class CamundaExporterITInvocationProvider
 
       @Override
       public List<Extension> getAdditionalExtensions() {
-        return asList(
-            new ParameterResolver() {
-
-              @Override
-              public boolean supportsParameter(
-                  final ParameterContext parameterCtx, final ExtensionContext extensionCtx) {
-                return parameterCtx.getParameter().getType().equals(ExporterConfiguration.class);
-              }
-
-              @Override
-              public Object resolveParameter(
-                  final ParameterContext parameterCtx, final ExtensionContext extensionCtx) {
-                return config;
-              }
-            },
-            new ParameterResolver() {
-
-              @Override
-              public boolean supportsParameter(
-                  final ParameterContext parameterContext, final ExtensionContext extensionContext)
-                  throws ParameterResolutionException {
-                return parameterContext.getParameter().getType().equals(SearchClientAdapter.class);
-              }
-
-              @Override
-              public Object resolveParameter(
-                  final ParameterContext parameterContext, final ExtensionContext extensionContext)
-                  throws ParameterResolutionException {
-                return clientAdapter;
-              }
-            });
+        return asList(exporterConfigResolver(config), clientAdapterResolver(clientAdapter));
       }
     };
   }

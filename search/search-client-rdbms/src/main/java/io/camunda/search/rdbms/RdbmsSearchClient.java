@@ -20,6 +20,7 @@ import io.camunda.search.clients.FormSearchClient;
 import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
+import io.camunda.search.clients.RoleSearchClient;
 import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.clients.VariableSearchClient;
@@ -32,6 +33,7 @@ import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
@@ -44,6 +46,7 @@ import io.camunda.search.query.FormQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
@@ -64,7 +67,8 @@ public class RdbmsSearchClient
         ProcessDefinitionSearchClient,
         UserTaskSearchClient,
         UserSearchClient,
-        VariableSearchClient {
+        VariableSearchClient,
+        RoleSearchClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsSearchClient.class);
 
@@ -76,7 +80,7 @@ public class RdbmsSearchClient
 
   @Override
   public SearchQueryResult<ProcessInstanceEntity> searchProcessInstances(
-      final ProcessInstanceQuery query, final SecurityContext securityContext) {
+      final ProcessInstanceQuery query) {
     LOG.debug("[RDBMS Search Client] Search for processInstance: {}", query);
 
     final var searchResult =
@@ -91,31 +95,36 @@ public class RdbmsSearchClient
 
   @Override
   public SearchQueryResult<AuthorizationEntity> searchAuthorizations(
-      final AuthorizationQuery filter, final SecurityContext securityContext) {
+      final AuthorizationQuery filter) {
     return null;
   }
 
   @Override
+  public RdbmsSearchClient withSecurityContext(final SecurityContext securityContext) {
+    return this;
+  }
+
+  @Override
   public SearchQueryResult<DecisionDefinitionEntity> searchDecisionDefinitions(
-      final DecisionDefinitionQuery filter, final SecurityContext securityContext) {
+      final DecisionDefinitionQuery filter) {
     return null;
   }
 
   @Override
   public SearchQueryResult<DecisionInstanceEntity> searchDecisionInstances(
-      final DecisionInstanceQuery filter, final SecurityContext securityContext) {
+      final DecisionInstanceQuery filter) {
     return null;
   }
 
   @Override
   public SearchQueryResult<DecisionRequirementsEntity> searchDecisionRequirements(
-      final DecisionRequirementsQuery filter, final SecurityContext securityContext) {
+      final DecisionRequirementsQuery filter) {
     return null;
   }
 
   @Override
   public SearchQueryResult<FlowNodeInstanceEntity> searchFlowNodeInstances(
-      final FlowNodeInstanceQuery query, final SecurityContext securityContext) {
+      final FlowNodeInstanceQuery query) {
     final var searchResult =
         rdbmsService
             .getFlowNodeInstanceReader()
@@ -127,38 +136,38 @@ public class RdbmsSearchClient
   }
 
   @Override
-  public SearchQueryResult<FormEntity> searchForms(
-      final FormQuery filter, final SecurityContext securityContext) {
+  public SearchQueryResult<FormEntity> searchForms(final FormQuery filter) {
     return null;
   }
 
   @Override
-  public SearchQueryResult<IncidentEntity> searchIncidents(
-      final IncidentQuery filter, final SecurityContext securityContext) {
+  public SearchQueryResult<IncidentEntity> searchIncidents(final IncidentQuery filter) {
     return null;
   }
 
   @Override
-  public SearchQueryResult<UserEntity> searchUsers(
-      final UserQuery filter, final SecurityContext securityContext) {
+  public SearchQueryResult<UserEntity> searchUsers(final UserQuery filter) {
     return null;
   }
 
   @Override
-  public SearchQueryResult<UserTaskEntity> searchUserTasks(
-      final UserTaskQuery filter, final SecurityContext securityContext) {
+  public SearchQueryResult<UserTaskEntity> searchUserTasks(final UserTaskQuery filter) {
     return null;
   }
 
   @Override
-  public SearchQueryResult<VariableEntity> searchVariables(
-      final VariableQuery filter, final SecurityContext securityContext) {
+  public SearchQueryResult<VariableEntity> searchVariables(final VariableQuery filter) {
+    return null;
+  }
+
+  @Override
+  public SearchQueryResult<RoleEntity> searchRoles(final RoleQuery filter) {
     return null;
   }
 
   @Override
   public SearchQueryResult<ProcessDefinitionEntity> searchProcessDefinitions(
-      final ProcessDefinitionQuery query, final SecurityContext securityContext) {
+      final ProcessDefinitionQuery query) {
     LOG.debug("[RDBMS Search Client] Search for processDefinition: {}", query);
 
     final var searchResult =

@@ -10,68 +10,99 @@ package io.camunda.search.filter;
 import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValues;
 
+import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
 
-public final record VariableFilter(
-    List<VariableValueFilter> variableFilters,
-    List<Long> scopeKeys,
-    List<Long> processInstanceKeys,
-    List<Long> variableKeys,
+public record VariableFilter(
+    Map<String, List<Operation<Object>>> variableOperations,
+    List<Operation<Long>> scopeKeyOperations,
+    List<Operation<Long>> processInstanceKeyOperations,
+    List<Operation<Long>> variableKeyOperations,
     List<String> tenantIds,
     Boolean isTruncated)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<VariableFilter> {
-    private List<VariableValueFilter> variableFilters;
-    private List<Long> scopeKeys;
-    private List<Long> processInstanceKeys;
-    private List<Long> variableKeys;
+    private Map<String, List<Operation<Object>>> variableOperations;
+    private List<Operation<Long>> scopeKeyOperations;
+    private List<Operation<Long>> processInstanceKeyOperations;
+    private List<Operation<Long>> variableKeyOperations;
     private List<String> tenantIds;
     private Boolean isTruncated;
 
-    public Builder variable(final List<VariableValueFilter> values) {
-      variableFilters = addValuesToList(variableFilters, values);
+    public Builder variableOperations(final String name, final List<Operation<Object>> operations) {
+      variableOperations = Objects.requireNonNullElse(variableOperations, new HashMap<>());
+      final var values = variableOperations.getOrDefault(name, new ArrayList<>());
+      values.addAll(operations);
+      variableOperations.put(name, values);
       return this;
     }
 
-    public Builder variable(final VariableValueFilter value, final VariableValueFilter... values) {
-      return variable(collectValues(value, values));
+    @SafeVarargs
+    public final Builder variableOperations(
+        final String name,
+        final Operation<Object> operation,
+        final Operation<Object>... operations) {
+      return variableOperations(name, collectValues(operation, operations));
     }
 
-    public Builder variable(
-        final Function<VariableValueFilter.Builder, ObjectBuilder<VariableValueFilter>> fn) {
-      return variable(fn.apply(new VariableValueFilter.Builder()).build());
+    public Builder variable(final String name) {
+      return variableOperations(name, Operation.exists(true));
+    }
+
+    public Builder scopeKeyOperations(final List<Operation<Long>> operations) {
+      scopeKeyOperations = addValuesToList(scopeKeyOperations, operations);
+      return this;
     }
 
     public Builder scopeKeys(final Long value, final Long... values) {
-      return scopeKeys(collectValues(value, values));
+      return scopeKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     public Builder scopeKeys(final List<Long> values) {
-      scopeKeys = addValuesToList(scopeKeys, values);
+      return scopeKeyOperations(FilterUtil.mapDefaultToOperation(values));
+    }
+
+    @SafeVarargs
+    public final Builder scopeKeyOperations(
+        final Operation<Long> operation, final Operation<Long>... operations) {
+      return scopeKeyOperations(collectValues(operation, operations));
+    }
+
+    public Builder processInstanceKeyOperations(final List<Operation<Long>> operations) {
+      processInstanceKeyOperations = addValuesToList(processInstanceKeyOperations, operations);
       return this;
     }
 
-    public Builder processInstanceKeys(final Long value, final Long... values) {
-      return processInstanceKeys(collectValues(value, values));
+    @SafeVarargs
+    public final Builder processInstanceKeyOperations(
+        final Operation<Long> operation, final Operation<Long>... operations) {
+      return processInstanceKeyOperations(collectValues(operation, operations));
     }
 
-    public Builder processInstanceKeys(final List<Long> values) {
-      processInstanceKeys = addValuesToList(processInstanceKeys, values);
+    public Builder processInstanceKeys(final Long value, final Long... values) {
+      return processInstanceKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    public Builder variableKeyOperations(final List<Operation<Long>> operations) {
+      variableKeyOperations = addValuesToList(variableKeyOperations, operations);
       return this;
     }
 
     public Builder variableKeys(final Long value, final Long... values) {
-      return variableKeys(collectValues(value, values));
+      return variableKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
-    public Builder variableKeys(final List<Long> values) {
-      variableKeys = addValuesToList(variableKeys, values);
-      return this;
+    @SafeVarargs
+    public final Builder variableKeyOperations(
+        final Operation<Long> operation, final Operation<Long>... operations) {
+      return variableKeyOperations(collectValues(operation, operations));
     }
 
     public Builder tenantIds(final String value, final String... values) {
@@ -91,10 +122,10 @@ public final record VariableFilter(
     @Override
     public VariableFilter build() {
       return new VariableFilter(
-          Objects.requireNonNullElseGet(variableFilters, Collections::emptyList),
-          Objects.requireNonNullElseGet(scopeKeys, Collections::emptyList),
-          Objects.requireNonNullElseGet(processInstanceKeys, Collections::emptyList),
-          Objects.requireNonNullElseGet(variableKeys, Collections::emptyList),
+          Objects.requireNonNullElseGet(variableOperations, Collections::emptyMap),
+          Objects.requireNonNullElseGet(scopeKeyOperations, Collections::emptyList),
+          Objects.requireNonNullElseGet(processInstanceKeyOperations, Collections::emptyList),
+          Objects.requireNonNullElseGet(variableKeyOperations, Collections::emptyList),
           Objects.requireNonNullElseGet(tenantIds, Collections::emptyList),
           isTruncated);
     }

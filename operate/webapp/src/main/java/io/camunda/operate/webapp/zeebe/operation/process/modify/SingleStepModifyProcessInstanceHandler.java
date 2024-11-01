@@ -63,7 +63,7 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
     final ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2 lastStep =
         processTokenModifications(modifyProcessInstanceRequest, operation);
 
-    modifyProcessZeebeWrapper.sendModificationsToZeebe(lastStep);
+    modifyProcessZeebeWrapper.sendModificationsToZeebe(lastStep, operation.getId());
     markAsSent(operation);
     operationsManager.completeOperation(operation, false);
   }
@@ -145,7 +145,8 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
     for (final Modification modification : modifications) {
       final Long scopeKey =
           modification.getScopeKey() == null ? processInstanceKey : modification.getScopeKey();
-      modifyProcessZeebeWrapper.setVariablesInZeebe(scopeKey, modification.getVariables());
+      modifyProcessZeebeWrapper.setVariablesInZeebe(
+          scopeKey, modification.getVariables(), operation.getId());
       updateFinishedInBatchOperation(operation);
     }
   }

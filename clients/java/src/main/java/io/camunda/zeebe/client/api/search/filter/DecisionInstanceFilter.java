@@ -30,6 +30,9 @@ public interface DecisionInstanceFilter extends SearchRequestFilter {
   /** Filter by evaluationFailure */
   DecisionInstanceFilter evaluationFailure(String evaluationFailure);
 
+  /** Filter by evaluationDate */
+  DecisionInstanceFilter evaluationDate(String evaluationDate);
+
   /** Filter by processDefinitionKey */
   DecisionInstanceFilter processDefinitionKey(long processDefinitionKey);
 

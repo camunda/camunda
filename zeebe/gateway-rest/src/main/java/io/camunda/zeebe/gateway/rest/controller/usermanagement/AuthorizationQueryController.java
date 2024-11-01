@@ -9,8 +9,10 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.service.AuthorizationServices;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResponse;
+import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
@@ -41,13 +43,21 @@ public class AuthorizationQueryController {
   }
 
   @PostMapping(
-      path = "/v2/users/{id}/authorizations/search",
+      path = "/v2/users/{userKey}/authorizations/search",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<AuthorizationSearchResponse> searchUserAuthorizations(
-      @PathVariable("id") final long id,
+      @PathVariable("userKey") final long userKey,
       @RequestBody(required = false) final AuthorizationSearchQueryRequest query) {
-    return SearchQueryRequestMapper.toAuthorizationQuery(query)
+    var finalQuery = query;
+    if (query == null) {
+      finalQuery = new AuthorizationSearchQueryRequest();
+    }
+    if (finalQuery.getFilter() == null) {
+      finalQuery.setFilter(new AuthorizationFilterRequest());
+    }
+    finalQuery.getFilter().ownerType(OwnerTypeEnum.USER).ownerKey(userKey);
+    return SearchQueryRequestMapper.toAuthorizationQuery(finalQuery)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 

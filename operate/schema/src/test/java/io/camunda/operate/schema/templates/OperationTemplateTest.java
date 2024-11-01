@@ -10,6 +10,7 @@ package io.camunda.operate.schema.templates;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.schema.migration.SemanticVersion;
+import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
 import org.junit.jupiter.api.Test;
 
 class OperationTemplateTest {
@@ -17,6 +18,7 @@ class OperationTemplateTest {
   @Test
   void templateShouldHaveCompletedDateFieldAndIncreasedMinorVersion() {
     assertThat(OperationTemplate.COMPLETED_DATE).isNotNull();
-    assertThat(new SemanticVersion(new OperationTemplate().getVersion()).isNewerThan("8.4.0"));
+    assertThat(
+        new SemanticVersion(new OperationTemplate("", false).getVersion()).isNewerThan("8.4.0"));
   }
 }

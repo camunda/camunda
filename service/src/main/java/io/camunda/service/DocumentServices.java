@@ -15,7 +15,7 @@ import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.document.api.DocumentStoreRecord;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
 import io.camunda.security.auth.Authentication;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.util.Either;
 import java.io.InputStream;
@@ -27,22 +27,22 @@ public class DocumentServices extends ApiServices<DocumentServices> {
   private final SimpleDocumentStoreRegistry registry;
 
   public DocumentServices(
-      final BrokerClient brokerClient, final SecurityConfiguration securityConfiguration) {
-    this(brokerClient, securityConfiguration, null, new SimpleDocumentStoreRegistry());
+      final BrokerClient brokerClient, final SecurityContextProvider securityContextProvider) {
+    this(brokerClient, securityContextProvider, null, new SimpleDocumentStoreRegistry());
   }
 
   public DocumentServices(
       final BrokerClient brokerClient,
-      final SecurityConfiguration securityConfiguration,
+      final SecurityContextProvider securityContextProvider,
       final Authentication authentication,
       final SimpleDocumentStoreRegistry registry) {
-    super(brokerClient, securityConfiguration, authentication);
+    super(brokerClient, securityContextProvider, authentication);
     this.registry = registry;
   }
 
   @Override
   public DocumentServices withAuthentication(final Authentication authentication) {
-    return new DocumentServices(brokerClient, securityConfiguration, authentication, registry);
+    return new DocumentServices(brokerClient, securityContextProvider, authentication, registry);
   }
 
   public CompletableFuture<DocumentReferenceResponse> createDocument(

@@ -11,8 +11,10 @@ import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.sort.AuthorizationSort;
+import io.camunda.search.sort.SearchSortOptions;
 import io.camunda.search.sort.SortOptionBuilders;
 import io.camunda.util.ObjectBuilder;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -22,6 +24,12 @@ public record AuthorizationQuery(
   public static AuthorizationQuery of(
       final Function<Builder, ObjectBuilder<AuthorizationQuery>> fn) {
     return fn.apply(new Builder()).build();
+  }
+
+  @Override
+  public List<SearchSortOptions> retainValidSortings(final List<SearchSortOptions> sorting) {
+    final var fieldNames = List.of("ownerKey", "ownerType", "resourceKey", "resourceType");
+    return sorting.stream().filter(s -> fieldNames.contains(s.field().field())).toList();
   }
 
   public static final class Builder extends SearchQueryBase.AbstractQueryBuilder<Builder>

@@ -15,13 +15,11 @@ import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
-import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.auth.Authorization;
 import io.camunda.service.search.core.SearchQueryService;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.function.Function;
 
 public final class FlowNodeInstanceServices
@@ -32,31 +30,26 @@ public final class FlowNodeInstanceServices
 
   public FlowNodeInstanceServices(
       final BrokerClient brokerClient,
-      final SecurityConfiguration securityConfiguration,
+      final SecurityContextProvider securityContextProvider,
       final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient,
       final Authentication authentication) {
-    super(brokerClient, securityConfiguration, authentication);
+    super(brokerClient, securityContextProvider, authentication);
     this.flowNodeInstanceSearchClient = flowNodeInstanceSearchClient;
   }
 
   @Override
   public FlowNodeInstanceServices withAuthentication(final Authentication authentication) {
     return new FlowNodeInstanceServices(
-        brokerClient, securityConfiguration, flowNodeInstanceSearchClient, authentication);
+        brokerClient, securityContextProvider, flowNodeInstanceSearchClient, authentication);
   }
 
   @Override
   public SearchQueryResult<FlowNodeInstanceEntity> search(final FlowNodeInstanceQuery query) {
-    return flowNodeInstanceSearchClient.searchFlowNodeInstances(
-        query,
-        SecurityContext.of(
-            s ->
-                s.withAuthentication(authentication)
-                    .withAuthorizationIfEnabled(
-                        securityConfiguration.getAuthorizations().isEnabled(),
-                        a ->
-                            a.resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-                                .permissionType(PermissionType.READ_INSTANCE))));
+    return flowNodeInstanceSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.processDefinition().readInstance())))
+        .searchFlowNodeInstances(query);
   }
 
   public SearchQueryResult<FlowNodeInstanceEntity> search(

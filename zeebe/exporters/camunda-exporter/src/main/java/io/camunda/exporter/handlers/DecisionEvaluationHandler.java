@@ -120,6 +120,11 @@ public class DecisionEvaluationHandler
     batchRequest.add(indexName, entity);
   }
 
+  @Override
+  public String getIndexName() {
+    return indexName;
+  }
+
   private int getEvaluatedDecisionValueIndex(
       final DecisionEvaluationRecordValue decisionEvaluation,
       final long key,

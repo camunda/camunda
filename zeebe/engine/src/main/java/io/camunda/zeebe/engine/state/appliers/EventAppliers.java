@@ -300,7 +300,13 @@ public final class EventAppliers implements EventApplier {
         new IncidentCreatedApplier(state.getIncidentState(), state.getJobState()));
     register(
         IncidentIntent.RESOLVED,
-        new IncidentResolvedApplier(
+        1,
+        new IncidentResolvedV1Applier(
+            state.getIncidentState(), state.getJobState(), state.getElementInstanceState()));
+    register(
+        IncidentIntent.RESOLVED,
+        2,
+        new IncidentResolvedV2Applier(
             state.getIncidentState(), state.getJobState(), state.getElementInstanceState()));
     register(IncidentIntent.MIGRATED, new IncidentMigratedApplier(state.getIncidentState()));
   }
@@ -466,9 +472,7 @@ public final class EventAppliers implements EventApplier {
         new RoleCreatedApplier(state.getRoleState(), state.getAuthorizationState()));
     register(RoleIntent.UPDATED, new RoleUpdatedApplier(state.getRoleState()));
     register(RoleIntent.ENTITY_ADDED, new RoleEntityAddedApplier(state));
-    register(
-        RoleIntent.ENTITY_REMOVED,
-        new RoleEntityRemovedApplier(state.getRoleState(), state.getUserState()));
+    register(RoleIntent.ENTITY_REMOVED, new RoleEntityRemovedApplier(state));
     register(
         RoleIntent.DELETED,
         new RoleDeletedApplier(
@@ -481,14 +485,18 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerTenantAppliers(final MutableProcessingState state) {
-    register(TenantIntent.CREATED, new TenantCreatedApplier(state.getTenantState()));
-    register(TenantIntent.UPDATED, new TenantUpdatedApplier(state.getTenantState()));
     register(
-        TenantIntent.ENTITY_ADDED,
-        new TenantEntityAddedApplier(state.getTenantState(), state.getUserState()));
+        TenantIntent.CREATED,
+        new TenantCreatedApplier(state.getTenantState(), state.getAuthorizationState()));
+    register(TenantIntent.UPDATED, new TenantUpdatedApplier(state.getTenantState()));
+    register(TenantIntent.ENTITY_ADDED, new TenantEntityAddedApplier(state));
     register(
         TenantIntent.ENTITY_REMOVED,
         new TenantEntityRemovedApplier(state.getTenantState(), state.getUserState()));
+    register(
+        TenantIntent.DELETED,
+        new TenantDeletedApplier(
+            state.getTenantState(), state.getUserState(), state.getAuthorizationState()));
   }
 
   private void registerMappingAppliers(final MutableProcessingState state) {

@@ -82,6 +82,8 @@ public final class DatabaseConstants {
   public static final String INDEX_NOT_FOUND_EXCEPTION_TYPE = "index_not_found_exception";
   public static final String INDEX_ALREADY_EXISTS_EXCEPTION_TYPE =
       "resource_already_exists_exception";
+  public static final String SEARCH_CONTEXT_MISSING_EXCEPTION_TYPE =
+      "search_context_missing_exception";
 
   public static final String DATABASE_TASK_DESCRIPTION_DOC_SUFFIX = "[_doc]";
 

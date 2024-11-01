@@ -20,7 +20,7 @@ import io.camunda.zeebe.protocol.record.value.ErrorType;
 import java.util.EnumSet;
 import java.util.Set;
 
-final class IncidentResolvedApplier implements TypedEventApplier<IncidentIntent, IncidentRecord> {
+final class IncidentResolvedV1Applier implements TypedEventApplier<IncidentIntent, IncidentRecord> {
 
   private static final Set<State> RESOLVABLE_JOB_STATES =
       EnumSet.of(State.FAILED, State.ERROR_THROWN);
@@ -29,7 +29,7 @@ final class IncidentResolvedApplier implements TypedEventApplier<IncidentIntent,
   private final MutableJobState jobState;
   private final MutableElementInstanceState elementInstanceState;
 
-  public IncidentResolvedApplier(
+  public IncidentResolvedV1Applier(
       final MutableIncidentState incidentState,
       final MutableJobState jobState,
       final MutableElementInstanceState elementInstanceState) {

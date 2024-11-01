@@ -17,6 +17,7 @@ import io.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.es.report.interpreter.view.process.ProcessViewInterpreterFacadeES;
+import io.camunda.optimize.service.db.report.interpreter.distributedby.process.model.ProcessDistributedByModelElementInterpreterHelper;
 import io.camunda.optimize.service.db.report.plan.process.ProcessDistributedBy;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
@@ -34,14 +35,37 @@ public class ProcessDistributedByFlowNodeInterpreterES
   private final ConfigurationService configurationService;
   private final DefinitionService definitionService;
   private final ProcessViewInterpreterFacadeES viewInterpreter;
+  private final ProcessDistributedByModelElementInterpreterHelper helper;
 
   public ProcessDistributedByFlowNodeInterpreterES(
       final ConfigurationService configurationService,
       final DefinitionService definitionService,
-      final ProcessViewInterpreterFacadeES viewInterpreter) {
+      final ProcessViewInterpreterFacadeES viewInterpreter,
+      final ProcessDistributedByModelElementInterpreterHelper helper) {
     this.configurationService = configurationService;
     this.definitionService = definitionService;
     this.viewInterpreter = viewInterpreter;
+    this.helper = helper;
+  }
+
+  @Override
+  public Set<ProcessDistributedBy> getSupportedDistributedBys() {
+    return Set.of(PROCESS_DISTRIBUTED_BY_FLOW_NODE);
+  }
+
+  @Override
+  public ConfigurationService getConfigurationService() {
+    return configurationService;
+  }
+
+  @Override
+  public DefinitionService getDefinitionService() {
+    return definitionService;
+  }
+
+  @Override
+  protected ProcessDistributedByModelElementInterpreterHelper getHelper() {
+    return helper;
   }
 
   @Override
@@ -57,19 +81,7 @@ public class ProcessDistributedByFlowNodeInterpreterES
   }
 
   @Override
-  public Set<ProcessDistributedBy> getSupportedDistributedBys() {
-    return Set.of(PROCESS_DISTRIBUTED_BY_FLOW_NODE);
-  }
-
-  public ConfigurationService getConfigurationService() {
-    return this.configurationService;
-  }
-
-  public DefinitionService getDefinitionService() {
-    return this.definitionService;
-  }
-
   public ProcessViewInterpreterFacadeES getViewInterpreter() {
-    return this.viewInterpreter;
+    return viewInterpreter;
   }
 }

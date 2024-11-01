@@ -8,7 +8,7 @@
 package io.camunda.service;
 
 import io.camunda.security.auth.Authentication;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerClockPinRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerClockResetRequest;
@@ -19,14 +19,14 @@ public final class ClockServices extends ApiServices<ClockServices> {
 
   public ClockServices(
       final BrokerClient brokerClient,
-      final SecurityConfiguration securityConfiguration,
+      final SecurityContextProvider securityContextProvider,
       final Authentication authentication) {
-    super(brokerClient, securityConfiguration, authentication);
+    super(brokerClient, securityContextProvider, authentication);
   }
 
   @Override
   public ClockServices withAuthentication(final Authentication authentication) {
-    return new ClockServices(brokerClient, securityConfiguration, authentication);
+    return new ClockServices(brokerClient, securityContextProvider, authentication);
   }
 
   public CompletableFuture<ClockRecord> pinClock(final long pinnedEpoch) {

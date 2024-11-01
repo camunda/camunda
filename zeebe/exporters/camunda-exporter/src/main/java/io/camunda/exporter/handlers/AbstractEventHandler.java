@@ -39,11 +39,11 @@ import java.util.Map;
 public abstract class AbstractEventHandler<R extends RecordValue>
     implements ExportHandler<EventEntity, R> {
   protected static final String ID_PATTERN = "%s_%s";
-  protected final String templateName;
+  protected final String indexName;
   protected final boolean concurrencyMode;
 
-  public AbstractEventHandler(final String templateName, final boolean concurrencyMode) {
-    this.templateName = templateName;
+  public AbstractEventHandler(final String indexName, final boolean concurrencyMode) {
+    this.indexName = indexName;
     this.concurrencyMode = concurrencyMode;
   }
 
@@ -55,6 +55,11 @@ public abstract class AbstractEventHandler<R extends RecordValue>
   @Override
   public EventEntity createNewEntity(final String id) {
     return new EventEntity().setId(id);
+  }
+
+  @Override
+  public String getIndexName() {
+    return indexName;
   }
 
   protected void loadEventGeneralData(final Record<R> record, final EventEntity eventEntity) {
@@ -109,9 +114,9 @@ public abstract class AbstractEventHandler<R extends RecordValue>
     // write event
     if (concurrencyMode) {
       batchRequest.upsertWithScript(
-          templateName, entity.getId(), entity, getScript(positionFieldName), jsonMap);
+          indexName, entity.getId(), entity, getScript(positionFieldName), jsonMap);
     } else {
-      batchRequest.upsert(templateName, entity.getId(), entity, jsonMap);
+      batchRequest.upsert(indexName, entity.getId(), entity, jsonMap);
     }
   }
 

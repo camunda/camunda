@@ -12,7 +12,6 @@ import static io.camunda.webapps.schema.entities.operation.OperationType.UPDATE_
 
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
-import io.camunda.zeebe.client.api.response.SetVariablesResponse;
 import java.util.Set;
 import org.springframework.stereotype.Component;
 
@@ -24,13 +23,14 @@ public class UpdateVariableHandler extends AbstractOperationHandler implements O
   public void handleWithException(final OperationEntity operation) throws Exception {
     final String updateVariableJson =
         mergeVariableJson(operation.getVariableName(), operation.getVariableValue());
-    final SetVariablesResponse response =
-        zeebeClient
-            .newSetVariablesCommand(operation.getScopeKey())
-            .variables(updateVariableJson)
-            .local(true)
-            .send()
-            .join();
+    final var setVariablesCommand =
+        withOperationReference(
+            zeebeClient
+                .newSetVariablesCommand(operation.getScopeKey())
+                .variables(updateVariableJson)
+                .local(true),
+            operation.getId());
+    final var response = setVariablesCommand.send().join();
     markAsSent(operation, response.getKey());
   }
 

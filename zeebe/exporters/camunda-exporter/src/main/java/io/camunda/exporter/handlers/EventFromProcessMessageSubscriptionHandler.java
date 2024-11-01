@@ -24,8 +24,8 @@ public class EventFromProcessMessageSubscriptionHandler
     extends AbstractEventHandler<ProcessMessageSubscriptionRecordValue> {
 
   public EventFromProcessMessageSubscriptionHandler(
-      final String templateName, final boolean concurrencyMode) {
-    super(templateName, concurrencyMode);
+      final String indexName, final boolean concurrencyMode) {
+    super(indexName, concurrencyMode);
   }
 
   @Override

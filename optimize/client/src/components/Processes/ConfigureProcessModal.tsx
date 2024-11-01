@@ -6,43 +6,47 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useState} from 'react';
+import {useState} from 'react';
 import {ActionableNotification, Button, Stack, Toggle, Tooltip} from '@carbon/react';
 import {Information} from '@carbon/icons-react';
 
-import {Modal, UserTypeahead} from 'components';
+import {Identity, Modal, User, UserTypeahead} from 'components';
 import {t} from 'translation';
-import {getOptimizeProfile, isEmailEnabled} from 'config';
-import {useDocs} from 'hooks';
+import {useDocs, useUiConfig} from 'hooks';
 
 import './ConfigureProcessModal.scss';
 
-export function ConfigureProcessModal({
+interface ConfigureProcessModalProps {
+  initialConfig: {
+    owner: Identity;
+    digest: {enabled: boolean};
+  };
+  onClose: () => void;
+  onConfirm: (
+    config: {ownerId: string | null; processDigest: {enabled: boolean}},
+    emailEnabled: boolean,
+    ownerName?: string | null
+  ) => void;
+}
+
+export default function ConfigureProcessModal({
   initialConfig: {
     owner,
     digest: {enabled},
   },
   onClose,
   onConfirm,
-}) {
-  const [selectedUser, setSelectedUser] = useState(
+}: ConfigureProcessModalProps) {
+  const [selectedUser, setSelectedUser] = useState<User | null>(
     owner?.id ? {id: 'USER:' + owner.id, identity: {...owner, type: 'user'}} : null
   );
   const [digestEnabled, setDigestEnabled] = useState(enabled);
-  const [optimizeProfile, setOptimizeProfile] = useState();
-  const [emailEnabled, setEmailEnabled] = useState();
+  const {optimizeProfile, emailEnabled} = useUiConfig();
   const {generateDocsLink} = useDocs();
 
   const noChangesHappened =
     digestEnabled === enabled &&
     ((!selectedUser?.identity.id && !owner?.id) || selectedUser?.identity.id === owner?.id);
-
-  useEffect(() => {
-    (async () => {
-      setOptimizeProfile(await getOptimizeProfile());
-      setEmailEnabled(await isEmailEnabled());
-    })();
-  }, []);
 
   return (
     <Modal open onClose={onClose} className="ConfigureProcessModal" isOverflowVisible>
@@ -73,19 +77,20 @@ export function ConfigureProcessModal({
             users={selectedUser ? [selectedUser] : []}
             onChange={(users) => {
               const newSelection = users[users.length - 1];
-              setSelectedUser(newSelection);
+              setSelectedUser(newSelection || null);
               if (!newSelection) {
                 setDigestEnabled(false);
               }
             }}
             excludeGroups
             optionsOnly={optimizeProfile === 'cloud'}
+            singleUser
           />
           <div className="infoContainer">
             <Toggle
               id="digestSwitch"
               disabled={!selectedUser}
-              labelText={t('processes.emailDigest')}
+              labelText={t('processes.emailDigest').toString()}
               size="sm"
               hideLabel
               toggled={digestEnabled}
@@ -128,5 +133,3 @@ export function ConfigureProcessModal({
     </Modal>
   );
 }
-
-export default ConfigureProcessModal;

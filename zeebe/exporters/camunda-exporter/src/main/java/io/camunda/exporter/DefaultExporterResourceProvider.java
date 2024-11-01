@@ -7,6 +7,12 @@
  */
 package io.camunda.exporter;
 
+import static java.util.Map.entry;
+
+import io.camunda.exporter.archiver.ArchiverRepository;
+import io.camunda.exporter.archiver.ArchiverRepository.NoopArchiverRepository;
+import io.camunda.exporter.cache.ProcessCacheImpl;
+import io.camunda.exporter.cache.ProcessCacheLoaderFactory;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.handlers.AuthorizationHandler;
@@ -39,6 +45,9 @@ import io.camunda.exporter.handlers.UserTaskHandler;
 import io.camunda.exporter.handlers.UserTaskProcessInstanceHandler;
 import io.camunda.exporter.handlers.UserTaskVariableHandler;
 import io.camunda.exporter.handlers.VariableHandler;
+import io.camunda.exporter.handlers.operation.OperationFromIncidentHandler;
+import io.camunda.exporter.handlers.operation.OperationFromProcessInstanceHandler;
+import io.camunda.exporter.handlers.operation.OperationFromVariableDocumentHandler;
 import io.camunda.exporter.utils.XMLUtil;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
@@ -47,11 +56,13 @@ import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
@@ -79,32 +90,37 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   private Set<ExportHandler> exportHandlers;
 
   @Override
-  public void init(final ExporterConfiguration configuration) {
+  public void init(
+      final ExporterConfiguration configuration,
+      final ProcessCacheLoaderFactory processCacheLoaderFactory) {
     final var globalPrefix = configuration.getIndex().getPrefix();
     final var isElasticsearch =
         ConnectionTypes.from(configuration.getConnect().getType())
             .equals(ConnectionTypes.ELASTICSEARCH);
 
     templateDescriptorsMap =
-        Map.of(
-            ListViewTemplate.class,
-            new ListViewTemplate(globalPrefix, isElasticsearch),
-            VariableTemplate.class,
-            new VariableTemplate(globalPrefix, isElasticsearch),
-            PostImporterQueueTemplate.class,
-            new PostImporterQueueTemplate(globalPrefix, isElasticsearch),
-            FlowNodeInstanceTemplate.class,
-            new FlowNodeInstanceTemplate(globalPrefix, isElasticsearch),
-            IncidentTemplate.class,
-            new IncidentTemplate(globalPrefix, isElasticsearch),
-            SequenceFlowTemplate.class,
-            new SequenceFlowTemplate(globalPrefix, isElasticsearch),
-            DecisionInstanceTemplate.class,
-            new DecisionInstanceTemplate(globalPrefix, isElasticsearch),
-            EventTemplate.class,
-            new EventTemplate(globalPrefix, isElasticsearch),
-            TaskTemplate.class,
-            new TaskTemplate(globalPrefix, isElasticsearch));
+        Map.ofEntries(
+            entry(ListViewTemplate.class, new ListViewTemplate(globalPrefix, isElasticsearch)),
+            entry(VariableTemplate.class, new VariableTemplate(globalPrefix, isElasticsearch)),
+            entry(
+                PostImporterQueueTemplate.class,
+                new PostImporterQueueTemplate(globalPrefix, isElasticsearch)),
+            entry(
+                FlowNodeInstanceTemplate.class,
+                new FlowNodeInstanceTemplate(globalPrefix, isElasticsearch)),
+            entry(IncidentTemplate.class, new IncidentTemplate(globalPrefix, isElasticsearch)),
+            entry(
+                SequenceFlowTemplate.class,
+                new SequenceFlowTemplate(globalPrefix, isElasticsearch)),
+            entry(
+                DecisionInstanceTemplate.class,
+                new DecisionInstanceTemplate(globalPrefix, isElasticsearch)),
+            entry(EventTemplate.class, new EventTemplate(globalPrefix, isElasticsearch)),
+            entry(TaskTemplate.class, new TaskTemplate(globalPrefix, isElasticsearch)),
+            entry(OperationTemplate.class, new OperationTemplate(globalPrefix, isElasticsearch)),
+            entry(
+                BatchOperationTemplate.class,
+                new BatchOperationTemplate(globalPrefix, isElasticsearch)));
 
     indexDescriptorsMap =
         Map.of(
@@ -127,6 +143,12 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             AuthorizationIndex.class,
             new AuthorizationIndex(globalPrefix, isElasticsearch));
 
+    final var processCache =
+        new ProcessCacheImpl(
+            10000,
+            processCacheLoaderFactory.create(
+                indexDescriptorsMap.get(ProcessIndex.class).getFullQualifiedName()));
+
     exportHandlers =
         Set.of(
             new RoleCreateUpdateHandler(
@@ -137,7 +159,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new DecisionHandler(
                 indexDescriptorsMap.get(DecisionIndex.class).getFullQualifiedName()),
             new ListViewProcessInstanceFromProcessInstanceHandler(
-                templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(), false),
+                templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(),
+                false,
+                processCache),
             new ListViewFlowNodeFromIncidentHandler(
                 templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(), false),
             new ListViewFlowNodeFromJobHandler(
@@ -164,7 +188,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new DecisionEvaluationHandler(
                 templateDescriptorsMap.get(DecisionInstanceTemplate.class).getFullQualifiedName()),
             new ProcessHandler(
-                indexDescriptorsMap.get(ProcessIndex.class).getFullQualifiedName(), new XMLUtil()),
+                indexDescriptorsMap.get(ProcessIndex.class).getFullQualifiedName(),
+                new XMLUtil(),
+                processCache),
             new MetricFromProcessInstanceHandler(
                 indexDescriptorsMap.get(MetricIndex.class).getFullQualifiedName()),
             new TaskCompletedMetricHandler(
@@ -187,7 +213,13 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 configuration.getIndex().getVariableSizeThreshold()),
             new UserTaskCompletionVariableHandler(
                 templateDescriptorsMap.get(TaskTemplate.class).getFullQualifiedName(),
-                configuration.getIndex().getVariableSizeThreshold()));
+                configuration.getIndex().getVariableSizeThreshold()),
+            new OperationFromProcessInstanceHandler(
+                templateDescriptorsMap.get(OperationTemplate.class).getFullQualifiedName()),
+            new OperationFromVariableDocumentHandler(
+                templateDescriptorsMap.get(OperationTemplate.class).getFullQualifiedName()),
+            new OperationFromIncidentHandler(
+                templateDescriptorsMap.get(OperationTemplate.class).getFullQualifiedName()));
   }
 
   @Override
@@ -201,8 +233,20 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   }
 
   @Override
+  public <T extends IndexTemplateDescriptor> T getIndexTemplateDescriptor(
+      final Class<T> descriptorClass) {
+    return descriptorClass.cast(templateDescriptorsMap.get(descriptorClass));
+  }
+
+  @Override
   public Set<ExportHandler> getExportHandlers() {
     // Register all handlers here
     return exportHandlers;
+  }
+
+  @Override
+  public ArchiverRepository newArchiverRepository() {
+    // TODO: return appropriate implementation
+    return new NoopArchiverRepository();
   }
 }

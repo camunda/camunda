@@ -14,9 +14,9 @@ import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
-import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.auth.Authorization;
 import io.camunda.service.search.core.SearchQueryService;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.role.BrokerRoleCreateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
@@ -29,22 +29,26 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
 
   public RoleServices(
       final BrokerClient brokerClient,
-      final SecurityConfiguration securityConfiguration,
+      final SecurityContextProvider securityContextProvider,
       final RoleSearchClient roleSearchClient,
       final Authentication authentication) {
-    super(brokerClient, securityConfiguration, authentication);
+    super(brokerClient, securityContextProvider, authentication);
     this.roleSearchClient = roleSearchClient;
   }
 
   @Override
   public SearchQueryResult<RoleEntity> search(final RoleQuery query) {
-    return roleSearchClient.searchRoles(
-        query, SecurityContext.of(s -> s.withAuthentication(authentication)));
+    return roleSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.role().read())))
+        .searchRoles(query);
   }
 
   @Override
   public RoleServices withAuthentication(final Authentication authentication) {
-    return new RoleServices(brokerClient, securityConfiguration, roleSearchClient, authentication);
+    return new RoleServices(
+        brokerClient, securityContextProvider, roleSearchClient, authentication);
   }
 
   public CompletableFuture<RoleRecord> createRole(final RoleDTO request) {

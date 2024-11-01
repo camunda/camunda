@@ -11,6 +11,8 @@ import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.*;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 
+import io.camunda.exporter.cache.CachedProcessEntity;
+import io.camunda.exporter.cache.ProcessCache;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
@@ -42,12 +44,14 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
       Set.of(ELEMENT_COMPLETED.name(), ELEMENT_TERMINATED.name());
 
   private final boolean concurrencyMode;
+  private final ProcessCache processCache;
   private final String indexName;
 
   public ListViewProcessInstanceFromProcessInstanceHandler(
-      final String indexName, final boolean concurrencyMode) {
+      final String indexName, final boolean concurrencyMode, final ProcessCache processCache) {
     this.indexName = indexName;
     this.concurrencyMode = concurrencyMode;
+    this.processCache = processCache;
   }
 
   @Override
@@ -101,7 +105,8 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
         .setBpmnProcessId(recordValue.getBpmnProcessId())
         .setProcessVersion(recordValue.getVersion())
         .setProcessName(
-            getProcessName(piEntity.getProcessDefinitionKey(), recordValue.getBpmnProcessId()));
+            getProcessName(piEntity.getProcessDefinitionKey(), recordValue.getBpmnProcessId()))
+        .setProcessVersionTag(getVersionTag(piEntity.getProcessDefinitionKey()));
 
     final OffsetDateTime timestamp =
         OffsetDateTime.ofInstant(Instant.ofEpochMilli(record.getTimestamp()), ZoneOffset.UTC);
@@ -143,8 +148,6 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
     //              .toString();
     //      piEntity.setTreePath(treePath);
     //    }
-
-    completeOperation(record);
   }
 
   @Override
@@ -178,6 +181,11 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
     } else {
       batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
     }
+  }
+
+  @Override
+  public String getIndexName() {
+    return indexName;
   }
 
   private boolean isProcessEvent(final ProcessInstanceRecordValue recordValue) {
@@ -293,43 +301,21 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
     //    }
   }
 
-  /// TODO - because it depends on operationsManager and batchRequest
-  private void completeOperation(final Record<ProcessInstanceRecordValue> record) {
-    // TODO: Implement Operations manager for Exporter
-    // https://github.com/camunda/camunda/issues/18372
-    //
-    //    final OperationsManager operationsManager = null;
-    //    final NewElasticsearchBatchRequest batchRequest = null;
-    //    if (operationsManager == null || batchRequest == null) {
-    //      return;
-    //    }
-    //
-    //    try {
-    //      if (isProcessInstanceTerminated(record)) {
-    //        // resolve corresponding operation
-    //        operationsManager.completeOperation(
-    //            null, record.getKey(), null, OperationType.CANCEL_PROCESS_INSTANCE, batchRequest);
-    //      } else if (isProcessInstanceMigrated(record)) {
-    //        // resolve corresponding operation
-    //        operationsManager.completeOperation(
-    //            null, record.getKey(), null, OperationType.MIGRATE_PROCESS_INSTANCE,
-    // batchRequest);
-    //      }
-    //    } catch (final PersistenceException ex) {
-    //      throw new OperateRuntimeException(ex);
-    //    }
+  private String getProcessName(final Long processDefinitionKey, final String bpmnProcessId) {
+    return processCache
+        .get(processDefinitionKey)
+        .map(CachedProcessEntity::name)
+        .map(
+            processName ->
+                processName == null || processName.isBlank() ? bpmnProcessId : processName)
+        // If the cache does not contain the process definition then the process has been
+        // deleted from the backend. This is a special case which can happen only if there was a
+        // data loss in the backend. In that case, inorder to not block the exporter, we can
+        // return the bpmnProcessId as the process name.
+        .orElse(bpmnProcessId);
   }
 
-  /// TODO - because it depends on processCache
-  private String getProcessName(final Long processDefinitionKey, final String bpmnProcessId) {
-    return bpmnProcessId;
-
-    // TODO https://github.com/camunda/camunda/issues/18364
-    //    final ProcessCache processCache = null;
-    //    if (processCache == null) {
-    //      return bpmnProcessId;
-    //    }
-    //
-    //    return processCache.getProcessNameOrDefaultValue(processDefinitionKey, bpmnProcessId);
+  private String getVersionTag(final long processDefinitionJey) {
+    return processCache.get(processDefinitionJey).map(CachedProcessEntity::versionTag).orElse(null);
   }
 }

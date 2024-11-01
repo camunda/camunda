@@ -23,8 +23,8 @@ import java.util.List;
 
 public class EventFromIncidentHandler extends AbstractEventHandler<IncidentRecordValue> {
 
-  public EventFromIncidentHandler(final String templateName, final boolean concurrencyMode) {
-    super(templateName, concurrencyMode);
+  public EventFromIncidentHandler(final String indexName, final boolean concurrencyMode) {
+    super(indexName, concurrencyMode);
   }
 
   @Override
