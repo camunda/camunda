@@ -353,14 +353,11 @@ final class CamundaExporterIT {
     private <S extends ExporterEntity<S>, T extends RecordValue> Record<T> recordGenerator(
         final ExportHandler<S, T> handler, final Supplier<Record<T>> createRecord) {
       // Sometimes the factory generates record with intents that are not supported by the handler.
-      for (int i = 0; i < 500; i++) {
-        final var record = createRecord.get();
-        if (handler.handlesRecord(record)) {
-          return record;
-        }
-      }
-      throw new IllegalArgumentException(
-          "Could not generate handled record for " + handler.getClass().getSimpleName());
+      var record = createRecord.get();
+      do {
+        record = createRecord.get();
+      } while (!handler.handlesRecord(record));
+      return record;
     }
 
     private <S extends ExporterEntity<S>, T extends RecordValue>
