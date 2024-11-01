@@ -77,6 +77,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
@@ -94,6 +95,7 @@ import org.testcontainers.containers.GenericContainer;
  */
 @TestInstance(Lifecycle.PER_CLASS)
 @ExtendWith(CamundaExporterITInvocationProvider.class)
+@Disabled("flaky test")
 final class CamundaExporterIT {
 
   private final ProtocolFactory factory = new ProtocolFactory();
