@@ -21,6 +21,8 @@ public class GatewayCfg {
   private List<InterceptorCfg> interceptors = new ArrayList<>();
   private MultiTenancyCfg multiTenancy = new MultiTenancyCfg();
 
+  private ExperimentalCfg experimental = new ExperimentalCfg();
+
   public void init() {
     init(ConfigurationDefaults.DEFAULT_HOST);
   }
@@ -90,10 +92,18 @@ public class GatewayCfg {
     this.multiTenancy = multiTenancy;
   }
 
+  public ExperimentalCfg getExperimental() {
+    return experimental;
+  }
+
+  public void setExperimental(final ExperimentalCfg experimental) {
+    this.experimental = experimental;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
-        network, cluster, threads, security, longPolling, interceptors, multiTenancy);
+        network, cluster, threads, security, longPolling, interceptors, multiTenancy, experimental);
   }
 
   @Override
@@ -111,7 +121,8 @@ public class GatewayCfg {
         && Objects.equals(security, that.security)
         && Objects.equals(longPolling, that.longPolling)
         && Objects.equals(interceptors, that.interceptors)
-        && Objects.equals(multiTenancy, that.multiTenancy);
+        && Objects.equals(multiTenancy, that.multiTenancy)
+        && Objects.equals(experimental, that.experimental);
   }
 
   @Override
@@ -131,6 +142,8 @@ public class GatewayCfg {
         + interceptors
         + ", multiTenancy="
         + multiTenancy
+        + ", experimental="
+        + experimental
         + '}';
   }
 }

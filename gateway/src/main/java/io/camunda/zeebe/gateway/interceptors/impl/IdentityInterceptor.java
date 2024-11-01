@@ -11,8 +11,12 @@ import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.identity.sdk.authentication.exception.TokenVerificationException;
 import io.camunda.identity.sdk.tenants.dto.Tenant;
+import io.camunda.zeebe.gateway.cmd.ConcurrentRequestException;
+import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.IdentityCfg;
+import io.camunda.zeebe.gateway.impl.configuration.IdentityServiceCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
+import io.camunda.zeebe.gateway.impl.identity.IdentityTenantService;
 import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
 import io.grpc.Contexts;
 import io.grpc.Metadata;
@@ -21,6 +25,7 @@ import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
 import io.grpc.Status;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,20 +35,31 @@ public final class IdentityInterceptor implements ServerInterceptor {
   private static final Metadata.Key<String> AUTH_KEY =
       Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
   private final Identity identity;
+  private final IdentityTenantService tenantService;
   private final MultiTenancyCfg multiTenancy;
 
-  public IdentityInterceptor(final IdentityCfg config, final MultiTenancyCfg multiTenancy) {
-    this(createIdentity(config), multiTenancy);
+  public IdentityInterceptor(final IdentityCfg config, final GatewayCfg gatewayCfg) {
+    this(
+        createIdentity(config),
+        gatewayCfg.getMultiTenancy(),
+        gatewayCfg.getExperimental().getIdentityRequest());
   }
 
   public IdentityInterceptor(
-      final IdentityConfiguration configuration, final MultiTenancyCfg multiTenancy) {
-    this(new Identity(configuration), multiTenancy);
+      final IdentityConfiguration configuration, final GatewayCfg gatewayCfg) {
+    this(
+        new Identity(configuration),
+        gatewayCfg.getMultiTenancy(),
+        gatewayCfg.getExperimental().getIdentityRequest());
   }
 
-  public IdentityInterceptor(final Identity identity, final MultiTenancyCfg multiTenancy) {
+  public IdentityInterceptor(
+      final Identity identity,
+      final MultiTenancyCfg multiTenancy,
+      final IdentityServiceCfg identityServiceCfg) {
     this.identity = identity;
     this.multiTenancy = multiTenancy;
+    tenantService = new IdentityTenantService(identity, identityServiceCfg);
   }
 
   private static Identity createIdentity(final IdentityCfg config) {
@@ -97,22 +113,30 @@ public final class IdentityInterceptor implements ServerInterceptor {
 
     try {
       final List<String> authorizedTenants =
-          identity.tenants().forToken(token).stream().map(Tenant::getTenantId).toList();
+          tenantService.getTenantsForToken(token).stream().map(Tenant::getTenantId).toList();
       final var context = InterceptorUtil.setAuthorizedTenants(authorizedTenants);
       return Contexts.interceptCall(context, call, headers, next);
 
-    } catch (final RuntimeException e) {
-      LOGGER.debug(
-          "Denying call {} as the authorized tenants could not be retrieved from Identity. Error message: {}",
-          methodDescriptor.getFullMethodName(),
-          e.getMessage());
-      return deny(
-          call,
-          Status.UNAUTHENTICATED
-              .augmentDescription(
-                  "Expected Identity to provide authorized tenants, see cause for details")
-              .withCause(e));
+    } catch (final ConcurrentRequestException cre) {
+      return denyTenantCallAndLog(call, Status.UNAVAILABLE, cre);
+    } catch (final RuntimeException | ExecutionException e) {
+      return denyTenantCallAndLog(call, Status.UNAUTHENTICATED, e);
     }
+  }
+
+  private <ReqT> ServerCall.Listener<ReqT> denyTenantCallAndLog(
+      final ServerCall<ReqT, ?> call, final Status status, final Throwable ex) {
+    LOGGER.debug(
+        "Denying call {} as the authorized tenants could not be retrieved from Identity. Error message: {}",
+        call.getMethodDescriptor().getFullMethodName(),
+        ex.getMessage());
+
+    return deny(
+        call,
+        status
+            .augmentDescription(
+                "Expected Identity to provide authorized tenants, see cause for details")
+            .withCause(ex));
   }
 
   private <ReqT> ServerCall.Listener<ReqT> deny(
