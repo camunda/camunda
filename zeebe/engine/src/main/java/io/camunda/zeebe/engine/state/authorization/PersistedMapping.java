@@ -89,7 +89,7 @@ public class PersistedMapping extends UnpackedObject implements DbValue {
         .collect(Collectors.toList());
   }
 
-  public PersistedMapping setTenantIds(final List<String> tenantIds) {
+  public PersistedMapping setTenantIdsList(final List<String> tenantIds) {
     tenantIdsProp.reset();
     tenantIds.forEach(id -> tenantIdsProp.add().wrap(BufferUtil.wrapString(id)));
     return this;
