@@ -51,7 +51,24 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
    * operations defined by the listener are fully executed before proceeding with the original task
    * command.
    */
-  COMPLETE_TASK_LISTENER(15);
+  COMPLETE_TASK_LISTENER(15),
+  /**
+   * Represents the intent that means Task Listener denied the operation and the creation of the
+   * next task listener or the finalization of the original user task command (COMPLETE) is not
+   * happening, but instead, COMPLETION_DENIED event will be written in order to revert the User
+   * Task to CREATED state. The job for the Task Listener itself in this case completes
+   * successfully.
+   *
+   * <p>Until this intent is written, the processing of the user task is paused, ensuring that the
+   * operations defined by the listener are fully executed before proceeding with the original task
+   * command.
+   */
+  REJECT_TASK_LISTENER(16),
+  /**
+   * Represents the intent indicating that the User Task will not be completed, but rather will be
+   * reverted to the CREATED state.
+   */
+  COMPLETION_DENIED(17);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -103,6 +120,10 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
         return MIGRATED;
       case 15:
         return COMPLETE_TASK_LISTENER;
+      case 16:
+        return REJECT_TASK_LISTENER;
+      case 17:
+        return COMPLETION_DENIED;
       default:
         return UNKNOWN;
     }
@@ -127,6 +148,7 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
       case UPDATING:
       case UPDATED:
       case MIGRATED:
+      case COMPLETION_DENIED:
         return true;
       default:
         return false;
