@@ -95,9 +95,6 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
         }
       case TASK_LISTENER:
         {
-          // to store the variable for merge, to handle concurrent commands
-          eventHandle.triggeringProcessEvent(value);
-
           /*
            We retrieve the intermediate user task state rather than the regular user task record
            because the intermediate state captures the exact data provided during the original

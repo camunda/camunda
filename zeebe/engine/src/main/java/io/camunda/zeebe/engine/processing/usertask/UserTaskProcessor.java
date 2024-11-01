@@ -13,7 +13,6 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
-import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.TaskListener;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
@@ -22,9 +21,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandProcessor;
-import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
-import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
@@ -46,12 +43,9 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   private final ProcessState processState;
   private final MutableUserTaskState userTaskState;
   private final ElementInstanceState elementInstanceState;
-  private final EventScopeInstanceState eventScopeInstanceState;
 
   private final BpmnJobBehavior jobBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
-  private final VariableBehavior variableBehavior;
-  private final EventTriggerBehavior eventTriggerBehavior;
 
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
@@ -69,12 +63,9 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     processState = state.getProcessState();
     this.userTaskState = userTaskState;
     elementInstanceState = state.getElementInstanceState();
-    eventScopeInstanceState = state.getEventScopeInstanceState();
 
     jobBehavior = bpmnBehaviors.jobBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
-    variableBehavior = bpmnBehaviors.variableBehavior();
-    eventTriggerBehavior = bpmnBehaviors.eventTriggerBehavior();
 
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
@@ -100,7 +91,6 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     final var listenerEventType = mapLifecycleStateToEventType(lifecycleState);
     final var context = buildContext(userTaskElementInstance);
 
-    mergeVariablesOfTaskListener(context);
     findNextTaskListener(listenerEventType, userTaskElement, userTaskElementInstance)
         .ifPresentOrElse(
             listener -> createTaskListenerJob(listener, context, persistedRecord),
@@ -239,32 +229,6 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
           throw new IllegalArgumentException(
               "Unexpected user task lifecycle state: '%s'".formatted(lifecycleState));
     };
-  }
-
-  private void mergeVariablesOfTaskListener(final BpmnElementContext context) {
-    Optional.ofNullable(eventScopeInstanceState.peekEventTrigger(context.getElementInstanceKey()))
-        .ifPresent(
-            eventTrigger -> {
-              if (eventTrigger.getVariables().capacity() > 0) {
-                final long scopeKey = context.getElementInstanceKey();
-
-                variableBehavior.mergeLocalDocument(
-                    scopeKey,
-                    context.getProcessDefinitionKey(),
-                    context.getProcessInstanceKey(),
-                    context.getBpmnProcessId(),
-                    context.getTenantId(),
-                    eventTrigger.getVariables());
-              }
-
-              eventTriggerBehavior.processEventTriggered(
-                  eventTrigger.getEventKey(),
-                  context.getProcessDefinitionKey(),
-                  eventTrigger.getProcessInstanceKey(),
-                  context.getTenantId(),
-                  context.getElementInstanceKey(),
-                  eventTrigger.getElementId());
-            });
   }
 
   private ElementInstance getUserTaskElementInstance(final UserTaskRecord userTaskRecord) {
