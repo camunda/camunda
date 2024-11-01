@@ -10,7 +10,6 @@ package io.camunda.zeebe.it.multitenancy;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
-import io.camunda.application.Profile;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.ZeebeFuture;
@@ -24,6 +23,7 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.testcontainers.DefaultTestContainers;
+import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
@@ -337,7 +337,7 @@ public class MultiTenancyOverIdentityHighRequestCountIT {
       // Create access rule for service account
       try (final var resultSet =
           postgres.executeQuery(
-              """
+                  """
                   INSERT INTO access_rules \
                     (member_id, member_type, global) \
                   VALUES ('%s', 'APPLICATION', false) \
@@ -356,7 +356,7 @@ public class MultiTenancyOverIdentityHighRequestCountIT {
       tenantIds.forEach(
           (tenantId) ->
               postgres.execute(
-                  """
+                      """
                       INSERT INTO tenants \
                         (name, tenant_id) \
                       VALUES ('%s', '%s') \
@@ -367,7 +367,7 @@ public class MultiTenancyOverIdentityHighRequestCountIT {
       tenantIds.forEach(
           tenantId ->
               postgres.execute(
-                  """
+                      """
                       INSERT INTO access_rules_tenants \
                         (tenant_id, access_rule_id) \
                       VALUES ('%s', '%s') \
