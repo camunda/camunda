@@ -38,12 +38,12 @@ public class TaskRepositoryES extends TaskRepository {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(TaskRepositoryES.class);
   private final OptimizeElasticsearchClient esClient;
-  private final ConfigurationService configuration;
+  private final ConfigurationService configurationService;
 
   public TaskRepositoryES(
       final OptimizeElasticsearchClient esClient, final ConfigurationService configurationService) {
     this.esClient = esClient;
-    this.configuration = configurationService;
+    this.configurationService = configurationService;
   }
 
   @Override
@@ -82,11 +82,11 @@ public class TaskRepositoryES extends TaskRepository {
       final Query filterQuery,
       final String... indices) {
     LOG.debug("Updating {}", updateItemIdentifier);
-    final boolean monitorClusterPrivilegeEnabled =
-        configuration
+    final boolean clusterTaskCheckingEnabled =
+        configurationService
             .getElasticSearchConfiguration()
             .getConnection()
-            .isMonitorClusterPrivilegeEnabled();
+            .isClusterTaskCheckingEnabled();
 
     final UpdateByQueryRequest updateByQueryRequest =
         UpdateByQueryRequest.of(
@@ -95,10 +95,10 @@ public class TaskRepositoryES extends TaskRepository {
                     .query(filterQuery)
                     .conflicts(Conflicts.Proceed)
                     .script(updateScript)
-                    .waitForCompletion(!monitorClusterPrivilegeEnabled)
+                    .waitForCompletion(!clusterTaskCheckingEnabled)
                     .refresh(true));
 
-    if (monitorClusterPrivilegeEnabled) {
+    if (clusterTaskCheckingEnabled) {
       return asyncUpdate(updateItemIdentifier, filterQuery, updateByQueryRequest);
     } else {
       return syncUpdate(updateByQueryRequest);
@@ -110,8 +110,7 @@ public class TaskRepositoryES extends TaskRepository {
       final Long deleted = esClient.submitUpdateTask(request).updated();
       return deleted != null && deleted > 0L;
     } catch (final IOException e) {
-      throw new OptimizeRuntimeException(
-          "Error while trying to read Elasticsearch task status with ID");
+      throw new OptimizeRuntimeException("Error while trying to submit update task", e);
     }
   }
 
@@ -151,11 +150,11 @@ public class TaskRepositoryES extends TaskRepository {
       final boolean refresh,
       final String... indices) {
     LOG.debug("Deleting {}", deletedItemIdentifier);
-    final boolean monitorClusterPrivilegeEnabled =
-        configuration
+    final boolean clusterTaskCheckingEnabled =
+        configurationService
             .getElasticSearchConfiguration()
             .getConnection()
-            .isMonitorClusterPrivilegeEnabled();
+            .isClusterTaskCheckingEnabled();
 
     final DeleteByQueryRequest request =
         DeleteByQueryRequest.of(
@@ -163,10 +162,10 @@ public class TaskRepositoryES extends TaskRepository {
                 b.index(esClient.addPrefixesToIndices(indices))
                     .query(query)
                     .refresh(refresh)
-                    .waitForCompletion(!monitorClusterPrivilegeEnabled)
+                    .waitForCompletion(!clusterTaskCheckingEnabled)
                     .conflicts(Conflicts.Proceed));
 
-    if (monitorClusterPrivilegeEnabled) {
+    if (clusterTaskCheckingEnabled) {
       return asyncDelete(query, deletedItemIdentifier, request);
     } else {
       return syncDelete(request);
@@ -178,8 +177,7 @@ public class TaskRepositoryES extends TaskRepository {
       final Long deleted = esClient.submitDeleteTask(request).deleted();
       return deleted != null && deleted > 0L;
     } catch (final IOException e) {
-      throw new OptimizeRuntimeException(
-          "Error while trying to read Elasticsearch task status with ID");
+      throw new OptimizeRuntimeException("Error while trying to submit update task", e);
     }
   }
 

@@ -26,8 +26,7 @@ public class DatabaseConnection {
   private ProxyConfiguration proxy;
   private Boolean awsEnabled;
 
-  /** Indicates whether optimize does a proper health check for ES/OS clusters. */
-  private boolean monitorClusterPrivilegeEnabled = true;
+  private boolean clusterTaskCheckingEnabled = true;
 
   private boolean initSchemaEnabled = true;
 
@@ -102,12 +101,12 @@ public class DatabaseConnection {
     return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
-  public boolean isMonitorClusterPrivilegeEnabled() {
-    return monitorClusterPrivilegeEnabled;
+  public boolean isClusterTaskCheckingEnabled() {
+    return clusterTaskCheckingEnabled;
   }
 
-  public void setMonitorClusterPrivilegeEnabled(final boolean monitorClusterPrivilegeEnabled) {
-    this.monitorClusterPrivilegeEnabled = monitorClusterPrivilegeEnabled;
+  public void setClusterTaskCheckingEnabled(final boolean clusterTaskCheckingEnabled) {
+    this.clusterTaskCheckingEnabled = clusterTaskCheckingEnabled;
   }
 
   public boolean isInitSchemaEnabled() {
