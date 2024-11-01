@@ -45,6 +45,7 @@ public class CamundaLicenseTest {
     when(mockKey.getProperties()).thenReturn(testProperties);
 
     Mockito.doReturn(mockKey).when(testLicense).getLicenseKey(anyString());
+    when(mockKey.getValidUntil()).thenReturn(new Date());
 
     // when
     testLicense.initializeWithLicense(TEST_LICENSE);
@@ -79,6 +80,7 @@ public class CamundaLicenseTest {
     when(mockKey.getProperties()).thenReturn(testProperties);
 
     Mockito.doReturn(mockKey).when(testLicense).getLicenseKey(anyString());
+    when(mockKey.getValidUntil()).thenReturn(new Date());
 
     // when
     testLicense.initializeWithLicense(TEST_LICENSE);
@@ -116,6 +118,7 @@ public class CamundaLicenseTest {
     when(mockKey.getProperties()).thenReturn(testProperties);
 
     Mockito.doReturn(mockKey).when(testLicense).getLicenseKey(anyString());
+    when(mockKey.getValidUntil()).thenReturn(new Date());
 
     // when
     testLicense.initializeWithLicense(TEST_LICENSE);
@@ -176,7 +179,9 @@ public class CamundaLicenseTest {
     final Map<String, String> testProperties = new HashMap<>();
     testProperties.put(LICENSE_TYPE_KEY, PRODUCTION_LICENSE_TYPE);
     when(mockKey.getProperties()).thenReturn(testProperties);
-    when(mockKey.getValidUntil()).thenReturn(new Date(1646245390158L));
+
+    final Date testDate = new Date();
+    when(mockKey.getValidUntil()).thenReturn(testDate);
 
     Mockito.doReturn(mockKey).when(testLicense).getLicenseKey(anyString());
 
@@ -184,6 +189,7 @@ public class CamundaLicenseTest {
     testLicense.initializeWithLicense(TEST_LICENSE);
 
     // then
-    assertEquals("2022-03-02T12:23:10Z", testLicense.expiresAt());
+    assertEquals(
+        CamundaLicense.dateFormatter.format(testDate.toInstant()), testLicense.expiresAt());
   }
 }

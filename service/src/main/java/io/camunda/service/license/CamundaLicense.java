@@ -8,9 +8,9 @@
 package io.camunda.service.license;
 
 import io.camunda.zeebe.util.VisibleForTesting;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import org.camunda.bpm.licensecheck.InvalidLicenseException;
 import org.camunda.bpm.licensecheck.LicenseKey;
 import org.camunda.bpm.licensecheck.LicenseKeyImpl;
@@ -19,13 +19,16 @@ import org.slf4j.LoggerFactory;
 
 public class CamundaLicense {
 
+  @VisibleForTesting
+  public static final DateTimeFormatter dateFormatter =
+      DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm'Z'").withZone(ZoneOffset.UTC);
+
   public static final String CAMUNDA_LICENSE_ENV_VAR_KEY = "CAMUNDA_LICENSE_KEY";
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaLicense.class);
-  private static final DateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
   private boolean isValid;
   private LicenseType licenseType;
   private boolean isCommercial;
-  private Date validUntil;
+  private Instant validUntil;
   private boolean isInitialized;
 
   @VisibleForTesting
@@ -83,7 +86,7 @@ public class CamundaLicense {
         isValid = false;
       } else {
         isCommercial = licenseKey.isCommercial();
-        validUntil = licenseKey.getValidUntil();
+        validUntil = licenseKey.getValidUntil().toInstant();
         isValid = true;
       }
 
