@@ -26,12 +26,8 @@ public class CamundaLicenseTest {
 
   private static final String TEST_LICENSE = "whatever";
   private static final String LICENSE_TYPE_KEY = "licenseType";
-  private static final String NON_COMMERCIAL_KEY = "non-commercial";
-  private static final String VALID_UNTIL_KEY = "expiryDate";
-
   private static final String PRODUCTION_LICENSE_TYPE = "production";
   private static final String SAAS_LICENSE_TYPE = "saas";
-
   private static final String TEST_EXCEPTION_MESSAGE = "test exception";
 
   @Test
