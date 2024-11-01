@@ -13,7 +13,9 @@ import static io.camunda.optimize.service.util.ExceptionUtil.isInstanceIndexNotF
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
+import io.camunda.optimize.service.db.os.report.interpreter.plan.process.ProcessExecutionPlanInterpreterFacadeOS;
 import io.camunda.optimize.service.db.report.CombinedReportInstanceCounter;
+import io.camunda.optimize.service.db.report.ExecutionContextFactory;
 import io.camunda.optimize.service.db.report.ExecutionPlanExtractor;
 import io.camunda.optimize.service.db.report.ReportEvaluationContext;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
@@ -21,37 +23,39 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.io.IOException;
 import java.util.List;
-import org.apache.commons.lang3.NotImplementedException;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
-import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
 @Conditional(OpenSearchCondition.class)
-public class CombinedReportInstanceCounterOS extends CombinedReportInstanceCounter<Query> {
+public class CombinedReportInstanceCounterOS
+    extends CombinedReportInstanceCounter<BoolQuery.Builder> {
 
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(CombinedReportInstanceCounterOS.class);
   private final OptimizeOpenSearchClient osClient;
   private final ExecutionPlanExtractor executionPlanExtractor;
+  private final ProcessExecutionPlanInterpreterFacadeOS interpreter;
 
   public CombinedReportInstanceCounterOS(
       final OptimizeOpenSearchClient osClient,
-      final ExecutionPlanExtractor executionPlanExtractor) {
+      final ExecutionPlanExtractor executionPlanExtractor,
+      final ProcessExecutionPlanInterpreterFacadeOS interpreter) {
     this.osClient = osClient;
     this.executionPlanExtractor = executionPlanExtractor;
+    this.interpreter = interpreter;
   }
-
-  //  private final ProcessExecutionPlanInterpreterFacadeOS interpreter;
 
   @Override
   public long count(final List<SingleProcessReportDefinitionRequestDto> singleReportDefinitions) {
-    final List<Query> baseQueries = getAllBaseQueries(singleReportDefinitions);
-    final Query instanceCountRequestQuery = createInstanceCountRequestQueries(baseQueries);
+    final List<BoolQuery.Builder> baseQueries = getAllBaseQueries(singleReportDefinitions);
+    final BoolQuery.Builder instanceCountRequestQuery =
+        createInstanceCountRequestQueries(baseQueries);
     try {
-      return osClient.count(new String[] {PROCESS_INSTANCE_MULTI_ALIAS}, instanceCountRequestQuery);
+      return osClient.count(
+          new String[] {PROCESS_INSTANCE_MULTI_ALIAS}, instanceCountRequestQuery.build().toQuery());
     } catch (final IOException e) {
       final String message =
           String.format(
@@ -77,17 +81,17 @@ public class CombinedReportInstanceCounterOS extends CombinedReportInstanceCount
   }
 
   @Override
-  protected Query getBaseQuery(
+  protected BoolQuery.Builder getBaseQuery(
       final ProcessExecutionPlan plan,
       final ReportEvaluationContext<SingleProcessReportDefinitionRequestDto> context) {
-    //    return interpreter.getBaseQuery(plan, context);
-    LOG.debug("Functionality not implemented");
-    throw new NotImplementedException();
+    return interpreter.baseQueryBuilder(
+        ExecutionContextFactory.buildExecutionContext(plan, context));
   }
 
-  private Query createInstanceCountRequestQueries(final List<Query> baseQueries) {
-    final BoolQuery.Builder baseQuerybuilder = new BoolQuery.Builder();
-    baseQueries.forEach(baseQuerybuilder::should);
-    return baseQuerybuilder.build().toQuery();
+  private BoolQuery.Builder createInstanceCountRequestQueries(
+      final List<BoolQuery.Builder> baseQueries) {
+    final BoolQuery.Builder baseQuery = new BoolQuery.Builder();
+    baseQueries.forEach(q -> baseQuery.should(s -> s.bool(q.build())));
+    return baseQuery;
   }
 }

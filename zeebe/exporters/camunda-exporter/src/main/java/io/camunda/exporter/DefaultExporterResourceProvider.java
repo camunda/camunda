@@ -44,6 +44,9 @@ import io.camunda.exporter.handlers.UserTaskHandler;
 import io.camunda.exporter.handlers.UserTaskProcessInstanceHandler;
 import io.camunda.exporter.handlers.UserTaskVariableHandler;
 import io.camunda.exporter.handlers.VariableHandler;
+import io.camunda.exporter.handlers.operation.OperationFromIncidentHandler;
+import io.camunda.exporter.handlers.operation.OperationFromProcessInstanceHandler;
+import io.camunda.exporter.handlers.operation.OperationFromVariableDocumentHandler;
 import io.camunda.exporter.utils.XMLUtil;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
@@ -204,7 +207,13 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 configuration.getIndex().getVariableSizeThreshold()),
             new UserTaskCompletionVariableHandler(
                 templateDescriptorsMap.get(TaskTemplate.class).getFullQualifiedName(),
-                configuration.getIndex().getVariableSizeThreshold()));
+                configuration.getIndex().getVariableSizeThreshold()),
+            new OperationFromProcessInstanceHandler(
+                templateDescriptorsMap.get(OperationTemplate.class).getFullQualifiedName()),
+            new OperationFromVariableDocumentHandler(
+                templateDescriptorsMap.get(OperationTemplate.class).getFullQualifiedName()),
+            new OperationFromIncidentHandler(
+                templateDescriptorsMap.get(OperationTemplate.class).getFullQualifiedName()));
   }
 
   @Override
