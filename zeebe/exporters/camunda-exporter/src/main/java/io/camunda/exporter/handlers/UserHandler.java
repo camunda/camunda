@@ -63,4 +63,9 @@ public class UserHandler implements ExportHandler<UserEntity, UserRecordValue> {
       throws PersistenceException {
     batchRequest.add(indexName, entity);
   }
+
+  @Override
+  public String getIndexName() {
+    return indexName;
+  }
 }

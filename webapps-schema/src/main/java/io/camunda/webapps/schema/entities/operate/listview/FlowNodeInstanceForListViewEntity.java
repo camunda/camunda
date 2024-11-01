@@ -197,18 +197,14 @@ public class FlowNodeInstanceForListViewEntity
         activityId,
         activityState,
         activityType,
-        incidentKeys,
         errorMessage,
         incident,
         jobFailedWithRetriesLeft,
         tenantId,
-        pendingIncident,
         position,
         positionIncident,
         positionJob,
-        joinRelation,
-        startTime,
-        endTime);
+        joinRelation);
   }
 
   @Override
@@ -225,19 +221,15 @@ public class FlowNodeInstanceForListViewEntity
     final FlowNodeInstanceForListViewEntity that = (FlowNodeInstanceForListViewEntity) o;
     return incident == that.incident
         && jobFailedWithRetriesLeft == that.jobFailedWithRetriesLeft
-        && pendingIncident == that.pendingIncident
         && Objects.equals(processInstanceKey, that.processInstanceKey)
         && Objects.equals(activityId, that.activityId)
         && activityState == that.activityState
         && activityType == that.activityType
-        && Objects.equals(incidentKeys, that.incidentKeys)
         && Objects.equals(errorMessage, that.errorMessage)
         && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(position, that.position)
         && Objects.equals(positionIncident, that.positionIncident)
         && Objects.equals(positionJob, that.positionJob)
-        && Objects.equals(joinRelation, that.joinRelation)
-        && Objects.equals(startTime, that.startTime)
-        && Objects.equals(endTime, that.endTime);
+        && Objects.equals(joinRelation, that.joinRelation);
   }
 }

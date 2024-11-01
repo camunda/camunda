@@ -70,4 +70,9 @@ public class UserTaskProcessInstanceHandler
   public void flush(final TaskProcessInstanceEntity entity, final BatchRequest batchRequest) {
     batchRequest.add(indexName, entity);
   }
+
+  @Override
+  public String getIndexName() {
+    return indexName;
+  }
 }

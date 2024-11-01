@@ -68,6 +68,11 @@ public class AuthorizationHandler
     batchRequest.add(indexName, entity);
   }
 
+  @Override
+  public String getIndexName() {
+    return indexName;
+  }
+
   private List<Permission> getPermissions(final List<PermissionValue> permissionValues) {
     return permissionValues.stream()
         .map(

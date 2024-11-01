@@ -84,4 +84,9 @@ public class VariableHandler implements ExportHandler<VariableEntity, VariableRe
   public void flush(final VariableEntity entity, final BatchRequest batchRequest) {
     batchRequest.add(indexName, entity);
   }
+
+  @Override
+  public String getIndexName() {
+    return indexName;
+  }
 }

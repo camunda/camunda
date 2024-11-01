@@ -32,8 +32,8 @@ public class EventFromProcessInstanceHandler
           ProcessInstanceIntent.ELEMENT_COMPLETED,
           ProcessInstanceIntent.ELEMENT_TERMINATED);
 
-  public EventFromProcessInstanceHandler(final String templateName, final boolean concurrencyMode) {
-    super(templateName, concurrencyMode);
+  public EventFromProcessInstanceHandler(final String indexName, final boolean concurrencyMode) {
+    super(indexName, concurrencyMode);
   }
 
   @Override

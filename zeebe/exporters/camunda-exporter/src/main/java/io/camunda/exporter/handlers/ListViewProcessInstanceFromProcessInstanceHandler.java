@@ -185,6 +185,11 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
     }
   }
 
+  @Override
+  public String getIndexName() {
+    return indexName;
+  }
+
   private boolean isProcessEvent(final ProcessInstanceRecordValue recordValue) {
     return isOfType(recordValue, BpmnElementType.PROCESS);
   }

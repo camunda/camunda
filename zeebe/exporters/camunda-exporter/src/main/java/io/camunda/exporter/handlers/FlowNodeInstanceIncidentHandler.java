@@ -84,4 +84,9 @@ public class FlowNodeInstanceIncidentHandler
     updateFields.put(FlowNodeInstanceTemplate.INCIDENT_KEY, entity.getIncidentKey());
     batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
   }
+
+  @Override
+  public String getIndexName() {
+    return indexName;
+  }
 }

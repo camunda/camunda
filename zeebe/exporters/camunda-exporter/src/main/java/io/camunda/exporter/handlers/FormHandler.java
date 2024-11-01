@@ -65,4 +65,9 @@ public class FormHandler implements ExportHandler<FormEntity, Form> {
   public void flush(final FormEntity entity, final BatchRequest batchRequest) {
     batchRequest.add(indexName, entity);
   }
+
+  @Override
+  public String getIndexName() {
+    return indexName;
+  }
 }

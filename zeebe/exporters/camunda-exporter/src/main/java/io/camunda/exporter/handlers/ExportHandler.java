@@ -75,4 +75,9 @@ public interface ExportHandler<T extends ExporterEntity<T>, R extends RecordValu
    * @throws PersistenceException if the handler fails to flush the entity to the batch request
    */
   void flush(T entity, BatchRequest batchRequest) throws PersistenceException;
+
+  /**
+   * @return the index name that the handler entities are flushed to.
+   */
+  String getIndexName();
 }
