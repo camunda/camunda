@@ -58,6 +58,7 @@ public class RoleProcessors {
         new RoleRemoveEntityProcessor(
             processingState.getRoleState(),
             processingState.getUserState(),
+            processingState.getMappingState(),
             authCheckBehavior,
             keyGenerator,
             writers,
