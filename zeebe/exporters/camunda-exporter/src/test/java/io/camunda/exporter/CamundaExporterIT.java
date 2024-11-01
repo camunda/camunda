@@ -369,8 +369,8 @@ final class CamundaExporterIT {
         final ExportHandler<S, T> handler)
         throws IOException {
 
+      final var currentTime = OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS);
       try (final var mocked = mockStatic(OffsetDateTime.class)) {
-        final var currentTime = OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS);
         mocked.when(OffsetDateTime::now).thenReturn(currentTime);
 
         final var record =
