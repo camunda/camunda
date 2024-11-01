@@ -10,11 +10,9 @@ package io.camunda.exporter.archiver;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
-import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
-import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.archiver.ArchiverRepository.NoopArchiverRepository;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -29,13 +27,7 @@ final class ArchiverTest {
   final class CloseTest {
     private final CloseableRepository repository = new CloseableRepository();
     private final Archiver archiver =
-        new Archiver(
-            1,
-            repository,
-            new ArchiverConfiguration(),
-            new CamundaExporterMetrics(new SimpleMeterRegistry()),
-            LoggerFactory.getLogger(ArchiverTest.class),
-            executor);
+        new Archiver(1, repository, LoggerFactory.getLogger(ArchiverTest.class), executor);
 
     @Test
     void shouldCloseExecutorOnClose() {
@@ -64,7 +56,7 @@ final class ArchiverTest {
       assertThatCode(archiver::close).doesNotThrowAnyException();
     }
 
-    private static final class CloseableRepository implements ArchiverRepository {
+    private static final class CloseableRepository extends NoopArchiverRepository {
       private boolean isClosed;
       private Exception exception;
 

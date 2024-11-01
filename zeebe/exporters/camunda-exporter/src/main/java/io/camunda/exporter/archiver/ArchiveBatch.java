@@ -5,15 +5,8 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.schema.descriptors.operate;
+package io.camunda.exporter.archiver;
 
-public interface ProcessInstanceDependant {
+import java.util.List;
 
-  String PROCESS_INSTANCE_KEY = "processInstanceKey";
-
-  String getFullQualifiedName();
-
-  default String getProcessInstanceDependantField() {
-    return PROCESS_INSTANCE_KEY;
-  }
-}
+public record ArchiveBatch(String finishDate, List<String> ids) {}

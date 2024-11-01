@@ -137,6 +137,8 @@ final class ReschedulingTaskTest {
     task.run();
 
     // then
+    // FYI - the back off is exponential, but at low values it looks like it's always adding the
+    // same value
     final var inOrder = Mockito.inOrder(executor);
     inOrder
         .verify(executor, Mockito.timeout(5_000).times(1))
