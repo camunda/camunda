@@ -10,10 +10,12 @@ package io.camunda.zeebe.engine.state.appliers;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
+import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -29,6 +31,7 @@ public class TenantAppliersTest {
 
   private MutableProcessingState processingState;
 
+  private MutableMappingState mappingState;
   private MutableTenantState tenantState;
   private MutableUserState userState;
   private MutableAuthorizationState authorizationState;
@@ -37,6 +40,7 @@ public class TenantAppliersTest {
 
   @BeforeEach
   public void setup() {
+    mappingState = processingState.getMappingState();
     tenantState = processingState.getTenantState();
     userState = processingState.getUserState();
     authorizationState = processingState.getAuthorizationState();
@@ -45,13 +49,11 @@ public class TenantAppliersTest {
             processingState.getTenantState(),
             processingState.getUserState(),
             processingState.getAuthorizationState());
-    tenantEntityAddedApplier =
-        new TenantEntityAddedApplier(
-            processingState.getTenantState(), processingState.getUserState());
+    tenantEntityAddedApplier = new TenantEntityAddedApplier(processingState);
   }
 
   @Test
-  void shouldAddEntityToTenant() {
+  void shouldAddEntityToTenantWithTypeUser() {
     // given
     final long entityKey = UUID.randomUUID().hashCode();
     final long tenantKey = UUID.randomUUID().hashCode();
@@ -65,6 +67,30 @@ public class TenantAppliersTest {
         .containsExactly(entityKey);
     final var persistedUser = userState.getUser(entityKey).get();
     assertThat(persistedUser.getTenantIdsList()).containsExactly(tenantId);
+  }
+
+  @Test
+  void shouldAddEntityToTenantWithTypeMapping() {
+    // given
+    final long entityKey = 1L;
+    mappingState.create(
+        new MappingRecord()
+            .setMappingKey(entityKey)
+            .setClaimName("claimName")
+            .setClaimValue("claimValue"));
+    final String tenantId = "tenantId";
+    final long tenantKey = 11L;
+    final var tenantRecord = new TenantRecord().setTenantId(tenantId).setTenantKey(tenantKey);
+    tenantState.createTenant(tenantRecord);
+    tenantRecord.setEntityKey(entityKey).setEntityType(EntityType.MAPPING);
+
+    // when
+    tenantEntityAddedApplier.applyState(tenantKey, tenantRecord);
+
+    // then
+    assertThat(tenantState.getEntityType(tenantKey, entityKey).get().equals(EntityType.MAPPING));
+    final var persistedMapping = mappingState.get(entityKey).get();
+    assertThat(persistedMapping.getTenantIdsList()).containsExactly(tenantId);
   }
 
   @Test

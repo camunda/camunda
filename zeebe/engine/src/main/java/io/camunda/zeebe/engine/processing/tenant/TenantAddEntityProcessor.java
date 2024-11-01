@@ -16,6 +16,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
+import io.camunda.zeebe.engine.state.immutable.MappingState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
@@ -31,6 +33,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
 
   private final TenantState tenantState;
   private final UserState userState;
+  private final MappingState mappingState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -39,14 +42,14 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
   private final CommandDistributionBehavior commandDistributionBehavior;
 
   public TenantAddEntityProcessor(
-      final TenantState tenantState,
-      final UserState userState,
+      final ProcessingState state,
       final AuthorizationCheckBehavior authCheckBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
-    this.tenantState = tenantState;
-    this.userState = userState;
+    tenantState = state.getTenantState();
+    userState = state.getUserState();
+    mappingState = state.getMappingState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -79,14 +82,11 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
     }
 
     final var entityKey = record.getEntityKey();
-    if (!isEntityPresent(entityKey, record)) {
-      rejectCommand(
-          command,
-          RejectionType.NOT_FOUND,
-          "Expected to add entity with key '%s' to tenant with key '%s', but the entity doesn't exist."
-              .formatted(entityKey, tenantKey));
+    final var tenantId = persistedRecord.get().getTenantId();
+    if (!isEntityPresentAndNotAssigned(entityKey, record.getEntityType(), command, tenantId)) {
       return;
     }
+    record.setTenantId(tenantId);
 
     stateWriter.appendFollowUpEvent(tenantKey, TenantIntent.ENTITY_ADDED, record);
     responseWriter.writeEventOnCommand(tenantKey, TenantIntent.ENTITY_ADDED, record, command);
@@ -101,14 +101,63 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private boolean isEntityPresent(final long entityKey, final TenantRecord record) {
+  private boolean isEntityPresentAndNotAssigned(
+      final long entityKey,
+      final EntityType entityType,
+      final TypedRecord<TenantRecord> command,
+      final String tenantId) {
+    return switch (entityType) {
+      case USER -> checkUserAssignment(entityKey, command, tenantId);
+      case MAPPING -> checkMappingAssignment(entityKey, command, tenantId);
+      default ->
+          throw new IllegalStateException(formatErrorMessage(entityKey, tenantId, "doesn't exist"));
+    };
+  }
+
+  private boolean checkUserAssignment(
+      final long entityKey, final TypedRecord<TenantRecord> command, final String tenantId) {
     final var user = userState.getUser(entityKey);
-    if (user.isPresent()) {
-      record.setEntityType(EntityType.USER);
-      return true;
+    if (user.isEmpty()) {
+      rejectCommand(
+          command,
+          RejectionType.NOT_FOUND,
+          formatErrorMessage(entityKey, tenantId, "doesn't exist"));
+      return false;
     }
-    // For now, we're only dealing with users. Extend this logic for other entity types later.
-    return false;
+    if (user.get().getTenantIdsList().contains(tenantId)) {
+      rejectCommand(
+          command,
+          RejectionType.INVALID_ARGUMENT,
+          formatErrorMessage(entityKey, tenantId, "is already assigned to the tenant"));
+      return false;
+    }
+    return true;
+  }
+
+  private boolean checkMappingAssignment(
+      final long entityKey, final TypedRecord<TenantRecord> command, final String tenantId) {
+    final var mapping = mappingState.get(entityKey);
+    if (mapping.isEmpty()) {
+      rejectCommand(
+          command,
+          RejectionType.NOT_FOUND,
+          formatErrorMessage(entityKey, tenantId, "doesn't exist"));
+      return false;
+    }
+    if (mapping.get().getTenantIdsList().contains(tenantId)) {
+      rejectCommand(
+          command,
+          RejectionType.INVALID_ARGUMENT,
+          formatErrorMessage(entityKey, tenantId, "is already assigned to the tenant"));
+      return false;
+    }
+    return true;
+  }
+
+  private String formatErrorMessage(
+      final long entityKey, final String tenantId, final String reason) {
+    return "Expected to add entity with key '%s' to tenant with id '%s', but the entity %s."
+        .formatted(entityKey, tenantId, reason);
   }
 
   private void rejectCommandWithUnauthorizedError(

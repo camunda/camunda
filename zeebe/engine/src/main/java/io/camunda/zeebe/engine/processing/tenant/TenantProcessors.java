@@ -48,8 +48,7 @@ public class TenantProcessors {
             ValueType.TENANT,
             TenantIntent.ADD_ENTITY,
             new TenantAddEntityProcessor(
-                processingState.getTenantState(),
-                processingState.getUserState(),
+                processingState,
                 authCheckBehavior,
                 keyGenerator,
                 writers,
