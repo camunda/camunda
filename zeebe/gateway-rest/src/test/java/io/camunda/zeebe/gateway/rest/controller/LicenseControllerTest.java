@@ -27,7 +27,9 @@ public class LicenseControllerTest extends RestControllerTest {
       """
       {
           "validLicense": true,
-          "licenseType": "saas"
+          "licenseType": "saas",
+          "isCommercial": true,
+          "expiresAt": "2024-10-29T15:14:13Z"
       }""";
 
   @MockBean ManagementServices managementServices;
@@ -37,6 +39,8 @@ public class LicenseControllerTest extends RestControllerTest {
     // given
     when(managementServices.isCamundaLicenseValid()).thenReturn(true);
     when(managementServices.getCamundaLicenseType()).thenReturn(LicenseType.SAAS);
+    when(managementServices.isCommercialCamundaLicense()).thenReturn(true);
+    when(managementServices.getCamundaLicenseExpirationDate()).thenReturn("2024-10-29T15:14:13Z");
 
     // when / then
     webClient
@@ -53,5 +57,7 @@ public class LicenseControllerTest extends RestControllerTest {
 
     verify(managementServices).isCamundaLicenseValid();
     verify(managementServices).getCamundaLicenseType();
+    verify(managementServices).isCommercialCamundaLicense();
+    verify(managementServices).getCamundaLicenseExpirationDate();
   }
 }

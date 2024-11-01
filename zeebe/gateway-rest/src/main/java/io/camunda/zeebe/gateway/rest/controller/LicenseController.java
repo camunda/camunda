@@ -28,6 +28,8 @@ public class LicenseController {
     final LicenseResponse response = new LicenseResponse();
     response.setValidLicense(managementServices.isCamundaLicenseValid());
     response.setLicenseType(managementServices.getCamundaLicenseType().getName());
+    response.setIsCommercial(managementServices.isCommercialCamundaLicense());
+    response.setExpiresAt(managementServices.getCamundaLicenseExpirationDate());
 
     return response;
   }

@@ -8,6 +8,9 @@
 package io.camunda.service.license;
 
 import io.camunda.zeebe.util.VisibleForTesting;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import org.camunda.bpm.licensecheck.InvalidLicenseException;
 import org.camunda.bpm.licensecheck.LicenseKey;
 import org.camunda.bpm.licensecheck.LicenseKeyImpl;
@@ -18,8 +21,11 @@ public class CamundaLicense {
 
   public static final String CAMUNDA_LICENSE_ENV_VAR_KEY = "CAMUNDA_LICENSE_KEY";
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaLicense.class);
+  private static final DateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
   private boolean isValid;
   private LicenseType licenseType;
+  private boolean isCommercial;
+  private Date validUntil;
   private boolean isInitialized;
 
   @VisibleForTesting
@@ -35,6 +41,14 @@ public class CamundaLicense {
 
   public synchronized LicenseType getLicenseType() {
     return licenseType;
+  }
+
+  public synchronized boolean isCommercial() {
+    return isCommercial;
+  }
+
+  public synchronized String expiresAt() {
+    return dateFormatter.format(validUntil);
   }
 
   public synchronized void initializeWithLicense(final String license) {
@@ -68,6 +82,8 @@ public class CamundaLicense {
             "Expected a valid licenseType property on the Camunda License, but none were found.");
         isValid = false;
       } else {
+        isCommercial = licenseKey.isCommercial();
+        validUntil = licenseKey.getValidUntil();
         isValid = true;
       }
 

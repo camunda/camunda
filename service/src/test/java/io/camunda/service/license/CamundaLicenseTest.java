@@ -14,6 +14,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import org.camunda.bpm.licensecheck.InvalidLicenseException;
@@ -25,8 +26,12 @@ public class CamundaLicenseTest {
 
   private static final String TEST_LICENSE = "whatever";
   private static final String LICENSE_TYPE_KEY = "licenseType";
+  private static final String NON_COMMERCIAL_KEY = "non-commercial";
+  private static final String VALID_UNTIL_KEY = "expiryDate";
+
   private static final String PRODUCTION_LICENSE_TYPE = "production";
   private static final String SAAS_LICENSE_TYPE = "saas";
+
   private static final String TEST_EXCEPTION_MESSAGE = "test exception";
 
   @Test
@@ -118,5 +123,67 @@ public class CamundaLicenseTest {
     // then
     assertEquals(LicenseType.SAAS, testLicense.getLicenseType());
     assertTrue(testLicense.isValid());
+  }
+
+  @Test
+  public void shouldReturnTrueForIsCommercialWhenLicenseIsNotNonCommercial()
+      throws InvalidLicenseException {
+    // given
+    final CamundaLicense testLicense = Mockito.spy(CamundaLicense.class);
+    final LicenseKey mockKey = mock(LicenseKey.class);
+
+    final Map<String, String> testProperties = new HashMap<>();
+    testProperties.put(LICENSE_TYPE_KEY, PRODUCTION_LICENSE_TYPE);
+    when(mockKey.getProperties()).thenReturn(testProperties);
+    when((mockKey.isCommercial())).thenReturn(true);
+
+    Mockito.doReturn(mockKey).when(testLicense).getLicenseKey(anyString());
+
+    // when
+    testLicense.initializeWithLicense(TEST_LICENSE);
+
+    // then
+    assertEquals(true, testLicense.isCommercial());
+  }
+
+  @Test
+  public void shouldReturnFalseForIsCommercialWhenLicenseIsNonCommercial()
+      throws InvalidLicenseException {
+    // given
+    final CamundaLicense testLicense = Mockito.spy(CamundaLicense.class);
+    final LicenseKey mockKey = mock(LicenseKey.class);
+
+    final Map<String, String> testProperties = new HashMap<>();
+    testProperties.put(LICENSE_TYPE_KEY, PRODUCTION_LICENSE_TYPE);
+    when(mockKey.getProperties()).thenReturn(testProperties);
+    when((mockKey.isCommercial())).thenReturn(false);
+
+    Mockito.doReturn(mockKey).when(testLicense).getLicenseKey(anyString());
+
+    // when
+    testLicense.initializeWithLicense(TEST_LICENSE);
+
+    // then
+    assertEquals(false, testLicense.isCommercial());
+  }
+
+  @Test
+  public void shouldReturnExpiryDateForLicense() throws InvalidLicenseException {
+    // given
+    final CamundaLicense testLicense = Mockito.spy(CamundaLicense.class);
+    final LicenseKey mockKey = mock(LicenseKey.class);
+
+    final Map<String, String> testProperties = new HashMap<>();
+    testProperties.put(LICENSE_TYPE_KEY, PRODUCTION_LICENSE_TYPE);
+    when(mockKey.getProperties()).thenReturn(testProperties);
+    when(mockKey.getValidUntil()).thenReturn(new Date(1646245390158L));
+
+    Mockito.doReturn(mockKey).when(testLicense).getLicenseKey(anyString());
+
+    // when
+    testLicense.initializeWithLicense(TEST_LICENSE);
+
+    // then
+    assertEquals("2022-03-02T12:23:10Z", testLicense.expiresAt());
   }
 }

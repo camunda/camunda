@@ -25,4 +25,12 @@ public final class ManagementServices {
   public LicenseType getCamundaLicenseType() {
     return license.getLicenseType();
   }
+
+  public boolean isCommercialCamundaLicense() {
+    return license.isCommercial();
+  }
+
+  public String getCamundaLicenseExpirationDate() {
+    return license.expiresAt();
+  }
 }
