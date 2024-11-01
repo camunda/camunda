@@ -12,7 +12,7 @@ import java.util.Optional;
 
 public interface GroupState {
 
-  Optional<PersistedGroup> getGroup(long groupKey);
+  Optional<PersistedGroup> get(long groupKey);
 
   Optional<Long> getGroupKeyByName(String groupName);
 }

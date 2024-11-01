@@ -44,7 +44,7 @@ public class GroupAppliersTest {
     groupCreatedApplier.applyState(groupKey, groupRecord);
 
     // then
-    final var group = groupState.getGroup(groupKey);
+    final var group = groupState.get(groupKey);
     assertThat(group.isPresent()).isTrue();
     final var persistedGroup = group.get();
     assertThat(persistedGroup.getGroupKey()).isEqualTo(groupKey);

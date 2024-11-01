@@ -27,7 +27,7 @@ public class GroupCreatedApplier implements TypedEventApplier<GroupIntent, Group
 
   @Override
   public void applyState(final long key, final GroupRecord value) {
-    groupState.createGroup(key, value);
+    groupState.create(key, value);
     authorizationState.insertOwnerTypeByKey(key, AuthorizationOwnerType.GROUP);
   }
 }

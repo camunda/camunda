@@ -36,10 +36,10 @@ public class GroupStateTest {
     final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
 
     // when
-    groupState.createGroup(groupKey, groupRecord);
+    groupState.create(groupKey, groupRecord);
 
     // then
-    final var group = groupState.getGroup(groupKey);
+    final var group = groupState.get(groupKey);
     assertThat(group.isPresent()).isTrue();
     final var persistedGroup = group.get();
     assertThat(persistedGroup.getGroupKey()).isEqualTo(groupKey);
@@ -52,7 +52,7 @@ public class GroupStateTest {
     final var groupKey = 1L;
     final var groupName = "group";
     final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
-    groupState.createGroup(groupKey, groupRecord);
+    groupState.create(groupKey, groupRecord);
 
     // when
     final var key = groupState.getGroupKeyByName(groupName);
@@ -65,10 +65,10 @@ public class GroupStateTest {
   @Test
   void shouldReturnNullIfGroupDoesNotExist() {
     // given
-    final var groupKey = 2l;
+    final var groupKey = 2L;
 
     // when
-    final var group = groupState.getGroup(groupKey);
+    final var group = groupState.get(groupKey);
 
     // then
     assertThat(group.isPresent()).isFalse();
