@@ -13,6 +13,7 @@ import static java.util.Arrays.asList;
 
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.exporter.DefaultExporterResourceProvider;
+import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
@@ -63,7 +64,7 @@ public class CamundaExporterHandlerITInvocationProvider
 
     // doesn't matter which config we use as handlers are unaware of who they export to
     final var provider = new DefaultExporterResourceProvider();
-    provider.init(osConfig);
+    provider.init(osConfig, ClientAdapter.of(elsConfig)::getProcessCacheLoader);
 
     return provider.getExportHandlers().stream()
         .map(
