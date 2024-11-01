@@ -68,9 +68,11 @@ import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
@@ -340,139 +342,44 @@ final class CamundaExporterIT {
   @ExtendWith(CamundaExporterHandlerITInvocationProvider.class)
   class ExportHandlerTests {
 
+    final Map<Class<?>, Function<ExportHandler<?, ?>, Record<?>>> customRecordGenerators =
+        new HashMap<>(
+            Map.of(
+                EventFromJobHandler.class,
+                this::jobRecordGenerator,
+                ListViewFlowNodeFromJobHandler.class,
+                this::jobRecordGenerator,
+                ListViewProcessInstanceFromProcessInstanceHandler.class,
+                (handler) -> processInstanceRecordGenerator(handler, BpmnElementType.PROCESS),
+                ListViewFlowNodeFromProcessInstanceHandler.class,
+                (handler) ->
+                    processInstanceRecordGenerator(handler, BpmnElementType.BOUNDARY_EVENT),
+                DecisionEvaluationHandler.class,
+                this::decisionEvalRecordGenerator,
+                MetricFromProcessInstanceHandler.class,
+                (handler) -> processInstanceRecordGenerator(handler, BpmnElementType.PROCESS),
+                UserTaskProcessInstanceHandler.class,
+                (handler) -> processInstanceRecordGenerator(handler, BpmnElementType.PROCESS)));
+
     @TestTemplate
-    void allHandlerTestsWithInvocationProvider(
+    @SuppressWarnings("unchecked")
+    <S extends ExporterEntity<S>, T extends RecordValue> void allHandlerTestsWithInvocationProvider(
         final CamundaExporter exporter,
         final SearchClientAdapter clientAdapter,
-        final ExportHandler<?, ?> handler)
-        throws IOException {
-
-      exportTest(exporter, handler, clientAdapter);
-    }
-
-    private <S extends ExporterEntity<S>, T extends RecordValue> Record<T> recordGenerator(
-        final ExportHandler<S, T> handler, final Supplier<Record<T>> createRecord) {
-      // Sometimes the factory generates record with intents that are not supported by the handler.
-      var record = createRecord.get();
-      do {
-        record = createRecord.get();
-      } while (!handler.handlesRecord(record));
-      return record;
-    }
-
-    private <S extends ExporterEntity<S>, T extends RecordValue>
-        Supplier<Record<T>> jobRecordGenerator(final ExportHandler<S, T> handler) {
-      return () ->
-          recordGenerator(
-              handler,
-              () -> {
-                final var jobRecordValue =
-                    ImmutableJobRecordValue.builder()
-                        .from(factory.generateObject(JobRecordValue.class))
-                        .withDeadline(System.currentTimeMillis() + 10000)
-                        .build();
-                return factory.generateRecord(
-                    ValueType.JOB,
-                    r ->
-                        r.withValue((T) jobRecordValue)
-                            .withTimestamp(System.currentTimeMillis())
-                            .withIntent(JobIntent.CREATED));
-              });
-    }
-
-    private <S extends ExporterEntity<S>, T extends RecordValue>
-        Supplier<Record<T>> decisionEvalRecordGenerator(final ExportHandler<S, T> handler) {
-      return () ->
-          recordGenerator(
-              handler,
-              () -> {
-                final ImmutableEvaluatedDecisionValue decisionValue =
-                    ImmutableEvaluatedDecisionValue.builder()
-                        .from(factory.generateObject(EvaluatedDecisionValue.class))
-                        .build();
-                final DecisionEvaluationRecordValue decisionRecordValue =
-                    ImmutableDecisionEvaluationRecordValue.builder()
-                        .from(factory.generateObject(DecisionEvaluationRecordValue.class))
-                        .withEvaluatedDecisions(List.of(decisionValue))
-                        .build();
-                return factory.generateRecord(
-                    ValueType.DECISION_EVALUATION,
-                    r ->
-                        r.withValue((T) decisionRecordValue)
-                            .withTimestamp(System.currentTimeMillis()));
-              });
-    }
-
-    private <S extends ExporterEntity<S>, T extends RecordValue>
-        Supplier<Record<T>> defaultRecordGenerator(final ExportHandler<S, T> handler) {
-      return () ->
-          recordGenerator(
-              handler,
-              () ->
-                  factory.generateRecord(
-                      handler.getHandledValueType(),
-                      r -> r.withTimestamp(System.currentTimeMillis())));
-    }
-
-    private <S extends ExporterEntity<S>, T extends RecordValue>
-        Supplier<Record<T>> processInstanceRecordGenerator(
-            final ExportHandler<S, T> handler, final BpmnElementType elementType) {
-      return () ->
-          recordGenerator(
-              handler,
-              () -> {
-                final ProcessInstanceRecordValue processInstanceRecordValue =
-                    ImmutableProcessInstanceRecordValue.builder()
-                        .from(factory.generateObject(ProcessInstanceRecordValue.class))
-                        .withParentProcessInstanceKey(-1L)
-                        .withBpmnElementType(elementType)
-                        .build();
-                return factory.generateRecord(
-                    ValueType.PROCESS_INSTANCE,
-                    r ->
-                        r.withIntent(ELEMENT_ACTIVATING)
-                            .withValue((T) processInstanceRecordValue)
-                            .withTimestamp(System.currentTimeMillis()));
-              });
-    }
-
-    private <S extends ExporterEntity<S>, T extends RecordValue>
-        Supplier<Record<T>> getRecordWhichCanBeHandled(final ExportHandler<S, T> handler) {
-
-      final Map<Class<?>, Supplier<Record<T>>> customRecordGenerators =
-          Map.of(
-              EventFromJobHandler.class,
-              jobRecordGenerator(handler),
-              ListViewFlowNodeFromJobHandler.class,
-              jobRecordGenerator(handler),
-              ListViewProcessInstanceFromProcessInstanceHandler.class,
-              processInstanceRecordGenerator(handler, BpmnElementType.PROCESS),
-              ListViewFlowNodeFromProcessInstanceHandler.class,
-              processInstanceRecordGenerator(handler, BpmnElementType.BOUNDARY_EVENT),
-              DecisionEvaluationHandler.class,
-              decisionEvalRecordGenerator(handler),
-              MetricFromProcessInstanceHandler.class,
-              processInstanceRecordGenerator(handler, BpmnElementType.PROCESS),
-              UserTaskProcessInstanceHandler.class,
-              processInstanceRecordGenerator(handler, BpmnElementType.PROCESS));
-
-      return () ->
-          customRecordGenerators
-              .getOrDefault(handler.getClass(), defaultRecordGenerator(handler))
-              .get();
-    }
-
-    private <S extends ExporterEntity<S>, T extends RecordValue> void exportTest(
-        final CamundaExporter exporter,
-        final ExportHandler<S, T> handler,
-        final SearchClientAdapter clientAdapter)
+        final ExportHandler<S, T> handler)
         throws IOException {
 
       final var currentTime = OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS);
       final var mocked = mockStatic(OffsetDateTime.class);
       mocked.when(OffsetDateTime::now).thenReturn(currentTime);
 
-      final var record = getRecordWhichCanBeHandled(handler).get();
+      final var record =
+          (Record<T>)
+              customRecordGenerators
+                  .getOrDefault(handler.getClass(), this::defaultRecordGenerator)
+                  .apply(handler);
+      customRecordGenerators.put(handler.getClass(), (ignored) -> record);
+
       final var entityId = handler.generateIds(record).getFirst();
       final var expectedEntity = handler.createNewEntity(entityId);
       handler.updateEntity(record, expectedEntity);
@@ -489,6 +396,86 @@ final class CamundaExporterIT {
               "Handler [%s] correctly handles a [%s] record",
               handler.getClass().getSimpleName(), handler.getHandledValueType())
           .isEqualTo(expectedEntity);
+    }
+
+    private <S extends ExporterEntity<S>, T extends RecordValue> Record<T> recordGenerator(
+        final ExportHandler<S, T> handler, final Supplier<Record<T>> createRecord) {
+      // Sometimes the factory generates record with intents that are not supported by the handler.
+      var record = createRecord.get();
+      do {
+        record = createRecord.get();
+      } while (!handler.handlesRecord(record));
+      return record;
+    }
+
+    private <S extends ExporterEntity<S>, T extends RecordValue> Record<T> jobRecordGenerator(
+        final ExportHandler<S, T> handler) {
+      return recordGenerator(
+          handler,
+          () -> {
+            final var jobRecordValue =
+                ImmutableJobRecordValue.builder()
+                    .from(factory.generateObject(JobRecordValue.class))
+                    .withDeadline(System.currentTimeMillis() + 10000)
+                    .build();
+            return factory.generateRecord(
+                ValueType.JOB,
+                r ->
+                    r.withValue((T) jobRecordValue)
+                        .withTimestamp(System.currentTimeMillis())
+                        .withIntent(JobIntent.CREATED));
+          });
+    }
+
+    private <S extends ExporterEntity<S>, T extends RecordValue>
+        Record<T> decisionEvalRecordGenerator(final ExportHandler<S, T> handler) {
+      return recordGenerator(
+          handler,
+          () -> {
+            final ImmutableEvaluatedDecisionValue decisionValue =
+                ImmutableEvaluatedDecisionValue.builder()
+                    .from(factory.generateObject(EvaluatedDecisionValue.class))
+                    .build();
+            final DecisionEvaluationRecordValue decisionRecordValue =
+                ImmutableDecisionEvaluationRecordValue.builder()
+                    .from(factory.generateObject(DecisionEvaluationRecordValue.class))
+                    .withEvaluatedDecisions(List.of(decisionValue))
+                    .build();
+            return factory.generateRecord(
+                ValueType.DECISION_EVALUATION,
+                r ->
+                    r.withValue((T) decisionRecordValue).withTimestamp(System.currentTimeMillis()));
+          });
+    }
+
+    private <S extends ExporterEntity<S>, T extends RecordValue> Record<T> defaultRecordGenerator(
+        final ExportHandler<S, T> handler) {
+      return recordGenerator(
+          handler,
+          () ->
+              factory.generateRecord(
+                  handler.getHandledValueType(), r -> r.withTimestamp(System.currentTimeMillis())));
+    }
+
+    private <S extends ExporterEntity<S>, T extends RecordValue>
+        Record<T> processInstanceRecordGenerator(
+            final ExportHandler<S, T> handler, final BpmnElementType elementType) {
+      return recordGenerator(
+          handler,
+          () -> {
+            final ProcessInstanceRecordValue processInstanceRecordValue =
+                ImmutableProcessInstanceRecordValue.builder()
+                    .from(factory.generateObject(ProcessInstanceRecordValue.class))
+                    .withParentProcessInstanceKey(-1L)
+                    .withBpmnElementType(elementType)
+                    .build();
+            return factory.generateRecord(
+                ValueType.PROCESS_INSTANCE,
+                r ->
+                    r.withIntent(ELEMENT_ACTIVATING)
+                        .withValue((T) processInstanceRecordValue)
+                        .withTimestamp(System.currentTimeMillis()));
+          });
     }
   }
 }
