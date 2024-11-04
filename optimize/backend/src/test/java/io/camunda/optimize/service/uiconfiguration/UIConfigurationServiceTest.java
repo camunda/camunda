@@ -182,6 +182,23 @@ public class UIConfigurationServiceTest {
     assertThat(configurationResponse.getExpiresAt()).isEqualTo("2024-10-29T15:14:13Z");
   }
 
+  @Test
+  public void testCamundaLicenseReturnsNullWhenThereIsNoExpiration() {
+    // given
+    initializeMocks();
+    when(environment.getActiveProfiles()).thenReturn(new String[] {CLOUD_PROFILE});
+    when(camundaLicenseService.getCamundaLicenseExpirationDate()).thenReturn(null);
+
+    // when
+    final UIConfigurationResponseDto configurationResponse = underTest.getUIConfiguration();
+
+    // then
+    assertThat(configurationResponse.getLicenseType()).isEqualTo("saas");
+    assertThat(configurationResponse.isValidLicense()).isEqualTo(true);
+    assertThat(configurationResponse.isCommercial()).isEqualTo(false);
+    assertThat(configurationResponse.getExpiresAt()).isEqualTo(null);
+  }
+
   private void initializeMocks() {
     when(configurationService.getConfiguredWebhooks()).thenReturn(Collections.emptyMap());
     when(identity.users()).thenReturn(identityUsers);
@@ -191,6 +208,6 @@ public class UIConfigurationServiceTest {
     when(camundaLicenseService.getCamundaLicenseType()).thenReturn(LicenseType.SAAS);
     when(camundaLicenseService.isCamundaLicenseValid()).thenReturn(true);
     when(camundaLicenseService.isCommercialCamundaLicense()).thenReturn(false);
-    // when(camundaLicenseService.getCamundaLicenseExpirationDate()).thenReturn(testDate);
+    when(camundaLicenseService.getCamundaLicenseExpirationDate()).thenReturn(testDate);
   }
 }

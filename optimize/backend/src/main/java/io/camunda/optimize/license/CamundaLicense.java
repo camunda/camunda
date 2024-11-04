@@ -84,7 +84,9 @@ public class CamundaLicense {
         isValid = false;
       } else {
         isCommercial = licenseKey.isCommercial();
-        validUntil = licenseKey.getValidUntil().toInstant().atOffset(ZoneOffset.UTC);
+        if (licenseKey.getValidUntil() != null) {
+          validUntil = licenseKey.getValidUntil().toInstant().atOffset(ZoneOffset.UTC);
+        }
         isValid = true;
       }
 
