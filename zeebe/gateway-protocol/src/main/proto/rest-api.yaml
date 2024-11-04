@@ -497,7 +497,7 @@ paths:
         The Camunda 8 API (REST) Overview page provides further details.
 
         :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
         :::
       parameters:
@@ -603,7 +603,7 @@ paths:
         The Camunda 8 API (REST) Overview page provides further details.
 
         :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
         :::
       parameters:
@@ -709,7 +709,7 @@ paths:
         The Camunda 8 API (REST) Overview page provides further details.
 
         :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
         :::
       requestBody:
@@ -754,7 +754,7 @@ paths:
         The Camunda 8 API (REST) Overview page provides further details.
 
         :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
         :::
       parameters:
@@ -808,7 +808,7 @@ paths:
         The Camunda 8 API (REST) Overview page provides further details.
 
         :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
         :::
       requestBody:
@@ -853,7 +853,7 @@ paths:
         The Camunda 8 API (REST) Overview page provides further details.
 
         :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
         :::
       parameters:
@@ -908,7 +908,7 @@ paths:
         To change the time, the clock must be pinned again with a new timestamp.
 
         :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
         :::
       requestBody:
@@ -945,7 +945,7 @@ paths:
         normal behavior after it has been pinned to a specific time.
 
         :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
       responses:
         "204":
@@ -969,7 +969,7 @@ paths:
         The Camunda 8 API (REST) Overview page provides further details.
 
         :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
         :::
       requestBody:
@@ -1014,7 +1014,7 @@ paths:
         The Camunda 8 API (REST) Overview page provides further details.
 
         :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
         :::
       parameters:
@@ -1069,7 +1069,7 @@ paths:
         The Camunda 8 API (REST) Overview page provides further details.
 
         :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
         :::
       parameters:
@@ -1132,7 +1132,7 @@ paths:
         The Camunda 8 API (REST) Overview page provides further details.
 
         :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
         :::
       parameters:
@@ -1237,7 +1237,7 @@ paths:
         The Camunda 8 API (REST) Overview page provides further details.
 
         :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
         :::
       parameters:
@@ -1292,7 +1292,7 @@ paths:
         The Camunda 8 API (REST) Overview page provides further details.
 
         :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
         :::
       requestBody:
@@ -1475,7 +1475,7 @@ paths:
         The Camunda 8 API (REST) Overview page provides further details.
 
         :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
         :::
       requestBody:
@@ -1520,7 +1520,7 @@ paths:
         The Camunda 8 API (REST) Overview page provides further details.
 
         :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
         :::
       parameters:
@@ -1575,7 +1575,7 @@ paths:
         The Camunda 8 API (REST) Overview page provides further details.
 
         :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
         :::
       requestBody:
@@ -1620,7 +1620,7 @@ paths:
         The Camunda 8 API (REST) Overview page provides further details.
 
         :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
         :::
       parameters:
@@ -1675,7 +1675,7 @@ paths:
         The Camunda 8 API (REST) Overview page provides further details.
 
         :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
         :::
       parameters:
@@ -1730,7 +1730,7 @@ paths:
         The Camunda 8 API (REST) Overview page provides further details.
 
         :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
         :::
       requestBody:
@@ -1775,7 +1775,7 @@ paths:
         The Camunda 8 API (REST) Overview page provides further details.
 
         :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
         :::
       parameters:
@@ -1830,7 +1830,7 @@ paths:
         The Camunda 8 API (REST) Overview page provides further details.
 
         :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
         :::
       parameters:
@@ -1886,7 +1886,7 @@ paths:
         The Camunda 8 API (REST) Overview page provides further details.
 
         :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
         :::
       requestBody:
@@ -1932,7 +1932,7 @@ paths:
         The Camunda 8 API (REST) Overview page provides further details.
 
         :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
         :::
       parameters:
@@ -2107,7 +2107,7 @@ paths:
         The Camunda 8 API (REST) Overview page provides further details.
 
         :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
         :::
       operationId: findAuthorizations
@@ -2286,7 +2286,7 @@ paths:
         Note that this currently only supports an in-memory document store, which is not meant for production use.
 
         :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
         :::
       parameters:
@@ -2347,7 +2347,7 @@ paths:
         Note that this currently only supports an in-memory document store, which is not meant for production use.
 
         :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
         :::
       parameters:
@@ -2396,7 +2396,7 @@ paths:
         Note that this currently only supports an in-memory document store, which is not meant for production use.
 
         :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
         :::
       parameters:
@@ -2441,7 +2441,7 @@ paths:
         Note that this currently only supports an in-memory document store, which is not meant for production use.
 
         :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
         :::
       parameters:
@@ -2491,7 +2491,7 @@ paths:
         The Camunda 8 API (REST) Overview page provides further details.
 
         :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
         :::
       requestBody:
@@ -2535,7 +2535,7 @@ paths:
         The Camunda 8 API (REST) Overview page provides further details.
 
         :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
         :::
       operationId: "findUserAuthorizations"
@@ -2589,7 +2589,7 @@ paths:
         The Camunda 8 API (REST) Overview page provides further details.
 
         :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
         :::
       requestBody:
@@ -2629,7 +2629,7 @@ paths:
         The Camunda 8 API (REST) Overview page provides further details.
 
         :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
         :::
       parameters:
