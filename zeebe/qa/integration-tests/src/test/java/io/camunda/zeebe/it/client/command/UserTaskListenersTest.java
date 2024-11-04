@@ -10,10 +10,12 @@ package io.camunda.zeebe.it.client.command;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.worker.JobHandler;
 import io.camunda.zeebe.it.util.RecordingJobHandler;
@@ -48,7 +50,7 @@ public class UserTaskListenersTest {
 
   @BeforeEach
   void init() {
-    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(5)).build();
     resourcesHelper = new ZeebeResourcesHelper(client);
   }
 
@@ -114,7 +116,8 @@ public class UserTaskListenersTest {
     client.newWorker().jobType(listenerType).handler(recordingHandler).open();
 
     // when
-    client.newUserTaskCompleteCommand(userTaskKey).send();
+    final var userTaskCompletionFuture =
+        client.newUserTaskCompleteCommand(userTaskKey).send().toCompletableFuture();
     await("until all retries are exhausted")
         .untilAsserted(
             () ->
@@ -149,5 +152,11 @@ public class UserTaskListenersTest {
                     IncidentRecordValue::getErrorMessage, as(InstanceOfAssertFactories.STRING))
                 .startsWith("io.camunda.zeebe.client.api.command.ClientStatusException:")
                 .contains(expectedErrorMessageWithRejectionReason));
+
+    // The rejection of the TL job `COMPLETE` command, due to variables payload being set,
+    // results in the `COMPLETE` user task command request failing with a `timeout` exception.
+    assertThatThrownBy(userTaskCompletionFuture::join)
+        .isInstanceOf(ClientException.class)
+        .hasMessageEndingWith("java.net.SocketTimeoutException: 5 SECONDS");
   }
 }
