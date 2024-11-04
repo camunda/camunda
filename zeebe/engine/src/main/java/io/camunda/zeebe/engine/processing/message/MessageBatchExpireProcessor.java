@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.message;
 
 import static io.camunda.zeebe.protocol.record.intent.MessageIntent.*;
 
+import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@ExcludeAuthorizationCheck
 public final class MessageBatchExpireProcessor implements TypedRecordProcessor<MessageBatchRecord> {
 
   private static final Logger LOG = LoggerFactory.getLogger(MessageBatchExpireProcessor.class);
