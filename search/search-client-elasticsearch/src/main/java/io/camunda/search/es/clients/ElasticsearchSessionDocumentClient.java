@@ -20,8 +20,6 @@ public class ElasticsearchSessionDocumentClient implements SessionDocumentStorag
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchSessionDocumentClient.class);
-  private static final String NUMBER_OF_SHARDS = "index.number_of_shards";
-  private static final String NUMBER_OF_REPLICAS = "index.number_of_replicas";
   private final RetryElasticsearchClient client;
   private final String indexName = String.format("%s-%s-%s_", "camunda", "web-session", "1.1.0");
 
@@ -30,8 +28,6 @@ public class ElasticsearchSessionDocumentClient implements SessionDocumentStorag
   }
 
   public void setup() throws IOException {
-    final Map<String, Object> indexDescription =
-        ElasticsearchJSONUtil.readJSONFileToMap("/camunda-web-session.json");
     client.createIndex(indexName, indexName + "alias", 1, 1, "/camunda-web-session.json");
   }
 

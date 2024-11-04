@@ -11,7 +11,6 @@ package io.camunda.search.es.clients;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.Time;
-import co.elastic.clients.elasticsearch._types.Time.Builder;
 import co.elastic.clients.elasticsearch.core.ClearScrollRequest;
 import co.elastic.clients.elasticsearch.core.GetResponse;
 import co.elastic.clients.elasticsearch.core.ScrollRequest;
@@ -19,13 +18,10 @@ import co.elastic.clients.elasticsearch.core.ScrollResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
-import co.elastic.clients.elasticsearch.indices.Alias;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
-import co.elastic.clients.elasticsearch.indices.GetIndicesSettingsResponse;
 import co.elastic.clients.elasticsearch.indices.IndexState;
 import co.elastic.clients.elasticsearch.indices.put_index_template.IndexTemplateMapping;
 import co.elastic.clients.json.JsonpDeserializer;
-import co.elastic.clients.util.ObjectBuilder;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.ByteArrayInputStream;
@@ -35,7 +31,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import net.jodah.failsafe.Failsafe;
@@ -46,8 +41,6 @@ import org.slf4j.LoggerFactory;
 
 public class RetryElasticsearchClient {
 
-  public static final String NUMBERS_OF_REPLICA = "index.number_of_replicas";
-  public static final String NO_REPLICA = "0";
   public static final int SCROLL_KEEP_ALIVE_MS = 60_000;
   public static final int DEFAULT_NUMBER_OF_RETRIES =
       30 * 10; // 30*10 with 2 seconds = 10 minutes retry loop
@@ -58,32 +51,13 @@ public class RetryElasticsearchClient {
 
   private final ObjectMapper objectMapper;
 
-  private int numberOfRetries = DEFAULT_NUMBER_OF_RETRIES;
-  private int delayIntervalInSeconds = DEFAULT_DELAY_INTERVAL_IN_SECONDS;
-  private final int numberOfReplicas = 1;
+  private final int numberOfRetries = DEFAULT_NUMBER_OF_RETRIES;
+  private final int delayIntervalInSeconds = DEFAULT_DELAY_INTERVAL_IN_SECONDS;
 
   public RetryElasticsearchClient(
       final ElasticsearchClient client, final ObjectMapper objectMapper) {
     this.client = client;
     this.objectMapper = objectMapper;
-  }
-
-  public int getNumberOfRetries() {
-    return numberOfRetries;
-  }
-
-  public RetryElasticsearchClient setNumberOfRetries(final int numberOfRetries) {
-    this.numberOfRetries = numberOfRetries;
-    return this;
-  }
-
-  public int getDelayIntervalInSeconds() {
-    return delayIntervalInSeconds;
-  }
-
-  public RetryElasticsearchClient setDelayIntervalInSeconds(final int delayIntervalInSeconds) {
-    this.delayIntervalInSeconds = delayIntervalInSeconds;
-    return this;
   }
 
   public <T> T deserializeJson(final JsonpDeserializer<T> deserializer, final InputStream json) {
@@ -256,13 +230,9 @@ public class RetryElasticsearchClient {
                           .scrollId(scrollId)
                           .scroll(
                               Time.of(
-                                  new Function<Builder, ObjectBuilder<Time>>() {
-                                    @Override
-                                    public ObjectBuilder<Time> apply(final Builder builder) {
-                                      return builder.time(
-                                          Instant.ofEpochMilli(SCROLL_KEEP_ALIVE_MS).toString());
-                                    }
-                                  }))
+                                  builder ->
+                                      builder.time(
+                                          Instant.ofEpochMilli(SCROLL_KEEP_ALIVE_MS).toString())))
                           .build(),
                       Map.class);
               searchResponse.hits().hits().forEach(searchHitConsumer);
@@ -307,39 +277,5 @@ public class RetryElasticsearchClient {
 
   private boolean indicesExist(final String indexPattern) throws IOException {
     return client.indices().exists(s -> s.index(indexPattern)).value();
-  }
-
-  public String getOrDefaultNumbersOfReplica(final String indexName, final String defaultValue) {
-    final Map<String, String> settings = getIndexSettingsFor(indexName, NUMBERS_OF_REPLICA);
-    String numbersOfReplica = getOrDefaultForNullValue(settings, NUMBERS_OF_REPLICA, defaultValue);
-    if (numbersOfReplica.trim().equals(NO_REPLICA)) {
-      numbersOfReplica = defaultValue;
-    }
-    return numbersOfReplica;
-  }
-
-  protected Map<String, String> getIndexSettingsFor(
-      final String indexName, final String... fields) {
-    return executeWithRetries(
-        "GetIndexSettings " + indexName,
-        () -> {
-          final Map<String, String> settings = new HashMap<>();
-          final GetIndicesSettingsResponse response =
-              client.indices().getSettings(s -> s.index(indexName));
-          for (final String field : fields) {
-            settings.put(field, response.get(field).toString());
-          }
-          return settings;
-        });
-  }
-
-  public static <K, V> V getOrDefaultForNullValue(
-      final Map<K, V> map, final K key, final V defaultValue) {
-    final V value = map.get(key);
-    return value == null ? defaultValue : value;
-  }
-
-  private boolean aliasExist(final Alias alias, final String index) throws IOException {
-    return client.indices().existsAlias(s -> s.index(index).name(alias.toString())).value();
   }
 }
