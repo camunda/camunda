@@ -47,7 +47,7 @@ public class ProcessInstancesArchiverJob implements ArchiverJob {
 
   private CompletableFuture<Integer> archiveBatch(final ArchiveBatch batch) {
     if (batch != null && !(batch.ids() == null || batch.ids().isEmpty())) {
-      logger.debug("Following process instances are found for archiving: {}", batch);
+      logger.trace("Following process instances are found for archiving: {}", batch);
 
       return moveDependants(batch.finishDate(), batch.ids())
           .thenComposeAsync(
@@ -57,7 +57,7 @@ public class ProcessInstancesArchiverJob implements ArchiverJob {
           .thenApplyAsync(FunctionUtil.peek(metrics::recordProcessInstancesArchived), executor);
     }
 
-    logger.debug("Nothing to archive");
+    logger.trace("Nothing to archive");
     return CompletableFuture.completedFuture(0);
   }
 
