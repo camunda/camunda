@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway;
 
 import io.camunda.zeebe.gateway.GatewayConfiguration.GatewayProperties;
+import io.camunda.zeebe.gateway.impl.configuration.ExperimentalCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import java.time.Duration;
@@ -44,6 +45,11 @@ public final class GatewayConfiguration {
   @Bean
   public MultiTenancyCfg multiTenancyCfg() {
     return config.getMultiTenancy();
+  }
+
+  @Bean
+  public ExperimentalCfg experimentalCfg() {
+    return config.getExperimental();
   }
 
   @ConfigurationProperties("zeebe.gateway")
