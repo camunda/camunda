@@ -74,6 +74,7 @@ import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
 import java.util.Collection;
 import java.util.Map;
@@ -145,7 +146,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             AuthorizationIndex.class,
             new AuthorizationIndex(globalPrefix, isElasticsearch),
             MappingIndex.class,
-            new MappingIndex(globalPrefix, isElasticsearch));
+            new MappingIndex(globalPrefix, isElasticsearch),
+            TenantIndex.class,
+            new TenantIndex(globalPrefix, isElasticsearch));
 
     final var processCache =
         new ExporterEntityCacheImpl<Long, CachedProcessEntity>(
@@ -166,6 +169,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new UserDeletedHandler(indexDescriptorsMap.get(UserIndex.class).getFullQualifiedName()),
             new AuthorizationHandler(
                 indexDescriptorsMap.get(AuthorizationIndex.class).getFullQualifiedName()),
+            new TenantHandler(indexDescriptorsMap.get(TenantIndex.class).getFullQualifiedName()),
             new DecisionHandler(
                 indexDescriptorsMap.get(DecisionIndex.class).getFullQualifiedName()),
             new ListViewProcessInstanceFromProcessInstanceHandler(
