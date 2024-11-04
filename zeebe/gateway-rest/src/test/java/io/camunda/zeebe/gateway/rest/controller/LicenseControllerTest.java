@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.service.ManagementServices;
 import io.camunda.service.license.LicenseType;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -40,7 +41,8 @@ public class LicenseControllerTest extends RestControllerTest {
     when(managementServices.isCamundaLicenseValid()).thenReturn(true);
     when(managementServices.getCamundaLicenseType()).thenReturn(LicenseType.SAAS);
     when(managementServices.isCommercialCamundaLicense()).thenReturn(true);
-    when(managementServices.getCamundaLicenseExpirationDate()).thenReturn("2024-10-29T15:14:13Z");
+    when(managementServices.getCamundaLicenseExpirationDate())
+        .thenReturn(Instant.parse("2024-10-29T15:14:13Z"));
 
     // when / then
     webClient

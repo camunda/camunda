@@ -3964,7 +3964,7 @@ components:
           description: Will be false when a license contains a non-commerical=true property
           type: boolean
         expiresAt:
-          description: The time in UTC when the Camunda license expires
+          description: The date when the Camunda license expires
           type: string
           format: date-time
     BrokerInfo:

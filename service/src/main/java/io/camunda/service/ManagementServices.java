@@ -9,6 +9,7 @@ package io.camunda.service;
 
 import io.camunda.service.license.CamundaLicense;
 import io.camunda.service.license.LicenseType;
+import java.time.Instant;
 
 public final class ManagementServices {
 
@@ -30,7 +31,7 @@ public final class ManagementServices {
     return license.isCommercial();
   }
 
-  public String getCamundaLicenseExpirationDate() {
+  public Instant getCamundaLicenseExpirationDate() {
     return license.expiresAt();
   }
 }

@@ -9,8 +9,6 @@ package io.camunda.service.license;
 
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import org.camunda.bpm.licensecheck.InvalidLicenseException;
 import org.camunda.bpm.licensecheck.LicenseKey;
 import org.camunda.bpm.licensecheck.LicenseKeyImpl;
@@ -18,10 +16,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class CamundaLicense {
-
-  @VisibleForTesting
-  public static final DateTimeFormatter DATE_TIME_FORMATTER =
-      DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm'Z'").withZone(ZoneOffset.UTC);
 
   public static final String CAMUNDA_LICENSE_ENV_VAR_KEY = "CAMUNDA_LICENSE_KEY";
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaLicense.class);
@@ -50,8 +44,8 @@ public class CamundaLicense {
     return isCommercial;
   }
 
-  public synchronized String expiresAt() {
-    return DATE_TIME_FORMATTER.format(validUntil);
+  public synchronized Instant expiresAt() {
+    return validUntil;
   }
 
   public synchronized void initializeWithLicense(final String license) {

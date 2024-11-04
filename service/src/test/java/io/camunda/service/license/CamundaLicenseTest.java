@@ -185,7 +185,6 @@ public class CamundaLicenseTest {
     testLicense.initializeWithLicense(TEST_LICENSE);
 
     // then
-    assertEquals(
-        CamundaLicense.DATE_TIME_FORMATTER.format(testDate.toInstant()), testLicense.expiresAt());
+    assertEquals(testDate.toInstant(), testLicense.expiresAt());
   }
 }
