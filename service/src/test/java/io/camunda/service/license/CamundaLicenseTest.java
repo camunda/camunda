@@ -14,6 +14,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -185,6 +186,6 @@ public class CamundaLicenseTest {
     testLicense.initializeWithLicense(TEST_LICENSE);
 
     // then
-    assertEquals(testDate.toInstant(), testLicense.expiresAt());
+    assertEquals(testDate.toInstant().atOffset(ZoneOffset.UTC), testLicense.expiresAt());
   }
 }

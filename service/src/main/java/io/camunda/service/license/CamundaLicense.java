@@ -8,7 +8,8 @@
 package io.camunda.service.license;
 
 import io.camunda.zeebe.util.VisibleForTesting;
-import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import org.camunda.bpm.licensecheck.InvalidLicenseException;
 import org.camunda.bpm.licensecheck.LicenseKey;
 import org.camunda.bpm.licensecheck.LicenseKeyImpl;
@@ -22,7 +23,7 @@ public class CamundaLicense {
   private boolean isValid;
   private LicenseType licenseType;
   private boolean isCommercial;
-  private Instant validUntil;
+  private OffsetDateTime validUntil;
   private boolean isInitialized;
 
   @VisibleForTesting
@@ -44,7 +45,7 @@ public class CamundaLicense {
     return isCommercial;
   }
 
-  public synchronized Instant expiresAt() {
+  public synchronized OffsetDateTime expiresAt() {
     return validUntil;
   }
 
@@ -80,7 +81,7 @@ public class CamundaLicense {
         isValid = false;
       } else {
         isCommercial = licenseKey.isCommercial();
-        validUntil = licenseKey.getValidUntil().toInstant();
+        validUntil = licenseKey.getValidUntil().toInstant().atOffset(ZoneOffset.UTC);
         isValid = true;
       }
 
