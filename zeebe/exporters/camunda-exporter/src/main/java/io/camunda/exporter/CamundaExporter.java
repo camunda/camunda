@@ -98,7 +98,7 @@ public class CamundaExporter implements Exporter {
           Archiver.create(
               context.getPartitionId(),
               context.getConfiguration().getId().toLowerCase(),
-              configuration.getArchiver(),
+              configuration,
               provider,
               metrics,
               logger);
