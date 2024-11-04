@@ -19,47 +19,18 @@ import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.conditions.ArchConditions;
-import io.camunda.zeebe.engine.processing.bpmn.BpmnStreamProcessor;
-import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributeProcessor;
-import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCompleteProcessor;
-import io.camunda.zeebe.engine.processing.distribution.CommandDistributionAcknowledgeProcessor;
-import io.camunda.zeebe.engine.processing.distribution.CommandDistributionContinueProcessor;
-import io.camunda.zeebe.engine.processing.distribution.CommandDistributionFinishProcessor;
+import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.job.DefaultJobCommandPreconditionGuard;
-import io.camunda.zeebe.engine.processing.job.JobBatchActivateProcessor;
-import io.camunda.zeebe.engine.processing.job.JobCancelProcessor;
-import io.camunda.zeebe.engine.processing.job.JobRecurProcessor;
-import io.camunda.zeebe.engine.processing.job.JobTimeOutProcessor;
-import io.camunda.zeebe.engine.processing.job.JobYieldProcessor;
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
-import io.camunda.zeebe.engine.processing.message.MessageBatchExpireProcessor;
-import io.camunda.zeebe.engine.processing.message.MessageExpireProcessor;
-import io.camunda.zeebe.engine.processing.message.MessageSubscriptionCorrelateProcessor;
-import io.camunda.zeebe.engine.processing.message.MessageSubscriptionCreateProcessor;
-import io.camunda.zeebe.engine.processing.message.MessageSubscriptionDeleteProcessor;
-import io.camunda.zeebe.engine.processing.message.MessageSubscriptionMigrateProcessor;
-import io.camunda.zeebe.engine.processing.message.MessageSubscriptionRejectProcessor;
-import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionCorrelateProcessor;
-import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionCreateProcessor;
-import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionDeleteProcessor;
-import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBatchActivateProcessor;
-import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBatchTerminateProcessor;
-import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateWithResultProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor.CommandControl;
-import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessorImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.timer.TimerCancelProcessor;
-import io.camunda.zeebe.engine.processing.timer.TimerTriggerProcessor;
-import io.camunda.zeebe.engine.processing.usertask.UserTaskProcessor;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandPreconditionChecker;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandProcessor;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
-import java.util.ArrayList;
-import java.util.List;
 
 @AnalyzeClasses(
     packages = "io.camunda.zeebe.engine.processing..",
@@ -89,8 +60,7 @@ public class AuthorizationArchTest {
       public boolean test(final JavaClass javaClass) {
         return Predicates.implement(TypedRecordProcessor.class)
             // Not all processors use the TypedRecordProcessor interface. We also need to check
-            // the
-            // CommandProcessor and the UserTaskCommandProcessor interfaces.
+            // the CommandProcessor and the UserTaskCommandProcessor interfaces.
             .or(Predicates.implement(CommandProcessor.class))
             .or(Predicates.implement(UserTaskCommandProcessor.class))
             .test(javaClass);
@@ -103,42 +73,9 @@ public class AuthorizationArchTest {
       @Override
       public boolean test(final JavaClass javaClass) {
         // Not all processors need to check authorization. We need to exclude those processors.
-        return !getProcessorsThatDoNotCheckAuthorization().contains(javaClass.reflect());
+        return !javaClass.isAnnotatedWith(ExcludeAuthorizationCheck.class);
       }
     };
-  }
-
-  private static List<Class<?>> getProcessorsThatDoNotCheckAuthorization() {
-    final List<Class<?>> processors = new ArrayList<>();
-    processors.add(BpmnStreamProcessor.class);
-    processors.add(CommandProcessorImpl.class);
-    processors.add(DeploymentDistributeProcessor.class);
-    processors.add(DeploymentDistributionCompleteProcessor.class);
-    processors.add(CommandDistributionAcknowledgeProcessor.class);
-    processors.add(CommandDistributionContinueProcessor.class);
-    processors.add(CommandDistributionFinishProcessor.class);
-    processors.add(JobBatchActivateProcessor.class); // TODO REMOVE THIS ONE
-    processors.add(JobCancelProcessor.class);
-    processors.add(JobRecurProcessor.class);
-    processors.add(JobTimeOutProcessor.class);
-    processors.add(JobYieldProcessor.class);
-    processors.add(MessageBatchExpireProcessor.class);
-    processors.add(MessageExpireProcessor.class);
-    processors.add(MessageSubscriptionCorrelateProcessor.class);
-    processors.add(MessageSubscriptionDeleteProcessor.class);
-    processors.add(MessageSubscriptionMigrateProcessor.class);
-    processors.add(MessageSubscriptionCreateProcessor.class);
-    processors.add(MessageSubscriptionRejectProcessor.class);
-    processors.add(ProcessMessageSubscriptionCorrelateProcessor.class);
-    processors.add(ProcessMessageSubscriptionCreateProcessor.class);
-    processors.add(ProcessMessageSubscriptionDeleteProcessor.class);
-    processors.add(ProcessInstanceBatchActivateProcessor.class);
-    processors.add(ProcessInstanceBatchTerminateProcessor.class);
-    processors.add(ProcessInstanceCreationCreateWithResultProcessor.class);
-    processors.add(TimerCancelProcessor.class);
-    processors.add(TimerTriggerProcessor.class);
-    processors.add(UserTaskProcessor.class);
-    return processors;
   }
 
   private static ArchCondition<JavaClass> checkAuthorization() {

@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.job;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.engine.metrics.JobMetrics;
+import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.job.JobBatchCollector.TooLargeJob;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -36,6 +37,7 @@ import java.util.Collections;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
+@ExcludeAuthorizationCheck // TODO remove this when auth checks are implemented for this class
 public final class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchRecord> {
 
   private final StateWriter stateWriter;

@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.message;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
@@ -29,6 +30,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import org.agrona.DirectBuffer;
 
+@ExcludeAuthorizationCheck
 public final class ProcessMessageSubscriptionCorrelateProcessor
     implements TypedRecordProcessor<ProcessMessageSubscriptionRecord> {
 

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
+@ExcludeAuthorizationCheck
 public final class ProcessInstanceBatchActivateProcessor
     implements TypedRecordProcessor<ProcessInstanceBatchRecord> {
   private final TypedCommandWriter commandWriter;
