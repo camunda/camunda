@@ -9,8 +9,6 @@ package io.camunda.exporter;
 
 import static java.util.Map.entry;
 
-import io.camunda.exporter.archiver.ArchiverRepository;
-import io.camunda.exporter.archiver.ArchiverRepository.NoopArchiverRepository;
 import io.camunda.exporter.cache.ProcessCacheImpl;
 import io.camunda.exporter.cache.ProcessCacheLoaderFactory;
 import io.camunda.exporter.config.ConnectionTypes;
@@ -86,13 +84,14 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
       templateDescriptorsMap;
 
   private Set<ExportHandler> exportHandlers;
+  private boolean isElasticsearch;
 
   @Override
   public void init(
       final ExporterConfiguration configuration,
       final ProcessCacheLoaderFactory processCacheLoaderFactory) {
     final var globalPrefix = configuration.getIndex().getPrefix();
-    final var isElasticsearch =
+    isElasticsearch =
         ConnectionTypes.from(configuration.getConnect().getType())
             .equals(ConnectionTypes.ELASTICSEARCH);
 
@@ -236,11 +235,5 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   public Set<ExportHandler> getExportHandlers() {
     // Register all handlers here
     return exportHandlers;
-  }
-
-  @Override
-  public ArchiverRepository newArchiverRepository() {
-    // TODO: return appropriate implementation
-    return new NoopArchiverRepository();
   }
 }

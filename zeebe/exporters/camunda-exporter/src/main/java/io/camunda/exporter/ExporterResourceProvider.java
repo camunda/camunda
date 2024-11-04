@@ -7,7 +7,6 @@
  */
 package io.camunda.exporter;
 
-import io.camunda.exporter.archiver.ArchiverRepository;
 import io.camunda.exporter.cache.ProcessCacheLoaderFactory;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.handlers.ExportHandler;
@@ -47,9 +46,4 @@ public interface ExporterResourceProvider {
    * @return A {@link Set} of {@link ExportHandler} to be registered with the exporter
    */
   Set<ExportHandler> getExportHandlers();
-
-  /**
-   * @return a new archiver repository scoped to the current partition
-   */
-  ArchiverRepository newArchiverRepository();
 }
