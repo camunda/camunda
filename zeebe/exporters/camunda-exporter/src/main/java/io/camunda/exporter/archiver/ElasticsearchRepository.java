@@ -90,7 +90,7 @@ public final class ElasticsearchRepository implements ArchiverRepository {
     final var timer = Timer.start();
     return client
         .asyncSearch()
-        .submit(searchRequest, SearchResult.class)
+        .submit(searchRequest, Object.class)
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
         .thenApplyAsync(this::createArchiveBatch, executor);
   }
@@ -134,7 +134,6 @@ public final class ElasticsearchRepository implements ArchiverRepository {
     final var request =
         new DeleteByQueryRequest.Builder()
             .index(sourceIndexName)
-            .waitForCompletion(true)
             .slices(AUTO_SLICES)
             .conflicts(Conflicts.Proceed)
             .query(q -> q.terms(termsQuery))
@@ -224,13 +223,15 @@ public final class ElasticsearchRepository implements ArchiverRepository {
     final var combinedQuery =
         QueryBuilders.bool(q -> q.must(endDateQ, isProcessInstanceQ, partitionQ));
 
-    logger.debug(
+    logger.trace(
         "Finished process instances for archiving request: \n{}\n and aggregation: \n{}",
         combinedQuery.toString(),
         aggregation.toString());
     return new SubmitRequest.Builder()
         .index(template.getFullQualifiedName())
         .requestCache(false)
+        .allowNoIndices(true)
+        .ignoreUnavailable(true)
         .source(source -> source.fetch(false))
         .query(query -> query.constantScore(q -> q.filter(combinedQuery)))
         .aggregations(DATES_AGG, aggregation)

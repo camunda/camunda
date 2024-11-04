@@ -93,7 +93,16 @@ public class CamundaExporter implements Exporter {
             provider.getIndexTemplateDescriptors(),
             configuration);
 
+    schemaManager.startup();
+
+    writer = createBatchWriter();
+
+    scheduleDelayedFlush();
+
+    // // start archiver after the schema has been created to avoid transient errors
     if (configuration.getArchiver().isRolloverEnabled()) {
+      // make sure we create a new one in case open is being retried
+      CloseHelper.quietClose(archiver);
       archiver =
           Archiver.create(
               context.getPartitionId(),
@@ -103,12 +112,6 @@ public class CamundaExporter implements Exporter {
               metrics,
               logger);
     }
-
-    schemaManager.startup();
-
-    writer = createBatchWriter();
-
-    scheduleDelayedFlush();
 
     LOG.info("Exporter opened");
   }
