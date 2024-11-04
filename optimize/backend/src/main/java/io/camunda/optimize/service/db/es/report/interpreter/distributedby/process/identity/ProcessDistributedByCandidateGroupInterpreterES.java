@@ -65,10 +65,12 @@ public class ProcessDistributedByCandidateGroupInterpreterES
     return this.viewInterpreter;
   }
 
+  @Override
   public ConfigurationService getConfigurationService() {
     return this.configurationService;
   }
 
+  @Override
   public LocalizationService getLocalizationService() {
     return this.localizationService;
   }
@@ -77,6 +79,7 @@ public class ProcessDistributedByCandidateGroupInterpreterES
     return this.definitionService;
   }
 
+  @Override
   public AssigneeCandidateGroupService getAssigneeCandidateGroupService() {
     return this.assigneeCandidateGroupService;
   }

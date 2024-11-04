@@ -206,9 +206,11 @@ public abstract class AbstractGroupByVariableInterpreterOS<
           new Aggregation.Builder()
               .filter(
                   createModelElementAggregationFilter(
-                      (ProcessReportDataDto) context.getReportData(),
-                      context.getFilterContext(),
-                      getDefinitionService()))
+                          (ProcessReportDataDto) context.getReportData(),
+                          context.getFilterContext(),
+                          getDefinitionService())
+                      .build()
+                      .toQuery())
               .aggregations(getDistributedByInterpreter().createAggregations(context, baseQuery))
               .build();
 
