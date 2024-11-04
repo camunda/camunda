@@ -112,7 +112,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
           final var userTask =
               userTaskState.getIntermediateState(elementInstance.getUserTaskKey()).getRecord();
 
-          if (!value.getResult().isApproved()) {
+          if (value.getResult().isDenied()) {
             commandWriter.appendFollowUpCommand(
                 userTask.getUserTaskKey(), UserTaskIntent.REJECT_TASK_LISTENER, userTask);
             return;

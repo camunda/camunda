@@ -12,24 +12,24 @@ import io.camunda.zeebe.msgpack.property.BooleanProperty;
 
 public class JobResult extends UnpackedObject {
 
-  private final BooleanProperty approvedProp = new BooleanProperty("approved", true);
+  private final BooleanProperty deniedProp = new BooleanProperty("denied", false);
 
   public JobResult() {
     super(1);
-    declareProperty(approvedProp);
+    declareProperty(deniedProp);
   }
 
   /** Sets all properties to current instance from provided user task job data */
   public void setFields(final JobResult result) {
-    approvedProp.setValue(result.isApproved());
+    deniedProp.setValue(result.isDenied());
   }
 
-  public boolean isApproved() {
-    return approvedProp.getValue();
+  public boolean isDenied() {
+    return deniedProp.getValue();
   }
 
-  public JobResult setApproved(final boolean approved) {
-    approvedProp.setValue(approved);
+  public JobResult setDenied(final boolean denied) {
+    deniedProp.setValue(denied);
     return this;
   }
 }
