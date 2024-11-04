@@ -401,6 +401,9 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
+          <ignoredNonTestScopedDependencies>
+            <ignoredNonTestScopedDependency>io.camunda:zeebe-journal</ignoredNonTestScopedDependency>
+          </ignoredNonTestScopedDependencies>
           <usedDependencies>
             <dependency>net.jqwik:jqwik</dependency>
           </usedDependencies>

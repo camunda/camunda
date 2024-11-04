@@ -80,7 +80,9 @@ import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
+import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
@@ -1231,6 +1233,16 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
   public int getSnapshotChunkSize() {
     return snapshotChunkSize;
+  }
+
+  public CompletableFuture<Collection<Path>> getTailSegments(final long index) {
+    final var fut = new CompletableFuture<Collection<Path>>();
+    threadContext.execute(
+        () -> {
+          final var segments = raftLog.getTailSegments(index);
+          fut.complete(segments.values());
+        });
+    return fut;
   }
 
   /** Raft server state. */
