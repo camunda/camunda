@@ -372,32 +372,31 @@ final class CamundaExporterIT {
         throws IOException {
 
       final var currentTime = OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS);
-      final var mocked = mockStatic(OffsetDateTime.class);
-      mocked.when(OffsetDateTime::now).thenReturn(currentTime);
+      try (final var mocked = mockStatic(OffsetDateTime.class)) {
+        mocked.when(OffsetDateTime::now).thenReturn(currentTime);
 
-      final var record =
-          (Record<T>)
-              customRecordGenerators
-                  .getOrDefault(handler.getClass(), this::defaultRecordGenerator)
-                  .apply(handler);
-      customRecordGenerators.put(handler.getClass(), (ignored) -> record);
+        final var record =
+            (Record<T>)
+                customRecordGenerators
+                    .getOrDefault(handler.getClass(), this::defaultRecordGenerator)
+                    .apply(handler);
+        customRecordGenerators.put(handler.getClass(), (ignored) -> record);
 
-      final var entityId = handler.generateIds(record).getFirst();
-      final var expectedEntity = handler.createNewEntity(entityId);
-      handler.updateEntity(record, expectedEntity);
-      exporter.export(record);
+        final var entityId = handler.generateIds(record).getFirst();
+        final var expectedEntity = handler.createNewEntity(entityId);
+        handler.updateEntity(record, expectedEntity);
+        exporter.export(record);
 
-      mocked.close();
+        final var responseEntity =
+            clientAdapter.get(
+                expectedEntity.getId(), handler.getIndexName(), handler.getEntityType());
 
-      final var responseEntity =
-          clientAdapter.get(
-              expectedEntity.getId(), handler.getIndexName(), handler.getEntityType());
-
-      assertThat(responseEntity)
-          .describedAs(
-              "Handler [%s] correctly handles a [%s] record",
-              handler.getClass().getSimpleName(), handler.getHandledValueType())
-          .isEqualTo(expectedEntity);
+        assertThat(responseEntity)
+            .describedAs(
+                "Handler [%s] correctly handles a [%s] record",
+                handler.getClass().getSimpleName(), handler.getHandledValueType())
+            .isEqualTo(expectedEntity);
+      }
     }
 
     private <S extends ExporterEntity<S>, T extends RecordValue> Record<T> recordGenerator(
