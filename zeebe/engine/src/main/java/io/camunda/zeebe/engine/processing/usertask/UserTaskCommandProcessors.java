@@ -44,13 +44,16 @@ public final class UserTaskCommandProcessors {
             bpmnBehaviors.eventTriggerBehavior(),
             bpmnBehaviors.stateBehavior());
 
+    final var assignProcessor =
+        new UserTaskAssignProcessor(processingState, writers, authCheckBehavior);
     commandToProcessor =
         new EnumMap<>(
             Map.of(
                 UserTaskIntent.CREATE,
-                new UserTaskCreateProcessor(processingState, writers, authCheckBehavior),
+                new UserTaskCreateProcessor(
+                    processingState, writers, authCheckBehavior, assignProcessor),
                 UserTaskIntent.ASSIGN,
-                new UserTaskAssignProcessor(processingState, writers, authCheckBehavior),
+                assignProcessor,
                 UserTaskIntent.CLAIM,
                 new UserTaskClaimProcessor(processingState, writers, authCheckBehavior),
                 UserTaskIntent.UPDATE,

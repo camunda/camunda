@@ -14,9 +14,11 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.impl.records.UnwrittenRecord;
 
 public final class UserTaskCreateProcessor implements UserTaskCommandProcessor {
 
@@ -25,16 +27,20 @@ public final class UserTaskCreateProcessor implements UserTaskCommandProcessor {
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
   private final TypedResponseWriter responseWriter;
+  private final UserTaskAssignProcessor assignProcessor;
 
   //  private final UserTaskCommandPreconditionChecker preconditionChecker;
 
   public UserTaskCreateProcessor(
       final ProcessingState state,
       final Writers writers,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final UserTaskAssignProcessor assignProcessor) {
     stateWriter = writers.state();
     commandWriter = writers.command();
     responseWriter = writers.response();
+    this.assignProcessor = assignProcessor;
+
     //    preconditionChecker =
     //        new UserTaskCommandPreconditionChecker(
     //            List.of(), "create", state.getUserTaskState(), authCheckBehavior);
@@ -75,8 +81,16 @@ public final class UserTaskCreateProcessor implements UserTaskCommandProcessor {
         userTaskKey, UserTaskIntent.CREATED, userTaskRecord, command);
 
     if (!Strings.isNullOrEmpty(assignee)) {
-      commandWriter.appendFollowUpCommand(
-          userTaskKey, UserTaskIntent.ASSIGN, userTaskRecord.setAssignee(assignee));
+      userTaskRecord.setAssignee(assignee);
+      new UnwrittenRecord(
+          command.getKey(),
+          command.getPartitionId(),
+          userTaskRecord,
+          new RecordMetadata().copyFrom(command));
+      assignProcessor.onCommand(command, userTaskRecord);
+      assignProcessor.onFinalizeCommand(command, userTaskRecord);
+      //      commandWriter.appendFollowUpCommand(
+      //          userTaskKey, UserTaskIntent.ASSIGN, userTaskRecord.setAssignee(assignee));
     }
   }
 }
