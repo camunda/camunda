@@ -34,7 +34,7 @@ public class CamundaLicenseService {
     return license.isCommercial();
   }
 
-  public OffsetDateTime getCamundaLicenseExpirationDate() {
+  public OffsetDateTime getCamundaLicenseExpiresAt() {
     return license.expiresAt();
   }
 }

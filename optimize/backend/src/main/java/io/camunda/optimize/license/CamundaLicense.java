@@ -29,7 +29,7 @@ public class CamundaLicense {
   private boolean isValid;
   private LicenseType licenseType;
   private boolean isCommercial;
-  private OffsetDateTime validUntil;
+  private OffsetDateTime expiresAt;
   private boolean isInitialized;
 
   public CamundaLicense(final String license) {
@@ -49,7 +49,7 @@ public class CamundaLicense {
   }
 
   public synchronized OffsetDateTime expiresAt() {
-    return validUntil;
+    return expiresAt;
   }
 
   public synchronized void initializeWithLicense(final String license) {
@@ -85,7 +85,7 @@ public class CamundaLicense {
       } else {
         isCommercial = licenseKey.isCommercial();
         if (licenseKey.getValidUntil() != null) {
-          validUntil = licenseKey.getValidUntil().toInstant().atOffset(ZoneOffset.UTC);
+          expiresAt = licenseKey.getValidUntil().toInstant().atOffset(ZoneOffset.UTC);
         }
         isValid = true;
       }

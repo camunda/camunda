@@ -49,7 +49,7 @@ public class LicenseControllerTest extends RestControllerTest {
     when(managementServices.isCamundaLicenseValid()).thenReturn(true);
     when(managementServices.getCamundaLicenseType()).thenReturn(LicenseType.SAAS);
     when(managementServices.isCommercialCamundaLicense()).thenReturn(true);
-    when(managementServices.getCamundaLicenseExpirationDate())
+    when(managementServices.getCamundaLicenseExpiresAt())
         .thenReturn(OffsetDateTime.parse("2024-10-29T15:14:13Z"));
 
     // when / then
@@ -68,7 +68,7 @@ public class LicenseControllerTest extends RestControllerTest {
     verify(managementServices).isCamundaLicenseValid();
     verify(managementServices).getCamundaLicenseType();
     verify(managementServices).isCommercialCamundaLicense();
-    verify(managementServices).getCamundaLicenseExpirationDate();
+    verify(managementServices).getCamundaLicenseExpiresAt();
   }
 
   @Test
@@ -77,7 +77,7 @@ public class LicenseControllerTest extends RestControllerTest {
     when(managementServices.isCamundaLicenseValid()).thenReturn(true);
     when(managementServices.getCamundaLicenseType()).thenReturn(LicenseType.SAAS);
     when(managementServices.isCommercialCamundaLicense()).thenReturn(true);
-    when(managementServices.getCamundaLicenseExpirationDate()).thenReturn(null);
+    when(managementServices.getCamundaLicenseExpiresAt()).thenReturn(null);
 
     // when / then
     webClient
@@ -95,6 +95,6 @@ public class LicenseControllerTest extends RestControllerTest {
     verify(managementServices).isCamundaLicenseValid();
     verify(managementServices).getCamundaLicenseType();
     verify(managementServices).isCommercialCamundaLicense();
-    verify(managementServices).getCamundaLicenseExpirationDate();
+    verify(managementServices).getCamundaLicenseExpiresAt();
   }
 }

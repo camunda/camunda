@@ -52,6 +52,7 @@ import org.springframework.core.env.Environment;
 public class UIConfigurationServiceTest {
 
   private static OffsetDateTime testDate;
+  private static final String testDateString = "2024-10-29T15:14:13Z";
   @InjectMocks UIConfigurationService underTest;
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
@@ -81,7 +82,7 @@ public class UIConfigurationServiceTest {
 
   @BeforeAll
   public static void beforeAll() {
-    testDate = OffsetDateTime.parse("2024-10-29T15:14:13Z");
+    testDate = OffsetDateTime.parse(testDateString);
   }
 
   @ParameterizedTest
@@ -179,7 +180,7 @@ public class UIConfigurationServiceTest {
     assertThat(configurationResponse.getLicenseType()).isEqualTo("saas");
     assertThat(configurationResponse.isValidLicense()).isEqualTo(true);
     assertThat(configurationResponse.isCommercial()).isEqualTo(false);
-    assertThat(configurationResponse.getExpiresAt()).isEqualTo("2024-10-29T15:14:13Z");
+    assertThat(configurationResponse.getExpiresAt()).isEqualTo(testDateString);
   }
 
   @Test
@@ -187,7 +188,7 @@ public class UIConfigurationServiceTest {
     // given
     initializeMocks();
     when(environment.getActiveProfiles()).thenReturn(new String[] {CLOUD_PROFILE});
-    when(camundaLicenseService.getCamundaLicenseExpirationDate()).thenReturn(null);
+    when(camundaLicenseService.getCamundaLicenseExpiresAt()).thenReturn(null);
 
     // when
     final UIConfigurationResponseDto configurationResponse = underTest.getUIConfiguration();
@@ -208,6 +209,6 @@ public class UIConfigurationServiceTest {
     when(camundaLicenseService.getCamundaLicenseType()).thenReturn(LicenseType.SAAS);
     when(camundaLicenseService.isCamundaLicenseValid()).thenReturn(true);
     when(camundaLicenseService.isCommercialCamundaLicense()).thenReturn(false);
-    when(camundaLicenseService.getCamundaLicenseExpirationDate()).thenReturn(testDate);
+    when(camundaLicenseService.getCamundaLicenseExpiresAt()).thenReturn(testDate);
   }
 }

@@ -37,7 +37,7 @@ public class LicenseController {
     response.setValidLicense(managementServices.isCamundaLicenseValid());
     response.setLicenseType(managementServices.getCamundaLicenseType().getName());
     response.setIsCommercial(managementServices.isCommercialCamundaLicense());
-    final OffsetDateTime expirationDate = managementServices.getCamundaLicenseExpirationDate();
+    final OffsetDateTime expirationDate = managementServices.getCamundaLicenseExpiresAt();
     response.setExpiresAt(
         expirationDate == null ? null : DATE_TIME_FORMATTER.format(expirationDate));
 
