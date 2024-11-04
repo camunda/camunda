@@ -30,7 +30,7 @@ import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl;
-import io.camunda.zeebe.test.util.AutoCloseableRule;
+import io.camunda.zeebe.test.DynamicAutoCloseable;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import java.io.IOException;
@@ -56,12 +56,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ExtendWith(MockitoExtension.class)
-public class ConcurrentBackupCompactionTest {
+public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
 
   private static final Logger LOG = LoggerFactory.getLogger(ConcurrentBackupCompactionTest.class);
   private static final String SNAPSHOT_FILE_NAME = "file1";
   @TempDir Path dataDirectory;
-  private final AutoCloseableRule closeRule = new AutoCloseableRule();
   private ActorScheduler actorScheduler;
   private SegmentedJournal journal;
   private FileBasedSnapshotStore snapshotStore;
@@ -76,12 +75,11 @@ public class ConcurrentBackupCompactionTest {
 
   @BeforeEach
   void setUp() {
-    actorScheduler = closeRule.manage(ActorScheduler.newActorScheduler().build());
+    actorScheduler = manage(ActorScheduler.newActorScheduler().build());
     actorScheduler.start();
-    backupStore = closeRule.manage(new InMemoryMockBackupStore());
+    backupStore = manage(new InMemoryMockBackupStore());
     snapshotStore =
-        closeRule.manage(
-            new FileBasedSnapshotStore(0, partitionId, dataDirectory, snapshotPath -> Map.of()));
+        manage(new FileBasedSnapshotStore(0, partitionId, dataDirectory, snapshotPath -> Map.of()));
     actorScheduler.submitActor(snapshotStore, SchedulingHints.IO_BOUND);
 
     final var partitionMetadata =
@@ -90,7 +88,7 @@ public class ConcurrentBackupCompactionTest {
     final var raftPartition = new RaftPartition(partitionMetadata, null, dataDirectory.toFile());
 
     journal =
-        closeRule.manage(
+        manage(
             SegmentedJournal.builder()
                 .withDirectory(dataDirectory.toFile())
                 .withName(raftPartition.name())
@@ -109,7 +107,7 @@ public class ConcurrentBackupCompactionTest {
                 });
 
     backupService =
-        closeRule.manage(
+        manage(
             new BackupService(
                 nodeId,
                 partitionId,
@@ -125,7 +123,7 @@ public class ConcurrentBackupCompactionTest {
 
   @AfterEach
   public void tearDown() {
-    closeRule.after();
+    close();
   }
 
   @Test
