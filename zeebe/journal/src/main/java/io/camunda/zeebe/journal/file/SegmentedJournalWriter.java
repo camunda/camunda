@@ -122,7 +122,7 @@ final class SegmentedJournalWriter {
     // even if the next flush index has not been written, this will always flush at least the last
     // segment if only to cover cases such as truncating the log, where the next flush index may not
     // have been written yet but we still want to flush that segment after modifying it
-    flusher.flush(segments.getTailSegments(flusher.nextFlushIndex()));
+    flusher.flush(segments.getTailSegments(flusher.nextFlushIndex()).values());
   }
 
   private void createNewSegment() {

@@ -2887,6 +2887,10 @@ components:
         assignee:
           type: string
           description: The assignee of the user task.
+        priority:
+          type: integer
+          format: int32
+          description: The priority of the user task.
         elementId:
           type: string
           description: The element ID of the user task.

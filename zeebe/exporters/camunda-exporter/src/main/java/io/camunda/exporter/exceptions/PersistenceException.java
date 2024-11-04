@@ -11,9 +11,6 @@ public class PersistenceException extends Exception {
 
   private static final long serialVersionUID = 1L;
 
-  @SuppressWarnings("checkstyle:MutableException")
-  private Integer failingRequestId;
-
   public PersistenceException() {}
 
   public PersistenceException(final String message) {
@@ -24,21 +21,7 @@ public class PersistenceException extends Exception {
     super(message, cause);
   }
 
-  public PersistenceException(
-      final String message, final Throwable cause, final Integer failingRequestId) {
-    super(message, cause);
-    this.failingRequestId = failingRequestId;
-  }
-
   public PersistenceException(final Throwable cause) {
     super(cause);
-  }
-
-  public Integer getFailingRequestId() {
-    return failingRequestId;
-  }
-
-  public void setFailingRequestId(final Integer failingRequestId) {
-    this.failingRequestId = failingRequestId;
   }
 }

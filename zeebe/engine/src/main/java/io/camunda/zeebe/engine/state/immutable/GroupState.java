@@ -7,4 +7,12 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
-public interface GroupState {}
+import io.camunda.zeebe.engine.state.group.PersistedGroup;
+import java.util.Optional;
+
+public interface GroupState {
+
+  Optional<PersistedGroup> get(long groupKey);
+
+  Optional<Long> getGroupKeyByName(String groupName);
+}

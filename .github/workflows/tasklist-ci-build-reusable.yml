@@ -82,16 +82,21 @@ jobs:
 
       #########################################################################
       # Setup and configure Maven, Docker, and settings
-      - uses: ./.github/actions/build-tasklist-setup
+      - uses: ./.github/actions/setup-build
         name: Build setup
         with:
-          nexusUsername: ${{ steps.secrets.outputs.NEXUS_USR }}
-          nexusPassword: ${{ steps.secrets.outputs.NEXUS_PSW }}
+          camunda-nexus-username: ${{ steps.secrets.outputs.NEXUS_USR }}
+          camunda-nexus-password: ${{ steps.secrets.outputs.NEXUS_PSW }}
+          java-distribution: adopt
+          maven-cache-key-modifier: tasklist
+          maven-version: 3.8.6
 
       #########################################################################
       # Build frontend
       - name: Build frontend
-        uses: ./.github/actions/build-tasklist-fe
+        uses: ./.github/actions/build-frontend
+        with:
+          directory: ./tasklist/client
       #########################################################################
       # Build backend
       - name: Build backend
@@ -141,13 +146,6 @@ jobs:
           push: true
           platforms: ${{ env.DOCKER_PLATFORMS }}
           dockerfile: tasklist.Dockerfile
-
-      #########################################################################
-      # Deploy Nexus SNAPSHOT
-      - name: Deploy - Nexus SNAPSHOT
-        if: ${{ env.IS_DEFAULT_BRANCH == 'true' }}
-        run: |
-          ./mvnw -f tasklist org.sonatype.plugins:nexus-staging-maven-plugin:deploy-staged -DskipTests=true -PskipFrontendBuild -B -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
 
       #########################################################################
       # Collect information about build status for central statistics with CI Analytics

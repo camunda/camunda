@@ -30,8 +30,9 @@ public class NoopBackupManager implements BackupManager {
   }
 
   @Override
-  public void takeBackup(final long checkpointId, final long checkpointPosition) {
+  public ActorFuture<Void> takeBackup(final long checkpointId, final long checkpointPosition) {
     LOG.warn("Attempted to take backup, but cannot take backup. {}", errorMessage);
+    return CompletableActorFuture.completedExceptionally(new Exception(errorMessage));
   }
 
   @Override

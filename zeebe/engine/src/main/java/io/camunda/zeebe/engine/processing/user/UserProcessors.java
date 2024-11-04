@@ -40,7 +40,8 @@ public class UserProcessors {
         .onCommand(
             ValueType.USER,
             UserIntent.DELETE,
-            new UserDeleteProcessor(keyGenerator, processingState, writers, distributionBehavior))
+            new UserDeleteProcessor(
+                keyGenerator, processingState, writers, distributionBehavior, authCheckBehavior))
         .withListener(new DefaultUserCreator(processingState, config));
   }
 }

@@ -47,6 +47,14 @@ public interface UserTaskFilter extends SearchRequestFilter {
   UserTaskFilter assignee(final String assignee);
 
   /**
+   * Filters user tasks by the specified priority.
+   *
+   * @param priority the priority of the user task
+   * @return the updated filter
+   */
+  UserTaskFilter priority(final Integer priority);
+
+  /**
    * Filters user tasks by the specified task definition ID.
    *
    * @param taskDefinitionId the task definition ID of the user task
