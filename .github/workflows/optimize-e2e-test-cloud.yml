@@ -77,18 +77,12 @@ jobs:
         ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
         ELASTIC_JVM_MEMORY: 1
         ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_database_port }}
-    - name: Setup NodeJS
-      uses: actions/setup-node@0a44ba7841725637a19e28fa30b79a866c81b0a6 # v4
+    - name: Build frontend
+      uses: ./.github/actions/build-frontend
       with:
-        node-version: ${{ steps.pom-info.outputs.x_version_node }}
-    - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
-      with:
-        directory: optimize/client
-    - name: Install node dependencies
-      working-directory: ./optimize/client
-      run: yarn install
+        directory: ./optimize/client
     - name: 'build backend & frontend'
-      run: ./mvnw clean install -DskipTests -Dskip.docker -pl optimize/backend -am
+      run: ./mvnw clean install -DskipTests -Dskip.docker -pl optimize/backend -am -PskipFrontendBuild
     - name: 'start backend'
       working-directory: ./optimize/client
       run: |
