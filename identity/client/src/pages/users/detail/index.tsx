@@ -39,7 +39,7 @@ const Details: FC = () => {
   const [deleteUser, deleteUserModal] = useEntityModal(DeleteModal, () =>
     navigate("..", { replace: true }),
   );
-  const user = userSearchResults != null ? userSearchResults.items[0] : null;
+  const user = userSearchResults !== null ? userSearchResults.items[0] : null;
   if (!loading && !user) return <NotFound />;
 
   return (
