@@ -11,6 +11,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.application.commons.search.SearchClientDatabaseConfiguration.SearchClientProperties;
+import io.camunda.authentication.handler.session.ConditionalOnSessionPersistence;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.SearchClients;
@@ -68,6 +69,7 @@ public class SearchClientDatabaseConfiguration {
       name = "type",
       havingValue = "elasticsearch",
       matchIfMissing = true)
+  @ConditionalOnSessionPersistence
   @Primary
   public ElasticsearchSessionDocumentClient elasticsearchSessionDocumentClient(
       @Qualifier("searchModuleElasticsearchClient") final ElasticsearchClient elasticsearchClient,
