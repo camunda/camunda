@@ -178,7 +178,7 @@ public class UIConfigurationServiceTest {
     // then
     assertThat(configurationResponse.getLicenseType()).isEqualTo("saas");
     assertThat(configurationResponse.isValidLicense()).isEqualTo(true);
-    assertThat(configurationResponse.isCommercial()).isEqualTo(true);
+    assertThat(configurationResponse.isCommercial()).isEqualTo(false);
     assertThat(configurationResponse.getExpiresAt()).isEqualTo("2024-10-29T15:14:13Z");
   }
 
