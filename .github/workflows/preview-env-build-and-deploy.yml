@@ -39,17 +39,6 @@ jobs:
           ref: refs/heads/${{ github.head_ref }}
           fetch-depth: 0 # fetches all history for all branches and tags
 
-      - uses: ./.github/actions/setup-zeebe
-        with:
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
-      - uses: ./.github/actions/build-zeebe
-        id: build-zeebe
-        with:
-          maven-extra-args: -T1C -PskipFrontendBuild
-
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@v3.0.0
@@ -59,8 +48,20 @@ jobs:
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
-            secret/data/github.com/organizations/camunda NEXUS_USR;
             secret/data/github.com/organizations/camunda NEXUS_PSW;
+            secret/data/github.com/organizations/camunda NEXUS_USR;
+            secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW_READ_ONLY;
+            secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_USR;
+
+      - uses: ./.github/actions/setup-build
+        with:
+          camunda-nexus-username: ${{ steps.secrets.outputs.NEXUS_USR }}
+          camunda-nexus-password: ${{ steps.secrets.outputs.NEXUS_PSW }}
+
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
 
       - name: Set environment variables
         env:
@@ -68,6 +69,13 @@ jobs:
         run: |
           GIT_COMMIT_HASH=$(git rev-parse $HEAD_REF)
           echo "VERSION=pr-$GIT_COMMIT_HASH" >> $GITHUB_ENV
+
+      # Logging to DockerHub to to avoid being rate-limited when using an anonymous account from GitHub-managed runners.
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
+          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW_READ_ONLY }}
 
       - name: Login to Harbor docker registry
         uses: docker/login-action@v3

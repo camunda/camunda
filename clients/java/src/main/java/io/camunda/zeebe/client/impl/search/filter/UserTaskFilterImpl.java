@@ -53,6 +53,12 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserT
   }
 
   @Override
+  public UserTaskFilter priority(final Integer priority) {
+    filter.setPriority(priority);
+    return this;
+  }
+
+  @Override
   public UserTaskFilter elementId(final String elementId) {
     filter.setElementId(elementId);
     return this;
