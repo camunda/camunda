@@ -81,14 +81,12 @@ jobs:
             secret/data/products/operate/ci/github-actions OPERATE_CI_ALERT_WEBHOOK_URL;
 
       # Setup: configure Java, Maven, settings.xml
-      - uses: ./.github/actions/setup-build
+      - uses: ./.github/actions/build-operate-setup
         name: Build setup
         with:
-          camunda-nexus-username: ${{ steps.secrets.outputs.NEXUS_USR }}
-          camunda-nexus-password: ${{ steps.secrets.outputs.NEXUS_PSW }}
-          java-distribution: adopt
           maven-cache-key-modifier: operate-tests
-          maven-version: 3.8.6
+          nexusUsername: ${{ steps.secrets.outputs.NEXUS_USR }}
+          nexusPassword: ${{ steps.secrets.outputs.NEXUS_PSW }}
 
       # Build: all Maven artifacts
       - name: Build Maven
