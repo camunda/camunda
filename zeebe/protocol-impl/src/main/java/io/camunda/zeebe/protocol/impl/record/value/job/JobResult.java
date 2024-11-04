@@ -7,9 +7,11 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.job;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
 
+@JsonIgnoreProperties({"empty", "encodedLength", "length"})
 public class JobResult extends UnpackedObject {
 
   private final BooleanProperty deniedProp = new BooleanProperty("denied", false);
