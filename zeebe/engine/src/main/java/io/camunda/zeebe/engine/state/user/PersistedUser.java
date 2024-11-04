@@ -29,10 +29,15 @@ public class PersistedUser extends UnpackedObject implements DbValue {
       new ArrayProperty<>("roleKeys", LongValue::new);
   private final ArrayProperty<StringValue> tenantIdsProp =
       new ArrayProperty<>("tenantIds", StringValue::new);
+  private final ArrayProperty<LongValue> groupKeysProp =
+      new ArrayProperty<>("groupKeys", LongValue::new);
 
   public PersistedUser() {
-    super(1);
-    declareProperty(userProp);
+    super(4);
+    declareProperty(userProp)
+        .declareProperty(roleKeysProp)
+        .declareProperty(tenantIdsProp)
+        .declareProperty(groupKeysProp);
   }
 
   public PersistedUser copy() {
@@ -40,6 +45,7 @@ public class PersistedUser extends UnpackedObject implements DbValue {
     copy.setUser(getUser());
     copy.setRoleKeysList(getRoleKeysList());
     copy.setTenantIdsList(getTenantIdsList());
+    copy.setGroupKeysList(getGroupKeysList());
     return copy;
   }
 
@@ -111,6 +117,23 @@ public class PersistedUser extends UnpackedObject implements DbValue {
   public PersistedUser addTenantId(final String tenantId) {
     final DirectBuffer buffer = new UnsafeBuffer(tenantId.getBytes());
     tenantIdsProp.add().wrap(buffer);
+    return this;
+  }
+
+  public List<Long> getGroupKeysList() {
+    return StreamSupport.stream(groupKeysProp.spliterator(), false)
+        .map(LongValue::getValue)
+        .collect(Collectors.toList());
+  }
+
+  public PersistedUser setGroupKeysList(final List<Long> groupKeys) {
+    groupKeysProp.reset();
+    groupKeys.forEach(groupKey -> groupKeysProp.add().setValue(groupKey));
+    return this;
+  }
+
+  public PersistedUser addGroupKey(final long groupKey) {
+    groupKeysProp.add().setValue(groupKey);
     return this;
   }
 }
