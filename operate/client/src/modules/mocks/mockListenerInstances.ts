@@ -8,7 +8,7 @@
 
 const mockListenerInstances: ListenerEntity[] = [
   {
-    listenerType: 'EXECUTION_LISTENER',
+    listenerType: 'USER_TASK_LISTENER',
     listenerKey: '2344567895437401',
     state: 'ACTIVE',
     event: 'START',
@@ -17,7 +17,7 @@ const mockListenerInstances: ListenerEntity[] = [
     sortValues: ['1'],
   },
   {
-    listenerType: 'EXECUTION_LISTENER',
+    listenerType: 'USER_TASK_LISTENER',
     listenerKey: '2344567895437402',
     state: 'ACTIVE',
     event: 'END',
