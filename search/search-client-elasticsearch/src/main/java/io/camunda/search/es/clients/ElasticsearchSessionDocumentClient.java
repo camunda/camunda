@@ -28,7 +28,12 @@ public class ElasticsearchSessionDocumentClient implements SessionDocumentStorag
   }
 
   public void setup() throws IOException {
-    client.createIndex(indexName, indexName + "alias", 1, 1, "/camunda-web-session.json");
+    client.createIndex(
+        indexName,
+        indexName + "alias",
+        1,
+        1,
+        "/schema/elasticsearch/create/index/camunda-web-session.json");
   }
 
   @Override
