@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.bpmn;
 
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
+import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
@@ -41,6 +42,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.slf4j.Logger;
 
+@ExcludeAuthorizationCheck
 public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessInstanceRecord> {
 
   private static final Logger LOGGER = Loggers.PROCESS_PROCESSOR_LOGGER;

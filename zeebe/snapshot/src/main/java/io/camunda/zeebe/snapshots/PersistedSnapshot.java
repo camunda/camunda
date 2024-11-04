@@ -8,6 +8,7 @@
 package io.camunda.zeebe.snapshots;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.nio.file.Path;
 
 /** Represents a snapshot, which was persisted at the {@link PersistedSnapshotStore}. */
@@ -98,4 +99,7 @@ public interface PersistedSnapshot {
    * @return future with SnapshotReservation
    */
   ActorFuture<SnapshotReservation> reserve();
+
+  @VisibleForTesting
+  boolean isReserved();
 }

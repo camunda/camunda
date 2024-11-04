@@ -7,7 +7,11 @@
  */
 package io.camunda.zeebe.engine.processing.user;
 
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
+
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -19,6 +23,8 @@ import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
@@ -29,18 +35,21 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior distributionBehavior;
+  private final AuthorizationCheckBehavior authCheckBehavior;
 
   public UserDeleteProcessor(
       final KeyGenerator keyGenerator,
       final ProcessingState state,
       final Writers writers,
-      final CommandDistributionBehavior distributionBehavior) {
+      final CommandDistributionBehavior distributionBehavior,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     this.keyGenerator = keyGenerator;
     userState = state.getUserState();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.distributionBehavior = distributionBehavior;
+    this.authCheckBehavior = authCheckBehavior;
   }
 
   @Override
@@ -55,6 +64,18 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
 
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, rejectionMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, rejectionMessage);
+      return;
+    }
+
+    final var authRequest =
+        new AuthorizationRequest(command, AuthorizationResourceType.USER, PermissionType.DELETE)
+            .addResourceId(persistedUser.get().getUsername());
+    if (!authCheckBehavior.isAuthorized(authRequest)) {
+      final var message =
+          UNAUTHORIZED_ERROR_MESSAGE.formatted(
+              authRequest.getPermissionType(), authRequest.getResourceType());
+      rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, message);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, message);
       return;
     }
 

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.timer;
 
+import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
@@ -35,6 +36,7 @@ import java.time.Instant;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
+@ExcludeAuthorizationCheck
 public final class TimerTriggerProcessor implements TypedRecordProcessor<TimerRecord> {
 
   private static final String NO_TIMER_FOUND_MESSAGE =

@@ -5,14 +5,6 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.state.immutable;
+package io.camunda.zeebe.engine.processing;
 
-import io.camunda.zeebe.engine.state.group.PersistedGroup;
-import java.util.Optional;
-
-public interface GroupState {
-
-  Optional<PersistedGroup> get(long groupKey);
-
-  Optional<Long> getGroupKeyByName(String groupName);
-}
+public @interface ExcludeAuthorizationCheck {}
