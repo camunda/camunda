@@ -31,6 +31,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnRestGatewayEnabled
@@ -65,6 +66,7 @@ public class SearchClientDatabaseConfiguration {
       name = "type",
       havingValue = "elasticsearch",
       matchIfMissing = true)
+  @Primary
   public ElasticsearchSessionDocumentClient elasticsearchSessionDocumentClient(
       final ElasticsearchClient elasticsearchClient, final ObjectMapper objectMapper)
       throws IOException {
