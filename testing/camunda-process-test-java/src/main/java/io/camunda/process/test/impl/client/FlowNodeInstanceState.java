@@ -16,7 +16,18 @@
 package io.camunda.process.test.impl.client;
 
 public enum FlowNodeInstanceState {
+  /**
+   * Indicates that the flow node instance is currently active and running.
+   */
   ACTIVE,
+
+  /**
+   * Indicates that the flow node instance has completed its execution successfully.
+   */
   COMPLETED,
+  
+  /**
+   * Indicates that the flow node instance was terminated before completion, likely due to an error or external intervention.
+   */
   TERMINATED
 }
