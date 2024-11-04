@@ -47,7 +47,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
-    this.tenantState = state.getTenantState();
+    tenantState = state.getTenantState();
     userState = state.getUserState();
     mappingState = state.getMappingState();
     this.authCheckBehavior = authCheckBehavior;
@@ -96,6 +96,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
           RejectionType.NOT_FOUND,
           "Expected to remove entity with key '%s' from tenant with key '%s', but the entity is not assigned to this tenant."
               .formatted(record.getEntityKey(), tenantKey));
+      return;
     }
 
     stateWriter.appendFollowUpEvent(tenantKey, TenantIntent.ENTITY_REMOVED, record);
