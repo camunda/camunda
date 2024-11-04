@@ -25,6 +25,7 @@ import io.camunda.search.rdbms.RdbmsSearchClient;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import java.io.IOException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -44,7 +45,8 @@ public class SearchClientDatabaseConfiguration {
       name = "type",
       havingValue = "elasticsearch",
       matchIfMissing = true)
-  public ElasticsearchClient elasticsearchClient(final SearchClientProperties configuration) {
+  public ElasticsearchClient searchModuleElasticsearchClient(
+      final SearchClientProperties configuration) {
     final var connector = new ElasticsearchConnector(configuration);
     return connector.createClient();
   }
@@ -56,7 +58,7 @@ public class SearchClientDatabaseConfiguration {
       havingValue = "elasticsearch",
       matchIfMissing = true)
   public ElasticsearchSearchClient elasticsearchSearchClient(
-      final ElasticsearchClient elasticsearchClient) {
+      @Qualifier("searchModuleElasticsearchClient") final ElasticsearchClient elasticsearchClient) {
     return new ElasticsearchSearchClient(elasticsearchClient);
   }
 
@@ -68,7 +70,8 @@ public class SearchClientDatabaseConfiguration {
       matchIfMissing = true)
   @Primary
   public ElasticsearchSessionDocumentClient elasticsearchSessionDocumentClient(
-      final ElasticsearchClient elasticsearchClient, final ObjectMapper objectMapper)
+      @Qualifier("searchModuleElasticsearchClient") final ElasticsearchClient elasticsearchClient,
+      final ObjectMapper objectMapper)
       throws IOException {
     final var sessionDocumentClient =
         new ElasticsearchSessionDocumentClient(
