@@ -73,9 +73,11 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
       return;
     }
 
-    stateWriter.appendFollowUpEvent(tenantKey, TenantIntent.DELETED, persistedTenantRecord.get());
-    responseWriter.writeEventOnCommand(
-        tenantKey, TenantIntent.DELETED, persistedTenantRecord.get(), command);
+    record.setTenantId(persistedTenantRecord.get().getTenantId());
+    record.setName(persistedTenantRecord.get().getName());
+
+    stateWriter.appendFollowUpEvent(tenantKey, TenantIntent.DELETED, record);
+    responseWriter.writeEventOnCommand(tenantKey, TenantIntent.DELETED, record, command);
     distributeCommand(command);
   }
 
