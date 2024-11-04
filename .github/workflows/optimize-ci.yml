@@ -64,15 +64,31 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/optimize/ci/optimize NEXUS_USERNAME;
+            secret/data/products/optimize/ci/optimize NEXUS_PASSWORD;
       - name: Setup Maven
-        uses: ./.github/actions/setup-maven
+        uses: ./.github/actions/setup-build
         with:
+          camunda-nexus-username: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
+          camunda-nexus-password: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
           maven-cache-key-modifier: optimize-tests
-          secrets: ${{ toJSON(secrets) }}
-      - name: Login to Harbor registry
-        uses: ./.github/actions/login-registry
+          maven-version: 3.8.6
+          time-zone: Europe/Berlin
+      - name: Login to Harbor docker registry
+        uses: docker/login-action@v3
         with:
-          secrets: ${{ toJSON(secrets) }}
+          registry: registry.camunda.cloud
+          username: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
+          password: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
       - name: "Read Java / Version Info"
         id: "pom-info"
         uses: YunaBraska/java-info-action@main
@@ -126,15 +142,31 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/optimize/ci/optimize NEXUS_USERNAME;
+            secret/data/products/optimize/ci/optimize NEXUS_PASSWORD;
       - name: Setup Maven
-        uses: ./.github/actions/setup-maven
+        uses: ./.github/actions/setup-build
         with:
+          camunda-nexus-username: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
+          camunda-nexus-password: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
           maven-cache-key-modifier: optimize-tests
-          secrets: ${{ toJSON(secrets) }}
-      - name: Login to Harbor registry
-        uses: ./.github/actions/login-registry
+          maven-version: 3.8.6
+          time-zone: Europe/Berlin
+      - name: Login to Harbor docker registry
+        uses: docker/login-action@v3
         with:
-          secrets: ${{ toJSON(secrets) }}
+          registry: registry.camunda.cloud
+          username: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
+          password: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
       - name: "Read Java / Version Info"
         id: "pom-info"
         uses: YunaBraska/java-info-action@main
@@ -204,16 +236,33 @@ jobs:
       - name: Fetch main branch
         run: git fetch origin main:refs/remote/origin/main
 
-      - name: Setup Maven
-        uses: ./.github/actions/setup-maven
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.0.0
         with:
-          maven-cache-key-modifier: optimize-tests
-          secrets: ${{ toJSON(secrets) }}
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/optimize/ci/optimize NEXUS_USERNAME;
+            secret/data/products/optimize/ci/optimize NEXUS_PASSWORD;
 
-      - name: Login to Harbor registry
-        uses: ./.github/actions/login-registry
+      - name: Setup Maven
+        uses: ./.github/actions/setup-build
         with:
-          secrets: ${{ toJSON(secrets) }}
+          camunda-nexus-username: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
+          camunda-nexus-password: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
+          maven-cache-key-modifier: optimize-tests
+          maven-version: 3.8.6
+          time-zone: Europe/Berlin
+
+      - name: Login to Harbor docker registry
+        uses: docker/login-action@v3
+        with:
+          registry: registry.camunda.cloud
+          username: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
+          password: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
 
       - name: "Read Java / Version Info"
         id: "pom-info"
@@ -284,16 +333,33 @@ jobs:
       - name: Fetch main branch
         run: git fetch origin main:refs/remote/origin/main
 
-      - name: Setup Maven
-        uses: ./.github/actions/setup-maven
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.0.0
         with:
-          maven-cache-key-modifier: optimize-tests
-          secrets: ${{ toJSON(secrets) }}
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/optimize/ci/optimize NEXUS_USERNAME;
+            secret/data/products/optimize/ci/optimize NEXUS_PASSWORD;
 
-      - name: Login to Harbor registry
-        uses: ./.github/actions/login-registry
+      - name: Setup Maven
+        uses: ./.github/actions/setup-build
         with:
-          secrets: ${{ toJSON(secrets) }}
+          camunda-nexus-username: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
+          camunda-nexus-password: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
+          maven-cache-key-modifier: optimize-tests
+          maven-version: 3.8.6
+          time-zone: Europe/Berlin
+
+      - name: Login to Harbor docker registry
+        uses: docker/login-action@v3
+        with:
+          registry: registry.camunda.cloud
+          username: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
+          password: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
 
       - name: "Read Java / Version Info"
         id: "pom-info"
@@ -366,16 +432,33 @@ jobs:
       - name: Fetch main branch
         run: git fetch origin main:refs/remote/origin/main
 
-      - name: Setup Maven
-        uses: ./.github/actions/setup-maven
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.0.0
         with:
-          maven-cache-key-modifier: optimize-tests
-          secrets: ${{ toJSON(secrets) }}
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/optimize/ci/optimize NEXUS_USERNAME;
+            secret/data/products/optimize/ci/optimize NEXUS_PASSWORD;
 
-      - name: Login to Harbor registry
-        uses: ./.github/actions/login-registry
+      - name: Setup Maven
+        uses: ./.github/actions/setup-build
         with:
-          secrets: ${{ toJSON(secrets) }}
+          camunda-nexus-username: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
+          camunda-nexus-password: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
+          maven-cache-key-modifier: optimize-tests
+          maven-version: 3.8.6
+          time-zone: Europe/Berlin
+
+      - name: Login to Harbor docker registry
+        uses: docker/login-action@v3
+        with:
+          registry: registry.camunda.cloud
+          username: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
+          password: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
 
       - name: "Read Java / Version Info"
         id: "pom-info"
@@ -432,10 +515,25 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - name: Setup Maven
-        uses: ./.github/actions/setup-maven
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.0.0
         with:
-          secrets: ${{ toJSON(secrets) }}
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/optimize/ci/optimize NEXUS_USERNAME;
+            secret/data/products/optimize/ci/optimize NEXUS_PASSWORD;
+      - name: Setup Maven
+        uses: ./.github/actions/setup-build
+        with:
+          camunda-nexus-username: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
+          camunda-nexus-password: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
+          maven-cache-key-modifier: optimize
+          maven-version: 3.8.6
+          time-zone: Europe/Berlin
       - name: Read Java/version info
         id: "pom-info"
         uses: YunaBraska/java-info-action@main

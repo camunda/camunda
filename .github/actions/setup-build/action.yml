@@ -1,0 +1,132 @@
+---
+name: Setup build
+description: Sets up the required stack to build, install, and run monorepo projects
+
+inputs:
+  camunda-nexus:
+    description: If enabled, Camunda Nexus will be configured and used as a mirror for Maven repositories
+    required: false
+    default: "true"
+  camunda-nexus-username:
+    description: Camunda Nexus username
+    required: true
+  camunda-nexus-password:
+    description: Camunda Nexus password
+    required: true
+  java-distribution:
+    description: Java distribution to use
+    required: false
+    default: temurin
+  java-version:
+    description: JDK version to install
+    required: false
+    default: "21"
+  maven-cache-key-modifier:
+    description: A modifier to use for maven cache key
+    required: false
+    default: "shared"
+  maven-mirrors:
+    description: |
+      JSON list of extra Maven mirrors.
+      It will be merged with Camunda Nexus settings (if enabled ), with precedence."
+    required: false
+    default: '[]'
+  maven-servers:
+    description: |
+      JSON list of extra Maven servers.
+      It will be merged with Camunda Nexus settings (if enabled), with precedence."
+    required: false
+    default: '[]'
+  maven-version:
+    description: |
+      Maven version to be used by the wrapper.
+      If not set, default version in .mvn/wrapper/maven-wrapper.properties will be used.
+    required: false
+  time-zone:
+    description: |
+      Time zone to set for the build environment. Use TZ identifiers, e.g., 'Europe/Berlin'.
+      https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+    required: false
+
+outputs: {}
+
+runs:
+  using: composite
+  steps:
+  - name: Setup Java
+    uses: actions/setup-java@v4
+    with:
+      distribution: ${{ inputs.java-distribution }}
+      java-version: ${{ inputs.java-version }}
+  - name: Setup Maven
+    if: inputs.maven-version != ''
+    uses: ./.github/actions/setup-maven-dist
+    with:
+      maven-version: ${{ inputs.maven-version }}
+      set-mvnw: true
+  - name: Configure Maven cache
+    uses: ./.github/actions/setup-maven-cache
+    with:
+      maven-cache-key-modifier: ${{ inputs.maven-cache-key-modifier }}
+  # Camunda Nexus and extra mirrors and servers must be merged.
+  # The merge is done on ids, and extrava lues have precedence.
+  - name: Get Maven mirrors and servers to use
+    id: maven
+    env:
+      CAMUNDA_NEXUS_ENABLED: ${{ inputs.camunda-nexus }}
+      CAMUNDA_NEXUS_MAVEN_MIRROR: >-
+        [{
+          "id": "camunda-nexus",
+          "name": "Camunda Nexus",
+          "url": "https://nexus.camunda.cloud/repository/maven-public/",
+          "mirrorOf": "zeebe,zeebe-snapshots"
+        }]
+      CAMUNDA_NEXUS_MAVEN_SERVER: >-
+        [{
+          "id": "camunda-nexus",
+          "username": "${{ inputs.camunda-nexus-username }}",
+          "password": "${{ inputs.camunda-nexus-password }}"
+        }]
+      EXTRA_MAVEN_MIRRORS: ${{ inputs.maven-mirrors }}
+      EXTRA_MAVEN_SERVERS: ${{ inputs.maven-servers }}
+    run: |
+      # Check if Camunda Nexus is enabled
+      if [ "${CAMUNDA_NEXUS_ENABLED}" != "true" ]; then
+        CAMUNDA_NEXUS_MAVEN_MIRROR="[]"
+        CAMUNDA_NEXUS_MAVEN_SERVER="[]"
+      fi
+
+      # Use the jq 'add' operator to merge grouped sub-lists
+      mirrors=$(\
+        jq -n \
+        --argjson nexus_mirror "${CAMUNDA_NEXUS_MAVEN_MIRROR}" \
+        --argjson maven_mirrors "${EXTRA_MAVEN_MIRRORS}" \
+        '[ $nexus_mirror + $maven_mirrors | group_by(.id)[] | add ]'
+      )
+      servers=$(\
+        jq -n \
+        --argjson nexus_server "${CAMUNDA_NEXUS_MAVEN_SERVER}" \
+        --argjson maven_servers "${EXTRA_MAVEN_SERVERS}" \
+        '[ $nexus_server + $maven_servers | group_by(.id)[] | add ]'
+      )
+      
+      echo mirrors=$mirrors >> $GITHUB_OUTPUT
+      echo servers=$servers >> $GITHUB_OUTPUT
+    shell: bash
+  - name: Update Maven settings.xml
+    uses: s4u/maven-settings-action@v3.0.0
+    with:
+      githubServer: false
+      servers: ${{ steps.maven.outputs.servers }}
+      mirrors: ${{ steps.maven.outputs.mirrors }}
+  - name: Set Time Zone
+    if: inputs.time-zone != '' && runner.os == 'Linux'
+    env:
+      TZ_IDENTIFIER: ${{ inputs.time-zone }}
+    run: |
+      # tzdata is not installed in self-hosted runners
+      sudo apt-get update && sudo apt-get install -y tzdata
+      echo ${TZ_IDENTIFIER} | sudo tee /etc/timezone 
+      sudo rm -rf /etc/localtime
+      sudo ln -s /usr/share/zoneinfo/${TZ_IDENTIFIER} /etc/localtime
+    shell: bash
