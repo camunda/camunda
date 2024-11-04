@@ -120,6 +120,18 @@ public class DbMappingState implements MutableMappingState {
   }
 
   @Override
+  public void addGroup(final long mappingKey, final long groupKey) {
+    this.mappingKey.wrapLong(mappingKey);
+    final var fkClaim = claimByKeyColumnFamily.get(this.mappingKey);
+    if (fkClaim != null) {
+      final var claim = fkClaim.inner();
+      final var persistedMapping = mappingColumnFamily.get(claim);
+      persistedMapping.addGroupKey(groupKey);
+      mappingColumnFamily.update(claim, persistedMapping);
+    }
+  }
+
+  @Override
   public Optional<PersistedMapping> get(final long key) {
     mappingKey.wrapLong(key);
     final var fk = claimByKeyColumnFamily.get(mappingKey);
