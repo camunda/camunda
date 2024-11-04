@@ -362,13 +362,13 @@ camunda-platform:
     env:
       - name: SPRING_PROFILES_ACTIVE
         value: dev-data
-    image:
-      registry: registry.camunda.cloud
-      repository: team-camunda/operate
-      # will be replaced by the preview-env-deploy workflow
-      tag: latest
-      pullSecrets:
-      - name: registry-camunda-cloud
+    # image:
+    #   registry: registry.camunda.cloud
+    #   repository: team-camunda/operate
+    #   # will be replaced by the preview-env-deploy workflow
+    #   tag: latest
+    #   pullSecrets:
+    #   - name: registry-camunda-cloud
     contextPath: "/operate"
     nodeSelector:
       cloud.google.com/gke-nodepool: previews
@@ -378,13 +378,13 @@ camunda-platform:
         effect: "NoSchedule"
 
   optimize:
-    image:
-      registry: registry.camunda.cloud
-      repository: team-camunda/optimize
-      # will be replaced by the preview-env-deploy workflow
-      tag: latest
-      pullSecrets:
-        - name: registry-camunda-cloud
+    # image:
+    #   registry: registry.camunda.cloud
+    #   repository: team-camunda/optimize
+    #   # will be replaced by the preview-env-deploy workflow
+    #   tag: latest
+    #   pullSecrets:
+    #     - name: registry-camunda-cloud
     contextPath: "/optimize"
     nodeSelector:
       cloud.google.com/gke-nodepool: previews
@@ -394,13 +394,13 @@ camunda-platform:
         effect: "NoSchedule"
 
   tasklist:
-    image:
-      registry: registry.camunda.cloud
-      repository: team-camunda/tasklist
-      # will be replaced by the preview-env-deploy workflow
-      tag: latest
-      pullSecrets:
-        - name: registry-camunda-cloud
+    # image:
+    #   registry: registry.camunda.cloud
+    #   repository: team-camunda/tasklist
+    #   # will be replaced by the preview-env-deploy workflow
+    #   tag: latest
+    #   pullSecrets:
+    #     - name: registry-camunda-cloud
     contextPath: "/tasklist"
     nodeSelector:
       cloud.google.com/gke-nodepool: previews
@@ -410,13 +410,13 @@ camunda-platform:
         effect: "NoSchedule"
 
   zeebe:
-    image:
-      registry: registry.camunda.cloud
-      repository: team-camunda/zeebe
-      # will be replaced by the preview-env-deploy workflow
-      tag: latest
-      pullSecrets:
-        - name: registry-camunda-cloud
+    # image:
+    #   registry: registry.camunda.cloud
+    #   repository: team-camunda/zeebe
+    #   # will be replaced by the preview-env-deploy workflow
+    #   tag: latest
+    #   pullSecrets:
+    #     - name: registry-camunda-cloud
     nodeSelector:
       cloud.google.com/gke-nodepool: previews
     tolerations:

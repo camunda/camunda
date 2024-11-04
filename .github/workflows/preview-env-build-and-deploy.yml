@@ -27,99 +27,9 @@ jobs:
         with:
           pull-request-id: ${{ github.event.pull_request.number }}
 
-  build-zeebe:
-    if: github.event.pull_request.state != 'closed' && (contains( github.event.label.name, 'deploy-preview') || contains( github.event.pull_request.labels.*.name, 'deploy-preview'))
-    name: Zeebe Build
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - name: Checkout ${{ github.head_ref }} branch
-        uses: actions/checkout@v4
-        with:
-          ref: refs/heads/${{ github.head_ref }}
-          fetch-depth: 0 # fetches all history for all branches and tags
-
-      - uses: ./.github/actions/setup-zeebe
-        with:
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
-      - uses: ./.github/actions/build-zeebe
-        id: build-zeebe
-        with:
-          maven-extra-args: -T1C -PskipFrontendBuild
-
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@v3.0.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/github.com/organizations/camunda NEXUS_USR;
-            secret/data/github.com/organizations/camunda NEXUS_PSW;
-
-      - name: Set environment variables
-        env:
-          HEAD_REF: ${{ github.head_ref }}
-        run: |
-          GIT_COMMIT_HASH=$(git rev-parse $HEAD_REF)
-          echo "VERSION=pr-$GIT_COMMIT_HASH" >> $GITHUB_ENV
-
-      - name: Login to Harbor docker registry
-        uses: docker/login-action@v3
-        with:
-          registry: registry.camunda.cloud
-          username: ${{ steps.secrets.outputs.NEXUS_USR }}
-          password: ${{ steps.secrets.outputs.NEXUS_PSW }}
-
-      - uses: ./.github/actions/build-platform-docker
-        with:
-          repository: registry.camunda.cloud/team-camunda/zeebe
-          version: ${{ env.VERSION }}
-          platforms: ${{ env.DOCKER_PLATFORMS }}
-          push: true
-          distball: ${{ steps.build-zeebe.outputs.distball }}
-
-  build-optimize:
-    if: github.event.pull_request.state != 'closed' && (contains( github.event.label.name, 'deploy-preview') || contains( github.event.pull_request.labels.*.name, 'deploy-preview'))
-    name: Optimize Build
-    uses: ./.github/workflows/optimize-ci-build-reusable.yml
-    secrets: inherit
-    with:
-      branch: ${{ github.head_ref }}
-      pushDocker: true
-
-  build-operate:
-    if: github.event.pull_request.state != 'closed' && (contains( github.event.label.name, 'deploy-preview') || contains( github.event.pull_request.labels.*.name, 'deploy-preview'))
-    name: Operate Build
-    uses: ./.github/workflows/operate-ci-build-reusable.yml
-    secrets: inherit
-    with:
-      branch: ${{ github.head_ref }}
-      previewEnv: true
-
-  build-tasklist:
-    if: github.event.pull_request.state != 'closed' && (contains( github.event.label.name, 'deploy-preview') || contains( github.event.pull_request.labels.*.name, 'deploy-preview'))
-    name: Tasklist Build
-    uses: ./.github/workflows/tasklist-ci-build-reusable.yml
-    secrets: inherit
-    with:
-      branch: ${{ github.head_ref }}
-      previewEnv: true
-
   deploy-preview:
-    if: |
-        needs.build-tasklist.result != 'skipped' && needs.build-tasklist.result != 'cancelled' &&
-        needs.build-operate.result != 'skipped' && needs.build-operate.result != 'cancelled' &&
-        needs.build-optimize.result != 'skipped' && needs.build-optimize.result != 'cancelled' &&
-        needs.build-zeebe.result != 'skipped' && needs.build-zeebe.result != 'cancelled'
-    needs: [ build-optimize, build-operate, build-tasklist, conflicts, build-zeebe ]
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     name: Deploy Preview Environment C8SM
     env:
       BRANCH_NAME: ${{ github.head_ref }} # head_ref = branch on PR
@@ -172,17 +82,12 @@ jobs:
             --helm-set global.identity.auth.console.redirectUrl=https://${app_url}/console \
             --helm-set global.identity.auth.connectors.redirectUrl=https://${app_url}/connectors \
             --helm-set camunda-platform.identity.fullURL=https://${app_url}/identity \
-            --helm-set camunda-platform.operate.image.tag=${docker_tag} \
-            --helm-set camunda-platform.optimize.image.tag=${docker_tag} \
-            --helm-set camunda-platform.tasklist.image.tag=${docker_tag} \
-            --helm-set camunda-platform.zeebe.image.tag=${docker_tag} \
             --helm-set camunda-platform.zeebeGateway.ingress.grpc.host=zeebe-${app_url} \
             --name ${app_name} \
             --revision ${revision} \
             --helm-set git.branch=${revision} \
             --upsert" >> $GITHUB_ENV
         env:
-          docker_tag: "pr-${{ github.event.pull_request.head.sha }}"
           revision: ${{ env.BRANCH_NAME }}
           app_name: camunda-${{ steps.sanitize.outputs.branch_name }}
           app_url: ${{ steps.sanitize.outputs.branch_name }}.camunda.camunda.cloud
