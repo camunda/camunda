@@ -108,14 +108,12 @@ jobs:
           CAMUNDA_OPTIMIZE_DATABASE: elasticsearch
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4
+        uses: ./.github/actions/collect-test-artifacts
         with:
           name: es-schema-integrity-test-junit
           path: |
             **/failsafe-reports/**/*.xml
             **/*.log
-          retention-days: 7
-          if-no-files-found: ignore
       - name: Docker log dump
         uses: ./.github/actions/docker-logs
         if: always()
@@ -172,14 +170,12 @@ jobs:
           CAMUNDA_OPTIMIZE_DATABASE: opensearch
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4
+        uses: ./.github/actions/collect-test-artifacts
         with:
           name: os-schema-integrity-test-junit
           path: |
             **/failsafe-reports/**/*.xml
             **/*.log
-          retention-days: 7
-          if-no-files-found: ignore
       - name: Docker log dump
         uses: ./.github/actions/docker-logs
         if: always()
@@ -254,13 +250,11 @@ jobs:
 
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4
+        uses: ./.github/actions/collect-test-artifacts
         with:
           name: integration-test-elasticsearch-${{ matrix.includedGroups }}-junit
           path: |
             **/failsafe-reports/**/*.xml
-          retention-days: 7
-          if-no-files-found: ignore
 
       - name: Docker log dump
         uses: ./.github/actions/docker-logs
@@ -335,13 +329,11 @@ jobs:
 
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4
+        uses: ./.github/actions/collect-test-artifacts
         with:
           name: integration-test-opensearch-${{ matrix.includedGroups }}-junit
           path: |
             **/failsafe-reports/**/*.xml
-          retention-days: 7
-          if-no-files-found: ignore
 
       - name: Docker log dump
         uses: ./.github/actions/docker-logs
@@ -419,13 +411,11 @@ jobs:
 
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4
+        uses: ./.github/actions/collect-test-artifacts
         with:
           name: integration-test-opensearch-dev-${{ matrix.includedGroups }}-junit
           path: |
             **/failsafe-reports/**/*.xml
-          retention-days: 7
-          if-no-files-found: ignore
 
       - name: Docker log dump
         uses: ./.github/actions/docker-logs
@@ -470,15 +460,13 @@ jobs:
           CAMUNDA_OPTIMIZE_DATABASE: elasticsearch
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4
+        uses: ./.github/actions/collect-test-artifacts
         with:
           name: upgrade-junit
           path: |
             **/failsafe-reports/**/*.xml
             **/*.log
             **/*.json
-          retention-days: 7
-          if-no-files-found: ignore
       - name: Docker log dump
         uses: ./.github/actions/docker-logs
         if: always()
