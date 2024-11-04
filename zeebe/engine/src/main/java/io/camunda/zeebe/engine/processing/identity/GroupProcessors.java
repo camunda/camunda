@@ -32,5 +32,14 @@ public class GroupProcessors {
             keyGenerator,
             writers,
             commandDistributionBehavior));
+    typedRecordProcessors.onCommand(
+        ValueType.GROUP,
+        GroupIntent.UPDATE,
+        new GroupUpdateProcessor(
+            processingState.getGroupState(),
+            keyGenerator,
+            authCheckBehavior,
+            writers,
+            commandDistributionBehavior));
   }
 }
