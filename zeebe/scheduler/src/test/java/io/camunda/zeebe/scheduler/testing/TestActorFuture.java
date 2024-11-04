@@ -9,6 +9,7 @@ package io.camunda.zeebe.scheduler.testing;
 
 import io.camunda.zeebe.scheduler.ActorTask;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
@@ -110,13 +111,32 @@ public final class TestActorFuture<V> implements ActorFuture<V> {
 
   @Override
   public <U> ActorFuture<U> andThen(final Supplier<ActorFuture<U>> next, final Executor executor) {
-    throw new UnsupportedOperationException("Not yet implemented");
+    return andThen(ignored -> next.get(), executor);
   }
 
   @Override
   public <U> ActorFuture<U> andThen(
       final Function<V, ActorFuture<U>> next, final Executor executor) {
-    throw new UnsupportedOperationException("Not yet implemented");
+    final ActorFuture<U> nextFuture = new CompletableActorFuture<>();
+    onComplete(
+        (thisResult, thisError) -> {
+          if (thisError != null) {
+            nextFuture.completeExceptionally(thisError);
+          } else {
+            next.apply(thisResult)
+                .onComplete(
+                    (nextResult, nextError) -> {
+                      if (nextError != null) {
+                        nextFuture.completeExceptionally(nextError);
+                      } else {
+                        nextFuture.complete(nextResult);
+                      }
+                    },
+                    executor);
+          }
+        },
+        executor);
+    return nextFuture;
   }
 
   @Override

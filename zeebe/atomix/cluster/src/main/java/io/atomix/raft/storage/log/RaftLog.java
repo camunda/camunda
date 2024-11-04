@@ -27,6 +27,8 @@ import io.atomix.raft.storage.serializer.RaftEntrySerializer;
 import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.JournalRecord;
 import java.io.Closeable;
+import java.nio.file.Path;
+import java.util.SortedMap;
 import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -238,5 +240,9 @@ public final class RaftLog implements Closeable {
         + ", commitIndex="
         + commitIndex
         + '}';
+  }
+
+  public SortedMap<Long, Path> getTailSegments(final long index) {
+    return journal.getTailSegments(index);
   }
 }
