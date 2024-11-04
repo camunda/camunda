@@ -24,6 +24,9 @@ import io.camunda.optimize.service.tenant.TenantService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.OptimizeProfile;
 import io.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +38,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class UIConfigurationService {
 
+  public static final DateTimeFormatter DATE_TIME_FORMATTER =
+      DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneOffset.UTC);
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(UIConfigurationService.class);
   private final ConfigurationService configurationService;
   private final OptimizeVersionService versionService;
@@ -89,6 +94,9 @@ public class UIConfigurationService {
     uiConfigurationDto.setOptimizeDatabase(ConfigurationService.getDatabaseType(environment));
     uiConfigurationDto.setValidLicense(isCamundaLicenseValid());
     uiConfigurationDto.setLicenseType(getLicenseType().getName());
+    uiConfigurationDto.setCommercial(isCommercialCamundaLicense());
+    uiConfigurationDto.setLicenseType(
+        DATE_TIME_FORMATTER.format(getCamundaLicenseExpirationDate()));
 
     final MixpanelConfigResponseDto mixpanel = uiConfigurationDto.getMixpanel();
     mixpanel.setEnabled(configurationService.getAnalytics().isEnabled());
@@ -127,6 +135,14 @@ public class UIConfigurationService {
 
   private LicenseType getLicenseType() {
     return camundaLicenseService.getCamundaLicenseType();
+  }
+
+  private boolean isCommercialCamundaLicense() {
+    return camundaLicenseService.isCommercialCamundaLicense();
+  }
+
+  private OffsetDateTime getCamundaLicenseExpirationDate() {
+    return camundaLicenseService.getCamundaLicenseExpirationDate();
   }
 
   private boolean isEnterpriseMode(final OptimizeProfile optimizeProfile) {

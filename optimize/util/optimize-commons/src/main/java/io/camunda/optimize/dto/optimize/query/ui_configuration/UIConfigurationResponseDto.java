@@ -33,6 +33,8 @@ public class UIConfigurationResponseDto {
   private DatabaseType optimizeDatabase;
   private boolean validLicense;
   private String licenseType;
+  private boolean isCommercial;
+  private String expiresAt;
 
   private MixpanelConfigResponseDto mixpanel = new MixpanelConfigResponseDto();
 
@@ -86,228 +88,247 @@ public class UIConfigurationResponseDto {
   public UIConfigurationResponseDto() {}
 
   public boolean isEmailEnabled() {
-    return this.emailEnabled;
-  }
-
-  public boolean isSharingEnabled() {
-    return this.sharingEnabled;
-  }
-
-  public boolean isTenantsAvailable() {
-    return this.tenantsAvailable;
-  }
-
-  public boolean isUserSearchAvailable() {
-    return this.userSearchAvailable;
-  }
-
-  public boolean isUserTaskAssigneeAnalyticsEnabled() {
-    return this.userTaskAssigneeAnalyticsEnabled;
-  }
-
-  public String getOptimizeVersion() {
-    return this.optimizeVersion;
-  }
-
-  public String getOptimizeDocsVersion() {
-    return this.optimizeDocsVersion;
-  }
-
-  public boolean isEnterpriseMode() {
-    return this.isEnterpriseMode;
-  }
-
-  public OptimizeProfile getOptimizeProfile() {
-    return this.optimizeProfile;
-  }
-
-  public Map<String, WebappsEndpointDto> getWebappsEndpoints() {
-    return this.webappsEndpoints;
-  }
-
-  public Map<AppName, String> getWebappsLinks() {
-    return this.webappsLinks;
-  }
-
-  public String getNotificationsUrl() {
-    return this.notificationsUrl;
-  }
-
-  public List<String> getWebhooks() {
-    return this.webhooks;
-  }
-
-  public boolean isLogoutHidden() {
-    return this.logoutHidden;
-  }
-
-  public int getMaxNumDataSourcesForReport() {
-    return this.maxNumDataSourcesForReport;
-  }
-
-  public Integer getExportCsvLimit() {
-    return this.exportCsvLimit;
-  }
-
-  public DatabaseType getOptimizeDatabase() {
-    return this.optimizeDatabase;
-  }
-
-  public boolean isValidLicense() {
-    return this.validLicense;
-  }
-
-  public String getLicenseType() {
-    return this.licenseType;
-  }
-
-  public MixpanelConfigResponseDto getMixpanel() {
-    return this.mixpanel;
-  }
-
-  public OnboardingResponseDto getOnboarding() {
-    return this.onboarding;
+    return emailEnabled;
   }
 
   public void setEmailEnabled(final boolean emailEnabled) {
     this.emailEnabled = emailEnabled;
   }
 
+  public boolean isSharingEnabled() {
+    return sharingEnabled;
+  }
+
   public void setSharingEnabled(final boolean sharingEnabled) {
     this.sharingEnabled = sharingEnabled;
+  }
+
+  public boolean isTenantsAvailable() {
+    return tenantsAvailable;
   }
 
   public void setTenantsAvailable(final boolean tenantsAvailable) {
     this.tenantsAvailable = tenantsAvailable;
   }
 
+  public boolean isUserSearchAvailable() {
+    return userSearchAvailable;
+  }
+
   public void setUserSearchAvailable(final boolean userSearchAvailable) {
     this.userSearchAvailable = userSearchAvailable;
+  }
+
+  public boolean isUserTaskAssigneeAnalyticsEnabled() {
+    return userTaskAssigneeAnalyticsEnabled;
   }
 
   public void setUserTaskAssigneeAnalyticsEnabled(final boolean userTaskAssigneeAnalyticsEnabled) {
     this.userTaskAssigneeAnalyticsEnabled = userTaskAssigneeAnalyticsEnabled;
   }
 
+  public String getOptimizeVersion() {
+    return optimizeVersion;
+  }
+
   public void setOptimizeVersion(final String optimizeVersion) {
     this.optimizeVersion = optimizeVersion;
+  }
+
+  public String getOptimizeDocsVersion() {
+    return optimizeDocsVersion;
   }
 
   public void setOptimizeDocsVersion(final String optimizeDocsVersion) {
     this.optimizeDocsVersion = optimizeDocsVersion;
   }
 
+  public boolean isEnterpriseMode() {
+    return isEnterpriseMode;
+  }
+
   public void setEnterpriseMode(final boolean isEnterpriseMode) {
     this.isEnterpriseMode = isEnterpriseMode;
+  }
+
+  public OptimizeProfile getOptimizeProfile() {
+    return optimizeProfile;
   }
 
   public void setOptimizeProfile(final OptimizeProfile optimizeProfile) {
     this.optimizeProfile = optimizeProfile;
   }
 
+  public Map<String, WebappsEndpointDto> getWebappsEndpoints() {
+    return webappsEndpoints;
+  }
+
   public void setWebappsEndpoints(final Map<String, WebappsEndpointDto> webappsEndpoints) {
     this.webappsEndpoints = webappsEndpoints;
+  }
+
+  public Map<AppName, String> getWebappsLinks() {
+    return webappsLinks;
   }
 
   public void setWebappsLinks(final Map<AppName, String> webappsLinks) {
     this.webappsLinks = webappsLinks;
   }
 
+  public String getNotificationsUrl() {
+    return notificationsUrl;
+  }
+
   public void setNotificationsUrl(final String notificationsUrl) {
     this.notificationsUrl = notificationsUrl;
+  }
+
+  public List<String> getWebhooks() {
+    return webhooks;
   }
 
   public void setWebhooks(final List<String> webhooks) {
     this.webhooks = webhooks;
   }
 
+  public boolean isLogoutHidden() {
+    return logoutHidden;
+  }
+
   public void setLogoutHidden(final boolean logoutHidden) {
     this.logoutHidden = logoutHidden;
+  }
+
+  public int getMaxNumDataSourcesForReport() {
+    return maxNumDataSourcesForReport;
   }
 
   public void setMaxNumDataSourcesForReport(final int maxNumDataSourcesForReport) {
     this.maxNumDataSourcesForReport = maxNumDataSourcesForReport;
   }
 
+  public Integer getExportCsvLimit() {
+    return exportCsvLimit;
+  }
+
   public void setExportCsvLimit(final Integer exportCsvLimit) {
     this.exportCsvLimit = exportCsvLimit;
+  }
+
+  public DatabaseType getOptimizeDatabase() {
+    return optimizeDatabase;
   }
 
   public void setOptimizeDatabase(final DatabaseType optimizeDatabase) {
     this.optimizeDatabase = optimizeDatabase;
   }
 
+  public boolean isValidLicense() {
+    return validLicense;
+  }
+
   public void setValidLicense(final boolean validLicense) {
     this.validLicense = validLicense;
+  }
+
+  public String getLicenseType() {
+    return licenseType;
   }
 
   public void setLicenseType(final String licenseType) {
     this.licenseType = licenseType;
   }
 
+  public boolean isCommercial() {
+    return isCommercial;
+  }
+
+  public void setCommercial(final boolean isCommercial) {
+    this.isCommercial = isCommercial;
+  }
+
+  public String getExpiresAt() {
+    return expiresAt;
+  }
+
+  public void setExpiresAt(final String expiresAt) {
+    this.expiresAt = expiresAt;
+  }
+
+  public MixpanelConfigResponseDto getMixpanel() {
+    return mixpanel;
+  }
+
   public void setMixpanel(final MixpanelConfigResponseDto mixpanel) {
     this.mixpanel = mixpanel;
+  }
+
+  public OnboardingResponseDto getOnboarding() {
+    return onboarding;
   }
 
   public void setOnboarding(final OnboardingResponseDto onboarding) {
     this.onboarding = onboarding;
   }
 
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
-  }
-
   protected boolean canEqual(final Object other) {
     return other instanceof UIConfigurationResponseDto;
   }
 
+  @Override
   public int hashCode() {
     return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
+  @Override
+  public boolean equals(final Object o) {
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  }
+
+  @Override
   public String toString() {
     return "UIConfigurationResponseDto(emailEnabled="
-        + this.isEmailEnabled()
+        + isEmailEnabled()
         + ", sharingEnabled="
-        + this.isSharingEnabled()
+        + isSharingEnabled()
         + ", tenantsAvailable="
-        + this.isTenantsAvailable()
+        + isTenantsAvailable()
         + ", userSearchAvailable="
-        + this.isUserSearchAvailable()
+        + isUserSearchAvailable()
         + ", userTaskAssigneeAnalyticsEnabled="
-        + this.isUserTaskAssigneeAnalyticsEnabled()
+        + isUserTaskAssigneeAnalyticsEnabled()
         + ", optimizeVersion="
-        + this.getOptimizeVersion()
+        + getOptimizeVersion()
         + ", optimizeDocsVersion="
-        + this.getOptimizeDocsVersion()
+        + getOptimizeDocsVersion()
         + ", isEnterpriseMode="
-        + this.isEnterpriseMode()
+        + isEnterpriseMode()
         + ", optimizeProfile="
-        + this.getOptimizeProfile()
+        + getOptimizeProfile()
         + ", webappsEndpoints="
-        + this.getWebappsEndpoints()
+        + getWebappsEndpoints()
         + ", webappsLinks="
-        + this.getWebappsLinks()
+        + getWebappsLinks()
         + ", notificationsUrl="
-        + this.getNotificationsUrl()
+        + getNotificationsUrl()
         + ", webhooks="
-        + this.getWebhooks()
+        + getWebhooks()
         + ", logoutHidden="
-        + this.isLogoutHidden()
+        + isLogoutHidden()
         + ", maxNumDataSourcesForReport="
-        + this.getMaxNumDataSourcesForReport()
+        + getMaxNumDataSourcesForReport()
         + ", exportCsvLimit="
-        + this.getExportCsvLimit()
+        + getExportCsvLimit()
         + ", optimizeDatabase="
-        + this.getOptimizeDatabase()
+        + getOptimizeDatabase()
         + ", validLicense="
-        + this.isValidLicense()
+        + isValidLicense()
         + ", licenseType="
-        + this.getLicenseType()
+        + getLicenseType()
         + ", mixpanel="
-        + this.getMixpanel()
+        + getMixpanel()
         + ", onboarding="
-        + this.getOnboarding()
+        + getOnboarding()
         + ")";
   }
 }
