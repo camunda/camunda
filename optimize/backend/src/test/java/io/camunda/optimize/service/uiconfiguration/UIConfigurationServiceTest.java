@@ -191,6 +191,6 @@ public class UIConfigurationServiceTest {
     when(camundaLicenseService.getCamundaLicenseType()).thenReturn(LicenseType.SAAS);
     when(camundaLicenseService.isCamundaLicenseValid()).thenReturn(true);
     when(camundaLicenseService.isCommercialCamundaLicense()).thenReturn(false);
-    when(camundaLicenseService.getCamundaLicenseExpirationDate()).thenReturn(testDate);
+    // when(camundaLicenseService.getCamundaLicenseExpirationDate()).thenReturn(testDate);
   }
 }

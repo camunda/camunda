@@ -95,8 +95,11 @@ public class UIConfigurationService {
     uiConfigurationDto.setValidLicense(isCamundaLicenseValid());
     uiConfigurationDto.setLicenseType(getLicenseType().getName());
     uiConfigurationDto.setCommercial(isCommercialCamundaLicense());
-    uiConfigurationDto.setLicenseType(
-        DATE_TIME_FORMATTER.format(getCamundaLicenseExpirationDate()));
+    final OffsetDateTime expirationDate = getCamundaLicenseExpirationDate();
+    uiConfigurationDto.setExpiresAt(
+        expirationDate == null
+            ? null
+            : DATE_TIME_FORMATTER.format(getCamundaLicenseExpirationDate()));
 
     final MixpanelConfigResponseDto mixpanel = uiConfigurationDto.getMixpanel();
     mixpanel.setEnabled(configurationService.getAnalytics().isEnabled());
