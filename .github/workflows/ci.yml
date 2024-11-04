@@ -80,22 +80,13 @@ jobs:
     runs-on: gcp-perf-core-8-default
     steps:
       - uses: actions/checkout@v4
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@v3.0.0
+      - uses: ./.github/actions/setup-zeebe
         with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
-            secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
-      - uses: ./.github/actions/setup-build
-        with:
-          camunda-nexus-username: ${{ steps.secrets.outputs.ARTIFACTS_USR }}
-          camunda-nexus-password: ${{ steps.secrets.outputs.ARTIFACTS_PSW }}
+          docker: false
           maven-cache-key-modifier: java-checks
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - run: ./mvnw -T1C -B -D skipTests -D skipOptimize -P !autoFormat,checkFormat,spotbugs,skipFrontendBuild verify
       - name: Observe build status
         if: always()
@@ -114,6 +105,11 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-zeebe
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - uses: ./.github/actions/build-frontend
         id: build-operate-fe
         with:
@@ -147,21 +143,11 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@v3.0.0
+      - uses: ./.github/actions/setup-zeebe
         with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
-            secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
-      - uses: ./.github/actions/setup-build
-        with:
-          camunda-nexus-username: ${{ steps.secrets.outputs.ARTIFACTS_USR }}
-          camunda-nexus-password: ${{ steps.secrets.outputs.ARTIFACTS_PSW }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - uses: ./.github/actions/build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild -D skipOptimize
@@ -245,22 +231,12 @@ jobs:
           - 5000:5000
     steps:
       - uses: actions/checkout@v4
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@v3.0.0
+      - uses: ./.github/actions/setup-zeebe
         with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
-            secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
-      - uses: ./.github/actions/setup-build
-        with:
-          camunda-nexus-username: ${{ steps.secrets.outputs.ARTIFACTS_USR }}
-          camunda-nexus-password: ${{ steps.secrets.outputs.ARTIFACTS_PSW }}
           maven-cache-key-modifier: it-${{ matrix.group }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
@@ -338,29 +314,12 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: ./hadolint.sarif
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@v3.0.0
+      - uses: ./.github/actions/setup-zeebe
         with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW_READ_ONLY;
-            secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_USR;
-            secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
-            secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
-      # Logging to DockerHub to to avoid being rate-limited when using an anonymous account from GitHub-managed runners.
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
-          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW_READ_ONLY }}
-      - uses: ./.github/actions/setup-build
-        with:
-          camunda-nexus-username: ${{ steps.secrets.outputs.ARTIFACTS_USR }}
-          camunda-nexus-password: ${{ steps.secrets.outputs.ARTIFACTS_PSW }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          docker-secret-path: secret/data/products/camunda/ci/github-actions
       - uses: ./.github/actions/build-zeebe
         id: build-camunda
         with:
@@ -509,25 +468,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@v3.0.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/optimize/ci/optimize NEXUS_USERNAME;
-            secret/data/products/optimize/ci/optimize NEXUS_PASSWORD;
       - name: Setup Maven
-        uses: ./.github/actions/setup-build
+        uses: ./.github/actions/setup-maven
         with:
-          camunda-nexus-username: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
-          camunda-nexus-password: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
           maven-cache-key-modifier: optimize-tests
-          maven-version: 3.8.6
-          time-zone: Europe/Berlin
+          secrets: ${{ toJSON(secrets) }}
       - name: Test
         uses: ./.github/actions/run-maven
         with:
@@ -710,28 +655,13 @@ jobs:
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@v3.0.0
+      - uses: ./.github/actions/setup-zeebe
         with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW;
-            secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_USR;
-            secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
-            secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
-          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
-      - uses: ./.github/actions/setup-build
-        with:
-          camunda-nexus-username: ${{ steps.secrets.outputs.ARTIFACTS_USR }}
-          camunda-nexus-password: ${{ steps.secrets.outputs.ARTIFACTS_PSW }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          docker-token: REGISTRY_HUB_DOCKER_COM_PSW
+          docker-secret-path: secret/data/products/camunda/ci/github-actions
       - uses: ./.github/actions/build-frontend
         id: build-operate-fe
         with:
