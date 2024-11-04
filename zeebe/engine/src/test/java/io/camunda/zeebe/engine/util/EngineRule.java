@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.util.client.AuthorizationClient;
 import io.camunda.zeebe.engine.util.client.ClockClient;
 import io.camunda.zeebe.engine.util.client.DecisionEvaluationClient;
 import io.camunda.zeebe.engine.util.client.DeploymentClient;
+import io.camunda.zeebe.engine.util.client.GroupClient;
 import io.camunda.zeebe.engine.util.client.IncidentClient;
 import io.camunda.zeebe.engine.util.client.JobActivationClient;
 import io.camunda.zeebe.engine.util.client.JobClient;
@@ -359,6 +360,10 @@ public final class EngineRule extends ExternalResource {
 
   public MappingClient mapping() {
     return new MappingClient(environmentRule);
+  }
+
+  public GroupClient group() {
+    return new GroupClient(environmentRule);
   }
 
   public Record<JobRecordValue> createJob(final String type, final String processId) {
