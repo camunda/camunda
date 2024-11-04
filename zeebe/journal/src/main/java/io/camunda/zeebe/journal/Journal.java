@@ -18,6 +18,8 @@ package io.camunda.zeebe.journal;
 import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
 import io.camunda.zeebe.journal.JournalException.InvalidIndex;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.nio.file.Path;
+import java.util.SortedMap;
 
 public interface Journal extends AutoCloseable {
 
@@ -134,4 +136,6 @@ public interface Journal extends AutoCloseable {
    * @return true if open, false otherwise
    */
   boolean isOpen();
+
+  SortedMap<Long, Path> getTailSegments(long index);
 }

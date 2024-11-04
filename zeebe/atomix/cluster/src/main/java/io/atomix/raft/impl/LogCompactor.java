@@ -43,6 +43,23 @@ public final class LogCompactor {
     this.logger = logger;
   }
 
+  @VisibleForTesting
+  public long getCompactableIndex() {
+    return compactableIndex;
+  }
+
+  /**
+   * Sets the compactable index to the given index; this will cause a call to {@link #compact()} or
+   * {@link #compactIgnoringReplicationThreshold()} to compact the log up to the given index here.
+   *
+   * <p>NOTE: this method is thread safe
+   */
+  @VisibleForTesting
+  void setCompactableIndex(final long index) {
+    logger.trace("Updated compactable index to {}", index);
+    compactableIndex = index;
+  }
+
   /**
    * Assumes our snapshots are being taken asynchronously, and we regularly update the compactable
    * index. It can happen that nothing is compacted (e.g. there are no snapshots since the last
@@ -74,18 +91,6 @@ public final class LogCompactor {
   /** Compacts the log based on the snapshot store's lowest compaction bound. */
   public void compactFromSnapshots(final PersistedSnapshotStore snapshotStore) {
     snapshotStore.getCompactionBound().onComplete(this::onSnapshotCompactionBound, threadContext);
-  }
-
-  /**
-   * Sets the compactable index to the given index; this will cause a call to {@link #compact()} or
-   * {@link #compactIgnoringReplicationThreshold()} to compact the log up to the given index here.
-   *
-   * <p>NOTE: this method is thread safe
-   */
-  @VisibleForTesting
-  void setCompactableIndex(final long index) {
-    logger.trace("Updated compactable index to {}", index);
-    compactableIndex = index;
   }
 
   private boolean compact(final long index) {

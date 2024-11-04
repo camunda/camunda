@@ -278,7 +278,7 @@ class SegmentsManagerTest {
     segments = journalFactory.segmentsManager(directory, loader, metaStore);
     try (final var journal = journalFactory.journal(segments)) {
       // grab all segments and copy them to avoid the map getting cleared
-      final var loadedSegments = new ArrayList<>(segments.getTailSegments(0));
+      final var loadedSegments = new ArrayList<>(segments.getTailSegments(0).values());
       journal.reset(10);
 
       // then - assert we reset first, then delete the segments in reversed order
