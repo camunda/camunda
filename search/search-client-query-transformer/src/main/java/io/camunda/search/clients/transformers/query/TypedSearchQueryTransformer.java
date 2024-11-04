@@ -42,7 +42,6 @@ public final class TypedSearchQueryTransformer<F extends FilterBase, S extends S
     final var filter = query.filter();
     final var searchQueryFilter = toSearchQuery(filter, authCheck);
     final var indices = toIndices(filter);
-
     final var page = query.page();
     final var reverse = !page.isNextPage();
 

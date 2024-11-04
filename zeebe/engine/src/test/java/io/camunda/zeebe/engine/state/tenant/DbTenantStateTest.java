@@ -268,4 +268,59 @@ public class DbTenantStateTest {
     // Check that an unassigned entity is not recognized as assigned to the tenant
     assertThat(tenantState.isEntityAssignedToTenant(unassignedEntityKey, tenantKey)).isFalse();
   }
+
+  @Test
+  void shouldDeleteTenant() {
+    // given
+    final long tenantKey = 1L;
+    final String tenantId = "tenant-1";
+    final var tenantRecord =
+        new TenantRecord().setTenantKey(tenantKey).setTenantId(tenantId).setName("Tenant One");
+
+    tenantState.createTenant(tenantRecord);
+    tenantState.addEntity(
+        new TenantRecord()
+            .setTenantKey(tenantKey)
+            .setEntityKey(100L)
+            .setEntityType(EntityType.USER));
+
+    // when
+    tenantState.delete(tenantRecord);
+
+    // then
+    final var deletedTenant = tenantState.getTenantByKey(tenantKey);
+    assertThat(deletedTenant).isEmpty();
+    final var deletedEntity = tenantState.getEntityType(tenantKey, 100L);
+    assertThat(deletedEntity).isEmpty();
+    final var tenantKeyById = tenantState.getTenantKeyById(tenantId);
+    assertThat(tenantKeyById).isEmpty();
+  }
+
+  @Test
+  void shouldReturnEntitiesByType() {
+    // given
+    final long tenantKey = 1L;
+    final String tenantId = "tenant-1";
+    final var tenantRecord =
+        new TenantRecord().setTenantKey(tenantKey).setTenantId(tenantId).setName("Tenant One");
+
+    tenantState.createTenant(tenantRecord);
+    tenantState.addEntity(
+        new TenantRecord()
+            .setTenantKey(tenantKey)
+            .setEntityKey(100L)
+            .setEntityType(EntityType.USER));
+    tenantState.addEntity(
+        new TenantRecord()
+            .setTenantKey(tenantKey)
+            .setEntityKey(200L)
+            .setEntityType(EntityType.MAPPING));
+
+    // when
+    final var entities = tenantState.getEntitiesByType(tenantKey);
+
+    // then
+    assertThat(entities.get(EntityType.USER)).containsExactly(100L);
+    assertThat(entities.get(EntityType.MAPPING)).containsExactly(200L);
+  }
 }

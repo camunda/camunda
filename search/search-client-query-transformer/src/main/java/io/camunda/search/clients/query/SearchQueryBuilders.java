@@ -12,6 +12,7 @@ import static io.camunda.util.CollectionUtil.withoutNull;
 
 import io.camunda.search.clients.query.SearchHasParentQuery.Builder;
 import io.camunda.search.clients.query.SearchMatchQuery.SearchMatchQueryOperator;
+import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.filter.Operation;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
@@ -20,7 +21,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public final class SearchQueryBuilders {
 
@@ -262,6 +265,10 @@ public final class SearchQueryBuilders {
     return term((q) -> q.field(field).value(value)).toSearchQuery();
   }
 
+  public static SearchQuery term(final String field, final TypedValue value) {
+    return term((q) -> q.field(field).value(value)).toSearchQuery();
+  }
+
   public static SearchTermsQuery.Builder terms() {
     return new SearchTermsQuery.Builder();
   }
@@ -303,6 +310,19 @@ public final class SearchQueryBuilders {
       return term(field, fieldValues.get(0));
     } else {
       return SearchTermsQuery.of(q -> q.field(field).stringTerms(fieldValues)).toSearchQuery();
+    }
+  }
+
+  public static SearchQuery objectTerms(final String field, final Collection<Object> values) {
+    final var fieldValues = withoutNull(values);
+    if (fieldValues == null || fieldValues.isEmpty()) {
+      return null;
+    } else if (fieldValues.size() == 1) {
+      return term(field, TypedValue.toTypedValue(fieldValues.getFirst()));
+    } else {
+      final var typedValues =
+          fieldValues.stream().map(TypedValue::toTypedValue).collect(Collectors.toList());
+      return SearchTermsQuery.of(q -> q.field(field).terms(typedValues)).toSearchQuery();
     }
   }
 
@@ -390,26 +410,75 @@ public final class SearchQueryBuilders {
     return DATE_TIME_FORMATTER.format(dateTime);
   }
 
-  public static <C extends List<Operation<OffsetDateTime>>> SearchQuery dateTimeOperations(
+  private static SearchRangeQuery.Builder buildRangeQuery(
+      SearchRangeQuery.Builder builder,
+      final String field,
+      final Consumer<SearchRangeQuery.Builder> builderConsumer) {
+    if (builder == null) {
+      builder = new SearchRangeQuery.Builder().field(field).format(DATE_TIME_FORMAT);
+    }
+    builderConsumer.accept(builder);
+    return builder;
+  }
+
+  public static <C extends List<Operation<OffsetDateTime>>> List<SearchQuery> dateTimeOperations(
       final String field, final C operations) {
     if (operations == null || operations.isEmpty()) {
       return null;
     } else {
-      final var b = new SearchRangeQuery.Builder().field(field).format(DATE_TIME_FORMAT);
+      final var queries = new ArrayList<SearchQuery>();
+      SearchRangeQuery.Builder rangeQueryBuilder = null;
+      for (final Operation<OffsetDateTime> op : operations) {
+        final var formatted = formatDate(op.value());
+        switch (op.operator()) {
+          case EQUALS -> queries.add(term(field, formatted));
+          case NOT_EQUALS -> queries.add(mustNot(term(field, formatted)));
+          case EXISTS -> queries.add(exists(field));
+          case NOT_EXISTS -> queries.add(mustNot(exists(field)));
+          case GREATER_THAN ->
+              rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.gt(formatted));
+          case GREATER_THAN_EQUALS ->
+              rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.gte(formatted));
+          case LOWER_THAN ->
+              rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.lt(formatted));
+          case LOWER_THAN_EQUALS ->
+              rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.lte(formatted));
+          default -> throw unexpectedOperation("Date", op);
+        }
+      }
+      if (rangeQueryBuilder != null) {
+        queries.add(rangeQueryBuilder.build().toSearchQuery());
+      }
+      return queries;
+    }
+  }
+
+  public static <C extends List<Operation<Object>>> List<SearchQuery> variableOperations(
+      final String varName, final String varValue, final String name, final C operations) {
+    if (operations == null || operations.isEmpty()) {
+      return null;
+    } else {
+      final var searchQueries = new ArrayList<SearchQuery>();
+      searchQueries.add(term(varName, name));
       operations.forEach(
           op -> {
-            final var formatted = formatDate(op.value());
-            switch (op.operator()) {
-              case EXISTS -> exists(field);
-              case NOT_EXISTS -> mustNot(exists(field));
-              case GREATER_THAN -> b.gt(formatted);
-              case GREATER_THAN_EQUALS -> b.gte(formatted);
-              case LOWER_THAN -> b.lt(formatted);
-              case LOWER_THAN_EQUALS -> b.lte(formatted);
-              default -> throw unexpectedOperation("Date", op);
-            }
+            searchQueries.add(
+                switch (op.operator()) {
+                  case EQUALS -> term(varValue, TypedValue.toTypedValue(op.value()));
+                  case NOT_EQUALS -> mustNot(term(varValue, TypedValue.toTypedValue(op.value())));
+                  case EXISTS -> exists(varValue);
+                  case NOT_EXISTS -> mustNot(exists(varValue));
+                  case GREATER_THAN -> range(q -> q.field(varValue).gt(op.value())).toSearchQuery();
+                  case GREATER_THAN_EQUALS ->
+                      range(q -> q.field(varValue).gte(op.value())).toSearchQuery();
+                  case LOWER_THAN -> range(q -> q.field(varValue).lt(op.value())).toSearchQuery();
+                  case LOWER_THAN_EQUALS ->
+                      range(q -> q.field(varValue).lte(op.value())).toSearchQuery();
+                  case IN -> objectTerms(varValue, op.values());
+                  default -> throw unexpectedOperation("Variable", op);
+                });
           });
-      return b.build().toSearchQuery();
+      return searchQueries;
     }
   }
 

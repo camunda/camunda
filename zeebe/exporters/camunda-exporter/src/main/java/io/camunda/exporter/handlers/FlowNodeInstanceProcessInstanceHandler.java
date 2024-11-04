@@ -143,6 +143,11 @@ public class FlowNodeInstanceProcessInstanceHandler
     batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
   }
 
+  @Override
+  public String getIndexName() {
+    return indexName;
+  }
+
   private boolean isOfType(
       final ProcessInstanceRecordValue recordValue, final BpmnElementType type) {
     final BpmnElementType bpmnElementType = recordValue.getBpmnElementType();

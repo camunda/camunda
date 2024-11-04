@@ -54,7 +54,13 @@ public class AddEntityTenantTest {
 
     // when add user entity to tenant
     final var updatedTenant =
-        ENGINE.tenant().addEntity(tenantKey).withEntityKey(userKey).add().getValue();
+        ENGINE
+            .tenant()
+            .addEntity(tenantKey)
+            .withEntityKey(userKey)
+            .withEntityType(USER)
+            .add()
+            .getValue();
 
     // then assert that the entity was added correctly
     Assertions.assertThat(updatedTenant)
@@ -99,7 +105,45 @@ public class AddEntityTenantTest {
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to add entity with key '1' to tenant with key '%s', but the entity doesn't exist."
-                .formatted(tenantKey));
+            "Expected to add entity with key '1' to tenant with id '%s', but the entity doesn't exist."
+                .formatted(tenantId));
+  }
+
+  @Test
+  public void shouldRejectIfEntityIsAlreadyAssignedToTenant() {
+    // given
+    final var username = UUID.randomUUID().toString();
+    final var userKey =
+        ENGINE
+            .user()
+            .newUser(username)
+            .withName("Foo Bar")
+            .withEmail("foo@bar.com")
+            .withPassword("password")
+            .create()
+            .getValue()
+            .getUserKey();
+    final var tenantId = UUID.randomUUID().toString();
+    final var tenantRecord =
+        ENGINE.tenant().newTenant().withTenantId(tenantId).withName("Tenant 1").create();
+    final var tenantKey = tenantRecord.getValue().getTenantKey();
+    ENGINE.tenant().addEntity(tenantKey).withEntityKey(userKey).withEntityType(USER).add();
+
+    // when try adding a non-existent entity to the tenant
+    final var alreadyAssignedRecord =
+        ENGINE
+            .tenant()
+            .addEntity(tenantKey)
+            .withEntityKey(userKey)
+            .withEntityType(USER)
+            .expectRejection()
+            .add();
+
+    // then assert that the rejection is for entity not found
+    assertThat(alreadyAssignedRecord)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to add entity with key '%s' to tenant with id '%s', but the entity is already assigned to the tenant."
+                .formatted(userKey, tenantId));
   }
 }

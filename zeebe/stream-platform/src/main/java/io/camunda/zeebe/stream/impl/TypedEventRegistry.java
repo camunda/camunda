@@ -9,6 +9,7 @@ package io.camunda.zeebe.stream.impl;
 
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
@@ -106,6 +107,7 @@ public final class TypedEventRegistry {
     registry.put(ValueType.TENANT, TenantRecord.class);
     registry.put(ValueType.ROLE, RoleRecord.class);
     registry.put(ValueType.SCALE, ScaleRecord.class);
+    registry.put(ValueType.MAPPING, MappingRecord.class);
 
     EVENT_REGISTRY = Collections.unmodifiableMap(registry);
 

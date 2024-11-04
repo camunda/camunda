@@ -7,11 +7,11 @@
  */
 package io.camunda.operate.webapp.zeebe.operation;
 
-import static io.camunda.webapps.schema.entities.operate.ErrorType.JOB_NO_RETRIES;
 import static io.camunda.webapps.schema.entities.operation.OperationType.RESOLVE_INCIDENT;
 
 import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
+import io.camunda.webapps.schema.entities.operate.ErrorType;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
@@ -41,7 +41,8 @@ public class ResolveIncidentHandler extends AbstractOperationHandler implements 
       return;
     }
 
-    if (incident.getErrorType().equals(JOB_NO_RETRIES)) {
+    final ErrorType errorType = incident.getErrorType();
+    if (errorType != null && errorType.isResolvedViaRetries()) {
       final var updateRetriesJobCommand =
           withOperationReference(
               zeebeClient.newUpdateRetriesCommand(incident.getJobKey()).retries(1),

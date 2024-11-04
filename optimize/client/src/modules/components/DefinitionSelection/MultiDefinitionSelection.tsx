@@ -99,12 +99,13 @@ function MultiDefinitionSelection({
 
   return (
     <div className="entry">
+      {/* @ts-expect-error remove when https://github.com/carbon-design-system/carbon/issues/16993 is fixed */}
       <FilterableMultiSelect
         id="multiDefinitionSelection"
         initialSelectedItems={selectedItems}
         items={allItems}
         onChange={({selectedItems}) => handleSelectionChange(selectedItems)}
-        placeholder={t('common.select')}
+        placeholder={t('common.select').toString()}
         titleText={t('common.definitionSelection.select.multiProcess')}
         size="sm"
         invalid={invalid}

@@ -248,25 +248,27 @@ public class RetryElasticsearchClient {
           String scrollId = null;
           ScrollResponse<Map> scrollResponse = null;
           do {
-            scrollId = response.scrollId();
-            scrollResponse =
-                client.scroll(
-                    new ScrollRequest.Builder()
-                        .scrollId(scrollId)
-                        .scroll(
-                            Time.of(
-                                new Function<Builder, ObjectBuilder<Time>>() {
-                                  @Override
-                                  public ObjectBuilder<Time> apply(final Builder builder) {
-                                    return builder.time(
-                                        Instant.ofEpochMilli(SCROLL_KEEP_ALIVE_MS).toString());
-                                  }
-                                }))
-                        .build(),
-                    Map.class);
-            searchResponse.hits().hits().forEach(searchHitConsumer);
-            doneOnSearchHits += scrollResponse.hits().hits().size();
-          } while (!scrollResponse.hits().hits().isEmpty());
+            scrollId = scrollResponse != null ? scrollResponse.scrollId() : response.scrollId();
+            if (scrollId != null) {
+              scrollResponse =
+                  client.scroll(
+                      new ScrollRequest.Builder()
+                          .scrollId(scrollId)
+                          .scroll(
+                              Time.of(
+                                  new Function<Builder, ObjectBuilder<Time>>() {
+                                    @Override
+                                    public ObjectBuilder<Time> apply(final Builder builder) {
+                                      return builder.time(
+                                          Instant.ofEpochMilli(SCROLL_KEEP_ALIVE_MS).toString());
+                                    }
+                                  }))
+                          .build(),
+                      Map.class);
+              searchResponse.hits().hits().forEach(searchHitConsumer);
+              doneOnSearchHits += scrollResponse.hits().hits().size();
+            }
+          } while (scrollResponse != null && !scrollResponse.hits().hits().isEmpty());
           if (scrollId != null) {
             final ClearScrollRequest clearScrollRequest =
                 new ClearScrollRequest.Builder().scrollId(scrollId).build();
@@ -283,21 +285,24 @@ public class RetryElasticsearchClient {
       final int replicas,
       final String mappingFile)
       throws IOException {
-    final var templateFile = getClass().getResourceAsStream(mappingFile);
-    final var templateFields =
-        deserializeJson(
-            IndexTemplateMapping._DESERIALIZER,
-            appendToFileSchemaSettings(templateFile, shards, replicas));
+    if (!indicesExist(indexName)) {
+      final var templateFile = getClass().getResourceAsStream(mappingFile);
+      final var templateFields =
+          deserializeJson(
+              IndexTemplateMapping._DESERIALIZER,
+              appendToFileSchemaSettings(templateFile, shards, replicas));
 
-    final CreateIndexRequest request =
-        new CreateIndexRequest.Builder()
-            .index(indexName)
-            .aliases(alias, a -> a.isWriteIndex(false))
-            .mappings(templateFields.mappings())
-            .settings(templateFields.settings())
-            .build();
+      final CreateIndexRequest request =
+          new CreateIndexRequest.Builder()
+              .index(indexName)
+              .aliases(alias, a -> a.isWriteIndex(false))
+              .mappings(templateFields.mappings())
+              .settings(templateFields.settings())
+              .build();
 
-    return client.indices().create(request).acknowledged();
+      return client.indices().create(request).acknowledged();
+    }
+    return true;
   }
 
   private boolean indicesExist(final String indexPattern) throws IOException {

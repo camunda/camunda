@@ -109,6 +109,11 @@ public class ListViewVariableFromVariableHandler
     }
   }
 
+  @Override
+  public String getIndexName() {
+    return indexName;
+  }
+
   protected String getVariableScript() {
     return String.format(
         "if (ctx._source.%s == null || ctx._source.%s < params.%s) { "
