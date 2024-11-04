@@ -489,6 +489,7 @@ public final class SearchQueryRequestMapper {
               Optional.ofNullable(f.getProcessDefinitionId()).ifPresent(builder::bpmnProcessIds);
               Optional.ofNullable(f.getElementId()).ifPresent(builder::elementIds);
               Optional.ofNullable(f.getAssignee()).ifPresent(builder::assignees);
+              Optional.ofNullable(f.getPriority()).ifPresent(builder::priorities);
               Optional.ofNullable(f.getCandidateGroup()).ifPresent(builder::candidateGroups);
               Optional.ofNullable(f.getCandidateUser()).ifPresent(builder::candidateUsers);
               Optional.ofNullable(f.getProcessDefinitionKey())

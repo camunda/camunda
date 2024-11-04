@@ -114,6 +114,12 @@ class UserTaskQueryTest {
   }
 
   @Test
+  public void shouldRetrieveTaskByPriority() {
+    final var result = camundaClient.newUserTaskQuery().filter(f -> f.priority(30)).send().join();
+    assertThat(result.items()).hasSize(1);
+  }
+
+  @Test
   public void shouldRetrieveTaskByVariableNameSearch() {
     final UserTaskVariableFilterRequest variableValueFilter =
         new UserTaskVariableFilterRequest().name("process01");
