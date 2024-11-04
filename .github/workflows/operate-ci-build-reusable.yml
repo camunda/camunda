@@ -150,13 +150,6 @@ jobs:
           dockerfile: operate.Dockerfile
 
       #########################################################################
-      # Deploy Nexus SNAPSHOT
-      - name: Deploy - Nexus SNAPSHOT
-        if: ${{ env.IS_DEFAULT_BRANCH == 'true' }}
-        run: |
-          ./mvnw -f operate org.sonatype.plugins:nexus-staging-maven-plugin:deploy-staged -DskipTests=true -P -docker,skipFrontendBuild -B -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
-
-      #########################################################################
       # Collect information about build status for central statistics with CI Analytics
       - name: Observe build status
         if: always()
