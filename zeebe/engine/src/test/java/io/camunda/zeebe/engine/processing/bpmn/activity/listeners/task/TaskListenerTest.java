@@ -21,6 +21,7 @@ import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
@@ -526,6 +527,221 @@ public class TaskListenerTest {
     // complete the listener job without variables to have a completed process
     // and prevent flakiness in other tests
     ENGINE.job().ofInstance(processInstanceKey).withType(LISTENER_TYPE).complete();
+  }
+
+  @Test
+  public void shouldCompleteTaskWithTaskListenerWhenJobResultDeniedIsNotSet() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(createProcessWithCompleteTaskListeners(LISTENER_TYPE));
+
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(LISTENER_TYPE)
+        .withResult(new JobResult())
+        .complete();
+
+    // then
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == UserTaskIntent.COMPLETED))
+        .extracting(Record::getIntent)
+        .describedAs(
+            "Ensure that `COMPLETE_TASK_LISTENER` events were triggered between user task"
+                + " `COMPLETING` and `COMPLETED` events")
+        .containsSubsequence(
+            UserTaskIntent.COMPLETING,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.COMPLETED);
+  }
+
+  @Test
+  public void shouldCompleteUserTaskWhenTaskListenerAcceptsTheOperation() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(createProcessWithCompleteTaskListeners(LISTENER_TYPE));
+
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(LISTENER_TYPE)
+        .withResult(new JobResult().setDenied(false))
+        .complete();
+
+    // then
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == UserTaskIntent.COMPLETED))
+        .extracting(Record::getIntent)
+        .describedAs(
+            "Ensure that `COMPLETE_TASK_LISTENER` events were triggered between user "
+                + "task `COMPLETING` and `COMPLETED` events")
+        .containsSubsequence(
+            UserTaskIntent.COMPLETING,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.COMPLETED);
+  }
+
+  @Test
+  public void shouldRejectUserTaskCompletionWhenTaskListenerRejectsTheOperation() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(createProcessWithCompleteTaskListeners(LISTENER_TYPE));
+
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(LISTENER_TYPE)
+        .withResult(new JobResult().setDenied(true))
+        .complete();
+
+    // then
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == UserTaskIntent.COMPLETED))
+        .extracting(Record::getIntent)
+        .describedAs(
+            "Ensure that `REJECT_TASK_LISTENER` and `COMPLETION_DENIED` are written "
+                + "after `COMPLETING` event")
+        .containsSubsequence(
+            UserTaskIntent.COMPLETING,
+            UserTaskIntent.REJECT_TASK_LISTENER,
+            UserTaskIntent.COMPLETION_DENIED);
+  }
+
+  @Test
+  public void shouldCompleteTaskWhenTaskListenerAcceptsOperationAfterRejection() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(createProcessWithCompleteTaskListeners(LISTENER_TYPE));
+
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(LISTENER_TYPE)
+        .withResult(new JobResult().setDenied(true))
+        .complete();
+
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+
+    completeRecreatedJobWithType(ENGINE, processInstanceKey, LISTENER_TYPE);
+
+    // then
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == UserTaskIntent.COMPLETED))
+        .extracting(Record::getIntent)
+        .describedAs(
+            "Ensure that `COMPLETING` `COMPLETE_TASK_LISTENER` and `COMPLETED"
+                + "` events are present after `REJECT_TASK_LISTENER` and `COMPLETION_DENIED` events")
+        .containsSubsequence(
+            UserTaskIntent.COMPLETING,
+            UserTaskIntent.REJECT_TASK_LISTENER,
+            UserTaskIntent.COMPLETION_DENIED,
+            UserTaskIntent.COMPLETING,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.COMPLETED);
+  }
+
+  @Test
+  public void shouldCompleteAllTaskListenersWhenFirstTaskListenerAcceptOperationAfterRejection() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcessWithCompleteTaskListeners(
+                LISTENER_TYPE, LISTENER_TYPE + "_2", LISTENER_TYPE + "_3"));
+
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(LISTENER_TYPE)
+        .withResult(new JobResult().setDenied(true))
+        .complete();
+
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    completeRecreatedJobWithType(ENGINE, processInstanceKey, LISTENER_TYPE);
+    completeJobs(processInstanceKey, LISTENER_TYPE + "_2", LISTENER_TYPE + "_3");
+
+    // then
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == UserTaskIntent.COMPLETED))
+        .extracting(Record::getIntent)
+        .describedAs(
+            "Ensure that all three `COMPLETE_TASK_LISTENER` events were triggered after the "
+                + "rejection from the first Task Listener")
+        .containsSubsequence(
+            UserTaskIntent.COMPLETING,
+            UserTaskIntent.REJECT_TASK_LISTENER,
+            UserTaskIntent.COMPLETION_DENIED,
+            UserTaskIntent.COMPLETING,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.COMPLETED);
+  }
+
+  @Test
+  public void shouldAssignAndCompleteTaskAfterTaskListenerRejectsTheCompletion() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(createProcessWithCompleteTaskListeners(LISTENER_TYPE));
+
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(LISTENER_TYPE)
+        .withResult(new JobResult().setDenied(true))
+        .complete();
+
+    ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("Test Assignee").assign();
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+
+    completeRecreatedJobWithType(ENGINE, processInstanceKey, LISTENER_TYPE);
+
+    // then
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == UserTaskIntent.COMPLETED))
+        .extracting(Record::getIntent)
+        .describedAs(
+            "Ensure that user task could be assigned after completion was rejected from the"
+                + " `COMPLETE` Task Listener. Ensure that user task could be completed after assignment"
+                + " and `COMPLETE_TASK_LISTENER` event was triggered successfully")
+        .containsSubsequence(
+            UserTaskIntent.COMPLETING,
+            UserTaskIntent.REJECT_TASK_LISTENER,
+            UserTaskIntent.COMPLETION_DENIED,
+            UserTaskIntent.ASSIGNING,
+            UserTaskIntent.ASSIGNED,
+            UserTaskIntent.COMPLETING,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.COMPLETED);
+  }
+
+  private static void completeRecreatedJobWithType(
+      final EngineRule engine, final long processInstanceKey, final String jobType) {
+    final long jobKey =
+        jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(jobType)
+            .skip(1)
+            .getFirst()
+            .getKey();
+    engine.job().ofInstance(processInstanceKey).withKey(jobKey).complete();
   }
 
   private void assertThatProcessInstanceCompleted(final long processInstanceKey) {
