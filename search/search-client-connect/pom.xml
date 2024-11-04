@@ -87,7 +87,7 @@
 
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
-      <artifactId>netty-nio-client</artifactId>
+      <artifactId>apache-client</artifactId>
     </dependency>
 
     <dependency>
