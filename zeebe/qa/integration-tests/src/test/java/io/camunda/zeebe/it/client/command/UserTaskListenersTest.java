@@ -139,7 +139,7 @@ public class UserTaskListenersTest {
 
     // assert that an incident was created due to the rejection of TL job completion with variables
     final var expectedErrorMessageWithRejectionReason =
-        "Command 'COMPLETE' rejected with code 'INVALID_ARGUMENT': Task Listener job completion with variables is not supported";
+        "Command 'COMPLETE' rejected with code 'INVALID_ARGUMENT': Task Listener job completion with variables payload provided is not supported";
     ZeebeAssertHelper.assertIncidentCreated(
         incident ->
             assertThat(incident)

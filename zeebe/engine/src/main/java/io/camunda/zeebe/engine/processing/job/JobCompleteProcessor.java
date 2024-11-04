@@ -33,7 +33,7 @@ import java.util.List;
 public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
 
   public static final String TL_JOB_COMPLETION_WITH_VARS_NOT_SUPPORTED_MESSAGE =
-      "Task Listener job completion with variables is not supported (job key '%d', type '%s', processInstanceKey '%d')";
+      "Task Listener job completion with variables payload provided is not supported (job key '%d', type '%s', processInstanceKey '%d')";
 
   private final UserTaskState userTaskState;
   private final ElementInstanceState elementInstanceState;
