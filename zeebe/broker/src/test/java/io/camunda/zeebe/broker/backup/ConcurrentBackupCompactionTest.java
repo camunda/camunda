@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
  */
 package io.camunda.zeebe.broker.backup;
 
@@ -29,8 +29,7 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
-import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl;
-import io.camunda.zeebe.test.util.AutoCloseableRule;
+import io.camunda.zeebe.test.DynamicAutoCloseable;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import java.io.IOException;
@@ -56,12 +55,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ExtendWith(MockitoExtension.class)
-public class ConcurrentBackupCompactionTest {
+public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
 
   private static final Logger LOG = LoggerFactory.getLogger(ConcurrentBackupCompactionTest.class);
   private static final String SNAPSHOT_FILE_NAME = "file1";
   @TempDir Path dataDirectory;
-  private final AutoCloseableRule closeRule = new AutoCloseableRule();
   private ActorScheduler actorScheduler;
   private SegmentedJournal journal;
   private FileBasedSnapshotStore snapshotStore;
@@ -76,12 +74,11 @@ public class ConcurrentBackupCompactionTest {
 
   @BeforeEach
   void setUp() {
-    actorScheduler = closeRule.manage(ActorScheduler.newActorScheduler().build());
+    actorScheduler = manage(ActorScheduler.newActorScheduler().build());
     actorScheduler.start();
-    backupStore = closeRule.manage(new InMemoryMockBackupStore());
+    backupStore = manage(new InMemoryMockBackupStore());
     snapshotStore =
-        closeRule.manage(
-            new FileBasedSnapshotStore(0, partitionId, dataDirectory, snapshotPath -> Map.of()));
+        manage(new FileBasedSnapshotStore(partitionId, dataDirectory, snapshotPath -> Map.of()));
     actorScheduler.submitActor(snapshotStore, SchedulingHints.IO_BOUND);
 
     final var partitionMetadata =
@@ -90,7 +87,7 @@ public class ConcurrentBackupCompactionTest {
     final var raftPartition = new RaftPartition(partitionMetadata, null, dataDirectory.toFile());
 
     journal =
-        closeRule.manage(
+        manage(
             SegmentedJournal.builder()
                 .withDirectory(dataDirectory.toFile())
                 .withName(raftPartition.name())
@@ -109,7 +106,7 @@ public class ConcurrentBackupCompactionTest {
                 });
 
     backupService =
-        closeRule.manage(
+        manage(
             new BackupService(
                 nodeId,
                 partitionId,
@@ -125,7 +122,7 @@ public class ConcurrentBackupCompactionTest {
 
   @AfterEach
   public void tearDown() {
-    closeRule.after();
+    close();
   }
 
   @Test
@@ -163,7 +160,7 @@ public class ConcurrentBackupCompactionTest {
     // then
     // snapshot files are not deleted
     try (final var files =
-        Files.list(dataDirectory.resolve(FileBasedSnapshotStoreImpl.SNAPSHOTS_DIRECTORY))) {
+        Files.list(dataDirectory.resolve(FileBasedSnapshotStore.SNAPSHOTS_DIRECTORY))) {
       // 2 file per snapshot: snapshot + checksum
       assertThat(files.toList().size()).isEqualTo(4L);
     }
