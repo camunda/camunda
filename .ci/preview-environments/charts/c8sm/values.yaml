@@ -452,7 +452,7 @@ camunda-platform:
 
   connectors:
     # temporarily disabled until solution for problem from https://github.com/camunda/camunda/pull/24253 is found
-    enabled: false
+    # enabled: false
     contextPath: "/connectors"
     nodeSelector:
       cloud.google.com/gke-nodepool: previews
