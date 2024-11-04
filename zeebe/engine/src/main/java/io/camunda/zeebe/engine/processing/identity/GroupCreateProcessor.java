@@ -68,7 +68,7 @@ public class GroupCreateProcessor implements DistributedTypedRecordProcessor<Gro
     final var groupKey = groupState.getGroupKeyByName(record.getName());
     if (groupKey.isPresent()) {
       final var errorMessage =
-          "Expected to create group with name '%s', but a group with this name already exists"
+          "Expected to create group with name '%s', but a group with this name already exists."
               .formatted(record.getName());
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);

@@ -46,8 +46,7 @@ public class GroupTest {
     assertThat(duplicatedGroupRecord)
         .hasRejectionType(RejectionType.ALREADY_EXISTS)
         .hasRejectionReason(
-            "Expected to create group with name '"
-                + name
-                + "', but a group with this name already exists");
+            "Expected to create group with name '%s', but a group with this name already exists."
+                .formatted(name));
   }
 }
