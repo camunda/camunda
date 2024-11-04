@@ -9,8 +9,7 @@ package io.camunda.exporter.archiver;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.exporter.archiver.ArchiverRepository.NoopArchiverRepository;
-import io.camunda.exporter.archiver.ProcessInstancesArchiverJobTest.TestRepository.DocumentMove;
+import io.camunda.exporter.archiver.TestRepository.DocumentMove;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
@@ -18,9 +17,7 @@ import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -164,35 +161,6 @@ final class ProcessInstancesArchiverJobTest {
     assertThat(meterRegistry.counter("zeebe.camunda.exporter.archived.process.instances").count())
         .isEqualTo(6)
         .isEqualTo(count);
-  }
-
-  static final class TestRepository extends NoopArchiverRepository {
-    private final List<DocumentMove> moves = new ArrayList<>();
-    private ArchiveBatch batch;
-
-    @Override
-    public CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch() {
-      return CompletableFuture.completedFuture(batch);
-    }
-
-    @Override
-    public CompletableFuture<Void> moveDocuments(
-        final String sourceIndexName,
-        final String destinationIndexName,
-        final String idFieldName,
-        final List<String> ids,
-        final Executor executor) {
-      moves.add(
-          new DocumentMove(sourceIndexName, destinationIndexName, idFieldName, ids, executor));
-      return CompletableFuture.completedFuture(null);
-    }
-
-    record DocumentMove(
-        String sourceIndexName,
-        String destinationIndexName,
-        String idFieldName,
-        List<String> ids,
-        Executor executor) {}
   }
 
   private static final class WeirdlyNamedDependant implements ProcessInstanceDependant {
