@@ -121,4 +121,43 @@ public class MappingStateTest {
     final var persistedMapping = mappingState.get(key).get();
     assertThat(persistedMapping.getRoleKeysList()).isEmpty();
   }
+
+  @Test
+  void shouldAddTenant() {
+    // given
+    final long key = 1L;
+    final String claimName = "foo";
+    final String claimValue = "bar";
+    final var mapping =
+        new MappingRecord().setMappingKey(key).setClaimName(claimName).setClaimValue(claimValue);
+    mappingState.create(mapping);
+    final String tenantId = "tenantId";
+
+    // when
+    mappingState.addTenant(key, tenantId);
+
+    // then
+    final var persistedMapping = mappingState.get(key).get();
+    assertThat(persistedMapping.getTenantIdsList()).containsExactly(tenantId);
+  }
+
+  @Test
+  void shouldRemoveTenant() {
+    // given
+    final long key = 1L;
+    final String claimName = "foo";
+    final String claimValue = "bar";
+    final var mapping =
+        new MappingRecord().setMappingKey(key).setClaimName(claimName).setClaimValue(claimValue);
+    mappingState.create(mapping);
+    final String tenantId = "tenantId";
+    mappingState.addTenant(key, tenantId);
+
+    // when
+    mappingState.removeTenant(key, tenantId);
+
+    // then
+    final var persistedMapping = mappingState.get(key).get();
+    assertThat(persistedMapping.getTenantIdsList()).isEmpty();
+  }
 }
