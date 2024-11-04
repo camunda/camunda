@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.shared;
 import io.camunda.zeebe.broker.shared.BrokerConfiguration.BrokerProperties;
 import io.camunda.zeebe.broker.shared.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.gateway.impl.configuration.ExperimentalCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled.RestGatewayDisabled;
 import java.time.Duration;
@@ -62,6 +63,11 @@ public final class BrokerConfiguration {
   @Bean
   public MultiTenancyCfg multiTenancyCfg() {
     return properties.getGateway().getMultiTenancy();
+  }
+
+  @Bean
+  public ExperimentalCfg experimentalCfg() {
+    return properties.getGateway().getExperimental();
   }
 
   @ConfigurationProperties("zeebe.broker")
