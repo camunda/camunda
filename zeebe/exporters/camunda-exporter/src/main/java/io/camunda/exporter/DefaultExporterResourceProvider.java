@@ -38,7 +38,8 @@ import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
 import io.camunda.exporter.handlers.ProcessHandler;
 import io.camunda.exporter.handlers.SequenceFlowHandler;
 import io.camunda.exporter.handlers.TaskCompletedMetricHandler;
-import io.camunda.exporter.handlers.UserHandler;
+import io.camunda.exporter.handlers.UserCreatedUpdatedHandler;
+import io.camunda.exporter.handlers.UserDeletedHandler;
 import io.camunda.exporter.handlers.UserTaskCompletionVariableHandler;
 import io.camunda.exporter.handlers.UserTaskHandler;
 import io.camunda.exporter.handlers.UserTaskProcessInstanceHandler;
@@ -147,7 +148,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
 
     exportHandlers =
         Set.of(
-            new UserHandler(indexDescriptorsMap.get(UserIndex.class).getFullQualifiedName()),
+            new UserCreatedUpdatedHandler(
+                indexDescriptorsMap.get(UserIndex.class).getFullQualifiedName()),
+            new UserDeletedHandler(indexDescriptorsMap.get(UserIndex.class).getFullQualifiedName()),
             new AuthorizationHandler(
                 indexDescriptorsMap.get(AuthorizationIndex.class).getFullQualifiedName()),
             new DecisionHandler(
