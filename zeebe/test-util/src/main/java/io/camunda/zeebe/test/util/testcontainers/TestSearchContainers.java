@@ -8,6 +8,7 @@
 package io.camunda.zeebe.test.util.testcontainers;
 
 import java.time.Duration;
+import java.util.Objects;
 import org.opensearch.testcontainers.OpensearchContainer;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
@@ -18,11 +19,16 @@ public final class TestSearchContainers {
   private static final DockerImageName ELASTIC_IMAGE =
       DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
           .withTag(
-              org.elasticsearch.client.RestClient.class.getPackage().getImplementationVersion());
+              Objects.requireNonNullElse(
+                  org.elasticsearch.client.RestClient.class.getPackage().getImplementationVersion(),
+                  "8.13.4"));
 
   private static final DockerImageName OPENSEARCH_IMAGE =
       DockerImageName.parse("opensearchproject/opensearch")
-          .withTag(org.opensearch.client.RestClient.class.getPackage().getImplementationVersion());
+          .withTag(
+              Objects.requireNonNullElse(
+                  org.opensearch.client.RestClient.class.getPackage().getImplementationVersion(),
+                  "2.14.0"));
 
   private TestSearchContainers() {}
 
