@@ -161,6 +161,8 @@ public final class Archiver implements CloseableSilently {
       final Logger logger) {
     final var listViewTemplate =
         resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
+    final var batchOperationTemplate =
+        resourceProvider.getIndexTemplateDescriptor(BatchOperationTemplate.class);
     return switch (ConnectionTypes.from(config.getConnect().getType())) {
       case ELASTICSEARCH -> {
         final var connector = new ElasticsearchConnector(config.getConnect());
@@ -168,7 +170,8 @@ public final class Archiver implements CloseableSilently {
             partitionId,
             config.getArchiver(),
             config.getRetention(),
-            listViewTemplate,
+            listViewTemplate.getFullQualifiedName(),
+            batchOperationTemplate.getFullQualifiedName(),
             connector.createAsyncClient(),
             executor,
             metrics,

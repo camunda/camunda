@@ -54,8 +54,8 @@ public final class ElasticsearchRepository implements ArchiverRepository {
   private final int partitionId;
   private final ArchiverConfiguration config;
   private final RetentionConfiguration retention;
-  private final ListViewTemplate processInstanceTemplate;
-  private final BatchOperationTemplate batchOperationTemplate;
+  private final String processInstanceIndex;
+  private final String batchOperationIndex;
   private final ElasticsearchAsyncClient client;
   private final Executor executor;
   private final CamundaExporterMetrics metrics;
@@ -67,8 +67,8 @@ public final class ElasticsearchRepository implements ArchiverRepository {
       final int partitionId,
       final ArchiverConfiguration config,
       final RetentionConfiguration retention,
-      final ListViewTemplate processInstanceTemplate,
-      final BatchOperationTemplate batchOperationTemplate,
+      final String processInstanceIndex,
+      final String batchOperationIndex,
       @WillCloseWhenClosed final ElasticsearchAsyncClient client,
       final Executor executor,
       final CamundaExporterMetrics metrics,
@@ -76,8 +76,8 @@ public final class ElasticsearchRepository implements ArchiverRepository {
     this.partitionId = partitionId;
     this.config = config;
     this.retention = retention;
-    this.processInstanceTemplate = processInstanceTemplate;
-    this.batchOperationTemplate = batchOperationTemplate;
+    this.processInstanceIndex = processInstanceIndex;
+    this.batchOperationIndex = batchOperationTemplate;
     this.client = client;
     this.executor = executor;
     this.metrics = metrics;
@@ -204,7 +204,7 @@ public final class ElasticsearchRepository implements ArchiverRepository {
         QueryBuilders.bool(q -> q.must(endDateQ, isProcessInstanceQ, partitionQ));
 
     return createSearchRequest(
-        processInstanceTemplate.getFullQualifiedName(),
+        processInstanceIndex.getFullQualifiedName(),
         combinedQuery,
         aggregation,
         ListViewTemplate.END_DATE);
@@ -276,7 +276,7 @@ public final class ElasticsearchRepository implements ArchiverRepository {
                     .lte(JsonData.of(config.getArchivingTimePoint())));
 
     return createSearchRequest(
-        batchOperationTemplate.getFullQualifiedName(),
+        batchOperationIndex.getFullQualifiedName(),
         endDateQ,
         aggregation,
         BatchOperationTemplate.END_DATE);
