@@ -22,8 +22,8 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
@@ -45,7 +45,7 @@ public class UserTaskControllerTest extends RestControllerTest {
   static final CompletableFuture<UserTaskRecord> BROKER_RESPONSE =
       CompletableFuture.completedFuture(new UserTaskRecord());
   static final String TEST_TIME =
-      ZonedDateTime.of(2023, 11, 11, 11, 11, 11, 11, ZoneId.of("UTC")).toString();
+      OffsetDateTime.of(2023, 11, 11, 11, 11, 11, 11, ZoneOffset.of("Z")).toString();
 
   @MockBean UserTaskServices userTaskServices;
 

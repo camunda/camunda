@@ -90,7 +90,7 @@ import io.camunda.zeebe.util.Either;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -485,11 +485,11 @@ public class RequestMapper {
       return new DocumentMetadataModel(
           file.getContentType(), file.getOriginalFilename(), null, file.getSize(), Map.of());
     }
-    final ZonedDateTime expiresAt;
+    final OffsetDateTime expiresAt;
     if (metadata.getExpiresAt() == null || metadata.getExpiresAt().isBlank()) {
       expiresAt = null;
     } else {
-      expiresAt = ZonedDateTime.parse(metadata.getExpiresAt());
+      expiresAt = OffsetDateTime.parse(metadata.getExpiresAt());
     }
     final var fileName =
         Optional.ofNullable(metadata.getFileName()).orElse(file.getOriginalFilename());

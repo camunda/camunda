@@ -8,14 +8,15 @@
 package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.time.OffsetDateTime;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record FlowNodeInstanceEntity(
     Long key,
     Long processInstanceKey,
     Long processDefinitionKey,
-    String startDate,
-    String endDate,
+    OffsetDateTime startDate,
+    OffsetDateTime endDate,
     String flowNodeId,
     String treePath,
     FlowNodeType type,

@@ -13,7 +13,7 @@ import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +37,7 @@ public final class RequestValidator {
       final String dateString, final String attributeName, final List<String> violations) {
     if (dateString != null && !dateString.isEmpty()) {
       try {
-        ZonedDateTime.parse(dateString);
+        OffsetDateTime.parse(dateString);
       } catch (final DateTimeParseException ex) {
         violations.add(ERROR_MESSAGE_DATE_PARSING.formatted(attributeName, dateString));
       }

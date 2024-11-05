@@ -21,6 +21,7 @@ import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.security.auth.SecurityContext;
+import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,7 +43,7 @@ class SearchClientBasedQueryExecutorTest {
           null,
           null,
           "default",
-          "2024-01-01T00:00:00Z",
+          OffsetDateTime.parse("2024-01-01T00:00:00Z"),
           null,
           ProcessInstanceState.ACTIVE,
           false,

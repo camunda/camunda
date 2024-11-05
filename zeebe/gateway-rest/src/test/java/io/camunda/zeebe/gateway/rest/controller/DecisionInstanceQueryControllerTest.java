@@ -49,7 +49,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                    {
                        "decisionInstanceKey": 123,
                        "state": "EVALUATED",
-                       "evaluationDate": "2024-06-05T08:29:15.027+0000",
+                       "evaluationDate": "2024-06-05T08:29:15.027Z",
                        "processDefinitionKey": 2251799813688736,
                        "processInstanceKey": 6755399441058457,
                        "decisionDefinitionKey": 123456,
@@ -77,7 +77,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                   new DecisionInstanceEntity(
                       123L,
                       DecisionInstanceState.EVALUATED,
-                      "2024-06-05T08:29:15.027+0000",
+                      OffsetDateTime.parse("2024-06-05T08:29:15.027+00:00"),
                       null,
                       2251799813688736L,
                       6755399441058457L,
@@ -193,7 +193,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         new DecisionInstanceEntity(
             123L,
             DecisionInstanceState.EVALUATED,
-            "2024-06-05T08:29:15.027+0000",
+            OffsetDateTime.parse("2024-06-05T08:29:15.027+00:00"),
             null,
             2251799813688736L,
             6755399441058457L,
@@ -223,7 +223,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                 {
                      "decisionInstanceKey": 123,
                      "state": "EVALUATED",
-                     "evaluationDate": "2024-06-05T08:29:15.027+0000",
+                     "evaluationDate": "2024-06-05T08:29:15.027Z",
                      "processDefinitionKey": 2251799813688736,
                      "processInstanceKey": 6755399441058457,
                      "decisionDefinitionKey": 123456,
