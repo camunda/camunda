@@ -105,7 +105,11 @@ public final class JobEventProcessors {
             ValueType.JOB_BATCH,
             JobBatchIntent.ACTIVATE,
             new JobBatchActivateProcessor(
-                writers, processingState, processingState.getKeyGenerator(), jobMetrics))
+                writers,
+                processingState,
+                processingState.getKeyGenerator(),
+                jobMetrics,
+                authCheckBehavior))
         .withListener(
             new JobTimeoutCheckerScheduler(
                 scheduledTaskStateFactory.get().getJobState(),
