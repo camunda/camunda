@@ -140,10 +140,12 @@ public class UserTaskListenersTest {
         .hasSize(jobRetries)
         .allSatisfy(job -> assertThat(job.getType()).isEqualTo(listenerType));
 
+    final var rejectionReason =
+        "Task Listener job completion with variables payload provided is not yet supported";
     assertThat(
-        RecordingExporter.records()
-            .limit(r -> r.getIntent().equals(IncidentIntent.CREATED))
-            .onlyCommandRejections())
+            RecordingExporter.records()
+                .limit(r -> r.getIntent().equals(IncidentIntent.CREATED))
+                .onlyCommandRejections())
         .describedAs(
             "Expected to have %d `COMPLETE` job command rejections all having same rejection type and reason",
             jobRetries)
@@ -154,13 +156,10 @@ public class UserTaskListenersTest {
                     .hasIntent(JobIntent.COMPLETE)
                     .hasRejectionType(RejectionType.INVALID_ARGUMENT)
                     .extracting(Record::getRejectionReason, as(InstanceOfAssertFactories.STRING))
-                    .startsWith(
-                        "Task Listener job completion with variables payload provided is not supported"));
+                    .startsWith(rejectionReason));
 
     // assert that an incident was created after exhausting all retries with a message
     // describing that the reason is the rejection of TL job completion with variables
-    final var expectedErrorMessageWithRejectionReason =
-        "Command 'COMPLETE' rejected with code 'INVALID_ARGUMENT': Task Listener job completion with variables payload provided is not supported";
     ZeebeAssertHelper.assertIncidentCreated(
         incident ->
             assertThat(incident)
@@ -169,7 +168,8 @@ public class UserTaskListenersTest {
                 .extracting(
                     IncidentRecordValue::getErrorMessage, as(InstanceOfAssertFactories.STRING))
                 .startsWith("io.camunda.zeebe.client.api.command.ClientStatusException:")
-                .contains(expectedErrorMessageWithRejectionReason));
+                .contains("Command 'COMPLETE' rejected with code 'INVALID_ARGUMENT':")
+                .contains(rejectionReason));
 
     // The rejection of the TL job `COMPLETE` command, due to variables payload being set,
     // results in the `COMPLETE` user task command request failing with a `timeout` exception.
