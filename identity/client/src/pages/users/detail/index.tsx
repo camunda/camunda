@@ -21,24 +21,25 @@ import Flex from "src/components/layout/Flex";
 import { useEntityModal } from "src/components/modal";
 import EditModal from "src/pages/users/modals/EditModal";
 import DeleteModal from "src/pages/users/modals/DeleteModal";
-import List from "src/pages/users/detail/role/List";
+import RoleList from "src/pages/users/detail/role/List";
+import AuthorizationList from "src/pages/users/detail/authorization/List";
 
 const Details: FC = () => {
   const { t } = useTranslate();
   const { id = "", tab = "details" } = useParams<{ id: string; tab: string }>();
   const navigate = useNavigate();
   const {
-    data: user,
+    data: userSearchResults,
     loading,
     reload,
   } = useApi(getUserDetails, {
-    id,
+    username: id,
   });
   const [editUser, editUserModal] = useEntityModal(EditModal, reload);
   const [deleteUser, deleteUserModal] = useEntityModal(DeleteModal, () =>
     navigate("..", { replace: true }),
   );
-
+  const user = userSearchResults !== null ? userSearchResults.items[0] : null;
   if (!loading && !user) return <NotFound />;
 
   return (
@@ -80,7 +81,14 @@ const Details: FC = () => {
               {
                 key: "roles",
                 label: t("Assigned roles"),
-                content: user && <List user={user} loadingUser={loading} />,
+                content: user && <RoleList user={user} loadingUser={loading} />,
+              },
+              {
+                key: "authorizations",
+                label: t("Assigned Authorizations"),
+                content: user && (
+                  <AuthorizationList user={user} loadingUser={loading} />
+                ),
               },
             ]}
             selectedTabKey={tab}

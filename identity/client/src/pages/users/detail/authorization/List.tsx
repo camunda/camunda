@@ -7,43 +7,40 @@ import EntityList, {
   NoDataHeader,
 } from "src/components/entityList";
 import useTranslate from "src/utility/localization";
-import { useEntityModal } from "src/components/modal";
 import { User } from "src/utility/api/users";
-import { getUserRoles } from "src/utility/api/users/roles";
-import AddModal from "./AddModal";
-import DeleteModal from "./DeleteModal";
+import { getUserAuthorizations } from "src/utility/api/users/authorizations";
 import { DocumentationLink } from "src/components/documentation";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import { useApi } from "src/utility/api";
+import { Authorization } from "src/utility/api/authorizations";
 
-type RolesListProps = {
+type AuthorizationsListProps = {
   user: User;
   loadingUser: boolean;
 };
 
-const List: FC<RolesListProps> = ({ user, loadingUser }) => {
+const List: FC<AuthorizationsListProps> = ({ user, loadingUser }) => {
   const { t, Translate } = useTranslate();
 
   const {
-    data: roles,
-    loading: loadingRoles,
+    data: authorizations,
+    loading: loadingAuthorizations,
     success,
     reload,
-  } = useApi(getUserRoles, { id: user.id! });
+  } = useApi(getUserAuthorizations, { key: user.key });
 
-  const loading = loadingUser || loadingRoles;
+  const loading = loadingUser || loadingAuthorizations;
 
-  const [assignRole, addModal] = useEntityModal(AddModal, reload, {
-    userRoles: roles || [],
-  });
-  const [removeRole, deleteModal] = useEntityModal(DeleteModal, reload);
+  const areAuthorizationsEmpty =
+    !authorizations || authorizations.items.length === 0;
 
-  const areRolesEmpty = !roles || roles.length === 0;
+  const showAuthorizationDetails = (authorization: Authorization) =>
+    console.log(authorization);
 
   const documentationReference = (
     <Translate>
-      Learn more about assigning roles to users in our{" "}
-      <DocumentationLink path="/identity/user-guide/assigning-a-role-to-a-user" />
+      Learn more about assigning authorizations to users in our{" "}
+      <DocumentationLink path="/identity/user-guide/assigning-an-authorization-to-a-user" />
       .
     </Translate>
   );
@@ -51,35 +48,33 @@ const List: FC<RolesListProps> = ({ user, loadingUser }) => {
   return (
     <>
       <EntityList
-        title={t("Roles assigned to user")}
-        data={roles}
-        headers={[
-          { header: t("Name"), key: "name" },
-          { header: t("Description"), key: "description" },
-        ]}
-        addEntityLabel="Assign roles"
-        onAddEntity={() => assignRole(user)}
+        title={t("Authorizations assigned to user")}
+        data={authorizations == null ? [] : authorizations.items}
+        headers={[{ header: t("ResourceType"), key: "resourceType" }]}
+        onEntityClick={showAuthorizationDetails}
+        addEntityLabel="Assign authorization"
+        onAddEntity={() => {}}
         menuItems={[
           {
             label: t("Delete"),
-            onClick: removeRole,
+            onClick: () => {},
             isDangerous: true,
             icon: TrashCan,
           },
         ]}
-        loading={loadingRoles}
+        loading={loadingAuthorizations}
       />
-      {success && !areRolesEmpty && (
+      {success && !areAuthorizationsEmpty && (
         <DocumentationDescription>
           {documentationReference}
         </DocumentationDescription>
       )}
-      {!loading && areRolesEmpty && (
+      {!loading && areAuthorizationsEmpty && (
         <div>
           {success && (
             <NoDataContainer>
               <NoDataHeader>
-                <Translate>No roles assigned to this user</Translate>
+                <Translate>No authorizations assigned to this user</Translate>
               </NoDataHeader>
               <NoDataBody>{documentationReference}</NoDataBody>
             </NoDataContainer>
@@ -88,12 +83,10 @@ const List: FC<RolesListProps> = ({ user, loadingUser }) => {
       )}
       {!loading && !success && (
         <TranslatedErrorInlineNotification
-          title="The list of roles could not be loaded."
+          title="The list of authorizations could not be loaded."
           actionButton={{ label: "Retry", onClick: reload }}
         />
       )}
-      {addModal}
-      {deleteModal}
     </>
   );
 };

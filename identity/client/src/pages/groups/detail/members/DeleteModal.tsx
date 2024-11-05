@@ -32,7 +32,7 @@ const DeleteModal: FC<RemoveGroupMemberModalProps> = ({
     if (group && user) {
       const { success } = await callUnassignMember({
         groupId: group,
-        userId: user.id,
+        userId: user.id!,
       });
 
       if (success) {
