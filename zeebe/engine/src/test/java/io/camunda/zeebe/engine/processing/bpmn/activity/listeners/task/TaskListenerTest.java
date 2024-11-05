@@ -17,6 +17,8 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
+import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
@@ -43,9 +45,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -259,6 +263,100 @@ public class TaskListenerTest {
   }
 
   @Test
+  @Ignore(
+      "Ignored due to task listener job completion rejection when variables payload is provided (issue #24056). Re-enable after implementing issue #23702.")
+  public void shouldMakeVariablesFromPreviousTaskListenersAvailableToSubsequentListeners() {
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcessWithCompleteTaskListeners(LISTENER_TYPE, LISTENER_TYPE + "_2"));
+
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(LISTENER_TYPE)
+        .withVariable("listener_1_var", "foo")
+        .complete();
+
+    // then: `listener_1_var` variable accessible in subsequent TL
+    final var jobActivated = activateJob(processInstanceKey, LISTENER_TYPE + "_2");
+    assertThat(jobActivated.getVariables()).contains(entry("listener_1_var", "foo"));
+  }
+
+  @Test
+  @Ignore(
+      "Ignored due to task listener job completion rejection when variables payload is provided (issue #24056). Re-enable after implementing issue #23702.")
+  public void shouldNotExposeTaskListenerVariablesOutsideUserTaskScope() {
+    // given: deploy a process with a user task having complete TL and service task following it
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcess(
+                p ->
+                    p.userTask(
+                            USER_TASK_ELEMENT_ID,
+                            t ->
+                                t.zeebeUserTask()
+                                    .zeebeAssignee("foo")
+                                    .zeebeTaskListener(l -> l.complete().type(LISTENER_TYPE)))
+                        .serviceTask(
+                            "subsequent_service_task",
+                            tb -> tb.zeebeJobType("subsequent_service_task"))));
+
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+
+    // when: complete TL job with a variable 'my_listener_var'
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(LISTENER_TYPE)
+        .withVariable("my_listener_var", "bar")
+        .complete();
+
+    // then: assert the variable 'my_listener_var' isn't accessible in the subsequent element
+    final var subsequentServiceTaskJob = activateJob(processInstanceKey, "subsequent_service_task");
+    assertThat(subsequentServiceTaskJob.getVariables()).doesNotContainKey("my_listener_var");
+    completeJobs(processInstanceKey, "subsequent_service_task");
+  }
+
+  @Test
+  @Ignore(
+      "Ignored due to task listener job completion rejection when variables payload is provided (issue #24056). Re-enable after implementing issue #23702.")
+  public void shouldAllowTaskListenerVariablesInUserTaskOutputMappings() {
+    // given: deploy a process with a user task having complete TL and service task following it
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcess(
+                p ->
+                    p.userTask(
+                            USER_TASK_ELEMENT_ID,
+                            t ->
+                                t.zeebeUserTask()
+                                    .zeebeAssignee("foo")
+                                    .zeebeTaskListener(l -> l.complete().type(LISTENER_TYPE))
+                                    .zeebeOutput("=my_listener_var+\"_abc\"", "userTaskOutput"))
+                        .serviceTask(
+                            "subsequent_service_task",
+                            tb -> tb.zeebeJobType("subsequent_service_task"))));
+
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+
+    // when: complete TL job with a variable 'my_listener_var'
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(LISTENER_TYPE)
+        .withVariable("my_listener_var", "bar")
+        .complete();
+
+    // then: assert the variable 'userTaskOutput' is accessible in the subsequent element
+    final var subsequentServiceTaskJob = activateJob(processInstanceKey, "subsequent_service_task");
+    assertThat(subsequentServiceTaskJob.getVariables()).containsEntry("userTaskOutput", "bar_abc");
+    completeJobs(processInstanceKey, "subsequent_service_task");
+  }
+
+  @Test
   public void shouldIncludeConfiguredUserTaskDataInCompleteTaskListenerJobHeaders() {
     final var form = deployForm("/form/test-form-1.form");
     final long processInstanceKey =
@@ -446,6 +544,14 @@ public class TaskListenerTest {
     return Bpmn.createExecutableProcess(PROCESS_ID)
         .startEvent()
         .userTask(USER_TASK_ELEMENT_ID, t -> userTaskBuilderFunction.apply(t.zeebeUserTask()))
+        .endEvent()
+        .done();
+  }
+
+  private BpmnModelInstance createProcess(
+      final Function<StartEventBuilder, AbstractFlowNodeBuilder<?, ?>> processBuilderFunction) {
+    return processBuilderFunction
+        .apply(Bpmn.createExecutableProcess(PROCESS_ID).startEvent())
         .endEvent()
         .done();
   }
