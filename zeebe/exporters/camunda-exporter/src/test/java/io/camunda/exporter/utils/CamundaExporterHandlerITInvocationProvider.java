@@ -10,6 +10,7 @@ package io.camunda.exporter.utils;
 import static io.camunda.exporter.config.ConnectionTypes.ELASTICSEARCH;
 import static io.camunda.exporter.config.ConnectionTypes.OPENSEARCH;
 import static java.util.Arrays.asList;
+import static org.mockito.Mockito.doReturn;
 
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.exporter.DefaultExporterResourceProvider;
@@ -23,12 +24,14 @@ import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.extension.Extension;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolver;
 import org.junit.jupiter.api.extension.TestTemplateInvocationContext;
+import org.mockito.Mockito;
 
 public class CamundaExporterHandlerITInvocationProvider
     extends CamundaExporterITInvocationProvider {
@@ -57,38 +60,49 @@ public class CamundaExporterHandlerITInvocationProvider
       final ExtensionContext extensionContext) {
 
     final var osConfig = getConfigWithConnectionDetails(OPENSEARCH);
-    final var osExporter = new CamundaExporter();
+
+    // doesn't matter which config we use as handlers are unaware of who they export to
+    final var provider = new DefaultExporterResourceProvider();
+    provider.init(osConfig, ClientAdapter.of(osConfig)::getProcessCacheLoader);
+
+    final var notOperationHandlers =
+        provider.getExportHandlers().stream()
+            .filter(handler -> !isAnOperationHandler(handler))
+            .collect(Collectors.toSet());
+
+    final var osProvider = Mockito.spy(new DefaultExporterResourceProvider());
+    doReturn(notOperationHandlers).when(osProvider).getExportHandlers();
+    final var osExporter = new CamundaExporter(osProvider);
     osExporter.configure(
         new ExporterTestContext()
             .setConfiguration(new ExporterTestConfiguration<>(OPENSEARCH.toString(), osConfig)));
     osExporter.open(new ExporterTestController());
 
+    final var elsProvider = Mockito.spy(new DefaultExporterResourceProvider());
+    doReturn(notOperationHandlers).when(elsProvider).getExportHandlers();
     final var elsConfig = getConfigWithConnectionDetails(ELASTICSEARCH);
-    final var elsExporter = new CamundaExporter();
+    final var elsExporter = new CamundaExporter(elsProvider);
     elsExporter.configure(
         new ExporterTestContext()
             .setConfiguration(
                 new ExporterTestConfiguration<>(ELASTICSEARCH.toString(), elsConfig)));
     elsExporter.open(new ExporterTestController());
 
-    // doesn't matter which config we use as handlers are unaware of who they export to
-    final var provider = new DefaultExporterResourceProvider();
-    provider.init(osConfig, ClientAdapter.of(elsConfig)::getProcessCacheLoader);
-
-    return provider.getExportHandlers().stream()
-        .filter(
-            handler ->
-                !List.of(
-                        OperationFromIncidentHandler.class,
-                        OperationFromProcessInstanceHandler.class,
-                        OperationFromVariableDocumentHandler.class)
-                    .contains(handler.getClass()))
+    return notOperationHandlers.stream()
         .map(
             handler ->
                 List.of(
                     invocationContext(osExporter, osClientAdapter, handler, OPENSEARCH),
                     invocationContext(elsExporter, elsClientAdapter, handler, ELASTICSEARCH)))
         .flatMap(List::stream);
+  }
+
+  private boolean isAnOperationHandler(final ExportHandler<?, ?> handler) {
+    return List.of(
+            OperationFromIncidentHandler.class,
+            OperationFromProcessInstanceHandler.class,
+            OperationFromVariableDocumentHandler.class)
+        .contains(handler.getClass());
   }
 
   private ParameterResolver exportHandlerResolver(final ExportHandler<?, ?> handler) {
