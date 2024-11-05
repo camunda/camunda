@@ -14,7 +14,6 @@ import co.elastic.clients.elasticsearch.snapshot.CreateSnapshotResponse;
 import co.elastic.clients.elasticsearch.snapshot.DeleteSnapshotRequest;
 import co.elastic.clients.elasticsearch.snapshot.DeleteSnapshotResponse;
 import co.elastic.clients.elasticsearch.snapshot.SnapshotInfo;
-import co.elastic.clients.transport.TransportException;
 import io.camunda.optimize.dto.optimize.rest.SnapshotState;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.repository.SnapshotRepository;
@@ -77,7 +76,7 @@ public class SnapshotRepositoryES implements SnapshotRepository {
     future.whenComplete(
         (v, e) -> {
           if (e != null) {
-            if (e instanceof IOException || e instanceof TransportException) {
+            if (e instanceof IOException) {
               final String reason =
                   String.format(
                       "Encountered an error connecting to Elasticsearch while attempting to create snapshot [%s].",
@@ -119,7 +118,7 @@ public class SnapshotRepositoryES implements SnapshotRepository {
     future.whenComplete(
         (v, e) -> {
           if (e != null) {
-            if (e instanceof IOException || e instanceof TransportException) {
+            if (e instanceof IOException) {
               final String reason =
                   String.format(
                       "Encountered an error connecting to Elasticsearch while attempting to delete snapshots for backupID [%s].",

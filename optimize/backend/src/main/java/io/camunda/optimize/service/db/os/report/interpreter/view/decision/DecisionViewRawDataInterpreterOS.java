@@ -96,7 +96,7 @@ public class DecisionViewRawDataInterpreterOS extends AbstractDecisionViewRawDat
                 searchRequestBuilder.scroll(
                     seconds(
                         configurationService
-                            .getElasticSearchConfiguration()
+                            .getOpenSearchConfiguration()
                             .getScrollTimeoutInSeconds()));
               } else {
                 if (pag.getLimit() > MAX_RESPONSE_SIZE_LIMIT) {
