@@ -131,14 +131,14 @@ public class MappingStateTest {
     final var mapping =
         new MappingRecord().setMappingKey(key).setClaimName(claimName).setClaimValue(claimValue);
     mappingState.create(mapping);
-    final String tenantId = "tenantId";
+    final long tenantKey = 1L;
 
     // when
-    mappingState.addTenant(key, tenantId);
+    mappingState.addTenant(key, tenantKey);
 
     // then
     final var persistedMapping = mappingState.get(key).get();
-    assertThat(persistedMapping.getTenantIdsList()).containsExactly(tenantId);
+    assertThat(persistedMapping.getTenantKeysList()).containsExactly(tenantKey);
   }
 
   @Test
@@ -150,14 +150,14 @@ public class MappingStateTest {
     final var mapping =
         new MappingRecord().setMappingKey(key).setClaimName(claimName).setClaimValue(claimValue);
     mappingState.create(mapping);
-    final String tenantId = "tenantId";
-    mappingState.addTenant(key, tenantId);
+    final long tenantKey = 1L;
+    mappingState.addTenant(key, tenantKey);
 
     // when
-    mappingState.removeTenant(key, tenantId);
+    mappingState.removeTenant(key, tenantKey);
 
     // then
     final var persistedMapping = mappingState.get(key).get();
-    assertThat(persistedMapping.getTenantIdsList()).isEmpty();
+    assertThat(persistedMapping.getTenantKeysList()).isEmpty();
   }
 }
