@@ -91,10 +91,10 @@ public class OpensearchEngineClient implements SearchEngineClient {
               .indices()
               .existsIndexTemplate(req -> req.name(templateDescriptor.getTemplateName()))
               .value()) {
-        throw new OpensearchExporterException(
-            String.format(
-                "Cannot update template [%s] as create = true",
-                templateDescriptor.getTemplateName()));
+        LOG.warn(
+            "Did not create index template [{}] as it already exists",
+            templateDescriptor.getTemplateName());
+        return;
       }
 
       client.indices().putIndexTemplate(request);
