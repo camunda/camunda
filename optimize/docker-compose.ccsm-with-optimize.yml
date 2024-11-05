@@ -13,7 +13,7 @@ services:
       - SPRING_PROFILES_ACTIVE=ccsm
       - CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform
       - CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL=http://keycloak:8080/auth/realms/camunda-platform
-      - CAMUNDA_OPTIMIZE_IDENTITY_BASE_URL=http://localhost:8081/
+      - CAMUNDA_OPTIMIZE_IDENTITY_BASE_URL=http://identity:8081/
       - CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID=optimize
       - CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET=XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
       - CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE=optimize-api
@@ -45,7 +45,7 @@ services:
       - CAMUNDA_OPTIMIZE_DATABASE=opensearch
       - CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform
       - CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL=http://keycloak:8080/auth/realms/camunda-platform
-      - CAMUNDA_OPTIMIZE_IDENTITY_BASE_URL=http://localhost:8081/
+      - CAMUNDA_OPTIMIZE_IDENTITY_BASE_URL=http://identity:8081/
       - CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID=optimize
       - CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET=XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
       - CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE=optimize-api
