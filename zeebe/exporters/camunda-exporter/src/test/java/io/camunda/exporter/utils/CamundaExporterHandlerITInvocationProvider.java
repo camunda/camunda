@@ -97,7 +97,7 @@ public class CamundaExporterHandlerITInvocationProvider
         .flatMap(List::stream);
   }
 
-  private boolean isAnOperationHandler(final ExportHandler<?, ?> handler) {
+  public static boolean isAnOperationHandler(final ExportHandler<?, ?> handler) {
     return List.of(
             OperationFromIncidentHandler.class,
             OperationFromProcessInstanceHandler.class,

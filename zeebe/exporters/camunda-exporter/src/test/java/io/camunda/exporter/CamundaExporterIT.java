@@ -8,6 +8,7 @@
 package io.camunda.exporter;
 
 import static io.camunda.exporter.config.ConnectionTypes.ELASTICSEARCH;
+import static io.camunda.exporter.config.ConnectionTypes.OPENSEARCH;
 import static io.camunda.exporter.schema.SchemaTestUtil.mappingsMatch;
 import static io.camunda.exporter.utils.CamundaExporterITInvocationProvider.*;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
@@ -16,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
@@ -24,6 +26,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.cache.ProcessCacheLoaderFactory;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
@@ -39,9 +42,14 @@ import io.camunda.exporter.schema.SchemaTestUtil;
 import io.camunda.exporter.utils.CamundaExporterHandlerITInvocationProvider;
 import io.camunda.exporter.utils.CamundaExporterITInvocationProvider;
 import io.camunda.exporter.utils.SearchClientAdapter;
+import io.camunda.exporter.utils.TestSupport;
+import io.camunda.search.connect.es.ElasticsearchConnector;
+import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.webapps.schema.entities.operation.OperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
@@ -71,6 +79,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
@@ -367,6 +376,79 @@ final class CamundaExporterIT {
                 (handler) -> processInstanceRecordGenerator(handler, BpmnElementType.PROCESS),
                 UserTaskProcessInstanceHandler.class,
                 (handler) -> processInstanceRecordGenerator(handler, BpmnElementType.PROCESS)));
+
+    private static Stream<Arguments> operationHandlerTestCases() {
+      final var elsConfig =
+          CamundaExporterHandlerITInvocationProvider.getConfigWithConnectionDetails(ELASTICSEARCH);
+      final var osConfig =
+          CamundaExporterHandlerITInvocationProvider.getConfigWithConnectionDetails(OPENSEARCH);
+
+      // no need to do schema initialisation again it is already done in invocation provider
+      final var provider = spy(new DefaultExporterResourceProvider());
+      provider.init(osConfig, ClientAdapter.of(elsConfig)::getProcessCacheLoader);
+      doReturn(Set.of()).when(provider).getIndexDescriptors();
+      doReturn(Set.of()).when(provider).getIndexTemplateDescriptors();
+
+      final var osClient = new OpensearchConnector(osConfig.getConnect()).createClient();
+      final var osClientAdapter = new SearchClientAdapter(osClient);
+
+      final var elsClient = new ElasticsearchConnector(elsConfig.getConnect()).createClient();
+      final var elsClientAdapter = new SearchClientAdapter(elsClient);
+
+      final var elsExporter = new CamundaExporter(provider);
+      configureAndOpenExporter(elsExporter, elsConfig);
+
+      final var osExporter = new CamundaExporter(provider);
+      configureAndOpenExporter(osExporter, osConfig);
+
+      return provider.getExportHandlers().stream()
+          .filter(CamundaExporterHandlerITInvocationProvider::isAnOperationHandler)
+          .map(
+              handler ->
+                  List.of(
+                      Arguments.of(handler, elsExporter, elsClientAdapter),
+                      Arguments.of(handler, osExporter, osClientAdapter)))
+          .flatMap(List::stream);
+    }
+
+    @ParameterizedTest
+    @MethodSource("operationHandlerTestCases")
+    <S extends ExporterEntity<S>, T extends RecordValue> void operationHandlerTests(
+        final ExportHandler<S, T> operationHandler,
+        final CamundaExporter exporter,
+        final SearchClientAdapter clientAdapter)
+        throws IOException {
+
+      // given
+      final var initialDocumentId = String.valueOf(new Random().nextLong(Long.MAX_VALUE));
+      clientAdapter.index(initialDocumentId, operationHandler.getIndexName(), new HashMap<>());
+
+      final Record<T> operationRecord =
+          recordGenerator(
+              operationHandler,
+              () ->
+                  factory.generateRecord(
+                      operationHandler.getHandledValueType(),
+                      r -> r.withOperationReference(Long.parseLong(initialDocumentId))));
+
+      // when
+      final var currentTime = OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS);
+      try (final var mocked = mockStatic(OffsetDateTime.class)) {
+        mocked.when(OffsetDateTime::now).thenReturn(currentTime);
+        exporter.export(operationRecord);
+      }
+
+      // then
+      final var updatedEntity =
+          clientAdapter.get(
+              initialDocumentId, operationHandler.getIndexName(), OperationEntity.class);
+
+      assertThat(updatedEntity.getLockExpirationTime()).isNull();
+      assertThat(updatedEntity.getLockOwner()).isNull();
+      assertThat(updatedEntity.getState()).isEqualTo(OperationState.COMPLETED);
+      assertThat(updatedEntity.getCompletedDate()).isEqualTo(currentTime);
+    }
+
     private <S extends ExporterEntity<S>, T extends RecordValue> S createExpectedEntity(
         final Record<T> record, final ExportHandler<S, T> handler) {
       final var entityId = handler.generateIds(record).getFirst();
