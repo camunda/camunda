@@ -102,43 +102,22 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           exportEnv: false # we rely on step outputs, no need for environment variables
           secrets: |
-            secret/data/github.com/organizations/camunda NEXUS_USR;
-            secret/data/github.com/organizations/camunda NEXUS_PSW;
             secret/data/products/operate/ci/github-actions REGISTRY_HUB_DOCKER_COM_USR;
             secret/data/products/operate/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW;
             secret/data/products/operate/ci/github-actions OPERATE_CI_ALERT_WEBHOOK_URL;
             secret/data/products/operate/release_process GITHUB_TOKEN;
 
       # Setup: configure Java, Maven, settings.xml
-      - name: Setup Java ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v4
-        with:
-          distribution: "adopt"
-          java-version: ${{ env.JAVA_VERSION }}
-
       - name: Setup Maven
-        uses: ./.github/actions/setup-maven-dist
+        uses: ./.github/actions/setup-build
         with:
-          maven-version: 3.9.6
-          set-mvnw: true
-
-      - name: Configure Maven
-        uses: ./.github/actions/setup-maven-cache
-        with:
+          java-distribution: adopt
+          java-version: ${{ env.JAVA_VERSION }}
           maven-cache-key-modifier: operate
-
-      # Setup: Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
-      - name: Create Maven settings.xml
-        uses: s4u/maven-settings-action@v3.0.0
-        with:
-          githubServer: false
-          servers: |
-            [{
-              "id": "camunda-nexus",
-              "username": "${{ steps.secrets.outputs.NEXUS_USR }}",
-              "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
-            }]
-          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
+          maven-version: 3.9.6
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
       #########################################################################
       # Build frontend
