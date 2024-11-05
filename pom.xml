@@ -37,6 +37,7 @@
     <module>testing/camunda-process-test-example</module>
     <module>document</module>
     <module>security</module>
+    <module>migration</module>
   </modules>
 
   <scm>

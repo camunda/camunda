@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>io.camunda</groupId>
+    <artifactId>zeebe-parent</artifactId>
+    <version>8.7.0-SNAPSHOT</version>
+    <relativePath>../parent/pom.xml</relativePath>
+  </parent>
+
+  <artifactId>migration</artifactId>
+  <packaging>pom</packaging>
+  <name>Migration Parent</name>
+
+  <modules>
+    <module>migration-api</module>
+    <module>tasklist-migration</module>
+    <module>webapp</module>
+  </modules>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+    <!-- release parent settings -->
+    <nexus.snapshot.repository>https://artifacts.camunda.com/artifactory/camunda-migration-snapshots/</nexus.snapshot.repository>
+    <nexus.release.repository>https://artifacts.camunda.com/artifactory/camunda-migration/</nexus.release.repository>
+
+    <maven.compiler.target>21</maven.compiler.target>
+    <maven.compiler.source>21</maven.compiler.source>
+
+    <maven.javadoc.skip>true</maven.javadoc.skip>
+  </properties>
+
+</project>
