@@ -20,7 +20,7 @@ const DeleteModal: FC<UseEntityModalProps<User>> = ({
 
   const handleSubmit = async () => {
     const { success } = await apiCall({
-      id,
+      id: id!,
     });
 
     if (success) {

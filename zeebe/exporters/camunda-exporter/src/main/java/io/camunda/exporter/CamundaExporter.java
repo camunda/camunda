@@ -92,14 +92,17 @@ public class CamundaExporter implements Exporter {
             provider.getIndexDescriptors(),
             provider.getIndexTemplateDescriptors(),
             configuration);
-    archiver =
-        Archiver.create(
-            context.getPartitionId(),
-            context.getConfiguration().getId().toLowerCase(),
-            configuration.getArchiver(),
-            provider,
-            metrics,
-            logger);
+
+    if (configuration.getArchiver().isRolloverEnabled()) {
+      archiver =
+          Archiver.create(
+              context.getPartitionId(),
+              context.getConfiguration().getId().toLowerCase(),
+              configuration.getArchiver(),
+              provider,
+              metrics,
+              logger);
+    }
 
     schemaManager.startup();
 

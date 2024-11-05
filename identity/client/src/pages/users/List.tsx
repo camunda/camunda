@@ -40,7 +40,7 @@ const List: FC = () => {
   const [editUser, editUserModal] = useEntityModal(EditModal, reload);
   const [deleteUser, deleteUserModal] = useEntityModal(DeleteModal, reload);
 
-  const showDetails = ({ id }: User) => navigate(`${id}`);
+  const showDetails = ({ username }: User) => navigate(`${username}`);
 
   if (success && !userSearchResults?.items.length) {
     return (

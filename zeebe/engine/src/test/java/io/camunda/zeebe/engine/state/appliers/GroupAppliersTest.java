@@ -50,4 +50,30 @@ public class GroupAppliersTest {
     assertThat(persistedGroup.getGroupKey()).isEqualTo(groupKey);
     assertThat(persistedGroup.getName()).isEqualTo(groupName);
   }
+
+  @Test
+  void shouldUpdateGroup() {
+    // given
+    final var groupUpdatedApplier = new GroupUpdatedApplier(groupState);
+    final var groupKey = 1L;
+    final var groupName = "group";
+    final var updatedGroupName = "updatedGroup";
+    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
+    groupState.create(groupKey, groupRecord);
+    final var persistedGroup = groupState.get(groupKey);
+    assertThat(persistedGroup.isPresent()).isTrue();
+    assertThat(persistedGroup.get().getName()).isEqualTo(groupName);
+    final var updatedGroupRecord =
+        new GroupRecord().setGroupKey(groupKey).setName(updatedGroupName);
+
+    // when
+    groupUpdatedApplier.applyState(groupKey, updatedGroupRecord);
+
+    // then
+    final var group = groupState.get(groupKey);
+    assertThat(group.isPresent()).isTrue();
+    final var persistedUpdatedGroup = group.get();
+    assertThat(persistedUpdatedGroup.getGroupKey()).isEqualTo(groupKey);
+    assertThat(persistedUpdatedGroup.getName()).isEqualTo(updatedGroupRecord.getName());
+  }
 }

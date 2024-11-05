@@ -29,7 +29,7 @@ const List: FC<RolesListProps> = ({ user, loadingUser }) => {
     loading: loadingRoles,
     success,
     reload,
-  } = useApi(getUserRoles, { id: user.id });
+  } = useApi(getUserRoles, { id: user.id! });
 
   const loading = loadingUser || loadingRoles;
 

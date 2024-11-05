@@ -11,11 +11,10 @@ import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_ASSIGNEE;
 
 import io.camunda.optimize.dto.optimize.IdentityType;
-import io.camunda.optimize.service.AssigneeCandidateGroupService;
 import io.camunda.optimize.service.DefinitionService;
-import io.camunda.optimize.service.LocalizationService;
 import io.camunda.optimize.service.db.es.report.interpreter.distributedby.process.ProcessDistributedByInterpreterFacadeES;
 import io.camunda.optimize.service.db.es.report.interpreter.view.process.ProcessViewInterpreterFacadeES;
+import io.camunda.optimize.service.db.report.interpreter.groupby.process.identity.ProcessGroupByIdentityInterpreterHelper;
 import io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
@@ -27,27 +26,38 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class ProcessGroupByAssigneeInterpreterES
     extends AbstractProcessGroupByIdentityInterpreterES {
-
-  final AssigneeCandidateGroupService assigneeCandidateGroupService;
-  final ConfigurationService configurationService;
-  final DefinitionService definitionService;
-  final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
-  final ProcessViewInterpreterFacadeES viewInterpreter;
-  final LocalizationService localizationService;
+  private final ConfigurationService configurationService;
+  private final DefinitionService definitionService;
+  private final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
+  private final ProcessViewInterpreterFacadeES viewInterpreter;
+  private final ProcessGroupByIdentityInterpreterHelper helper;
 
   public ProcessGroupByAssigneeInterpreterES(
-      final AssigneeCandidateGroupService assigneeCandidateGroupService,
       final ConfigurationService configurationService,
       final DefinitionService definitionService,
       final ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
       final ProcessViewInterpreterFacadeES viewInterpreter,
-      final LocalizationService localizationService) {
-    this.assigneeCandidateGroupService = assigneeCandidateGroupService;
+      final ProcessGroupByIdentityInterpreterHelper helper) {
     this.configurationService = configurationService;
     this.definitionService = definitionService;
     this.distributedByInterpreter = distributedByInterpreter;
     this.viewInterpreter = viewInterpreter;
-    this.localizationService = localizationService;
+    this.helper = helper;
+  }
+
+  @Override
+  protected ConfigurationService getConfigurationService() {
+    return configurationService;
+  }
+
+  @Override
+  protected DefinitionService getDefinitionService() {
+    return definitionService;
+  }
+
+  @Override
+  protected ProcessGroupByIdentityInterpreterHelper getHelper() {
+    return helper;
   }
 
   @Override
@@ -61,31 +71,17 @@ public class ProcessGroupByAssigneeInterpreterES
   }
 
   @Override
+  protected ProcessDistributedByInterpreterFacadeES getDistributedByInterpreter() {
+    return distributedByInterpreter;
+  }
+
+  @Override
+  protected ProcessViewInterpreterFacadeES getViewInterpreter() {
+    return viewInterpreter;
+  }
+
+  @Override
   public Set<ProcessGroupBy> getSupportedGroupBys() {
     return Set.of(PROCESS_GROUP_BY_ASSIGNEE);
-  }
-
-  public AssigneeCandidateGroupService getAssigneeCandidateGroupService() {
-    return this.assigneeCandidateGroupService;
-  }
-
-  public ConfigurationService getConfigurationService() {
-    return this.configurationService;
-  }
-
-  public DefinitionService getDefinitionService() {
-    return this.definitionService;
-  }
-
-  public ProcessDistributedByInterpreterFacadeES getDistributedByInterpreter() {
-    return this.distributedByInterpreter;
-  }
-
-  public ProcessViewInterpreterFacadeES getViewInterpreter() {
-    return this.viewInterpreter;
-  }
-
-  public LocalizationService getLocalizationService() {
-    return this.localizationService;
   }
 }
