@@ -162,6 +162,6 @@ public class BackupReaderOS extends AbstractBackupReader {
   }
 
   private String getRepositoryName() {
-    return configurationService.getElasticSearchConfiguration().getSnapshotRepositoryName();
+    return configurationService.getOpenSearchConfiguration().getSnapshotRepositoryName();
   }
 }
