@@ -486,6 +486,10 @@ public final class RaftRule extends ExternalResource {
   }
 
   public void awaitCommit(final long commitIndex) throws Exception {
+    awaitCommit(commitIndex, Duration.ofSeconds(30));
+  }
+
+  public void awaitCommit(final long commitIndex, final Duration timeout) throws Exception {
     if (highestCommit >= commitIndex) {
       return;
     }
@@ -493,7 +497,7 @@ public final class RaftRule extends ExternalResource {
     final var commitAwaiter = new CommitAwaiter(commitIndex);
     commitAwaiterRef.set(commitAwaiter);
 
-    commitAwaiter.awaitCommit();
+    commitAwaiter.awaitCommit(timeout);
   }
 
   private RaftServer createServer(final MemberId memberId, final Configurator configurator) {
@@ -529,7 +533,6 @@ public final class RaftRule extends ExternalResource {
             .withMaxSegmentSize(1024 * 10)
             .withFreeDiskSpace(100)
             .withSnapshotStore(snapshotStore);
-
     return builder.build();
   }
 
@@ -557,6 +560,15 @@ public final class RaftRule extends ExternalResource {
     final var leader = getLeader().orElseThrow();
 
     return appendEntry(leader, 1024);
+  }
+
+  public TestAppendListener appendEntryAsync() throws Exception {
+    final var raftRole = getLeader().orElseThrow().getContext().getRaftRole();
+    if (raftRole instanceof LeaderRole) {
+      return appendEntry(1024, (LeaderRole) raftRole);
+    } else {
+      throw new IllegalStateException("Expected Leader to be a LeaderRole, was: " + raftRole);
+    }
   }
 
   private long appendEntry(final RaftServer leader, final int entrySize) throws Exception {
@@ -640,29 +652,7 @@ public final class RaftRule extends ExternalResource {
     protocolFactory.heal(follower.cluster().getLocalMember().memberId());
   }
 
-  private static final class CommitAwaiter {
-
-    private final long awaitedIndex;
-    private final CountDownLatch latch = new CountDownLatch(1);
-
-    public CommitAwaiter(final long index) {
-      awaitedIndex = index;
-    }
-
-    public boolean reachedCommit(final long currentIndex) {
-      if (awaitedIndex <= currentIndex) {
-        latch.countDown();
-        return true;
-      }
-      return false;
-    }
-
-    public void awaitCommit() throws Exception {
-      latch.await(30, TimeUnit.SECONDS);
-    }
-  }
-
-  private static final class TestAppendListener implements ZeebeLogAppender.AppendListener {
+  public static final class TestAppendListener implements ZeebeLogAppender.AppendListener {
 
     private final CompletableFuture<Long> commitFuture = new CompletableFuture<>();
 
@@ -683,6 +673,36 @@ public final class RaftRule extends ExternalResource {
 
     public long awaitCommit() throws Exception {
       return commitFuture.get(30, TimeUnit.SECONDS);
+    }
+
+    public long awaitCommit(final Duration duration) throws Exception {
+      return commitFuture.get(duration.toMillis(), TimeUnit.MILLISECONDS);
+    }
+  }
+
+  private static final class CommitAwaiter {
+
+    private final long awaitedIndex;
+    private final CountDownLatch latch = new CountDownLatch(1);
+
+    public CommitAwaiter(final long index) {
+      awaitedIndex = index;
+    }
+
+    public boolean reachedCommit(final long currentIndex) {
+      if (awaitedIndex <= currentIndex) {
+        latch.countDown();
+        return true;
+      }
+      return false;
+    }
+
+    public void awaitCommit(final Duration timeout) throws Exception {
+      latch.await(timeout.toMillis(), TimeUnit.MILLISECONDS);
+    }
+
+    public void awaitCommit() throws Exception {
+      latch.await(30, TimeUnit.SECONDS);
     }
   }
 
