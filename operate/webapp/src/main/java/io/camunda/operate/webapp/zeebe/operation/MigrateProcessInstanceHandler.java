@@ -50,7 +50,7 @@ public class MigrateProcessInstanceHandler extends AbstractOperationHandler
         "Operation [{}]: Sending Zeebe migrate command for processInstanceKey [{}]...",
         operation.getId(),
         processInstanceKey);
-    migrate(processInstanceKey, migrationPlanDto);
+    migrate(processInstanceKey, migrationPlanDto, operation.getId());
     markAsSent(operation);
     LOGGER.info(
         "Operation [{}]: Migrate command sent to Zeebe for processInstanceKey [{}]",
@@ -63,7 +63,10 @@ public class MigrateProcessInstanceHandler extends AbstractOperationHandler
     return Set.of(OperationType.MIGRATE_PROCESS_INSTANCE);
   }
 
-  public void migrate(final Long processInstanceKey, final MigrationPlanDto migrationPlanDto) {
+  public void migrate(
+      final Long processInstanceKey,
+      final MigrationPlanDto migrationPlanDto,
+      final String operationId) {
     final long targetProcessDefinitionKey =
         Long.parseLong(migrationPlanDto.getTargetProcessDefinitionKey());
 
@@ -79,10 +82,12 @@ public class MigrateProcessInstanceHandler extends AbstractOperationHandler
                         new MigrationPlanBuilderImpl.MappingInstruction(
                             mapping.getSourceElementId(), mapping.getTargetElementId())));
 
-    zeebeClient
-        .newMigrateProcessInstanceCommand(processInstanceKey)
-        .migrationPlan(migrationPlan)
-        .send()
-        .join();
+    final var migrateProcessInstanceCommand =
+        withOperationReference(
+            zeebeClient
+                .newMigrateProcessInstanceCommand(processInstanceKey)
+                .migrationPlan(migrationPlan),
+            operationId);
+    migrateProcessInstanceCommand.send().join();
   }
 }

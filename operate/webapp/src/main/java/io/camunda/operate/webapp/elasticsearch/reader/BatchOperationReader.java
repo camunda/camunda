@@ -15,10 +15,10 @@ import static org.elasticsearch.search.builder.SearchSourceBuilder.searchSource;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.schema.templates.BatchOperationTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
 import io.camunda.operate.webapp.security.UserService;
+import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import java.io.IOException;
 import java.util.Collections;
@@ -57,7 +57,7 @@ public class BatchOperationReader implements io.camunda.operate.webapp.reader.Ba
 
   @Override
   public List<BatchOperationEntity> getBatchOperations(
-      BatchOperationRequestDto batchOperationRequestDto) {
+      final BatchOperationRequestDto batchOperationRequestDto) {
 
     final SearchRequest searchRequest = createSearchRequest(batchOperationRequestDto);
     final SearchResponse searchResponse;
@@ -77,7 +77,7 @@ public class BatchOperationReader implements io.camunda.operate.webapp.reader.Ba
         Collections.reverse(batchOperationEntities);
       }
       return batchOperationEntities;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format(
               "Exception occurred, while getting page of batch operations list: %s",
@@ -87,7 +87,8 @@ public class BatchOperationReader implements io.camunda.operate.webapp.reader.Ba
     }
   }
 
-  private SearchRequest createSearchRequest(BatchOperationRequestDto batchOperationRequestDto) {
+  private SearchRequest createSearchRequest(
+      final BatchOperationRequestDto batchOperationRequestDto) {
     final QueryBuilder queryBuilder =
         termQuery(BatchOperationTemplate.USERNAME, userService.getCurrentUser().getUsername());
 

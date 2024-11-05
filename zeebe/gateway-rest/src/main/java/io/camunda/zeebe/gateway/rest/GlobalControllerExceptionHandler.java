@@ -81,6 +81,7 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ProblemDetail> handleAllExceptions(
       final Exception ex, final HttpServletRequest request) {
+    Loggers.REST_LOGGER.debug(ex.getMessage(), ex);
     final ProblemDetail problemDetail =
         ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
     problemDetail.setInstance(URI.create(request.getRequestURI()));

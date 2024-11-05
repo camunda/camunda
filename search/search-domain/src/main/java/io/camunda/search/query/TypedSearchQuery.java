@@ -9,7 +9,9 @@ package io.camunda.search.query;
 
 import io.camunda.search.filter.FilterBase;
 import io.camunda.search.result.QueryResultConfig;
+import io.camunda.search.sort.SearchSortOptions;
 import io.camunda.search.sort.SortOption;
+import java.util.List;
 
 public interface TypedSearchQuery<F extends FilterBase, S extends SortOption>
     extends SearchQueryBase {
@@ -20,5 +22,9 @@ public interface TypedSearchQuery<F extends FilterBase, S extends SortOption>
 
   default QueryResultConfig resultConfig() {
     return null;
+  }
+
+  default List<SearchSortOptions> retainValidSortings(final List<SearchSortOptions> sorting) {
+    return sorting;
   }
 }

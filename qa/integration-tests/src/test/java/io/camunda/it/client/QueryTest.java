@@ -126,6 +126,23 @@ class QueryTest {
             });
   }
 
+  static void waitUntilFlowNodeInstanceHasIncidents(
+      final ZeebeClient zeebeClient, final int expectedIncidents) {
+    Awaitility.await("should wait until flow node instance has incidents")
+        .atMost(Duration.ofSeconds(15))
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  zeebeClient
+                      .newFlownodeInstanceQuery()
+                      .filter(f -> f.hasIncident(true))
+                      .send()
+                      .join();
+              assertThat(result.page().totalItems()).isEqualTo(expectedIncidents);
+            });
+  }
+
   static <T, U extends Comparable<U>> void assertSorted(
       final SearchQueryResponse<T> resultAsc,
       final SearchQueryResponse<T> resultDesc,

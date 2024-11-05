@@ -13,6 +13,7 @@ import static io.camunda.it.client.QueryTest.startProcessInstance;
 import static io.camunda.it.client.QueryTest.waitForFlowNodeInstances;
 import static io.camunda.it.client.QueryTest.waitForProcessInstancesToStart;
 import static io.camunda.it.client.QueryTest.waitForProcessesToBeDeployed;
+import static io.camunda.it.client.QueryTest.waitUntilFlowNodeInstanceHasIncidents;
 import static io.camunda.it.client.QueryTest.waitUntilProcessInstanceHasIncidents;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
@@ -82,16 +83,23 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
 
     waitForProcessInstancesToStart(zeebeClient, 6);
     waitForFlowNodeInstances(zeebeClient, 20);
+    waitUntilFlowNodeInstanceHasIncidents(zeebeClient, 1);
     waitUntilProcessInstanceHasIncidents(zeebeClient, 1);
     // store flow node instances for querying
     final var allFlowNodeInstances =
-        zeebeClient.newFlownodeInstanceQuery().page(p -> p.limit(100)).send().join().items();
+        zeebeClient
+            .newFlownodeInstanceQuery()
+            .page(p -> p.limit(100))
+            .sort(s -> s.flowNodeId().asc())
+            .send()
+            .join()
+            .items();
     flowNodeInstance = allFlowNodeInstances.getFirst();
     flowNodeInstanceWithIncident =
         allFlowNodeInstances.stream()
             .filter(f -> f.getIncidentKey() != null)
             .findFirst()
-            .orElse(null);
+            .orElseThrow();
   }
 
   @AfterAll
@@ -512,7 +520,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(2);
+    assertThat(result.items().size()).isEqualTo(5);
     assertThat(result.items().getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
     assertThat(result.items().get(1).getProcessInstanceKey()).isEqualTo(processInstanceKey);
   }
@@ -558,9 +566,9 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
         zeebeClient.newFlownodeInstanceQuery().filter(f -> f.flowNodeId(flowNodeId)).send().join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(2);
+    assertThat(result.items().size()).isEqualTo(1);
     assertThat(result.items().getFirst().getFlowNodeId()).isEqualTo(flowNodeId);
-    assertThat(result.items().get(1).getFlowNodeId()).isEqualTo(flowNodeId);
+    assertThat(result.items().get(0).getFlowNodeId()).isEqualTo(flowNodeId);
   }
 
   @Test
@@ -586,7 +594,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(2);
+    assertThat(result.items().size()).isEqualTo(5);
     assertThat(result.items().getFirst().getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
   }
 
@@ -686,7 +694,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
         zeebeClient.newFlownodeInstanceQuery().filter(f -> f.type(type)).send().join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(6);
+    assertThat(result.items().size()).isEqualTo(3);
     assertThat(result.items().getFirst().getType()).isEqualTo(type);
     assertThat(result.items().get(1).getType()).isEqualTo(type);
     assertThat(result.items().get(2).getType()).isEqualTo(type);

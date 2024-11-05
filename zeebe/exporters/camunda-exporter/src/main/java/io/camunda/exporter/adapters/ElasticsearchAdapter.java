@@ -9,6 +9,9 @@ package io.camunda.exporter.adapters;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
+import com.github.benmanes.caffeine.cache.CacheLoader;
+import io.camunda.exporter.cache.CachedProcessEntity;
+import io.camunda.exporter.cache.ElasticSearchProcessCacheLoader;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
@@ -42,5 +45,11 @@ class ElasticsearchAdapter implements ClientAdapter {
   @Override
   public void close() throws IOException {
     client._transport().close();
+  }
+
+  @Override
+  public CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(
+      final String processIndexName) {
+    return new ElasticSearchProcessCacheLoader(client, processIndexName);
   }
 }

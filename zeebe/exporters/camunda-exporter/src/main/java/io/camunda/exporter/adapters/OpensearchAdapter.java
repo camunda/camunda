@@ -7,6 +7,9 @@
  */
 package io.camunda.exporter.adapters;
 
+import com.github.benmanes.caffeine.cache.CacheLoader;
+import io.camunda.exporter.cache.CachedProcessEntity;
+import io.camunda.exporter.cache.OpenSearchProcessCacheLoader;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
@@ -37,6 +40,12 @@ class OpensearchAdapter implements ClientAdapter {
   public BatchRequest createBatchRequest() {
     return new OpensearchBatchRequest(
         client, new BulkRequest.Builder(), new OpensearchScriptBuilder());
+  }
+
+  @Override
+  public CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(
+      final String processIndexName) {
+    return new OpenSearchProcessCacheLoader(client, processIndexName);
   }
 
   @Override

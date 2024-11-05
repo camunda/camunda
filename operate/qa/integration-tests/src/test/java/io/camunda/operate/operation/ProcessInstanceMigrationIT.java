@@ -19,6 +19,7 @@ import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.FlowNodeType;
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -58,7 +59,8 @@ class ProcessInstanceMigrationIT extends OperateZeebeSearchAbstractIT {
                         .setSourceElementId("taskB")
                         .setTargetElementId("taskB")));
     migrateProcessInstanceHandler.setZeebeClient(zeebeContainerManager.getClient());
-    migrateProcessInstanceHandler.migrate(processFrom, migrationPlan);
+    migrateProcessInstanceHandler.migrate(
+        processFrom, migrationPlan, String.valueOf(UUID.randomUUID().getMostSignificantBits()));
 
     // then
     // subprocesses are migrated

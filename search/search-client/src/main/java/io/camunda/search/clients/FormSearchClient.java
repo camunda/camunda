@@ -14,5 +14,7 @@ import io.camunda.security.auth.SecurityContext;
 
 public interface FormSearchClient {
 
-  SearchQueryResult<FormEntity> searchForms(FormQuery filter, SecurityContext securityContext);
+  SearchQueryResult<FormEntity> searchForms(FormQuery filter);
+
+  FormSearchClient withSecurityContext(SecurityContext securityContext);
 }

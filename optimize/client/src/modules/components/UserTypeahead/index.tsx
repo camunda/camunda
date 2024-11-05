@@ -8,4 +8,4 @@
 
 export {default as UserTypeahead} from './UserTypeahead';
 
-export type {User} from './service';
+export type {User, Identity} from './service';

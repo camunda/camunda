@@ -69,6 +69,12 @@ public class DecisionInstanceFilterImpl
   }
 
   @Override
+  public DecisionInstanceFilter evaluationDate(final String evaluationDate) {
+    filter.setEvaluationDate(evaluationDate);
+    return null;
+  }
+
+  @Override
   public DecisionInstanceFilter processDefinitionKey(final long processDefinitionKey) {
     filter.setProcessDefinitionKey(processDefinitionKey);
     return this;

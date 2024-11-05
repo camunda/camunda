@@ -62,9 +62,14 @@ public class ProcessInstanceRequestValidator {
   }
 
   public void validateListenerRequest(final ListenerRequestDto request) {
-    if (request.getPageSize() == null || request.getFlowNodeId() == null) {
+    if (request.getPageSize() == null
+        || (request.getFlowNodeId() == null && request.getFlowNodeInstanceId() == null)) {
       throw new InvalidRequestException(
-          "'pageSize' and 'flowNodeId' must be specified in the request.");
+          "'pageSize' and either 'flowNodeId' or 'flowNodeInstanceId' must be specified in the request.");
+    }
+    if (request.getFlowNodeId() != null && request.getFlowNodeInstanceId() != null) {
+      throw new InvalidRequestException(
+          "Only one of 'flowNodeId' or 'flowNodeInstanceId' must be specified in the request.");
     }
   }
 

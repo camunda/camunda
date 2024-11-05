@@ -7,6 +7,9 @@
  */
 package io.camunda.optimize.service.export;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.SEARCH_CONTEXT_MISSING_EXCEPTION_TYPE;
+
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import io.camunda.optimize.dto.optimize.query.report.AuthorizedReportEvaluationResult;
 import io.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -19,6 +22,8 @@ import io.camunda.optimize.service.db.report.ReportEvaluationInfo;
 import io.camunda.optimize.service.report.ReportService;
 import jakarta.ws.rs.BadRequestException;
 import java.time.ZoneId;
+import java.util.Optional;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
@@ -38,7 +43,8 @@ public class JsonReportResultExportService {
   }
 
   public PaginatedDataExportDto getJsonForEvaluatedReportResult(
-      final String reportId, final ZoneId timezone, final PaginationDto paginationInfo) {
+      final String reportId, final ZoneId timezone, final PaginationDto paginationInfo)
+      throws Exception {
     LOG.info("Exporting provided report " + reportId + " as JSON.");
     final ReportDefinitionDto<ReportDataDto> reportData =
         reportService.getReportDefinition(reportId);
@@ -58,21 +64,55 @@ public class JsonReportResultExportService {
         // pagination info is only valid in the context of raw data reports
         evaluationInfoBuilder.pagination(paginationInfo);
       }
-      final AuthorizedReportEvaluationResult reportResult =
-          reportEvaluationHandler.evaluateReport(evaluationInfoBuilder.build());
-      final PaginatedDataExportDto resultAsJson = reportResult.getEvaluationResult().getResult();
-      resultAsJson.setReportId(reportId);
-      // This can only possibly happen with non-raw-data Reports
-      if (!isRawDataReport
-          && paginationInfo.getLimit() < resultAsJson.getNumberOfRecordsInResponse()) {
-        resultAsJson.setMessage(
-            "All records are delivered in this response regardless of the set limit, since "
-                + "result pagination is only supported for raw data reports.");
+      try {
+        final AuthorizedReportEvaluationResult reportResult =
+            reportEvaluationHandler.evaluateReport(evaluationInfoBuilder.build());
+        final PaginatedDataExportDto resultAsJson = reportResult.getEvaluationResult().getResult();
+        resultAsJson.setReportId(reportId);
+        // This can only possibly happen with non-raw-data Reports
+        if (!isRawDataReport
+            && paginationInfo.getLimit() < resultAsJson.getNumberOfRecordsInResponse()) {
+          resultAsJson.setMessage(
+              "All records are delivered in this response regardless of the set limit, since "
+                  + "result pagination is only supported for raw data reports.");
+        }
+        LOG.info("Report " + reportId + " exported successfully as JSON.");
+        return resultAsJson;
+      } catch (final RuntimeException e) {
+        throw processAndEnrichExceptionWithMessage(e);
       }
-      LOG.info("Report " + reportId + " exported successfully as JSON.");
-      return resultAsJson;
     } else {
       throw new BadRequestException("Combined reports cannot be exported as Json");
+    }
+  }
+
+  private Exception processAndEnrichExceptionWithMessage(final RuntimeException e) {
+    // In case the user provides a parsable but invalid scroll id (e.g. scroll id was earlier
+    // valid, but now expired) the message from the database is a bit cryptic. Therefore, extract
+    // the useful information so that the user gets an appropriate response.
+    if (e instanceof final ElasticsearchException elasticExc) {
+      return Optional.ofNullable(elasticExc.response().error().causedBy())
+          .filter(
+              pag -> {
+                assert pag.type() != null;
+                return pag.type().contains(SEARCH_CONTEXT_MISSING_EXCEPTION_TYPE);
+              })
+          .map(pag -> (Exception) new BadRequestException(pag.reason()))
+          // In case the exception happened for another reason, just return it as is
+          .orElse(e);
+    } else if (e instanceof final OpenSearchException openSearchExc) {
+      return Optional.ofNullable(openSearchExc.response().error().causedBy())
+          .filter(
+              pag -> {
+                assert pag.type() != null;
+                return pag.type().contains(SEARCH_CONTEXT_MISSING_EXCEPTION_TYPE);
+              })
+          .map(pag -> (Exception) new BadRequestException(pag.reason()))
+          // In case the exception happened for another reason, just return it as is
+          .orElse(e);
+    } else {
+      // Just return exception unchanged
+      return e;
     }
   }
 }

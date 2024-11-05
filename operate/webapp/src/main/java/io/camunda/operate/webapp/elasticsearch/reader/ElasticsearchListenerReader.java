@@ -58,8 +58,7 @@ public class ElasticsearchListenerReader extends AbstractReader implements Liste
       final String processInstanceId, final ListenerRequestDto request) {
     final TermQueryBuilder processInstanceQ =
         termQuery(JobTemplate.PROCESS_INSTANCE_KEY, processInstanceId);
-    final TermQueryBuilder flowNodeIdQ =
-        termQuery(JobTemplate.FLOW_NODE_ID, request.getFlowNodeId());
+    final TermQueryBuilder flowNodeQ = getFlowNodeQuery(request);
     final TermQueryBuilder executionListenersQ =
         termQuery(JobTemplate.JOB_KIND, ListenerType.EXECUTION_LISTENER);
     final TermQueryBuilder taskListenersQ =
@@ -69,7 +68,7 @@ public class ElasticsearchListenerReader extends AbstractReader implements Liste
         new SearchSourceBuilder()
             .query(
                 joinWithAnd(
-                    processInstanceQ, flowNodeIdQ, joinWithOr(executionListenersQ, taskListenersQ)))
+                    processInstanceQ, flowNodeQ, joinWithOr(executionListenersQ, taskListenersQ)))
             .size(request.getPageSize());
 
     applySorting(sourceBuilder, request);
@@ -104,6 +103,13 @@ public class ElasticsearchListenerReader extends AbstractReader implements Liste
       throw new OperateRuntimeException(message, e);
     }
     return new ListenerResponseDto(listeners, totalHitCount);
+  }
+
+  private TermQueryBuilder getFlowNodeQuery(final ListenerRequestDto request) {
+    if (request.getFlowNodeInstanceId() != null) {
+      return termQuery(JobTemplate.FLOW_NODE_INSTANCE_ID, request.getFlowNodeInstanceId());
+    }
+    return termQuery(JobTemplate.FLOW_NODE_ID, request.getFlowNodeId());
   }
 
   private void applySorting(

@@ -51,8 +51,8 @@ public final class TypedSearchQueryTransformer<F extends FilterBase, S extends S
 
     final var sort = query.sort();
     final var sorting = toSearchSortOptions(sort, reverse);
-    if (sorting != null && !sorting.isEmpty()) {
-      builder.sort(sorting);
+    if (!sorting.isEmpty()) {
+      builder.sort(query.retainValidSortings(sorting));
     }
 
     final var searchAfter = page.startNextPageAfter();

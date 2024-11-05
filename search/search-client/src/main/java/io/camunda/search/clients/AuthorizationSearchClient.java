@@ -14,6 +14,7 @@ import io.camunda.security.auth.SecurityContext;
 
 public interface AuthorizationSearchClient {
 
-  SearchQueryResult<AuthorizationEntity> searchAuthorizations(
-      AuthorizationQuery filter, SecurityContext securityContext);
+  SearchQueryResult<AuthorizationEntity> searchAuthorizations(AuthorizationQuery filter);
+
+  AuthorizationSearchClient withSecurityContext(SecurityContext securityContext);
 }

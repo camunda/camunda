@@ -17,7 +17,7 @@ import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,9 +31,10 @@ public final class DecisionRequirementsServiceTest {
   @BeforeEach
   public void before() {
     client = mock(DecisionRequirementSearchClient.class);
+    when(client.withSecurityContext(any())).thenReturn(client);
     services =
         new DecisionRequirementsServices(
-            mock(BrokerClient.class), new SecurityConfiguration(), client, null);
+            mock(BrokerClient.class), mock(SecurityContextProvider.class), client, null);
   }
 
   @Test
@@ -44,7 +45,7 @@ public final class DecisionRequirementsServiceTest {
 
     // when
     final var result = mock(SearchQueryResult.class);
-    when(client.searchDecisionRequirements(any(), any())).thenReturn(result);
+    when(client.searchDecisionRequirements(any())).thenReturn(result);
     final SearchQueryResult<DecisionRequirementsEntity> searchQueryResult =
         services.search(searchQuery);
 
@@ -57,7 +58,7 @@ public final class DecisionRequirementsServiceTest {
     // given
     final var decisionRequirementEntity = mock(DecisionRequirementsEntity.class);
     when(decisionRequirementEntity.key()).thenReturn(124L);
-    when(client.searchDecisionRequirements(any(), any()))
+    when(client.searchDecisionRequirements(any()))
         .thenReturn(new SearchQueryResult(1, List.of(decisionRequirementEntity), null));
 
     // when
@@ -76,7 +77,7 @@ public final class DecisionRequirementsServiceTest {
     when(decisionRequirementEntity.xml()).thenReturn("<xml/>");
     final var decisionRequirementResult = mock(SearchQueryResult.class);
     when(decisionRequirementResult.items()).thenReturn(List.of(decisionRequirementEntity));
-    when(client.searchDecisionRequirements(any(), any())).thenReturn(decisionRequirementResult);
+    when(client.searchDecisionRequirements(any())).thenReturn(decisionRequirementResult);
 
     // when
     final String expectedXml = "<xml/>";

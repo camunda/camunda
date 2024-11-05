@@ -28,17 +28,12 @@ public class ProcessInstanceExportHandler
 
   @Override
   public boolean canExport(final Record<ProcessInstanceRecordValue> record) {
-    return record.getValueType() == ValueType.PROCESS_INSTANCE;
+    return record.getValueType() == ValueType.PROCESS_INSTANCE
+        && record.getValue().getBpmnElementType() == BpmnElementType.PROCESS;
   }
 
   @Override
   public void export(final Record<ProcessInstanceRecordValue> record) {
-    if (record.getValue().getBpmnElementType() == BpmnElementType.PROCESS) {
-      exportProcessInstance(record);
-    }
-  }
-
-  private void exportProcessInstance(final Record<ProcessInstanceRecordValue> record) {
     final var value = record.getValue();
     if (record.getIntent().equals(ProcessInstanceIntent.ELEMENT_ACTIVATING)) {
       processInstanceWriter.create(map(record));

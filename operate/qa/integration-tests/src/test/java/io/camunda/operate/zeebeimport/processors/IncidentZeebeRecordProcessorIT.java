@@ -8,7 +8,9 @@
 package io.camunda.operate.zeebeimport.processors;
 
 import static io.camunda.operate.util.TestUtil.createIncident;
+import static io.camunda.operate.util.ZeebeRecordTestUtil.createIncidentZeebeRecord;
 import static io.camunda.operate.util.ZeebeRecordTestUtil.createZeebeRecordFromIncident;
+import static io.camunda.zeebe.protocol.record.intent.IncidentIntent.CREATED;
 import static io.camunda.zeebe.protocol.record.intent.IncidentIntent.MIGRATED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -22,6 +24,7 @@ import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentState;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import java.io.IOException;
 import java.util.List;
@@ -150,6 +153,29 @@ public class IncidentZeebeRecordProcessorIT extends OperateSearchAbstractIT {
     assertThat(updatedInc.getProcessDefinitionKey()).isEqualTo(inc.getProcessDefinitionKey());
     assertThat(updatedInc.getFlowNodeId()).isEqualTo(inc.getFlowNodeId());
     assertThat(updatedInc.getPosition()).isEqualTo(oldPosition);
+  }
+
+  @Test
+  public void shouldImportExecutionListenerNoRetriesIncident()
+      throws PersistenceException, IOException {
+    // given
+    final long incidentKey = 1L;
+
+    final Record<IncidentRecordValue> zeebeRecord =
+        createIncidentZeebeRecord(
+            b -> b.withIntent(CREATED).withKey(incidentKey),
+            b -> b.withErrorType(ErrorType.EXECUTION_LISTENER_NO_RETRIES).withErrorMessage("foo"));
+
+    // when
+    importIncidentZeebeRecord(zeebeRecord);
+
+    // then
+    final IncidentEntity incidentEntity = findIncidentByKey(incidentKey);
+
+    // the error type was imported correctly
+    assertThat(incidentEntity.getErrorType())
+        .isEqualTo(
+            io.camunda.webapps.schema.entities.operate.ErrorType.EXECUTION_LISTENER_NO_RETRIES);
   }
 
   @NotNull

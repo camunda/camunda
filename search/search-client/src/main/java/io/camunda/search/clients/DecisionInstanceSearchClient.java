@@ -14,6 +14,7 @@ import io.camunda.security.auth.SecurityContext;
 
 public interface DecisionInstanceSearchClient {
 
-  SearchQueryResult<DecisionInstanceEntity> searchDecisionInstances(
-      DecisionInstanceQuery filter, SecurityContext securityContext);
+  SearchQueryResult<DecisionInstanceEntity> searchDecisionInstances(DecisionInstanceQuery filter);
+
+  DecisionInstanceSearchClient withSecurityContext(SecurityContext securityContext);
 }

@@ -8,59 +8,47 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+import static io.camunda.search.clients.query.SearchQueryBuilders.dateTimeOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.intTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
+import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.search.clients.transformers.ServiceTransformers;
-import io.camunda.search.clients.transformers.filter.DateValueFilterTransformer.DateFieldFilter;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
-import io.camunda.search.filter.DateValueFilter;
 import io.camunda.search.filter.DecisionInstanceFilter;
+import io.camunda.search.filter.Operation;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 public final class DecisionInstanceFilterTransformer
     implements FilterTransformer<DecisionInstanceFilter> {
 
-  private final ServiceTransformers transformers;
-
-  public DecisionInstanceFilterTransformer(final ServiceTransformers transformers) {
-    this.transformers = transformers;
-  }
-
   @Override
   public SearchQuery toSearchQuery(final DecisionInstanceFilter filter) {
-    final var keysQuery = getKeysQuery(filter.decisionInstanceKeys());
-    final var statesQuery = getStatesQuery(filter.states());
-    final var evaluationDateQuery = getEvaluationDateQuery(filter.evaluationDate());
-    final var evaluationFailuresQuery = getEvaluationFailuresQuery(filter.evaluationFailures());
-    final var processDefinitionKeysQuery =
-        getProcessDefinitionKeysQuery(filter.processDefinitionKeys());
-    final var processInstanceKeysQuery = getProcessInstanceKeysQuery(filter.processInstanceKeys());
-    final var decisionKeysQuery = getDecisionDefinitionKeysQuery(filter.decisionDefinitionKeys());
-    final var dmnDecisionIdsQuery = getDecisionDefinitionIdsQuery(filter.decisionDefinitionIds());
-    final var dmnDecisionNamesQuery =
-        getDecisionDefinitionNamesQuery(filter.decisionDefinitionNames());
-    final var decisionVersionsQuery =
-        getDecisionDefinitionVersionsQuery(filter.decisionDefinitionVersions());
-    final var decisionTypesQuery = getDecisionDefinitionTypesQuery(filter.decisionTypes());
-    final var tenantIdsQuery = getTenantIdsQuery(filter.tenantIds());
-
-    return and(
-        keysQuery,
-        statesQuery,
-        evaluationDateQuery,
-        evaluationFailuresQuery,
-        processDefinitionKeysQuery,
-        processInstanceKeysQuery,
-        decisionKeysQuery,
-        dmnDecisionIdsQuery,
-        dmnDecisionNamesQuery,
-        decisionVersionsQuery,
-        decisionTypesQuery,
-        tenantIdsQuery);
+    final var queries = new ArrayList<SearchQuery>();
+    ofNullable(getKeysQuery(filter.decisionInstanceKeys())).ifPresent(queries::add);
+    ofNullable(getStatesQuery(filter.states())).ifPresent(queries::add);
+    ofNullable(getEvaluationDateQuery(filter.evaluationDateOperations()))
+        .ifPresent(queries::addAll);
+    ofNullable(getEvaluationFailuresQuery(filter.evaluationFailures())).ifPresent(queries::add);
+    ofNullable(getProcessDefinitionKeysQuery(filter.processDefinitionKeys()))
+        .ifPresent(queries::add);
+    ofNullable(getProcessInstanceKeysQuery(filter.processInstanceKeys())).ifPresent(queries::add);
+    ofNullable(getDecisionDefinitionKeysQuery(filter.decisionDefinitionKeyOperations()))
+        .ifPresent(queries::addAll);
+    ofNullable(getDecisionDefinitionIdsQuery(filter.decisionDefinitionIds()))
+        .ifPresent(queries::add);
+    ofNullable(getDecisionDefinitionNamesQuery(filter.decisionDefinitionNames()))
+        .ifPresent(queries::add);
+    ofNullable(getDecisionDefinitionVersionsQuery(filter.decisionDefinitionVersions()))
+        .ifPresent(queries::add);
+    ofNullable(getDecisionDefinitionTypesQuery(filter.decisionTypes())).ifPresent(queries::add);
+    ofNullable(getTenantIdsQuery(filter.tenantIds())).ifPresent(queries::add);
+    return and(queries);
   }
 
   @Override
@@ -76,12 +64,9 @@ public final class DecisionInstanceFilterTransformer
     return stringTerms("state", states != null ? states.stream().map(Enum::name).toList() : null);
   }
 
-  private SearchQuery getEvaluationDateQuery(final DateValueFilter filter) {
-    if (filter != null) {
-      final var transformer = transformers.getFilterTransformer(DateValueFilter.class);
-      return transformer.apply(new DateFieldFilter("evaluationDate", filter));
-    }
-    return null;
+  private List<SearchQuery> getEvaluationDateQuery(
+      final List<Operation<OffsetDateTime>> evaluationDateOperations) {
+    return dateTimeOperations("evaluationDate", evaluationDateOperations);
   }
 
   private SearchQuery getEvaluationFailuresQuery(final List<String> evaluationFailures) {
@@ -96,12 +81,13 @@ public final class DecisionInstanceFilterTransformer
     return longTerms("processInstanceKey", processInstanceKeys);
   }
 
-  private SearchQuery getDecisionDefinitionKeysQuery(final List<Long> decisionDefinitionKeys) {
-    return stringTerms(
-        "decisionDefinitionId",
-        decisionDefinitionKeys != null
-            ? decisionDefinitionKeys.stream().map(String::valueOf).toList()
-            : null);
+  private List<SearchQuery> getDecisionDefinitionKeysQuery(
+      final List<Operation<Long>> decisionDefinitionKeyOperations) {
+    final var stringOperations =
+        decisionDefinitionKeyOperations.stream()
+            .map(op -> new Operation<>(op.operator(), String.valueOf(op.value())))
+            .toList();
+    return stringOperations("decisionDefinitionId", stringOperations);
   }
 
   private SearchQuery getDecisionDefinitionIdsQuery(final List<String> decisionDefinitionIds) {

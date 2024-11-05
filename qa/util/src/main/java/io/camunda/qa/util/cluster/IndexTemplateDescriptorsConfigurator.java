@@ -13,6 +13,7 @@ import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
@@ -20,6 +21,7 @@ import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.JobTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.MessageTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.UserTaskTemplate;
@@ -120,5 +122,15 @@ public class IndexTemplateDescriptorsConfigurator {
   public VariableTemplate getVariableTemplate(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new VariableTemplate("", databaseInfo.isElasticsearchDb());
+  }
+
+  @Bean
+  public OperationTemplate getOperationTemplate(final DatabaseInfo databaseInfo) {
+    return new OperationTemplate("", databaseInfo.isElasticsearchDb());
+  }
+
+  @Bean
+  public BatchOperationTemplate getBatchOperationTemplate(final DatabaseInfo databaseInfo) {
+    return new BatchOperationTemplate("", databaseInfo.isElasticsearchDb());
   }
 }

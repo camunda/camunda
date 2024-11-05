@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.distribution;
 
+import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
+@ExcludeAuthorizationCheck
 public class CommandDistributionAcknowledgeProcessor
     implements TypedRecordProcessor<CommandDistributionRecord> {
 

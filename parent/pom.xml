@@ -40,7 +40,7 @@
     <version.awaitility>4.2.2</version.awaitility>
     <version.bouncycastle>1.78.1</version.bouncycastle>
     <version.camunda>7.22.0</version.camunda>
-    <version.camunda-license-check>2.9.0</version.camunda-license-check>
+    <version.camunda-license-check>2.10.0</version.camunda-license-check>
     <version.checkstyle>10.18.2</version.checkstyle>
     <version.commons-beanutils>1.9.4</version.commons-beanutils>
     <version.commons-lang>3.17.0</version.commons-lang>
@@ -149,6 +149,7 @@
     <version.jakarta-annotation>3.0.0</version.jakarta-annotation>
     <version.jna-platform>5.15.0</version.jna-platform>
     <version.liquibase>4.29.2</version.liquibase>
+    <version.caffeine>3.1.8</version.caffeine>
 
     <version.commons-io>2.17.0</version.commons-io>
     <version.thymeleaf>3.1.2.RELEASE</version.thymeleaf>
@@ -2242,6 +2243,12 @@
         <artifactId>xmlunit-core</artifactId>
         <version>${version.xmlunit-core}</version>
         <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>com.github.ben-manes.caffeine</groupId>
+        <artifactId>caffeine</artifactId>
+        <version>${version.caffeine}</version>
       </dependency>
 
     </dependencies>

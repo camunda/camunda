@@ -15,6 +15,7 @@ import io.camunda.operate.qa.util.DependencyInjectionTestExecutionListener;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.util.j5templates.MockMvcManager;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
+import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
 import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -92,5 +93,18 @@ public class ProcessInstanceRestServiceIT {
     final MvcResult mvcResult =
         mockMvcManager.postRequestShouldFailWithException(url, ConstraintViolationException.class);
     assertThat(mvcResult.getResolvedException().getMessage()).contains("Specified ID is not valid");
+  }
+
+  @Test
+  public void testListenersRequestWithFlowNodeIdAndFlowNodeInstanceIdInvalid() throws Exception {
+    final String url = ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/1/listeners";
+    final ListenerRequestDto request =
+        new ListenerRequestDto()
+            .setPageSize(20)
+            .setFlowNodeId("testid")
+            .setFlowNodeInstanceId(123L);
+    final MvcResult mvcResult = mockMvcManager.postRequest(url, request, 400);
+    assertThat(mvcResult.getResolvedException().getMessage())
+        .contains("Only one of 'flowNodeId' or 'flowNodeInstanceId'");
   }
 }

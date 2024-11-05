@@ -14,6 +14,7 @@ import io.camunda.security.auth.SecurityContext;
 
 public interface FlowNodeInstanceSearchClient {
 
-  SearchQueryResult<FlowNodeInstanceEntity> searchFlowNodeInstances(
-      FlowNodeInstanceQuery filter, SecurityContext securityContext);
+  SearchQueryResult<FlowNodeInstanceEntity> searchFlowNodeInstances(FlowNodeInstanceQuery filter);
+
+  FlowNodeInstanceSearchClient withSecurityContext(SecurityContext securityContext);
 }

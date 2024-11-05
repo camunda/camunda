@@ -15,5 +15,7 @@ import io.camunda.security.auth.SecurityContext;
 public interface ProcessDefinitionSearchClient {
 
   SearchQueryResult<ProcessDefinitionEntity> searchProcessDefinitions(
-      ProcessDefinitionQuery filter, SecurityContext securityContext);
+      ProcessDefinitionQuery filter);
+
+  ProcessDefinitionSearchClient withSecurityContext(SecurityContext securityContext);
 }

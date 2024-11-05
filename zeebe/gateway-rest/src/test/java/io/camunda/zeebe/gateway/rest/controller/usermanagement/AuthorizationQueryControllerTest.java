@@ -216,7 +216,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
     verify(authorizationServices)
         .search(
             new AuthorizationQuery.Builder()
-                .filter(f -> f.ownerType(OwnerTypeEnum.USER.getValue()).ownerKey(1L))
+                .filter(f -> f.ownerType(OwnerTypeEnum.USER.getValue()).ownerKeys(1L))
                 .build());
   }
 
@@ -244,7 +244,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
     verify(authorizationServices)
         .search(
             new AuthorizationQuery.Builder()
-                .filter(f -> f.ownerType(OwnerTypeEnum.USER.getValue()).ownerKey(1L))
+                .filter(f -> f.ownerType(OwnerTypeEnum.USER.getValue()).ownerKeys(1L))
                 .build());
   }
 
@@ -275,7 +275,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
     verify(authorizationServices)
         .search(
             new AuthorizationQuery.Builder()
-                .filter(f -> f.ownerType(OwnerTypeEnum.USER.getValue()).ownerKey(1L))
+                .filter(f -> f.ownerType(OwnerTypeEnum.USER.getValue()).ownerKeys(1L))
                 .build());
   }
 
@@ -312,7 +312,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
     verify(authorizationServices)
         .search(
             new AuthorizationQuery.Builder()
-                .filter(f -> f.ownerType(OwnerTypeEnum.USER.getValue()).ownerKey(1L))
+                .filter(f -> f.ownerType(OwnerTypeEnum.USER.getValue()).ownerKeys(1L))
                 .sort(new AuthorizationSort.Builder().ownerType().desc().build())
                 .build());
   }

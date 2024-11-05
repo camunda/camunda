@@ -70,32 +70,10 @@ jobs:
       - name: Install firefox
         uses: browser-actions/setup-firefox@v1
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ steps.pom_info.outputs.x_version_node }}
-
-      - name: Setup yarn
-        run: npm install -g yarn
-
-      - name: Setup NodeJS
-        uses: actions/setup-node@0a44ba7841725637a19e28fa30b79a866c81b0a6 # v4
-        with:
-          node-version: ${{ steps.pom_info.outputs.x_version_node }}
-
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
-        with:
-          directory: optimize/client
-
-      - name: Install node dependencies
-        working-directory: ./optimize/client
-        shell: bash
-        run: yarn
-
       - name: Build frontend
-        working-directory: ./optimize/client
-        run: yarn build
-        shell: bash
+        uses: ./.github/actions/build-frontend
+        with:
+          directory: ./optimize/client
 
       - name: Start frontend
         working-directory: ./optimize/client

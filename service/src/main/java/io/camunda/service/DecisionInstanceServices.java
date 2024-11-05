@@ -18,9 +18,9 @@ import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.result.DecisionInstanceQueryResultConfig;
 import io.camunda.security.auth.Authentication;
-import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.auth.Authorization;
 import io.camunda.service.search.core.SearchQueryService;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.function.Function;
@@ -33,18 +33,17 @@ public final class DecisionInstanceServices
 
   public DecisionInstanceServices(
       final BrokerClient brokerClient,
-      final SecurityConfiguration securityConfiguration,
+      final SecurityContextProvider securityHandler,
       final DecisionInstanceSearchClient decisionInstanceSearchClient,
       final Authentication authentication) {
-    super(brokerClient, securityConfiguration, authentication);
-
+    super(brokerClient, securityHandler, authentication);
     this.decisionInstanceSearchClient = decisionInstanceSearchClient;
   }
 
   @Override
   public DecisionInstanceServices withAuthentication(final Authentication authentication) {
     return new DecisionInstanceServices(
-        brokerClient, securityConfiguration, decisionInstanceSearchClient, authentication);
+        brokerClient, securityContextProvider, decisionInstanceSearchClient, authentication);
   }
 
   /**
@@ -89,9 +88,11 @@ public final class DecisionInstanceServices
 
   private SearchQueryResult<DecisionInstanceEntity> baseSearch(
       final Function<DecisionInstanceQuery.Builder, ObjectBuilder<DecisionInstanceQuery>> fn) {
-    return decisionInstanceSearchClient.searchDecisionInstances(
-        decisionInstanceSearchQuery(fn),
-        SecurityContext.of(s -> s.withAuthentication(authentication)));
+    return decisionInstanceSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.decisionDefinition().readInstance())))
+        .searchDecisionInstances(decisionInstanceSearchQuery(fn));
   }
 
   private DecisionInstanceQueryResultConfig defaultSearchResultConfig() {

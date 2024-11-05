@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.timer;
 
+import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -17,6 +18,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
+@ExcludeAuthorizationCheck
 public final class TimerCancelProcessor implements TypedRecordProcessor<TimerRecord> {
   public static final String NO_TIMER_FOUND_MESSAGE =
       "Expected to cancel timer with key '%d', but no such timer was found";

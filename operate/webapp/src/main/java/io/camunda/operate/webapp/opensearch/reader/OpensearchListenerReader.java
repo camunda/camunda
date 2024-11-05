@@ -57,7 +57,7 @@ public class OpensearchListenerReader extends OpensearchAbstractReader implement
     final Query query =
         and(
             term(JobTemplate.PROCESS_INSTANCE_KEY, processInstanceId),
-            term(JobTemplate.FLOW_NODE_ID, request.getFlowNodeId()),
+            getFlowNodeQuery(request),
             or(
                 term(JobTemplate.JOB_KIND, ListenerType.EXECUTION_LISTENER.name()),
                 term(JobTemplate.JOB_KIND, ListenerType.TASK_LISTENER.name())));
@@ -83,6 +83,13 @@ public class OpensearchListenerReader extends OpensearchAbstractReader implement
       Collections.reverse(listeners);
     }
     return new ListenerResponseDto(listeners, totalHitCount);
+  }
+
+  private Query getFlowNodeQuery(final ListenerRequestDto request) {
+    if (request.getFlowNodeInstanceId() != null) {
+      return term(JobTemplate.FLOW_NODE_INSTANCE_ID, request.getFlowNodeInstanceId());
+    }
+    return term(JobTemplate.FLOW_NODE_ID, request.getFlowNodeId());
   }
 
   private void applySorting(

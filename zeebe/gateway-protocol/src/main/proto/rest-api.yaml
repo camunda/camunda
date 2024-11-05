@@ -60,12 +60,19 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TopologyResponse"
+        "500":
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /license:
     get:
       tags:
         - License
       operationId: getLicense
-      summary: Get status of Camunda license
+      summary: Get license status
       description: Obtains the status of the current Camunda license
       responses:
         "200":
@@ -74,6 +81,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/LicenseResponse"
+        "500":
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /jobs/activation:
     post:
       tags:
@@ -276,7 +290,7 @@ paths:
       tags:
         - Job
       operationId: updateJob
-      summary: Update a job
+      summary: Update job
       description: Update a job with the given key.
       parameters:
         - name: jobKey
@@ -475,14 +489,16 @@ paths:
       tags:
         - User task
       operationId: getUserTask
-      summary: Return user task by a user task key
+      summary: Get user task (alpha)
       description: |
         Get the user task by the user task key.
 
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
         :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        in future releases.
         :::
       parameters:
         - name: userTaskKey
@@ -501,25 +517,22 @@ paths:
               schema:
                 $ref: "#/components/schemas/UserTaskItem"
         "400":
-          description: "Bad request"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          description: "Unauthorized"
+          description: >
+            The provided data is not valid.
+            More details are provided in the response body.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "404":
-          description: "Not found"
+          description: The user task with the given key was not found.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: "Internal server error"
+          description: >
+            An internal error occurred while processing the request.
           content:
             application/problem+json:
               schema:
@@ -581,18 +594,17 @@ paths:
       tags:
         - User task
       operationId: getUserTaskForm
-      summary: Return user task form
+      summary: Get user task form (alpha)
       description: |
         Get the form of a user task.
 
-        :::note
-        This endpoint will only return linked forms. This endpoint does not support embedded forms.
-        :::
+        Note that this endpoint will only return linked forms. This endpoint does not support embedded forms.
+        Furthermore, this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
 
         :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        in future releases.
         :::
       parameters:
         - name: userTaskKey
@@ -693,10 +705,12 @@ paths:
       description: |
         Search for user tasks based on given criteria.
 
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
         :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        in future releases.
         :::
       requestBody:
         required: false
@@ -707,7 +721,7 @@ paths:
       responses:
         "200":
           description: >
-            The user task search successful response.
+            The user task search result.
           content:
             application/json:
               schema:
@@ -732,14 +746,16 @@ paths:
       tags:
         - User task
       operationId: findUserTaskVariables
-      summary: Query user tasks variables (alpha)
+      summary: Query user task variables (alpha)
       description: |
-        Search for user tasks based on given criteria.
+        Search for user task variables based on given criteria.
+
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
 
         :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        in future releases.
         :::
       parameters:
         - name: userTaskKey
@@ -758,7 +774,7 @@ paths:
       responses:
         "200":
           description: >
-            The user task varialbes search successful response.
+            The user task variables search response.
           content:
             application/json:
               schema:
@@ -784,14 +800,16 @@ paths:
       tags:
         - Variable
       operationId: findVariables
-      summary: Query process and local variables (alpha)
+      summary: Query variables (alpha)
       description: |
-        Search for variables based on given criteria.
+        Search for process and local variables based on given criteria.
+
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
 
         :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        in future releases.
         :::
       requestBody:
         required: false
@@ -802,7 +820,7 @@ paths:
       responses:
         "200":
           description: >
-            The variable search successful response.
+            The variable search result.
           content:
             application/json:
               schema:
@@ -827,13 +845,16 @@ paths:
       tags:
         - Variable
       operationId: getVariable
-      summary: Return variable by a variable key
+      summary: Get variable (alpha)
       description: |
         Get the variable by the variable key.
+
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
         :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        in future releases.
         :::
       parameters:
         - name: variableKey
@@ -887,7 +908,7 @@ paths:
         To change the time, the clock must be pinned again with a new timestamp.
 
         :::note
-        This endpoint is an [alpha feature](/reference/alpha-features.md) and may be subject to change
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
         in future releases.
         :::
       requestBody:
@@ -924,7 +945,7 @@ paths:
         normal behavior after it has been pinned to a specific time.
 
         :::note
-        This endpoint is an [alpha feature](/reference/alpha-features.md) and may be subject to change
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
         in future releases.
       responses:
         "204":
@@ -940,13 +961,16 @@ paths:
       tags:
         - Process definition
       operationId: findProcessDefinitions
-      summary: Search process definitions (alpha)
+      summary: Query process definitions (alpha)
       description: |
         Search for process definitions based on given criteria.
+
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
         :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        in future releases.
         :::
       requestBody:
         required: false
@@ -957,7 +981,7 @@ paths:
       responses:
         "200":
           description: >
-            The process definition search successful response.
+            The process definition search result.
           content:
             application/json:
               schema:
@@ -982,13 +1006,16 @@ paths:
       tags:
         - Process definition
       operationId: getProcessDefinition
-      summary: Get process definition by key (alpha)
+      summary: Get process definition (alpha)
       description: |
         Returns process definition as JSON.
+
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
         :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        in future releases.
         :::
       parameters:
         - name: processDefinitionKey
@@ -1038,10 +1065,12 @@ paths:
       description: |
         Returns process definition as XML.
 
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
         :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        in future releases.
         :::
       parameters:
         - name: processDefinitionKey
@@ -1094,18 +1123,17 @@ paths:
       tags:
         - Process definition
       operationId: getStartProcessForm
-      summary: Get start process form
+      summary: Get process start form (alpha)
       description: |
         Get the start form of a process.
 
-        :::note
-        This endpoint will only return linked forms. This endpoint does not support embedded forms.
-        :::
+        Note that this endpoint will only return linked forms. This endpoint does not support embedded forms.
+        Furthermore, this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
 
         :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        in future releases.
         :::
       parameters:
         - name: processDefinitionsKey
@@ -1205,10 +1233,12 @@ paths:
       description: |
         Get the process instance by the process instance key.
 
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
         :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        in future releases.
         :::
       parameters:
         - name: processInstanceKey
@@ -1258,10 +1288,12 @@ paths:
       description: |
         Search for process instances based on given criteria.
 
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
         :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        in future releases.
         :::
       requestBody:
         required: false
@@ -1271,7 +1303,7 @@ paths:
               $ref: "#/components/schemas/ProcessInstanceSearchQueryRequest"
       responses:
         "200":
-          description: The process instance search successful response.
+          description: The process instance search result.
           content:
             application/json:
               schema:
@@ -1439,10 +1471,12 @@ paths:
       description: |
         Search for flow node instances based on given criteria.
 
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
         :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        in future releases.
         :::
       requestBody:
         required: false
@@ -1453,7 +1487,7 @@ paths:
       responses:
         "200":
           description: >
-            The Flow node instance search successful response.
+            The flow node instance search result.
           content:
             application/json:
               schema:
@@ -1478,13 +1512,16 @@ paths:
       tags:
         - Flow node instance
       operationId: getFlowNodeInstance
-      summary: Get flow node instance by key (alpha)
+      summary: Get flow node instance (alpha)
       description: |
         Returns flow node instance as JSON.
+
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
         :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        in future releases.
         :::
       parameters:
         - name: flownodeInstanceKey
@@ -1534,10 +1571,12 @@ paths:
       description: |
         Search for decision definitions based on given criteria.
 
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
         :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        in future releases.
         :::
       requestBody:
         required: false
@@ -1548,7 +1587,7 @@ paths:
       responses:
         "200":
           description: >
-            The Decision Definition Search successful response.
+            The decision definition search result.
           content:
             application/json:
               schema:
@@ -1573,14 +1612,16 @@ paths:
       tags:
         - Decision definition
       operationId: getDecisionDefinition
-      summary: Get decision definition by key (alpha)
+      summary: Get decision definition (alpha)
       description: |
-        Returns a decision definition.
+        Returns a decision definition by key.
+
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
 
         :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        in future releases.
         :::
       parameters:
         - name: decisionDefinitionKey
@@ -1630,10 +1671,12 @@ paths:
       description: |
         Returns decision definition as XML.
 
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
         :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        in future releases.
         :::
       parameters:
         - name: decisionDefinitionKey
@@ -1683,10 +1726,12 @@ paths:
       description: |
         Search for decision requirements based on given criteria.
 
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
         :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        in future releases.
         :::
       requestBody:
         required: false
@@ -1697,28 +1742,41 @@ paths:
       responses:
         "200":
           description: >
-            The decision requirements search successful response.
+            The decision requirements search result.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/DecisionRequirementsSearchQueryResponse"
         "400":
           description: >
-            The decision requirements search query failed.
+            The search query failed.
             More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /decision-requirements/{decisionRequirementsKey}:
     get:
       tags:
         - Decision requirements
       operationId: getDecisionRequirements
-      summary: Get decision requirements by key (alpha)
+      summary: Get decision requirements (alpha)
       description: |
         Returns Decision Requirements as JSON.
 
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
         :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        in future releases.
         :::
       parameters:
         - name: decisionRequirementsKey
@@ -1768,10 +1826,12 @@ paths:
       description: |
         Returns decision requirements as XML.
 
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
         :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        in future releases.
         :::
       parameters:
         - name: decisionRequirementsKey
@@ -1822,10 +1882,12 @@ paths:
       description: |
         Search for decision instances based on given criteria.
 
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
         :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        in future releases.
         :::
       requestBody:
         required: false
@@ -1836,7 +1898,7 @@ paths:
       responses:
         "200":
           description: >
-            The decision instance search successful response.
+            The decision instance search result.
           content:
             application/json:
               schema:
@@ -1862,14 +1924,16 @@ paths:
       tags:
         - Decision instance
       operationId: getDecisionInstance
-      summary: Get decision instance by key (alpha)
+      summary: Get decision instance (alpha)
       description: |
         Returns a decision instance.
 
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
         :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        in future releases.
         :::
       parameters:
         - name: decisionInstanceKey
@@ -1970,7 +2034,7 @@ paths:
       tags:
         - Authorization
       operationId: updateAuthorization
-      summary: Patch authorization
+      summary: Update authorization
       description: Manage the permissions assigned to the authorization.
       parameters:
         - name: ownerKey
@@ -2035,16 +2099,18 @@ paths:
     post:
       tags:
         - Authorization
-      summary: "Query authorizations (alpha)"
+      summary: Query authorizations (alpha)
       description: |
         Search for authorizations based on given criteria.
 
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
         :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        in future releases.
         :::
-      operationId: "findAuthorizations"
+      operationId: findAuthorizations
       requestBody:
         content:
           application/json:
@@ -2053,49 +2119,33 @@ paths:
         required: true
       responses:
         "200":
-          description: "OK"
+          description: The authorization search result.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthorizationSearchResponse"
         "400":
-          description: "Bad request"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          description: "Unauthorized"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: "Forbidden"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: "Not found"
+          description: >
+            The authorization search query failed.
+            More details are provided in the response body.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: "Internal server error"
+          description: >
+            An internal error occurred while processing the request.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-
 
   /users:
     post:
       tags:
         - User
       operationId: createUser
-      summary: Create a user
+      summary: Create user
       requestBody:
         content:
           application/json:
@@ -2146,7 +2196,7 @@ paths:
       tags:
         - Message
       operationId: publishMessage
-      summary: Publish a message
+      summary: Publish message
       description: |
         Publishes a single message.
         Messages are published to specific partitions computed from their correlation keys.
@@ -2182,7 +2232,7 @@ paths:
       tags:
         - Message
       operationId: correlateMessage
-      summary: Correlate a message
+      summary: Correlate message
       description: |
         Publishes a message and correlates it to a subscription.
         If correlation is successful it will return the first process instance key the message correlated with.
@@ -2233,9 +2283,11 @@ paths:
       description: |
         Upload a document to the Camunda 8 cluster.
 
+        Note that this currently only supports an in-memory document store, which is not meant for production use.
+
         :::note
-        This endpoint is an alpha feature. It currently only supports an in-memory document store,
-        which is not meant for production use.
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        in future releases.
         :::
       parameters:
         - name: storeId
@@ -2292,9 +2344,11 @@ paths:
       description: |
         Download a document from the Camunda 8 cluster.
 
+        Note that this currently only supports an in-memory document store, which is not meant for production use.
+
         :::note
-        This endpoint is an alpha feature. It currently only supports an in-memory document store,
-        which is not meant for production use.
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        in future releases.
         :::
       parameters:
         - name: documentId
@@ -2339,9 +2393,11 @@ paths:
       description: |
         Delete a document from the Camunda 8 cluster.
 
+        Note that this currently only supports an in-memory document store, which is not meant for production use.
+
         :::note
-        This endpoint is an alpha feature. It currently only supports an in-memory document store,
-        which is not meant for production use.
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        in future releases.
         :::
       parameters:
         - name: documentId
@@ -2382,9 +2438,11 @@ paths:
       description: |
         Create a link to a document in the Camunda 8 cluster.
 
+        Note that this currently only supports an in-memory document store, which is not meant for production use.
+
         :::note
-        This endpoint is an alpha feature. It currently only supports an in-memory document store,
-        which is not meant for production use.
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        in future releases.
         :::
       parameters:
         - name: documentId
@@ -2425,14 +2483,16 @@ paths:
       tags:
         - User
       operationId: findUsers
-      summary: "Query users (alpha)"
+      summary: Query users (alpha)
       description: |
         Search for users based on given criteria.
 
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
         :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        in future releases.
         :::
       requestBody:
         content:
@@ -2442,25 +2502,22 @@ paths:
         required: true
       responses:
         "200":
-          description: "OK"
+          description: The user search result.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/UserSearchResponse"
         "400":
-          description: "Bad request"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          description: "Unauthorized"
+          description: >
+            The user search query failed.
+            More details are provided in the response body.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: "Internal server error"
+          description: >
+            An internal error occurred while processing the request.
           content:
             application/problem+json:
               schema:
@@ -2470,14 +2527,16 @@ paths:
     post:
       tags:
         - Authorization
-      summary: "Query a User's authorizations (alpha)"
+      summary: "Query user authorizations (alpha)"
       description: |
-        Search for authorizations based on given criteria.
+        Search for user authorizations based on given criteria.
+
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
 
         :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        in future releases.
         :::
       operationId: "findUserAuthorizations"
       parameters:
@@ -2496,37 +2555,22 @@ paths:
         required: true
       responses:
         "200":
-          description: "OK"
+          description: The user authorization search result.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthorizationSearchResponse"
         "400":
-          description: "Bad request"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          description: "Unauthorized"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: "Forbidden"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: "Not found"
+          description: >
+            The user authorization search query failed.
+            More details are provided in the response body.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: "Internal server error"
+          description: >
+            An internal error occurred while processing the request.
           content:
             application/problem+json:
               schema:
@@ -2541,10 +2585,12 @@ paths:
       description: |
         Search for incidents based on given criteria.
 
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
         :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        in future releases.
         :::
       requestBody:
         required: false
@@ -2555,7 +2601,7 @@ paths:
       responses:
         "200":
           description: >
-            The incident search successful response.
+            The incident search result.
           content:
             application/json:
               schema:
@@ -2564,24 +2610,6 @@ paths:
           description: >
             The incident search query failed.
             More details are provided in the response body.
-        "401":
-          description: "Unauthorized"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: "Forbidden"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: "Not found"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
         "500":
           description: "Internal server error"
           content:
@@ -2593,13 +2621,16 @@ paths:
       tags:
         - Incident
       operationId: getIncident
-      summary: Get incident by key (alpha)
+      summary: Get incident (alpha)
       description: |
         Returns incident as JSON.
+
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
         :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        in future releases.
         :::
       parameters:
         - name: incidentKey
@@ -2856,6 +2887,10 @@ components:
         assignee:
           type: string
           description: The assignee of the user task.
+        priority:
+          type: integer
+          format: int32
+          description: The priority of the user task.
         elementId:
           type: string
           description: The element ID of the user task.
@@ -3715,6 +3750,8 @@ components:
         enum:
           - CREATE
           - READ
+          - READ_INSTANCE
+          - READ_USER_TASK
           - UPDATE
           - DELETE
           - DELETE_PROCESS
@@ -3927,6 +3964,13 @@ components:
         licenseType:
           description: Will return the license type property of the Camunda license
           type: string
+        isCommercial:
+          description: Will be false when a license contains a non-commerical=true property
+          type: boolean
+        expiresAt:
+          description: The date when the Camunda license expires
+          type: string
+          format: date-time
     BrokerInfo:
       description: Provides information on a broker node.
       type: object
@@ -4611,6 +4655,10 @@ components:
         evaluationFailure:
           type: string
           description: The evaluation failure of the decision instance.
+        evaluationDate:
+          type: string
+          description: The evaluation date of the decision instance.
+          format: date-time
         processDefinitionKey:
           type: integer
           format: int64

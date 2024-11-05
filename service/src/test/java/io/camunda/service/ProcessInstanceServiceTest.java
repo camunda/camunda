@@ -25,6 +25,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -42,16 +43,19 @@ public final class ProcessInstanceServiceTest {
   @BeforeEach
   public void before() {
     client = mock(ProcessInstanceSearchClient.class);
+    when(client.withSecurityContext(any())).thenReturn(client);
     securityConfiguration = new SecurityConfiguration();
+    final var securityContextProvider = new SecurityContextProvider(securityConfiguration);
     services =
-        new ProcessInstanceServices(mock(BrokerClient.class), securityConfiguration, client, null);
+        new ProcessInstanceServices(
+            mock(BrokerClient.class), securityContextProvider, client, null);
   }
 
   @Test
   public void shouldReturnProcessInstance() {
     // given
     final var result = mock(SearchQueryResult.class);
-    when(client.searchProcessInstances(any(), any())).thenReturn(result);
+    when(client.searchProcessInstances(any())).thenReturn(result);
 
     final ProcessInstanceQuery searchQuery =
         SearchQueryBuilders.processInstanceSearchQuery().build();
@@ -69,7 +73,7 @@ public final class ProcessInstanceServiceTest {
     final var key = 123L;
     final var entity = mock(ProcessInstanceEntity.class);
     when(entity.key()).thenReturn(key);
-    when(client.searchProcessInstances(any(), any()))
+    when(client.searchProcessInstances(any()))
         .thenReturn(new SearchQueryResult(1, List.of(entity), null));
 
     // when
@@ -83,7 +87,7 @@ public final class ProcessInstanceServiceTest {
   public void shouldThrownExceptionIfNotFoundByKey() {
     // given
     final var key = 100L;
-    when(client.searchProcessInstances(any(), any()))
+    when(client.searchProcessInstances(any()))
         .thenReturn(new SearchQueryResult(0, List.of(), null));
 
     // when / then
@@ -98,7 +102,7 @@ public final class ProcessInstanceServiceTest {
     final var key = 200L;
     final var entity1 = mock(DecisionRequirementsEntity.class);
     final var entity2 = mock(DecisionRequirementsEntity.class);
-    when(client.searchProcessInstances(any(), any()))
+    when(client.searchProcessInstances(any()))
         .thenReturn(new SearchQueryResult(2, List.of(entity1, entity2), null));
 
     // when / then
@@ -120,10 +124,9 @@ public final class ProcessInstanceServiceTest {
     services.withAuthentication(authentication).search(searchQuery);
 
     // then
-    // assertThat(searchQueryResult.key()).isEqualTo(key);
     final ArgumentCaptor<SecurityContext> securityContextArgumentCaptor =
         ArgumentCaptor.forClass(SecurityContext.class);
-    verify(client).searchProcessInstances(any(), securityContextArgumentCaptor.capture());
+    verify(client).withSecurityContext(securityContextArgumentCaptor.capture());
     assertThat(securityContextArgumentCaptor.getValue())
         .isEqualTo(
             SecurityContext.of(
@@ -149,9 +152,8 @@ public final class ProcessInstanceServiceTest {
     // then
     final ArgumentCaptor<SecurityContext> securityContextArgumentCaptor =
         ArgumentCaptor.forClass(SecurityContext.class);
-    verify(client).searchProcessInstances(any(), securityContextArgumentCaptor.capture());
+    verify(client).withSecurityContext(securityContextArgumentCaptor.capture());
     assertThat(securityContextArgumentCaptor.getValue())
-        .isEqualTo(
-            SecurityContext.of(s -> s.withAuthentication(authentication).withoutAuthorization()));
+        .isEqualTo(SecurityContext.of(s -> s.withAuthentication(authentication)));
   }
 }

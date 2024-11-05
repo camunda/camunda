@@ -130,4 +130,9 @@ public class UserTaskCompletionVariableHandler
     batchRequest.upsertWithRouting(
         indexName, entity.getId(), entity, updateFields, String.valueOf(entity.getScopeKey()));
   }
+
+  @Override
+  public String getIndexName() {
+    return indexName;
+  }
 }

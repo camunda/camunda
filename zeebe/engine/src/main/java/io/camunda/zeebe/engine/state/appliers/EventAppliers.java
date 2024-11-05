@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.EscalationIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
+import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
@@ -118,6 +119,7 @@ public final class EventAppliers implements EventApplier {
     registerAuthorizationAppliers(state);
     registerClockAppliers(state);
     registerRoleAppliers(state);
+    registerGroupAppliers(state);
     registerScalingAppliers(state);
     registerTenantAppliers(state);
     registerMappingAppliers(state);
@@ -300,7 +302,13 @@ public final class EventAppliers implements EventApplier {
         new IncidentCreatedApplier(state.getIncidentState(), state.getJobState()));
     register(
         IncidentIntent.RESOLVED,
-        new IncidentResolvedApplier(
+        1,
+        new IncidentResolvedV1Applier(
+            state.getIncidentState(), state.getJobState(), state.getElementInstanceState()));
+    register(
+        IncidentIntent.RESOLVED,
+        2,
+        new IncidentResolvedV2Applier(
             state.getIncidentState(), state.getJobState(), state.getElementInstanceState()));
     register(IncidentIntent.MIGRATED, new IncidentMigratedApplier(state.getIncidentState()));
   }
@@ -466,13 +474,18 @@ public final class EventAppliers implements EventApplier {
         new RoleCreatedApplier(state.getRoleState(), state.getAuthorizationState()));
     register(RoleIntent.UPDATED, new RoleUpdatedApplier(state.getRoleState()));
     register(RoleIntent.ENTITY_ADDED, new RoleEntityAddedApplier(state));
-    register(
-        RoleIntent.ENTITY_REMOVED,
-        new RoleEntityRemovedApplier(state.getRoleState(), state.getUserState()));
+    register(RoleIntent.ENTITY_REMOVED, new RoleEntityRemovedApplier(state));
     register(
         RoleIntent.DELETED,
         new RoleDeletedApplier(
             state.getRoleState(), state.getUserState(), state.getAuthorizationState()));
+  }
+
+  private void registerGroupAppliers(final MutableProcessingState state) {
+    register(
+        GroupIntent.CREATED,
+        new GroupCreatedApplier(state.getGroupState(), state.getAuthorizationState()));
+    register(GroupIntent.UPDATED, new GroupUpdatedApplier(state.getGroupState()));
   }
 
   private void registerScalingAppliers(final MutableProcessingState state) {
@@ -481,14 +494,18 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerTenantAppliers(final MutableProcessingState state) {
-    register(TenantIntent.CREATED, new TenantCreatedApplier(state.getTenantState()));
-    register(TenantIntent.UPDATED, new TenantUpdatedApplier(state.getTenantState()));
     register(
-        TenantIntent.ENTITY_ADDED,
-        new TenantEntityAddedApplier(state.getTenantState(), state.getUserState()));
+        TenantIntent.CREATED,
+        new TenantCreatedApplier(state.getTenantState(), state.getAuthorizationState()));
+    register(TenantIntent.UPDATED, new TenantUpdatedApplier(state.getTenantState()));
+    register(TenantIntent.ENTITY_ADDED, new TenantEntityAddedApplier(state));
     register(
         TenantIntent.ENTITY_REMOVED,
         new TenantEntityRemovedApplier(state.getTenantState(), state.getUserState()));
+    register(
+        TenantIntent.DELETED,
+        new TenantDeletedApplier(
+            state.getTenantState(), state.getUserState(), state.getAuthorizationState()));
   }
 
   private void registerMappingAppliers(final MutableProcessingState state) {

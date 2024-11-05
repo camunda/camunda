@@ -9,6 +9,7 @@ package io.camunda.db.rdbms.write;
 
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.service.ExporterPositionService;
+import io.camunda.db.rdbms.write.service.FlowNodeInstanceWriter;
 import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
 import io.camunda.db.rdbms.write.service.ProcessInstanceWriter;
 import io.camunda.db.rdbms.write.service.VariableWriter;
@@ -17,6 +18,7 @@ public class RdbmsWriter {
 
   private final ExecutionQueue executionQueue;
   private final ExporterPositionService exporterPositionService;
+  private final FlowNodeInstanceWriter flowNodeInstanceWriter;
   private final ProcessDefinitionWriter processDefinitionWriter;
   private final ProcessInstanceWriter processInstanceWriter;
   private final VariableWriter variableWriter;
@@ -25,9 +27,14 @@ public class RdbmsWriter {
       final ExecutionQueue executionQueue, final ExporterPositionService exporterPositionService) {
     this.executionQueue = executionQueue;
     this.exporterPositionService = exporterPositionService;
+    flowNodeInstanceWriter = new FlowNodeInstanceWriter(executionQueue);
     processDefinitionWriter = new ProcessDefinitionWriter(executionQueue);
     processInstanceWriter = new ProcessInstanceWriter(executionQueue);
     variableWriter = new VariableWriter(executionQueue);
+  }
+
+  public FlowNodeInstanceWriter getFlowNodeInstanceWriter() {
+    return flowNodeInstanceWriter;
   }
 
   public ProcessDefinitionWriter getProcessDefinitionWriter() {

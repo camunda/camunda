@@ -31,8 +31,7 @@ public abstract class RestControllerTest {
       mockRequestMapper
           .when(RequestMapper::getAuthentication)
           .thenReturn(
-              Authentication.of(
-                  a -> a.user("user").group("group").tenant(tenantId).token("token")));
+              Authentication.of(a -> a.user(123L).group(456L).tenant(tenantId).token("token")));
       return function.apply(webClient);
     }
   }

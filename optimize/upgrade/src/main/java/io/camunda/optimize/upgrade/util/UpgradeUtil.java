@@ -76,7 +76,6 @@ public final class UpgradeUtil {
           OPTIMIZE_MAPPER,
           metadataService);
     } else {
-      // TODO Evaluate the need for OpenSearchCustomHeaderProvider with OPT-7400
       final OptimizeOpenSearchClient osClient =
           new OptimizeOpenSearchClient(
               OpenSearchClientBuilder.buildOpenSearchClientFromConfig(

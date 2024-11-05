@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.ImmutableIncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
@@ -180,6 +181,69 @@ public class IncidentHandlerTest {
         .isEqualTo(incidentRecordValue.getElementInstanceKey());
     assertThat(incidentEntity.getErrorMessageHash())
         .isEqualTo(incidentRecordValue.getErrorMessage().hashCode());
+  }
+
+  /**
+   * Must be imported correctly so that resolving the incident considers incrementing job retries.
+   */
+  @Test
+  void shouldHandleJobNoRetriesErrorType() {
+    // given
+    final long expectedId = 123;
+    final IncidentRecordValue incidentRecordValue =
+        ImmutableIncidentRecordValue.builder()
+            .from(factory.generateObject(IncidentRecordValue.class))
+            .withErrorType(ErrorType.JOB_NO_RETRIES)
+            .build();
+
+    final Record<IncidentRecordValue> incidentRecord =
+        factory.generateRecord(
+            ValueType.INCIDENT,
+            r ->
+                r.withIntent(ProcessIntent.CREATED)
+                    .withValue(incidentRecordValue)
+                    .withKey(expectedId));
+
+    final IncidentEntity incidentEntity = new IncidentEntity();
+
+    // when
+    underTest.updateEntity(incidentRecord, incidentEntity);
+
+    // then
+    assertThat(incidentEntity.getErrorType())
+        .isEqualTo(io.camunda.webapps.schema.entities.operate.ErrorType.JOB_NO_RETRIES);
+  }
+
+  /**
+   * Must be imported correctly so that resolving the incident considers incrementing job retries.
+   */
+  @Test
+  void shouldHandleExecutionListenerNoRetriesErrorType() {
+    // given
+    final long expectedId = 123;
+    final IncidentRecordValue incidentRecordValue =
+        ImmutableIncidentRecordValue.builder()
+            .from(factory.generateObject(IncidentRecordValue.class))
+            .withErrorType(ErrorType.EXECUTION_LISTENER_NO_RETRIES)
+            .build();
+
+    final Record<IncidentRecordValue> incidentRecord =
+        factory.generateRecord(
+            ValueType.INCIDENT,
+            r ->
+                r.withIntent(ProcessIntent.CREATED)
+                    .withValue(incidentRecordValue)
+                    .withKey(expectedId));
+
+    final IncidentEntity incidentEntity = new IncidentEntity();
+
+    // when
+    underTest.updateEntity(incidentRecord, incidentEntity);
+
+    // then
+    assertThat(incidentEntity.getErrorType())
+        .isEqualTo(
+            io.camunda.webapps.schema.entities.operate.ErrorType.EXECUTION_LISTENER_NO_RETRIES);
   }
 
   private String concurrencyScriptMock() {

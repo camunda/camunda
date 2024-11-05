@@ -47,6 +47,11 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-workflow-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>operate-webapp</artifactId>
       <scope>test</scope>
     </dependency>

@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper">
+
+  <select id="count" resultType="java.lang.Long">
+    SELECT COUNT(*)
+    FROM FLOW_NODE_INSTANCE pi
+    <include refid="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.searchFilter"/>
+  </select>
+
+  <!-- default search statement for databases supporting LIMIT/OFFSET-->
+  <select id="search" parameterType="io.camunda.db.rdbms.read.domain.FlowNodeInstanceDbQuery"
+    resultMap="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.searchResultMap">
+    SELECT
+    FLOW_NODE_INSTANCE_KEY,
+    FLOW_NODE_ID,
+    PROCESS_INSTANCE_KEY,
+    PROCESS_DEFINITION_ID,
+    PROCESS_DEFINITION_KEY,
+    TYPE,
+    STATE,
+    START_DATE,
+    END_DATE,
+    TENANT_ID,
+    TREE_PATH,
+    INCIDENT_KEY IS NOT NULL AS HAS_INCIDENT,
+    INCIDENT_KEY,
+    SCOPE_KEY
+    FROM FLOW_NODE_INSTANCE
+    <include refid="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.searchFilter"/>
+    <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
+      <foreach collection="sort.orderings" open="ORDER BY " separator=", " item="item">
+        <include refid="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.flowNodeInstanceSortMapper"/>
+        ${item.order}
+      </foreach>
+    </if>
+    ${paging.after}
+  </select>
+
+  <sql id="searchFilter">
+    WHERE 1 = 1
+    <!-- basic filters -->
+    <if test="filter.flowNodeInstanceKeys != null and !filter.flowNodeInstanceKeys.isEmpty()">
+      AND FLOW_NODE_INSTANCE_KEY IN
+      <foreach collection="filter.flowNodeInstanceKeys" item="value" open="(" separator=", " close=")">#{value}</foreach>
+    </if>
+    <if test="filter.processDefinitionIds != null and !filter.processDefinitionIds.isEmpty()">
+      AND PROCESS_DEFINITION_ID IN
+      <foreach collection="filter.processDefinitionIds" item="value" open="(" separator=", " close=")">#{value}</foreach>
+    </if>
+    <if test="filter.processInstanceKeys != null and !filter.processInstanceKeys.isEmpty()">
+      AND PROCESS_INSTANCE_KEY IN
+      <foreach collection="filter.processInstanceKeys" item="value" open="(" separator=", " close=")">#{value}</foreach>
+    </if>
+    <if test="filter.processDefinitionKeys != null and !filter.processDefinitionKeys.isEmpty()">
+      AND PROCESS_DEFINITION_KEY IN
+      <foreach collection="filter.processDefinitionKeys" item="value" open="(" separator=", " close=")">#{value}</foreach>
+    </if>
+    <if test="filter.states != null and !filter.states.isEmpty()">
+      AND STATE IN
+      <foreach collection="filter.states" item="value" open="(" separator=", " close=")">#{value}</foreach>
+    </if>
+    <if test="filter.types != null and !filter.types.isEmpty()">
+      AND TYPE IN
+      <foreach collection="filter.types" item="value" open="(" separator=", " close=")">#{value}</foreach>
+    </if>
+    <if test="filter.flowNodeIds != null and !filter.flowNodeIds.isEmpty()">
+      AND FLOW_NODE_ID IN
+      <foreach collection="filter.flowNodeIds" item="value" open="(" separator=", " close=")">#{value}</foreach>
+    </if>
+    <if test="filter.incidentKeys != null and !filter.incidentKeys.isEmpty()">
+      AND INCIDENT_KEY IN
+      <foreach collection="filter.incidentKeys" item="value" open="(" separator=", " close=")">#{value}</foreach>
+    </if>
+    <if test="filter.hasIncident == true">
+      AND INCIDENT_KEY IS NOT NULL
+    </if>
+    <if test="filter.hasIncident == false">
+      AND INCIDENT_KEY IS NULL
+    </if>
+    <if test="filter.treePaths != null and !filter.treePaths.isEmpty()">
+      AND TREE_PATH IN
+      <foreach collection="filter.treePaths" item="value" open="(" separator=", " close=")">#{value}</foreach>
+    </if>
+    <if test="filter.tenantIds != null and !filter.tenantIds.isEmpty()">
+      AND TENANT_ID IN
+      <foreach collection="filter.tenantIds" item="value" open="(" separator=", " close=")">#{value}</foreach>
+    </if>
+  </sql>
+
+  <sql id="flowNodeInstanceSortMapper">
+    <choose>
+      <when test='item.field == "key"'>
+        FLOW_NODE_INSTANCE_KEY
+      </when>
+      <when test='item.field == "bpmnProcessId"'>
+        PROCESS_DEFINITION_ID
+      </when>
+      <when test='item.field == "processDefinitionKey"'>
+        PROCESS_DEFINITION_KEY
+      </when>
+      <when test='item.field == "processInstanceKey"'>
+        PROCESS_INSTANCE_KEY
+      </when>
+      <when test='item.field == "flowNodeId"'>
+        FLOW_NODE_ID
+      </when>
+      <when test='item.field == "type"'>
+        TYPE
+      </when>
+      <when test='item.field == "state"'>
+        STATE
+      </when>
+      <when test='item.field == "startDate"'>
+        START_DATE
+      </when>
+      <when test='item.field == "endDate"'>
+        END_DATE
+      </when>
+      <when test='item.field == "tenantId"'>
+        TENANT_ID
+      </when>
+      <when test='item.field == "incidentKey"'>
+        INCIDENT_KEY
+      </when>
+      <when test='item.field == "incidentKey"'>
+        INCIDENT_KEY
+      </when>
+    </choose>
+  </sql>
+
+  <resultMap id="searchResultMap" type="io.camunda.search.entities.FlowNodeInstanceEntity">
+    <constructor>
+      <idArg column="FLOW_NODE_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
+      <arg column="START_DATE" javaType="java.lang.String" typeHandler="io.camunda.db.rdbms.sql.typehandler.OffsetDateTimeToStringTypeHandler"/>
+      <arg column="END_DATE" javaType="java.lang.String" typeHandler="io.camunda.db.rdbms.sql.typehandler.OffsetDateTimeToStringTypeHandler"/>
+      <arg column="FLOW_NODE_ID" javaType="java.lang.String"/>
+      <arg column="TREE_PATH" javaType="java.lang.String"/>
+      <arg column="TYPE" javaType="io.camunda.search.entities.FlowNodeInstanceEntity$FlowNodeType"/>
+      <arg column="STATE" javaType="io.camunda.search.entities.FlowNodeInstanceEntity$FlowNodeState"/>
+      <arg column="HAS_INCIDENT" javaType="java.lang.Boolean"/>
+      <arg column="INCIDENT_KEY" javaType="java.lang.Long"/>
+      <arg column="SCOPE_KEY" javaType="java.lang.Long"/>
+      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
+      <arg column="TENANT_ID" javaType="java.lang.String"/>
+    </constructor>
+  </resultMap>
+
+  <insert
+    id="insert"
+    parameterType="io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel"
+    flushCache="true">
+    INSERT INTO FLOW_NODE_INSTANCE (FLOW_NODE_INSTANCE_KEY, FLOW_NODE_ID, PROCESS_INSTANCE_KEY,
+                                    PROCESS_DEFINITION_ID, PROCESS_DEFINITION_KEY, TYPE, STATE,
+                                    START_DATE, END_DATE, TENANT_ID, TREE_PATH, INCIDENT_KEY,
+                                    SCOPE_KEY)
+    VALUES (#{flowNodeInstanceKey}, #{flowNodeId}, #{processInstanceKey}, #{processDefinitionId},
+            #{processDefinitionKey}, #{type}, #{state},
+            #{startDate, jdbcType=TIMESTAMP}, #{endDate, jdbcType=TIMESTAMP}, #{tenantId},
+            #{treePath}, #{incidentKey}, #{scopeKey})
+  </insert>
+
+  <update
+    id="updateStateAndEndDate"
+    statementType="PREPARED"
+    parameterType="hashmap"
+    flushCache="true">
+    UPDATE FLOW_NODE_INSTANCE
+    SET STATE = #{state},
+        END_DATE = #{endDate}
+    WHERE FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey}
+  </update>
+</mapper>

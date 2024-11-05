@@ -182,6 +182,10 @@ public final class SearchQueryRequestMapper {
           .map(s -> convertEnum(s, DecisionInstanceState.class))
           .ifPresent(builder::states);
       ofNullable(filter.getEvaluationFailure()).ifPresent(builder::evaluationFailures);
+      ofNullable(filter.getEvaluationDate())
+          .map(SearchQueryRequestMapper::toOffsetDateTime)
+          .map(SearchQueryRequestMapper::mapToOperation)
+          .ifPresent(builder::evaluationDateOperations);
       ofNullable(filter.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
       ofNullable(filter.getDecisionDefinitionKey()).ifPresent(builder::decisionDefinitionKeys);
       ofNullable(filter.getDecisionDefinitionId()).ifPresent(builder::decisionDefinitionIds);
@@ -288,11 +292,12 @@ public final class SearchQueryRequestMapper {
     ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     ofNullable(filter.getIsTruncated()).ifPresent(builder::isTruncated);
 
-    if (filter.getName() != null || filter.getValue() != null) {
-      final VariableValueFilter variableValueFilter =
-          new VariableValueFilter.Builder().name(filter.getName()).eq(filter.getValue()).build();
-
-      builder.variable(variableValueFilter);
+    if (filter.getName() != null) {
+      if (filter.getValue() != null) {
+        builder.variableOperations(filter.getName(), Operation.eq(filter.getValue()));
+      } else {
+        builder.variableOperations(filter.getName(), Operation.exists(true));
+      }
     }
 
     return builder.build();
@@ -479,11 +484,12 @@ public final class SearchQueryRequestMapper {
             f -> {
               Optional.ofNullable(f.getUserTaskKey()).ifPresent(builder::userTaskKeys);
               Optional.ofNullable(f.getState())
-                  .ifPresent(
-                      s -> builder.states(String.valueOf(UserTaskState.valueOf(s.getValue()))));
+                  .map(s -> String.valueOf(UserTaskState.valueOf(s.getValue())))
+                  .ifPresent(builder::states);
               Optional.ofNullable(f.getProcessDefinitionId()).ifPresent(builder::bpmnProcessIds);
               Optional.ofNullable(f.getElementId()).ifPresent(builder::elementIds);
               Optional.ofNullable(f.getAssignee()).ifPresent(builder::assignees);
+              Optional.ofNullable(f.getPriority()).ifPresent(builder::priorities);
               Optional.ofNullable(f.getCandidateGroup()).ifPresent(builder::candidateGroups);
               Optional.ofNullable(f.getCandidateUser()).ifPresent(builder::candidateUsers);
               Optional.ofNullable(f.getProcessDefinitionKey())
@@ -491,7 +497,6 @@ public final class SearchQueryRequestMapper {
               Optional.ofNullable(f.getProcessInstanceKey())
                   .ifPresent(builder::processInstanceKeys);
               Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
-
               Optional.ofNullable(f.getVariables())
                   .filter(variables -> !variables.isEmpty())
                   .ifPresent(vars -> builder.variable(toVariableValueFilters(vars)));
@@ -905,7 +910,7 @@ public final class SearchQueryRequestMapper {
             f ->
                 FilterBuilders.authorization()
                     .ownerType(f.getOwnerType() == null ? null : f.getOwnerType().getValue())
-                    .ownerKey(f.getOwnerKey())
+                    .ownerKeys(f.getOwnerKey())
                     .build())
         .orElse(null);
   }

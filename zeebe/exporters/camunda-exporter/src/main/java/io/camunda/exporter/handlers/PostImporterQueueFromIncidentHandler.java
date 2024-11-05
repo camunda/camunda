@@ -78,4 +78,9 @@ public class PostImporterQueueFromIncidentHandler
   public void flush(final PostImporterQueueEntity entity, final BatchRequest batchRequest) {
     batchRequest.add(indexName, entity);
   }
+
+  @Override
+  public String getIndexName() {
+    return indexName;
+  }
 }

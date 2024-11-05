@@ -15,7 +15,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.clients.FormSearchClient;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,8 +28,10 @@ public final class FormServiceTest {
   @BeforeEach
   public void before() {
     client = mock(FormSearchClient.class);
+    when(client.withSecurityContext(any())).thenReturn(client);
     services =
-        new FormServices(mock(BrokerClient.class), new SecurityConfiguration(), client, null);
+        new FormServices(
+            mock(BrokerClient.class), mock(SecurityContextProvider.class), client, null);
   }
 
   @Test
@@ -39,7 +41,7 @@ public final class FormServiceTest {
         SearchQueryBuilders.formSearchQuery().filter(f -> f.formKeys(1L)).build();
 
     final var result = mock(SearchQueryResult.class);
-    when(client.searchForms(any(), any())).thenReturn(result);
+    when(client.searchForms(any())).thenReturn(result);
 
     // when
     final var searchQueryResult = services.search(searchQuery);
@@ -55,7 +57,7 @@ public final class FormServiceTest {
         SearchQueryBuilders.formSearchQuery().filter(f -> f.formIds("formId")).build();
 
     final var result = mock(SearchQueryResult.class);
-    when(client.searchForms(any(), any())).thenReturn(result);
+    when(client.searchForms(any())).thenReturn(result);
 
     // when
     final var searchQueryResult = services.search(searchQuery);

@@ -115,6 +115,11 @@ public class ListViewFlowNodeFromJobHandler
     }
   }
 
+  @Override
+  public String getIndexName() {
+    return indexName;
+  }
+
   protected String getFlowNodeInstanceFromJobScript() {
     return String.format(
         "if (ctx._source.%s == null || ctx._source.%s < params.%s) { "

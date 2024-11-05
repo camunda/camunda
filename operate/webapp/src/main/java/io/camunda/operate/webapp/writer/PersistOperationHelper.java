@@ -12,7 +12,6 @@ import static io.camunda.operate.util.ConversionUtils.toLongOrNull;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.schema.templates.OperationTemplate;
 import io.camunda.operate.store.ListViewStore;
 import io.camunda.operate.store.OperationStore;
 import io.camunda.operate.webapp.reader.IncidentReader;
@@ -21,6 +20,7 @@ import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequest
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.UserService;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
@@ -158,15 +158,16 @@ public class PersistOperationHelper {
       final OperationType operationType,
       final String batchOperationId) {
 
-    final OperationEntity operationEntity = new OperationEntity();
-    operationEntity.generateId();
-    operationEntity.setProcessInstanceKey(processInstanceSource.getProcessInstanceKey());
-    operationEntity.setProcessDefinitionKey(processInstanceSource.getProcessDefinitionKey());
-    operationEntity.setBpmnProcessId(processInstanceSource.getBpmnProcessId());
-    operationEntity.setType(operationType);
-    operationEntity.setState(OperationState.SCHEDULED);
-    operationEntity.setBatchOperationId(batchOperationId);
-    operationEntity.setUsername(userService.getCurrentUser().getUsername());
+    final OperationEntity operationEntity =
+        new OperationEntity()
+            .withGeneratedId()
+            .setProcessInstanceKey(processInstanceSource.getProcessInstanceKey())
+            .setProcessDefinitionKey(processInstanceSource.getProcessDefinitionKey())
+            .setBpmnProcessId(processInstanceSource.getBpmnProcessId())
+            .setType(operationType)
+            .setState(OperationState.SCHEDULED)
+            .setBatchOperationId(batchOperationId)
+            .setUsername(userService.getCurrentUser().getUsername());
 
     return operationEntity;
   }

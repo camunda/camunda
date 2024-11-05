@@ -12,6 +12,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.exporter.cache.CachedProcessEntity;
+import io.camunda.exporter.cache.TestProcessCache;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.XMLUtil;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
@@ -30,7 +32,9 @@ import org.junit.jupiter.api.Test;
 public class ProcessHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-process";
-  private final ProcessHandler underTest = new ProcessHandler(indexName, new XMLUtil());
+  private final TestProcessCache processCache = new TestProcessCache();
+  private final ProcessHandler underTest =
+      new ProcessHandler(indexName, new XMLUtil(), processCache);
 
   @Test
   void testGetHandledValueType() {
@@ -175,5 +179,36 @@ public class ProcessHandlerTest {
     assertThat(processEntity.getTenantId()).isEqualTo(processRecordValue.getTenantId());
     assertThat(processEntity.getIsPublic()).isTrue();
     assertThat(processEntity.getFormId()).isNotNull();
+  }
+
+  @Test
+  void shouldUpdateProcessCache() throws IOException {
+    // given
+    final long expectedId = 123;
+    final var resource = getClass().getClassLoader().getResource("process/test-process.bpmn");
+    assertThat(resource).isNotNull();
+    final ImmutableProcess processRecordValue =
+        ImmutableProcess.builder()
+            .from(factory.generateObject(ImmutableProcess.class))
+            .withProcessDefinitionKey(expectedId)
+            .withBpmnProcessId("testProcessId")
+            .withResource(Files.readAllBytes(Path.of(resource.getPath())))
+            .build();
+
+    final Record<Process> processRecord =
+        factory.generateRecord(
+            ValueType.DECISION,
+            r -> r.withIntent(ProcessIntent.CREATED).withValue(processRecordValue));
+
+    // when
+    final ProcessEntity processEntity = new ProcessEntity();
+    underTest.updateEntity(processRecord, processEntity);
+
+    // then
+    assertThat(processCache.get(processRecord.getValue().getProcessDefinitionKey()))
+        .isPresent()
+        .get()
+        .extracting(CachedProcessEntity::name, CachedProcessEntity::versionTag)
+        .containsExactly("testProcessName", "processTag");
   }
 }

@@ -144,6 +144,11 @@ public class ListViewFlowNodeFromProcessInstanceHandler
     }
   }
 
+  @Override
+  public String getIndexName() {
+    return indexName;
+  }
+
   private boolean isProcessEvent(final ProcessInstanceRecordValue recordValue) {
     return isOfType(recordValue, BpmnElementType.PROCESS);
   }

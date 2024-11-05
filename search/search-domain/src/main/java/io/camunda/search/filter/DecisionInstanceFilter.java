@@ -8,11 +8,14 @@
 package io.camunda.search.filter;
 
 import static io.camunda.util.CollectionUtil.addValuesToList;
+import static io.camunda.util.CollectionUtil.collectValues;
 import static io.camunda.util.CollectionUtil.collectValuesAsList;
 
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
+import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
+import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -20,11 +23,11 @@ import java.util.Objects;
 public record DecisionInstanceFilter(
     List<Long> decisionInstanceKeys,
     List<DecisionInstanceState> states,
-    DateValueFilter evaluationDate,
+    List<Operation<OffsetDateTime>> evaluationDateOperations,
     List<String> evaluationFailures,
     List<Long> processDefinitionKeys,
     List<Long> processInstanceKeys,
-    List<Long> decisionDefinitionKeys,
+    List<Operation<Long>> decisionDefinitionKeyOperations,
     List<String> decisionDefinitionIds,
     List<String> decisionDefinitionNames,
     List<Integer> decisionDefinitionVersions,
@@ -36,11 +39,11 @@ public record DecisionInstanceFilter(
 
     private List<Long> decisionInstanceKeys;
     private List<DecisionInstanceState> states;
-    private DateValueFilter evaluationDate;
+    private List<Operation<OffsetDateTime>> evaluationDateOperations;
     private List<String> evaluationFailures;
     private List<Long> processDefinitionKeys;
     private List<Long> processInstanceKeys;
-    private List<Long> decisionDefinitionKeys;
+    private List<Operation<Long>> decisionDefinitionKeyOperations;
     private List<String> decisionDefinitionIds;
     private List<String> decisionDefinitionNames;
     private List<Integer> decisionDefinitionVersions;
@@ -65,9 +68,15 @@ public record DecisionInstanceFilter(
       return states(collectValuesAsList(values));
     }
 
-    public Builder evaluationDate(final DateValueFilter evaluationDate) {
-      this.evaluationDate = evaluationDate;
+    public Builder evaluationDateOperations(final List<Operation<OffsetDateTime>> operations) {
+      evaluationDateOperations = addValuesToList(evaluationDateOperations, operations);
       return this;
+    }
+
+    @SafeVarargs
+    public final Builder evaluationDateOperations(
+        final Operation<OffsetDateTime> operation, final Operation<OffsetDateTime>... operations) {
+      return evaluationDateOperations(collectValues(operation, operations));
     }
 
     public Builder evaluationFailures(final List<String> values) {
@@ -97,13 +106,20 @@ public record DecisionInstanceFilter(
       return processInstanceKeys(collectValuesAsList(values));
     }
 
-    public Builder decisionDefinitionKeys(final List<Long> values) {
-      decisionDefinitionKeys = addValuesToList(decisionDefinitionKeys, values);
+    public Builder decisionDefinitionKeyOperations(final List<Operation<Long>> operations) {
+      decisionDefinitionKeyOperations =
+          addValuesToList(decisionDefinitionKeyOperations, operations);
       return this;
     }
 
-    public Builder decisionDefinitionKeys(final Long... values) {
-      return decisionDefinitionKeys(collectValuesAsList(values));
+    public Builder decisionDefinitionKeys(final Long value, final Long... values) {
+      return decisionDefinitionKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final Builder decisionDefinitionKeyOperations(
+        final Operation<Long> operation, final Operation<Long>... operations) {
+      return decisionDefinitionKeyOperations(collectValues(operation, operations));
     }
 
     public Builder decisionDefinitionIds(final List<String> values) {
@@ -156,11 +172,11 @@ public record DecisionInstanceFilter(
       return new DecisionInstanceFilter(
           Objects.requireNonNullElse(decisionInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(states, Collections.emptyList()),
-          evaluationDate,
+          Objects.requireNonNullElse(evaluationDateOperations, Collections.emptyList()),
           Objects.requireNonNullElse(evaluationFailures, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceKeys, Collections.emptyList()),
-          Objects.requireNonNullElse(decisionDefinitionKeys, Collections.emptyList()),
+          Objects.requireNonNullElse(decisionDefinitionKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(decisionDefinitionIds, Collections.emptyList()),
           Objects.requireNonNullElse(decisionDefinitionNames, Collections.emptyList()),
           Objects.requireNonNullElse(decisionDefinitionVersions, Collections.emptyList()),

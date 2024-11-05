@@ -22,6 +22,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
 
 import co.elastic.clients.util.VisibleForTesting;
 import io.camunda.exporter.adapters.ClientAdapter;
+import io.camunda.exporter.archiver.Archiver;
 import io.camunda.exporter.config.ConfigValidator;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
@@ -39,12 +40,14 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.time.Duration;
 import java.util.Set;
+import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class CamundaExporter implements Exporter {
   private static final Logger LOG = LoggerFactory.getLogger(CamundaExporter.class);
 
+  private Context context;
   private Controller controller;
   private ExporterConfiguration configuration;
   private ClientAdapter clientAdapter;
@@ -52,6 +55,8 @@ public class CamundaExporter implements Exporter {
   private long lastPosition = -1;
   private final ExporterResourceProvider provider;
   private CamundaExporterMetrics metrics;
+  private Logger logger;
+  private Archiver archiver;
 
   public CamundaExporter() {
     this(new DefaultExporterResourceProvider());
@@ -64,9 +69,10 @@ public class CamundaExporter implements Exporter {
 
   @Override
   public void configure(final Context context) {
+    this.context = context;
+    logger = context.getLogger();
     configuration = context.getConfiguration().instantiate(ExporterConfiguration.class);
     ConfigValidator.validate(configuration);
-    provider.init(configuration);
     context.setFilter(new CamundaExporterRecordFilter());
     metrics = new CamundaExporterMetrics(context.getMeterRegistry());
     LOG.debug("Exporter configured with {}", configuration);
@@ -76,6 +82,9 @@ public class CamundaExporter implements Exporter {
   public void open(final Controller controller) {
     this.controller = controller;
     clientAdapter = ClientAdapter.of(configuration);
+
+    provider.init(configuration, clientAdapter::getProcessCacheLoader);
+
     final var searchEngineClient = clientAdapter.getSearchEngineClient();
     final var schemaManager =
         new SchemaManager(
@@ -83,6 +92,14 @@ public class CamundaExporter implements Exporter {
             provider.getIndexDescriptors(),
             provider.getIndexTemplateDescriptors(),
             configuration);
+    archiver =
+        Archiver.create(
+            context.getPartitionId(),
+            context.getConfiguration().getId().toLowerCase(),
+            configuration.getArchiver(),
+            provider,
+            metrics,
+            logger);
 
     schemaManager.startup();
 
@@ -112,6 +129,7 @@ public class CamundaExporter implements Exporter {
       }
     }
 
+    CloseHelper.close(error -> LOG.warn("Failed to close archiver", error), archiver);
     LOG.info("Exporter closed");
   }
 

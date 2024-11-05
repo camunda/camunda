@@ -16,11 +16,11 @@ import static io.camunda.operate.util.ConversionUtils.toStringArray;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.schema.templates.BatchOperationTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.reader.BatchOperationReader;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
 import io.camunda.operate.webapp.security.UserService;
+import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import java.util.Arrays;
 import java.util.List;
@@ -46,7 +46,7 @@ public class OpensearchBatchOperationReader implements BatchOperationReader {
 
   @Override
   public List<BatchOperationEntity> getBatchOperations(
-      BatchOperationRequestDto batchOperationRequestDto) {
+      final BatchOperationRequestDto batchOperationRequestDto) {
     final var searchRequestBuilder = createSearchRequest(batchOperationRequestDto);
     final List<BatchOperationEntity> batchOperationEntities =
         richOpenSearchClient
@@ -70,7 +70,7 @@ public class OpensearchBatchOperationReader implements BatchOperationReader {
   }
 
   private SearchRequest.Builder createSearchRequest(
-      BatchOperationRequestDto batchOperationRequestDto) {
+      final BatchOperationRequestDto batchOperationRequestDto) {
     final SortOptions sort1, sort2;
     final Object[] querySearchAfter;
 

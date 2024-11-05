@@ -74,11 +74,18 @@ jobs:
           secrets: ${{ toJSON(secrets) }}
 
       #########################################################################
+      # Build Optimize frontend
+      - name: Build frontend
+        uses: ./.github/actions/build-frontend
+        with:
+          directory: ./optimize/client
+
+      #########################################################################
       # Build Optimize
       - name: Generate production .tar.gz
         uses: ./.github/actions/run-maven
         with:
-          parameters: -f optimize/pom.xml install -DskipTests -Dskip.docker -PrunAssembly -T 1
+          parameters: -f optimize/pom.xml install -DskipTests -Dskip.docker -P skipFrontendBuild,runAssembly -T 1
 
       #########################################################################
       # Build Docker image
