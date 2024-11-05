@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # set constants
-CAMUNDA_VERSION="8.6.7"
-CAMUNDA_CONNECTORS_VERSION="8.6.6"
+CAMUNDA_VERSION="8.7.0-alpha1"
+CAMUNDA_CONNECTORS_VERSION="8.7.0-alpha1"
 ELASTICSEARCH_VERSION="8.13.4"
 
 architectureRaw="$(uname -m)"
