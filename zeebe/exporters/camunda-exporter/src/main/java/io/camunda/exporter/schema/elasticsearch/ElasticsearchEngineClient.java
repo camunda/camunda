@@ -84,6 +84,15 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       client.indices().putIndexTemplate(request);
       LOG.debug("Template [{}] was successfully created", templateDescriptor.getTemplateName());
     } catch (final IOException | ElasticsearchException e) {
+      if (e.getMessage()
+          .contains(
+              String.format(
+                  "index template [%s] already exists", templateDescriptor.getTemplateName()))) {
+        LOG.warn(
+            "Did not create index template [{}] as it already exists",
+            templateDescriptor.getTemplateName());
+        return;
+      }
       final var errMsg =
           String.format("Template [%s] was NOT created", templateDescriptor.getTemplateName());
       LOG.error(errMsg, e);
