@@ -550,7 +550,7 @@ jobs:
   
   openapi-lint:
     name: C8 REST OpenAPI linting
-    timeout-minutes: 10
+    timeout-minutes: 2
     needs: [detect-changes]
     runs-on: ubuntu-latest
     if: |
