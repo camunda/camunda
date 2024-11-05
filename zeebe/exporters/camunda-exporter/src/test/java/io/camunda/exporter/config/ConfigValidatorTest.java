@@ -123,4 +123,16 @@ public class ConfigValidatorTest {
         .isInstanceOf(ExporterException.class)
         .hasMessageContaining("CamundaExporter delayBetweenRuns must be >= 1. Current value: 0");
   }
+
+  @ParameterizedTest(name = "{0}")
+  @ValueSource(ints = {-1, 0})
+  void shouldForbidNonPositiveMaxCacheSize(final int maxCacheSize) {
+    // given
+    config.getProcessCache().setMaxCacheSize(maxCacheSize);
+
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config))
+        .isInstanceOf(ExporterException.class)
+        .hasMessageContaining("CamundaExporter maxCacheSize must be >= 1.");
+  }
 }

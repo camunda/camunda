@@ -98,5 +98,11 @@ public final class ConfigValidator {
       throw new ExporterException(
           "CamundaExporter delayBetweenRuns must be >= 1. Current value: " + delayBetweenRuns);
     }
+
+    final int maxCacheSize = configuration.getProcessCache().getMaxCacheSize();
+    if (maxCacheSize < 1) {
+      throw new ExporterException(
+          "CamundaExporter maxCacheSize must be >= 1. Current value: " + maxCacheSize);
+    }
   }
 }
