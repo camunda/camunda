@@ -101,18 +101,14 @@ public class GroupStateTest {
     groupState.update(groupKey, groupRecord);
 
     // then
-    var group = groupState.get(groupKey);
+    final var group = groupState.get(groupKey);
     assertThat(group.isPresent()).isTrue();
-    var persistedGroup = group.get();
+    final var persistedGroup = group.get();
     assertThat(persistedGroup.getGroupKey()).isEqualTo(groupKey);
     assertThat(persistedGroup.getName()).isEqualTo(updatedGroupName);
 
     final var groupKeyByName = groupState.getGroupKeyByName(updatedGroupName);
     assertThat(groupKeyByName.isPresent()).isTrue();
-    group = groupState.get(groupKeyByName.get());
-    assertThat(group.isPresent()).isTrue();
-    persistedGroup = group.get();
-    assertThat(persistedGroup.getGroupKey()).isEqualTo(groupKey);
-    assertThat(persistedGroup.getName()).isEqualTo(updatedGroupName);
+    assertThat(groupKeyByName.get()).isEqualTo(groupKey);
   }
 }
