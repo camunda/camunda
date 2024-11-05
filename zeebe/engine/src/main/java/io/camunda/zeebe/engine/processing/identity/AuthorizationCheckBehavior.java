@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.identity;
 import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
-import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -25,7 +24,7 @@ public final class AuthorizationCheckBehavior {
 
   public static final String UNAUTHORIZED_ERROR_MESSAGE =
       "Unauthorized to perform operation '%s' on resource '%s'";
-  private static final String WILDCARD_PERMISSION = "*";
+  public static final String WILDCARD_PERMISSION = "*";
   private final AuthorizationState authorizationState;
   private final UserState userState;
   private final EngineConfiguration engineConfig;
@@ -75,6 +74,20 @@ public final class AuthorizationCheckBehavior {
   private static Optional<Long> getUserKey(final AuthorizationRequest request) {
     return Optional.ofNullable(
         (Long) request.getCommand().getAuthorizations().get(Authorization.AUTHORIZED_USER_KEY));
+  }
+
+  public Set<String> getAuthorizedResourceIdentifiers(final AuthorizationRequest request) {
+    if (!engineConfig.isEnableAuthorization()) {
+      return Set.of(WILDCARD_PERMISSION);
+    }
+
+    final var userKey = getUserKey(request);
+    if (userKey.isEmpty()) {
+      return Collections.emptySet();
+    }
+
+    return getAuthorizedResourceIdentifiers(
+        userKey.get(), request.getResourceType(), request.getPermissionType());
   }
 
   private Set<String> getAuthorizedResourceIdentifiers(
