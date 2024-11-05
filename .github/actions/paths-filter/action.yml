@@ -81,7 +81,13 @@ outputs:
         github.event_name == 'push' ||
         steps.filter-common.outputs.protobuf-change == 'true'
       }}
-
+  openapi-changes:
+    description: Output whether any C8 OpenAPI code has changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        steps.filter-common.outputs.openapi-change == 'true'
+      }}
 
 runs:
   using: composite
@@ -129,6 +135,9 @@ runs:
         protobuf-change:
           - '**/*.proto'
           - 'buf.yaml'
+
+        openapi-change:
+          - '**/rest-api.yaml'
 
   - uses: dorny/paths-filter@v3
     id: filter-identity

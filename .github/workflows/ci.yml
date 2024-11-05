@@ -39,6 +39,7 @@ jobs:
       optimize-frontend-changes: ${{ steps.filter.outputs.optimize-frontend-changes }}
       optimize-backend-changes: ${{ steps.filter.outputs.optimize-backend-changes }}
       protobuf-changes: ${{ steps.filter.outputs.protobuf-changes }}
+      openapi-changes: ${{ steps.filter.outputs.openapi-changes }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -546,6 +547,31 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+  
+  openapi-lint:
+    name: C8 REST OpenAPI linting
+    timeout-minutes: 10
+    needs: [detect-changes]
+    runs-on: ubuntu-latest
+    if: |
+      needs.detect-changes.outputs.openapi-changes == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Vacuum
+        run: curl -fsSL https://quobix.com/scripts/install_vacuum.sh | sh > /dev/null
+        shell: bash
+      - name: Run OpenAPI Linter
+        run: vacuum lint zeebe/gateway-protocol/src/main/proto/rest-api.yaml -r .github/vacuum-ruleset.yaml -d -e 
+        shell: bash
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   check-results:
     # Used by the merge queue to check all tests, including the unit test matrix.
@@ -565,6 +591,7 @@ jobs:
       - optimize-frontend-unit-tests
       - optimize-backend-unit-tests
       - protobuf-checks
+      - openapi-lint
     steps:
       - uses: actions/checkout@v4
       - name: Check for aborted jobs
