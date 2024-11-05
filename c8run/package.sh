@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # set constants
-CAMUNDA_VERSION="8.6.2"
-CAMUNDA_CONNECTORS_VERSION="8.6.2"
+CAMUNDA_VERSION="8.6.5"
+CAMUNDA_CONNECTORS_VERSION="8.6.4"
 ELASTICSEARCH_VERSION="8.13.4"
 
 architectureRaw="$(uname -m)"
@@ -32,16 +32,16 @@ if [ ! -d "elasticsearch-$ELASTICSEARCH_VERSION" ]; then
 fi
 
 if [ ! -d "camunda-zeebe-$CAMUNDA_VERSION" ]; then
-  wget -q "https://github.com/camunda/camunda/releases/download/$CAMUNDA_VERSION/camunda-zeebe-$CAMUNDA_VERSION.tar.gz"
+  gh release download -R camunda/camunda "$CAMUNDA_VERSION" -p "camunda-zeebe-$CAMUNDA_VERSION.tar.gz"
   tar -xzf camunda-zeebe-$CAMUNDA_VERSION.tar.gz
 fi
 
 connectorsFileName="connector-runtime-bundle-$CAMUNDA_CONNECTORS_VERSION-with-dependencies.jar"
 if [ ! -f "$connectorsFileName" ]; then
-  wget -q "https://repo1.maven.org/maven2/io/camunda/connector/connector-runtime-bundle/$CAMUNDA_CONNECTORS_VERSION/$connectorsFileName"
+  wget -q "https://artifacts.camunda.com/artifactory/connectors/io/camunda/connector/connector-runtime-bundle/$CAMUNDA_CONNECTORS_VERSION/$connectorsFileName"
 fi
 
-tar -czf camunda8-run-$CAMUNDA_VERSION-$architecture.tar.gz \
+tar -czf camunda8-run-$CAMUNDA_VERSION-$PLATFORM-$architecture.tar.gz \
   -C ../ \
   c8run/start.sh \
   c8run/shutdown.sh \
