@@ -72,12 +72,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
@@ -95,7 +95,7 @@ import org.testcontainers.containers.GenericContainer;
  */
 @TestInstance(Lifecycle.PER_CLASS)
 @ExtendWith(CamundaExporterITInvocationProvider.class)
-@Disabled("flaky test")
+// @Disabled("flaky test")
 final class CamundaExporterIT {
 
   private final ProtocolFactory factory = new ProtocolFactory();
@@ -310,7 +310,7 @@ final class CamundaExporterIT {
     return config;
   }
 
-  private Context getContextFromConfig(final ExporterConfiguration config) {
+  private static Context getContextFromConfig(final ExporterConfiguration config) {
     return new ExporterTestContext()
         .setConfiguration(new ExporterTestConfiguration<>(config.getConnect().getType(), config));
   }
@@ -321,10 +321,15 @@ final class CamundaExporterIT {
       final ExporterConfiguration config) {
     final var exporter =
         new CamundaExporter(mockResourceProvider(indexDescriptors, templateDescriptors, config));
-    exporter.configure(getContextFromConfig(config));
-    exporter.open(new ExporterTestController());
+    configureAndOpenExporter(exporter, config);
 
     return exporter;
+  }
+
+  public static void configureAndOpenExporter(
+      final CamundaExporter exporter, final ExporterConfiguration config) {
+    exporter.configure(getContextFromConfig(config));
+    exporter.open(new ExporterTestController());
   }
 
   private ExporterResourceProvider mockResourceProvider(
@@ -362,14 +367,23 @@ final class CamundaExporterIT {
                 (handler) -> processInstanceRecordGenerator(handler, BpmnElementType.PROCESS),
                 UserTaskProcessInstanceHandler.class,
                 (handler) -> processInstanceRecordGenerator(handler, BpmnElementType.PROCESS)));
+    private <S extends ExporterEntity<S>, T extends RecordValue> S createExpectedEntity(
+        final Record<T> record, final ExportHandler<S, T> handler) {
+      final var entityId = handler.generateIds(record).getFirst();
+      final var expectedEntity = handler.createNewEntity(entityId);
+      handler.updateEntity(record, expectedEntity);
+
+      return expectedEntity;
+    }
 
     @TestTemplate
     @SuppressWarnings("unchecked")
-    <S extends ExporterEntity<S>, T extends RecordValue> void allHandlerTestsWithInvocationProvider(
-        final CamundaExporter exporter,
-        final SearchClientAdapter clientAdapter,
-        final ExportHandler<S, T> handler)
-        throws IOException {
+    <S extends ExporterEntity<S>, T extends RecordValue>
+        void shouldVerifyHandlersWhichCreateEntities(
+            final CamundaExporter exporter,
+            final SearchClientAdapter clientAdapter,
+            final ExportHandler<S, T> handler)
+            throws IOException {
 
       final var currentTime = OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS);
       try (final var mocked = mockStatic(OffsetDateTime.class)) {
@@ -382,9 +396,7 @@ final class CamundaExporterIT {
                     .apply(handler);
         customRecordGenerators.put(handler.getClass(), (ignored) -> record);
 
-        final var entityId = handler.generateIds(record).getFirst();
-        final var expectedEntity = handler.createNewEntity(entityId);
-        handler.updateEntity(record, expectedEntity);
+        final var expectedEntity = createExpectedEntity(record, handler);
         exporter.export(record);
 
         final var responseEntity =
@@ -392,11 +404,20 @@ final class CamundaExporterIT {
                 expectedEntity.getId(), handler.getIndexName(), handler.getEntityType());
 
         assertThat(responseEntity)
+            .usingRecursiveComparison()
             .describedAs(
                 "Handler [%s] correctly handles a [%s] record",
                 handler.getClass().getSimpleName(), handler.getHandledValueType())
+            .withEqualsForType(sameOffsetDateTime(), OffsetDateTime.class)
+            // startTime is ignored as it is annotated with JsonIgnore
+            .ignoringFieldsMatchingRegexes("startTime", "creationTime")
             .isEqualTo(expectedEntity);
       }
+    }
+
+    private BiPredicate<OffsetDateTime, OffsetDateTime> sameOffsetDateTime() {
+      return (d1, d2) ->
+          d1.truncatedTo(ChronoUnit.MILLIS).equals(d2.truncatedTo(ChronoUnit.MILLIS));
     }
 
     private <S extends ExporterEntity<S>, T extends RecordValue> Record<T> recordGenerator(

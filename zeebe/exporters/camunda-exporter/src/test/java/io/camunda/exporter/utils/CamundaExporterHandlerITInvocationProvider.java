@@ -16,6 +16,9 @@ import io.camunda.exporter.DefaultExporterResourceProvider;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.operation.OperationFromIncidentHandler;
+import io.camunda.exporter.handlers.operation.OperationFromProcessInstanceHandler;
+import io.camunda.exporter.handlers.operation.OperationFromVariableDocumentHandler;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -29,6 +32,12 @@ import org.junit.jupiter.api.extension.TestTemplateInvocationContext;
 
 public class CamundaExporterHandlerITInvocationProvider
     extends CamundaExporterITInvocationProvider {
+  @Override
+  public void afterEach(final ExtensionContext context) {
+    //    we don't want to clear indices and templates after each test as each invocation context
+    //    now providers the same exporter, limiting the amount of schema startups
+  }
+
   @Override
   public boolean supportsTestTemplate(final ExtensionContext extensionContext) {
     // we only want to template tests in the class which ask for exporter, client
@@ -67,6 +76,13 @@ public class CamundaExporterHandlerITInvocationProvider
     provider.init(osConfig, ClientAdapter.of(elsConfig)::getProcessCacheLoader);
 
     return provider.getExportHandlers().stream()
+        .filter(
+            handler ->
+                !List.of(
+                        OperationFromIncidentHandler.class,
+                        OperationFromProcessInstanceHandler.class,
+                        OperationFromVariableDocumentHandler.class)
+                    .contains(handler.getClass()))
         .map(
             handler ->
                 List.of(

@@ -42,17 +42,17 @@ public class CamundaExporterITInvocationProvider
         AfterEachCallback {
 
   public static final String CONFIG_PREFIX = "camunda-record";
+  private static final ElasticsearchContainer elsContainer =
+      TestSearchContainers.createDefeaultElasticsearchContainer();
+  private static final OpensearchContainer<?> osContainer =
+      TestSearchContainers.createDefaultOpensearchContainer();
   protected SearchClientAdapter elsClientAdapter;
   protected SearchClientAdapter osClientAdapter;
-  private final ElasticsearchContainer elsContainer =
-      TestSearchContainers.createDefeaultElasticsearchContainer();
-  private final OpensearchContainer<?> osContainer =
-      TestSearchContainers.createDefaultOpensearchContainer();
   private ElasticsearchClient elsClient;
   private OpenSearchClient osClient;
   private final List<AutoCloseable> closeables = new ArrayList<>();
 
-  protected ExporterConfiguration getConfigWithConnectionDetails(
+  public static ExporterConfiguration getConfigWithConnectionDetails(
       final ConnectionTypes connectionType) {
     final var config = new ExporterConfiguration();
     config.getIndex().setPrefix(CONFIG_PREFIX);
