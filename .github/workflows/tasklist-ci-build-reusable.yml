@@ -77,16 +77,19 @@ jobs:
           secrets: |
             secret/data/github.com/organizations/camunda NEXUS_USR;
             secret/data/github.com/organizations/camunda NEXUS_PSW;
-            secret/data/products/tasklist/ci/tasklist REGISTRY_HUB_DOCKER_COM_USR;
-            secret/data/products/tasklist/ci/tasklist REGISTRY_HUB_DOCKER_COM_PSW;
 
       #########################################################################
       # Setup and configure Maven, Docker, and settings
-      - uses: ./.github/actions/build-tasklist-setup
+      - uses: ./.github/actions/setup-build
         name: Build setup
         with:
-          nexusUsername: ${{ steps.secrets.outputs.NEXUS_USR }}
-          nexusPassword: ${{ steps.secrets.outputs.NEXUS_PSW }}
+          dockerhub: ${{ env.IS_DEFAULT_BRANCH == 'true' }}
+          java-distribution: adopt
+          maven-cache-key-modifier: tasklist
+          maven-version: 3.8.6
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
       #########################################################################
       # Build frontend
@@ -120,15 +123,6 @@ jobs:
           push: ${{ inputs.pushDocker }}
           platforms: ${{ inputs.pushDocker && env.DOCKER_PLATFORMS || 'linux/amd64' }}
           dockerfile: tasklist.Dockerfile
-
-      #########################################################################
-      # Docker login for snapshot deployment
-      - name: Login to docker hub
-        if: ${{ env.IS_DEFAULT_BRANCH == 'true' }}
-        uses: docker/login-action@v3
-        with:
-          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
-          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
 
       #########################################################################
       # Build SNAPSHOT Docker image

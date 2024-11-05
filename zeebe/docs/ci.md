@@ -7,7 +7,7 @@ This is a small guide for things useful around our continuous integration setup.
 ### Maven repository cache
 
 Within
-our [Github action to setup zeebe](/Users/megglos/git/zeebe/.github/actions/setup-zeebe/action.yml)
+our [Github action to setup build](/Users/megglos/git/zeebe/.github/actions/setup-build/action.yml)
 we make use of [action/cache](https://github.com/actions/cache) to store the content of
 the maven repository and share it across jobs and even branches. Primarily to speedup builds and
 reduce the
@@ -35,7 +35,7 @@ and delete them via:
 gh actions-cache delete Linux-maven-default-dddf7912807d96783a168b6dda5c5b639c6eb183bfedaab524c6e34f695afba4
 ```
 
-To determine the key of the cache used you can take a look into the log of the setup-zeebe job.
+To determine the key of the cache used you can take a look into the log of the setup-build job.
 
 ```
 ...

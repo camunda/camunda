@@ -1,0 +1,239 @@
+---
+name: Setup build
+description: Sets up the required stack to build, install, and run monorepo projects
+
+inputs:
+  camunda-nexus:
+    description: |
+      If enabled, Camunda Nexus will be configured and used as a mirror for Maven repositories
+      Camunda Nexus is automatically disabled for fork PRs.
+    required: false
+    default: "true"
+  dockerhub:
+    description: |
+      If enabled, logs into DockerHub with a CI account.
+      DockerHub login is automatically disabled for fork PRs.
+    required: false
+    default: "false"
+  dockerhub-readonly:
+    description: |
+      If enabled, logs into DockerHub with a read-only CI account.
+      Useful to avoid being rate-limited when using an anonymous account from GitHub-managed runners.
+      DockerHub login is automatically disabled for fork PRs.
+    required: false
+    default: "false"
+  java-distribution:
+    description: Java distribution to use
+    required: false
+    default: temurin
+  java-version:
+    description: JDK version to install
+    required: false
+    default: "21"
+  maven-cache-key-modifier:
+    description: A modifier to use for maven cache key
+    required: false
+    default: "shared"
+  maven-mirrors:
+    description: |
+      JSON list of extra Maven mirrors.
+      It will be merged with Camunda Nexus settings (if enabled ), with precedence."
+    required: false
+    default: '[]'
+  maven-servers:
+    description: |
+      JSON list of extra Maven servers.
+      It will be merged with Camunda Nexus settings (if enabled), with precedence."
+    required: false
+    default: '[]'
+  maven-version:
+    description: |
+      Maven version to be used by the wrapper.
+      If not set, default version in .mvn/wrapper/maven-wrapper.properties will be used.
+    required: false
+  time-zone:
+    description: |
+      Time zone to set for the build environment. Use TZ identifiers, e.g., 'Europe/Berlin'.
+      https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+    required: false
+  vault-address:
+    description: Vault URL to retrieve secrets from
+    required: false
+  vault-role-id:
+    description: Vault Role ID to use
+    required: false
+  vault-secret-id:
+    description: Vault Secret ID to use
+    required: false
+
+outputs: {}
+
+runs:
+  using: composite
+  steps:
+  - name: Preliminary checks
+    id: checks
+    env:
+      DOCKERHUB: ${{ inputs.dockerhub }}
+      DOCKERHUB_READONLY: ${{ inputs.dockerhub-readonly }}
+      # Paths to Vault secrets for DockerHub accounts
+      DOCKERHUB_VAULT_PATHS: >-
+        {
+          "camunda": {
+            "path": "secret/data/products/camunda/ci/github-actions"
+          },
+          "operate": {
+            "path": "secret/data/products/operate/ci/github-actions"
+          },
+          "optimize": {
+            "path": "secret/data/products/optimize/ci/camunda-optimize"
+          },
+          "tasklist": {
+            "path": "secret/data/products/tasklist/ci/tasklist"
+          },
+          "zeebe": {
+            "path": "secret/data/products/zeebe/ci/zeebe"
+          }
+        }
+      IS_FORK: >-
+        ${{ 
+          github.event.name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name != 'camunda/camunda'
+        }}
+      WORKFLOW_REF: ${{ github.workflow_ref }}
+    run: |
+      ## Preliminary checks
+
+      # Check if current workflow run is related to a fork PR
+      if [[ "${IS_FORK}" == "true" ]]; then
+        echo "The current workflow run is related to a fork PR."
+        echo "As a result, Vault secrets cannot be recovered, Camunda Nexus and DockerHub login will be disabled."
+      fi
+
+      # Check if DockerHub and DockerHub-readonly are both enabled
+      if [[ "${DOCKERHUB}" == "true" && "${DOCKERHUB_READONLY}" == "true" ]]; then
+        echo "Both dockerhub and dockerhub-readonly inputs are enabled. Only one can be enabled at a time."
+        exit 1
+      fi
+
+      # Infer team from workflow (.yml) file name if possible, otherwise default to camunda
+      worklow=$(basename ${WORKFLOW_REF%@*})  # remove Github ref part and extract filename
+      team=camunda
+      if [[ "$worklow" =~ ^(operate|optimize|tasklist|zeebe)-.*\.(yml|yaml)$ ]]; then
+        team=${BASH_REMATCH[1]}
+      fi
+
+      # Get Vault path to the DockerHub account to use, and check JSON validity at the same time
+      dockerhub_vault_path=$(echo ${DOCKERHUB_VAULT_PATHS} | jq -r --arg team "$team" '.[$team].path')
+
+      echo dockerhub-vault-path="${dockerhub_vault_path}" | tee -a $GITHUB_OUTPUT
+      echo is-fork="${IS_FORK}" | tee -a $GITHUB_OUTPUT
+    shell: bash
+  - name: Import Secrets
+    # Secrets are imported only if current workflow run is not related to a fork PR
+    if: steps.checks.outputs.is-fork != 'true'
+    id: secrets
+    uses: hashicorp/vault-action@v3.0.0
+    with:
+      url: ${{ inputs.vault-address }}
+      method: approle
+      roleId: ${{ inputs.vault-role-id }}
+      secretId: ${{ inputs.vault-secret-id }}
+      secrets: |
+        secret/data/github.com/organizations/camunda NEXUS_PSW | camunda-nexus-password;
+        secret/data/github.com/organizations/camunda NEXUS_USR | camunda-nexus-username;
+        ${{ steps.checks.outputs.dockerhub-vault-path }} REGISTRY_HUB_DOCKER_COM_PSW${{ inputs.dockerhub-readonly == 'true' && '_READ_ONLY' || ''}} | dockerhub-token;
+        ${{ steps.checks.outputs.dockerhub-vault-path }} REGISTRY_HUB_DOCKER_COM_USR | dockerhub-username;
+  - name: Setup Java
+    uses: actions/setup-java@v4
+    with:
+      distribution: ${{ inputs.java-distribution }}
+      java-version: ${{ inputs.java-version }}
+  - name: Setup Maven
+    if: inputs.maven-version != ''
+    uses: ./.github/actions/setup-maven-dist
+    with:
+      maven-version: ${{ inputs.maven-version }}
+      set-mvnw: true
+  - name: Configure Maven cache
+    uses: ./.github/actions/setup-maven-cache
+    with:
+      maven-cache-key-modifier: ${{ inputs.maven-cache-key-modifier }}
+  # Camunda Nexus and extra mirrors/servers must be merged on ids (extra values have precedence).
+  - name: Get Maven mirrors and servers to use
+    id: maven
+    env:
+      # Camunda Nexus is disabled for fork PRs
+      CAMUNDA_NEXUS_ENABLED: >-
+        ${{ 
+          steps.checks.outputs.is-fork != 'true' &&
+          inputs.camunda-nexus == 'true'
+        }}
+      CAMUNDA_NEXUS_MAVEN_MIRROR: >-
+        [{
+          "id": "camunda-nexus",
+          "name": "Camunda Nexus",
+          "url": "https://repository.nexus.camunda.cloud/content/groups/internal/",
+          "mirrorOf": "zeebe,zeebe-snapshots"
+        }]
+      CAMUNDA_NEXUS_MAVEN_SERVER: >-
+        [{
+          "id": "camunda-nexus",
+          "username": "${{ steps.secrets.outputs.camunda-nexus-username }}",
+          "password": "${{ steps.secrets.outputs.camunda-nexus-password }}"
+        }]
+      EXTRA_MAVEN_MIRRORS: ${{ inputs.maven-mirrors }}
+      EXTRA_MAVEN_SERVERS: ${{ inputs.maven-servers }}
+    run: |
+      # If Camunda Nexus is disabled, reset default mirrors/servers to empty lists
+      if [ "${CAMUNDA_NEXUS_ENABLED}" != "true" ]; then
+        CAMUNDA_NEXUS_MAVEN_MIRROR="[]"
+        CAMUNDA_NEXUS_MAVEN_SERVER="[]"
+      fi
+
+      # Use jq 'add' operator to merge grouped sublists
+      mirrors=$(\
+        jq -n \
+        --argjson nexus_mirror "${CAMUNDA_NEXUS_MAVEN_MIRROR}" \
+        --argjson maven_mirrors "${EXTRA_MAVEN_MIRRORS}" \
+        '[ $nexus_mirror + $maven_mirrors | group_by(.id)[] | add ]'
+      )
+      servers=$(\
+        jq -n \
+        --argjson nexus_server "${CAMUNDA_NEXUS_MAVEN_SERVER}" \
+        --argjson maven_servers "${EXTRA_MAVEN_SERVERS}" \
+        '[ $nexus_server + $maven_servers | group_by(.id)[] | add ]'
+      )
+      
+      echo mirrors=$mirrors >> $GITHUB_OUTPUT
+      echo servers=$servers >> $GITHUB_OUTPUT
+    shell: bash
+  - name: Update Maven settings.xml
+    uses: s4u/maven-settings-action@v3.0.0
+    with:
+      githubServer: false
+      servers: ${{ steps.maven.outputs.servers }}
+      mirrors: ${{ steps.maven.outputs.mirrors }}
+  - name: Set Time Zone
+    if: inputs.time-zone != '' && runner.os == 'Linux'
+    env:
+      TZ_IDENTIFIER: ${{ inputs.time-zone }}
+    run: |
+      # tzdata is not installed in self-hosted runners
+      sudo apt-get update && sudo apt-get install -y tzdata
+      echo ${TZ_IDENTIFIER} | sudo tee /etc/timezone 
+      sudo rm -rf /etc/localtime
+      sudo ln -s /usr/share/zoneinfo/${TZ_IDENTIFIER} /etc/localtime
+    shell: bash
+  - name: Login to Docker Hub
+    # DockerHub login is disabled for fork PRs
+    if: >-
+      steps.checks.outputs.is-fork != 'true' &&
+      (
+        inputs.dockerhub == 'true' ||
+        inputs.dockerhub-readonly == 'true'
+      )
+    uses: docker/login-action@v3
+    with:
+      username: ${{ steps.secrets.outputs.dockerhub-username }}
+      password: ${{ steps.secrets.outputs.dockerhub-token }}
