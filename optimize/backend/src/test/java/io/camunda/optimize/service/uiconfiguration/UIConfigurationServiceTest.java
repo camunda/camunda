@@ -51,7 +51,7 @@ import org.springframework.core.env.Environment;
 @MockitoSettings(strictness = Strictness.LENIENT)
 public class UIConfigurationServiceTest {
 
-  private static OffsetDateTime TEST_DATE;
+  private static OffsetDateTime testDate;
   private static final String TEST_DATE_STRING = "2024-10-29T15:14:13Z";
   @InjectMocks UIConfigurationService underTest;
 
@@ -82,7 +82,7 @@ public class UIConfigurationServiceTest {
 
   @BeforeAll
   public static void beforeAll() {
-    TEST_DATE = OffsetDateTime.parse(TEST_DATE_STRING);
+    testDate = OffsetDateTime.parse(TEST_DATE_STRING);
   }
 
   @ParameterizedTest
@@ -209,6 +209,6 @@ public class UIConfigurationServiceTest {
     when(camundaLicenseService.getCamundaLicenseType()).thenReturn(LicenseType.SAAS);
     when(camundaLicenseService.isCamundaLicenseValid()).thenReturn(true);
     when(camundaLicenseService.isCommercialCamundaLicense()).thenReturn(false);
-    when(camundaLicenseService.getCamundaLicenseExpiresAt()).thenReturn(TEST_DATE);
+    when(camundaLicenseService.getCamundaLicenseExpiresAt()).thenReturn(testDate);
   }
 }
