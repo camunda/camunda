@@ -435,7 +435,10 @@ opensearch:
 # a connection to it.
 es:
   connection:
+    #  Used to determine whether Optimize should attempt to check cluster tasks.
+    #  This can be used in case Optimize does not have permission to query cluster tasks.
     clusterTaskCheckingEnabled: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_CLUSTER_TASK_CHECKING_ENABLED:true}
+    # Determines whether this Optimize instance should perform schema initialization
     initSchemaEnabled: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_INIT_SCHEMA_ENABLED:true}
     # Maximum time without connection to Elasticsearch, Optimize should
     # wait until a timeout triggers.

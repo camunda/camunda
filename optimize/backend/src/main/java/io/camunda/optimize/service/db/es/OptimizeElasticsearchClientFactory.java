@@ -55,7 +55,7 @@ public final class OptimizeElasticsearchClientFactory {
           build, backoffCalculator, transportOptionsProvider.getTransportOptions());
       LOG.info("Elasticsearch client has successfully been started");
     } else {
-      LOG.info("Health check disabled, not waiting for Elasticsearch to start");
+      LOG.info("Cluster task checking disabled, not waiting for Elasticsearch to start");
     }
 
     final OptimizeElasticsearchClient prefixedClient =

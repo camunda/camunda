@@ -114,6 +114,34 @@ public class TaskRepositoryES extends TaskRepository {
     }
   }
 
+  public boolean tryDeleteByQueryRequest(
+      final Query query,
+      final String deletedItemIdentifier,
+      final boolean refresh,
+      final String... indices) {
+    LOG.debug("Deleting {}", deletedItemIdentifier);
+    final boolean clusterTaskCheckingEnabled =
+        configurationService
+            .getElasticSearchConfiguration()
+            .getConnection()
+            .isClusterTaskCheckingEnabled();
+
+    final DeleteByQueryRequest request =
+        DeleteByQueryRequest.of(
+            b ->
+                b.index(esClient.addPrefixesToIndices(indices))
+                    .query(query)
+                    .refresh(refresh)
+                    .waitForCompletion(!clusterTaskCheckingEnabled)
+                    .conflicts(Conflicts.Proceed));
+
+    if (clusterTaskCheckingEnabled) {
+      return asyncDelete(query, deletedItemIdentifier, request);
+    } else {
+      return syncDelete(request);
+    }
+  }
+
   private boolean asyncUpdate(
       final String updateItemIdentifier,
       final Query filterQuery,
@@ -141,34 +169,6 @@ public class TaskRepositoryES extends TaskRepository {
           String.format(
               "Error while trying to read Elasticsearch task status with ID: [%s]", taskId),
           e);
-    }
-  }
-
-  public boolean tryDeleteByQueryRequest(
-      final Query query,
-      final String deletedItemIdentifier,
-      final boolean refresh,
-      final String... indices) {
-    LOG.debug("Deleting {}", deletedItemIdentifier);
-    final boolean clusterTaskCheckingEnabled =
-        configurationService
-            .getElasticSearchConfiguration()
-            .getConnection()
-            .isClusterTaskCheckingEnabled();
-
-    final DeleteByQueryRequest request =
-        DeleteByQueryRequest.of(
-            b ->
-                b.index(esClient.addPrefixesToIndices(indices))
-                    .query(query)
-                    .refresh(refresh)
-                    .waitForCompletion(!clusterTaskCheckingEnabled)
-                    .conflicts(Conflicts.Proceed));
-
-    if (clusterTaskCheckingEnabled) {
-      return asyncDelete(query, deletedItemIdentifier, request);
-    } else {
-      return syncDelete(request);
     }
   }
 

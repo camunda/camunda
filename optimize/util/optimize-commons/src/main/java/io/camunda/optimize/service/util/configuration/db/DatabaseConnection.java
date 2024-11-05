@@ -26,9 +26,9 @@ public class DatabaseConnection {
   private ProxyConfiguration proxy;
   private Boolean awsEnabled;
 
-  private boolean clusterTaskCheckingEnabled = true;
+  private Boolean clusterTaskCheckingEnabled;
 
-  private boolean initSchemaEnabled = true;
+  private Boolean initSchemaEnabled;
 
   public DatabaseConnection() {}
 
@@ -101,19 +101,19 @@ public class DatabaseConnection {
     return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
-  public boolean isClusterTaskCheckingEnabled() {
+  public Boolean isClusterTaskCheckingEnabled() {
     return clusterTaskCheckingEnabled;
   }
 
-  public void setClusterTaskCheckingEnabled(final boolean clusterTaskCheckingEnabled) {
+  public void setClusterTaskCheckingEnabled(final Boolean clusterTaskCheckingEnabled) {
     this.clusterTaskCheckingEnabled = clusterTaskCheckingEnabled;
   }
 
-  public boolean isInitSchemaEnabled() {
+  public Boolean isInitSchemaEnabled() {
     return initSchemaEnabled;
   }
 
-  public void setInitSchemaEnabled(final boolean initSchemaEnabled) {
+  public void setInitSchemaEnabled(final Boolean initSchemaEnabled) {
     this.initSchemaEnabled = initSchemaEnabled;
   }
 
