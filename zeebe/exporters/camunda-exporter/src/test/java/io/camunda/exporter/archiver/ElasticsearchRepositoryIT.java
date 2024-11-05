@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.mapping.Property;
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.ilm.Phase;
 import co.elastic.clients.elasticsearch.indices.IndexSettingsLifecycle;
@@ -21,6 +23,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
@@ -28,6 +32,9 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -65,10 +72,7 @@ final class ElasticsearchRepositoryIT {
     final var indexName = UUID.randomUUID().toString();
     final var repository = createRepository();
     final var documents =
-        List.of(
-            new TestDocument("1", "2024-01-01"),
-            new TestDocument("2", "2024-01-04"),
-            new TestDocument("3", "2024-01-02"));
+        List.of(new TestDocument("1"), new TestDocument("2"), new TestDocument("3"));
     documents.forEach(doc -> index(indexName, doc));
     testClient.indices().refresh(r -> r.index(indexName));
 
@@ -168,10 +172,7 @@ final class ElasticsearchRepositoryIT {
     final var destIndexName = UUID.randomUUID().toString();
     final var repository = createRepository();
     final var documents =
-        List.of(
-            new TestDocument("1", "2024-01-01"),
-            new TestDocument("2", "2024-01-04"),
-            new TestDocument("3", "2024-01-02"));
+        List.of(new TestDocument("1"), new TestDocument("2"), new TestDocument("3"));
     documents.forEach(doc -> index(sourceIndexName, doc));
     testClient.indices().refresh(r -> r.index(sourceIndexName));
     testClient.indices().create(r -> r.index(destIndexName));
@@ -203,7 +204,75 @@ final class ElasticsearchRepositoryIT {
         .containsExactlyInAnyOrder("1", "2", "3");
   }
 
-  private void index(final String index, final TestDocument document) {
+  @Test
+  void shouldGetProcessInstancesNextBatch() throws IOException {
+    // given - 5 documents, two of which were created over an hour ago, one of which was created,
+    // one which is not a process instance join relation, and one which is not on the right
+    // partition
+    final var now = Instant.now();
+    final var twoHoursAgo = now.minus(Duration.ofHours(2)).toString();
+    final var repository = createRepository();
+    final var documents =
+        List.of(
+            new TestProcessInstance(
+                "1", twoHoursAgo, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION, 1),
+            new TestProcessInstance(
+                "2", twoHoursAgo, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION, 2),
+            new TestProcessInstance("3", twoHoursAgo, ListViewTemplate.ACTIVITIES_JOIN_RELATION, 1),
+            new TestProcessInstance(
+                "4", now.toString(), ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION, 1));
+
+    // create the index template first to ensure ID is a keyword, otherwise the surrounding
+    // aggregation will fail
+    createProcessInstanceIndex();
+    documents.forEach(doc -> index(processInstanceIndex, doc));
+    testClient.indices().refresh(r -> r.index(processInstanceIndex));
+    config.setRolloverBatchSize(3);
+
+    // when
+    final var result = repository.getProcessInstancesNextBatch();
+
+    // then - we expect only the first two documents created two days ago to be returned
+    final var dateFormatter =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+    final var batch = result.join();
+    assertThat(batch.ids()).containsExactly("1");
+    assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
+  }
+
+  @Test
+  void shouldGetBatchOperationsNextBatch() throws IOException {
+    // given - 3 documents, two of which were created over an hour ago, one of which was created
+    final var now = Instant.now();
+    final var twoHoursAgo = now.minus(Duration.ofHours(2)).toString();
+    final var repository = createRepository();
+    final var documents =
+        List.of(
+            new TestBatchOperation("1", twoHoursAgo),
+            new TestBatchOperation("2", twoHoursAgo),
+            new TestBatchOperation("3", now.toString()));
+
+    // create the index template first to ensure ID is a keyword, otherwise the surrounding
+    // aggregation will fail
+    createBatchOperationIndex();
+    documents.forEach(doc -> index(batchOperationIndex, doc));
+    testClient.indices().refresh(r -> r.index(batchOperationIndex));
+    config.setRolloverBatchSize(3);
+
+    // when
+    final var result = repository.getBatchOperationsNextBatch();
+
+    // then - we expect only the first two documents created two days ago to be returned
+    final var dateFormatter =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+    final var batch = result.join();
+    assertThat(batch.ids()).containsExactly("1", "2");
+    assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
+  }
+
+  private <T extends TDocument> void index(final String index, final T document) {
     try {
       testClient.index(b -> b.index(index).document(document).id(document.id()));
     } catch (final IOException e) {
@@ -243,13 +312,49 @@ final class ElasticsearchRepositoryIT {
     return new RestClientTransport(restClient, new JacksonJsonpMapper());
   }
 
-  /**
-   * NOTE: the fields of this class have to match the ID and END_DATE fields in {@link
-   * io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate} and {@link
-   * io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate}
-   *
-   * <p>If those change in the future, please keep them up to date here. If you need to split the
-   * document types as the names diverge, then go ahead and do so.
-   */
-  private record TestDocument(String id, String endDate) {}
+  private void createProcessInstanceIndex() throws IOException {
+    final var idProp = Property.of(p -> p.keyword(k -> k.index(true)));
+    final var endDateProp =
+        Property.of(p -> p.date(d -> d.index(true).format("date_time || epoch_millis")));
+    final var joinRelationProp = Property.of(p -> p.keyword(k -> k.index(true)));
+    final var properties =
+        TypeMapping.of(
+            m ->
+                m.properties(
+                    Map.of(
+                        ListViewTemplate.ID,
+                        idProp,
+                        ListViewTemplate.END_DATE,
+                        endDateProp,
+                        ListViewTemplate.JOIN_RELATION,
+                        joinRelationProp)));
+    testClient.indices().create(r -> r.index(processInstanceIndex).mappings(properties));
+  }
+
+  private void createBatchOperationIndex() throws IOException {
+    final var idProp = Property.of(p -> p.keyword(k -> k.index(true)));
+    final var endDateProp =
+        Property.of(p -> p.date(d -> d.index(true).format("date_time || epoch_millis")));
+    final var properties =
+        TypeMapping.of(
+            m ->
+                m.properties(
+                    Map.of(
+                        BatchOperationTemplate.ID,
+                        idProp,
+                        BatchOperationTemplate.END_DATE,
+                        endDateProp)));
+    testClient.indices().create(r -> r.index(batchOperationIndex).mappings(properties));
+  }
+
+  private record TestDocument(String id) implements TDocument {}
+
+  private record TestBatchOperation(String id, String endDate) implements TDocument {}
+
+  private record TestProcessInstance(
+      String id, String endDate, String joinRelation, int partitionId) implements TDocument {}
+
+  private interface TDocument {
+    String id();
+  }
 }
