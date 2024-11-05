@@ -142,8 +142,8 @@
       <idArg column="FLOW_NODE_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
-      <arg column="START_DATE" javaType="java.lang.String" typeHandler="io.camunda.db.rdbms.sql.typehandler.OffsetDateTimeToStringTypeHandler"/>
-      <arg column="END_DATE" javaType="java.lang.String" typeHandler="io.camunda.db.rdbms.sql.typehandler.OffsetDateTimeToStringTypeHandler"/>
+      <arg column="START_DATE" javaType="java.time.OffsetDateTime"/>
+      <arg column="END_DATE" javaType="java.time.OffsetDateTime"/>
       <arg column="FLOW_NODE_ID" javaType="java.lang.String"/>
       <arg column="TREE_PATH" javaType="java.lang.String"/>
       <arg column="TYPE" javaType="io.camunda.search.entities.FlowNodeInstanceEntity$FlowNodeType"/>
