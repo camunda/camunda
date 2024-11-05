@@ -5,29 +5,29 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.service.db.es.report.interpreter.groupby.process.usertask;
+package io.camunda.optimize.service.db.os.report.interpreter.groupby.process.usertask;
 
-import static io.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtilES.createModelElementAggregationFilter;
-import static io.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtilES.createUserTaskFlowNodeTypeFilter;
+import static io.camunda.optimize.service.db.os.report.filter.util.ModelElementFilterQueryUtilOS.createModelElementAggregationFilter;
+import static io.camunda.optimize.service.db.os.report.filter.util.ModelElementFilterQueryUtilOS.createUserTaskFlowNodeTypeFilter;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 
-import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
-import co.elastic.clients.elasticsearch._types.aggregations.Aggregation.Builder.ContainerBuilder;
-import co.elastic.clients.elasticsearch._types.aggregations.FilterAggregate;
-import co.elastic.clients.elasticsearch._types.aggregations.SingleBucketAggregateBase;
-import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
-import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.DefinitionService;
-import io.camunda.optimize.service.db.es.report.interpreter.groupby.process.AbstractProcessGroupByInterpreterES;
+import io.camunda.optimize.service.db.os.report.interpreter.RawResult;
+import io.camunda.optimize.service.db.os.report.interpreter.groupby.process.AbstractProcessGroupByInterpreterOS;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.interpreter.groupby.usertask.ProcessGroupByUserTaskInterpreterHelper;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import java.util.Map;
 import java.util.Optional;
+import org.opensearch.client.opensearch._types.aggregations.Aggregation;
+import org.opensearch.client.opensearch._types.aggregations.FilterAggregate;
+import org.opensearch.client.opensearch._types.aggregations.SingleBucketAggregateBase;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch.core.SearchResponse;
 
-public abstract class AbstractGroupByUserTaskInterpreterES
-    extends AbstractProcessGroupByInterpreterES {
+public abstract class AbstractGroupByUserTaskInterpreterOS
+    extends AbstractProcessGroupByInterpreterOS {
 
   private static final String USER_TASKS_AGGREGATION = "userTasks";
   private static final String FLOW_NODE_AGGREGATION = "flowNodes";
@@ -37,9 +37,9 @@ public abstract class AbstractGroupByUserTaskInterpreterES
 
   protected abstract ProcessGroupByUserTaskInterpreterHelper getHelper();
 
-  protected Map<String, ContainerBuilder> createFilteredUserTaskAggregation(
+  protected Map<String, Aggregation> createFilteredUserTaskAggregation(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
-      final BoolQuery baseQuery,
+      final Query baseQuery,
       final String name,
       final Aggregation subAggregation) {
     // sibling aggregation next to filtered userTask agg for distributedByPart for retrieval of all
@@ -69,20 +69,21 @@ public abstract class AbstractGroupByUserTaskInterpreterES
                                       .aggregations(name, subAggregation)));
               getDistributedByInterpreter()
                   .createAggregations(context, baseQuery)
-                  .forEach((k, v) -> aggregations.aggregations(k, v.build()));
+                  .forEach(aggregations::aggregations);
               return aggregations;
             }));
-    return Map.of(FLOW_NODE_AGGREGATION, builder);
+    return Map.of(FLOW_NODE_AGGREGATION, builder.build());
   }
 
   protected Optional<FilterAggregate> getFilteredUserTaskAggregation(
-      final ResponseBody<?> response) {
+      final SearchResponse<RawResult> response) {
     return getUserTasksAggregation(response)
         .map(SingleBucketAggregateBase::aggregations)
         .map(aggs -> aggs.get(FILTERED_USER_TASKS_AGGREGATION).filter());
   }
 
-  protected Optional<FilterAggregate> getUserTasksAggregation(final ResponseBody<?> response) {
+  protected Optional<FilterAggregate> getUserTasksAggregation(
+      final SearchResponse<RawResult> response) {
     return Optional.ofNullable(response.aggregations())
         .filter(f -> !f.isEmpty())
         .map(aggs -> aggs.get(FLOW_NODE_AGGREGATION).nested())

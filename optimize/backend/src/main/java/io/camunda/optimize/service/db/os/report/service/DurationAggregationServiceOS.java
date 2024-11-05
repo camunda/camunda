@@ -8,6 +8,7 @@
 package io.camunda.optimize.service.db.os.report.service;
 
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.filter;
+import static io.camunda.optimize.service.db.os.report.filter.util.ModelElementFilterQueryUtilOS.createUserTaskFlowNodeTypeFilter;
 import static io.camunda.optimize.service.db.os.report.interpreter.util.FilterLimitedAggregationUtilOS.wrapWithFilterLimitedParentAggregation;
 import static io.camunda.optimize.service.db.os.report.interpreter.util.NumberHistogramAggregationUtilOS.generateHistogramFromScript;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.DURATION;
@@ -17,6 +18,7 @@ import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.F
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.START_DATE;
 
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
+import io.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomBucketDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -75,6 +77,31 @@ public class DurationAggregationServiceOS extends DurationAggregationService {
         this::createProcessInstanceLimitingFilterQuery);
   }
 
+  public Optional<Pair<String, Aggregation>>
+      createLimitedGroupByScriptedUserTaskDurationAggregation(
+          final Query boolQuery,
+          final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
+          final Script durationCalculationScript,
+          final UserTaskDurationTime userTaskDurationTime) {
+
+    final MinMaxStatDto minMaxStats =
+        minMaxStatsService.getMinMaxNumberRangeForNestedScriptedField(
+            context,
+            boolQuery,
+            getIndexNames(context),
+            FLOW_NODE_INSTANCES,
+            durationCalculationScript,
+            Query.of(q -> q.bool(createUserTaskFlowNodeTypeFilter().build())));
+    return createLimitedGroupByScriptedDurationAggregation(
+        context,
+        boolQuery,
+        durationCalculationScript,
+        minMaxStats,
+        (filterOperator, filterValueInMillis) ->
+            createUserTaskLimitingFilterQuery(
+                filterOperator, userTaskDurationTime, filterValueInMillis));
+  }
+
   public Optional<Pair<String, Aggregation>> createLimitedGroupByScriptedEventDurationAggregation(
       final Query query,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,
@@ -110,6 +137,20 @@ public class DurationAggregationServiceOS extends DurationAggregationService {
                               String.valueOf(durationBucket.key()), distributions);
                         }))
         .toList();
+  }
+
+  private Query createUserTaskLimitingFilterQuery(
+      final ComparisonOperator filterOperator,
+      final UserTaskDurationTime userTaskDurationTime,
+      final double filterValueInMillis) {
+    return createLimitingFilterQuery(
+        filterOperator,
+        (long) filterValueInMillis,
+        FLOW_NODE_INSTANCES + "." + userTaskDurationTime.getDurationFieldName(),
+        FLOW_NODE_INSTANCES + "." + FLOW_NODE_START_DATE,
+        // user task duration calculations can be null (e.g. work time if the userTask hasn't been
+        // claimed)
+        true);
   }
 
   private Optional<Pair<String, Aggregation>> createLimitedGroupByScriptedDurationAggregation(

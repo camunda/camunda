@@ -5,25 +5,23 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.service.db.es.report.interpreter.groupby.process.usertask;
+package io.camunda.optimize.service.db.os.report.interpreter.groupby.process.usertask;
 
-import static io.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtilES.createUserTaskFlowNodeTypeFilter;
+import static io.camunda.optimize.service.db.os.report.filter.util.ModelElementFilterQueryUtilOS.createUserTaskFlowNodeTypeFilter;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_USER_TASK_DURATION;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 
-import co.elastic.clients.elasticsearch._types.Script;
-import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
-import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
-import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.DefinitionService;
-import io.camunda.optimize.service.db.es.report.interpreter.distributedby.process.ProcessDistributedByInterpreterFacadeES;
-import io.camunda.optimize.service.db.es.report.interpreter.util.DurationScriptUtilES;
-import io.camunda.optimize.service.db.es.report.interpreter.view.process.ProcessViewInterpreterFacadeES;
-import io.camunda.optimize.service.db.es.report.service.DurationAggregationServiceES;
-import io.camunda.optimize.service.db.es.report.service.MinMaxStatsServiceES;
+import io.camunda.optimize.service.db.os.report.interpreter.RawResult;
+import io.camunda.optimize.service.db.os.report.interpreter.distributedby.DistributedByInterpreterOS;
+import io.camunda.optimize.service.db.os.report.interpreter.distributedby.process.ProcessDistributedByInterpreterFacadeOS;
+import io.camunda.optimize.service.db.os.report.interpreter.util.DurationScriptUtilOS;
+import io.camunda.optimize.service.db.os.report.interpreter.view.ViewInterpreterOS;
+import io.camunda.optimize.service.db.os.report.interpreter.view.process.ProcessViewInterpreterFacadeOS;
+import io.camunda.optimize.service.db.os.report.service.DurationAggregationServiceOS;
+import io.camunda.optimize.service.db.os.report.service.MinMaxStatsServiceOS;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.MinMaxStatDto;
 import io.camunda.optimize.service.db.report.interpreter.groupby.usertask.ProcessGroupByUserTaskInterpreterHelper;
@@ -31,33 +29,38 @@ import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
-import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
+import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import org.opensearch.client.opensearch._types.Script;
+import org.opensearch.client.opensearch._types.aggregations.Aggregation;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch.core.SearchResponse;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@Conditional(ElasticSearchCondition.class)
-public class ProcessGroupByUserTaskDurationInterpreterES
-    extends AbstractGroupByUserTaskInterpreterES {
+@Conditional(OpenSearchCondition.class)
+public class ProcessGroupByUserTaskDurationInterpreterOS
+    extends AbstractGroupByUserTaskInterpreterOS {
 
-  private final MinMaxStatsServiceES minMaxStatsService;
-  private final DurationAggregationServiceES durationAggregationService;
+  private final MinMaxStatsServiceOS minMaxStatsService;
+  private final DurationAggregationServiceOS durationAggregationService;
   private final DefinitionService definitionService;
-  private final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
-  private final ProcessViewInterpreterFacadeES viewInterpreter;
+  private final ProcessDistributedByInterpreterFacadeOS distributedByInterpreter;
+  private final ProcessViewInterpreterFacadeOS viewInterpreter;
   private final ProcessGroupByUserTaskInterpreterHelper helper;
 
-  public ProcessGroupByUserTaskDurationInterpreterES(
-      final MinMaxStatsServiceES minMaxStatsService,
-      final DurationAggregationServiceES durationAggregationService,
+  public ProcessGroupByUserTaskDurationInterpreterOS(
+      final MinMaxStatsServiceOS minMaxStatsService,
+      final DurationAggregationServiceOS durationAggregationService,
       final DefinitionService definitionService,
-      final ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
-      final ProcessViewInterpreterFacadeES viewInterpreter,
+      final ProcessDistributedByInterpreterFacadeOS distributedByInterpreter,
+      final ProcessViewInterpreterFacadeOS viewInterpreter,
       final ProcessGroupByUserTaskInterpreterHelper helper) {
+    super();
     this.minMaxStatsService = minMaxStatsService;
     this.durationAggregationService = durationAggregationService;
     this.definitionService = definitionService;
@@ -72,22 +75,14 @@ public class ProcessGroupByUserTaskDurationInterpreterES
   }
 
   @Override
-  public Map<String, Aggregation.Builder.ContainerBuilder> createAggregation(
-      final BoolQuery boolQuery,
+  public Map<String, Aggregation> createAggregation(
+      final Query boolQuery,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     final UserTaskDurationTime userTaskDurationTime = getHelper().getUserTaskDurationTime(context);
     return durationAggregationService
         .createLimitedGroupByScriptedUserTaskDurationAggregation(
             boolQuery, context, getDurationScript(userTaskDurationTime), userTaskDurationTime)
-        .map(
-            durationAggregation ->
-                durationAggregation.entrySet().stream()
-                    .map(
-                        e ->
-                            createFilteredUserTaskAggregation(
-                                context, boolQuery, e.getKey(), e.getValue().build()))
-                    .findFirst()
-                    .get())
+        .map(e -> createFilteredUserTaskAggregation(context, boolQuery, e.getKey(), e.getValue()))
         .orElse(Map.of());
   }
 
@@ -101,9 +96,9 @@ public class ProcessGroupByUserTaskDurationInterpreterES
   }
 
   @Override
-  public void addQueryResult(
+  protected void addQueryResult(
       final CompositeCommandResult compositeCommandResult,
-      final ResponseBody<?> response,
+      final SearchResponse<RawResult> response,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     compositeCommandResult.setGroupByKeyOfNumericType(true);
     compositeCommandResult.setDistributedByKeyOfNumericType(
@@ -119,13 +114,24 @@ public class ProcessGroupByUserTaskDurationInterpreterES
   }
 
   @Override
-  public ProcessDistributedByInterpreterFacadeES getDistributedByInterpreter() {
+  protected DistributedByInterpreterOS<ProcessReportDataDto, ProcessExecutionPlan>
+      getDistributedByInterpreter() {
     return distributedByInterpreter;
   }
 
   @Override
-  public ProcessViewInterpreterFacadeES getViewInterpreter() {
+  protected ViewInterpreterOS<ProcessReportDataDto, ProcessExecutionPlan> getViewInterpreter() {
     return viewInterpreter;
+  }
+
+  @Override
+  protected DefinitionService getDefinitionService() {
+    return definitionService;
+  }
+
+  @Override
+  public ProcessGroupByUserTaskInterpreterHelper getHelper() {
+    return helper;
   }
 
   private MinMaxStatDto retrieveMinMaxDurationStats(
@@ -141,18 +147,8 @@ public class ProcessGroupByUserTaskDurationInterpreterES
   }
 
   private Script getDurationScript(final UserTaskDurationTime userTaskDurationTime) {
-    return DurationScriptUtilES.getUserTaskDurationScript(
+    return DurationScriptUtilOS.getUserTaskDurationScript(
         LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
         FLOW_NODE_INSTANCES + "." + userTaskDurationTime.getDurationFieldName());
-  }
-
-  @Override
-  public DefinitionService getDefinitionService() {
-    return definitionService;
-  }
-
-  @Override
-  public ProcessGroupByUserTaskInterpreterHelper getHelper() {
-    return helper;
   }
 }
