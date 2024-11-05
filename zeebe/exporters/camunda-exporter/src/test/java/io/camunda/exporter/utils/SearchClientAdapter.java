@@ -13,8 +13,6 @@ import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplate
 import co.elastic.clients.json.JsonpMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.exporter.SchemaResourceSerializer;
 import java.io.IOException;
 import java.util.Objects;
@@ -25,7 +23,7 @@ import org.opensearch.client.opensearch.generic.Requests;
 import org.opensearch.client.opensearch.indices.IndexState;
 
 public class SearchClientAdapter {
-  private static final ObjectMapper MAPPER = getObjectMapper();
+  private static final ObjectMapper MAPPER = new ObjectMapper();
   private static final JsonpMapper ELS_JSON_MAPPER =
       new co.elastic.clients.json.jackson.JacksonJsonpMapper(MAPPER);
   private static final org.opensearch.client.json.JsonpMapper OPENSEARCH_JSON_MAPPER =
@@ -44,14 +42,6 @@ public class SearchClientAdapter {
     Objects.requireNonNull(osClient, "osClient cannot be null");
     elsClient = null;
     this.osClient = osClient;
-  }
-
-  public static ObjectMapper getObjectMapper() {
-    final JavaTimeModule javaTimeModule = new JavaTimeModule();
-
-    return new ObjectMapper()
-        .registerModule(javaTimeModule)
-        .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
   }
 
   private JsonNode opensearchIndexToNode(final IndexState index) throws IOException {
