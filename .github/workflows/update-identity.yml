@@ -41,14 +41,13 @@ jobs:
           xml-file: './parent/pom.xml'
           xpath: '//*[local-name()="version.identity"]'
       - name: Setup Zeebe Build Tooling
-        id: build-setup
-        uses: ./.github/actions/setup-zeebe
+        uses: ./.github/actions/setup-build
         if: ${{ steps.get-current-identity-version.outputs.info != inputs.identityVersion }}
         with:
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           maven-cache-key-modifier: identity-update
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: Update identity version in ./parent/pom.xml
         id: update-identity-version
         if: ${{ steps.get-current-identity-version.outputs.info != inputs.identityVersion }}
