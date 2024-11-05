@@ -62,8 +62,10 @@ public class TenantAppliersTest {
     final var tenantId = UUID.randomUUID().toString();
     createTenant(tenantKey, tenantId);
     createUser(entityKey, "username");
+
     // when
     associateUserWithTenant(tenantKey, tenantId, entityKey);
+
     // then
     assertThat(tenantState.getEntitiesByType(tenantKey).get(EntityType.USER))
         .containsExactly(entityKey);
@@ -107,15 +109,20 @@ public class TenantAppliersTest {
       createUser(userKey, "user" + userKey);
       associateUserWithTenant(tenantKey, tenantId, userKey);
     }
+
     // Ensure the tenant and associated users exist before deletion
     assertThat(tenantState.getTenantByKey(tenantKey)).isPresent();
     assertUsersAreAssociatedWithTenant(userKeys, tenantId);
+
     // when
     tenantDeletedApplier.applyState(tenantKey, tenantRecord);
+
     // then verify tenant is deleted
     assertThat(tenantState.getTenantByKey(tenantKey)).isEmpty();
+
     // Verify all associated users are no longer linked to the tenant
     assertUsersAreNotAssociatedWithAnyTenant(userKeys);
+
     // Verify owner type and permissions are removed
     assertThat(authorizationState.getOwnerType(tenantKey)).isEmpty();
     final var resourceIdentifiers =
@@ -129,12 +136,16 @@ public class TenantAppliersTest {
     // given
     final long tenantKey = UUID.randomUUID().hashCode();
     final var tenantId = UUID.randomUUID().toString();
+
     // Create tenant without any entities
     final TenantRecord tenantRecord = createTenant(tenantKey, tenantId);
+
     // Ensure the tenant exists before deletion
     assertThat(tenantState.getTenantByKey(tenantKey)).isPresent();
+
     // when
     tenantDeletedApplier.applyState(tenantKey, tenantRecord);
+
     // then
     assertThat(tenantState.getTenantByKey(tenantKey)).isEmpty();
     final var ownerType = authorizationState.getOwnerType(tenantKey);
@@ -154,11 +165,13 @@ public class TenantAppliersTest {
     createTenant(tenantKey, tenantId);
     createUser(entityKey, "username");
     associateUserWithTenant(tenantKey, tenantId, entityKey);
+
     // Ensure the user is associated with the tenant before removal
     assertThat(tenantState.getEntitiesByType(tenantKey).get(EntityType.USER))
         .containsExactly(entityKey);
     final var persistedUser = userState.getUser(entityKey).get();
     assertThat(persistedUser.getTenantIdsList()).containsExactly(tenantId);
+
     // when
     final var tenantRecord =
         new TenantRecord()
@@ -167,6 +180,7 @@ public class TenantAppliersTest {
             .setEntityKey(entityKey)
             .setEntityType(EntityType.USER);
     tenantEntityRemovedApplier.applyState(tenantKey, tenantRecord);
+
     // then
     assertThat(tenantState.getEntitiesByType(tenantKey)).isEmpty();
     final var updatedUser = userState.getUser(entityKey).get();
@@ -188,12 +202,15 @@ public class TenantAppliersTest {
     tenantState.createTenant(tenantRecord);
     tenantRecord.setEntityKey(entityKey).setEntityType(EntityType.MAPPING);
     tenantEntityAddedApplier.applyState(tenantKey, tenantRecord);
+
     // Ensure the mapping is associated with the tenant before removal
     assertThat(tenantState.getEntityType(tenantKey, entityKey).get().equals(EntityType.MAPPING));
     final var persistedMapping = mappingState.get(entityKey).get();
     assertThat(persistedMapping.getTenantIdsList()).containsExactly(tenantId);
+
     // when
     tenantEntityRemovedApplier.applyState(tenantKey, tenantRecord);
+
     // then
     assertThat(tenantState.getEntityType(tenantKey, entityKey)).isEmpty();
     final var updatedMapping = mappingState.get(entityKey).get();
