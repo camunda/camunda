@@ -26,6 +26,10 @@ public class GroupClient {
     return new GroupCreateClient(writer, name);
   }
 
+  public GroupUpdateClient updateGroup(final long groupKey) {
+    return new GroupUpdateClient(writer, groupKey);
+  }
+
   public static class GroupCreateClient {
 
     private static final Function<Long, Record<GroupRecordValue>> SUCCESS_SUPPLIER =
@@ -58,6 +62,49 @@ public class GroupClient {
     }
 
     public GroupCreateClient expectRejection() {
+      expectation = REJECTION_SUPPLIER;
+      return this;
+    }
+  }
+
+  public static class GroupUpdateClient {
+
+    private static final Function<Long, Record<GroupRecordValue>> SUCCESS_SUPPLIER =
+        (position) ->
+            RecordingExporter.groupRecords()
+                .withIntent(GroupIntent.UPDATED)
+                .withSourceRecordPosition(position)
+                .getFirst();
+
+    private static final Function<Long, Record<GroupRecordValue>> REJECTION_SUPPLIER =
+        (position) ->
+            RecordingExporter.groupRecords()
+                .onlyCommandRejections()
+                .withIntent(GroupIntent.UPDATE)
+                .withSourceRecordPosition(position)
+                .getFirst();
+
+    private final CommandWriter writer;
+    private final GroupRecord groupRecord;
+    private Function<Long, Record<GroupRecordValue>> expectation = SUCCESS_SUPPLIER;
+
+    public GroupUpdateClient(final CommandWriter writer, final long groupKey) {
+      this.writer = writer;
+      groupRecord = new GroupRecord();
+      groupRecord.setGroupKey(groupKey);
+    }
+
+    public GroupUpdateClient withName(final String name) {
+      groupRecord.setName(name);
+      return this;
+    }
+
+    public Record<GroupRecordValue> update() {
+      final long position = writer.writeCommand(GroupIntent.UPDATE, groupRecord);
+      return expectation.apply(position);
+    }
+
+    public GroupUpdateClient expectRejection() {
       expectation = REJECTION_SUPPLIER;
       return this;
     }

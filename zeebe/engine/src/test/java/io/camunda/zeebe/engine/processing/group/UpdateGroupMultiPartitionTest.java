@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.processing.authorization;
+package io.camunda.zeebe.engine.processing.group;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
@@ -17,7 +17,6 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
-import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -29,7 +28,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
-public class CreateGroupMultiPartitionTest {
+public class UpdateGroupMultiPartitionTest {
   private static final int PARTITION_COUNT = 3;
 
   @Rule public final EngineRule engine = EngineRule.multiplePartition(PARTITION_COUNT);
@@ -37,15 +36,20 @@ public class CreateGroupMultiPartitionTest {
   @Rule public final TestWatcher testWatcher = new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldDistributeGroupCreateCommand() {
-    // when
+  public void shouldDistributeGroupUpdateCommand() {
+    // given
     final var name = UUID.randomUUID().toString();
-    engine.group().newGroup(name).create();
+    final var groupRecord = engine.group().newGroup(name).create();
+
+    // when
+    final var groupKey = groupRecord.getKey();
+    engine.group().updateGroup(groupKey).withName("updated-" + name).update();
 
     assertThat(
             RecordingExporter.records()
                 .withPartitionId(1)
-                .limit(record -> record.getIntent().equals(CommandDistributionIntent.FINISHED)))
+                .limitByCount(
+                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 2))
         .extracting(
             io.camunda.zeebe.protocol.record.Record::getIntent,
             io.camunda.zeebe.protocol.record.Record::getRecordType,
@@ -57,9 +61,9 @@ public class CreateGroupMultiPartitionTest {
                 r.getValue() instanceof CommandDistributionRecordValue
                     ? ((CommandDistributionRecordValue) r.getValue()).getPartitionId()
                     : r.getPartitionId())
-        .startsWith(
-            tuple(GroupIntent.CREATE, RecordType.COMMAND, 1),
-            tuple(GroupIntent.CREATED, RecordType.EVENT, 1),
+        .containsSubsequence(
+            tuple(GroupIntent.UPDATE, RecordType.COMMAND, 1),
+            tuple(GroupIntent.UPDATED, RecordType.EVENT, 1),
             tuple(CommandDistributionIntent.STARTED, RecordType.EVENT, 1))
         .containsSubsequence(
             tuple(CommandDistributionIntent.DISTRIBUTING, RecordType.EVENT, 2),
@@ -74,10 +78,10 @@ public class CreateGroupMultiPartitionTest {
       assertThat(
               RecordingExporter.groupRecords()
                   .withPartitionId(partitionId)
-                  .limit(record -> record.getIntent().equals(GroupIntent.CREATED))
+                  .limit(record -> record.getIntent().equals(GroupIntent.UPDATED))
                   .collect(Collectors.toList()))
           .extracting(Record::getIntent)
-          .containsExactly(GroupIntent.CREATE, GroupIntent.CREATED);
+          .containsSubsequence(GroupIntent.UPDATE, GroupIntent.UPDATED);
     }
   }
 
@@ -85,12 +89,13 @@ public class CreateGroupMultiPartitionTest {
   public void shouldDistributeInIdentityQueue() {
     // when
     final var name = UUID.randomUUID().toString();
-    engine.group().newGroup(name).create();
+    final var groupKey = engine.group().newGroup(name).create().getKey();
+    engine.group().updateGroup(groupKey).withName(name + "-updated").update();
 
     // then
     assertThat(
             RecordingExporter.commandDistributionRecords()
-                .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 1)
+                .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 2)
                 .withIntent(CommandDistributionIntent.ENQUEUED))
         .extracting(r -> r.getValue().getQueueId())
         .containsOnly(DistributionQueue.IDENTITY.getQueueId());
@@ -98,22 +103,15 @@ public class CreateGroupMultiPartitionTest {
 
   @Test
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
-    // given the user creation distribution is intercepted
+    // given the group creation distribution is intercepted
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
-      interceptUserCreateForPartition(partitionId);
+      interceptGroupCommandForPartition(partitionId, GroupIntent.CREATE);
     }
-
-    engine
-        .user()
-        .newUser(UUID.randomUUID().toString())
-        .withName("Foo Bar")
-        .withPassword("baz")
-        .withEmail("foobar@baz.com")
-        .create();
+    final var groupKey = engine.group().newGroup(UUID.randomUUID().toString()).create().getKey();
 
     // when
     final var name = UUID.randomUUID().toString();
-    engine.group().newGroup(name).create();
+    engine.group().updateGroup(groupKey).withName("updated-" + name).update();
 
     // Increase time to trigger a redistribution
     engine.increaseTime(Duration.ofMinutes(1));
@@ -124,10 +122,11 @@ public class CreateGroupMultiPartitionTest {
                 .limit(2))
         .extracting(r -> r.getValue().getValueType(), r -> r.getValue().getIntent())
         .containsExactly(
-            tuple(ValueType.USER, UserIntent.CREATE), tuple(ValueType.GROUP, GroupIntent.CREATE));
+            tuple(ValueType.GROUP, GroupIntent.CREATE), tuple(ValueType.GROUP, GroupIntent.UPDATE));
   }
 
-  private void interceptUserCreateForPartition(final int partitionId) {
+  private void interceptGroupCommandForPartition(
+      final int partitionId, final GroupIntent groupIntent) {
     final var hasInterceptedPartition = new AtomicBoolean(false);
     engine.interceptInterPartitionCommands(
         (receiverPartitionId, valueType, intent, recordKey, command) -> {
@@ -135,7 +134,7 @@ public class CreateGroupMultiPartitionTest {
             return true;
           }
           hasInterceptedPartition.set(true);
-          return !(receiverPartitionId == partitionId && intent == UserIntent.CREATE);
+          return !(receiverPartitionId == partitionId && intent == groupIntent);
         });
   }
 }

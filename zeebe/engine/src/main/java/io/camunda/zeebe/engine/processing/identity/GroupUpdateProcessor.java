@@ -17,18 +17,18 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
-import io.camunda.zeebe.engine.state.immutable.RoleState;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.engine.state.immutable.GroupState;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
-public class RoleUpdateProcessor implements DistributedTypedRecordProcessor<RoleRecord> {
+public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<GroupRecord> {
 
-  private final RoleState roleState;
+  private final GroupState groupState;
   private final KeyGenerator keyGenerator;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final StateWriter stateWriter;
@@ -36,38 +36,38 @@ public class RoleUpdateProcessor implements DistributedTypedRecordProcessor<Role
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
 
-  public RoleUpdateProcessor(
-      final RoleState roleState,
+  public GroupUpdateProcessor(
+      final GroupState groupState,
       final KeyGenerator keyGenerator,
       final AuthorizationCheckBehavior authCheckBehavior,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
-    this.roleState = roleState;
+    this.groupState = groupState;
     this.keyGenerator = keyGenerator;
     this.authCheckBehavior = authCheckBehavior;
-    stateWriter = writers.state();
-    rejectionWriter = writers.rejection();
-    responseWriter = writers.response();
     this.commandDistributionBehavior = commandDistributionBehavior;
+    stateWriter = writers.state();
+    responseWriter = writers.response();
+    rejectionWriter = writers.rejection();
   }
 
   @Override
-  public void processNewCommand(final TypedRecord<RoleRecord> command) {
+  public void processNewCommand(final TypedRecord<GroupRecord> command) {
     final var record = command.getValue();
-    final var persistedRecord = roleState.getRole(record.getRoleKey());
+    final var persistedRecord = groupState.get(record.getGroupKey());
     if (persistedRecord.isEmpty()) {
       final var errorMessage =
-          "Expected to update role with key '%s', but a role with this key does not exist."
-              .formatted(record.getRoleKey());
+          "Expected to update group with key '%s', but a group with this key does not exist."
+              .formatted(record.getGroupKey());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
     }
 
-    final var updatedName = record.getName();
+    final var updatedGroupName = record.getName();
     final var authorizationRequest =
-        new AuthorizationRequest(command, AuthorizationResourceType.ROLE, PermissionType.UPDATE)
-            .addResourceId(updatedName);
+        new AuthorizationRequest(command, AuthorizationResourceType.GROUP, PermissionType.UPDATE)
+            .addResourceId(updatedGroupName);
     if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
       final var errorMessage =
           UNAUTHORIZED_ERROR_MESSAGE.formatted(
@@ -77,17 +77,17 @@ public class RoleUpdateProcessor implements DistributedTypedRecordProcessor<Role
       return;
     }
 
-    if (updatedName.equals(persistedRecord.get().getName())) {
+    if (updatedGroupName.equals(persistedRecord.get().getName())) {
       final var errorMessage =
-          "Expected to update role with name '%s', but a role with this name already exists."
-              .formatted(updatedName);
+          "Expected to update group with name '%s', but a group with this name already exists."
+              .formatted(updatedGroupName);
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);
       return;
     }
 
-    stateWriter.appendFollowUpEvent(record.getRoleKey(), RoleIntent.UPDATED, record);
-    responseWriter.writeEventOnCommand(record.getRoleKey(), RoleIntent.UPDATED, record, command);
+    stateWriter.appendFollowUpEvent(record.getGroupKey(), GroupIntent.UPDATED, record);
+    responseWriter.writeEventOnCommand(record.getGroupKey(), GroupIntent.UPDATED, record, command);
 
     final long distributionKey = keyGenerator.nextKey();
     commandDistributionBehavior
@@ -97,9 +97,9 @@ public class RoleUpdateProcessor implements DistributedTypedRecordProcessor<Role
   }
 
   @Override
-  public void processDistributedCommand(final TypedRecord<RoleRecord> command) {
+  public void processDistributedCommand(final TypedRecord<GroupRecord> command) {
     stateWriter.appendFollowUpEvent(
-        command.getValue().getRoleKey(), RoleIntent.UPDATED, command.getValue());
+        command.getValue().getGroupKey(), GroupIntent.UPDATED, command.getValue());
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 }
