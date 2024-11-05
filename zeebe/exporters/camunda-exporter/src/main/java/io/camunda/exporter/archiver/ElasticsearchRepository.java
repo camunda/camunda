@@ -185,7 +185,7 @@ public final class ElasticsearchRepository implements ArchiverRepository {
         AggregationBuilders.dateHistogram()
             .field(ListViewTemplate.END_DATE)
             .calendarInterval(rolloverInterval)
-            .format(config.getRolloverDateFormat())
+            .format(config.getElsRolloverDateFormat())
             .keyed(false) // get result as an array (not a map)
             .build();
     final var sortAggregation =
