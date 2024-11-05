@@ -83,4 +83,23 @@ public class GroupTest {
             "Expected to update group with key '%d', but a group with this key does not exist."
                 .formatted(groupKey));
   }
+
+  @Test
+  public void shouldRejectUpdatedIfSameGroupExists() {
+    // given
+    final var groupName = "yolo";
+    final var groupKey = engine.group().newGroup(groupName).create().getKey();
+
+    // when
+    final var updatedName = "yolo";
+    final var updatedGroupRecord =
+        engine.group().updateGroup(groupKey).withName(updatedName).expectRejection().update();
+
+    // then
+    assertThat(updatedGroupRecord)
+        .hasRejectionType(RejectionType.ALREADY_EXISTS)
+        .hasRejectionReason(
+            "Expected to update group with name '%s', but a group with this name already exists."
+                .formatted(updatedName));
+  }
 }

@@ -95,7 +95,7 @@ public class UpdateGroupMultiPartitionTest {
     // then
     assertThat(
             RecordingExporter.commandDistributionRecords()
-                .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 1)
+                .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 2)
                 .withIntent(CommandDistributionIntent.ENQUEUED))
         .extracting(r -> r.getValue().getQueueId())
         .containsOnly(DistributionQueue.IDENTITY.getQueueId());
@@ -103,9 +103,9 @@ public class UpdateGroupMultiPartitionTest {
 
   @Test
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
-    // given the user creation distribution is intercepted
+    // given the group creation distribution is intercepted
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
-      interceptGroupCommandForPartition(partitionId, GroupIntent.UPDATE);
+      interceptGroupCommandForPartition(partitionId, GroupIntent.CREATE);
     }
     final var groupKey = engine.group().newGroup(UUID.randomUUID().toString()).create().getKey();
 
