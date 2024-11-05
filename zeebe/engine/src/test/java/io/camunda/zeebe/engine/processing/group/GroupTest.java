@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.processing.authorization;
+package io.camunda.zeebe.engine.processing.group;
 
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
@@ -48,5 +48,39 @@ public class GroupTest {
         .hasRejectionReason(
             "Expected to create group with name '%s', but a group with this name already exists."
                 .formatted(name));
+  }
+
+  @Test
+  public void shouldUpdateGroup() {
+    // given
+    final var name = UUID.randomUUID().toString();
+    final var groupRecord = engine.group().newGroup(name).create();
+
+    // when
+    final var groupKey = groupRecord.getKey();
+    final var updatedName = name + "-updated";
+    final var updatedGroupRecord =
+        engine.group().updateGroup(groupKey).withName(updatedName).update();
+
+    final var updatedGroup = updatedGroupRecord.getValue();
+    Assertions.assertThat(updatedGroup)
+        .isNotNull()
+        .hasFieldOrPropertyWithValue("name", updatedName);
+  }
+
+  @Test
+  public void shouldRejectUpdatedIfNoGroupExists() {
+    // when
+    final var groupKey = 1L;
+    final var updatedName = "yolo";
+    final var updatedGroupRecord =
+        engine.group().updateGroup(groupKey).withName(updatedName).expectRejection().update();
+
+    // then
+    assertThat(updatedGroupRecord)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to update group with key '%d', but a group with this key does not exist."
+                .formatted(groupKey));
   }
 }
