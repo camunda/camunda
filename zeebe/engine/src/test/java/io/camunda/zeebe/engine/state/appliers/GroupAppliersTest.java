@@ -145,4 +145,66 @@ public class GroupAppliersTest {
     final var persistedMapping = mappingState.get(entityKey).get();
     assertThat(persistedMapping.getGroupKeysList()).containsExactly(groupKey);
   }
+
+  @Test
+  void shoulRemoveUserEntityFromGroup() {
+    // given
+    final var entityKey = 1L;
+    final var userRecord =
+        new UserRecord()
+            .setUserKey(entityKey)
+            .setName("test")
+            .setUsername("username")
+            .setPassword("password")
+            .setEmail("test@example.com");
+    userState.create(userRecord);
+    final var groupEntityAddedApplier = new GroupEntityAddedApplier(processingState);
+    final var groupEnetityRemovedApplier = new GroupEntityRemovedApplier(processingState);
+    final var groupKey = 2L;
+    final var groupName = "group";
+    final var entityType = EntityType.USER;
+    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
+    groupState.create(groupKey, groupRecord);
+    groupRecord.setEntityKey(entityKey).setEntityType(entityType);
+    groupEntityAddedApplier.applyState(groupKey, groupRecord);
+
+    // when
+    groupEnetityRemovedApplier.applyState(groupKey, groupRecord);
+
+    // then
+    final var entitiesByType = groupState.getEntitiesByType(groupKey);
+    assertThat(entitiesByType).isEmpty();
+    final var persistedUser = userState.getUser(entityKey).get();
+    assertThat(persistedUser.getGroupKeysList()).isEmpty();
+  }
+
+  @Test
+  void shouldRemoveMappingEntityFromGroup() {
+    // given
+    final var entityKey = 1L;
+    final var mappingRecord =
+        new MappingRecord()
+            .setMappingKey(entityKey)
+            .setClaimName("claimName")
+            .setClaimValue("claimValue");
+    mappingState.create(mappingRecord);
+    final var groupEntityAddedApplier = new GroupEntityAddedApplier(processingState);
+    final var groupEnetityRemovedApplier = new GroupEntityRemovedApplier(processingState);
+    final var groupKey = 2L;
+    final var groupName = "group";
+    final var entityType = EntityType.MAPPING;
+    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
+    groupState.create(groupKey, groupRecord);
+    groupRecord.setEntityKey(entityKey).setEntityType(entityType);
+    groupEntityAddedApplier.applyState(groupKey, groupRecord);
+
+    // when
+    groupEnetityRemovedApplier.applyState(groupKey, groupRecord);
+
+    // then
+    final var entitiesByType = groupState.getEntitiesByType(groupKey);
+    assertThat(entitiesByType).isEmpty();
+    final var persistedMapping = mappingState.get(entityKey).get();
+    assertThat(persistedMapping.getGroupKeysList()).isEmpty();
+  }
 }
