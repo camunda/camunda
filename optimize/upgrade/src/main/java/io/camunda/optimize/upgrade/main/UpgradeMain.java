@@ -13,6 +13,7 @@ import static io.camunda.optimize.upgrade.util.UpgradeUtil.createUpgradeDependen
 
 import io.camunda.optimize.service.metadata.Version;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
@@ -82,7 +83,17 @@ public class UpgradeMain {
       for (final UpgradePlan upgradePlan : upgradePlans) {
         upgradeProcedure.performUpgrade(upgradePlan);
       }
-      upgradeProcedure.schemaUpgradeClient.initializeSchema();
+
+      final boolean initSchemaEnabled =
+          ConfigurationServiceBuilder.createDefaultConfiguration()
+              .getElasticSearchConfiguration()
+              .getConnection()
+              .isInitSchemaEnabled();
+      if (initSchemaEnabled) {
+        upgradeProcedure.schemaUpgradeClient.initializeSchema();
+      } else {
+        LOG.info("Schema initialization disabled, skipping");
+      }
 
       LOG.info("Update finished successfully.");
 
