@@ -11,6 +11,7 @@ import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
+import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -85,7 +86,9 @@ public final class Archiver implements CloseableSilently {
 
     final var processInstanceJob =
         createProcessInstanceJob(metrics, logger, resourceProvider, repository, executor);
-    archiver.start(config, processInstanceJob);
+    final var batchOperationJob =
+        createBatchOperationJob(metrics, logger, resourceProvider, repository, executor);
+    archiver.start(config, processInstanceJob, batchOperationJob);
 
     return archiver;
   }
@@ -106,6 +109,21 @@ public final class Archiver implements CloseableSilently {
         repository,
         resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class),
         dependantTemplates,
+        metrics,
+        logger,
+        executor);
+  }
+
+  private static BatchOperationArchiverJob createBatchOperationJob(
+      final CamundaExporterMetrics metrics,
+      final Logger logger,
+      final ExporterResourceProvider resourceProvider,
+      final ArchiverRepository repository,
+      final ScheduledThreadPoolExecutor executor) {
+
+    return new BatchOperationArchiverJob(
+        repository,
+        resourceProvider.getIndexTemplateDescriptor(BatchOperationTemplate.class),
         metrics,
         logger,
         executor);

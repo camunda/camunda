@@ -15,6 +15,8 @@ import java.util.concurrent.Executor;
 public interface ArchiverRepository extends AutoCloseable {
   CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch();
 
+  CompletableFuture<ArchiveBatch> getBatchOperationsNextBatch();
+
   CompletableFuture<Void> setIndexLifeCycle(final String destinationIndexName);
 
   CompletableFuture<Void> deleteDocuments(
@@ -43,6 +45,11 @@ public interface ArchiverRepository extends AutoCloseable {
 
     @Override
     public CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch() {
+      return CompletableFuture.completedFuture(new ArchiveBatch("2024-01-01", List.of()));
+    }
+
+    @Override
+    public CompletableFuture<ArchiveBatch> getBatchOperationsNextBatch() {
       return CompletableFuture.completedFuture(new ArchiveBatch("2024-01-01", List.of()));
     }
 
