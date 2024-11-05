@@ -16,11 +16,11 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
-import io.camunda.exporter.utils.TestSupport;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -42,11 +42,11 @@ class ProcessCacheImplIT {
 
   @Container
   private static final ElasticsearchContainer ELASTICSEARCH_CONTAINER =
-      TestSupport.createDefeaultElasticsearchContainer();
+      TestSearchContainers.createDefeaultElasticsearchContainer();
 
   @Container
   private static final OpensearchContainer OPENSEARCH_CONTAINER =
-      TestSupport.createDefaultOpensearchContainer();
+      TestSearchContainers.createDefaultOpensearchContainer();
 
   private static ElasticsearchClient elsClient;
   private static OpenSearchClient osClient;

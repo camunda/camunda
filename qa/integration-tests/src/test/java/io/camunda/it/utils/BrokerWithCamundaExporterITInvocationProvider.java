@@ -16,6 +16,7 @@ import io.camunda.it.utils.ZeebeClientTestFactory.User;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.lang.reflect.Parameter;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -37,7 +38,6 @@ import org.junit.jupiter.api.extension.TestTemplateInvocationContext;
 import org.junit.jupiter.api.extension.TestTemplateInvocationContextProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.BindMode;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -111,19 +111,8 @@ public class BrokerWithCamundaExporterITInvocationProvider
               switch (entry.getValue()) {
                 case CAMUNDA_EXPORTER_ELASTIC_SEARCH -> {
                   final ElasticsearchContainer elasticsearchContainer =
-                      new ElasticsearchContainer(ELASTIC_IMAGE)
-                          // use JVM option files to avoid overwriting default options set by the ES
-                          // container class
-                          .withClasspathResourceMapping(
-                              "elasticsearch-fast-startup.options",
-                              "/usr/share/elasticsearch/config/jvm.options.d/ elasticsearch-fast-startup.options",
-                              BindMode.READ_ONLY)
-                          // can be slow in CI
-                          .withStartupTimeout(Duration.ofMinutes(5))
-                          .withEnv("action.auto_create_index", "true")
-                          .withEnv("xpack.security.enabled", "false")
-                          .withEnv("xpack.watcher.enabled", "false")
-                          .withEnv("xpack.ml.enabled", "false");
+                      TestSearchContainers.createDefeaultElasticsearchContainer()
+                          .withStartupTimeout(Duration.ofMinutes(5)); // can be slow in CI
                   elasticsearchContainer.start();
                   closeables.add(elasticsearchContainer);
 

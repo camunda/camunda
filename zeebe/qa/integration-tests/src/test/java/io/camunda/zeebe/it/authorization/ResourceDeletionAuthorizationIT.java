@@ -24,42 +24,23 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import java.time.Duration;
+import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.util.List;
 import java.util.UUID;
-import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.BindMode;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 
 @AutoCloseResources
 @Testcontainers
 @ZeebeIntegration
 public class ResourceDeletionAuthorizationIT {
 
-  private static final DockerImageName ELASTIC_IMAGE =
-      DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
-          .withTag(RestClient.class.getPackage().getImplementationVersion());
-
   @Container
   private static final ElasticsearchContainer CONTAINER =
-      new ElasticsearchContainer(ELASTIC_IMAGE)
-          // use JVM option files to avoid overwriting default options set by the ES container class
-          .withClasspathResourceMapping(
-              "elasticsearch-fast-startup.options",
-              "/usr/share/elasticsearch/config/jvm.options.d/ elasticsearch-fast-startup.options",
-              BindMode.READ_ONLY)
-          // can be slow in CI
-          .withStartupTimeout(Duration.ofMinutes(5))
-          .withEnv("action.auto_create_index", "true")
-          .withEnv("xpack.security.enabled", "false")
-          .withEnv("xpack.watcher.enabled", "false")
-          .withEnv("xpack.ml.enabled", "false")
-          .withEnv("action.destructive_requires_name", "false");
+      TestSearchContainers.createDefeaultElasticsearchContainer();
 
   @TestZeebe(autoStart = false)
   private static final TestStandaloneBroker BROKER =

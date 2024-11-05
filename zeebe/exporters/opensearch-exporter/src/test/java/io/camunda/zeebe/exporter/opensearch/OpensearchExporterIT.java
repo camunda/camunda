@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -60,7 +61,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 final class OpensearchExporterIT {
   @Container
   private static final OpensearchContainer<?> CONTAINER =
-      TestSupport.createDefaultContainer().withEnv("action.destructive_requires_name", "false");
+      TestSearchContainers.createDefaultOpensearchContainer()
+          .withEnv("action.destructive_requires_name", "false");
 
   private final OpensearchExporterConfiguration config = new OpensearchExporterConfiguration();
   private final ProtocolFactory factory = new ProtocolFactory();
