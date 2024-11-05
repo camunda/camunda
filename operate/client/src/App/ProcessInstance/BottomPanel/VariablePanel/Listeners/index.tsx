@@ -7,22 +7,66 @@
  */
 
 import {observer} from 'mobx-react';
-import {CellContainer, Content, StructuredList, WarningFilled} from './styled';
+import {
+  CellContainer,
+  Content,
+  StructuredList,
+  WarningFilled,
+  Dropdown,
+} from './styled';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
 import {
   MAX_LISTENERS_STORED,
   processInstanceListenersStore,
 } from 'modules/stores/processInstanceListeners';
 import {formatDate} from 'modules/utils/date';
+import {useState} from 'react';
 
 type Props = {
   listeners: ListenerEntity[];
 };
+
+enum FilterLabelMapping {
+  'All listeners' = 'ALL_LISTENERS',
+  'Execution listeners' = 'EXECUTION_LISTENER',
+  'User task listeners' = 'USER_TASK_LISTENER',
+}
+
+type FilterLabelMappingType = typeof FilterLabelMapping;
+type FilterLabelMappingKeys = keyof FilterLabelMappingType;
+
+type SelectedItem = {
+  selectedItem: FilterLabelMappingKeys;
+};
+
 const ROW_HEIGHT = 46;
 
 const Listeners: React.FC<Props> = observer(({listeners}) => {
+  const {setListenerTypeFilter} = processInstanceListenersStore;
+
+  const [selectedOption, setSelectedOption] =
+    useState<FilterLabelMappingKeys>('All listeners');
+
   return (
     <Content>
+      <Dropdown
+        id="listenerTypeFilter"
+        titleText="Listener type"
+        label="All listeners"
+        hideLabel
+        onChange={async ({selectedItem}: SelectedItem) => {
+          setSelectedOption(selectedItem);
+
+          if (FilterLabelMapping[selectedItem] !== 'ALL_LISTENERS') {
+            setListenerTypeFilter(FilterLabelMapping[selectedItem]);
+          } else {
+            setListenerTypeFilter(undefined);
+          }
+        }}
+        items={Object.keys(FilterLabelMapping)}
+        size="sm"
+        selectedItem={selectedOption}
+      />
       <StructuredList
         dataTestId="listeners-list"
         headerColumns={[

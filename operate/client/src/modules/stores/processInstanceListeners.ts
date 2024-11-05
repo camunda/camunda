@@ -23,6 +23,7 @@ type CurrentId = {
 type State = {
   listenersCount: number;
   listeners: ListenersDto['listeners'];
+  listenerTypeFilter?: ListenerEntity['listenerType'];
   page: number;
   latestFetch: {
     fetchType: FetchType | null;
@@ -120,6 +121,10 @@ class ProcessInstanceListeners {
     this.state.listenersCount = listenersCount;
   };
 
+  setListenerTypeFilter = (filterOption?: ListenerEntity['listenerType']) => {
+    this.state.listenerTypeFilter = filterOption;
+  };
+
   setLatestFetchDetails = (fetchType: FetchType, listenersCount: number) => {
     this.state.latestFetch.fetchType = fetchType;
     this.state.latestFetch.itemsCount = listenersCount;
@@ -195,6 +200,9 @@ class ProcessInstanceListeners {
       processInstanceId: this.state.currentProcessInstanceId,
       payload: {
         ...payloadId,
+        ...(this.state.listenerTypeFilter && {
+          listenerTypeFilter: this.state.listenerTypeFilter,
+        }),
         searchBefore: this.state.listeners[0]?.sortValues,
         pageSize: MAX_LISTENERS_PER_REQUEST,
       },
@@ -217,6 +225,9 @@ class ProcessInstanceListeners {
       processInstanceId: this.state.currentProcessInstanceId,
       payload: {
         ...payloadId,
+        ...(this.state.listenerTypeFilter && {
+          listenerTypeFilter: this.state.listenerTypeFilter,
+        }),
         searchAfter:
           this.state.listeners[this.state.listeners.length - 1]?.sortValues,
         pageSize: MAX_LISTENERS_PER_REQUEST,

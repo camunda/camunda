@@ -10,19 +10,21 @@ import {StructuredList as BaseStructuredList} from 'modules/components/Structure
 import {WarningFilled as BaseWarningFilled} from '@carbon/react/icons';
 import {supportError, spacing01, spacing03} from '@carbon/elements';
 import styled from 'styled-components';
-import {Stack} from '@carbon/react';
+import {Stack, Dropdown as BaseDropdown} from '@carbon/react';
 
 const Content = styled.div`
   position: relative;
   height: 100%;
   display: flex;
+  flex-direction: column;
+  padding: var(--cds-spacing-03) var(--cds-spacing-05);
+
   .cds--loading-overlay {
     position: absolute;
   }
 `;
 
 const StructuredList = styled(BaseStructuredList)`
-  padding: var(--cds-spacing-05);
   [role='table'] {
     table-layout: fixed;
   }
@@ -37,4 +39,13 @@ const WarningFilled = styled(BaseWarningFilled)`
   margin-top: ${spacing01};
 `;
 
-export {Content, StructuredList, CellContainer, WarningFilled};
+const Dropdown = styled(BaseDropdown)`
+  width: 200px;
+  border-bottom: 1px solid var(--cds-border-strong);
+
+  button {
+    background-color: var(--cds-background);
+  }
+`;
+
+export {Content, StructuredList, CellContainer, WarningFilled, Dropdown};
