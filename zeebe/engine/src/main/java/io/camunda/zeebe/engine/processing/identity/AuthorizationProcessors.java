@@ -26,8 +26,8 @@ public final class AuthorizationProcessors {
       final AuthorizationCheckBehavior authCheckBehavior) {
     typedRecordProcessors.onCommand(
         ValueType.AUTHORIZATION,
-        AuthorizationIntent.ADD_PERMISSION,
-        new AuthorizationAddPermissionProcessor(
+        AuthorizationIntent.UPDATE_PERMISSION,
+        new AuthorizationUpdatePermissionProcessor(
             writers, keyGenerator, processingState, distributionBehavior, authCheckBehavior));
   }
 }

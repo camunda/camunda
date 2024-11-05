@@ -60,7 +60,7 @@ public class AddPermissionsTest {
 
     // then
     final var recordValue =
-        RecordingExporter.authorizationRecords(AuthorizationIntent.PERMISSION_ADDED)
+        RecordingExporter.authorizationRecords(AuthorizationIntent.PERMISSION_UPDATED)
             .withOwnerKey(ownerKey)
             .limit(1)
             .getFirst()

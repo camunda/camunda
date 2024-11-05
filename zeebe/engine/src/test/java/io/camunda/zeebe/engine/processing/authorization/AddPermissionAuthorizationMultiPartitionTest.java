@@ -77,8 +77,8 @@ public class AddPermissionAuthorizationMultiPartitionTest {
                     ? ((CommandDistributionRecordValue) r.getValue()).getPartitionId()
                     : r.getPartitionId())
         .containsSubsequence(
-            tuple(AuthorizationIntent.ADD_PERMISSION, RecordType.COMMAND, 1),
-            tuple(AuthorizationIntent.PERMISSION_ADDED, RecordType.EVENT, 1),
+            tuple(AuthorizationIntent.UPDATE_PERMISSION, RecordType.COMMAND, 1),
+            tuple(AuthorizationIntent.PERMISSION_UPDATED, RecordType.EVENT, 1),
             tuple(CommandDistributionIntent.STARTED, RecordType.EVENT, 1))
         .containsSubsequence(
             tuple(CommandDistributionIntent.DISTRIBUTING, RecordType.EVENT, 2),
@@ -94,10 +94,10 @@ public class AddPermissionAuthorizationMultiPartitionTest {
       assertThat(
               RecordingExporter.records()
                   .withPartitionId(partitionId)
-                  .limit(r -> r.getIntent().equals(AuthorizationIntent.PERMISSION_ADDED))
+                  .limit(r -> r.getIntent().equals(AuthorizationIntent.PERMISSION_UPDATED))
                   .collect(Collectors.toList()))
           .extracting(Record::getIntent)
-          .endsWith(AuthorizationIntent.ADD_PERMISSION, AuthorizationIntent.PERMISSION_ADDED);
+          .endsWith(AuthorizationIntent.UPDATE_PERMISSION, AuthorizationIntent.PERMISSION_UPDATED);
     }
   }
 
@@ -168,7 +168,7 @@ public class AddPermissionAuthorizationMultiPartitionTest {
         .extracting(r -> r.getValue().getValueType(), r -> r.getValue().getIntent())
         .containsExactly(
             tuple(ValueType.USER, UserIntent.CREATE),
-            tuple(ValueType.AUTHORIZATION, AuthorizationIntent.ADD_PERMISSION));
+            tuple(ValueType.AUTHORIZATION, AuthorizationIntent.UPDATE_PERMISSION));
   }
 
   private void interceptUserCreateForPartition(final int partitionId) {

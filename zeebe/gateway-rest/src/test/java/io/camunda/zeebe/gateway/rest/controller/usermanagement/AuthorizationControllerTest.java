@@ -125,7 +125,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
         .thenThrow(
             new CamundaBrokerException(
                 new BrokerRejection(
-                    AuthorizationIntent.ADD_PERMISSION,
+                    AuthorizationIntent.UPDATE_PERMISSION,
                     1L,
                     RejectionType.ALREADY_EXISTS,
                     "Authorization already exists")));
