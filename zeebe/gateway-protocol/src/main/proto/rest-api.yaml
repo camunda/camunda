@@ -2898,8 +2898,8 @@ components:
         - type: integer
           format: int32
         - $ref: "#/components/schemas/AdvancedIntegerFilter"
-    AdvancedLongFilter:
-      description: Advanced long (int64) filter.
+    BasicAdvancedLongFilter:
+      description: Basic advanced long (int64) filter.
       type: object
       properties:
         $eq:
@@ -2913,30 +2913,43 @@ components:
         $exists:
           description: Checks if the current property exists.
           type: boolean
-        $gt:
-          description: Greater than comparison with the provided value.
-          type: integer
-          format: int64
-        $gte:
-          description: Greater than or equal comparison with the provided value.
-          type: integer
-          format: int64
-        $lt:
-          description: Lower than comparison with the provided value.
-          type: integer
-          format: int64
-        $lte:
-          description: Lower than or equal comparison with the provided value.
-          type: integer
-          format: int64
         $in:
           description: Checks if the property matches any of the provided values.
           type: array
           items:
             type: integer
             format: int64
+    AdvancedLongFilter:
+      description: Advanced long (int64) filter.
+      allOf:
+        - $ref: "#/components/schemas/BasicAdvancedLongFilter"
+        - type: object
+          properties:
+            $gt:
+              description: Greater than comparison with the provided value.
+              type: integer
+              format: int64
+            $gte:
+              description: Greater than or equal comparison with the provided value.
+              type: integer
+              format: int64
+            $lt:
+              description: Lower than comparison with the provided value.
+              type: integer
+              format: int64
+            $lte:
+              description: Lower than or equal comparison with the provided value.
+              type: integer
+              format: int64
+    BasicLongFilterProperty:
+      description: Long property with basic advanced search capabilities.
+      type: object
+      oneOf:
+        - type: integer
+          format: int64
+        - $ref: "#/components/schemas/BasicAdvancedLongFilter"
     LongFilterProperty:
-      description: Long property with advanced search capabilities.
+      description: Long property with full advanced search capabilities.
       type: object
       oneOf:
         - type: integer
@@ -4445,7 +4458,7 @@ components:
         decisionDefinitionKey:
           description: The key of the decision.
           allOf:
-            - $ref: "#/components/schemas/LongFilterProperty"
+            - $ref: "#/components/schemas/BasicLongFilterProperty"
         decisionDefinitionId:
           type: string
           description: The ID of the DMN decision.

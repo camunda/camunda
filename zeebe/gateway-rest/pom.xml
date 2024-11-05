@@ -409,6 +409,7 @@
               <generateModelTests>false</generateModelTests>
               <!-- validate the spec on every generation -->
               <skipValidateSpec>false</skipValidateSpec>
+              <openapiNormalizer>REF_AS_PARENT_IN_ALLOF=true</openapiNormalizer>
               <configOptions>
                 <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)</additionalModelTypeAnnotations>
                 <serializationLibrary>jackson</serializationLibrary>

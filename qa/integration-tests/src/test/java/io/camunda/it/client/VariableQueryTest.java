@@ -14,6 +14,7 @@ import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.api.search.response.Variable;
+import io.camunda.zeebe.client.protocol.rest.LongFilterProperty;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -130,6 +131,56 @@ class VariableQueryTest {
             .filter(f -> f.processInstanceKey(variable.getProcessInstanceKey()))
             .send()
             .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(5);
+    assertThat(
+            result.items().stream()
+                .allMatch(v -> v.getProcessInstanceKey().equals(variable.getProcessInstanceKey())))
+        .isTrue();
+  }
+
+  @Test
+  void shouldQueryByProcessInstanceKeyFilterGtLt() {
+    // when
+    final LongFilterProperty filter = new LongFilterProperty();
+    filter.$gt(variable.getProcessInstanceKey() - 1);
+    filter.$lt(variable.getProcessInstanceKey() + 1);
+    final var result =
+        camundaClient.newVariableQuery().filter(f -> f.processInstanceKey(filter)).send().join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(5);
+    assertThat(
+            result.items().stream()
+                .allMatch(v -> v.getProcessInstanceKey().equals(variable.getProcessInstanceKey())))
+        .isTrue();
+  }
+
+  @Test
+  void shouldQueryByProcessInstanceKeyFilterGteLte() {
+    // when
+    final LongFilterProperty filter = new LongFilterProperty();
+    filter.$gte(variable.getProcessInstanceKey());
+    filter.$lte(variable.getProcessInstanceKey());
+    final var result =
+        camundaClient.newVariableQuery().filter(f -> f.processInstanceKey(filter)).send().join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(5);
+    assertThat(
+            result.items().stream()
+                .allMatch(v -> v.getProcessInstanceKey().equals(variable.getProcessInstanceKey())))
+        .isTrue();
+  }
+
+  @Test
+  void shouldQueryByProcessInstanceKeyFilterIn() {
+    // when
+    final LongFilterProperty filter = new LongFilterProperty();
+    filter.$in(List.of(variable.getProcessInstanceKey()));
+    final var result =
+        camundaClient.newVariableQuery().filter(f -> f.processInstanceKey(filter)).send().join();
 
     // then
     assertThat(result.items().size()).isEqualTo(5);

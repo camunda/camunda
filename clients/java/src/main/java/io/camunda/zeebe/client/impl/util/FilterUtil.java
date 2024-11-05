@@ -15,10 +15,17 @@
  */
 package io.camunda.zeebe.client.impl.util;
 
+import io.camunda.zeebe.client.protocol.rest.BasicLongFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.IntegerFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.LongFilterProperty;
 
 public class FilterUtil {
+
+  public static BasicLongFilterProperty basicLongFilterProperty(final Long value) {
+    final BasicLongFilterProperty filter = new BasicLongFilterProperty();
+    filter.$eq(value);
+    return filter;
+  }
 
   public static LongFilterProperty longFilterProperty(final Long value) {
     final LongFilterProperty filter = new LongFilterProperty();

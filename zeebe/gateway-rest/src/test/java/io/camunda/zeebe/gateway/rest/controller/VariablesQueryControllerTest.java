@@ -13,8 +13,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.filter.VariableFilter;
@@ -24,11 +22,8 @@ import io.camunda.search.query.VariableQuery;
 import io.camunda.search.sort.VariableSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.VariableServices;
-import io.camunda.zeebe.gateway.protocol.rest.IntegerFilterProperty;
-import io.camunda.zeebe.gateway.protocol.rest.LongFilterProperty;
+import io.camunda.zeebe.gateway.rest.JacksonConfig;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
-import io.camunda.zeebe.gateway.rest.deserializer.IntegerFilterPropertyDeserializer;
-import io.camunda.zeebe.gateway.rest.deserializer.LongFilterPropertyDeserializer;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,13 +32,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 @WebMvcTest(value = VariableQueryController.class, properties = "camunda.rest.query.enabled=true")
+@Import(JacksonConfig.class)
 public class VariablesQueryControllerTest extends RestControllerTest {
 
   private static final Long VALID_VARIABLE_KEY = 0L;
@@ -400,23 +394,5 @@ public class VariablesQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE);
 
     verify(variableServices).search(new VariableQuery.Builder().filter(filter).build());
-  }
-
-  @TestConfiguration
-  public static class TestConfig {
-
-    @Bean
-    public ObjectMapper objectMapper() {
-      final var objectMapper = Jackson2ObjectMapperBuilder.json().build();
-
-      final var deserializers = new SimpleModule();
-      deserializers.addDeserializer(
-          LongFilterProperty.class, new LongFilterPropertyDeserializer(objectMapper));
-      deserializers.addDeserializer(
-          IntegerFilterProperty.class, new IntegerFilterPropertyDeserializer(objectMapper));
-      objectMapper.registerModule(deserializers);
-
-      return objectMapper;
-    }
   }
 }

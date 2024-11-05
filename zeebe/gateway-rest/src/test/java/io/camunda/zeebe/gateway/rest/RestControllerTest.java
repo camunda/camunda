@@ -26,17 +26,19 @@ import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
       "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration"
     })
 public abstract class RestControllerTest {
-  protected static final List<List<Operation<Long>>> LONG_OPERATIONS =
+  protected static final List<List<Operation<Long>>> BASIC_LONG_OPERATIONS =
       List.of(
           List.of(Operation.eq(10L)),
           List.of(Operation.neq(1L)),
           List.of(Operation.exists(true)),
           List.of(Operation.exists(false)),
+          List.of(Operation.in(5L, 10L)));
+  protected static final List<List<Operation<Long>>> LONG_OPERATIONS =
+      List.of(
           List.of(Operation.gt(5L)),
           List.of(Operation.gte(5L)),
           List.of(Operation.lt(5L)),
           List.of(Operation.lte(5L)),
-          List.of(Operation.in(5L, 10L)),
           List.of(Operation.gt(5L), Operation.lt(10L)),
           List.of(Operation.gte(5L), Operation.lte(10L)));
   protected static final List<List<Operation<Integer>>> INTEGER_OPERATIONS =
@@ -73,10 +75,20 @@ public abstract class RestControllerTest {
     return Arguments.of(operationsToJSON(filterKey, operations), consumer.apply(operations));
   }
 
+  public static void basicLongOperationTestCases(
+      final Stream.Builder<Arguments> streamBuilder,
+      final String filterKey,
+      final Function<List<Operation<Long>>, Object> builderMethod) {
+    BASIC_LONG_OPERATIONS.stream()
+        .map(ops -> generateParameterizedArguments(filterKey, builderMethod, ops))
+        .forEach(streamBuilder::add);
+  }
+
   public static void longOperationTestCases(
       final Stream.Builder<Arguments> streamBuilder,
       final String filterKey,
       final Function<List<Operation<Long>>, Object> builderMethod) {
+    basicLongOperationTestCases(streamBuilder, filterKey, builderMethod);
     LONG_OPERATIONS.stream()
         .map(ops -> generateParameterizedArguments(filterKey, builderMethod, ops))
         .forEach(streamBuilder::add);

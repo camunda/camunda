@@ -19,12 +19,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.api.search.response.DecisionDefinitionType;
 import io.camunda.zeebe.client.api.search.response.DecisionInstanceState;
+import io.camunda.zeebe.client.protocol.rest.BasicLongFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionTypeEnum;
 import io.camunda.zeebe.client.protocol.rest.DecisionInstanceFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.DecisionInstanceSearchQueryRequest;
 import io.camunda.zeebe.client.protocol.rest.DecisionInstanceStateEnum;
-import io.camunda.zeebe.client.protocol.rest.LongFilterProperty;
 import io.camunda.zeebe.client.util.ClientRestTest;
+import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
 class SearchDecisionInstanceTest extends ClientRestTest {
@@ -81,9 +82,8 @@ class SearchDecisionInstanceTest extends ClientRestTest {
   @Test
   void shouldSearchDecisionInstanceByDecisionDefinitionKeyLongProperty() {
     // when
-    final LongFilterProperty filterProperty = new LongFilterProperty();
-    filterProperty.$gt(1L);
-    filterProperty.$lt(10L);
+    final BasicLongFilterProperty filterProperty = new BasicLongFilterProperty();
+    filterProperty.$in(Arrays.asList(1L, 10L));
     client
         .newDecisionInstanceQuery()
         .filter(f -> f.decisionDefinitionKey(filterProperty))
@@ -95,10 +95,9 @@ class SearchDecisionInstanceTest extends ClientRestTest {
         gatewayService.getLastRequest(DecisionInstanceSearchQueryRequest.class);
     final DecisionInstanceFilterRequest filter = request.getFilter();
     assertThat(filter).isNotNull();
-    final LongFilterProperty decisionDefinitionKey = filter.getDecisionDefinitionKey();
+    final BasicLongFilterProperty decisionDefinitionKey = filter.getDecisionDefinitionKey();
     assertThat(decisionDefinitionKey).isNotNull();
-    assertThat(decisionDefinitionKey.get$Gt()).isEqualTo(1);
-    assertThat(decisionDefinitionKey.get$Lt()).isEqualTo(10);
+    assertThat(decisionDefinitionKey.get$In()).isEqualTo(Arrays.asList(1L, 10L));
   }
 
   @Test

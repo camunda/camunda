@@ -13,7 +13,6 @@ import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
-import io.camunda.application.sources.DefaultObjectMapperConfiguration;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.operate.property.OperateProperties;
@@ -70,7 +69,6 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
         TasklistModuleConfiguration.class,
         WebappsModuleConfiguration.class,
         BrokerModuleConfiguration.class,
-        DefaultObjectMapperConfiguration.class,
         // test overrides - to control data clean up; (and some components are not installed on
         // Tests)
         TestOperateElasticsearchSchemaManager.class,
