@@ -79,7 +79,7 @@ public class RoleUpdateProcessor implements DistributedTypedRecordProcessor<Role
 
     if (updatedName.equals(persistedRecord.get().getName())) {
       final var errorMessage =
-          "Expected to update role with name '%s', but a role with this name already exists"
+          "Expected to update role with name '%s', but a role with this name already exists."
               .formatted(updatedName);
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);
