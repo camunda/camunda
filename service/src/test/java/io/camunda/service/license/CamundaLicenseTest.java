@@ -188,4 +188,25 @@ public class CamundaLicenseTest {
     // then
     assertEquals(testDate.toInstant().atOffset(ZoneOffset.UTC), testLicense.expiresAt());
   }
+
+  @Test
+  public void shouldReturnNullWhenThereIsNoExpirationDate() throws InvalidLicenseException {
+    // given
+    final CamundaLicense testLicense = Mockito.spy(CamundaLicense.class);
+    final LicenseKey mockKey = mock(LicenseKey.class);
+
+    final Map<String, String> testProperties = new HashMap<>();
+    testProperties.put(LICENSE_TYPE_KEY, PRODUCTION_LICENSE_TYPE);
+    when(mockKey.getProperties()).thenReturn(testProperties);
+
+    when(mockKey.getValidUntil()).thenReturn(null);
+
+    Mockito.doReturn(mockKey).when(testLicense).getLicenseKey(anyString());
+
+    // when
+    testLicense.initializeWithLicense(TEST_LICENSE);
+
+    // then
+    assertEquals(null, testLicense.expiresAt());
+  }
 }

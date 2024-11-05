@@ -3971,6 +3971,7 @@ components:
           description: The date when the Camunda license expires
           type: string
           format: date-time
+          nullable: true
     BrokerInfo:
       description: Provides information on a broker node.
       type: object

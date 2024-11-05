@@ -9,6 +9,7 @@ package io.camunda.optimize.service;
 
 import io.camunda.optimize.license.CamundaLicense;
 import io.camunda.optimize.license.LicenseType;
+import java.time.OffsetDateTime;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -27,5 +28,13 @@ public class CamundaLicenseService {
 
   public LicenseType getCamundaLicenseType() {
     return license.getLicenseType();
+  }
+
+  public boolean isCommercialCamundaLicense() {
+    return license.isCommercial();
+  }
+
+  public OffsetDateTime getCamundaLicenseExpiresAt() {
+    return license.expiresAt();
   }
 }

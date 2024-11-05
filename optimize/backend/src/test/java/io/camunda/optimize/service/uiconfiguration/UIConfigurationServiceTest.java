@@ -29,9 +29,11 @@ import io.camunda.optimize.service.tenant.TenantService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.service.util.configuration.OptimizeProfile;
+import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -49,6 +51,8 @@ import org.springframework.core.env.Environment;
 @MockitoSettings(strictness = Strictness.LENIENT)
 public class UIConfigurationServiceTest {
 
+  private static OffsetDateTime testDate;
+  private static final String TEST_DATE_STRING = "2024-10-29T15:14:13Z";
   @InjectMocks UIConfigurationService underTest;
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
@@ -74,6 +78,11 @@ public class UIConfigurationServiceTest {
     return Stream.of(
         Arguments.of(CLOUD_PROFILE, true),
         Arguments.of(CCSM_PROFILE, false)); // false by default because it's not mocked
+  }
+
+  @BeforeAll
+  public static void beforeAll() {
+    testDate = OffsetDateTime.parse(TEST_DATE_STRING);
   }
 
   @ParameterizedTest
@@ -170,6 +179,25 @@ public class UIConfigurationServiceTest {
     // then
     assertThat(configurationResponse.getLicenseType()).isEqualTo("saas");
     assertThat(configurationResponse.isValidLicense()).isEqualTo(true);
+    assertThat(configurationResponse.isCommercial()).isEqualTo(false);
+    assertThat(configurationResponse.getExpiresAt()).isEqualTo(TEST_DATE_STRING);
+  }
+
+  @Test
+  public void testCamundaLicenseReturnsNullWhenThereIsNoExpiration() {
+    // given
+    initializeMocks();
+    when(environment.getActiveProfiles()).thenReturn(new String[] {CLOUD_PROFILE});
+    when(camundaLicenseService.getCamundaLicenseExpiresAt()).thenReturn(null);
+
+    // when
+    final UIConfigurationResponseDto configurationResponse = underTest.getUIConfiguration();
+
+    // then
+    assertThat(configurationResponse.getLicenseType()).isEqualTo("saas");
+    assertThat(configurationResponse.isValidLicense()).isEqualTo(true);
+    assertThat(configurationResponse.isCommercial()).isEqualTo(false);
+    assertThat(configurationResponse.getExpiresAt()).isEqualTo(null);
   }
 
   private void initializeMocks() {
@@ -180,5 +208,7 @@ public class UIConfigurationServiceTest {
         .thenReturn(DatabaseType.ELASTICSEARCH.toString());
     when(camundaLicenseService.getCamundaLicenseType()).thenReturn(LicenseType.SAAS);
     when(camundaLicenseService.isCamundaLicenseValid()).thenReturn(true);
+    when(camundaLicenseService.isCommercialCamundaLicense()).thenReturn(false);
+    when(camundaLicenseService.getCamundaLicenseExpiresAt()).thenReturn(testDate);
   }
 }
