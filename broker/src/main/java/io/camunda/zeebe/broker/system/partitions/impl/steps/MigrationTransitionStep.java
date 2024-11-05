@@ -50,6 +50,7 @@ public class MigrationTransitionStep implements PartitionTransitionStep {
     final var dbMigrator = new DbMigratorImpl(processingState);
     try {
       dbMigrator.runMigrations();
+      zeebeDbContext.getCurrentTransaction().commit();
     } catch (final Exception e) {
       return CompletableActorFuture.completedExceptionally(e);
     }
