@@ -88,7 +88,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
           .contains(
               String.format(
                   "index template [%s] already exists", templateDescriptor.getTemplateName()))) {
-        LOG.warn(
+        LOG.debug(
             "Did not create index template [{}] as it already exists",
             templateDescriptor.getTemplateName());
         return;

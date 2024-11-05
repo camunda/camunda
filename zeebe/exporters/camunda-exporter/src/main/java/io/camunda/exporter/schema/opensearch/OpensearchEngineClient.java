@@ -91,7 +91,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
               .indices()
               .existsIndexTemplate(req -> req.name(templateDescriptor.getTemplateName()))
               .value()) {
-        LOG.warn(
+        LOG.debug(
             "Did not create index template [{}] as it already exists",
             templateDescriptor.getTemplateName());
         return;

@@ -11,6 +11,7 @@ import static io.camunda.exporter.schema.SchemaTestUtil.validateMappings;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
@@ -63,6 +64,7 @@ public class ElasticsearchEngineClientIT {
     logWatcher = new ListAppender<>();
     logWatcher.start();
     ((Logger) LoggerFactory.getLogger(ElasticsearchEngineClient.class)).addAppender(logWatcher);
+    ((Logger) LoggerFactory.getLogger(ElasticsearchEngineClient.class)).setLevel(Level.ALL);
   }
 
   @Test
@@ -129,11 +131,15 @@ public class ElasticsearchEngineClientIT {
     elsEngineClient.createIndexTemplate(indexTemplate, settings, true);
 
     // then
-    assertThat(logWatcher.list.stream().map(ILoggingEvent::getFormattedMessage))
-        .contains(
-            String.format(
-                "Did not create index template [%s] as it already exists",
-                indexTemplate.getTemplateName()));
+    assertThat(logWatcher.list.stream())
+        .anyMatch(
+            log ->
+                log.getLevel().equals(Level.DEBUG)
+                    && log.getFormattedMessage()
+                        .contains(
+                            String.format(
+                                "Did not create index template [%s] as it already exists",
+                                indexTemplate.getTemplateName())));
   }
 
   @Test
