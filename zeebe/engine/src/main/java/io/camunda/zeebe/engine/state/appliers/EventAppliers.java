@@ -485,6 +485,7 @@ public final class EventAppliers implements EventApplier {
     register(
         GroupIntent.CREATED,
         new GroupCreatedApplier(state.getGroupState(), state.getAuthorizationState()));
+    register(GroupIntent.UPDATED, new GroupUpdatedApplier(state.getGroupState()));
   }
 
   private void registerScalingAppliers(final MutableProcessingState state) {
