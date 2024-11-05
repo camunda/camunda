@@ -28,7 +28,9 @@ public abstract class AbstractProcessGroupByFlowNodeDateInterpreterOS
   @Override
   protected Query getFilterBoolQuery(final ExecutionContext<ProcessReportDataDto, ?> context) {
     return createModelElementAggregationFilter(
-        context.getReportData(), context.getFilterContext(), getDefinitionService());
+            context.getReportData(), context.getFilterContext(), getDefinitionService())
+        .build()
+        .toQuery();
   }
 
   @Override

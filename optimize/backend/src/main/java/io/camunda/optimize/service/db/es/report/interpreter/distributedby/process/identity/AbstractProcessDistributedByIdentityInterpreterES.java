@@ -33,6 +33,7 @@ import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.LocalizationService;
 import io.camunda.optimize.service.db.es.report.interpreter.distributedby.process.AbstractProcessDistributedByInterpreterES;
 import io.camunda.optimize.service.db.report.ExecutionContext;
+import io.camunda.optimize.service.db.report.interpreter.distributedby.process.identity.ProcessDistributedByIdentityInterpreter;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -46,7 +47,6 @@ import java.util.stream.Collectors;
 
 public abstract class AbstractProcessDistributedByIdentityInterpreterES
     extends AbstractProcessDistributedByInterpreterES {
-  public static final String DISTRIBUTE_BY_IDENTITY_MISSING_KEY = "unassignedUserTasks___";
   private static final String DISTRIBUTE_BY_IDENTITY_TERMS_AGGREGATION = "identity";
   // temporary GROUP_BY_IDENTITY_MISSING_KEY to ensure no overlap between this label and userTask
   // names
@@ -73,7 +73,7 @@ public abstract class AbstractProcessDistributedByIdentityInterpreterES
         .size(getConfigurationService().getElasticSearchConfiguration().getAggregationBucketLimit())
         .order(NamedValue.of("_key", SortOrder.Asc))
         .field(FLOW_NODE_INSTANCES + "." + getIdentityField())
-        .missing(DISTRIBUTE_BY_IDENTITY_MISSING_KEY);
+        .missing(ProcessDistributedByIdentityInterpreter.DISTRIBUTE_BY_IDENTITY_MISSING_KEY);
     final Aggregation.Builder.ContainerBuilder identityTermsAggregation =
         new Aggregation.Builder().terms(builder.build());
     getViewInterpreter()
@@ -121,7 +121,7 @@ public abstract class AbstractProcessDistributedByIdentityInterpreterES
           getViewInterpreter().retrieveResult(response, identityBucket.aggregations(), context);
 
       final String key = identityBucket.key().stringValue();
-      if (DISTRIBUTE_BY_IDENTITY_MISSING_KEY.equals(key)) {
+      if (ProcessDistributedByIdentityInterpreter.DISTRIBUTE_BY_IDENTITY_MISSING_KEY.equals(key)) {
         for (final CompositeCommandResult.ViewMeasure viewMeasure : viewResult.getViewMeasures()) {
           final AggregationDto aggTypeDto = viewMeasure.getAggregationType();
           if (aggTypeDto != null
@@ -179,7 +179,7 @@ public abstract class AbstractProcessDistributedByIdentityInterpreterES
   }
 
   private String resolveIdentityName(final String key) {
-    if (DISTRIBUTE_BY_IDENTITY_MISSING_KEY.equals(key)) {
+    if (ProcessDistributedByIdentityInterpreter.DISTRIBUTE_BY_IDENTITY_MISSING_KEY.equals(key)) {
       return getLocalizationService().getDefaultLocaleMessageForMissingAssigneeLabel();
     }
     return getAssigneeCandidateGroupService()

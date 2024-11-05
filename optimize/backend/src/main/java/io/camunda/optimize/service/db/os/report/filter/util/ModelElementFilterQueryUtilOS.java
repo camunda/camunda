@@ -56,6 +56,7 @@ import io.camunda.optimize.service.db.filter.FilterContext;
 import io.camunda.optimize.service.exceptions.OptimizeValidationException;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -152,7 +153,7 @@ public final class ModelElementFilterQueryUtilOS {
     return Optional.empty();
   }
 
-  public static Query createModelElementAggregationFilter(
+  public static BoolQuery.Builder createModelElementAggregationFilter(
       final ProcessReportDataDto reportData,
       final FilterContext filterContext,
       final DefinitionService definitionService) {
@@ -181,7 +182,7 @@ public final class ModelElementFilterQueryUtilOS {
         filterBoolQueryBuilder,
         filterContext,
         filtersByDefinition.getOrDefault(APPLIED_TO_ALL_DEFINITIONS, List.of()));
-    return filterBoolQueryBuilder.build().toQuery();
+    return filterBoolQueryBuilder;
   }
 
   private static void addModelElementFilters(
@@ -203,6 +204,20 @@ public final class ModelElementFilterQueryUtilOS {
   public static BoolQuery.Builder createUserTaskFlowNodeTypeFilter() {
     return new BoolQuery.Builder()
         .must(term(nestedFieldReference(FLOW_NODE_TYPE), FLOW_NODE_TYPE_USER_TASK));
+  }
+
+  public static Query createInclusiveFlowNodeIdFilterQuery(
+      final ProcessReportDataDto reportDataDto,
+      final Set<String> flowNodeIds,
+      final FilterContext filterContext,
+      final DefinitionService definitionService) {
+    return createExecutedFlowNodeFilterQuery(
+            createModelElementAggregationFilter(reportDataDto, filterContext, definitionService),
+            nestedFieldReference(FLOW_NODE_ID),
+            new ArrayList<>(flowNodeIds),
+            IN)
+        .build()
+        .toQuery();
   }
 
   public static BoolQuery.Builder createExecutedFlowNodeFilterQuery(
