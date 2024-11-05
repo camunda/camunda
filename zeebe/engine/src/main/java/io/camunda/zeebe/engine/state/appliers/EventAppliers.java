@@ -485,6 +485,7 @@ public final class EventAppliers implements EventApplier {
     register(
         GroupIntent.CREATED,
         new GroupCreatedApplier(state.getGroupState(), state.getAuthorizationState()));
+    register(GroupIntent.UPDATED, new GroupUpdatedApplier(state.getGroupState()));
   }
 
   private void registerScalingAppliers(final MutableProcessingState state) {
@@ -498,9 +499,7 @@ public final class EventAppliers implements EventApplier {
         new TenantCreatedApplier(state.getTenantState(), state.getAuthorizationState()));
     register(TenantIntent.UPDATED, new TenantUpdatedApplier(state.getTenantState()));
     register(TenantIntent.ENTITY_ADDED, new TenantEntityAddedApplier(state));
-    register(
-        TenantIntent.ENTITY_REMOVED,
-        new TenantEntityRemovedApplier(state.getTenantState(), state.getUserState()));
+    register(TenantIntent.ENTITY_REMOVED, new TenantEntityRemovedApplier(state));
     register(
         TenantIntent.DELETED,
         new TenantDeletedApplier(

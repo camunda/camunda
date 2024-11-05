@@ -43,18 +43,6 @@ jobs:
           ref: refs/heads/${{ inputs.branch }}
           fetch-depth: 0 # fetches all history for all branches and tags
 
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@v3.0.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/optimize/ci/optimize NEXUS_USERNAME;
-            secret/data/products/optimize/ci/optimize NEXUS_PASSWORD;
-
       #########################################################################
       # Setup: define env variables
       - name: Set GitHub environment variables
@@ -73,30 +61,31 @@ jobs:
 
       #########################################################################
       # Docker login and image tagging
-      - name: Login to Harbor docker registry
-        uses: docker/login-action@v3
+      - name: Login to Harbor registry
+        uses: ./.github/actions/login-registry
         with:
-          registry: registry.camunda.cloud
-          username: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
-          password: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
+          secrets: ${{ toJSON(secrets) }}
 
       #########################################################################
       # Setup and configure Maven
       - name: Setup Maven
-        uses: ./.github/actions/setup-build
+        uses: ./.github/actions/setup-maven
         with:
-          camunda-nexus-username: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
-          camunda-nexus-password: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
-          maven-cache-key-modifier: optimize
-          maven-version: 3.8.6
-          time-zone: Europe/Berlin
+          secrets: ${{ toJSON(secrets) }}
+
+      #########################################################################
+      # Build Optimize frontend
+      - name: Build frontend
+        uses: ./.github/actions/build-frontend
+        with:
+          directory: ./optimize/client
 
       #########################################################################
       # Build Optimize
       - name: Generate production .tar.gz
         uses: ./.github/actions/run-maven
         with:
-          parameters: -f optimize/pom.xml install -DskipTests -Dskip.docker -PrunAssembly -T 1
+          parameters: -f optimize/pom.xml install -DskipTests -Dskip.docker -P skipFrontendBuild,runAssembly -T 1
 
       #########################################################################
       # Build Docker image

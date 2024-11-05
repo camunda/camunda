@@ -71,6 +71,24 @@ public class DbGroupState implements MutableGroupState {
   }
 
   @Override
+  public void update(final long groupKey, final GroupRecord group) {
+    this.groupKey.wrapLong(groupKey);
+    final var persistedGroup = groupColumnFamily.get(this.groupKey);
+    if (persistedGroup != null) {
+      // remove old record from GROUP_BY_NAME cf
+      groupName.wrapString(persistedGroup.getName());
+      groupByNameColumnFamily.deleteExisting(groupName);
+
+      // add new record to GROUP_BY_NAME cf
+      groupName.wrapString(group.getName());
+      groupByNameColumnFamily.insert(groupName, fkGroupKey);
+
+      persistedGroup.wrap(group);
+      groupColumnFamily.update(this.groupKey, persistedGroup);
+    }
+  }
+
+  @Override
   public Optional<PersistedGroup> get(final long groupKey) {
     this.groupKey.wrapLong(groupKey);
     final var persistedGroup = groupColumnFamily.get(this.groupKey);

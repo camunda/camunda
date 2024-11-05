@@ -45,24 +45,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@v3.0.0
+      - name: Login to Harbor registry
+        uses: ./.github/actions/login-registry
         with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/optimize/ci/optimize NEXUS_USERNAME;
-            secret/data/products/optimize/ci/optimize NEXUS_PASSWORD;
-
-      - name: Login to Harbor docker registry
-        uses: docker/login-action@v3
-        with:
-          registry: registry.camunda.cloud
-          username: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
-          password: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
+          secrets: ${{ toJSON(secrets) }}
 
       - name: "Parse pom.xml for versions"
         id: "pom_info"
@@ -71,13 +57,10 @@ jobs:
           work-dir: ./optimize
 
       - name: Setup Maven
-        uses: ./.github/actions/setup-build
+        uses: ./.github/actions/setup-maven
         with:
-          camunda-nexus-username: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
-          camunda-nexus-password: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
           maven-cache-key-modifier: optimize-tests
-          maven-version: 3.8.6
-          time-zone: Europe/Berlin
+          secrets: ${{ toJSON(secrets) }}
 
       - name: Install firefox deps
         run: |
@@ -87,32 +70,10 @@ jobs:
       - name: Install firefox
         uses: browser-actions/setup-firefox@v1
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ steps.pom_info.outputs.x_version_node }}
-
-      - name: Setup yarn
-        run: npm install -g yarn
-
-      - name: Setup NodeJS
-        uses: actions/setup-node@0a44ba7841725637a19e28fa30b79a866c81b0a6 # v4
-        with:
-          node-version: ${{ steps.pom_info.outputs.x_version_node }}
-
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
-        with:
-          directory: optimize/client
-
-      - name: Install node dependencies
-        working-directory: ./optimize/client
-        shell: bash
-        run: yarn
-
       - name: Build frontend
-        working-directory: ./optimize/client
-        run: yarn build
-        shell: bash
+        uses: ./.github/actions/build-frontend
+        with:
+          directory: ./optimize/client
 
       - name: Start frontend
         working-directory: ./optimize/client

@@ -13,4 +13,6 @@ import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 public interface MutableGroupState extends GroupState {
 
   void create(final long groupKey, final GroupRecord group);
+
+  void update(final long groupKey, final GroupRecord group);
 }
