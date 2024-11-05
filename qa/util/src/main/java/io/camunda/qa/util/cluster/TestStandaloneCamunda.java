@@ -33,20 +33,18 @@ import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
 import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
-import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.util.unit.DataSize;
-import org.testcontainers.containers.BindMode;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
-import org.testcontainers.utility.DockerImageName;
 
 /** Represents an instance of the {@link BrokerModuleConfiguration} Spring application. */
 @SuppressWarnings("UnusedReturnValue")
@@ -54,26 +52,12 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
     implements TestGateway<TestStandaloneCamunda> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TestStandaloneCamunda.class);
-  private static final DockerImageName ELASTIC_IMAGE =
-      DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
-          .withTag(RestClient.class.getPackage().getImplementationVersion());
   private static final String RECORDING_EXPORTER_ID = "recordingExporter";
   private static final String ELASTICSEARCH_EXPORTER_ID = "elasticsearchExporter";
   private static final String CAMUNDA_EXPORTER_ID = "camundaExporter";
   private final ElasticsearchContainer esContainer =
-      new ElasticsearchContainer(ELASTIC_IMAGE)
-          // use JVM option files to avoid overwriting default options set by the ES container class
-          .withClasspathResourceMapping(
-              "elasticsearch-fast-startup.options",
-              "/usr/share/elasticsearch/config/jvm.options.d/elasticsearch-fast-startup.options",
-              BindMode.READ_ONLY)
-          // can be slow in CI
-          .withStartupTimeout(Duration.ofMinutes(5))
-          .withEnv("action.auto_create_index", "true")
-          .withEnv("xpack.security.enabled", "false")
-          .withEnv("xpack.watcher.enabled", "false")
-          .withEnv("xpack.ml.enabled", "false")
-          .withEnv("action.destructive_requires_name", "false");
+      TestSearchContainers.createDefeaultElasticsearchContainer()
+          .withStartupTimeout(Duration.ofMinutes(5)); // can be slow in CI
   private final BrokerBasedProperties brokerProperties;
   private final OperateProperties operateProperties;
   private final TasklistProperties tasklistProperties;

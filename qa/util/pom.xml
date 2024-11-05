@@ -98,10 +98,6 @@
       <artifactId>jackson-core</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.elasticsearch.client</groupId>
-      <artifactId>elasticsearch-rest-client</artifactId>
-    </dependency>
-    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-webapp</artifactId>
     </dependency>

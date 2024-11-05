@@ -15,9 +15,9 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
-import io.camunda.exporter.utils.TestSupport;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
@@ -35,7 +35,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 public class ElasticsearchEngineClientIT {
   @Container
   private static final ElasticsearchContainer CONTAINER =
-      TestSupport.createDefeaultElasticsearchContainer();
+      TestSearchContainers.createDefeaultElasticsearchContainer();
 
   private static ElasticsearchClient elsClient;
   private static ElasticsearchEngineClient elsEngineClient;

@@ -16,6 +16,7 @@ import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
+import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,8 +45,9 @@ public class CamundaExporterITInvocationProvider
   protected SearchClientAdapter elsClientAdapter;
   protected SearchClientAdapter osClientAdapter;
   private final ElasticsearchContainer elsContainer =
-      TestSupport.createDefeaultElasticsearchContainer();
-  private final OpensearchContainer<?> osContainer = TestSupport.createDefaultOpensearchContainer();
+      TestSearchContainers.createDefeaultElasticsearchContainer();
+  private final OpensearchContainer<?> osContainer =
+      TestSearchContainers.createDefaultOpensearchContainer();
   private ElasticsearchClient elsClient;
   private OpenSearchClient osClient;
   private final List<AutoCloseable> closeables = new ArrayList<>();

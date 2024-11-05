@@ -15,8 +15,8 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.exceptions.OpensearchExporterException;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
-import io.camunda.exporter.utils.TestSupport;
 import io.camunda.search.connect.os.OpensearchConnector;
+import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
@@ -35,7 +35,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 public class OpensearchEngineClientIT {
   @Container
   private static final OpensearchContainer<?> CONTAINER =
-      TestSupport.createDefaultOpensearchContainer();
+      TestSearchContainers.createDefaultOpensearchContainer();
 
   private static OpenSearchClient openSearchClient;
   private static OpensearchEngineClient opensearchEngineClient;

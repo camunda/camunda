@@ -39,7 +39,6 @@ import io.camunda.exporter.schema.SchemaTestUtil;
 import io.camunda.exporter.utils.CamundaExporterHandlerITInvocationProvider;
 import io.camunda.exporter.utils.CamundaExporterITInvocationProvider;
 import io.camunda.exporter.utils.SearchClientAdapter;
-import io.camunda.exporter.utils.TestSupport;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.entities.ExporterEntity;
@@ -63,6 +62,7 @@ import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -288,8 +288,8 @@ final class CamundaExporterIT {
 
   private static Stream<Arguments> containerProvider() {
     return Stream.of(
-        Arguments.of(TestSupport.createDefeaultElasticsearchContainer()),
-        Arguments.of(TestSupport.createDefaultOpensearchContainer()));
+        Arguments.of(TestSearchContainers.createDefeaultElasticsearchContainer()),
+        Arguments.of(TestSearchContainers.createDefaultOpensearchContainer()));
   }
 
   private ExporterConfiguration getConnectConfigForContainer(final GenericContainer<?> container) {
