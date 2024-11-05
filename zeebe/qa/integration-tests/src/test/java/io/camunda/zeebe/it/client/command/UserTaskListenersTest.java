@@ -10,8 +10,8 @@ package io.camunda.zeebe.it.client.command;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.fail;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.client.ZeebeClient;
@@ -38,14 +38,10 @@ import java.time.Duration;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @ZeebeIntegration
 @AutoCloseResources
 public class UserTaskListenersTest {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(UserTaskListenersTest.class);
 
   @TestZeebe
   private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
@@ -67,28 +63,15 @@ public class UserTaskListenersTest {
         resourcesHelper.createSingleUserTask(
             t -> t.zeebeTaskListener(l -> l.complete().type("my_listener")));
 
-    final JobHandler completeJobHandler = (jobClient, job) -> client.newCompleteCommand(job).send();
+    final JobHandler completeJobHandler =
+        (jobClient, job) -> client.newCompleteCommand(job).send().join();
     client.newWorker().jobType("my_listener").handler(completeJobHandler).open();
 
     // when: invoke complete user task command
-    final var completeUserTaskFuture =
-        client
-            .newUserTaskCompleteCommand(userTaskKey)
-            .send()
-            .thenAccept(
-                ok -> LOGGER.info("User task with key: '{}' completed successfully.", userTaskKey))
-            .exceptionally(
-                throwable -> {
-                  fail(
-                      "Failed to complete user task with key: '%d' due to error:"
-                          .formatted(userTaskKey),
-                      throwable);
-                  return null;
-                })
-            .toCompletableFuture();
+    final var completeUserTaskFuture = client.newUserTaskCompleteCommand(userTaskKey).send();
 
-    // wait for `complete` user task command completion
-    completeUserTaskFuture.join();
+    // wait for successful `COMPLETE` user task command completion
+    assertThatCode(completeUserTaskFuture::join).doesNotThrowAnyException();
 
     // then
     ZeebeAssertHelper.assertUserTaskCompleted(
