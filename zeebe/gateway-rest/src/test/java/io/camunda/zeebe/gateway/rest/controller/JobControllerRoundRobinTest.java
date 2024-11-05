@@ -392,7 +392,7 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
         final ActivateJobsHandler<JobActivationResponse> activateJobsHandler) {
       return new JobServices<>(
           brokerClient,
-          new SecurityContextProvider(new SecurityConfiguration()),
+          new SecurityContextProvider(new SecurityConfiguration(), null),
           activateJobsHandler,
           null);
     }

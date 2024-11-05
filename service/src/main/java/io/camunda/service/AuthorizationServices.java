@@ -66,7 +66,7 @@ public class AuthorizationServices
                     fn.filter(
                             f ->
                                 f.resourceType(resourceType.name())
-                                    .resourceKey(
+                                    .resourceKeys(
                                         resourceId != null && !resourceId.isEmpty()
                                             ? resourceId
                                             : null)

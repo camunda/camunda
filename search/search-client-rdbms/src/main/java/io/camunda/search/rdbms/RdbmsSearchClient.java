@@ -52,6 +52,7 @@ import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.SecurityContext;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,6 +97,11 @@ public class RdbmsSearchClient
   @Override
   public SearchQueryResult<AuthorizationEntity> searchAuthorizations(
       final AuthorizationQuery filter) {
+    return null;
+  }
+
+  @Override
+  public List<AuthorizationEntity> findAllAuthorizations(final AuthorizationQuery filter) {
     return null;
   }
 
