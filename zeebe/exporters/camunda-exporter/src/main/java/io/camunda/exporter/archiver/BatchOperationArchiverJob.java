@@ -47,7 +47,7 @@ public class BatchOperationArchiverJob implements ArchiverJob {
       logger.debug("Following batch operations are found for archiving: {}", archiveBatch);
 
       return moveBatch(archiveBatch.finishDate(), archiveBatch.ids())
-          .thenApplyAsync(FunctionUtil.peek(metrics::operationsArchived), executor);
+          .thenApplyAsync(FunctionUtil.peek(metrics::batchOperationsArchived), executor);
     }
 
     logger.debug("Nothing to archive");

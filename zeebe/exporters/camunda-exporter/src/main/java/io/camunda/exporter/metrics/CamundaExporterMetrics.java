@@ -83,8 +83,7 @@ public class CamundaExporterMetrics {
     processInstancesArchived.increment(count);
   }
 
-  // counts the number of operations in the batch.
-  public void operationsArchived(final int count) {
+  public void batchOperationsArchived(final int count) {
     batchOperationsArchived.increment(count);
   }
 
