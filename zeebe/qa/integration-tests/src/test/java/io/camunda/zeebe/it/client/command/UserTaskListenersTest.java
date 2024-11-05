@@ -21,6 +21,11 @@ import io.camunda.zeebe.client.api.worker.JobHandler;
 import io.camunda.zeebe.it.util.RecordingJobHandler;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
+import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -28,6 +33,7 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeEach;
@@ -123,7 +129,7 @@ public class UserTaskListenersTest {
             () ->
                 assertThat(recordingHandler.getHandledJobs())
                     .describedAs(
-                        "TL job should retry until reaching the final attempt with retries set to 1")
+                        "TL job should be retried until reaching the final attempt with retries set to 1")
                     .last()
                     .extracting(ActivatedJob::getRetries)
                     .isEqualTo(1));
@@ -134,13 +140,25 @@ public class UserTaskListenersTest {
         .hasSize(jobRetries)
         .allSatisfy(job -> assertThat(job.getType()).isEqualTo(listenerType));
 
-    assertThat(handledJobs.getFirst())
-        .describedAs("Job attempts should have same field values except 'retries' and 'deadline'")
-        .usingRecursiveComparison()
-        .ignoringFields("retries", "deadline")
-        .isEqualTo(handledJobs.getLast());
+    assertThat(
+        RecordingExporter.records()
+            .limit(r -> r.getIntent().equals(IncidentIntent.CREATED))
+            .onlyCommandRejections())
+        .describedAs(
+            "Expected to have %d `COMPLETE` job command rejections all having same rejection type and reason",
+            jobRetries)
+        .hasSize(jobRetries)
+        .allSatisfy(
+            rejection ->
+                Assertions.assertThat(rejection)
+                    .hasIntent(JobIntent.COMPLETE)
+                    .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+                    .extracting(Record::getRejectionReason, as(InstanceOfAssertFactories.STRING))
+                    .startsWith(
+                        "Task Listener job completion with variables payload provided is not supported"));
 
-    // assert that an incident was created due to the rejection of TL job completion with variables
+    // assert that an incident was created after exhausting all retries with a message
+    // describing that the reason is the rejection of TL job completion with variables
     final var expectedErrorMessageWithRejectionReason =
         "Command 'COMPLETE' rejected with code 'INVALID_ARGUMENT': Task Listener job completion with variables payload provided is not supported";
     ZeebeAssertHelper.assertIncidentCreated(
