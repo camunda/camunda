@@ -5,55 +5,58 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.service.db.es.report.interpreter.groupby.process.usertask;
+package io.camunda.optimize.service.db.os.report.interpreter.groupby.process.usertask;
 
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_USER_TASK;
 import static io.camunda.optimize.service.db.report.result.CompositeCommandResult.GroupByResult;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 
-import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
-import co.elastic.clients.elasticsearch._types.aggregations.SingleBucketAggregateBase;
-import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
-import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
-import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import io.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import io.camunda.optimize.service.DefinitionService;
-import io.camunda.optimize.service.db.es.report.interpreter.distributedby.process.ProcessDistributedByInterpreterFacadeES;
-import io.camunda.optimize.service.db.es.report.interpreter.view.process.ProcessViewInterpreterFacadeES;
+import io.camunda.optimize.service.db.os.report.interpreter.RawResult;
+import io.camunda.optimize.service.db.os.report.interpreter.distributedby.DistributedByInterpreterOS;
+import io.camunda.optimize.service.db.os.report.interpreter.distributedby.process.ProcessDistributedByInterpreterFacadeOS;
+import io.camunda.optimize.service.db.os.report.interpreter.view.ViewInterpreterOS;
+import io.camunda.optimize.service.db.os.report.interpreter.view.process.ProcessViewInterpreterFacadeOS;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.interpreter.groupby.usertask.ProcessGroupByUserTaskInterpreterHelper;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
+import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.opensearch.client.opensearch._types.aggregations.Aggregation;
+import org.opensearch.client.opensearch._types.aggregations.SingleBucketAggregateBase;
+import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch.core.SearchResponse;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@Conditional(ElasticSearchCondition.class)
-public class ProcessGroupByUserTaskInterpreterES extends AbstractGroupByUserTaskInterpreterES {
+@Conditional(OpenSearchCondition.class)
+public class ProcessGroupByUserTaskInterpreterOS extends AbstractGroupByUserTaskInterpreterOS {
 
   private static final String USER_TASK_ID_TERMS_AGGREGATION = "userTaskIds";
 
   private final ConfigurationService configurationService;
   private final DefinitionService definitionService;
-  private final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
-  private final ProcessViewInterpreterFacadeES viewInterpreter;
+  private final ProcessDistributedByInterpreterFacadeOS distributedByInterpreter;
+  private final ProcessViewInterpreterFacadeOS viewInterpreter;
   private final ProcessGroupByUserTaskInterpreterHelper helper;
 
-  public ProcessGroupByUserTaskInterpreterES(
+  public ProcessGroupByUserTaskInterpreterOS(
       final ConfigurationService configurationService,
       final DefinitionService definitionService,
-      final ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
-      final ProcessViewInterpreterFacadeES viewInterpreter,
+      final ProcessDistributedByInterpreterFacadeOS distributedByInterpreter,
+      final ProcessViewInterpreterFacadeOS viewInterpreter,
       final ProcessGroupByUserTaskInterpreterHelper helper) {
     this.configurationService = configurationService;
     this.definitionService = definitionService;
@@ -68,8 +71,8 @@ public class ProcessGroupByUserTaskInterpreterES extends AbstractGroupByUserTask
   }
 
   @Override
-  public Map<String, Aggregation.Builder.ContainerBuilder> createAggregation(
-      final BoolQuery boolQuery,
+  public Map<String, Aggregation> createAggregation(
+      final Query boolQuery,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     final Aggregation aggregation =
         Aggregation.of(
@@ -80,11 +83,11 @@ public class ProcessGroupByUserTaskInterpreterES extends AbstractGroupByUserTask
                           t.field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID)
                               .size(
                                   configurationService
-                                      .getElasticSearchConfiguration()
+                                      .getOpenSearchConfiguration()
                                       .getAggregationBucketLimit()));
               distributedByInterpreter
                   .createAggregations(context, boolQuery)
-                  .forEach((k, v) -> terms.aggregations(k, v.build()));
+                  .forEach(terms::aggregations);
               return terms;
             });
 
@@ -95,7 +98,7 @@ public class ProcessGroupByUserTaskInterpreterES extends AbstractGroupByUserTask
   @Override
   public void addQueryResult(
       final CompositeCommandResult compositeCommandResult,
-      final ResponseBody<?> response,
+      final SearchResponse<RawResult> response,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     getFilteredUserTaskAggregation(response)
         .map(
@@ -114,7 +117,7 @@ public class ProcessGroupByUserTaskInterpreterES extends AbstractGroupByUserTask
                   getHelper().getUserTaskNames(context.getReportData());
               final List<GroupByResult> groupedData = new ArrayList<>();
               for (final StringTermsBucket b : userTasksAggregation.buckets().array()) {
-                final String userTaskKey = b.key().stringValue();
+                final String userTaskKey = b.key();
                 if (userTaskNames.containsKey(userTaskKey)) {
                   final List<CompositeCommandResult.DistributedByResult> singleResult =
                       distributedByInterpreter.retrieveResult(response, b.aggregations(), context);
@@ -140,17 +143,18 @@ public class ProcessGroupByUserTaskInterpreterES extends AbstractGroupByUserTask
   }
 
   @Override
-  public ProcessDistributedByInterpreterFacadeES getDistributedByInterpreter() {
+  protected DistributedByInterpreterOS<ProcessReportDataDto, ProcessExecutionPlan>
+      getDistributedByInterpreter() {
     return distributedByInterpreter;
   }
 
   @Override
-  public ProcessViewInterpreterFacadeES getViewInterpreter() {
+  protected ViewInterpreterOS<ProcessReportDataDto, ProcessExecutionPlan> getViewInterpreter() {
     return viewInterpreter;
   }
 
   @Override
-  public DefinitionService getDefinitionService() {
+  protected DefinitionService getDefinitionService() {
     return definitionService;
   }
 
