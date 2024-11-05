@@ -42,9 +42,9 @@ public class CamundaExporterITInvocationProvider
         AfterEachCallback {
 
   public static final String CONFIG_PREFIX = "camunda-record";
-  private static final ElasticsearchContainer elsContainer =
+  private static final ElasticsearchContainer ELS_CONTAINER =
       TestSearchContainers.createDefeaultElasticsearchContainer();
-  private static final OpensearchContainer<?> osContainer =
+  private static final OpensearchContainer<?> OS_CONTAINER =
       TestSearchContainers.createDefaultOpensearchContainer();
   protected SearchClientAdapter elsClientAdapter;
   protected SearchClientAdapter osClientAdapter;
@@ -58,9 +58,9 @@ public class CamundaExporterITInvocationProvider
     config.getIndex().setPrefix(CONFIG_PREFIX);
     config.getBulk().setSize(1); // force flushing on the first record
     if (connectionType == ELASTICSEARCH) {
-      config.getConnect().setUrl(elsContainer.getHttpHostAddress());
+      config.getConnect().setUrl(ELS_CONTAINER.getHttpHostAddress());
     } else if (connectionType == OPENSEARCH) {
-      config.getConnect().setUrl(osContainer.getHttpHostAddress());
+      config.getConnect().setUrl(OS_CONTAINER.getHttpHostAddress());
     }
     config.getConnect().setType(connectionType.getType());
     return config;
@@ -79,8 +79,8 @@ public class CamundaExporterITInvocationProvider
 
   @Override
   public void beforeAll(final ExtensionContext context) {
-    elsContainer.start();
-    osContainer.start();
+    ELS_CONTAINER.start();
+    OS_CONTAINER.start();
 
     final var osConfig = getConfigWithConnectionDetails(OPENSEARCH);
     osClient = new OpensearchConnector(osConfig.getConnect()).createClient();
@@ -90,8 +90,8 @@ public class CamundaExporterITInvocationProvider
     elsClient = new ElasticsearchConnector(elsConfig.getConnect()).createClient();
     elsClientAdapter = new SearchClientAdapter(elsClient);
 
-    closeables.add(elsContainer);
-    closeables.add(osContainer);
+    closeables.add(ELS_CONTAINER);
+    closeables.add(OS_CONTAINER);
   }
 
   @Override

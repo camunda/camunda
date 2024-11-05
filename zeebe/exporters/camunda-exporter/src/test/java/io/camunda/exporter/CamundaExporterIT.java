@@ -42,7 +42,6 @@ import io.camunda.exporter.schema.SchemaTestUtil;
 import io.camunda.exporter.utils.CamundaExporterHandlerITInvocationProvider;
 import io.camunda.exporter.utils.CamundaExporterITInvocationProvider;
 import io.camunda.exporter.utils.SearchClientAdapter;
-import io.camunda.exporter.utils.TestSupport;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
@@ -104,7 +103,6 @@ import org.testcontainers.containers.GenericContainer;
  */
 @TestInstance(Lifecycle.PER_CLASS)
 @ExtendWith(CamundaExporterITInvocationProvider.class)
-// @Disabled("flaky test")
 final class CamundaExporterIT {
 
   private final ProtocolFactory factory = new ProtocolFactory();
