@@ -77,7 +77,7 @@ public final class ElasticsearchRepository implements ArchiverRepository {
     this.config = config;
     this.retention = retention;
     this.processInstanceIndex = processInstanceIndex;
-    this.batchOperationIndex = batchOperationTemplate;
+    this.batchOperationIndex = batchOperationIndex;
     this.client = client;
     this.executor = executor;
     this.metrics = metrics;
@@ -204,10 +204,7 @@ public final class ElasticsearchRepository implements ArchiverRepository {
         QueryBuilders.bool(q -> q.must(endDateQ, isProcessInstanceQ, partitionQ));
 
     return createSearchRequest(
-        processInstanceIndex.getFullQualifiedName(),
-        combinedQuery,
-        aggregation,
-        ListViewTemplate.END_DATE);
+        processInstanceIndex, combinedQuery, aggregation, ListViewTemplate.END_DATE);
   }
 
   private ArchiveBatch createArchiveBatch(final SubmitResponse<?> search) {
@@ -276,10 +273,7 @@ public final class ElasticsearchRepository implements ArchiverRepository {
                     .lte(JsonData.of(config.getArchivingTimePoint())));
 
     return createSearchRequest(
-        batchOperationIndex.getFullQualifiedName(),
-        endDateQ,
-        aggregation,
-        BatchOperationTemplate.END_DATE);
+        batchOperationIndex, endDateQ, aggregation, BatchOperationTemplate.END_DATE);
   }
 
   private SubmitRequest createSearchRequest(
