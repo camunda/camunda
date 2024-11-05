@@ -12,13 +12,18 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.usermanagement.UserEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import java.util.List;
+import java.util.Set;
 
-public class UserHandler implements ExportHandler<UserEntity, UserRecordValue> {
+public class UserCreatedUpdatedHandler implements ExportHandler<UserEntity, UserRecordValue> {
+  private static final Set<Intent> SUPPORTED_INTENTS =
+      Set.of(UserIntent.CREATED, UserIntent.UPDATED);
   private final String indexName;
 
-  public UserHandler(final String indexName) {
+  public UserCreatedUpdatedHandler(final String indexName) {
     this.indexName = indexName;
   }
 
@@ -34,7 +39,8 @@ public class UserHandler implements ExportHandler<UserEntity, UserRecordValue> {
 
   @Override
   public boolean handlesRecord(final Record<UserRecordValue> record) {
-    return getHandledValueType().equals(record.getValueType());
+    return getHandledValueType().equals(record.getValueType())
+        && SUPPORTED_INTENTS.contains(record.getIntent());
   }
 
   @Override
