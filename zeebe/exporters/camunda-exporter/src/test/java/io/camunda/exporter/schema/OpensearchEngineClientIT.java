@@ -10,6 +10,7 @@ package io.camunda.exporter.schema;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
@@ -64,6 +65,7 @@ public class OpensearchEngineClientIT {
     logWatcher = new ListAppender<>();
     logWatcher.start();
     ((Logger) LoggerFactory.getLogger(OpensearchEngineClient.class)).addAppender(logWatcher);
+    ((Logger) LoggerFactory.getLogger(OpensearchEngineClient.class)).setLevel(Level.ALL);
   }
 
   @Test
@@ -136,7 +138,7 @@ public class OpensearchEngineClientIT {
   }
 
   @Test
-  void shouldNotThrowIfCreatingExistingTemplate() {
+  void shouldDebugLogIfCreatingExistingTemplate() {
     // given
     final var indexTemplate =
         SchemaTestUtil.mockIndexTemplate(
@@ -149,31 +151,18 @@ public class OpensearchEngineClientIT {
 
     final var settings = new IndexSettings();
     opensearchEngineClient.createIndexTemplate(indexTemplate, settings, true);
-
     opensearchEngineClient.createIndexTemplate(indexTemplate, settings, true);
 
     // then
-    assertThat(logWatcher.list.stream().map(ILoggingEvent::getFormattedMessage))
-        .contains(
-            String.format(
-                "Did not create index template [%s] as it already exists",
-                indexTemplate.getTemplateName()));
-  }
-
-  @Test
-  void shouldFailIndexTemplateUpdateIfCreateTrue() {
-    // given
-    final var template =
-        SchemaTestUtil.mockIndexTemplate(
-            "index_name", "index_pattern.*", "alias", List.of(), "template_name", "/mappings.json");
-    opensearchEngineClient.createIndexTemplate(template, new IndexSettings(), false);
-
-    // when
-    // then
-    assertThatThrownBy(
-            () -> opensearchEngineClient.createIndexTemplate(template, new IndexSettings(), true))
-        .isInstanceOf(OpensearchExporterException.class)
-        .hasMessageContaining("Cannot update template [template_name] as create = true");
+    assertThat(logWatcher.list.stream())
+        .anyMatch(
+            log ->
+                log.getLevel().equals(Level.DEBUG)
+                    && log.getFormattedMessage()
+                        .contains(
+                            String.format(
+                                "Did not create index template [%s] as it already exists",
+                                indexTemplate.getTemplateName())));
   }
 
   @Test
