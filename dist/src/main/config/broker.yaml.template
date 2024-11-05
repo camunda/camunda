@@ -906,7 +906,9 @@
         #     rolloverBatchSize: 100
         #     waitPeriodBeforeArchiving: "1h"
         #     delayBetweenRuns: 2000
-
+        #
+        #   processCache:
+        #     maxCacheSize: 10000
 
     # processing:
       # Sets the maximum number of commands that processed within one batch.
