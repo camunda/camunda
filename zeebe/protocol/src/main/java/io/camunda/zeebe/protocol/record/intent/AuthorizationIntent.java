@@ -17,7 +17,9 @@ package io.camunda.zeebe.protocol.record.intent;
 
 public enum AuthorizationIntent implements Intent {
   ADD_PERMISSION(0),
-  PERMISSION_ADDED(1);
+  PERMISSION_ADDED(1),
+  REMOVE_PERMISSION(2),
+  PERMISSION_REMOVED(3);
 
   private final short value;
 
