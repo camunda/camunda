@@ -125,6 +125,7 @@ public final class ElasticsearchRepository implements ArchiverRepository {
             .settings(
                 settings ->
                     settings.lifecycle(lifecycle -> lifecycle.name(retention.getPolicyName())))
+            .index(destinationIndexName)
             .allowNoIndices(true)
             .ignoreUnavailable(true)
             .build();
