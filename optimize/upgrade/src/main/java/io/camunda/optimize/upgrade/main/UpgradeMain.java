@@ -44,6 +44,23 @@ public class UpgradeMain {
   }
 
   public static void main(final String... args) {
+
+    final boolean initSchemaEnabled =
+        ConfigurationServiceBuilder.createDefaultConfiguration()
+            .getElasticSearchConfiguration()
+            .getConnection()
+            .isInitSchemaEnabled();
+
+    final boolean clusterTaskCheckingEnabled =
+        ConfigurationServiceBuilder.createDefaultConfiguration()
+            .getElasticSearchConfiguration()
+            .getConnection()
+            .isClusterTaskCheckingEnabled();
+    if (!initSchemaEnabled || !clusterTaskCheckingEnabled) {
+      throw new UpgradeRuntimeException(
+          "Can't upgrade without enable cluster task checking " + "and init schema privileges");
+    }
+
     try {
       final DatabaseType databaseType =
           ConfigurationService.convertToDatabaseProperty(
@@ -84,16 +101,7 @@ public class UpgradeMain {
         upgradeProcedure.performUpgrade(upgradePlan);
       }
 
-      final boolean initSchemaEnabled =
-          ConfigurationServiceBuilder.createDefaultConfiguration()
-              .getElasticSearchConfiguration()
-              .getConnection()
-              .isInitSchemaEnabled();
-      if (initSchemaEnabled) {
-        upgradeProcedure.schemaUpgradeClient.initializeSchema();
-      } else {
-        LOG.info("Schema initialization disabled, skipping");
-      }
+      upgradeProcedure.schemaUpgradeClient.initializeSchema();
 
       LOG.info("Update finished successfully.");
 

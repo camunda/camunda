@@ -105,15 +105,6 @@ public class TaskRepositoryES extends TaskRepository {
     }
   }
 
-  private boolean syncUpdate(final UpdateByQueryRequest request) {
-    try {
-      final Long deleted = esClient.submitUpdateTask(request).updated();
-      return deleted != null && deleted > 0L;
-    } catch (final IOException e) {
-      throw new OptimizeRuntimeException("Error while trying to submit update task", e);
-    }
-  }
-
   public boolean tryDeleteByQueryRequest(
       final Query query,
       final String deletedItemIdentifier,
@@ -139,6 +130,15 @@ public class TaskRepositoryES extends TaskRepository {
       return asyncDelete(query, deletedItemIdentifier, request);
     } else {
       return syncDelete(request);
+    }
+  }
+
+  private boolean syncUpdate(final UpdateByQueryRequest request) {
+    try {
+      final Long deleted = esClient.submitUpdateTask(request).updated();
+      return deleted != null && deleted > 0L;
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException("Error while trying to submit update task", e);
     }
   }
 
