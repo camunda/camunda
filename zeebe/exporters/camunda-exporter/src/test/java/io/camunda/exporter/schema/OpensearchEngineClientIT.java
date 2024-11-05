@@ -8,6 +8,7 @@
 package io.camunda.exporter.schema;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -228,6 +229,22 @@ public class OpensearchEngineClientIT {
                 .name("world")
                 .typeDefinition(Map.of("type", "keyword"))
                 .build());
+  }
+
+  @Test
+  void shouldNotThrowErrorIfRetrievingMappingsWhereOnlySubsetOfIndicesExist() {
+    // given
+    final var index =
+        SchemaTestUtil.mockIndex("index_qualified_name", "alias", "index_name", "/mappings.json");
+
+    opensearchEngineClient.createIndex(index, new IndexSettings());
+
+    // when, then
+    assertThatNoException()
+        .isThrownBy(
+            () ->
+                opensearchEngineClient.getMappings(
+                    index.getFullQualifiedName() + "*,foo*", MappingSource.INDEX));
   }
 
   @Test
