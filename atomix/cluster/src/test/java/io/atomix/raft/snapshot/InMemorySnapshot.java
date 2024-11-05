@@ -183,7 +183,8 @@ public final class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapsh
     return CompletableActorFuture.completed(reservation);
   }
 
-  boolean isReserved() {
+  @Override
+  public boolean isReserved() {
     return !reservations.isEmpty();
   }
 

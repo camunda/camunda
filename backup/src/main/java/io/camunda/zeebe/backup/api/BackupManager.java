@@ -22,8 +22,9 @@ public interface BackupManager {
    *
    * @param checkpointId id of the backup
    * @param checkpointPosition position of the record until which must be included in the backup.
+   * @return an ActorFuture with the result of the backup
    */
-  void takeBackup(long checkpointId, long checkpointPosition);
+  ActorFuture<Void> takeBackup(long checkpointId, long checkpointPosition);
 
   /**
    * Get the status of the backup

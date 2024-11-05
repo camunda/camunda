@@ -8,10 +8,13 @@
 package io.camunda.zeebe.scheduler.future;
 
 import io.camunda.zeebe.scheduler.ActorTask;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 /** interface for actor futures */
 public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
@@ -77,4 +80,48 @@ public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
       complete(value);
     }
   }
+
+  /**
+   * Utility method to convert this future to a {@link CompletableFuture}. The returned future will
+   * be completed when this future is completed.
+   *
+   * @return a completable future
+   */
+  default CompletableFuture<V> toCompletableFuture() {
+    final var future = new CompletableFuture<V>();
+    onComplete(
+        (status, error) -> {
+          if (error == null) {
+            future.complete(status);
+          } else {
+            future.completeExceptionally(error);
+          }
+        },
+        // Since the caller is most likely not an actor, we have to pass an executor. We use
+        // Runnable, so it executes in the same actor that completes this future. This is ok because
+        // the consumer passed here is not doing much to block the actor.
+        Runnable::run);
+    return future;
+  }
+
+  /**
+   * Convenience wrapper over {@link #andThen(Function, Executor)} for the case where the next step
+   * does not require the result of this future.
+   */
+  <U> ActorFuture<U> andThen(Supplier<ActorFuture<U>> next, Executor executor);
+
+  /**
+   * Similar to {@link CompletableFuture#thenCompose(Function)} in that it applies a function to the
+   * result of this future, supporting chaining of futures while propagating exceptions.
+   * Implementations may be somewhat inefficient and create intermediate futures, schedule
+   * completion callbacks on the provided executor etc. As such, it should be used for orchestrating
+   * futures in a non-performance critical context, for example for startup and shutdown sequences.
+   *
+   * @param next function to apply to the result of this future.
+   * @param executor The executor used to handle completion callbacks.
+   * @return a new future that completes with the result of applying the function to the result of
+   *     this future or exceptionally if this future completes exceptionally. This future can be
+   *     used for further chaining.
+   */
+  <U> ActorFuture<U> andThen(Function<V, ActorFuture<U>> next, Executor executor);
 }

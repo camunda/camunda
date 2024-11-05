@@ -38,6 +38,7 @@ import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -83,17 +84,6 @@ class PartitionRestoreServiceTest {
     snapshotStore = new FileBasedSnapshotStore(partitionId, dataDirectory);
     actorScheduler.submitActor(snapshotStore, SchedulingHints.IO_BOUND);
 
-    backupService =
-        new BackupService(
-            nodeId,
-            partitionId,
-            1,
-            backupStore,
-            snapshotStore,
-            dataDirectory,
-            path -> path.toString().endsWith(".log"));
-    actorScheduler.submitActor(backupService);
-
     final var partitionMetadata =
         new PartitionMetadata(
             PartitionId.from("raft", partitionId), Set.of(), Map.of(), 1, new MemberId("1"));
@@ -107,6 +97,18 @@ class PartitionRestoreServiceTest {
             .withName(raftPartition.name())
             .withMetaStore(mock(JournalMetaStore.class))
             .build();
+
+    backupService =
+        new BackupService(
+            nodeId,
+            partitionId,
+            1,
+            backupStore,
+            snapshotStore,
+            dataDirectory,
+            // RaftPartitions implements this interface, but the RaftServer is not started
+            index -> CompletableFuture.completedFuture(journal.getTailSegments(index).values()));
+    actorScheduler.submitActor(backupService);
   }
 
   @AfterEach

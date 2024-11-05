@@ -92,32 +92,20 @@ final class BackupServiceImpl {
         backupSaved.completeExceptionally(
             new BackupAlreadyExistsException(inProgressBackup.id(), existingBackupStatus));
       }
-      default -> {
-        final ActorFuture<Void> snapshotFound = concurrencyControl.createFuture();
-        final ActorFuture<Void> snapshotReserved = concurrencyControl.createFuture();
-        final ActorFuture<Void> snapshotFilesCollected = concurrencyControl.createFuture();
-        final ActorFuture<Void> segmentFilesCollected = inProgressBackup.findSegmentFiles();
-
-        segmentFilesCollected.onComplete(
-            proceed(
-                snapshotFound::completeExceptionally,
-                () -> inProgressBackup.findValidSnapshot().onComplete(snapshotFound)));
-
-        snapshotFound.onComplete(
-            proceed(
-                snapshotReserved::completeExceptionally,
-                () -> inProgressBackup.reserveSnapshot().onComplete(snapshotReserved)));
-
-        snapshotReserved.onComplete(
-            proceed(
-                snapshotFilesCollected::completeExceptionally,
-                () -> inProgressBackup.findSnapshotFiles().onComplete(snapshotFilesCollected)));
-
-        snapshotFilesCollected.onComplete(
-            proceed(
-                error -> failBackup(inProgressBackup, backupSaved, error),
-                () -> saveBackup(inProgressBackup, backupSaved)));
-      }
+      case DOES_NOT_EXIST -> inProgressBackup
+          .findValidSnapshot()
+          .andThen(inProgressBackup::findSegmentFiles, concurrencyControl)
+          .andThen(ok -> inProgressBackup.reserveSnapshot(), concurrencyControl)
+          .andThen(ok -> inProgressBackup.findSnapshotFiles(), concurrencyControl)
+          .onComplete(
+              (result, error) -> {
+                if (error != null) {
+                  failBackup(inProgressBackup, backupSaved, error);
+                } else {
+                  saveBackup(inProgressBackup, backupSaved);
+                }
+              });
+      default -> LOG.warn("Invalid case on BackupStatus {}", existingBackupStatus);
     }
   }
 

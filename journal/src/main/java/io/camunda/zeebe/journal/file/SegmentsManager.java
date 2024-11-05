@@ -326,13 +326,13 @@ final class SegmentsManager implements AutoCloseable {
     nextSegment = CompletableFuture.supplyAsync(() -> createUninitializedSegment(descriptor));
   }
 
-  Collection<Segment> getTailSegments(final long index) {
+  SortedMap<Long, Segment> getTailSegments(final long index) {
     final var segment = getSegment(index);
     if (segment == null) {
-      return Collections.emptySet();
+      return Collections.emptySortedMap();
     }
 
-    return Collections.unmodifiableSortedMap(segments.tailMap(segment.index(), true)).values();
+    return Collections.unmodifiableSortedMap(segments.tailMap(segment.index(), true)); // inclusive
   }
 
   private UninitializedSegment createUninitializedSegment(final SegmentDescriptor descriptor) {
