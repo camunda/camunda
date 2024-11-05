@@ -23,6 +23,7 @@ public class CamundaExporterMetrics {
   private final AtomicInteger bulkMemorySize = new AtomicInteger(0);
   private final Timer flushLatency;
   private final Counter processInstancesArchived;
+  private final Counter batchOperationsArchived;
   private Timer.Sample flushLatencyMeasurement;
 
   public CamundaExporterMetrics(final MeterRegistry meterRegistry) {
@@ -35,6 +36,7 @@ public class CamundaExporterMetrics {
             .publishPercentileHistogram()
             .register(meterRegistry);
     processInstancesArchived = meterRegistry.counter(meterName("archived.process.instances"));
+    batchOperationsArchived = meterRegistry.counter(meterName("archived.batch.operations"));
   }
 
   public ResourceSample measureFlushDuration() {
@@ -79,6 +81,10 @@ public class CamundaExporterMetrics {
 
   public void recordProcessInstancesArchived(final int count) {
     processInstancesArchived.increment(count);
+  }
+
+  public void batchOperationsArchived(final int count) {
+    batchOperationsArchived.increment(count);
   }
 
   private String meterName(final String name) {
