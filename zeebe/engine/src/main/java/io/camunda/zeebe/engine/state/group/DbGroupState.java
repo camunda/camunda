@@ -47,7 +47,7 @@ public class DbGroupState implements MutableGroupState {
     groupKey = new DbLong();
     groupColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.GROUPS, transactionContext, groupKey, persistedGroup);
+            ZbColumnFamilies.GROUPS, transactionContext, groupKey, new PersistedGroup());
 
     fkGroupKey = new DbForeignKey<>(groupKey, ZbColumnFamilies.GROUPS);
     entityKey = new DbLong();

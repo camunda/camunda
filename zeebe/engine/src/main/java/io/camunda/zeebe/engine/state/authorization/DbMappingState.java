@@ -41,7 +41,7 @@ public class DbMappingState implements MutableMappingState {
     claim = new DbCompositeKey<>(claimName, claimValue);
     mappingColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.MAPPINGS, transactionContext, claim, persistedMapping);
+            ZbColumnFamilies.MAPPINGS, transactionContext, claim, new PersistedMapping());
 
     mappingKey = new DbLong();
     fkClaim = new DbForeignKey<>(claim, ZbColumnFamilies.MAPPINGS);
@@ -75,6 +75,18 @@ public class DbMappingState implements MutableMappingState {
       final var claim = fkClaim.inner();
       final var persistedMapping = mappingColumnFamily.get(claim);
       persistedMapping.addRoleKey(roleKey);
+      mappingColumnFamily.update(claim, persistedMapping);
+    }
+  }
+
+  @Override
+  public void addGroup(final long mappingKey, final long groupKey) {
+    this.mappingKey.wrapLong(mappingKey);
+    final var fkClaim = claimByKeyColumnFamily.get(this.mappingKey);
+    if (fkClaim != null) {
+      final var claim = fkClaim.inner();
+      final var persistedMapping = mappingColumnFamily.get(claim);
+      persistedMapping.addGroupKey(groupKey);
       mappingColumnFamily.update(claim, persistedMapping);
     }
   }
@@ -115,18 +127,6 @@ public class DbMappingState implements MutableMappingState {
       final List<String> tenantIds = persistedMapping.getTenantIdsList();
       tenantIds.remove(tenantId);
       persistedMapping.setTenantIdsList(tenantIds);
-      mappingColumnFamily.update(claim, persistedMapping);
-    }
-  }
-
-  @Override
-  public void addGroup(final long mappingKey, final long groupKey) {
-    this.mappingKey.wrapLong(mappingKey);
-    final var fkClaim = claimByKeyColumnFamily.get(this.mappingKey);
-    if (fkClaim != null) {
-      final var claim = fkClaim.inner();
-      final var persistedMapping = mappingColumnFamily.get(claim);
-      persistedMapping.addGroupKey(groupKey);
       mappingColumnFamily.update(claim, persistedMapping);
     }
   }
