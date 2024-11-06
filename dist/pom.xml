@@ -324,6 +324,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-services</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>document-store</artifactId>
     </dependency>
 

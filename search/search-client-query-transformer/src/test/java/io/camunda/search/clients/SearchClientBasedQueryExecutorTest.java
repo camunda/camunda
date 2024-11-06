@@ -9,8 +9,10 @@ package io.camunda.search.clients;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.clients.auth.AuthorizationQueryStrategy;
 import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
@@ -47,6 +49,7 @@ class SearchClientBasedQueryExecutorTest {
           null);
 
   @Mock private DocumentBasedSearchClient searchClient;
+  @Mock private AuthorizationQueryStrategy authorizationQueryStrategy;
   private final ServiceTransformers serviceTransformers = ServiceTransformers.newInstance(false);
 
   private SearchClientBasedQueryExecutor queryExecutor;
@@ -55,7 +58,10 @@ class SearchClientBasedQueryExecutorTest {
   void setUp() {
     queryExecutor =
         new SearchClientBasedQueryExecutor(
-            searchClient, serviceTransformers, SecurityContext.withoutAuthentication());
+            searchClient,
+            serviceTransformers,
+            authorizationQueryStrategy,
+            SecurityContext.withoutAuthentication());
   }
 
   @Test
@@ -67,8 +73,11 @@ class SearchClientBasedQueryExecutorTest {
     final SearchQueryResponse<ProcessInstanceEntity> processInstanceEntityResponse =
         createProcessInstanceEntityResponse(demoProcessInstance);
 
-    when(searchClient.search(any(SearchQueryRequest.class), any(Class.class)))
+    when(searchClient.search(any(SearchQueryRequest.class), eq(ProcessInstanceEntity.class)))
         .thenReturn(processInstanceEntityResponse);
+    when(authorizationQueryStrategy.applyAuthorizationToQuery(
+            any(SearchQueryRequest.class), any(SecurityContext.class), any()))
+        .thenAnswer(i -> i.getArgument(0));
 
     // When we search
     final var searchResult = queryExecutor.search(searchAllQuery, ProcessInstanceEntity.class);
@@ -77,6 +86,27 @@ class SearchClientBasedQueryExecutorTest {
     final List<ProcessInstanceEntity> items = searchResult.items();
     assertThat(items).hasSize(1);
     assertThat(items.getFirst().key()).isEqualTo(demoProcessInstance.key());
+  }
+
+  @Test
+  void shouldFindAllUsingTransformers() {
+    // Given our search Query
+    final var searchAllQuery = new ProcessInstanceQuery.Builder().build();
+
+    // And our search client returns stuff
+    final var processInstanceEntityResponse = List.of(demoProcessInstance);
+
+    when(searchClient.findAll(any(SearchQueryRequest.class), eq(ProcessInstanceEntity.class)))
+        .thenReturn(processInstanceEntityResponse);
+    when(authorizationQueryStrategy.applyAuthorizationToQuery(
+            any(SearchQueryRequest.class), any(SecurityContext.class), any()))
+        .thenAnswer(i -> i.getArgument(0));
+
+    // When we search
+    final var searchResult = queryExecutor.findAll(searchAllQuery, ProcessInstanceEntity.class);
+
+    assertThat(searchResult).hasSize(1);
+    assertThat(searchResult.getFirst().key()).isEqualTo(demoProcessInstance.key());
   }
 
   private SearchQueryResponse<ProcessInstanceEntity> createProcessInstanceEntityResponse(

@@ -8,7 +8,7 @@
 package io.camunda.search.clients;
 
 import io.camunda.search.clients.auth.AuthorizationQueryStrategy;
-import io.camunda.search.clients.auth.DocumentAuthorizationQueryStrategy;
+import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.clients.transformers.filter.AuthenticationTransformer;
@@ -20,6 +20,8 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TypedSearchQuery;
 import io.camunda.search.sort.SortOption;
 import io.camunda.security.auth.SecurityContext;
+import java.util.List;
+import java.util.function.Function;
 
 public final class SearchClientBasedQueryExecutor {
 
@@ -31,23 +33,35 @@ public final class SearchClientBasedQueryExecutor {
   public SearchClientBasedQueryExecutor(
       final DocumentBasedSearchClient searchClient,
       final ServiceTransformers transformers,
+      final AuthorizationQueryStrategy authorizationQueryStrategy,
       final SecurityContext securityContext) {
     this.searchClient = searchClient;
     this.transformers = transformers;
+    this.authorizationQueryStrategy = authorizationQueryStrategy;
     this.securityContext = securityContext;
-    authorizationQueryStrategy = new DocumentAuthorizationQueryStrategy(searchClient, transformers);
   }
 
   public <T extends FilterBase, S extends SortOption, R> SearchQueryResult<R> search(
       final TypedSearchQuery<T, S> query, final Class<R> documentClass) {
+    final SearchQueryResultTransformer<R> responseTransformer = getSearchResultTransformer();
+    return executeSearch(
+        query, q -> responseTransformer.apply(searchClient.search(q, documentClass)));
+  }
+
+  public <T extends FilterBase, S extends SortOption, R> List<R> findAll(
+      final TypedSearchQuery<T, S> query, final Class<R> documentClass) {
+    return executeSearch(query, q -> searchClient.findAll(q, documentClass));
+  }
+
+  private <T extends FilterBase, S extends SortOption, R> R executeSearch(
+      final TypedSearchQuery<T, S> query, final Function<SearchQueryRequest, R> searchExecutor) {
     final var authenticationCheck = getAuthenticationCheckIfPresent();
     final var transformer = getSearchQueryRequestTransformer(query);
     final var searchRequest = transformer.applyWithAuthentication(query, authenticationCheck);
     final var authorizedSearchRequest =
         authorizationQueryStrategy.applyAuthorizationToQuery(
             searchRequest, securityContext, query.getClass());
-    final SearchQueryResultTransformer<R> responseTransformer = getSearchResultTransformer();
-    return responseTransformer.apply(searchClient.search(authorizedSearchRequest, documentClass));
+    return searchExecutor.apply(authorizedSearchRequest);
   }
 
   private SearchQuery getAuthenticationCheckIfPresent() {

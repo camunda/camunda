@@ -7,6 +7,7 @@
  */
 package io.camunda.search.connect.es;
 
+import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
@@ -67,6 +68,22 @@ public final class ElasticsearchConnector {
 
     // And create the API client
     return new ElasticsearchClient(transport);
+  }
+
+  public ElasticsearchAsyncClient createAsyncClient() {
+    LOGGER.debug("Creating async Elasticsearch Client ...");
+
+    // Load plugins
+    pluginRepository.load(configuration.getInterceptorPlugins());
+
+    // create rest client
+    final var restClient = createRestClient(configuration);
+
+    // Create the transport with a Jackson mapper
+    final var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(objectMapper));
+
+    // And create the API client
+    return new ElasticsearchAsyncClient(transport);
   }
 
   private RestClient createRestClient(final ConnectConfiguration configuration) {

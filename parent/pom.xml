@@ -923,6 +923,11 @@
         <artifactId>camunda-security-core</artifactId>
         <version>${project.version}</version>
       </dependency>
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-security-services</artifactId>
+        <version>${project.version}</version>
+      </dependency>
 
       <!-- Camunda Process Testing modules -->
 

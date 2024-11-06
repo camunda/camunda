@@ -13,6 +13,7 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.Timer.ResourceSample;
+import io.micrometer.core.instrument.Timer.Sample;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -24,6 +25,9 @@ public class CamundaExporterMetrics {
   private final Timer flushLatency;
   private final Counter processInstancesArchived;
   private final Counter batchOperationsArchived;
+  private final Timer archiverSearchTimer;
+  private final Timer archiverDeleteTimer;
+  private final Timer archiverReindexTimer;
   private Timer.Sample flushLatencyMeasurement;
 
   public CamundaExporterMetrics(final MeterRegistry meterRegistry) {
@@ -37,6 +41,9 @@ public class CamundaExporterMetrics {
             .register(meterRegistry);
     processInstancesArchived = meterRegistry.counter(meterName("archived.process.instances"));
     batchOperationsArchived = meterRegistry.counter(meterName("archived.batch.operations"));
+    archiverSearchTimer = meterRegistry.timer(meterName("archiver.query"));
+    archiverDeleteTimer = meterRegistry.timer(meterName("archiver.delete.query"));
+    archiverReindexTimer = meterRegistry.timer(meterName("archiver.reindex.query"));
   }
 
   public ResourceSample measureFlushDuration() {
@@ -44,6 +51,10 @@ public class CamundaExporterMetrics {
         .description("Flush duration of bulk exporters in seconds")
         .publishPercentileHistogram()
         .minimumExpectedValue(Duration.ofMillis(10));
+  }
+
+  public void measureArchiverSearch(final Timer.Sample sample) {
+    sample.stop(archiverSearchTimer);
   }
 
   public void recordBulkSize(final int bulkSize) {
@@ -89,5 +100,13 @@ public class CamundaExporterMetrics {
 
   private String meterName(final String name) {
     return NAMESPACE + "." + name;
+  }
+
+  public void measureArchiverDelete(final Sample timer) {
+    timer.stop(archiverDeleteTimer);
+  }
+
+  public void measureArchiverReindex(final Sample timer) {
+    timer.stop(archiverReindexTimer);
   }
 }
