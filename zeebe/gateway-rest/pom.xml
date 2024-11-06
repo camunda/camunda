@@ -112,6 +112,11 @@
       <groupId>io.camunda</groupId>
       <artifactId>camunda-security-core</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-services</artifactId>
+      <scope>test</scope>
+    </dependency>
 
     <!-- rest api dependencies -->
     <dependency>

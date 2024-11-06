@@ -10,19 +10,26 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>io.camunda</groupId>
-    <artifactId>zeebe-parent</artifactId>
+    <artifactId>camunda-security</artifactId>
     <version>8.7.0-SNAPSHOT</version>
-    <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
-  <artifactId>camunda-security</artifactId>
-  <packaging>pom</packaging>
+  <artifactId>camunda-security-services</artifactId>
+  <name>Camunda Security Services</name>
 
-  <name>Camunda Security Parent</name>
-
-  <modules>
-    <module>security-core</module>
-    <module>security-services</module>
-  </modules>
+  <dependencies>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-domain</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client</artifactId>
+    </dependency>
+  </dependencies>
 
 </project>

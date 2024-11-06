@@ -25,6 +25,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -45,7 +46,8 @@ public final class ProcessInstanceServiceTest {
     client = mock(ProcessInstanceSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
     securityConfiguration = new SecurityConfiguration();
-    final var securityContextProvider = new SecurityContextProvider(securityConfiguration);
+    final var securityContextProvider =
+        new SecurityContextProvider(securityConfiguration, mock(AuthorizationChecker.class));
     services =
         new ProcessInstanceServices(
             mock(BrokerClient.class), securityContextProvider, client, null);
