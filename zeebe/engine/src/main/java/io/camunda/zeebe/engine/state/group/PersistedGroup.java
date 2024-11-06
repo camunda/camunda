@@ -21,8 +21,7 @@ public class PersistedGroup extends UnpackedObject implements DbValue {
 
   public PersistedGroup() {
     super(2);
-    declareProperty(groupKeyProp);
-    declareProperty(nameProp);
+    declareProperty(groupKeyProp).declareProperty(nameProp);
   }
 
   public long getGroupKey() {

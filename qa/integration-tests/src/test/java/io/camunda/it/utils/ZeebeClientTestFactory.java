@@ -149,9 +149,9 @@ public final class ZeebeClientTestFactory implements AutoCloseable {
   }
 
   /**
-   * Annotation to be passed along with {@link CamundaExporterITInvocationProvider}'s {@link
-   * org.junit.jupiter.api.TestTemplate}. When applied, this indicates that the ZeebeClient should
-   * be created with the provided user's credentials.
+   * Annotation to be passed along with {@link BrokerWithCamundaExporterITInvocationProvider}'s
+   * {@link org.junit.jupiter.api.TestTemplate}. When applied, this indicates that the ZeebeClient
+   * should be created with the provided user's credentials.
    */
   @Target(ElementType.PARAMETER)
   @Retention(RetentionPolicy.RUNTIME)

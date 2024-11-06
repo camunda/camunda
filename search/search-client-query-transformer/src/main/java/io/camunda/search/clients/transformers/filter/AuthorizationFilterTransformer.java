@@ -9,6 +9,7 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 
 import io.camunda.search.clients.query.SearchQuery;
@@ -23,7 +24,7 @@ public final class AuthorizationFilterTransformer
     return and(
         longTerms("ownerKey", filter.ownerKeys()),
         filter.ownerType() == null ? null : term("ownerType", filter.ownerType()),
-        filter.resourceKey() == null ? null : term("permissions.resourceIds", filter.resourceKey()),
+        stringTerms("permissions.resourceIds", filter.resourceKeys()),
         filter.resourceType() == null ? null : term("resourceType", filter.resourceType()),
         filter.permissionType() == null
             ? null

@@ -18,6 +18,11 @@ import io.camunda.zeebe.engine.state.authorization.EntityTypeValue;
 import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
+import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public class DbGroupState implements MutableGroupState {
@@ -42,7 +47,7 @@ public class DbGroupState implements MutableGroupState {
     groupKey = new DbLong();
     groupColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.GROUPS, transactionContext, groupKey, persistedGroup);
+            ZbColumnFamilies.GROUPS, transactionContext, groupKey, new PersistedGroup());
 
     fkGroupKey = new DbForeignKey<>(groupKey, ZbColumnFamilies.GROUPS);
     entityKey = new DbLong();
@@ -89,6 +94,14 @@ public class DbGroupState implements MutableGroupState {
   }
 
   @Override
+  public void addEntity(final long groupKey, final GroupRecord group) {
+    this.groupKey.wrapLong(groupKey);
+    entityKey.wrapLong(group.getEntityKey());
+    entityTypeValue.setEntityType(group.getEntityType());
+    entityTypeByGroupColumnFamily.insert(fkGroupKeyAndEntityKey, entityTypeValue);
+  }
+
+  @Override
   public Optional<PersistedGroup> get(final long groupKey) {
     this.groupKey.wrapLong(groupKey);
     final var persistedGroup = groupColumnFamily.get(this.groupKey);
@@ -100,5 +113,27 @@ public class DbGroupState implements MutableGroupState {
     this.groupName.wrapString(groupName);
     final var groupKey = groupByNameColumnFamily.get(this.groupName);
     return Optional.ofNullable(groupKey).map(key -> key.inner().getValue());
+  }
+
+  @Override
+  public Optional<EntityType> getEntityType(final long groupKey, final long entityKey) {
+    this.groupKey.wrapLong(groupKey);
+    this.entityKey.wrapLong(entityKey);
+    final var entityType = entityTypeByGroupColumnFamily.get(fkGroupKeyAndEntityKey);
+    return Optional.ofNullable(entityType).map(EntityTypeValue::getEntityType);
+  }
+
+  @Override
+  public Map<EntityType, List<Long>> getEntitiesByType(final long groupKey) {
+    this.groupKey.wrapLong(groupKey);
+    final Map<EntityType, List<Long>> entitiesMap = new HashMap<>();
+    entityTypeByGroupColumnFamily.whileEqualPrefix(
+        fkGroupKey,
+        (compositeKey, value) -> {
+          final var entityType = value.getEntityType();
+          final var entityKey = compositeKey.second().getValue();
+          entitiesMap.computeIfAbsent(entityType, k -> new ArrayList<>()).add(entityKey);
+        });
+    return entitiesMap;
   }
 }

@@ -266,7 +266,12 @@ public class OpensearchEngineClient implements SearchEngineClient {
   private Map<String, TypeMapping> getCurrentMappings(
       final MappingSource mappingSource, final String namePattern) throws IOException {
     if (mappingSource == MappingSource.INDEX) {
-      return client.indices().getMapping(req -> req.index(namePattern)).result().entrySet().stream()
+      return client
+          .indices()
+          .getMapping(req -> req.index(namePattern).ignoreUnavailable(true))
+          .result()
+          .entrySet()
+          .stream()
           .collect(Collectors.toMap(Entry::getKey, e -> e.getValue().mappings()));
     } else if (mappingSource == MappingSource.INDEX_TEMPLATE) {
       return client

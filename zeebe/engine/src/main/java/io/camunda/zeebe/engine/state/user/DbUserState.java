@@ -44,7 +44,7 @@ public class DbUserState implements UserState, MutableUserState {
             ZbColumnFamilies.USER_KEY_BY_USERNAME, transactionContext, username, fkUserKey);
     userByUserKeyColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.USERS, transactionContext, userKey, persistedUser);
+            ZbColumnFamilies.USERS, transactionContext, userKey, new PersistedUser());
   }
 
   @Override
@@ -79,9 +79,7 @@ public class DbUserState implements UserState, MutableUserState {
   public void addTenantId(final long userKey, final String tenantId) {
     this.userKey.wrapLong(userKey);
     final var persistedUser = userByUserKeyColumnFamily.get(this.userKey);
-    final var tenantIds = persistedUser.getTenantIdsList();
-    tenantIds.add(tenantId);
-    persistedUser.setTenantIdsList(tenantIds);
+    persistedUser.addTenantId(tenantId);
     userByUserKeyColumnFamily.update(this.userKey, persistedUser);
   }
 
@@ -92,6 +90,14 @@ public class DbUserState implements UserState, MutableUserState {
     final List<String> tenantIds = persistedUser.getTenantIdsList();
     tenantIds.remove(tenantId);
     persistedUser.setTenantIdsList(tenantIds);
+    userByUserKeyColumnFamily.update(this.userKey, persistedUser);
+  }
+
+  @Override
+  public void addGroup(final long userKey, final long groupKey) {
+    this.userKey.wrapLong(userKey);
+    final var persistedUser = userByUserKeyColumnFamily.get(this.userKey);
+    persistedUser.addGroupKey(groupKey);
     userByUserKeyColumnFamily.update(this.userKey, persistedUser);
   }
 

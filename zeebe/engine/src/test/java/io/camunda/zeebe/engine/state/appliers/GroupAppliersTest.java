@@ -7,13 +7,20 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
+import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
+import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,11 +32,15 @@ public class GroupAppliersTest {
 
   private MutableGroupState groupState;
   private MutableAuthorizationState authorizationState;
+  private MutableUserState userState;
+  private MutableMappingState mappingState;
 
   @BeforeEach
   public void setup() {
     groupState = processingState.getGroupState();
     authorizationState = processingState.getAuthorizationState();
+    userState = processingState.getUserState();
+    mappingState = processingState.getMappingState();
   }
 
   @Test
@@ -75,5 +86,63 @@ public class GroupAppliersTest {
     final var persistedUpdatedGroup = group.get();
     assertThat(persistedUpdatedGroup.getGroupKey()).isEqualTo(groupKey);
     assertThat(persistedUpdatedGroup.getName()).isEqualTo(updatedGroupRecord.getName());
+  }
+
+  @Test
+  void shouldAddUserEntityToGroup() {
+    // given
+    final var entityKey = 1L;
+    final var userRecord =
+        new UserRecord()
+            .setUserKey(entityKey)
+            .setName("test")
+            .setUsername("username")
+            .setPassword("password")
+            .setEmail("test@example.com");
+    userState.create(userRecord);
+    final var groupEntityAddedApplier = new GroupEntityAddedApplier(processingState);
+    final var groupKey = 2L;
+    final var groupName = "group";
+    final var entityType = EntityType.USER;
+    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
+    groupState.create(groupKey, groupRecord);
+    groupRecord.setEntityKey(entityKey).setEntityType(entityType);
+
+    // when
+    groupEntityAddedApplier.applyState(groupKey, groupRecord);
+
+    // then
+    final var entitiesByType = groupState.getEntitiesByType(groupKey);
+    assertThat(entitiesByType).containsOnly(Map.entry(entityType, List.of(entityKey)));
+    final var persistedUser = userState.getUser(entityKey).get();
+    assertThat(persistedUser.getGroupKeysList()).containsExactly(groupKey);
+  }
+
+  @Test
+  void shouldAddMappingEntityToGroup() {
+    // given
+    final var entityKey = 1L;
+    final var mappingRecord =
+        new MappingRecord()
+            .setMappingKey(entityKey)
+            .setClaimName("claimName")
+            .setClaimValue("claimValue");
+    mappingState.create(mappingRecord);
+    final var groupEntityAddedApplier = new GroupEntityAddedApplier(processingState);
+    final var groupKey = 2L;
+    final var groupName = "group";
+    final var entityType = EntityType.MAPPING;
+    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
+    groupState.create(groupKey, groupRecord);
+    groupRecord.setEntityKey(entityKey).setEntityType(entityType);
+
+    // when
+    groupEntityAddedApplier.applyState(groupKey, groupRecord);
+
+    // then
+    final var entitiesByType = groupState.getEntitiesByType(groupKey);
+    assertThat(entitiesByType).containsOnly(Map.entry(entityType, List.of(entityKey)));
+    final var persistedMapping = mappingState.get(entityKey).get();
+    assertThat(persistedMapping.getGroupKeysList()).containsExactly(groupKey);
   }
 }

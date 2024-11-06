@@ -8,15 +8,22 @@
 package io.camunda.exporter.archiver;
 
 import io.camunda.exporter.ExporterResourceProvider;
+import io.camunda.exporter.archiver.ArchiverRepository.NoopArchiverRepository;
+import io.camunda.exporter.config.ConnectionTypes;
+import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
+import java.util.ArrayList;
 import java.util.Objects;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
@@ -71,7 +78,7 @@ public final class Archiver implements CloseableSilently {
   public static Archiver create(
       final int partitionId,
       final String exporterId,
-      final ArchiverConfiguration config,
+      final ExporterConfiguration config,
       final ExporterResourceProvider resourceProvider,
       final CamundaExporterMetrics metrics,
       final Logger logger) {
@@ -81,15 +88,15 @@ public final class Archiver implements CloseableSilently {
             .uncaughtExceptionHandler(FatalErrorHandler.uncaughtExceptionHandler(logger))
             .factory();
     final var executor = defaultExecutor(threadFactory);
-    final var repository = resourceProvider.newArchiverRepository();
+    final var repository =
+        createRepository(config, resourceProvider, partitionId, executor, metrics, logger);
     final var archiver = new Archiver(partitionId, repository, logger, executor);
-
     final var processInstanceJob =
         createProcessInstanceJob(metrics, logger, resourceProvider, repository, executor);
     final var batchOperationJob =
         createBatchOperationJob(metrics, logger, resourceProvider, repository, executor);
-    archiver.start(config, processInstanceJob, batchOperationJob);
 
+    archiver.start(config.getArchiver(), processInstanceJob, batchOperationJob);
     return archiver;
   }
 
@@ -99,11 +106,17 @@ public final class Archiver implements CloseableSilently {
       final ExporterResourceProvider resourceProvider,
       final ArchiverRepository repository,
       final ScheduledThreadPoolExecutor executor) {
-    final var dependantTemplates =
-        resourceProvider.getIndexTemplateDescriptors().stream()
-            .filter(ProcessInstanceDependant.class::isInstance)
-            .map(ProcessInstanceDependant.class::cast)
-            .toList();
+    final var dependantTemplates = new ArrayList<ProcessInstanceDependant>();
+    resourceProvider.getIndexTemplateDescriptors().stream()
+        .filter(ProcessInstanceDependant.class::isInstance)
+        .map(ProcessInstanceDependant.class::cast)
+        .forEach(dependantTemplates::add);
+
+    // add a special case just for TaskTemplate, which has 2 kinds of documents in the same
+    // index
+    final var taskTemplate = resourceProvider.getIndexTemplateDescriptor(TaskTemplate.class);
+    dependantTemplates.add(
+        new ProcessInstanceDependantAdapter(taskTemplate.getFullQualifiedName(), TaskTemplate.ID));
 
     return new ProcessInstancesArchiverJob(
         repository,
@@ -137,5 +150,48 @@ public final class Archiver implements CloseableSilently {
     executor.setRemoveOnCancelPolicy(true);
 
     return executor;
+  }
+
+  private static ArchiverRepository createRepository(
+      final ExporterConfiguration config,
+      final ExporterResourceProvider resourceProvider,
+      final int partitionId,
+      final Executor executor,
+      final CamundaExporterMetrics metrics,
+      final Logger logger) {
+    final var listViewTemplate =
+        resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
+    final var batchOperationTemplate =
+        resourceProvider.getIndexTemplateDescriptor(BatchOperationTemplate.class);
+    return switch (ConnectionTypes.from(config.getConnect().getType())) {
+      case ELASTICSEARCH -> {
+        final var connector = new ElasticsearchConnector(config.getConnect());
+        yield new ElasticsearchRepository(
+            partitionId,
+            config.getArchiver(),
+            config.getRetention(),
+            listViewTemplate.getFullQualifiedName(),
+            batchOperationTemplate.getFullQualifiedName(),
+            connector.createAsyncClient(),
+            executor,
+            metrics,
+            logger);
+      }
+      default -> new NoopArchiverRepository();
+    };
+  }
+
+  private record ProcessInstanceDependantAdapter(String name, String field)
+      implements ProcessInstanceDependant {
+
+    @Override
+    public String getFullQualifiedName() {
+      return name;
+    }
+
+    @Override
+    public String getProcessInstanceDependantField() {
+      return field;
+    }
   }
 }
