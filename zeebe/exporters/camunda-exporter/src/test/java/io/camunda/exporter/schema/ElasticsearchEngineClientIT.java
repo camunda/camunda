@@ -9,6 +9,7 @@ package io.camunda.exporter.schema;
 
 import static io.camunda.exporter.schema.SchemaTestUtil.validateMappings;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.Mockito.*;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
@@ -142,6 +143,22 @@ public class ElasticsearchEngineClientIT {
                 .name("world")
                 .typeDefinition(Map.of("type", "keyword"))
                 .build());
+  }
+
+  @Test
+  void shouldNotThrowErrorIfRetrievingMappingsWhereOnlySubsetOfIndicesExist() {
+    // given
+    final var index =
+        SchemaTestUtil.mockIndex("index_qualified_name", "alias", "index_name", "/mappings.json");
+
+    elsEngineClient.createIndex(index, new IndexSettings());
+
+    // when, tnen
+    assertThatNoException()
+        .isThrownBy(
+            () ->
+                elsEngineClient.getMappings(
+                    index.getFullQualifiedName() + "*,foo*", MappingSource.INDEX));
   }
 
   @Test
