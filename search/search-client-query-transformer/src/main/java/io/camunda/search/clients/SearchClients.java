@@ -213,7 +213,11 @@ public class SearchClients
 
   @Override
   public SearchQueryResult<TenantEntity> searchTenants(final TenantQuery filter) {
-    return new SearchClientBasedQueryExecutor(searchClient, transformers, securityContext)
+    return new SearchClientBasedQueryExecutor(
+            searchClient,
+            transformers,
+            new DocumentAuthorizationQueryStrategy(this),
+            securityContext)
         .search(filter, TenantEntity.class);
   }
 
