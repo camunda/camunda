@@ -17,6 +17,7 @@ import io.camunda.zeebe.exporter.TestClient.IndexTemplatesDto.IndexTemplateWrapp
 import io.camunda.zeebe.exporter.dto.Template;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
@@ -37,7 +38,7 @@ final class ElasticsearchClientIT {
   // authentication
   @Container
   private static final ElasticsearchContainer CONTAINER =
-      TestSupport.createDefaultContainer()
+      TestSearchContainers.createDefeaultElasticsearchContainer()
           .withEnv("xpack.license.self_generated.type", "trial")
           .withEnv("xpack.security.enabled", "true")
           .withEnv("xpack.security.authc.anonymous.username", "anon")

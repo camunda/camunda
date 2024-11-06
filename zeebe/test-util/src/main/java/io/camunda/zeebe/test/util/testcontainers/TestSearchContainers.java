@@ -5,24 +5,32 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.utils;
+package io.camunda.zeebe.test.util.testcontainers;
 
 import java.time.Duration;
-import org.elasticsearch.client.RestClient;
+import java.util.Objects;
 import org.opensearch.testcontainers.OpensearchContainer;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.utility.DockerImageName;
 
-public final class TestSupport {
+@SuppressWarnings("resource")
+public final class TestSearchContainers {
   private static final DockerImageName ELASTIC_IMAGE =
       DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
-          .withTag(RestClient.class.getPackage().getImplementationVersion());
+          .withTag(
+              Objects.requireNonNullElse(
+                  org.elasticsearch.client.RestClient.class.getPackage().getImplementationVersion(),
+                  "8.13.4"));
 
   private static final DockerImageName OPENSEARCH_IMAGE =
-      DockerImageName.parse("opensearchproject/opensearch").withTag("2.17.1");
+      DockerImageName.parse("opensearchproject/opensearch")
+          .withTag(
+              Objects.requireNonNullElse(
+                  org.opensearch.client.RestClient.class.getPackage().getImplementationVersion(),
+                  "2.14.0"));
 
-  private TestSupport() {}
+  private TestSearchContainers() {}
 
   /**
    * Returns an OpenSearch container pointing at the same version as the {@link
@@ -33,7 +41,6 @@ public final class TestSupport {
    *
    * <p>Additionally, security is explicitly disabled to avoid having tons of warning printed out.
    */
-  @SuppressWarnings("resource")
   public static OpensearchContainer<?> createDefaultOpensearchContainer() {
     return new OpensearchContainer<>(OPENSEARCH_IMAGE)
         .withEnv("OPENSEARCH_JAVA_OPTS", "-Xms512m -Xmx512m -XX:MaxDirectMemorySize=536870912")
@@ -41,14 +48,14 @@ public final class TestSupport {
   }
 
   /**
-   * Returns an Elasticsearch container pointing at the same version as the {@link RestClient}.
+   * Returns an Elasticsearch container pointing at the same version as the {@link
+   * org.elasticsearch.client.RestClient}.
    *
    * <p>The container is configured to use 512m of heap and 512m of direct memory. This is required
    * because Elasticsearch 7.x, by default, will grab all the RAM available otherwise.
    *
    * <p>Additionally, security is explicitly disabled to avoid having tons of warning printed out.
    */
-  @SuppressWarnings("resource")
   public static ElasticsearchContainer createDefeaultElasticsearchContainer() {
     return new ElasticsearchContainer(ELASTIC_IMAGE)
         // use JVM option files to avoid overwriting default options set by the ES container class

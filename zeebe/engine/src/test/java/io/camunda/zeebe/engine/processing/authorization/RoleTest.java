@@ -97,20 +97,17 @@ public class RoleTest {
   public void shouldRejectIfRoleWithSameNameIsPresent() {
     // given
     final var name = UUID.randomUUID().toString();
-    final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
-    final var anotherName = UUID.randomUUID().toString();
-    engine.role().newRole(anotherName).create();
+    final var roleKey = engine.role().newRole(name).create().getKey();
 
     // when
     final var notPresentUpdateRecord =
-        engine.role().updateRole(roleKey).withName(anotherName).expectRejection().update();
+        engine.role().updateRole(roleKey).withName(name).expectRejection().update();
 
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.ALREADY_EXISTS)
         .hasRejectionReason(
-            "Expected to update role with name '"
-                + anotherName
-                + "', but a role with this name already exists");
+            "Expected to update role with name '%s', but a role with this name already exists."
+                .formatted(name));
   }
 
   @Test

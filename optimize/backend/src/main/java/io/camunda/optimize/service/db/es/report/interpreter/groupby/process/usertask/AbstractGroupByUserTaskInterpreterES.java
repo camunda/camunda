@@ -21,17 +21,21 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepor
 import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.es.report.interpreter.groupby.process.AbstractProcessGroupByInterpreterES;
 import io.camunda.optimize.service.db.report.ExecutionContext;
+import io.camunda.optimize.service.db.report.interpreter.groupby.usertask.ProcessGroupByUserTaskInterpreterHelper;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import java.util.Map;
 import java.util.Optional;
 
 public abstract class AbstractGroupByUserTaskInterpreterES
     extends AbstractProcessGroupByInterpreterES {
+
   private static final String USER_TASKS_AGGREGATION = "userTasks";
   private static final String FLOW_NODE_AGGREGATION = "flowNodes";
   private static final String FILTERED_USER_TASKS_AGGREGATION = "filteredUserTasks";
 
   protected abstract DefinitionService getDefinitionService();
+
+  protected abstract ProcessGroupByUserTaskInterpreterHelper getHelper();
 
   protected Map<String, ContainerBuilder> createFilteredUserTaskAggregation(
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context,

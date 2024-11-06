@@ -61,6 +61,15 @@ public class TenantProcessors {
                 authCheckBehavior,
                 keyGenerator,
                 writers,
+                commandDistributionBehavior))
+        .onCommand(
+            ValueType.TENANT,
+            TenantIntent.DELETE,
+            new TenantDeleteProcessor(
+                processingState.getTenantState(),
+                authCheckBehavior,
+                keyGenerator,
+                writers,
                 commandDistributionBehavior));
   }
 }

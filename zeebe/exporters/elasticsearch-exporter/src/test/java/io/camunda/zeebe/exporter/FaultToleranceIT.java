@@ -15,6 +15,7 @@ import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.SocatContainer;
@@ -46,35 +47,37 @@ final class FaultToleranceIT {
             new SocatContainer()
                 .withTarget(9200, "elastic")
                 .withNetwork(network)
-                .withNetworkAliases("proxy");
-        final ElasticsearchContainer container =
-            TestSupport.createDefaultContainer()
-                .withNetwork(network)
-                .withNetworkAliases("elastic")) {
-      // fix the ports beforehand - since we don't know the container port until it starts, and we
-      // want to start it after the exporter is running, we need a fixed, predictable endpoint; this
-      // can be done by using socat to proxy Elastic's 9200 port to a predictable endpoint without
-      // starting Elastic
-      proxy.start();
-      config.url = container.getHost() + ":" + proxy.getMappedPort(9200);
+                .withNetworkAliases("proxy")) {
+      try (final ElasticsearchContainer container =
+          TestSearchContainers.createDefeaultElasticsearchContainer()
+              .withNetwork(network)
+              .withNetworkAliases("elastic")) {
+        // fix the ports beforehand - since we don't know the container port until it starts, and we
+        // want to start it after the exporter is running, we need a fixed, predictable endpoint;
+        // this
+        // can be done by using socat to proxy Elastic's 9200 port to a predictable endpoint without
+        // starting Elastic
+        proxy.start();
+        config.url = container.getHost() + ":" + proxy.getMappedPort(9200);
 
-      exporter.configure(
-          new ExporterTestContext()
-              .setConfiguration(new ExporterTestConfiguration<>("elastic", config)));
-      exporter.open(controller);
+        exporter.configure(
+            new ExporterTestContext()
+                .setConfiguration(new ExporterTestConfiguration<>("elastic", config)));
+        exporter.open(controller);
 
-      // when
-      assertThatThrownBy(() -> exporter.export(record))
-          .as("sanity check: should have failed to export since ES was down")
-          .isNotNull();
-      container.start();
+        // when
+        assertThatThrownBy(() -> exporter.export(record))
+            .as("sanity check: should have failed to export since ES was down")
+            .isNotNull();
+        container.start();
 
-      // then
-      exporter.export(record);
+        // then
+        exporter.export(record);
 
-      try (final var testClient = new TestClient(config, indexRouter)) {
-        final var response = testClient.getExportedDocumentFor(record);
-        assertThat(response.source()).isEqualTo(record);
+        try (final var testClient = new TestClient(config, indexRouter)) {
+          final var response = testClient.getExportedDocumentFor(record);
+          assertThat(response.source()).isEqualTo(record);
+        }
       }
     }
   }

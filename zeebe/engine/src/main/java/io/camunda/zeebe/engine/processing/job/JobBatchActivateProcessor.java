@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.job.JobBatchCollector.TooLargeJob;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -37,7 +38,7 @@ import java.util.Collections;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
-@ExcludeAuthorizationCheck // TODO remove this when auth checks are implemented for this class
+@ExcludeAuthorizationCheck
 public final class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchRecord> {
 
   private final StateWriter stateWriter;
@@ -53,12 +54,14 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       final Writers writers,
       final ProcessingState state,
       final KeyGenerator keyGenerator,
-      final JobMetrics jobMetrics) {
+      final JobMetrics jobMetrics,
+      final AuthorizationCheckBehavior authCheckBehavior) {
 
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
-    jobBatchCollector = new JobBatchCollector(state, stateWriter::canWriteEventOfLength);
+    jobBatchCollector =
+        new JobBatchCollector(state, stateWriter::canWriteEventOfLength, authCheckBehavior);
 
     this.keyGenerator = keyGenerator;
     this.jobMetrics = jobMetrics;

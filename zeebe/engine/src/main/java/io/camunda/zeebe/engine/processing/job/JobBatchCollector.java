@@ -7,7 +7,11 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.WILDCARD_PERMISSION;
+
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
@@ -16,7 +20,9 @@ import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
@@ -25,6 +31,7 @@ import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableInteger;
@@ -41,6 +48,7 @@ final class JobBatchCollector {
 
   private final JobState jobState;
   private final JobVariablesCollector jobVariablesCollector;
+  private final AuthorizationCheckBehavior authCheckBehavior;
   private final Predicate<Integer> canWriteEventOfLength;
 
   /**
@@ -49,10 +57,14 @@ final class JobBatchCollector {
    *     takes in the size of the record, and should return true if it can write such a record, and
    *     false otherwise
    */
-  JobBatchCollector(final ProcessingState state, final Predicate<Integer> canWriteEventOfLength) {
+  JobBatchCollector(
+      final ProcessingState state,
+      final Predicate<Integer> canWriteEventOfLength,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     jobState = state.getJobState();
     this.canWriteEventOfLength = canWriteEventOfLength;
     jobVariablesCollector = new JobVariablesCollector(state);
+    this.authCheckBehavior = authCheckBehavior;
   }
 
   /**
@@ -81,11 +93,20 @@ final class JobBatchCollector {
             ? List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             : value.getTenantIds();
     final Map<JobKind, Integer> jobCountPerJobKind = new EnumMap<>(JobKind.class);
+    final var authorizedProcessIds =
+        authCheckBehavior.getAuthorizedResourceIdentifiers(
+            new AuthorizationRequest(
+                record, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.UPDATE));
 
     jobState.forEachActivatableJobs(
         value.getTypeBuffer(),
         tenantIds,
         (key, jobRecord) -> {
+          if (!isAuthorizedForJob(jobRecord, authorizedProcessIds)) {
+            // Skip Jobs the user is not authorized for
+            return true;
+          }
+
           // fill in the job record properties first in order to accurately estimate its size before
           // adding it to the batch
           final var deadline = record.getTimestamp() + value.getTimeout();
@@ -127,6 +148,12 @@ final class JobBatchCollector {
     }
 
     return Either.right(jobCountPerJobKind);
+  }
+
+  private boolean isAuthorizedForJob(
+      final JobRecord jobRecord, final Set<String> authorizedProcessIds) {
+    return authorizedProcessIds.contains(WILDCARD_PERMISSION)
+        || authorizedProcessIds.contains(jobRecord.getBpmnProcessId());
   }
 
   private void appendJobToBatch(
