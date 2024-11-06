@@ -23,10 +23,14 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** https://docs.camunda.io/docs/next/components/zeebe/technical-concepts/process-lifecycles/ */
+/**
+ * https://docs.camunda.io/docs/next/components/zeebe/technical-concepts/process-lifecycles/
+ */
 public class RdbmsExporter implements Exporter {
 
-  /** The partition on which all process deployments are published */
+  /**
+   * The partition on which all process deployments are published
+   */
   public static final long PROCESS_DEFINITION_PARTITION = 1L;
 
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsExporter.class);
@@ -124,6 +128,10 @@ public class RdbmsExporter implements Exporter {
           ValueType.PROCESS,
           List.of(new ProcessExportHandler(rdbmsWriter.getProcessDefinitionWriter())));
     }
+    registeredHandlers.put(
+        ValueType.DECISION,
+        List.of(
+            new DecisionDefinitionExportHandler(rdbmsWriter.getDecisionDefinitionWriter())));
     registeredHandlers.put(
         ValueType.PROCESS_INSTANCE,
         List.of(

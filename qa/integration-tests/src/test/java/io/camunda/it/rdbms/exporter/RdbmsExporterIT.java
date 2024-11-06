@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -30,6 +31,8 @@ import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.ImmutableDecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ImmutableProcess;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
@@ -52,7 +55,8 @@ class RdbmsExporterIT {
 
   private final ProtocolFactory factory = new ProtocolFactory(System.nanoTime());
 
-  @Autowired private RdbmsService rdbmsService;
+  @Autowired
+  private RdbmsService rdbmsService;
 
   private RdbmsExporter exporter;
 
@@ -208,6 +212,22 @@ class RdbmsExporterIT {
     assertThat(userTask).isNotNull();
   }
 
+  @Test
+  public void shouldExportDecisionDefinition() {
+    // given
+    final var decisionDefinitionRecord = getDecisionDefinitionCreatedRecord(1L);
+
+    // when
+    exporter.export(decisionDefinitionRecord);
+    // and we do a manual flush
+    exporter.flushExecutionQueue();
+
+    // then
+    final var key = ((DecisionRecordValue) decisionDefinitionRecord.getValue()).getDecisionKey();
+    final var definition = rdbmsService.getDecisionDefinitionReader().findOne(key);
+    assertThat(definition).isNotEmpty();
+  }
+
   private ImmutableRecord<RecordValue> getProcessInstanceStartedRecord(final Long position) {
     final Record<RecordValue> recordValueRecord =
         factory.generateRecord(ValueType.PROCESS_INSTANCE);
@@ -257,6 +277,23 @@ class RdbmsExporterIT {
         .withValue(
             ImmutableProcess.builder()
                 .from((Process) recordValueRecord.getValue())
+                .withVersion(1)
+                .build())
+        .build();
+  }
+
+  private ImmutableRecord<RecordValue> getDecisionDefinitionCreatedRecord(final Long position) {
+    final Record<RecordValue> recordValueRecord = factory.generateRecord(ValueType.DECISION);
+
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withIntent(DecisionIntent.CREATED)
+        .withPosition(position)
+        .withTimestamp(System.currentTimeMillis())
+        .withPartitionId(1)
+        .withValue(
+            ImmutableDecisionRecordValue.builder()
+                .from((ImmutableDecisionRecordValue) recordValueRecord.getValue())
                 .withVersion(1)
                 .build())
         .build();

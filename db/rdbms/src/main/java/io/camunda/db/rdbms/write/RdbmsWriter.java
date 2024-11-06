@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.write;
 
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
+import io.camunda.db.rdbms.write.service.DecisionDefinitionWriter;
 import io.camunda.db.rdbms.write.service.ExporterPositionService;
 import io.camunda.db.rdbms.write.service.FlowNodeInstanceWriter;
 import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
@@ -18,6 +19,7 @@ import io.camunda.db.rdbms.write.service.VariableWriter;
 public class RdbmsWriter {
 
   private final ExecutionQueue executionQueue;
+  private final DecisionDefinitionWriter decisionDefinitionWriter;
   private final ExporterPositionService exporterPositionService;
   private final FlowNodeInstanceWriter flowNodeInstanceWriter;
   private final ProcessDefinitionWriter processDefinitionWriter;
@@ -29,11 +31,16 @@ public class RdbmsWriter {
       final ExecutionQueue executionQueue, final ExporterPositionService exporterPositionService) {
     this.executionQueue = executionQueue;
     this.exporterPositionService = exporterPositionService;
+    decisionDefinitionWriter = new DecisionDefinitionWriter(executionQueue);
     flowNodeInstanceWriter = new FlowNodeInstanceWriter(executionQueue);
     processDefinitionWriter = new ProcessDefinitionWriter(executionQueue);
     processInstanceWriter = new ProcessInstanceWriter(executionQueue);
     variableWriter = new VariableWriter(executionQueue);
     userTaskWriter = new UserTaskWriter(executionQueue);
+  }
+
+  public DecisionDefinitionWriter getDecisionDefinitionWriter() {
+    return decisionDefinitionWriter;
   }
 
   public FlowNodeInstanceWriter getFlowNodeInstanceWriter() {
