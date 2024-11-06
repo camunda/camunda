@@ -10,6 +10,8 @@ package io.camunda.exporter.handlers;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.TREE_PATH;
 import static io.camunda.zeebe.protocol.record.intent.IncidentIntent.CREATED;
 
+import io.camunda.exporter.cache.CachedProcessEntity;
+import io.camunda.exporter.cache.ProcessCache;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
@@ -19,6 +21,7 @@ import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,9 +33,12 @@ public class ListViewProcessInstanceFromIncidentHandler
       LoggerFactory.getLogger(ListViewProcessInstanceFromIncidentHandler.class);
 
   private final String indexName;
+  private final ProcessCache processCache;
 
-  public ListViewProcessInstanceFromIncidentHandler(final String indexName) {
+  public ListViewProcessInstanceFromIncidentHandler(
+      final String indexName, final ProcessCache processCache) {
     this.indexName = indexName;
+    this.processCache = processCache;
   }
 
   @Override
@@ -66,25 +72,42 @@ public class ListViewProcessInstanceFromIncidentHandler
   public void updateEntity(
       final Record<IncidentRecordValue> record, final ProcessInstanceForListViewEntity entity) {
 
-    final List<List<Long>> elementInstancePath = record.getValue().getElementInstancePath();
-    final List<Integer> callingElementPath = record.getValue().getCallingElementPath();
+    final IncidentRecordValue value = record.getValue();
+    final List<List<Long>> elementInstancePath = value.getElementInstancePath();
+    final List<Integer> callingElementPath = value.getCallingElementPath();
+    final List<Long> processDefinitionPath = value.getProcessDefinitionPath();
 
     final Long processInstanceKey = Long.valueOf(entity.getId());
 
+    // example of how the tree path is build when current instance is on the third level of calling
+    // hierarchy:
+    // PI_<parentProcessInstanceKey>/FN_<parentCallActivityId>/FNI_<parentCallActivityInstanceKey>/
+    // PI_<secondLevelProcessInstanceKey>/FN_<secondLevelCallActivityId>/FNI_<secondLevelCallActivityInstanceKey>PI_<currentProcessInstanceKey>
     final TreePath treePath = new TreePath();
     for (int i = 0; i < elementInstancePath.size(); i++) {
       final List<Long> keysWithinOnePI = elementInstancePath.get(i);
-      if (treePath.isEmpty()) {
-        treePath.startTreePath(keysWithinOnePI.get(0));
-      } else {
-        treePath.appendProcessInstance(keysWithinOnePI.get(0));
-      }
+      treePath.appendProcessInstance(keysWithinOnePI.get(0));
       if (keysWithinOnePI.get(0).equals(processInstanceKey)) {
+        // we stop building the tree path when we reach current processInstanceKey
         break;
       }
-      treePath
-          .appendFlowNode(String.valueOf(callingElementPath.get(i)))
-          .appendFlowNodeInstance(String.valueOf(keysWithinOnePI.get(1)));
+      // get call activity id from processCache
+      final Optional<CachedProcessEntity> cachedProcess =
+          processCache.get(processDefinitionPath.get(i));
+      if (cachedProcess.isPresent()
+          && cachedProcess.get().callElementIds() != null
+          && callingElementPath.get(i) != null) {
+        treePath.appendFlowNode(
+            cachedProcess.get().callElementIds().get(callingElementPath.get(i)));
+      } else {
+        LOGGER.debug(
+            "No process found in cache. TreePath won't contain proper callActivityId. processInstanceKey: {}, processDefinitionKey: {}, incidentKey: {}",
+            processInstanceKey,
+            processDefinitionPath.get(i),
+            record.getKey());
+        treePath.appendFlowNode(String.valueOf(callingElementPath.get(i)));
+      }
+      treePath.appendFlowNodeInstance(String.valueOf(keysWithinOnePI.get(1)));
     }
     entity.setTreePath(treePath.toString());
   }

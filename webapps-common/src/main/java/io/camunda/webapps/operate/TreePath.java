@@ -80,7 +80,11 @@ public class TreePath {
 
   public TreePath appendProcessInstance(final String newEntry) {
     if (newEntry != null) {
-      treePath.append(String.format("/%s_%s", PI, newEntry));
+      if (treePath == null || treePath.isEmpty()) {
+        startTreePath(newEntry);
+      } else {
+        treePath.append(String.format("/%s_%s", PI, newEntry));
+      }
     }
     return this;
   }
