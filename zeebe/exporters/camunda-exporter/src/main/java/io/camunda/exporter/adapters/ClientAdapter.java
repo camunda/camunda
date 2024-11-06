@@ -12,6 +12,7 @@ import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.utils.XMLUtil;
 import java.io.IOException;
 
 public interface ClientAdapter {

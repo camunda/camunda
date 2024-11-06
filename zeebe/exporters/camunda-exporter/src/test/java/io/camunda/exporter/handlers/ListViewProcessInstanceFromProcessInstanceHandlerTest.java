@@ -30,6 +30,7 @@ import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -264,7 +265,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
 
     processCache.put(
         processInstanceRecordValue.getProcessDefinitionKey(),
-        new CachedProcessEntity("test-process-name", "test-version-tag"));
+        new CachedProcessEntity("test-process-name", "test-version-tag", new ArrayList<>()));
 
     // when
     final ProcessInstanceForListViewEntity processInstanceForListViewEntity =
@@ -300,8 +301,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
         .isEqualTo(processInstanceRecordValue.getParentElementInstanceKey());
     assertThat(processInstanceForListViewEntity.getJoinRelation())
         .isEqualTo(new ListViewJoinRelation(ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION));
-    assertThat(processInstanceForListViewEntity.getTreePath())
-        .isEqualTo("PI_" + processInstanceRecordValue.getProcessInstanceKey());
+    assertThat(processInstanceForListViewEntity.getTreePath()).isNull();
 
     // process name and version tag is read from the cache
     assertThat(processInstanceForListViewEntity.getProcessName()).isEqualTo("test-process-name");

@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.cache;
 
+import static io.camunda.zeebe.model.bpmn.Bpmn.convertToString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatException;
 
@@ -19,12 +20,16 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
+import io.camunda.exporter.utils.XMLUtil;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
@@ -95,15 +100,29 @@ class ProcessCacheImplIT {
   void shouldLoadProcessEntityFromBackend(final ProcessCacheArgument processCacheArgument)
       throws IOException {
     // given
-    final var processEntity = new ProcessEntity().setId("3").setName("test").setVersionTag("v1");
+    final var processEntity =
+        new ProcessEntity()
+            .setId("3")
+            .setName("test")
+            .setVersionTag("v1")
+            .setBpmnProcessId("test")
+            .setBpmnXml(createBpmnWithCallActivities("test", List.of("Banana", "apple", "Cherry")));
     processCacheArgument.indexer().accept(processEntity);
 
     // when
     final var process = processCacheArgument.processCache().get(3L);
 
     // then
-    final var expectedCachedProcessEntity = new CachedProcessEntity("test", "v1");
+    final var expectedCachedProcessEntity =
+        new CachedProcessEntity("test", "v1", List.of("Banana", "Cherry", "apple"));
     assertThat(process).isPresent().get().isEqualTo(expectedCachedProcessEntity);
+  }
+
+  private String createBpmnWithCallActivities(
+      final String bpmnProcessId, final List<String> callActivityIds) {
+    final StartEventBuilder seb = Bpmn.createExecutableProcess(bpmnProcessId).startEvent();
+    callActivityIds.forEach(ca -> seb.callActivity(ca).zeebeProcessId(ca));
+    return convertToString(seb.done());
   }
 
   @ParameterizedTest

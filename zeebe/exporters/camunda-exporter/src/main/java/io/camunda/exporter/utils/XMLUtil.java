@@ -12,6 +12,7 @@ import io.camunda.webapps.schema.entities.operate.ProcessFlowNodeEntity;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.CallActivity;
 import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.model.bpmn.instance.Process;
 import java.io.ByteArrayInputStream;
@@ -95,6 +96,15 @@ public class XMLUtil {
                   processEntity
                       .getFlowNodes()
                       .add(new ProcessFlowNodeEntity(x.getId(), x.getName())));
+      // collect call activity ids
+      final Collection<CallActivity> callActivities =
+          modelInstance.getModelElementsByType(CallActivity.class);
+      processEntity.setCallActivityIds(
+          callActivities.stream()
+              .map(CallActivity::getId)
+              .filter(id -> processChildrenIds.contains(id))
+              .sorted()
+              .toList());
       return Optional.of(processEntity);
     } catch (final ParserConfigurationException | SAXException | IOException | ModelException e) {
       LOGGER.warn("Unable to parse diagram: " + e.getMessage(), e);
