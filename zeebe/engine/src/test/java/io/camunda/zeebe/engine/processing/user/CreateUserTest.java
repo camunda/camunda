@@ -11,7 +11,13 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
@@ -85,5 +91,35 @@ public class CreateUserTest {
             "Expected to create user with username '"
                 + username
                 + "', but a user with this username already exists");
+  }
+
+  @Test
+  public void shouldAddDefaultPermissionsOnUserCreation() {
+    // given
+    final var username = UUID.randomUUID().toString();
+
+    // when
+    final var userKey =
+        ENGINE
+            .user()
+            .newUser(username)
+            .withName("Foo Bar")
+            .withEmail("foo@bar.com")
+            .withPassword("password")
+            .create()
+            .getKey();
+
+    // then
+    assertThat(
+            RecordingExporter.authorizationRecords(AuthorizationIntent.PERMISSION_ADDED)
+                .withOwnerKey(userKey)
+                .getFirst()
+                .getValue())
+        .hasOwnerKey(userKey)
+        .hasOwnerType(AuthorizationOwnerType.USER)
+        .hasResourceType(AuthorizationResourceType.USER)
+        .hasOnlyPermissions(
+            new Permission().setPermissionType(PermissionType.READ).addResourceId(username),
+            new Permission().setPermissionType(PermissionType.UPDATE).addResourceId(username));
   }
 }
