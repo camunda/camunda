@@ -28,14 +28,17 @@ public class PersistedMapping extends UnpackedObject implements DbValue {
       new ArrayProperty<>("roleKeys", LongValue::new);
   private final ArrayProperty<StringValue> tenantIdsProp =
       new ArrayProperty<>("tenantIds", StringValue::new);
+  private final ArrayProperty<LongValue> groupKeysProp =
+      new ArrayProperty<>("groupKeys", LongValue::new);
 
   public PersistedMapping() {
-    super(5);
-    declareProperty(mappingKeyProp);
-    declareProperty(claimNameProp);
-    declareProperty(claimValueProp);
-    declareProperty(roleKeysProp);
-    declareProperty(tenantIdsProp);
+    super(6);
+    declareProperty(mappingKeyProp)
+        .declareProperty(claimNameProp)
+        .declareProperty(claimValueProp)
+        .declareProperty(roleKeysProp)
+        .declareProperty(tenantIdsProp)
+        .declareProperty(groupKeysProp);
   }
 
   public long getMappingKey() {
@@ -97,6 +100,23 @@ public class PersistedMapping extends UnpackedObject implements DbValue {
 
   public PersistedMapping addTenantId(final String tenantId) {
     tenantIdsProp.add().wrap(BufferUtil.wrapString(tenantId));
+    return this;
+  }
+
+  public List<Long> getGroupKeysList() {
+    return StreamSupport.stream(groupKeysProp.spliterator(), false)
+        .map(LongValue::getValue)
+        .collect(Collectors.toList());
+  }
+
+  public PersistedMapping setGroupKeysList(final List<Long> groupKeys) {
+    groupKeysProp.reset();
+    groupKeys.forEach(groupKey -> groupKeysProp.add().setValue(groupKey));
+    return this;
+  }
+
+  public PersistedMapping addGroupKey(final long groupKey) {
+    groupKeysProp.add().setValue(groupKey);
     return this;
   }
 }
