@@ -161,7 +161,7 @@ jobs:
       - name: Install
         uses: ./.github/actions/run-maven
         with:
-          parameters: -f optimize/pom.xml install -Dskip.fe.build -Dskip.docker -DskipTests -PrunAssembly -T 1
+          parameters: -f optimize/pom.xml install -Dskip.fe.build -Dskip.docker -DskipTests -PrunAssembly -T1
       - name: Verify optimize/qa/schema-integrity-tests
         uses: ./.github/actions/run-maven
         with:
@@ -341,92 +341,13 @@ jobs:
         with:
           archive_name: integration-tests-opensearch-${{ matrix.includedGroups }}-docker
 
-  integration-tests-os-dev:
-    name: Integration Tests OpenSearch Development
-    runs-on: gcp-core-32-default
-    needs: detect-changes
-    # checks that the PR isn't closed AND check whether the labeled event contains 'opensearch' as substring || check whether on new commit of PR the label 'opensearch'' is part of label array
-    if: github.event.pull_request.state != 'closed' && (contains( github.event.label.name, 'opensearch') || contains( github.event.pull_request.labels.*.name, 'opensearch')) && (needs.detect-changes.outputs.backend-changes == 'true')
-    timeout-minutes: 120
-    strategy:
-      fail-fast: false
-      matrix:
-        includedGroups: [ 'reportEvaluation', '' ]
-        include:
-          - includedGroups: ''
-            excludedGroups: 'ccsm-test,import,reportEvaluation'
-            profiles: 'it'
-          - includedGroups: 'reportEvaluation'
-            excludedGroups: ''
-            profiles: 'it'
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-
-      - name: Fetch main branch
-        run: git fetch origin main:refs/remote/origin/main
-
-      - name: Setup Maven
-        uses: ./.github/actions/setup-maven
-        with:
-          maven-cache-key-modifier: optimize-tests
-          secrets: ${{ toJSON(secrets) }}
-
-      - name: Login to Harbor registry
-        uses: ./.github/actions/login-registry
-        with:
-          secrets: ${{ toJSON(secrets) }}
-
-      - name: "Read Java / Version Info"
-        id: "pom-info"
-        uses: YunaBraska/java-info-action@main
-        with:
-          work-dir: ./optimize
-
-      - name: Expose Parsed OpenSearch Version
-        run: echo "OPENSEARCH_VERSION=${{ steps.pom-info.outputs.x_opensearch_test_version }}" >> "$GITHUB_ENV"
-
-      - name: Start OpenSearch
-        uses: ./.github/actions/compose
-        with:
-          compose_file: .github/actions/compose/docker-compose.opensearch.yml
-          project_name: opensearch
-        env:
-          OPENSEARCH_VERSION: ${{ env.OPENSEARCH_VERSION }}
-          OPENSEARCH_JVM_MEMORY: 16
-          OPENSEARCH_HTTP_PORT: 9205
-
-      - name: Verify integration
-        uses: ./.github/actions/run-maven
-        env:
-          LIMITS_CPU: 8
-        with:
-          threads: 8
-          parameters: >
-            verify -Dit.test.excludedGroups=${{ matrix.excludedGroups }}
-            -Dit.test.includedGroups=${{ matrix.includedGroups }}
-            -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }}
-            -Dfailsafe.rerunFailingTestsCount=2
-            -Ddatabase.type=opensearch -pl optimize/backend -am
-
-      - name: Upload Test Results
-        if: always()
-        uses: ./.github/actions/collect-test-artifacts
-        with:
-          name: integration-test-opensearch-dev-${{ matrix.includedGroups }}-junit
-          path: |
-            **/failsafe-reports/**/*.xml
-
-      - name: Docker log dump
-        uses: ./.github/actions/docker-logs
-        if: always()
-        with:
-          archive_name: integration-tests-opensearch-dev-${{ matrix.includedGroups }}-docker
-
   upgrade-tests:
     name: Upgrade
-    runs-on: gcp-core-8-default
+    runs-on: gcp-core-16-default
     timeout-minutes: 10
+    strategy:
+      matrix:
+        database: [ elasticsearch, opensearch ]
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.backend-changes == 'true' }}
     steps:
@@ -439,30 +360,33 @@ jobs:
       - name: Read Java/version info
         id: "pom-info"
         uses: YunaBraska/java-info-action@main
-      - name: Start Elasticsearch
+      - name: Start Database
         uses: ./.github/actions/compose
         with:
-          compose_file: .github/actions/compose/docker-compose.elasticsearch.yml
-          project_name: elasticsearch
+          compose_file: .github/actions/compose/docker-compose.${{ matrix.database }}.yml
+          project_name: ${{ matrix.database }}
         env:
           ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
           ELASTIC_JVM_MEMORY: 1
           ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_elasticsearch_port }}
+          OPENSEARCH_VERSION: ${{ steps.pom-info.outputs.x_opensearch_test_version }}
+          OPENSEARCH_JVM_MEMORY: 1
+          OPENSEARCH_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_elasticsearch_port }}
       - name: Install
         uses: ./.github/actions/run-maven
         with:
-          parameters: install -Dskip.fe.build -Dskip.docker -DskipTests -pl optimize -am
+          parameters: install -Dskip.fe.build -Dskip.docker -DskipTests -pl optimize/upgrade -am
       - name: Verify upgrade tests
         uses: ./.github/actions/run-maven
         with:
-          parameters: verify -Dskip.docker -pl optimize/upgrade
+          parameters: verify -U -Dskip.docker -pl optimize/upgrade -Ddatabase.type=${{ matrix.database }}
         env:
-          CAMUNDA_OPTIMIZE_DATABASE: elasticsearch
+          CAMUNDA_OPTIMIZE_DATABASE: ${{ matrix.database }}
       - name: Upload Test Results
         if: always()
         uses: ./.github/actions/collect-test-artifacts
         with:
-          name: upgrade-junit
+          name: upgrade-${{ matrix.database }}-junit
           path: |
             **/failsafe-reports/**/*.xml
             **/*.log
@@ -471,7 +395,7 @@ jobs:
         uses: ./.github/actions/docker-logs
         if: always()
         with:
-          archive_name: upgrade-docker
+          archive_name: upgrade-docker-${{ matrix.database }}
 
   # Only deploy artifacts on push event, which in this case can only be triggered by main and stable
   deploy-artifacts:
