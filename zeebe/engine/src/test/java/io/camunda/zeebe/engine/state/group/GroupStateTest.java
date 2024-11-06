@@ -197,10 +197,10 @@ public class GroupStateTest {
 
     // then
     final var group = groupState.get(groupKey);
-    assertThat(group.isPresent()).isFalse();
+    assertThat(group).isEmpty();
 
     final var groupKeyByName = groupState.getGroupKeyByName(groupName);
-    assertThat(groupKeyByName.isPresent()).isFalse();
+    assertThat(groupKeyByName).isEmpty();
 
     final var entitiesByGroup = groupState.getEntitiesByType(groupKey);
     assertThat(entitiesByGroup).isEmpty();

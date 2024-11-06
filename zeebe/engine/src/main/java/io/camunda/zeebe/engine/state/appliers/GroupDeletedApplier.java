@@ -16,8 +16,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
-import java.util.List;
-import java.util.Map.Entry;
 import java.util.function.BiConsumer;
 
 public class GroupDeletedApplier implements TypedEventApplier<GroupIntent, GroupRecord> {
@@ -39,21 +37,11 @@ public class GroupDeletedApplier implements TypedEventApplier<GroupIntent, Group
 
     // delete group key from entity states (user, mapping)
     final var entitiesByTypeMap = groupState.getEntitiesByType(key);
-    for (final Entry<EntityType, List<Long>> entry : entitiesByTypeMap.entrySet()) {
-      switch (entry.getKey()) {
-        case EntityType.USER:
-          removeGroupFromState(key, entry.getValue(), userState::removeGroup);
-          break;
-        case EntityType.MAPPING:
-          removeGroupFromState(key, entry.getValue(), mappingState::removeGroup);
-          break;
-        default:
-          throw new IllegalStateException(
-              String.format(
-                  "Expected to remove entity '%d' for group '%d', but entities of type '%s' are not supported by groups.",
-                  value.getEntityKey(), key, value.getEntityType()));
-      }
-    }
+    entitiesByTypeMap.forEach(
+        (entityType, entityKeys) -> {
+          final var removalConsumer = getRemovalFunction(entityType, key, value);
+          entityKeys.forEach(entityKey -> removalConsumer.accept(entityKey, key));
+        });
 
     // delete group from authorization state
     authorizationState.deleteAuthorizationsByOwnerKeyPrefix(key);
@@ -63,8 +51,16 @@ public class GroupDeletedApplier implements TypedEventApplier<GroupIntent, Group
     groupState.delete(key);
   }
 
-  private void removeGroupFromState(
-      final long key, final List<Long> entityKeys, final BiConsumer<Long, Long> removalMethod) {
-    entityKeys.forEach(entityKey -> removalMethod.accept(entityKey, key));
+  private BiConsumer<Long, Long> getRemovalFunction(
+      final EntityType entityType, final long groupKey, final GroupRecord groupRecord) {
+    return switch (entityType) {
+      case EntityType.USER -> userState::removeGroup;
+      case EntityType.MAPPING -> mappingState::removeGroup;
+      default ->
+          throw new IllegalStateException(
+              String.format(
+                  "Expected to remove entity '%d' for group '%d', but entities of type '%s' are not supported by groups.",
+                  groupRecord.getEntityKey(), groupKey, groupRecord.getEntityType()));
+    };
   }
 }
