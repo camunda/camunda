@@ -19,7 +19,6 @@ import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Optional;
 
 public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
 
@@ -80,16 +79,19 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
       entity.setVersionTag(process.getVersionTag());
     }
 
-    final Optional<ProcessEntity> diagramData =
-        xmlUtil.extractDiagramData(byteArray, process.getBpmnProcessId());
-    diagramData.ifPresent(
-        processEntity ->
-            entity
-                .setName(processEntity.getName())
-                .setFlowNodes(processEntity.getFlowNodes())
-                .setVersionTag(processEntity.getVersionTag())
-                .setFormId(processEntity.getFormId())
-                .setIsPublic(processEntity.getIsPublic()));
+    final var processModelInstance =
+        xmlUtil.readProcessModel(byteArray, process.getBpmnProcessId());
+    processModelInstance.ifPresent(
+        processModel -> {
+          final var processName = processModel.getProcessName();
+          final var hasPublicAccess = processModel.hasPublicAccess();
+          entity.setName(processName).setIsPublic(hasPublicAccess);
+
+          processModel.extractFlowNodes().ifPresent(entity::setFlowNodes);
+          processModel
+              .extractStartForm()
+              .ifPresent(f -> entity.setFormId(f.formId()).setFormId(f.formKey()));
+        });
 
     // update local cache so that the process info is available immediately to the process instance
     // record handler

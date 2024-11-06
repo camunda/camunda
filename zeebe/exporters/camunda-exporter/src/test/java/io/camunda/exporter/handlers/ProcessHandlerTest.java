@@ -116,6 +116,7 @@ public class ProcessHandlerTest {
             .withProcessDefinitionKey(expectedId)
             .withBpmnProcessId("testProcessId")
             .withResource(Files.readAllBytes(Path.of(resource.getPath())))
+            .withVersionTag("processTag")
             .build();
 
     final Record<Process> processRecord =
@@ -155,6 +156,7 @@ public class ProcessHandlerTest {
             .withProcessDefinitionKey(expectedId)
             .withBpmnProcessId("testProcessId")
             .withResource(Files.readAllBytes(Path.of(resource.getPath())))
+            .withVersionTag("processTag")
             .build();
 
     final Record<Process> processRecord =
@@ -193,6 +195,7 @@ public class ProcessHandlerTest {
             .withProcessDefinitionKey(expectedId)
             .withBpmnProcessId("testProcessId")
             .withResource(Files.readAllBytes(Path.of(resource.getPath())))
+            .withVersionTag("processTag")
             .build();
 
     final Record<Process> processRecord =
