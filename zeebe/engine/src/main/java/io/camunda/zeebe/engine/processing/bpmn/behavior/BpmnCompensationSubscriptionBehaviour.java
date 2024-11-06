@@ -420,6 +420,18 @@ public class BpmnCompensationSubscriptionBehaviour {
             });
   }
 
+  public void deleteSubscriptionsOfProcessInstanceFilter(
+      final BpmnElementContext context,
+      final Predicate<CompensationSubscription> compensationSubscriptionFilter) {
+    // delete all compensation subscriptions of the process instance matching the filter
+    compensationSubscriptionState
+        .findSubscriptionsByProcessInstanceKey(
+            context.getTenantId(), context.getProcessInstanceKey())
+        .stream()
+        .filter(compensationSubscriptionFilter)
+        .forEach(this::appendCompensationSubscriptionDeleteEvent);
+  }
+
   public void deleteSubscriptionsOfProcessInstance(final BpmnElementContext context) {
     // delete all compensation subscriptions of the process instance
     compensationSubscriptionState
