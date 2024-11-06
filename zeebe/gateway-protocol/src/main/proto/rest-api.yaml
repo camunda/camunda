@@ -496,10 +496,8 @@ paths:
         Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
         The Camunda 8 API (REST) Overview page provides further details.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       parameters:
         - name: userTaskKey
           in: path
@@ -602,10 +600,8 @@ paths:
         Furthermore, this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
         The Camunda 8 API (REST) Overview page provides further details.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       parameters:
         - name: userTaskKey
           in: path
@@ -708,10 +704,8 @@ paths:
         Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
         The Camunda 8 API (REST) Overview page provides further details.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       requestBody:
         required: false
         content:
@@ -753,10 +747,8 @@ paths:
         Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
         The Camunda 8 API (REST) Overview page provides further details.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       parameters:
         - name: userTaskKey
           in: path
@@ -807,10 +799,8 @@ paths:
         Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
         The Camunda 8 API (REST) Overview page provides further details.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       requestBody:
         required: false
         content:
@@ -852,10 +842,8 @@ paths:
         Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
         The Camunda 8 API (REST) Overview page provides further details.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       parameters:
         - name: variableKey
           in: path
@@ -907,10 +895,8 @@ paths:
         When the clock is pinned, it remains at the specified time and does not advance.
         To change the time, the clock must be pinned again with a new timestamp.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       requestBody:
         required: true
         content:
@@ -944,8 +930,7 @@ paths:
         This operation is useful for returning the clock to
         normal behavior after it has been pinned to a specific time.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
       responses:
         "204":
@@ -968,10 +953,8 @@ paths:
         Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
         The Camunda 8 API (REST) Overview page provides further details.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       requestBody:
         required: false
         content:
@@ -1013,10 +996,8 @@ paths:
         Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
         The Camunda 8 API (REST) Overview page provides further details.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       parameters:
         - name: processDefinitionKey
           in: path
@@ -1068,10 +1049,8 @@ paths:
         Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
         The Camunda 8 API (REST) Overview page provides further details.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       parameters:
         - name: processDefinitionKey
           in: path
@@ -1131,10 +1110,8 @@ paths:
         Furthermore, this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
         The Camunda 8 API (REST) Overview page provides further details.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       parameters:
         - name: processDefinitionsKey
           in: path
@@ -1236,10 +1213,8 @@ paths:
         Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
         The Camunda 8 API (REST) Overview page provides further details.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       parameters:
         - name: processInstanceKey
           in: path
@@ -1291,10 +1266,8 @@ paths:
         Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
         The Camunda 8 API (REST) Overview page provides further details.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       requestBody:
         required: false
         content:
@@ -1474,10 +1447,8 @@ paths:
         Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
         The Camunda 8 API (REST) Overview page provides further details.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       requestBody:
         required: false
         content:
@@ -1519,10 +1490,8 @@ paths:
         Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
         The Camunda 8 API (REST) Overview page provides further details.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       parameters:
         - name: flownodeInstanceKey
           in: path
@@ -1574,10 +1543,8 @@ paths:
         Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
         The Camunda 8 API (REST) Overview page provides further details.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       requestBody:
         required: false
         content:
@@ -1619,10 +1586,8 @@ paths:
         Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
         The Camunda 8 API (REST) Overview page provides further details.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       parameters:
         - name: decisionDefinitionKey
           in: path
@@ -1674,10 +1639,8 @@ paths:
         Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
         The Camunda 8 API (REST) Overview page provides further details.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       parameters:
         - name: decisionDefinitionKey
           in: path
@@ -1729,10 +1692,8 @@ paths:
         Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
         The Camunda 8 API (REST) Overview page provides further details.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       requestBody:
         required: false
         content:
@@ -1774,10 +1735,8 @@ paths:
         Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
         The Camunda 8 API (REST) Overview page provides further details.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       parameters:
         - name: decisionRequirementsKey
           in: path
@@ -1829,10 +1788,8 @@ paths:
         Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
         The Camunda 8 API (REST) Overview page provides further details.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       parameters:
         - name: decisionRequirementsKey
           in: path
@@ -1885,10 +1842,8 @@ paths:
         Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
         The Camunda 8 API (REST) Overview page provides further details.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       requestBody:
         required: false
         content:
@@ -1931,10 +1886,8 @@ paths:
         Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
         The Camunda 8 API (REST) Overview page provides further details.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       parameters:
         - name: decisionInstanceKey
           in: path
@@ -2106,10 +2059,8 @@ paths:
         Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
         The Camunda 8 API (REST) Overview page provides further details.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       operationId: findAuthorizations
       requestBody:
         content:
@@ -2285,10 +2236,8 @@ paths:
 
         Note that this currently only supports an in-memory document store, which is not meant for production use.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       parameters:
         - name: storeId
           in: query
@@ -2346,10 +2295,8 @@ paths:
 
         Note that this currently only supports an in-memory document store, which is not meant for production use.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       parameters:
         - name: documentId
           in: path
@@ -2395,10 +2342,8 @@ paths:
 
         Note that this currently only supports an in-memory document store, which is not meant for production use.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       parameters:
         - name: documentId
           in: path
@@ -2440,10 +2385,8 @@ paths:
 
         Note that this currently only supports an in-memory document store, which is not meant for production use.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       parameters:
         - name: documentId
           in: path
@@ -2490,10 +2433,8 @@ paths:
         Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
         The Camunda 8 API (REST) Overview page provides further details.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       requestBody:
         content:
           application/json:
@@ -2534,10 +2475,8 @@ paths:
         Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
         The Camunda 8 API (REST) Overview page provides further details.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       operationId: "findUserAuthorizations"
       parameters:
         - name: userKey
@@ -2588,10 +2527,8 @@ paths:
         Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
         The Camunda 8 API (REST) Overview page provides further details.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       requestBody:
         required: false
         content:
@@ -2628,10 +2565,8 @@ paths:
         Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
         The Camunda 8 API (REST) Overview page provides further details.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       parameters:
         - name: incidentKey
           in: path
@@ -3746,17 +3681,17 @@ components:
           type: string
           description: The tenant ID of the decision definition.
     PermissionTypeEnum:
-        description: Specifies the type of permissions.
-        enum:
-          - CREATE
-          - READ
-          - READ_INSTANCE
-          - READ_USER_TASK
-          - UPDATE
-          - DELETE
-          - DELETE_PROCESS
-          - DELETE_DRD
-          - DELETE_FORM
+      description: Specifies the type of permissions.
+      enum:
+        - CREATE
+        - READ
+        - READ_INSTANCE
+        - READ_USER_TASK
+        - UPDATE
+        - DELETE
+        - DELETE_PROCESS
+        - DELETE_DRD
+        - DELETE_FORM
     ResourceTypeEnum:
       description: The type of resource to add/remove permissions to/from.
       enum:
@@ -3789,7 +3724,7 @@ components:
           description: Specifies the type of permissions.
           type: object
           allOf:
-              - $ref: "#/components/schemas/PermissionTypeEnum"
+            - $ref: "#/components/schemas/PermissionTypeEnum"
         resourceIds:
           type: array
           description: A list of resource IDs the permission relates to.
@@ -3808,12 +3743,12 @@ components:
           description: The type of resource to add/remove permissions to/from.
           type: object
           allOf:
-             - $ref: "#/components/schemas/ResourceTypeEnum"
+            - $ref: "#/components/schemas/ResourceTypeEnum"
         permissions:
           type: array
           description: The permissions to add/remove.
           items:
-             $ref: "#/components/schemas/PermissionDTO"
+            $ref: "#/components/schemas/PermissionDTO"
     AuthorizationSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
@@ -3838,19 +3773,19 @@ components:
       type: "object"
       properties:
         ownerKey:
-            description: The id of the owner of permissions.
-            type: integer
-            format: int64
+          description: The id of the owner of permissions.
+          type: integer
+          format: int64
         ownerType:
           description: The type of the owner of permissions.
           type: object
           allOf:
-              - $ref: "#/components/schemas/OwnerTypeEnum"
+            - $ref: "#/components/schemas/OwnerTypeEnum"
         resourceType:
           description: The type of resource that owner have permissions.
           type: object
           allOf:
-             - $ref: "#/components/schemas/ResourceTypeEnum"
+            - $ref: "#/components/schemas/ResourceTypeEnum"
         permissions:
           type: array
           description: The permissions.
@@ -4893,9 +4828,9 @@ components:
           format: int64
           description: The size of the document in bytes.
         customProperties:
-            type: object
-            description: Custom properties of the document.
-            additionalProperties: true
+          type: object
+          description: Custom properties of the document.
+          additionalProperties: true
 
     DocumentLinkRequest:
       type: object
