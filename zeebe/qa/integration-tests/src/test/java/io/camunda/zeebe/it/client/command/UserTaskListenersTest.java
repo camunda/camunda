@@ -82,6 +82,26 @@ public class UserTaskListenersTest {
         });
   }
 
+  /**
+   * This test verifies the behavior when attempting to complete a Task Listener job with variables
+   * while awaiting the result of the completion command.
+   *
+   * <p>TL job completion with variables is currently not supported but is planned to be enabled
+   * with the resolution of issue https://github.com/camunda/camunda/issues/23702.
+   *
+   * <p>The current behavior is as follows:
+   *
+   * <ul>
+   *   <li>The TL job completion request is rejected due to the presence of variables. Since the
+   *       request is awaiting a result (using the `.join()` method), it throws a
+   *       `ClientStatusException` if the command is rejected.
+   *   <li>The job is treated as failed and retried until all retries are exhausted.
+   *   <li>Upon exhausting retries, a `JOB_NO_RETRIES` incident is created with a message explaining
+   *       that the rejection is due to the unsupported use of variables during TL job completion.
+   *   <li>The original `COMPLETE` user task command request fails with a timeout exception, as the
+   *       User Task remains in the `COMPLETING` state without a response being written.
+   * </ul>
+   */
   @Test
   void shouldRejectCompleteTaskListenerJobCompletionWhenVariablesAreSetAndCreateIncident() {
     // given
