@@ -70,13 +70,14 @@ public final class ZeebeAssertHelper {
     assertIncidentCreated(ignore -> {});
   }
 
-  public static void assertIncidentCreated(final Consumer<IncidentRecordValue> requirement) {
-    assertThat(
-            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-                .findFirst()
-                .map(Record::getValue))
+  public static long assertIncidentCreated(final Consumer<IncidentRecordValue> requirement) {
+    final var incidentRecord =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED).findFirst();
+    assertThat(incidentRecord)
         .describedAs("Expect incident to be created")
-        .hasValueSatisfying(requirement);
+        .hasValueSatisfying(incident -> requirement.accept(incident.getValue()));
+
+    return incidentRecord.map(Record::getKey).orElseThrow();
   }
 
   public static void assertProcessInstanceCompleted(

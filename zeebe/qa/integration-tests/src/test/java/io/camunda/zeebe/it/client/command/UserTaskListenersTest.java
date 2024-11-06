@@ -11,11 +11,9 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.worker.JobHandler;
 import io.camunda.zeebe.it.util.RecordingJobHandler;
@@ -35,6 +33,7 @@ import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -86,24 +85,25 @@ public class UserTaskListenersTest {
    * This test verifies the behavior when attempting to complete a Task Listener job with variables
    * while awaiting the result of the completion command.
    *
-   * <p>TL job completion with variables is currently not supported but is planned to be enabled
-   * with the resolution of issue https://github.com/camunda/camunda/issues/23702.
+   * <p>TL job completion with variables is currently not supported but is planned to be enabled as
+   * part of issue <a href="https://github.com/camunda/camunda/issues/23702">#23702</a>.
    *
-   * <p>The current behavior is as follows:
+   * <p>The tested behavior is as follows:
    *
    * <ul>
-   *   <li>The TL job completion request is rejected due to the presence of variables. Since the
-   *       request is awaiting a result (using the `.join()` method), it throws a
-   *       `ClientStatusException` if the command is rejected.
-   *   <li>The job is treated as failed and retried until all retries are exhausted.
-   *   <li>Upon exhausting retries, a `JOB_NO_RETRIES` incident is created with a message explaining
-   *       that the rejection is due to the unsupported use of variables during TL job completion.
-   *   <li>The original `COMPLETE` user task command request fails with a timeout exception, as the
-   *       User Task remains in the `COMPLETING` state without a response being written.
+   *   <li>The first attempt to complete the TL job with variables is rejected due to unsupported
+   *       variable payload, resulting in the job being retried until all retries are exhausted.
+   *   <li>Upon exhausting retries, a `JOB_NO_RETRIES` incident is created, detailing the rejection
+   *       reason due to unsupported variables.
+   *   <li>The test then adjusts the handler to complete next job without variables, updates retries
+   *       for the previously failed job, and resolves the incident, which triggers the engine to
+   *       retry the TL job again.
+   *   <li>As a result, the user task `COMPLETE` request finishes successfully without any errors,
+   *       and the User Task completes as expected.
    * </ul>
    */
   @Test
-  void shouldRejectCompleteTaskListenerJobCompletionWhenVariablesAreSetAndCreateIncident() {
+  void shouldRejectCompleteTaskListenerJobCompletionWhenVariablesAreSet() {
     // given
     final int jobRetries = 2;
     final var listenerType = "complete_with_variables";
@@ -117,15 +117,21 @@ public class UserTaskListenersTest {
                             .type(listenerType)
                             .retries(String.valueOf(jobRetries))));
 
+    final var isCompletingWithVar = new AtomicBoolean(true);
     final JobHandler completeJobWithVariableHandler =
-        (jobClient, job) ->
-            jobClient.newCompleteCommand(job.getKey()).variable("my_variable", 123).send().join();
+        (jobClient, job) -> {
+          final var request = jobClient.newCompleteCommand(job.getKey());
+          if (isCompletingWithVar.get()) {
+            request.variable("my_variable", 123);
+          }
+          request.send().join();
+        };
 
     final var recordingHandler = new RecordingJobHandler(completeJobWithVariableHandler);
     client.newWorker().jobType(listenerType).handler(recordingHandler).open();
 
     // when
-    final var userTaskCompletionFuture =
+    final var completeUserTaskFuture =
         client.newUserTaskCompleteCommand(userTaskKey).send().toCompletableFuture();
     await("until all retries are exhausted")
         .untilAsserted(
@@ -163,21 +169,32 @@ public class UserTaskListenersTest {
 
     // assert that an incident was created after exhausting all retries with a message
     // describing that the reason is the rejection of TL job completion with variables
-    ZeebeAssertHelper.assertIncidentCreated(
-        incident ->
-            assertThat(incident)
-                .hasJobKey(handledJobs.getLast().getKey())
-                .hasErrorType(ErrorType.JOB_NO_RETRIES)
-                .extracting(
-                    IncidentRecordValue::getErrorMessage, as(InstanceOfAssertFactories.STRING))
-                .startsWith("io.camunda.zeebe.client.api.command.ClientStatusException:")
-                .contains("Command 'COMPLETE' rejected with code 'INVALID_ARGUMENT':")
-                .contains(rejectionReason));
+    final long incidentKey =
+        ZeebeAssertHelper.assertIncidentCreated(
+            incident ->
+                assertThat(incident)
+                    .hasJobKey(handledJobs.getLast().getKey())
+                    .hasErrorType(ErrorType.JOB_NO_RETRIES)
+                    .extracting(
+                        IncidentRecordValue::getErrorMessage, as(InstanceOfAssertFactories.STRING))
+                    .startsWith("io.camunda.zeebe.client.api.command.ClientStatusException:")
+                    .contains("Command 'COMPLETE' rejected with code 'INVALID_ARGUMENT':")
+                    .contains(rejectionReason));
 
-    // The rejection of the TL job `COMPLETE` command, due to variables payload being set,
-    // results in the `COMPLETE` user task command request failing with a `timeout` exception.
-    assertThatThrownBy(userTaskCompletionFuture::join)
-        .isInstanceOf(ClientException.class)
-        .hasMessageEndingWith("java.net.SocketTimeoutException: 5 SECONDS");
+    // tune JobHandler not to provide variables while completing the job
+    isCompletingWithVar.set(false);
+    // update retries for the job and resolve incident
+    client.newUpdateRetriesCommand(handledJobs.getLast().getKey()).retries(1).send().join();
+    client.newResolveIncidentCommand(incidentKey).send().join();
+
+    // `COMPLETE` user task command request was completed successfully
+    assertThatCode(completeUserTaskFuture::join).doesNotThrowAnyException();
+
+    ZeebeAssertHelper.assertUserTaskCompleted(
+        userTaskKey,
+        (userTask) -> {
+          assertThat(userTask.getVariables()).isEmpty();
+          assertThat(userTask.getAction()).isEqualTo("complete");
+        });
   }
 }
