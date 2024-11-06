@@ -270,6 +270,16 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return this;
   }
 
+  @Override
+  public JobResult getResult() {
+    return resultProp.getValue();
+  }
+
+  public JobRecord setResult(final JobResult result) {
+    resultProp.getValue().setFields(result);
+    return this;
+  }
+
   public JobRecord setProcessDefinitionVersion(final int version) {
     processDefinitionVersionProp.setValue(version);
     return this;
@@ -359,15 +369,6 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
   public JobRecord setType(final DirectBuffer buf) {
     return setType(buf, 0, buf.capacity());
-  }
-
-  public JobResult getResult() {
-    return resultProp.getValue();
-  }
-
-  public JobRecord setResult(final JobResult result) {
-    resultProp.getValue().setFields(result);
-    return this;
   }
 
   public JobRecord setListenerEventType(final JobListenerEventType jobListenerEventType) {

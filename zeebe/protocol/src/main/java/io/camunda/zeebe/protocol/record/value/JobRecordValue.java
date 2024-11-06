@@ -127,4 +127,16 @@ public interface JobRecordValue
   JobListenerEventType getJobListenerEventType();
 
   Set<String> getChangedAttributes();
+
+  JobResultValue getResult();
+
+  @Value.Immutable
+  @ImmutableProtocol(builder = ImmutableJobResultValue.Builder.class)
+  interface JobResultValue {
+
+    /**
+     * @return true if the operation was rejected by Task Listener
+     */
+    boolean isDenied();
+  }
 }

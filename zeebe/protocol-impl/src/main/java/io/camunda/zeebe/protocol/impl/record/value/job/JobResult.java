@@ -10,9 +10,15 @@ package io.camunda.zeebe.protocol.impl.record.value.job;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue.JobResultValue;
 
-@JsonIgnoreProperties({"empty", "encodedLength", "length"})
-public class JobResult extends UnpackedObject {
+@JsonIgnoreProperties({
+  /* These fields are inherited from ObjectValue; there have no purpose in exported JSON records*/
+  "empty",
+  "encodedLength",
+  "length"
+})
+public class JobResult extends UnpackedObject implements JobResultValue {
 
   private final BooleanProperty deniedProp = new BooleanProperty("denied", false);
 
@@ -26,6 +32,7 @@ public class JobResult extends UnpackedObject {
     deniedProp.setValue(result.isDenied());
   }
 
+  @Override
   public boolean isDenied() {
     return deniedProp.getValue();
   }
