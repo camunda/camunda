@@ -83,6 +83,7 @@ public class RoleControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
+    // then
     verify(roleServices, times(1)).updateRole(roleKey, roleName);
   }
 }
