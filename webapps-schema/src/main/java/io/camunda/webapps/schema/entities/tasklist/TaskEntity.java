@@ -54,6 +54,9 @@ public class TaskEntity extends TasklistEntity<TaskEntity> {
   private String formKey;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
+  private boolean isFormEmbedded;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private OffsetDateTime followUpDate;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -79,6 +82,9 @@ public class TaskEntity extends TasklistEntity<TaskEntity> {
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private TaskJoinRelationship join;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private TaskImplementation implementation;
 
   public TaskEntity() {}
 
@@ -248,6 +254,15 @@ public class TaskEntity extends TasklistEntity<TaskEntity> {
     return this;
   }
 
+  public Boolean getIsFormEmbedded() {
+    return isFormEmbedded;
+  }
+
+  public TaskEntity setIsFormEmbedded(final Boolean isFormEmbedded) {
+    this.isFormEmbedded = isFormEmbedded;
+    return this;
+  }
+
   public OffsetDateTime getFollowUpDate() {
     return followUpDate;
   }
@@ -329,7 +344,17 @@ public class TaskEntity extends TasklistEntity<TaskEntity> {
     return this;
   }
 
-  public String getImplementation() {
-    return "ZEEBE_USER_TASK";
+  public TaskImplementation getImplementation() {
+    return implementation;
+  }
+
+  public TaskEntity setImplementation(final TaskImplementation implementation) {
+    this.implementation = implementation;
+    return this;
+  }
+
+  public enum TaskImplementation {
+    JOB_WORKER,
+    ZEEBE_USER_TASK
   }
 }

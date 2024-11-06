@@ -40,6 +40,7 @@ import io.camunda.exporter.handlers.UserCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.UserDeletedHandler;
 import io.camunda.exporter.handlers.UserTaskCompletionVariableHandler;
 import io.camunda.exporter.handlers.UserTaskHandler;
+import io.camunda.exporter.handlers.UserTaskJobBasedHandler;
 import io.camunda.exporter.handlers.UserTaskProcessInstanceHandler;
 import io.camunda.exporter.handlers.UserTaskVariableHandler;
 import io.camunda.exporter.handlers.VariableHandler;
@@ -201,6 +202,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new EventFromProcessMessageSubscriptionHandler(
                 templateDescriptorsMap.get(EventTemplate.class).getFullQualifiedName(), false),
             new UserTaskHandler(
+                templateDescriptorsMap.get(TaskTemplate.class).getFullQualifiedName()),
+            new UserTaskJobBasedHandler(
                 templateDescriptorsMap.get(TaskTemplate.class).getFullQualifiedName()),
             new UserTaskProcessInstanceHandler(
                 templateDescriptorsMap.get(TaskTemplate.class).getFullQualifiedName()),

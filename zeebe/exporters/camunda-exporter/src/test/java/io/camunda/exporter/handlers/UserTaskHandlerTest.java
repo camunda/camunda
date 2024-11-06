@@ -16,6 +16,7 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
 import io.camunda.webapps.schema.entities.tasklist.TaskState;
 import io.camunda.zeebe.protocol.record.Record;
@@ -198,6 +199,7 @@ public class UserTaskHandlerTest {
     assertThat(taskEntity.getCreationTime())
         .isEqualTo(
             ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(taskRecord.getTimestamp())));
+    assertThat(taskEntity.getImplementation()).isEqualTo(TaskImplementation.ZEEBE_USER_TASK);
   }
 
   @Test

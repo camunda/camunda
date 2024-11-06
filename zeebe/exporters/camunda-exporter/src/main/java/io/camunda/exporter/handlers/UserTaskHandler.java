@@ -11,6 +11,7 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship;
 import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
 import io.camunda.webapps.schema.entities.tasklist.TaskState;
@@ -193,6 +194,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
 
   private void createTaskEntity(final TaskEntity entity, final Record<UserTaskRecordValue> record) {
     entity
+        .setImplementation(TaskImplementation.ZEEBE_USER_TASK)
         .setId(String.valueOf(record.getValue().getElementInstanceKey()))
         .setKey(record.getKey())
         .setState(TaskState.CREATED)
