@@ -18,7 +18,6 @@ import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.jupiter.api.DisplayName;
 
 public class CreateUserTest {
 
@@ -28,7 +27,6 @@ public class CreateUserTest {
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  @DisplayName("should create user if no user with given username exists")
   @Test
   public void shouldCreateUser() {
     // when
@@ -52,9 +50,8 @@ public class CreateUserTest {
         .hasFieldOrPropertyWithValue("password", "password");
   }
 
-  @DisplayName("should reject user create command when username already exists")
   @Test
-  public void shouldNotDuplicate() {
+  public void shouldRejectIfUsernameAlreadyExists() {
     // given
     final var username = UUID.randomUUID().toString();
     final var createdUserRecord =
