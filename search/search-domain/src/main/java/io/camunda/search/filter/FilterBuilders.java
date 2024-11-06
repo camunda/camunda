@@ -64,6 +64,10 @@ public final class FilterBuilders {
     return new RoleFilter.Builder();
   }
 
+  public static TenantFilter.Builder tenant() {
+    return new TenantFilter.Builder();
+  }
+
   public static AuthorizationFilter.Builder authorization() {
     return new AuthorizationFilter.Builder();
   }
@@ -108,6 +112,11 @@ public final class FilterBuilders {
 
   public static RoleFilter role(final Function<RoleFilter.Builder, ObjectBuilder<RoleFilter>> fn) {
     return fn.apply(new RoleFilter.Builder()).build();
+  }
+
+  public static TenantFilter tenant(
+      final Function<TenantFilter.Builder, ObjectBuilder<TenantFilter>> fn) {
+    return fn.apply(new TenantFilter.Builder()).build();
   }
 
   public static AuthorizationFilter authorization(
