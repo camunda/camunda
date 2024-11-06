@@ -161,6 +161,7 @@ if [ "$1" = "start" ] ; then
 
   # limit the java heapspace used by ElasticSearch to 1GB
   export ES_JAVA_OPTS="-Xms1g -Xmx1g"
+  export ES_JAVA_HOME="$JAVA_HOME"
 
   echo
   echo "Starting Elasticsearch ${ELASTICSEARCH_VERSION}...";
