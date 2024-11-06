@@ -17,8 +17,11 @@ import io.camunda.zeebe.protocol.record.value.UserType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public final class AuthorizationCheckBehavior {
 
@@ -63,7 +66,7 @@ public final class AuthorizationCheckBehavior {
 
     final var userKey = getUserKey(request);
     if (userKey.isPresent()) {
-      authorizedResourceIdentifiers = getAuthorizedResourceIdentifiers(userKey.get(), request);
+      authorizedResourceIdentifiers = getUserAuthorizedResourceIdentifiers(userKey.get(), request);
     }
 
     // Check if authorizations contain a resource identifier that matches the required resource
@@ -86,20 +89,11 @@ public final class AuthorizationCheckBehavior {
       return Collections.emptySet();
     }
 
-    return getAuthorizedResourceIdentifiers(
-        userKey.get(), request.getResourceType(), request.getPermissionType());
+    return getUserAuthorizedResourceIdentifiers(userKey.get(), request);
   }
 
-  private Set<String> getAuthorizedResourceIdentifiers(
+  private Set<String> getUserAuthorizedResourceIdentifiers(
       final long userKey, final AuthorizationRequest request) {
-    return getAuthorizedResourceIdentifiers(
-        userKey, request.getResourceType(), request.getPermissionType());
-  }
-
-  private Set<String> getAuthorizedResourceIdentifiers(
-      final long userKey,
-      final AuthorizationResourceType resourceType,
-      final PermissionType permissionType) {
     final var userOptional = userState.getUser(userKey);
     if (userOptional.isEmpty()) {
       return Collections.emptySet();
@@ -112,8 +106,29 @@ public final class AuthorizationCheckBehavior {
       return Set.of(WILDCARD_PERMISSION);
     }
 
-    // Get resource identifiers for this user, resource type and permission type from state
-    return authorizationState.getResourceIdentifiers(userKey, resourceType, permissionType);
+    // Get resource identifiers for this user
+    final var userAuthorizedResourceIdentifiers =
+        authorizationState.getResourceIdentifiers(
+            userKey, request.getResourceType(), request.getPermissionType());
+    // Get resource identifiers for the user's roles
+    final var roleAuthorizedResourceIdentifiers =
+        getRoleAuthorizedResourceIdentifiers(user.getRoleKeysList(), request);
+
+    return Stream.concat(
+            userAuthorizedResourceIdentifiers.stream(), roleAuthorizedResourceIdentifiers.stream())
+        .collect(Collectors.toSet());
+  }
+
+  private Set<String> getRoleAuthorizedResourceIdentifiers(
+      final List<Long> roleKeys, final AuthorizationRequest request) {
+    return roleKeys.stream()
+        .flatMap(
+            roleKey ->
+                authorizationState
+                    .getResourceIdentifiers(
+                        roleKey, request.getResourceType(), request.getPermissionType())
+                    .stream())
+        .collect(Collectors.toSet());
   }
 
   private boolean hasRequiredPermission(
