@@ -19,7 +19,6 @@ import co.elastic.clients.elasticsearch.indices.IndexSettingsLifecycle;
 import co.elastic.clients.json.JsonData;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
@@ -51,7 +50,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 @AutoCloseResources
 final class ElasticsearchRepositoryIT {
-  private static final ObjectMapper MAPPER = new ObjectMapper();
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchRepositoryIT.class);
 
   @Container
@@ -206,9 +204,8 @@ final class ElasticsearchRepositoryIT {
 
   @Test
   void shouldGetProcessInstancesNextBatch() throws IOException {
-    // given - 5 documents, two of which were created over an hour ago, one of which was created,
-    // one which is not a process instance join relation, and one which is not on the right
-    // partition
+    // given - 4 documents, where 2 is on a different partition, 3 is the wrong join relation type,
+    // and 4 was finished too recently: we then expect only 1 to be returned
     final var now = Instant.now();
     final var twoHoursAgo = now.minus(Duration.ofHours(2)).toString();
     final var repository = createRepository();
@@ -232,7 +229,7 @@ final class ElasticsearchRepositoryIT {
     // when
     final var result = repository.getProcessInstancesNextBatch();
 
-    // then - we expect only the first two documents created two days ago to be returned
+    // then - we expect only the first document created two hours ago to be returned
     final var dateFormatter =
         DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
@@ -263,7 +260,7 @@ final class ElasticsearchRepositoryIT {
     // when
     final var result = repository.getBatchOperationsNextBatch();
 
-    // then - we expect only the first two documents created two days ago to be returned
+    // then - we expect only the first two documents created two hours ago to be returned
     final var dateFormatter =
         DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
