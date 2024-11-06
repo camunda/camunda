@@ -324,7 +324,7 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         + '}';
   }
 
-  public static class JobResultValueImpl implements JobResultValue{
+  public static class JobResultValueImpl implements JobResultValue {
 
     private boolean denied;
 
@@ -356,9 +356,7 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
 
     @Override
     public String toString() {
-      return "JobResultValueImpl{"
-          + "denied='" + denied
-          + '}';
-      }
+      return "JobResultValueImpl{" + "denied='" + denied + '}';
+    }
   }
 }
