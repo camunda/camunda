@@ -10,9 +10,6 @@ package io.camunda.zeebe.engine.processing.tenant;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
-import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -31,24 +28,31 @@ public class TenantDeleteProcessorTest {
   public void shouldDeleteTenant() {
     // Given
     final var tenantId = UUID.randomUUID().toString();
+    final var tenantName = UUID.randomUUID().toString();
     final var tenantKey =
-        engine.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
+        engine
+            .tenant()
+            .newTenant()
+            .withTenantId(tenantId)
+            .withName(tenantName)
+            .create()
+            .getValue()
+            .getTenantKey();
     assertThat(engine.getProcessingState().getTenantState().getTenantByKey(tenantKey).get())
         .isNotNull();
 
     // When
     engine.tenant().deleteTenant(tenantKey).delete();
 
-    // Then confirms the Tenant.DELETED event was recorded
-    final Record<RecordValue> deletedEvent =
-        RecordingExporter.records()
-            .withIntent(TenantIntent.DELETED)
-            .withRecordType(RecordType.EVENT)
-            .withPartitionId(1)
-            .filter(record -> record.getKey() == tenantKey)
-            .getFirst();
-
-    assertThat(deletedEvent).isNotNull();
+    // Then confirms the Tenant.DELETED event was written
+    assertThat(
+            RecordingExporter.tenantRecords(TenantIntent.DELETED)
+                .withTenantKey(tenantKey)
+                .getFirst()
+                .getValue())
+        .hasTenantKey(tenantKey)
+        .hasTenantId(tenantId)
+        .hasName(tenantName);
   }
 
   @Test
