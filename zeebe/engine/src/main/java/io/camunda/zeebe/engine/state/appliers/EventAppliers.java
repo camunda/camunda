@@ -423,6 +423,10 @@ public final class EventAppliers implements EventApplier {
         CompensationSubscriptionIntent.DELETED,
         new CompensationSubscriptionDeletedApplier(
             processingState.getCompensationSubscriptionState()));
+    register(
+        CompensationSubscriptionIntent.MIGRATED,
+        new CompensationSubscriptionMigratedApplier(
+            processingState.getCompensationSubscriptionState()));
   }
 
   private void registerCommandDistributionAppliers(final MutableProcessingState state) {
