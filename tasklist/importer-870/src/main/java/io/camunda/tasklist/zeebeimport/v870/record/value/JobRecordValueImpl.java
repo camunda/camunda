@@ -34,6 +34,7 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
   private JobKind jobKind;
   private JobListenerEventType jobListenerEventType;
   private Set<String> changedAttributes;
+  private JobResultValueImpl result;
 
   public JobRecordValueImpl() {}
 
@@ -191,21 +192,30 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
   }
 
   @Override
-  public String getTenantId() {
-    return tenantId;
-  }
-
-  public void setTenantId(final String tenantId) {
-    this.tenantId = tenantId;
-  }
-
-  @Override
   public Set<String> getChangedAttributes() {
     return changedAttributes;
   }
 
   public void setChangedAttributes(final Set<String> changedAttributes) {
     this.changedAttributes = changedAttributes;
+  }
+
+  @Override
+  public JobResultValueImpl getResult() {
+    return result;
+  }
+
+  public void setResult(final JobResultValueImpl result) {
+    this.result = result;
+  }
+
+  @Override
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public void setTenantId(final String tenantId) {
+    this.tenantId = tenantId;
   }
 
   @Override
@@ -228,7 +238,8 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         tenantId,
         jobKind,
         jobListenerEventType,
-        changedAttributes);
+        changedAttributes,
+        result);
   }
 
   @Override
@@ -259,7 +270,8 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         && Objects.equals(tenantId, that.tenantId)
         && jobKind == that.jobKind
         && jobListenerEventType == that.jobListenerEventType
-        && Objects.equals(changedAttributes, that.changedAttributes);
+        && Objects.equals(changedAttributes, that.changedAttributes)
+        && Objects.equals(result, that.result);
   }
 
   @Override
@@ -307,6 +319,46 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         + jobListenerEventType
         + ", changedAttributes="
         + changedAttributes
+        + ", result="
+        + result
         + '}';
+  }
+
+  public static class JobResultValueImpl implements JobResultValue{
+
+    private boolean denied;
+
+    @Override
+    public boolean isDenied() {
+      return denied;
+    }
+
+    public void setDenied(final boolean denied) {
+      this.denied = denied;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(denied);
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final JobResultValueImpl that = (JobResultValueImpl) o;
+      return denied == that.denied;
+    }
+
+    @Override
+    public String toString() {
+      return "JobResultValueImpl{"
+          + "denied='" + denied
+          + '}';
+    }
   }
 }
