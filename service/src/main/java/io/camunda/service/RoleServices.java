@@ -18,6 +18,7 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerRoleUpdateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.role.BrokerRoleCreateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import java.util.Set;
@@ -53,6 +54,11 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
 
   public CompletableFuture<RoleRecord> createRole(final RoleDTO request) {
     return sendBrokerRequest(new BrokerRoleCreateRequest().setName(request.name()));
+  }
+
+  public CompletableFuture<RoleRecord> updateRole(final RoleDTO request) {
+    return sendBrokerRequest(
+        new BrokerRoleUpdateRequest(request.roleKey()).setName(request.name()));
   }
 
   public RoleEntity getByRoleKey(final Long roleKey) {
