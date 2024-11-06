@@ -112,23 +112,21 @@ trap childExitHandler SIGCHLD
 if [ "$1" = "start" ] ; then
   shift
   # setup the JVM
-  if [ "x$JAVA" = "x" ]; then
-    if [ "x$JAVA_HOME" != "x" ]; then
-      echo Setting JAVA property to "$JAVA_HOME/bin/java"
-      JAVA="$JAVA_HOME/bin/java"
-    else
-      echo JAVA_HOME is not set. Unexpected results may occur.
-      echo Set JAVA_HOME to the directory of your local JDK to avoid this message.
+  if [ "x$JAVA_HOME" != "x" ]; then
+
+    # turns out not all java installations put the binary in bin/java . so this should be a find command.
+    if [ "x$JAVA" == "x" ]; then
+      JAVA=$(find "$JAVA_HOME" -name "java" | head -n 1)
+      echo Setting JAVA property to "$JAVA" in "$JAVA_HOME"
+    fi
+  else
+    echo JAVA_HOME is not set. Unexpected results may occur.
+    echo Set JAVA_HOME to the directory of your local JDK to avoid this message.
+    if [ "x$JAVA" == "x" ]; then
       JAVA="java"
     fi
-  fi
-
-  JAVA_VERSION=$("$JAVA" -version 2>&1 | head -1 | cut -d'"' -f2 | sed '/^0\./s///' | cut -d'.' -f1)
-  echo Java version is $("$JAVA" -version 2>&1 | head -1 | cut -d'"' -f2)
-  if [[ "$JAVA_VERSION" -lt "$EXPECTED_JAVA_VERSION" ]]; then
-    echo "You must use at least JDK $EXPECTED_JAVA_VERSION to start Camunda Platform Run."
-    childExitHandler $$ 1
-    exit 1
+    # We want to set JAVA_HOME so that we can set elasticsearch to use JAVA_HOME
+    export JAVA_HOME=$(which $JAVA | xargs dirname | xargs dirname)
   fi
 
   if [ "x$JAVA_OPTS" != "x" ]; then
