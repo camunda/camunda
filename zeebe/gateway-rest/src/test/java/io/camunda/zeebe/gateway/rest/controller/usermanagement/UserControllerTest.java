@@ -288,6 +288,28 @@ public class UserControllerTest extends RestControllerTest {
     verifyNoInteractions(userServices);
   }
 
+  @Test
+  void deleteUserShouldReturnNoContent() {
+    // given
+    final long key = 1234L;
+
+    final var userRecord = new UserRecord().setUserKey(key);
+
+    when(userServices.deleteUser(key)).thenReturn(CompletableFuture.completedFuture(userRecord));
+
+    // when
+    webClient
+        .delete()
+        .uri(USER_BASE_URL + "/{key}", key)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    // then
+    verify(userServices, times(1)).deleteUser(key);
+  }
+
   private UserDTO validCreateUserRequest() {
     return new UserDTO(null, "foo", "Foo Bar", "bar@baz.com", "zabraboof");
   }
