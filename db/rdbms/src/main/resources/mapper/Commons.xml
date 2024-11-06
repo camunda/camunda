@@ -61,7 +61,7 @@
 
   <sql id="orderBy">
     <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
-      <foreach collection="sort.orderings" open=" " separator=", " item="item">
+      <foreach collection="sort.orderings" open="ORDER BY " separator=", " item="item">
         ${item.column} ${item.order}
       </foreach>
     </if>

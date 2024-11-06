@@ -10,7 +10,7 @@ package io.camunda.db.rdbms.sql;
 import io.camunda.db.rdbms.read.domain.ProcessInstanceDbQuery;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
 import io.camunda.search.entities.ProcessInstanceEntity;
-import java.time.OffsetDateTime;
+import io.camunda.zeebe.util.DateUtil;
 import java.util.List;
 import java.util.function.Function;
 
@@ -31,9 +31,8 @@ public interface ProcessInstanceMapper {
     PROCESS_DEFINITION_NAME("processName", ProcessInstanceEntity::processName),
     PROCESS_DEFINITION_VERSION("processVersion", ProcessInstanceEntity::processVersion),
     PROCESS_DEFINITION_VERSION_TAG("processVersionTag", ProcessInstanceEntity::processVersionTag),
-    START_DATE(
-        "startDate", ProcessInstanceEntity::startDate, v -> OffsetDateTime.parse((String) v)),
-    END_DATE("endDate", ProcessInstanceEntity::endDate, v -> OffsetDateTime.parse((String) v)),
+    START_DATE("startDate", ProcessInstanceEntity::startDate, DateUtil::fuzzyToOffsetDateTime),
+    END_DATE("endDate", ProcessInstanceEntity::endDate, DateUtil::fuzzyToOffsetDateTime),
     STATE("state", ProcessInstanceEntity::state),
     TENANT_ID("tenantId", ProcessInstanceEntity::tenantId),
     PARENT_PROCESS_INSTANCE_KEY(

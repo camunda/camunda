@@ -63,7 +63,6 @@
     <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
-    ORDER BY
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
   </select>

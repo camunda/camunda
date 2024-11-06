@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.rdbms;
+package io.camunda.zeebe.util;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -17,5 +17,18 @@ public final class DateUtil {
 
   public static OffsetDateTime toOffsetDateTime(final Instant timestamp) {
     return OffsetDateTime.ofInstant(timestamp, ZoneOffset.UTC);
+  }
+
+  public static OffsetDateTime fuzzyToOffsetDateTime(final Object object) {
+    return switch (object) {
+      case null -> null;
+      case final OffsetDateTime offsetDateTime -> offsetDateTime;
+      case final Instant instant -> toOffsetDateTime(instant);
+      case final Long l -> toOffsetDateTime(Instant.ofEpochMilli(l));
+      case final String s -> OffsetDateTime.parse(s);
+      default ->
+          throw new IllegalArgumentException(
+              "Could not convert " + object.getClass() + " to OffsetDateTime");
+    };
   }
 }

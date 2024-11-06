@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.read.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.read.domain.DbQueryPage;
@@ -45,22 +46,19 @@ class AbstractEntityReaderTest {
   }
 
   @Test
-  void shouldSkipUnknownSortColumn() {
+  void shouldThrowOnUnknownSortColumn() {
     final var reader = new ProcessInstanceReader(null);
 
-    final var convertedSort =
-        reader.convertSort(
-            new ProcessInstanceSort(
-                List.of(
-                    new FieldSorting("processName", SortOrder.ASC),
-                    new FieldSorting("foo", SortOrder.ASC))),
-            ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY);
-
-    assertThat(convertedSort.orderings()).hasSize(2);
-    assertThat(convertedSort.orderings())
-        .containsExactly(
-            new SortingEntry<>(ProcessInstanceSearchColumn.PROCESS_DEFINITION_NAME, SortOrder.ASC),
-            new SortingEntry<>(ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY, SortOrder.ASC));
+    assertThatThrownBy(
+            () ->
+                reader.convertSort(
+                    new ProcessInstanceSort(
+                        List.of(
+                            new FieldSorting("processName", SortOrder.ASC),
+                            new FieldSorting("foo", SortOrder.ASC))),
+                    ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Unknown sortField: foo");
   }
 
   @Test

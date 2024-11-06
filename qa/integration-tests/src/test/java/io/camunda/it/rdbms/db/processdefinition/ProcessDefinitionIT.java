@@ -12,7 +12,6 @@ import static io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures.createAn
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.domain.ProcessDefinitionDbQuery;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
@@ -20,6 +19,7 @@ import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtensio
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.sort.ProcessDefinitionSort;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Tag;
@@ -69,7 +69,7 @@ public class ProcessDefinitionIT {
 
     final var searchResult =
         processDefinitionReader.search(
-            new ProcessDefinitionDbQuery(
+            new ProcessDefinitionQuery(
                 new ProcessDefinitionFilter.Builder()
                     .processDefinitionIds("test-process-unique")
                     .build(),
@@ -78,9 +78,9 @@ public class ProcessDefinitionIT {
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(1);
-    assertThat(searchResult.hits()).hasSize(1);
+    assertThat(searchResult.items()).hasSize(1);
 
-    final var instance = searchResult.hits().getFirst();
+    final var instance = searchResult.items().getFirst();
 
     assertThat(instance.key()).isEqualTo(processDefinition.processDefinitionKey());
     assertThat(instance.bpmnProcessId()).isEqualTo(processDefinition.processDefinitionId());
@@ -103,7 +103,7 @@ public class ProcessDefinitionIT {
 
     final var searchResult =
         processDefinitionReader.search(
-            new ProcessDefinitionDbQuery(
+            new ProcessDefinitionQuery(
                 new ProcessDefinitionFilter.Builder()
                     .processDefinitionIds(processDefinitionId)
                     .build(),
@@ -112,7 +112,7 @@ public class ProcessDefinitionIT {
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(20);
-    assertThat(searchResult.hits()).hasSize(5);
+    assertThat(searchResult.items()).hasSize(5);
   }
 
   @TestTemplate
@@ -127,14 +127,14 @@ public class ProcessDefinitionIT {
 
     final var searchResult =
         processDefinitionReader.search(
-            new ProcessDefinitionDbQuery(
+            new ProcessDefinitionQuery(
                 new ProcessDefinitionFilter.Builder().build(),
                 ProcessDefinitionSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(null).size(null))));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isGreaterThanOrEqualTo(20);
-    assertThat(searchResult.hits()).hasSizeGreaterThanOrEqualTo(20);
+    assertThat(searchResult.items()).hasSizeGreaterThanOrEqualTo(20);
   }
 
   @TestTemplate
@@ -151,7 +151,7 @@ public class ProcessDefinitionIT {
 
     final var searchResult =
         processDefinitionReader.search(
-            new ProcessDefinitionDbQuery(
+            new ProcessDefinitionQuery(
                 new ProcessDefinitionFilter.Builder()
                     .processDefinitionKeys(processDefinition.processDefinitionKey())
                     .processDefinitionIds(processDefinition.processDefinitionId())
@@ -165,8 +165,50 @@ public class ProcessDefinitionIT {
                 SearchQueryPage.of(b -> b.from(0).size(5))));
 
     assertThat(searchResult.total()).isEqualTo(1);
-    assertThat(searchResult.hits()).hasSize(1);
-    assertThat(searchResult.hits().getFirst().key())
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().getFirst().key())
         .isEqualTo(processDefinition.processDefinitionKey());
+  }
+
+  @TestTemplate
+  public void shouldFindProcessDefinitionsWithSearchAfter(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessDefinitionReader processDefinitionReader =
+        rdbmsService.getProcessDefinitionReader();
+
+    createAndSaveRandomProcessDefinitions(rdbmsWriter, b -> b.versionTag("search-after-123456"));
+    final var sort =
+        ProcessDefinitionSort.of(s -> s.name().asc().version().asc().tenantId().desc());
+    final var searchResult =
+        processDefinitionReader.search(
+            ProcessDefinitionQuery.of(
+                b ->
+                    b.filter(f -> f.versionTags("search-after-123456"))
+                        .sort(sort)
+                        .page(p -> p.from(0).size(20))));
+
+    final var instanceAfter = searchResult.items().get(9);
+    final var nextPage =
+        processDefinitionReader.search(
+            ProcessDefinitionQuery.of(
+                b ->
+                    b.filter(f -> f.versionTags("search-after-123456"))
+                        .sort(sort)
+                        .page(
+                            p ->
+                                p.size(5)
+                                    .searchAfter(
+                                        new Object[] {
+                                          instanceAfter.name(),
+                                          instanceAfter.version(),
+                                          instanceAfter.tenantId(),
+                                          instanceAfter.key()
+                                        }))));
+
+    assertThat(nextPage.total()).isEqualTo(20);
+    assertThat(nextPage.items()).hasSize(5);
+    assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(10, 15));
   }
 }

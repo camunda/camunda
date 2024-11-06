@@ -9,7 +9,6 @@ package io.camunda.search.rdbms;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.domain.FlowNodeInstanceDbQuery;
-import io.camunda.db.rdbms.read.domain.ProcessDefinitionDbQuery;
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
 import io.camunda.search.clients.DecisionInstanceSearchClient;
@@ -181,13 +180,6 @@ public class RdbmsSearchClient
       final ProcessDefinitionQuery query) {
     LOG.debug("[RDBMS Search Client] Search for processDefinition: {}", query);
 
-    final var searchResult =
-        rdbmsService
-            .getProcessDefinitionReader()
-            .search(
-                ProcessDefinitionDbQuery.of(
-                    b -> b.filter(query.filter()).sort(query.sort()).page(query.page())));
-
-    return new SearchQueryResult<>(searchResult.total(), searchResult.hits(), null);
+    return rdbmsService.getProcessDefinitionReader().search(query);
   }
 }

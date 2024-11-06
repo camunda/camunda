@@ -37,9 +37,11 @@ abstract class AbstractEntityReader<T> {
 
     for (final FieldSorting fieldSorting : sortOption.getFieldSortings()) {
       final var column = searchColumnFinder.findByProperty(fieldSorting.field());
-      if (column != null) {
-        builder.addEntry(column, fieldSorting.order());
+      if (column == null) {
+        throw new IllegalArgumentException("Unknown sortField: " + fieldSorting.field());
       }
+
+      builder.addEntry(column, fieldSorting.order());
     }
 
     builder.addEntry(discriminatorColumn, SortOrder.ASC);
