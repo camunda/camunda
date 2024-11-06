@@ -35,6 +35,10 @@ public class GroupClient {
     return new GroupAddEntityClient(writer, groupKey);
   }
 
+  public GroupRemoveEntityClient removeEntity(final long groupKey) {
+    return new GroupRemoveEntityClient(writer, groupKey);
+  }
+
   public static class GroupCreateClient {
 
     private static final Function<Long, Record<GroupRecordValue>> SUCCESS_SUPPLIER =
@@ -159,6 +163,54 @@ public class GroupClient {
     }
 
     public GroupAddEntityClient expectRejection() {
+      expectation = REJECTION_SUPPLIER;
+      return this;
+    }
+  }
+
+  public static class GroupRemoveEntityClient {
+
+    private static final Function<Long, Record<GroupRecordValue>> SUCCESS_SUPPLIER =
+        (position) ->
+            RecordingExporter.groupRecords()
+                .withIntent(GroupIntent.ENTITY_REMOVED)
+                .withSourceRecordPosition(position)
+                .getFirst();
+    private static final Function<Long, Record<GroupRecordValue>> REJECTION_SUPPLIER =
+        (position) ->
+            RecordingExporter.groupRecords()
+                .onlyCommandRejections()
+                .withIntent(GroupIntent.REMOVE_ENTITY)
+                .withSourceRecordPosition(position)
+                .getFirst();
+
+    private final CommandWriter writer;
+    private final GroupRecord groupRecord;
+
+    private Function<Long, Record<GroupRecordValue>> expectation = SUCCESS_SUPPLIER;
+
+    public GroupRemoveEntityClient(final CommandWriter writer, final long key) {
+      this.writer = writer;
+      groupRecord = new GroupRecord();
+      groupRecord.setGroupKey(key);
+    }
+
+    public GroupRemoveEntityClient withEntityKey(final long entityKey) {
+      groupRecord.setEntityKey(entityKey);
+      return this;
+    }
+
+    public GroupRemoveEntityClient withEntityType(final EntityType entityType) {
+      groupRecord.setEntityType(entityType);
+      return this;
+    }
+
+    public Record<GroupRecordValue> remove() {
+      final long position = writer.writeCommand(GroupIntent.REMOVE_ENTITY, groupRecord);
+      return expectation.apply(position);
+    }
+
+    public GroupRemoveEntityClient expectRejection() {
       expectation = REJECTION_SUPPLIER;
       return this;
     }
