@@ -363,6 +363,30 @@ public class CamundaExporterHandlerIT {
         handler, config, clientAdapter, defaultRecordGenerator(handler));
   }
 
+  @TestTemplate
+  void shouldExportUsingOperationFromIncidentHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, OperationFromIncidentHandler.class);
+    testForOperationHandlers(handler, config, clientAdapter);
+  }
+
+  @TestTemplate
+  void shouldExportUsingOperationFromProcessInstanceHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, OperationFromProcessInstanceHandler.class);
+    testForOperationHandlers(handler, config, clientAdapter);
+  }
+
+  @TestTemplate
+  void shouldExportUsingOperationFromVariableDocumentHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, OperationFromVariableDocumentHandler.class);
+    testForOperationHandlers(handler, config, clientAdapter);
+  }
+
   @SuppressWarnings("unchecked")
   private <S extends ExporterEntity<S>, T extends RecordValue> ExportHandler<S, T> getHandler(
       final ExporterConfiguration config, final Class<?> handlerClass) {
@@ -411,12 +435,15 @@ public class CamundaExporterHandlerIT {
           final Record<T> record)
           throws IOException {
 
+    // given
     final var exporter = getExporter(config, handler);
 
     final var expectedEntity = getExpectedEntity(record, handler);
 
+    // when
     exporter.export(record);
 
+    // then
     final var responseEntity =
         clientAdapter.get(expectedEntity.getId(), handler.getIndexName(), handler.getEntityType());
 
@@ -425,6 +452,38 @@ public class CamundaExporterHandlerIT {
             "Handler [%s] correctly handles a [%s] record",
             handler.getClass().getSimpleName(), handler.getHandledValueType())
         .isEqualTo(expectedEntity);
+  }
+
+  private <S extends ExporterEntity<S>, T extends RecordValue> void testForOperationHandlers(
+      final ExportHandler<S, T> handler,
+      final ExporterConfiguration config,
+      final SearchClientAdapter clientAdapter)
+      throws IOException {
+    // given
+    final var exporter = getExporter(config, handler);
+
+    final var initialDocumentId = String.valueOf(new Random().nextLong(Long.MAX_VALUE));
+    clientAdapter.index(initialDocumentId, handler.getIndexName(), new HashMap<>());
+
+    final Record<T> operationRecord =
+        recordGenerator(
+            handler,
+            () ->
+                factory.generateRecord(
+                    handler.getHandledValueType(),
+                    r -> r.withOperationReference(Long.parseLong(initialDocumentId))));
+
+    // when
+    exporter.export(operationRecord);
+
+    // then
+    final var updatedEntity =
+        clientAdapter.get(initialDocumentId, handler.getIndexName(), OperationEntity.class);
+
+    assertThat(updatedEntity.getLockExpirationTime()).isNull();
+    assertThat(updatedEntity.getLockOwner()).isNull();
+    assertThat(updatedEntity.getState()).isEqualTo(OperationState.COMPLETED);
+    assertThat(updatedEntity.getCompletedDate()).isEqualTo(currentTime);
   }
 
   private <S extends ExporterEntity<S>, T extends RecordValue> Record<T> recordGenerator(
