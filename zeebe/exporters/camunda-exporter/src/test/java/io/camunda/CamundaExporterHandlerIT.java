@@ -90,14 +90,14 @@ import org.mockito.MockedStatic;
 @ExtendWith(CamundaExporterITInvocationProvider.class)
 public class CamundaExporterHandlerIT {
   static MockedStatic<OffsetDateTime> offsetDateTimeMockedStatic;
-  private static final OffsetDateTime currentTime =
+  private static final OffsetDateTime CURRENT_TIME =
       OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS);
   private final ProtocolFactory factory = new ProtocolFactory();
 
   @BeforeAll
   static void init() {
     offsetDateTimeMockedStatic = mockStatic(OffsetDateTime.class, CALLS_REAL_METHODS);
-    offsetDateTimeMockedStatic.when(OffsetDateTime::now).thenReturn(currentTime);
+    offsetDateTimeMockedStatic.when(OffsetDateTime::now).thenReturn(CURRENT_TIME);
   }
 
   @AfterAll
@@ -483,7 +483,7 @@ public class CamundaExporterHandlerIT {
     assertThat(updatedEntity.getLockExpirationTime()).isNull();
     assertThat(updatedEntity.getLockOwner()).isNull();
     assertThat(updatedEntity.getState()).isEqualTo(OperationState.COMPLETED);
-    assertThat(updatedEntity.getCompletedDate()).isEqualTo(currentTime);
+    assertThat(updatedEntity.getCompletedDate()).isEqualTo(CURRENT_TIME);
   }
 
   private <S extends ExporterEntity<S>, T extends RecordValue> Record<T> recordGenerator(
