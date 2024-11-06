@@ -1902,6 +1902,8 @@ paths:
         - Role
       operationId: createRole
       summary: Create role
+      description: |
+        Create a new role
       requestBody:
         content:
           application/json:
@@ -1924,13 +1926,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "401":
-          description: |
-            The request to create a role was unauthorized.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/Unauthorized"
         "403":
           description: |
             The request to create a role was denied.
@@ -1940,13 +1936,41 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: An internal error occurred while processing the request.
+          $ref: "#/components/responses/InternalServerError"
+
+  /roles/{roleKey}:
+    get:
+      tags:
+        - Role
+      operationId: getRole
+      summary: Get role
+      description: |
+        Get a role by its key
+      parameters:
+        - name: roleKey
+          in: path
+          required: true
+          description: The role key.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: The role is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleItem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: The role with the given key was not found.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-
-  /roles/{roleKey}:
+        "500":
+          $ref: "#/components/responses/InternalServerError"
     patch:
       tags:
         - Role
@@ -1977,6 +2001,8 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "404":
           description: The role with the roleKey is not found.
           content:
@@ -1984,13 +2010,43 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /roles/search:
+    post:
+      tags:
+        - Role
+      operationId: searchRoles
+      summary: Query roles
+      description: |
+        Search for roles based on given criteria.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoleSearchQueryRequest"
+      responses:
+        "200":
+          description: The roles search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleSearchQueryResponse"
+        "400":
           description: >
-            An internal error occurred while processing the request.
+            The role search query failed.
+            More details are provided in the response body.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-
+        "500":
+          description: An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /messages/publication:
     post:
       tags:
@@ -3846,6 +3902,7 @@ components:
       properties:
         name:
           type: "string"
+          description: The display name of the new role
     RoleCreateResponse:
       type: "object"
       properties:
@@ -3865,6 +3922,39 @@ components:
       properties:
         name:
           type: string
+          description: The updated display name of the role.
+    RoleItem:
+      description: Role search response item.
+      type: object
+      properties:
+        roleKey:
+          type: integer
+          description: The role key.
+          format: int64
+        name:
+          type: string
+          description: The role name.
+        assignedMemberKeys:
+          type: array
+          description: The set of keys of members assigned to the role.
+          items:
+            type: integer
+            format: int64
+    RoleSearchQueryRequest:
+      description: Role search request.
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      type: object
+    RoleSearchQueryResponse:
+      description: Role search response.
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/RoleItem"
     TopologyResponse:
       description: The response of a topology request.
       type: object

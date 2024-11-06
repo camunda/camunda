@@ -21,7 +21,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerRoleUpdateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.role.BrokerRoleCreateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
-import java.util.Set;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, RoleEntity> {
@@ -60,15 +60,16 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
     return sendBrokerRequest(new BrokerRoleUpdateRequest(roleKey).setName(name));
   }
 
-  public RoleEntity getByRoleKey(final Long roleKey) {
-    final SearchQueryResult<RoleEntity> result =
-        search(SearchQueryBuilders.roleSearchQuery().filter(f -> f.roleKey(roleKey)).build());
-    if (result.total() < 1) {
-      throw new NotFoundException(String.format("Role with roleKey %d not found", roleKey));
-    } else {
-      return result.items().stream().findFirst().orElseThrow();
-    }
+  public RoleEntity getRole(final Long roleKey) {
+    return findRole(roleKey)
+        .orElseThrow(
+            () -> new NotFoundException("Role with roleKey %d not found".formatted(roleKey)));
   }
 
-  public record RoleDTO(long roleKey, String name, Set<Long> assignedMemberKeys) {}
+  public Optional<RoleEntity> findRole(final Long roleKey) {
+    return search(SearchQueryBuilders.roleSearchQuery().filter(f -> f.roleKey(roleKey)).build())
+        .items()
+        .stream()
+        .findFirst();
+  }
 }

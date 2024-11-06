@@ -8,14 +8,12 @@
 package io.camunda.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.RoleSearchClient;
 import io.camunda.search.entities.RoleEntity;
-import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.filter.RoleFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
@@ -81,10 +79,10 @@ public class RoleServiceTest {
     when(client.searchRoles(any())).thenReturn(result);
 
     // when
-    final var searchQueryResult = services.getByRoleKey(1L);
+    final var searchQueryResult = services.findRole(1L);
 
     // then
-    assertThat(searchQueryResult).isEqualTo(entity);
+    assertThat(searchQueryResult).contains(entity);
   }
 
   @Test
@@ -94,9 +92,7 @@ public class RoleServiceTest {
     when(client.searchRoles(any())).thenReturn(new SearchQueryResult(0, List.of(), null));
 
     // when / then
-    final var exception =
-        assertThrowsExactly(NotFoundException.class, () -> services.getByRoleKey(key));
-    assertThat(exception.getMessage()).isEqualTo("Role with roleKey 100 not found");
+    assertThat(services.findRole(key)).isEmpty();
   }
 
   @Test
