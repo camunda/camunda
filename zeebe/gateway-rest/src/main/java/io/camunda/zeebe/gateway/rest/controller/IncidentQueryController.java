@@ -8,8 +8,8 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.Loggers.REST_LOGGER;
+import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
-import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.service.IncidentServices;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentItem;
@@ -19,7 +19,6 @@ import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import jakarta.validation.ValidationException;
 import java.nio.charset.StandardCharsets;
 import org.springframework.http.HttpStatus;
@@ -60,19 +59,9 @@ public class IncidentQueryController {
       return ResponseEntity.ok()
           .contentType(new MediaType(MediaType.APPLICATION_JSON, StandardCharsets.UTF_8))
           .body(SearchQueryResponseMapper.toIncident(incidentServices.getByKey(incidentKey)));
-    } catch (final NotFoundException nfe) {
-      final var problemDetail =
-          RestErrorMapper.createProblemDetail(
-              HttpStatus.NOT_FOUND, nfe.getMessage(), RejectionType.NOT_FOUND.name());
-      return RestErrorMapper.mapProblemToResponse(problemDetail);
     } catch (final Exception e) {
-      REST_LOGGER.warn("An exception occurred in get incident by key.", e);
-      final var problemDetail =
-          RestErrorMapper.createProblemDetail(
-              HttpStatus.INTERNAL_SERVER_ERROR,
-              e.getMessage(),
-              "Failed to execute Get Incident by key.");
-      return RestErrorMapper.mapProblemToResponse(problemDetail);
+      REST_LOGGER.debug("An exception occurred in getIncident.", e);
+      return mapErrorToResponse(e);
     }
   }
 
@@ -89,12 +78,8 @@ public class IncidentQueryController {
               "Validation failed for Incident Search Query");
       return RestErrorMapper.mapProblemToResponse(problemDetail);
     } catch (final Exception e) {
-      final var problemDetail =
-          RestErrorMapper.createProblemDetail(
-              HttpStatus.INTERNAL_SERVER_ERROR,
-              e.getMessage(),
-              "Failed to execute Incident Search Query");
-      return RestErrorMapper.mapProblemToResponse(problemDetail);
+      REST_LOGGER.debug("An exception occurred in searchIncidents.", e);
+      return mapErrorToResponse(e);
     }
   }
 }

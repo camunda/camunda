@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static io.camunda.zeebe.gateway.rest.Loggers.REST_LOGGER;
+import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
+
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.service.FlowNodeInstanceServices;
@@ -77,12 +80,8 @@ public class UserTaskQueryController {
               "Validation failed for UserTask Search Query");
       return RestErrorMapper.mapProblemToResponse(problemDetail);
     } catch (final Exception e) {
-      final var problemDetail =
-          RestErrorMapper.createProblemDetail(
-              HttpStatus.INTERNAL_SERVER_ERROR,
-              e.getMessage(),
-              "Failed to execute UserTask Search Query");
-      return RestErrorMapper.mapProblemToResponse(problemDetail);
+      REST_LOGGER.debug("An exception occurred in searchUserTasks.", e);
+      return mapErrorToResponse(e);
     }
   }
 
@@ -94,11 +93,9 @@ public class UserTaskQueryController {
       // Success case: Return the left side with the UserTaskItem wrapped in ResponseEntity
       return ResponseEntity.ok()
           .body(SearchQueryResponseMapper.toUserTask(userTaskServices.getByKey(userTaskKey)));
-    } catch (final Exception exc) {
-      // Error case: Return the right side with ProblemDetail
-      final var problemDetail =
-          RestErrorMapper.mapErrorToProblem(exc, RestErrorMapper.DEFAULT_REJECTION_MAPPER);
-      return RestErrorMapper.mapProblemToResponse(problemDetail);
+    } catch (final Exception e) {
+      REST_LOGGER.debug("An exception occurred in getUserTask.", e);
+      return mapErrorToResponse(e);
     }
   }
 
@@ -116,11 +113,9 @@ public class UserTaskQueryController {
 
       return ResponseEntity.ok()
           .body(SearchQueryResponseMapper.toFormItem(formServices.getByKey(formKey)));
-    } catch (final Exception exc) {
-      // Error case: Return the right side with ProblemDetail
-      final var problemDetail =
-          RestErrorMapper.mapErrorToProblem(exc, RestErrorMapper.DEFAULT_REJECTION_MAPPER);
-      return RestErrorMapper.mapProblemToResponse(problemDetail);
+    } catch (final Exception e) {
+      REST_LOGGER.debug("An exception occurred in getUserTaskForm.", e);
+      return mapErrorToResponse(e);
     }
   }
 
@@ -156,20 +151,9 @@ public class UserTaskQueryController {
           variableServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
 
       return ResponseEntity.ok(SearchQueryResponseMapper.toVariableSearchQueryResponse(result));
-    } catch (final ValidationException e) {
-      final var problemDetail =
-          RestErrorMapper.createProblemDetail(
-              HttpStatus.BAD_REQUEST,
-              e.getMessage(),
-              "Validation failed for UserTask Variables Search Query");
-      return RestErrorMapper.mapProblemToResponse(problemDetail);
     } catch (final Exception e) {
-      final var problemDetail =
-          RestErrorMapper.createProblemDetail(
-              HttpStatus.INTERNAL_SERVER_ERROR,
-              e.getMessage(),
-              "Failed to execute UserTask Search Variable Query");
-      return RestErrorMapper.mapProblemToResponse(problemDetail);
+      REST_LOGGER.debug("An exception occurred in searchUserTaskVariables.", e);
+      return mapErrorToResponse(e);
     }
   }
 }
