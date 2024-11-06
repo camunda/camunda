@@ -7,34 +7,19 @@
  */
 package io.camunda.db.rdbms.read.mapper;
 
-import static java.util.Optional.ofNullable;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.UserTaskEntity.UserTaskState;
-import java.util.HashMap;
 
 public class UserTaskEntityMapper {
 
   public static UserTaskEntity toEntity(final UserTaskDbModel dbModel) {
-    final var objectMapper = new ObjectMapper();
-
-    HashMap<String, String> customHeader = new HashMap<>();
-    if (dbModel.serializedCustomHeaders() != null && !dbModel.serializedCustomHeaders().isEmpty()) {
-      try {
-        customHeader = objectMapper.readValue(dbModel.serializedCustomHeaders(), HashMap.class);
-      } catch (final Exception e) {
-        throw new RuntimeException("Failed to deserialize custom headers", e);
-      }
-    }
-
     return new UserTaskEntity(
         dbModel.key(),
         dbModel.flowNodeBpmnId(),
         dbModel.processDefinitionId(),
-        ofNullable(dbModel.creationTime()).map(Object::toString).orElse(null),
-        ofNullable(dbModel.completionTime()).map(Object::toString).orElse(null),
+        dbModel.creationTime(),
+        dbModel.completionTime(),
         dbModel.assignee(),
         UserTaskState.valueOf(dbModel.state().name()),
         dbModel.formKey(),
@@ -42,13 +27,13 @@ public class UserTaskEntityMapper {
         dbModel.processInstanceKey(),
         dbModel.elementInstanceKey(),
         dbModel.tenantId(),
-        ofNullable(dbModel.dueDate()).map(Object::toString).orElse(null),
-        ofNullable(dbModel.followUpDate()).map(Object::toString).orElse(null),
+        dbModel.dueDate(),
+        dbModel.followUpDate(),
         dbModel.candidateGroups(),
         dbModel.candidateUsers(),
         dbModel.externalFormReference(),
         dbModel.processDefinitionVersion(),
-        customHeader,
+        dbModel.customHeaders(),
         dbModel.priority());
   }
 }

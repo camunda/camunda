@@ -132,14 +132,26 @@
     </createTable>
 
     <createTable tableName="CANDIDATE_USER">
-      <column name="USER_TASK_KEY" type="BIGINT"/>
+      <column name="USER_TASK_KEY" type="BIGINT">
+        <constraints foreignKeyName="FK_CANDIDATE_USER_USER_TASK"/>
+      </column>
       <column name="CANDIDATE_USER" type="VARCHAR(200)"/>
     </createTable>
 
     <createTable tableName="CANDIDATE_GROUP">
-      <column name="USER_TASK_KEY" type="BIGINT"/>
+      <column name="USER_TASK_KEY" type="BIGINT">
+        <constraints foreignKeyName="FK_CANDIDATE_GROUP_USER_TASK"/>
+      </column>
       <column name="CANDIDATE_GROUP" type="VARCHAR(200)"/>
     </createTable>
+
+    <createIndex tableName="CANDIDATE_USER" indexName="IDX_CANDIDATE_USER_USER_TASK_KEY">
+      <column name="USER_TASK_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="CANDIDATE_GROUP" indexName="IDX_CANDIDATE_GROUP_USER_TASK_KEY">
+      <column name="USER_TASK_KEY"/>
+    </createIndex>
 
     <modifySql dbms="mariadb">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->

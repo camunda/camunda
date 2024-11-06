@@ -7,18 +7,19 @@
  */
 package io.camunda.db.rdbms.write.domain;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 public class UserTaskDbModelTest {
 
   @Test
   public void testBuilder() {
-    OffsetDateTime now = OffsetDateTime.now();
-    UserTaskDbModel model =
+    final OffsetDateTime now = OffsetDateTime.now();
+    final UserTaskDbModel model =
         new UserTaskDbModel.Builder()
             .key(1L)
             .flowNodeBpmnId("flowNodeBpmnId")
@@ -38,37 +39,38 @@ public class UserTaskDbModelTest {
             .candidateUsers(List.of("user1", "user2"))
             .externalFormReference("externalFormReference")
             .processDefinitionVersion(1)
-            .serializedCustomHeaders("{\"key\":\"value\"}")
+            .customHeaders(Map.of("key", "value"))
             .priority(10)
             .build();
 
-    assertNotNull(model);
-    assertEquals(1L, model.key());
-    assertEquals("flowNodeBpmnId", model.flowNodeBpmnId());
-    assertEquals("processDefinitionId", model.processDefinitionId());
-    assertEquals(now, model.creationTime());
-    assertEquals(now, model.completionTime());
-    assertEquals("assignee", model.assignee());
-    assertEquals(UserTaskDbModel.UserTaskState.CREATED, model.state());
-    assertEquals(2L, model.formKey());
-    assertEquals(3L, model.processDefinitionKey());
-    assertEquals(4L, model.processInstanceKey());
-    assertEquals(5L, model.elementInstanceKey());
-    assertEquals("tenantId", model.tenantId());
-    assertEquals(now, model.dueDate());
-    assertEquals(now, model.followUpDate());
-    assertEquals(List.of("group1", "group2"), model.candidateGroups());
-    assertEquals(List.of("user1", "user2"), model.candidateUsers());
-    assertEquals("externalFormReference", model.externalFormReference());
-    assertEquals(1, model.processDefinitionVersion());
-    assertEquals("{\"key\":\"value\"}", model.serializedCustomHeaders());
-    assertEquals(10, model.priority());
+    assertThat(model).isNotNull();
+    assertThat(model.key()).isEqualTo(1L);
+    assertThat(model.flowNodeBpmnId()).isEqualTo("flowNodeBpmnId");
+    assertThat(model.processDefinitionId()).isEqualTo("processDefinitionId");
+    assertThat(model.creationTime()).isEqualTo(now);
+    assertThat(model.completionTime()).isEqualTo(now);
+    assertThat(model.assignee()).isEqualTo("assignee");
+    assertThat(model.state()).isEqualTo(UserTaskDbModel.UserTaskState.CREATED);
+    assertThat(model.formKey()).isEqualTo(2L);
+    assertThat(model.processDefinitionKey()).isEqualTo(3L);
+    assertThat(model.processInstanceKey()).isEqualTo(4L);
+    assertThat(model.elementInstanceKey()).isEqualTo(5L);
+    assertThat(model.tenantId()).isEqualTo("tenantId");
+    assertThat(model.dueDate()).isEqualTo(now);
+    assertThat(model.followUpDate()).isEqualTo(now);
+    assertThat(model.candidateGroups()).containsExactly("group1", "group2");
+    assertThat(model.candidateUsers()).containsExactly("user1", "user2");
+    assertThat(model.externalFormReference()).isEqualTo("externalFormReference");
+    assertThat(model.processDefinitionVersion()).isEqualTo(1);
+    assertThat(model.serializedCustomHeaders()).isEqualTo("{\"key\":\"value\"}");
+    assertThat(model.customHeaders()).containsEntry("key", "value");
+    assertThat(model.priority()).isEqualTo(10);
   }
 
   @Test
   public void testToBuilder() {
-    OffsetDateTime now = OffsetDateTime.now();
-    UserTaskDbModel model =
+    final OffsetDateTime now = OffsetDateTime.now();
+    final UserTaskDbModel model =
         new UserTaskDbModel.Builder()
             .key(1L)
             .flowNodeBpmnId("flowNodeBpmnId")
@@ -88,33 +90,34 @@ public class UserTaskDbModelTest {
             .candidateUsers(List.of("user1", "user2"))
             .externalFormReference("externalFormReference")
             .processDefinitionVersion(1)
-            .serializedCustomHeaders("{\"key\":\"value\"}")
+            .customHeaders(Map.of("key", "value"))
             .priority(10)
             .build();
 
-    UserTaskDbModel.Builder builder = model.toBuilder();
-    UserTaskDbModel newModel = builder.priority(20).build();
+    final UserTaskDbModel.Builder builder = model.toBuilder();
+    final UserTaskDbModel newModel = builder.priority(20).build();
 
-    assertNotNull(newModel);
-    assertEquals(1L, newModel.key());
-    assertEquals("flowNodeBpmnId", newModel.flowNodeBpmnId());
-    assertEquals("processDefinitionId", newModel.processDefinitionId());
-    assertEquals(now, newModel.creationTime());
-    assertEquals(now, newModel.completionTime());
-    assertEquals("assignee", newModel.assignee());
-    assertEquals(UserTaskDbModel.UserTaskState.CREATED, newModel.state());
-    assertEquals(2L, newModel.formKey());
-    assertEquals(3L, newModel.processDefinitionKey());
-    assertEquals(4L, newModel.processInstanceKey());
-    assertEquals(5L, newModel.elementInstanceKey());
-    assertEquals("tenantId", newModel.tenantId());
-    assertEquals(now, newModel.dueDate());
-    assertEquals(now, newModel.followUpDate());
-    assertEquals(List.of("group1", "group2"), newModel.candidateGroups());
-    assertEquals(List.of("user1", "user2"), newModel.candidateUsers());
-    assertEquals("externalFormReference", newModel.externalFormReference());
-    assertEquals(1, newModel.processDefinitionVersion());
-    assertEquals("{\"key\":\"value\"}", newModel.serializedCustomHeaders());
-    assertEquals(20, newModel.priority());
+    assertThat(newModel).isNotNull();
+    assertThat(newModel.key()).isEqualTo(1L);
+    assertThat(newModel.flowNodeBpmnId()).isEqualTo("flowNodeBpmnId");
+    assertThat(newModel.processDefinitionId()).isEqualTo("processDefinitionId");
+    assertThat(newModel.creationTime()).isEqualTo(now);
+    assertThat(newModel.completionTime()).isEqualTo(now);
+    assertThat(newModel.assignee()).isEqualTo("assignee");
+    assertThat(newModel.state()).isEqualTo(UserTaskDbModel.UserTaskState.CREATED);
+    assertThat(newModel.formKey()).isEqualTo(2L);
+    assertThat(newModel.processDefinitionKey()).isEqualTo(3L);
+    assertThat(newModel.processInstanceKey()).isEqualTo(4L);
+    assertThat(newModel.elementInstanceKey()).isEqualTo(5L);
+    assertThat(newModel.tenantId()).isEqualTo("tenantId");
+    assertThat(newModel.dueDate()).isEqualTo(now);
+    assertThat(newModel.followUpDate()).isEqualTo(now);
+    assertThat(newModel.candidateGroups()).containsExactly("group1", "group2");
+    assertThat(newModel.candidateUsers()).containsExactly("user1", "user2");
+    assertThat(newModel.externalFormReference()).isEqualTo("externalFormReference");
+    assertThat(newModel.processDefinitionVersion()).isEqualTo(1);
+    assertThat(newModel.serializedCustomHeaders()).isEqualTo("{\"key\":\"value\"}");
+    assertThat(newModel.customHeaders()).containsEntry("key", "value");
+    assertThat(newModel.priority()).isEqualTo(20);
   }
 }

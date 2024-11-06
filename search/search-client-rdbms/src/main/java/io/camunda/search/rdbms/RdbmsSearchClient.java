@@ -153,8 +153,7 @@ public class RdbmsSearchClient
   }
 
   @Override
-  public SearchQueryResult<UserTaskEntity> searchUserTasks(
-      final UserTaskQuery query) {
+  public SearchQueryResult<UserTaskEntity> searchUserTasks(final UserTaskQuery query) {
     final var searchResult =
         rdbmsService
             .getUserTaskReader()

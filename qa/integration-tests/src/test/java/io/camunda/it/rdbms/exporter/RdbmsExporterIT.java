@@ -22,14 +22,18 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ImmutableProcess;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -189,6 +193,21 @@ class RdbmsExporterIT {
     assertThat(completedFlowNode.get().state()).isEqualTo(FlowNodeState.COMPLETED);
   }
 
+  @Test
+  public void shouldExportUserTask() {
+    // given
+    final var userTaskRecord = getUserTaskCreatedRecord(1L);
+
+    // when
+    exporter.export(userTaskRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var key = ((UserTaskRecordValue) userTaskRecord.getValue()).getUserTaskKey();
+    final var userTask = rdbmsService.getUserTaskReader().findOne(key);
+    assertThat(userTask).isNotNull();
+  }
+
   private ImmutableRecord<RecordValue> getProcessInstanceStartedRecord(final Long position) {
     final Record<RecordValue> recordValueRecord =
         factory.generateRecord(ValueType.PROCESS_INSTANCE);
@@ -277,6 +296,28 @@ class RdbmsExporterIT {
             ImmutableProcessInstanceRecordValue.builder()
                 .from((ProcessInstanceRecordValue) recordValueRecord.getValue())
                 .withVersion(1)
+                .build())
+        .build();
+  }
+
+  private ImmutableRecord<RecordValue> getUserTaskCreatedRecord(final Long position) {
+    final Record<RecordValue> recordValueRecord = factory.generateRecord(ValueType.USER_TASK);
+
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withIntent(UserTaskIntent.CREATED)
+        .withPosition(position)
+        .withTimestamp(System.currentTimeMillis())
+        .withPartitionId(1)
+        .withValue(
+            ImmutableUserTaskRecordValue.builder()
+                .from((ImmutableUserTaskRecordValue) recordValueRecord.getValue())
+                .withCreationTimestamp(OffsetDateTime.now().toEpochSecond())
+                .withDueDate(OffsetDateTime.now().toString())
+                .withFollowUpDate(OffsetDateTime.now().toString())
+                .withProcessDefinitionVersion(1)
+                .withCandidateUsersList(List.of("user1", "user2"))
+                .withCandidateGroupsList(List.of("group1", "group2"))
                 .build())
         .build();
   }

@@ -22,10 +22,10 @@ import io.camunda.it.rdbms.db.fixtures.UserTaskFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.UserTaskEntity;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.sort.UserTaskSort;
-import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import org.assertj.core.data.TemporalUnitWithinOffset;
@@ -77,7 +77,7 @@ public class UserTaskIT {
 
     final UserTaskDbModel updatedModel =
         randomizedUserTask.toBuilder()
-            .candidateUsers(List.of("user1", "user2"))
+            .candidateUsers(List.of("user1", "user2", "user3"))
             .candidateGroups(List.of("group1", "group2"))
             .build();
     rdbmsWriter.getUserTaskWriter().update(updatedModel);
@@ -176,8 +176,8 @@ public class UserTaskIT {
                     .states(randomizedUserTask.state().name())
                     .processInstanceKeys(randomizedUserTask.processInstanceKey())
                     .processDefinitionKeys(randomizedUserTask.processDefinitionKey())
-                    .candidateUsers(randomizedUserTask.candidateUsers())
-                    .candidateGroups(randomizedUserTask.candidateGroups())
+                    .candidateUserOperations(Operation.in(randomizedUserTask.candidateUsers()))
+                    .candidateGroupOperations(Operation.in(randomizedUserTask.candidateGroups()))
                     .tenantIds(randomizedUserTask.tenantId())
                     .build(),
                 UserTaskSort.of(b -> b),
@@ -210,17 +210,17 @@ public class UserTaskIT {
     assertThat(instance.bpmnProcessId()).isEqualTo(randomizedUserTask.processDefinitionId());
     assertThat(instance.flowNodeInstanceId()).isEqualTo(randomizedUserTask.elementInstanceKey());
     assertThat(instance.processDefinitionId()).isEqualTo(randomizedUserTask.processDefinitionKey());
-    assertThat(OffsetDateTime.parse(instance.creationTime()))
+    assertThat(instance.creationTime())
         .isCloseTo(
             randomizedUserTask.creationTime(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
-    assertThat(OffsetDateTime.parse(instance.completionTime()))
+    assertThat(instance.completionTime())
         .isCloseTo(
             randomizedUserTask.completionTime(),
             new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
-    assertThat(OffsetDateTime.parse(instance.dueDate()))
+    assertThat(instance.dueDate())
         .isCloseTo(
             randomizedUserTask.dueDate(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
-    assertThat(OffsetDateTime.parse(instance.followUpDate()))
+    assertThat(instance.followUpDate())
         .isCloseTo(
             randomizedUserTask.followUpDate(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
     assertThat(instance.candidateUsers())

@@ -9,7 +9,6 @@ package io.camunda.db.rdbms.read.mapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel;
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel.Builder;
@@ -46,7 +45,7 @@ public class UserTaskEntityMapperTest {
             .candidateUsers(List.of("user1", "user2"))
             .externalFormReference("externalFormReference")
             .processDefinitionVersion(1)
-            .serializedCustomHeaders("{\"key\":\"value\"}")
+            .customHeaders(Map.of("key", "value"))
             .priority(1)
             .build();
 
@@ -73,45 +72,14 @@ public class UserTaskEntityMapperTest {
     assertThat(entity.processInstanceId()).isEqualTo(dbModel.processInstanceKey());
     assertThat(entity.flowNodeInstanceId()).isEqualTo(dbModel.elementInstanceKey());
     assertThat(entity.customHeaders()).isEqualTo(Map.of("key", "value"));
-    assertThat(OffsetDateTime.parse(entity.creationTime()))
+    assertThat(entity.creationTime())
         .isCloseTo(dbModel.creationTime(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
-    assertThat(OffsetDateTime.parse(entity.completionTime()))
+    assertThat(entity.completionTime())
         .isCloseTo(dbModel.completionTime(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
-    assertThat(OffsetDateTime.parse(entity.dueDate()))
+    assertThat(entity.dueDate())
         .isCloseTo(dbModel.dueDate(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
-    assertThat(OffsetDateTime.parse(entity.followUpDate()))
+    assertThat(entity.followUpDate())
         .isCloseTo(dbModel.followUpDate(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
-  }
-
-  @Test
-  public void testToEntityWithInvalidCustomHeaders() {
-    // Given
-    final UserTaskDbModel dbModel =
-        new Builder()
-            .key(1L)
-            .flowNodeBpmnId("flowNodeBpmnId")
-            .processDefinitionId("processDefinitionId")
-            .creationTime(OffsetDateTime.now())
-            .completionTime(OffsetDateTime.now().plusDays(1))
-            .assignee("assignee")
-            .state(UserTaskDbModel.UserTaskState.CREATED)
-            .formKey(1L)
-            .processDefinitionKey(1L)
-            .processInstanceKey(1L)
-            .elementInstanceKey(1L)
-            .tenantId("tenantId")
-            .dueDate(OffsetDateTime.now().plusDays(3))
-            .followUpDate(OffsetDateTime.now().plusDays(2))
-            .candidateGroups(List.of("group1", "group2"))
-            .candidateUsers(List.of("user1", "user2"))
-            .externalFormReference("externalFormReference")
-            .processDefinitionVersion(1)
-            .serializedCustomHeaders("invalid_json")
-            .priority(1)
-            .build();
-
-    // When & Then
-    assertThrows(RuntimeException.class, () -> UserTaskEntityMapper.toEntity(dbModel));
   }
 
   @Test
@@ -137,7 +105,7 @@ public class UserTaskEntityMapperTest {
             .candidateUsers(List.of("user1", "user2"))
             .externalFormReference("externalFormReference")
             .processDefinitionVersion(1)
-            .serializedCustomHeaders("{\"key\":\"value\"}")
+            .customHeaders(Map.of("key", "value"))
             .priority(1)
             .build();
 
@@ -164,7 +132,7 @@ public class UserTaskEntityMapperTest {
     assertThat(entity.processInstanceId()).isEqualTo(dbModel.processInstanceKey());
     assertThat(entity.flowNodeInstanceId()).isEqualTo(dbModel.elementInstanceKey());
     assertThat(entity.customHeaders()).isEqualTo(Map.of("key", "value"));
-    assertThat(OffsetDateTime.parse(entity.creationTime()))
+    assertThat(entity.creationTime())
         .isCloseTo(dbModel.creationTime(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
     assertNull(entity.completionTime());
     assertNull(entity.dueDate());

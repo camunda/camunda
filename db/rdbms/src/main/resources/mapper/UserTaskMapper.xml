@@ -55,25 +55,29 @@
   <resultMap id="searchResultMap" type="io.camunda.db.rdbms.write.domain.UserTaskDbModel">
     <constructor>
       <idArg column="USER_TASK_KEY" javaType="java.lang.Long"/>
-      <arg column="FLOW_NODE_BPM_ID" javaType="java.lang.String"/>
-      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
-      <arg column="CREATION_TIME" javaType="java.time.OffsetDateTime"/>
-      <arg column="COMPLETION_TIME" javaType="java.time.OffsetDateTime"/>
-      <arg column="ASSIGNEE" javaType="java.lang.String"/>
-      <arg column="STATE"
-        javaType="io.camunda.db.rdbms.write.domain.UserTaskDbModel$UserTaskState"/>
-      <arg column="FORM_KEY" javaType="java.lang.Long"/>
-      <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
-      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="ELEMENT_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="TENANT_ID" javaType="java.lang.String"/>
-      <arg column="DUE_DATE" javaType="java.time.OffsetDateTime"/>
-      <arg column="FOLLOW_UP_DATE" javaType="java.time.OffsetDateTime"/>
-      <arg column="EXTERNAL_FORM_REFERENCE" javaType="java.lang.String"/>
-      <arg column="PROCESS_DEFINITION_VERSION" javaType="java.lang.Integer"/>
-      <arg column="CUSTOM_HEADERS" javaType="java.lang.String"/>
-      <arg column="PRIORITY" javaType="java.lang.Integer"/>
     </constructor>
+    <result property="flowNodeBpmnId" column="FLOW_NODE_BPM_ID" javaType="java.lang.String"/>
+    <result property="processDefinitionId" column="PROCESS_DEFINITION_ID"
+      javaType="java.lang.String"/>
+    <result property="creationTime" column="CREATION_TIME" javaType="java.time.OffsetDateTime"/>
+    <result property="completionTime" column="COMPLETION_TIME" javaType="java.time.OffsetDateTime"/>
+    <result property="assignee" column="ASSIGNEE" javaType="java.lang.String"/>
+    <result property="state" column="STATE"
+      javaType="io.camunda.db.rdbms.write.domain.UserTaskDbModel$UserTaskState"/>
+    <result property="formKey" column="FORM_KEY" javaType="java.lang.Long"/>
+    <result property="processDefinitionKey" column="PROCESS_DEFINITION_KEY"
+      javaType="java.lang.Long"/>
+    <result property="processInstanceKey" column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+    <result property="elementInstanceKey" column="ELEMENT_INSTANCE_KEY" javaType="java.lang.Long"/>
+    <result property="tenantId" column="TENANT_ID" javaType="java.lang.String"/>
+    <result property="dueDate" column="DUE_DATE" javaType="java.time.OffsetDateTime"/>
+    <result property="followUpDate" column="FOLLOW_UP_DATE" javaType="java.time.OffsetDateTime"/>
+    <result property="externalFormReference" column="EXTERNAL_FORM_REFERENCE"
+      javaType="java.lang.String"/>
+    <result property="processDefinitionVersion" column="PROCESS_DEFINITION_VERSION"
+      javaType="java.lang.Integer"/>
+    <result property="serializedCustomHeaders" column="CUSTOM_HEADERS" javaType="java.lang.String"/>
+    <result property="priority" column="PRIORITY" javaType="java.lang.Integer"/>
     <collection property="candidateGroups" ofType="java.lang.String" javaType="java.util.List">
       <id column="CANDIDATE_GROUP"/>
     </collection>
@@ -174,10 +178,16 @@
         separator=", ">#{value}
       </foreach>
     </if>
-    <if test="filter.assignees != null and !filter.assignees.isEmpty()">
-      AND ut.ASSIGNEE IN
-      <foreach close=")" collection="filter.assignees" item="value" open="("
-        separator=", ">#{value}
+    <if test="filter.assigneeOperations != null and !filter.assigneeOperations.isEmpty()">
+      <foreach collection="filter.assigneeOperations" item="operation">
+        AND ut.ASSIGNEE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.priorityOperations != null and !filter.priorityOperations.isEmpty()">
+      <foreach collection="filter.priorityOperations" item="operation">
+        AND ut.PRIORITY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
     <if test="filter.states != null and !filter.states.isEmpty()">
@@ -205,22 +215,23 @@
       </foreach>
     </if>
 
-    <!-- logig for candidate groups and users -->
-    <if test="filter.candidateGroups != null and !filter.candidateGroups.isEmpty()">
-      AND (Select count(*) from CANDIDATE_GROUP cg where cg.USER_TASK_KEY = ut.USER_TASK_KEY and
-      CANDIDATE_GROUP IN
-      <foreach close=")" collection="filter.candidateGroups" item="value" open="("
-        separator=", ">#{value}
+    <!-- candidate groups and users -->
+    <if
+      test="filter.candidateGroupOperations != null and !filter.candidateGroupOperations.isEmpty()">
+      AND EXISTS (Select * from CANDIDATE_GROUP cg where cg.USER_TASK_KEY = ut.USER_TASK_KEY
+      <foreach collection="filter.candidateGroupOperations" item="operation">
+        AND cg.CANDIDATE_GROUP
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
-      ) > 0
+      )
     </if>
-    <if test="filter.candidateUsers != null and !filter.candidateUsers.isEmpty()">
-      AND (Select count(*) from CANDIDATE_USER cu where cu.USER_TASK_KEY = ut.USER_TASK_KEY and
-      CANDIDATE_USER IN
-      <foreach close=")" collection="filter.candidateUsers" item="value" open="("
-        separator=", ">#{value}
+    <if test="filter.candidateUserOperations != null and !filter.candidateUserOperations.isEmpty()">
+      AND EXISTS (Select * from CANDIDATE_USER cu where cu.USER_TASK_KEY = ut.USER_TASK_KEY
+      <foreach collection="filter.candidateUserOperations" item="operation">
+        AND cu.CANDIDATE_USER
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
-      ) > 0
+      )
     </if>
 
     <!-- TODO "variables" -->

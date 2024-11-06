@@ -16,9 +16,19 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import java.time.OffsetDateTime;
+import java.util.Set;
 
 /** Based on UserTaskRecordToTaskEntityMapper */
 public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordValue> {
+
+  private static final Set<UserTaskIntent> EXPORTABLE_INTENTS =
+      Set.of(
+          UserTaskIntent.CREATED,
+          UserTaskIntent.UPDATED,
+          UserTaskIntent.CANCELED,
+          UserTaskIntent.ASSIGNED,
+          UserTaskIntent.COMPLETED,
+          UserTaskIntent.MIGRATED);
 
   private final UserTaskWriter userTaskWriter;
 
@@ -28,12 +38,11 @@ public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordV
 
   @Override
   public boolean canExport(final Record<UserTaskRecordValue> record) {
-    return record.getIntent() == UserTaskIntent.CREATED
-        || record.getIntent() == UserTaskIntent.UPDATED
-        || record.getIntent() == UserTaskIntent.CANCELED
-        || record.getIntent() == UserTaskIntent.ASSIGNED
-        || record.getIntent() == UserTaskIntent.COMPLETED
-        || record.getIntent() == UserTaskIntent.MIGRATED;
+    if (record.getIntent() != null && record.getIntent() instanceof UserTaskIntent intent) {
+      return EXPORTABLE_INTENTS.contains(intent);
+    }
+
+    return false;
   }
 
   @Override
@@ -43,17 +52,15 @@ public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordV
       case CREATED -> userTaskWriter.create(map(value, UserTaskState.CREATED, null));
       case CANCELED ->
           userTaskWriter.update(
-              map(value,
-                  UserTaskState.CANCELED,
-                  DateUtil.toOffsetDateTime(record.getTimestamp())));
+              map(value, UserTaskState.CANCELED, DateUtil.toOffsetDateTime(record.getTimestamp())));
       case COMPLETED ->
           userTaskWriter.update(
-              map(value,
+              map(
+                  value,
                   UserTaskState.COMPLETED,
                   DateUtil.toOffsetDateTime(record.getTimestamp())));
       case MIGRATED -> userTaskWriter.update(map(value, UserTaskState.CREATED, null));
-      default ->
-          userTaskWriter.update(map(value, null, null));
+      default -> userTaskWriter.update(map(value, null, null));
     }
   }
 

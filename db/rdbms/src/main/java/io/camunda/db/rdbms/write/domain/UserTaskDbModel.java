@@ -7,41 +7,40 @@
  */
 package io.camunda.db.rdbms.write.domain;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.db.rdbms.write.util.CustomHeaderSerializer;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class UserTaskDbModel {
 
-  private static final Logger LOG = LoggerFactory.getLogger(UserTaskDbModel.class);
-
-  private final Long key;
-  private final String flowNodeBpmnId; // elementId in UserTaskFilter
-  private final String processDefinitionId;
-  private final OffsetDateTime creationTime;
-  private final OffsetDateTime completionTime;
-  private final String assignee;
-  private final UserTaskState state;
-  private final Long formKey;
-  private final Long processDefinitionKey;
-  private final Long processInstanceKey;
-  private final Long elementInstanceKey;
-  private final String tenantId;
-  private final OffsetDateTime dueDate;
-  private final OffsetDateTime followUpDate;
+  private Long key;
+  private String flowNodeBpmnId; // elementId in UserTaskFilter
+  private String processDefinitionId;
+  private OffsetDateTime creationTime;
+  private OffsetDateTime completionTime;
+  private String assignee;
+  private UserTaskState state;
+  private Long formKey;
+  private Long processDefinitionKey;
+  private Long processInstanceKey;
+  private Long elementInstanceKey;
+  private String tenantId;
+  private OffsetDateTime dueDate;
+  private OffsetDateTime followUpDate;
   private List<String> candidateGroups;
   private List<String> candidateUsers;
-  private final String externalFormReference;
-  private final Integer processDefinitionVersion;
+  private String externalFormReference;
+  private Integer processDefinitionVersion;
   private String serializedCustomHeaders;
   private Map<String, String> customHeaders;
   private Integer priority;
+
+  public UserTaskDbModel(final Long userTaskKey) {
+    key = userTaskKey;
+  }
 
   public UserTaskDbModel(
       final Long userTaskKey,
@@ -60,7 +59,7 @@ public class UserTaskDbModel {
       final OffsetDateTime followUpDate,
       final String externalFormReference,
       final Integer processDefinitionVersion,
-      final String customHeaders,
+      final Map<String, String> customHeaders,
       final Integer priority) {
     key = userTaskKey;
     this.flowNodeBpmnId = flowNodeBpmnId;
@@ -78,17 +77,130 @@ public class UserTaskDbModel {
     this.followUpDate = followUpDate;
     this.externalFormReference = externalFormReference;
     this.processDefinitionVersion = processDefinitionVersion;
-    serializedCustomHeaders = customHeaders;
+    this.customHeaders = customHeaders;
+    serializedCustomHeaders = CustomHeaderSerializer.serialize(customHeaders);
     this.priority = priority;
   }
 
-  // Getters and Setters for modifiable fields
+  // Methods without get/set prefix
+
+  public Long key() {
+    return key;
+  }
+
+  public void key(final Long key) {
+    this.key = key;
+  }
+
+  public String flowNodeBpmnId() {
+    return flowNodeBpmnId;
+  }
+
+  public void flowNodeBpmnId(final String flowNodeBpmnId) {
+    this.flowNodeBpmnId = flowNodeBpmnId;
+  }
+
+  public String processDefinitionId() {
+    return processDefinitionId;
+  }
+
+  public void processDefinitionId(final String processDefinitionId) {
+    this.processDefinitionId = processDefinitionId;
+  }
+
+  public OffsetDateTime creationTime() {
+    return creationTime;
+  }
+
+  public void creationTime(final OffsetDateTime creationTime) {
+    this.creationTime = creationTime;
+  }
+
+  public OffsetDateTime completionTime() {
+    return completionTime;
+  }
+
+  public void completionTime(final OffsetDateTime completionTime) {
+    this.completionTime = completionTime;
+  }
+
+  public String assignee() {
+    return assignee;
+  }
+
+  public void assignee(final String assignee) {
+    this.assignee = assignee;
+  }
+
+  public UserTaskState state() {
+    return state;
+  }
+
+  public void state(final UserTaskState state) {
+    this.state = state;
+  }
+
+  public Long formKey() {
+    return formKey;
+  }
+
+  public void formKey(final Long formKey) {
+    this.formKey = formKey;
+  }
+
+  public Long processDefinitionKey() {
+    return processDefinitionKey;
+  }
+
+  public void processDefinitionKey(final Long processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
+  }
+
+  public Long processInstanceKey() {
+    return processInstanceKey;
+  }
+
+  public void processInstanceKey(final Long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
+  }
+
+  public Long elementInstanceKey() {
+    return elementInstanceKey;
+  }
+
+  public void elementInstanceKey(final Long elementInstanceKey) {
+    this.elementInstanceKey = elementInstanceKey;
+  }
+
+  public String tenantId() {
+    return tenantId;
+  }
+
+  public void tenantId(final String tenantId) {
+    this.tenantId = tenantId;
+  }
+
+  public OffsetDateTime dueDate() {
+    return dueDate;
+  }
+
+  public void dueDate(final OffsetDateTime dueDate) {
+    this.dueDate = dueDate;
+  }
+
+  public OffsetDateTime followUpDate() {
+    return followUpDate;
+  }
+
+  public void followUpDate(final OffsetDateTime followUpDate) {
+    this.followUpDate = followUpDate;
+  }
 
   public List<String> candidateGroups() {
     return candidateGroups;
   }
 
-  public void setCandidateGroups(final List<String> candidateGroups) {
+  public void candidateGroups(final List<String> candidateGroups) {
     this.candidateGroups = candidateGroups;
   }
 
@@ -96,23 +208,40 @@ public class UserTaskDbModel {
     return candidateUsers;
   }
 
-  public void setCandidateUsers(final List<String> candidateUsers) {
+  public void candidateUsers(final List<String> candidateUsers) {
     this.candidateUsers = candidateUsers;
+  }
+
+  public String externalFormReference() {
+    return externalFormReference;
+  }
+
+  public void externalFormReference(final String externalFormReference) {
+    this.externalFormReference = externalFormReference;
+  }
+
+  public Integer processDefinitionVersion() {
+    return processDefinitionVersion;
+  }
+
+  public void processDefinitionVersion(final Integer processDefinitionVersion) {
+    this.processDefinitionVersion = processDefinitionVersion;
   }
 
   public String serializedCustomHeaders() {
     return serializedCustomHeaders;
   }
 
-  public void setSerializedCustomHeaders(final String serializedCustomHeaders) {
+  public void serializedCustomHeaders(final String serializedCustomHeaders) {
     this.serializedCustomHeaders = serializedCustomHeaders;
+    customHeaders = CustomHeaderSerializer.deserialize(serializedCustomHeaders);
   }
 
   public Map<String, String> customHeaders() {
     return customHeaders;
   }
 
-  public void setCustomHeaders(final Map<String, String> customHeaders) {
+  public void customHeaders(final Map<String, String> customHeaders) {
     this.customHeaders = customHeaders;
   }
 
@@ -120,74 +249,8 @@ public class UserTaskDbModel {
     return priority;
   }
 
-  public void setPriority(final Integer priority) {
+  public void priority(final Integer priority) {
     this.priority = priority;
-  }
-
-  // Getters for non-modifiable fields
-
-  public Long key() {
-    return key;
-  }
-
-  public String flowNodeBpmnId() {
-    return flowNodeBpmnId;
-  }
-
-  public String processDefinitionId() {
-    return processDefinitionId;
-  }
-
-  public OffsetDateTime creationTime() {
-    return creationTime;
-  }
-
-  public OffsetDateTime completionTime() {
-    return completionTime;
-  }
-
-  public String assignee() {
-    return assignee;
-  }
-
-  public UserTaskState state() {
-    return state;
-  }
-
-  public Long formKey() {
-    return formKey;
-  }
-
-  public Long processDefinitionKey() {
-    return processDefinitionKey;
-  }
-
-  public Long processInstanceKey() {
-    return processInstanceKey;
-  }
-
-  public Long elementInstanceKey() {
-    return elementInstanceKey;
-  }
-
-  public String tenantId() {
-    return tenantId;
-  }
-
-  public OffsetDateTime dueDate() {
-    return dueDate;
-  }
-
-  public OffsetDateTime followUpDate() {
-    return followUpDate;
-  }
-
-  public String externalFormReference() {
-    return externalFormReference;
-  }
-
-  public Integer processDefinitionVersion() {
-    return processDefinitionVersion;
   }
 
   public Builder toBuilder() {
@@ -210,7 +273,7 @@ public class UserTaskDbModel {
         .candidateUsers(candidateUsers)
         .externalFormReference(externalFormReference)
         .processDefinitionVersion(processDefinitionVersion)
-        .serializedCustomHeaders(serializedCustomHeaders)
+        .customHeaders(customHeaders)
         .priority(priority);
   }
 
@@ -234,7 +297,7 @@ public class UserTaskDbModel {
     private List<String> candidateUsers;
     private String externalFormReference;
     private Integer processDefinitionVersion;
-    private String serializedCustomHeaders;
+    private Map<String, String> customHeaders;
     private Integer priority;
 
     // Public constructor to initialize the builder
@@ -337,17 +400,7 @@ public class UserTaskDbModel {
     }
 
     public Builder customHeaders(final Map<String, String> customHeaders) {
-      final ObjectMapper mapper = new ObjectMapper();
-      try {
-        serializedCustomHeaders = mapper.writeValueAsString(customHeaders);
-      } catch (final JsonProcessingException e) {
-        LOG.warn("Failed to serialize custom headers!", e);
-      }
-      return this;
-    }
-
-    public Builder serializedCustomHeaders(final String serializedCustomHeaders) {
-      this.serializedCustomHeaders = serializedCustomHeaders;
+      this.customHeaders = customHeaders;
       return this;
     }
 
@@ -377,11 +430,11 @@ public class UserTaskDbModel {
               followUpDate,
               externalFormReference,
               processDefinitionVersion,
-              serializedCustomHeaders,
+              customHeaders,
               priority);
 
-      model.setCandidateUsers(candidateUsers);
-      model.setCandidateGroups(candidateGroups);
+      model.candidateUsers(candidateUsers);
+      model.candidateGroups(candidateGroups);
 
       return model;
     }

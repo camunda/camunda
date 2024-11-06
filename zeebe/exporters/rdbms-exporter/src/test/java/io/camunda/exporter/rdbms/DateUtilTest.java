@@ -17,19 +17,19 @@ import org.junit.jupiter.api.Test;
 public class DateUtilTest {
 
   @Test
-  public void testToOffsetDateTimeFromLong() {
-    // Arrange
+  public void shouldConvertLongToOffsetDateTime() {
+    // Given
     final Long timestamp = 1633046400000L;
 
-    // Act
+    // When
     final OffsetDateTime result = DateUtil.toOffsetDateTime(timestamp);
 
-    // Assert
+    // Then
     assertThat(result).isEqualTo(OffsetDateTime.parse("2021-10-01T00:00:00Z"));
   }
 
   @Test
-  public void testToOffsetDateTimeFromString() {
+  public void shouldConvertStringToOffsetDateTime() {
     // Given
     final String timestamp = "2021-10-01T00:00:00Z";
 
@@ -41,7 +41,7 @@ public class DateUtilTest {
   }
 
   @Test
-  public void testToOffsetDateTimeFromStringWithFormatter() {
+  public void shouldConvertStringToOffsetDateTimeWithFormatter() {
     // Given
     final String timestamp = "2021-10-01T00:00:00+00:00";
     final DateTimeFormatter formatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
@@ -54,25 +54,31 @@ public class DateUtilTest {
   }
 
   @Test
-  public void testToOffsetDateTimeFromNullString() {
+  public void shouldReturnNullForNullString() {
+    // Given
+    final String timestamp = null;
+
     // When
-    final OffsetDateTime result = DateUtil.toOffsetDateTime((String) null);
+    final OffsetDateTime result = DateUtil.toOffsetDateTime(timestamp);
 
     // Then
     assertNull(result);
   }
 
   @Test
-  public void testToOffsetDateTimeFromBlankString() {
+  public void shouldReturnNullForBlankString() {
+    // Given
+    final String timestamp = "";
+
     // When
-    final OffsetDateTime result = DateUtil.toOffsetDateTime("");
+    final OffsetDateTime result = DateUtil.toOffsetDateTime(timestamp);
 
     // Then
     assertNull(result);
   }
 
   @Test
-  public void testToOffsetDateTimeFromInvalidString() {
+  public void shouldReturnNullForInvalidString() {
     // Given
     final String invalidTimestamp = "invalid-date";
 
