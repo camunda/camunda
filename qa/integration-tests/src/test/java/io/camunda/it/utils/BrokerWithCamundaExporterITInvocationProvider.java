@@ -56,7 +56,8 @@ public class BrokerWithCamundaExporterITInvocationProvider
   private Consumer<BrokerBasedProperties> additionalBrokerConfig = cfg -> {};
   private final Map<String, Object> additionalProperties = new HashMap<>();
   private final List<AutoCloseable> closeables = new ArrayList<>();
-  private final ZeebeClientTestFactory zeebeClientTestFactory = new ZeebeClientTestFactory();
+  private final Map<String, ZeebeClientTestFactory> zeebeClientTestFactories = new HashMap<>();
+  private final List<User> registeredUsers = new ArrayList<>();
 
   public BrokerWithCamundaExporterITInvocationProvider() {
     exporterTypes = new HashMap<>();
@@ -90,7 +91,7 @@ public class BrokerWithCamundaExporterITInvocationProvider
   }
 
   public BrokerWithCamundaExporterITInvocationProvider withUsers(final User... users) {
-    zeebeClientTestFactory.registerUsers(users);
+    registeredUsers.addAll(List.of(users));
     return this;
   }
 
@@ -125,12 +126,15 @@ public class BrokerWithCamundaExporterITInvocationProvider
                   closeables.add(testBroker);
                   testBrokers.put(entry.getKey(), testBroker);
                   testBroker.awaitCompleteTopology();
+                  final var zeebeClientTestFactory =
+                      new ZeebeClientTestFactory().withUsers(registeredUsers);
+                  zeebeClientTestFactories.put(entry.getKey(), zeebeClientTestFactory);
+                  closeables.add(zeebeClientTestFactory);
                 }
                 default -> throw new RuntimeException("Unknown exporter type");
               }
               LOGGER.info("Start up of '{}' finished.", entry.getKey());
             });
-    closeables.add(zeebeClientTestFactory);
   }
 
   @Override
@@ -172,6 +176,8 @@ public class BrokerWithCamundaExporterITInvocationProvider
                 if (TestStandaloneBroker.class.equals(parameter.getType())) {
                   return testGateway;
                 } else if (ZeebeClient.class.equals(parameter.getType())) {
+                  final var zeebeClientTestFactory =
+                      zeebeClientTestFactories.get(standaloneCamundaKey);
                   return zeebeClientTestFactory.createZeebeClient(
                       testGateway, parameter.getAnnotation(Authenticated.class));
                 }

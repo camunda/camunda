@@ -12,6 +12,7 @@ import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.READ;
 import static io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum.DEPLOYMENT;
 import static io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum.PROCESS_DEFINITION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.camunda.application.Profile;
 import io.camunda.it.utils.BrokerWithCamundaExporterITInvocationProvider;
@@ -19,14 +20,20 @@ import io.camunda.it.utils.ZeebeClientTestFactory.Authenticated;
 import io.camunda.it.utils.ZeebeClientTestFactory.Permissions;
 import io.camunda.it.utils.ZeebeClientTestFactory.User;
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import java.time.Duration;
 import java.util.List;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.function.Executable;
 
-public class ProcessAuthorizationIT {
+@TestInstance(Lifecycle.PER_CLASS)
+class ProcessAuthorizationIT {
 
   private static final String ADMIN = "admin";
   private static final String RESTRICTED = "restricted-user";
@@ -52,19 +59,27 @@ public class ProcessAuthorizationIT {
           .withAuthorizationsEnabled()
           .withUsers(ADMIN_USER, RESTRICTED_USER);
 
+  private boolean initialized;
+
+  /**
+   * @param adminClient
+   */
+  @BeforeEach
+  void setUp(@Authenticated(ADMIN) final ZeebeClient adminClient) {
+    if (!initialized) {
+      final List<String> processes =
+          List.of("service_tasks_v1.bpmn", "service_tasks_v2.bpmn", "incident_process_v1.bpmn");
+      processes.forEach(
+          process ->
+              deployResource(adminClient, String.format("process/%s", process)).getProcesses());
+      waitForProcessesToBeDeployed(adminClient, processes.size());
+      initialized = true;
+    }
+  }
+
   @TestTemplate
   void shouldReturnAuthorizedProcessDefinitions(
-      @Authenticated(ADMIN) final ZeebeClient adminClient,
       @Authenticated(RESTRICTED) final ZeebeClient userClient) {
-
-    // given
-    final List<String> processes =
-        List.of("service_tasks_v1.bpmn", "service_tasks_v2.bpmn", "incident_process_v1.bpmn");
-    processes.forEach(
-        process ->
-            deployResource(adminClient, String.format("process/%s", process)).getProcesses());
-    waitForProcessesToBeDeployed(adminClient, processes.size());
-
     // when
     final var processDefinitions = userClient.newProcessDefinitionQuery().send().join().items();
 
@@ -72,6 +87,51 @@ public class ProcessAuthorizationIT {
     assertThat(processDefinitions).hasSize(2);
     assertThat(processDefinitions.stream().map(p -> p.getProcessDefinitionId()).toList())
         .containsExactlyInAnyOrder("service_tasks_v1", "service_tasks_v2");
+  }
+
+  @TestTemplate
+  void shouldReturnForbiddenForUnauthorizedProcessDefinition(
+      @Authenticated(ADMIN) final ZeebeClient adminClient,
+      @Authenticated(RESTRICTED) final ZeebeClient userClient) {
+    // given
+    final var processDefinitionKey = getProcessDefinitionKey(adminClient, "incident_process_v1");
+
+    // when
+    final Executable executeGet =
+        () -> userClient.newProcessDefinitionGetRequest(processDefinitionKey).send().join();
+
+    // then
+    final var problemException = assertThrows(ProblemException.class, executeGet);
+    assertThat(problemException.code()).isEqualTo(403);
+    assertThat(problemException.details().getDetail())
+        .isEqualTo("Unauthorized to perform operation 'READ' on resource 'PROCESS_DEFINITION'");
+  }
+
+  @TestTemplate
+  void shouldReturnAuthorizedProcessDefinition(
+      @Authenticated(ADMIN) final ZeebeClient adminClient,
+      @Authenticated(RESTRICTED) final ZeebeClient userClient) {
+    // given
+    final var processDefinitionKey = getProcessDefinitionKey(adminClient, "service_tasks_v1");
+
+    // when
+    final var processDefinition =
+        userClient.newProcessDefinitionGetRequest(processDefinitionKey).send().join();
+
+    // then
+    assertThat(processDefinition).isNotNull();
+    assertThat(processDefinition.getProcessDefinitionId()).isEqualTo("service_tasks_v1");
+  }
+
+  private long getProcessDefinitionKey(final ZeebeClient client, final String processDefinitionId) {
+    return client
+        .newProcessDefinitionQuery()
+        .filter(f -> f.processDefinitionId(processDefinitionId))
+        .send()
+        .join()
+        .items()
+        .getFirst()
+        .getProcessDefinitionKey();
   }
 
   private DeploymentEvent deployResource(final ZeebeClient zeebeClient, final String resourceName) {

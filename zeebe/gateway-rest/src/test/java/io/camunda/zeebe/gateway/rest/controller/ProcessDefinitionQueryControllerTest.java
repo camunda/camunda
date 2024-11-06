@@ -19,8 +19,10 @@ import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.Authorization;
 import io.camunda.service.FormServices;
 import io.camunda.service.ProcessDefinitionServices;
+import io.camunda.service.exception.ForbiddenException;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import java.util.Optional;
@@ -188,6 +190,34 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
 
     // Verify that the service was called with the valid key
     verify(processDefinitionServices).getByKey(23L);
+  }
+
+  @Test
+  public void shouldReturn403ForForbiddenProcessDefinitionKey() {
+    // given
+    when(processDefinitionServices.getByKey(17L))
+        .thenThrow(new ForbiddenException(Authorization.of(a -> a.processDefinition().read())));
+    // when / then
+    webClient
+        .get()
+        .uri(PROCESS_DEFINITION_URL + "17")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isForbidden()
+        .expectBody()
+        .json(
+            """
+                    {
+                      "type": "about:blank",
+                      "status": 403,
+                      "title": "io.camunda.service.exception.ForbiddenException",
+                      "detail": "Unauthorized to perform operation 'READ' on resource 'PROCESS_DEFINITION'"
+                    }
+                """);
+
+    // Verify that the service was called with the invalid key
+    verify(processDefinitionServices).getByKey(17L);
   }
 
   @Test

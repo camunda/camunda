@@ -18,6 +18,7 @@ import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.NotFoundException;
 import io.camunda.service.DocumentServices.DocumentException;
 import io.camunda.service.exception.CamundaBrokerException;
+import io.camunda.service.exception.ForbiddenException;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.NoTopologyAvailableException;
@@ -92,6 +93,8 @@ public class RestErrorMapper {
       case final NotFoundException nfe:
         yield createProblemDetail(
             HttpStatus.NOT_FOUND, nfe.getMessage(), RejectionType.NOT_FOUND.name());
+      case final ForbiddenException fe:
+        yield createProblemDetail(HttpStatus.FORBIDDEN, fe.getMessage(), fe.getClass().getName());
       case final CamundaSearchException cse:
         yield cse.getCause() != null ? mapErrorToProblem(cse.getCause(), rejectionMapper) : null;
       case final CamundaBrokerException cse:

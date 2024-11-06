@@ -92,7 +92,9 @@ public class ProcessDefinitionQueryController {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toProcessDefinition(
-                  processDefinitionServices.getByKey(processDefinitionKey)));
+                  processDefinitionServices
+                      .withAuthentication(RequestMapper.getAuthentication())
+                      .getByKey(processDefinitionKey)));
     } catch (final Exception exc) {
       // Error case: Return the right side with ProblemDetail
       final var problemDetail =
@@ -129,7 +131,9 @@ public class ProcessDefinitionQueryController {
       @PathVariable("processDefinitionKey") final long processDefinitionKey) {
     try {
       final ProcessDefinitionEntity processDefinition =
-          processDefinitionServices.getByKey(processDefinitionKey);
+          processDefinitionServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .getByKey(processDefinitionKey);
 
       if (processDefinition.formId() != null) {
         return ResponseEntity.ok()
