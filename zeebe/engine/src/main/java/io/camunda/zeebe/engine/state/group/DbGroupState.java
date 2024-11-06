@@ -102,6 +102,13 @@ public class DbGroupState implements MutableGroupState {
   }
 
   @Override
+  public void removeEntity(final long groupKey, final long entityKey) {
+    this.groupKey.wrapLong(groupKey);
+    this.entityKey.wrapLong(entityKey);
+    entityTypeByGroupColumnFamily.deleteExisting(fkGroupKeyAndEntityKey);
+  }
+
+  @Override
   public Optional<PersistedGroup> get(final long groupKey) {
     this.groupKey.wrapLong(groupKey);
     final var persistedGroup = groupColumnFamily.get(this.groupKey);

@@ -118,6 +118,20 @@ public class DbMappingState implements MutableMappingState {
   }
 
   @Override
+  public void removeGroup(final long mappingKey, final long groupKey) {
+    this.mappingKey.wrapLong(mappingKey);
+    final var fkClaim = claimByKeyColumnFamily.get(this.mappingKey);
+    if (fkClaim != null) {
+      final var claim = fkClaim.inner();
+      final var persistedMapping = mappingColumnFamily.get(claim);
+      final List<Long> groupKeys = persistedMapping.getGroupKeysList();
+      groupKeys.remove(groupKey);
+      persistedMapping.setGroupKeysList(groupKeys);
+      mappingColumnFamily.update(claim, persistedMapping);
+    }
+  }
+
+  @Override
   public void removeTenant(final long mappingKey, final String tenantId) {
     this.mappingKey.wrapLong(mappingKey);
     final var fkClaim = claimByKeyColumnFamily.get(this.mappingKey);
