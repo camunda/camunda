@@ -20,7 +20,6 @@ import io.camunda.search.filter.RoleFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
-import io.camunda.service.RoleServices.RoleDTO;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerRoleUpdateRequest;
@@ -28,7 +27,6 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import java.util.List;
-import java.util.Set;
 import org.assertj.core.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -104,17 +102,18 @@ public class RoleServiceTest {
   @Test
   public void shouldUpdateName() {
     // given
-    final var roleDTO = new RoleDTO(100, "UpdatedName", Set.of());
+    final var roleKey = 100L;
+    final var name = "UpdatedName";
 
     // when
-    services.updateRole(roleDTO);
+    services.updateRole(roleKey, name);
 
     // then
     final BrokerRoleUpdateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
     assertThat(request.getIntent()).isEqualTo(RoleIntent.UPDATE);
     assertThat(request.getValueType()).isEqualTo(ValueType.ROLE);
-    assertThat(request.getKey()).isEqualTo(roleDTO.roleKey());
+    assertThat(request.getKey()).isEqualTo(roleKey);
     final RoleRecord brokerRequestValue = request.getRequestWriter();
-    assertThat(brokerRequestValue.getName()).isEqualTo(roleDTO.name());
+    assertThat(brokerRequestValue.getName()).isEqualTo(name);
   }
 }

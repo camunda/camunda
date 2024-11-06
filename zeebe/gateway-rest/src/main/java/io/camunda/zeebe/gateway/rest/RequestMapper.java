@@ -71,6 +71,8 @@ import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ModifyProcessInstanceActivateInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ModifyProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SetVariableRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
@@ -241,6 +243,16 @@ public class RequestMapper {
                 new UpdateJobChangeset(
                     updateRequest.getChangeset().getRetries(),
                     updateRequest.getChangeset().getTimeout())));
+  }
+
+  public static Either<ProblemDetail, UpdateRoleRequest> toRoleUpdateRequest(
+      final RoleUpdateRequest roleUpdateRequest, final long roleKey) {
+    return Either.right(new UpdateRoleRequest(roleKey, roleUpdateRequest.getChangeset().getName()));
+  }
+
+  public static Either<ProblemDetail, CreateRoleRequest> toRoleCreateRequest(
+      final RoleCreateRequest roleCreateRequest) {
+    return Either.right(new CreateRoleRequest(roleCreateRequest.getName()));
   }
 
   public static Either<ProblemDetail, PatchAuthorizationRequest> toAuthorizationPatchRequest(
@@ -708,4 +720,8 @@ public class RequestMapper {
 
   public record DecisionEvaluationRequest(
       String decisionId, Long decisionKey, Map<String, Object> variables, String tenantId) {}
+
+  public record CreateRoleRequest(String name) {}
+
+  public record UpdateRoleRequest(long roleKey, String name) {}
 }
