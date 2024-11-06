@@ -11,7 +11,10 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
@@ -242,5 +245,41 @@ public class GroupTest {
         .hasRejectionReason(
             "Expected to remove an entity with key '%s' and type '%s' from group with key '%s', but the entity does not exist."
                 .formatted(1L, EntityType.USER, groupKey));
+  }
+
+  @Test
+  public void shouldDeleteGroup() {
+    // given
+    final var name = UUID.randomUUID().toString();
+    final var groupKey = engine.group().newGroup(name).create().getValue().getGroupKey();
+    engine
+        .authorization()
+        .permission()
+        .withOwnerKey(groupKey)
+        .withOwnerType(AuthorizationOwnerType.ROLE)
+        .withResourceType(AuthorizationResourceType.ROLE)
+        .withAction(PermissionAction.REMOVE)
+        .add();
+
+    // when
+    final var deletedGroup = engine.group().deleteGroup(groupKey).delete().getValue();
+
+    Assertions.assertThat(deletedGroup)
+        .isNotNull()
+        .hasFieldOrPropertyWithValue("groupKey", groupKey);
+  }
+
+  @Test
+  public void shouldRejectIfGroupIsNotPresentOnDeletion() {
+    // when
+    final var notPresentGroupKey = 1L;
+    final var notPresentUpdateRecord =
+        engine.group().deleteGroup(notPresentGroupKey).expectRejection().delete();
+
+    assertThat(notPresentUpdateRecord)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to delete group with key '%s', but a group with this key doesn't exist."
+                .formatted(notPresentGroupKey));
   }
 }
