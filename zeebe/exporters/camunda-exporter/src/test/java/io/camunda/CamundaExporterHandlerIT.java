@@ -9,20 +9,23 @@ package io.camunda;
 
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.spy;
 
 import io.camunda.exporter.CamundaExporter;
-import io.camunda.exporter.handlers.DecisionEvaluationHandler;
-import io.camunda.exporter.handlers.EventFromJobHandler;
+import io.camunda.exporter.DefaultExporterResourceProvider;
+import io.camunda.exporter.adapters.ClientAdapter;
+import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.handlers.ExportHandler;
-import io.camunda.exporter.handlers.ListViewFlowNodeFromJobHandler;
-import io.camunda.exporter.handlers.ListViewFlowNodeFromProcessInstanceHandler;
-import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHandler;
-import io.camunda.exporter.handlers.MetricFromProcessInstanceHandler;
-import io.camunda.exporter.handlers.UserTaskProcessInstanceHandler;
 import io.camunda.exporter.utils.CamundaExporterITInvocationProvider;
 import io.camunda.exporter.utils.SearchClientAdapter;
 import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.zeebe.exporter.api.context.Context;
+import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
+import io.camunda.zeebe.exporter.test.ExporterTestContext;
+import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -40,74 +43,93 @@ import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
+import java.util.Set;
 import java.util.function.Supplier;
-import org.junit.jupiter.api.TestTemplate;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.MockedStatic;
 
 @ExtendWith(CamundaExporterITInvocationProvider.class)
 public class CamundaExporterHandlerIT {
-  final Map<Class<?>, Function<ExportHandler<?, ?>, Record<?>>> customRecordGenerators;
+  static MockedStatic<OffsetDateTime> offsetDateTimeMockedStatic;
   private final ProtocolFactory factory = new ProtocolFactory();
 
-  public CamundaExporterHandlerIT() {
-    customRecordGenerators =
-        new HashMap<>(
-            Map.of(
-                EventFromJobHandler.class,
-                this::jobRecordGenerator,
-                ListViewFlowNodeFromJobHandler.class,
-                this::jobRecordGenerator,
-                ListViewProcessInstanceFromProcessInstanceHandler.class,
-                (handler) -> processInstanceRecordGenerator(handler, BpmnElementType.PROCESS),
-                ListViewFlowNodeFromProcessInstanceHandler.class,
-                (handler) ->
-                    processInstanceRecordGenerator(handler, BpmnElementType.BOUNDARY_EVENT),
-                DecisionEvaluationHandler.class,
-                this::decisionEvalRecordGenerator,
-                MetricFromProcessInstanceHandler.class,
-                (handler) -> processInstanceRecordGenerator(handler, BpmnElementType.PROCESS),
-                UserTaskProcessInstanceHandler.class,
-                (handler) -> processInstanceRecordGenerator(handler, BpmnElementType.PROCESS)));
+  @BeforeAll
+  static void init() {
+    final var currentTime = OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS);
+    offsetDateTimeMockedStatic = mockStatic(OffsetDateTime.class, CALLS_REAL_METHODS);
+    offsetDateTimeMockedStatic.when(OffsetDateTime::now).thenReturn(currentTime);
   }
 
-  @TestTemplate
+  @AfterAll
+  static void tearDown() {
+    offsetDateTimeMockedStatic.close();
+  }
+
   @SuppressWarnings("unchecked")
-  <S extends ExporterEntity<S>, T extends RecordValue> void allHandlerTestsWithInvocationProvider(
-      final CamundaExporter exporter,
-      final SearchClientAdapter clientAdapter,
-      final ExportHandler<S, T> handler)
-      throws IOException {
+  private <S extends ExporterEntity<S>, T extends RecordValue> ExportHandler<S, T> getHandler(
+      final ExporterConfiguration config, final Class<?> handlerClass) {
+    final var provider = new DefaultExporterResourceProvider();
+    provider.init(config, ClientAdapter.of(config)::getProcessCacheLoader);
 
-    final var currentTime = OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS);
-    try (final var mocked = mockStatic(OffsetDateTime.class)) {
-      mocked.when(OffsetDateTime::now).thenReturn(currentTime);
+    return provider.getExportHandlers().stream()
+        .filter(handler -> handler.getClass().equals(handlerClass))
+        .findFirst()
+        .orElseThrow();
+  }
 
-      final var record =
-          (Record<T>)
-              customRecordGenerators
-                  .getOrDefault(handler.getClass(), this::defaultRecordGenerator)
-                  .apply(handler);
-      customRecordGenerators.put(handler.getClass(), (ignored) -> record);
+  private Context getContextFromConfig(final ExporterConfiguration config) {
+    return new ExporterTestContext()
+        .setConfiguration(new ExporterTestConfiguration<>(config.getConnect().getType(), config));
+  }
 
-      final var entityId = handler.generateIds(record).getFirst();
-      final var expectedEntity = handler.createNewEntity(entityId);
-      handler.updateEntity(record, expectedEntity);
-      exporter.export(record);
+  private CamundaExporter getExporter(
+      final ExporterConfiguration config, final ExportHandler<?, ?> handler) {
+    final var provider = spy(new DefaultExporterResourceProvider());
+    provider.init(config, ClientAdapter.of(config)::getProcessCacheLoader);
 
-      final var responseEntity =
-          clientAdapter.get(
-              expectedEntity.getId(), handler.getIndexName(), handler.getEntityType());
+    doReturn(Set.of(handler)).when(provider).getExportHandlers();
 
-      assertThat(responseEntity)
-          .describedAs(
-              "Handler [%s] correctly handles a [%s] record",
-              handler.getClass().getSimpleName(), handler.getHandledValueType())
-          .isEqualTo(expectedEntity);
-    }
+    final var exporter = new CamundaExporter(provider);
+    exporter.configure(getContextFromConfig(config));
+    exporter.open(new ExporterTestController());
+
+    return exporter;
+  }
+
+  private <S extends ExporterEntity<S>, T extends RecordValue> S getExpectedEntity(
+      final io.camunda.zeebe.protocol.record.Record<T> record, final ExportHandler<S, T> handler) {
+    final var entityId = handler.generateIds(record).getFirst();
+    final var expectedEntity = handler.createNewEntity(entityId);
+    handler.updateEntity(record, expectedEntity);
+
+    return expectedEntity;
+  }
+
+  private <S extends ExporterEntity<S>, T extends RecordValue>
+      void basicAssertWhereHandlerCreatesDefaultEntity(
+          final Class<?> handlerClass,
+          final ExporterConfiguration config,
+          final SearchClientAdapter clientAdapter)
+          throws IOException {
+
+    final ExportHandler<S, T> handler = getHandler(config, handlerClass);
+    final Record<T> record = defaultRecordGenerator(handler);
+
+    final var expectedEntity = getExpectedEntity(record, handler);
+
+    getExporter(config, handler).export(record);
+
+    final var responseEntity =
+        clientAdapter.get(expectedEntity.getId(), handler.getIndexName(), handler.getEntityType());
+
+    assertThat(responseEntity)
+        .describedAs(
+            "Handler [%s] correctly handles a [%s] record",
+            handler.getClass().getSimpleName(), handler.getHandledValueType())
+        .isEqualTo(expectedEntity);
   }
 
   private <S extends ExporterEntity<S>, T extends RecordValue> Record<T> recordGenerator(
