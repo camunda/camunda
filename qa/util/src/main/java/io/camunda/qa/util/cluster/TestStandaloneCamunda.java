@@ -75,7 +75,6 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
         // Tests)
         TestOperateElasticsearchSchemaManager.class,
         TestTasklistElasticsearchSchemaManager.class,
-        TestOperateSchemaStartup.class,
         TestTasklistSchemaStartup.class,
         IndexTemplateDescriptorsConfigurator.class);
 

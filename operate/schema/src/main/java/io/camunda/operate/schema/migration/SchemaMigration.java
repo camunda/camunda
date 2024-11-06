@@ -9,10 +9,8 @@ package io.camunda.operate.schema.migration;
 
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.Metrics;
-import io.camunda.operate.schema.SchemaStartup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
@@ -40,7 +38,6 @@ import org.springframework.context.annotation.Import;
 public class SchemaMigration implements CommandLineRunner {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SchemaMigration.class);
-  @Autowired private SchemaStartup schemaStartup;
 
   public static void main(final String[] args) {
     // To ensure that debug logging performed using java.util.logging is routed into Log4j2
