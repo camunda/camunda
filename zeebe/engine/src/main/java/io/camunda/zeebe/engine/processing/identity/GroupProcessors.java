@@ -63,5 +63,14 @@ public class GroupProcessors {
             keyGenerator,
             writers,
             commandDistributionBehavior));
+    typedRecordProcessors.onCommand(
+        ValueType.GROUP,
+        GroupIntent.DELETE,
+        new GroupDeleteProcessor(
+            processingState.getGroupState(),
+            authCheckBehavior,
+            keyGenerator,
+            writers,
+            commandDistributionBehavior));
   }
 }
