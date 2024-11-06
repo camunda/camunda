@@ -44,29 +44,28 @@ public class UpgradeMain {
   }
 
   public static void main(final String... args) {
-
-    final boolean initSchemaEnabled =
-        ConfigurationServiceBuilder.createDefaultConfiguration()
-            .getElasticSearchConfiguration()
-            .getConnection()
-            .isInitSchemaEnabled();
-
-    final boolean clusterTaskCheckingEnabled =
-        ConfigurationServiceBuilder.createDefaultConfiguration()
-            .getElasticSearchConfiguration()
-            .getConnection()
-            .isClusterTaskCheckingEnabled();
-    if (!initSchemaEnabled || !clusterTaskCheckingEnabled) {
-      throw new UpgradeRuntimeException(
-          "Can't upgrade without enable cluster task checking " + "and init schema privileges");
-    }
-
     try {
       final DatabaseType databaseType =
           ConfigurationService.convertToDatabaseProperty(
               Optional.ofNullable(System.getenv(CAMUNDA_OPTIMIZE_DATABASE))
                   .orElse(ELASTICSEARCH_DATABASE_PROPERTY));
       LOG.info("Identified {} Database configuration", databaseType.getId());
+
+      final boolean initSchemaEnabled =
+          ConfigurationServiceBuilder.createDefaultConfiguration()
+              .getElasticSearchConfiguration()
+              .getConnection()
+              .isInitSchemaEnabled();
+
+      final boolean clusterTaskCheckingEnabled =
+          ConfigurationServiceBuilder.createDefaultConfiguration()
+              .getElasticSearchConfiguration()
+              .getConnection()
+              .isClusterTaskCheckingEnabled();
+      if (!initSchemaEnabled || !clusterTaskCheckingEnabled) {
+        throw new UpgradeRuntimeException(
+            "Upgrade cannot be performed without cluster checking and schema initialization enabled");
+      }
 
       final UpgradeExecutionDependencies upgradeDependencies =
           createUpgradeDependencies(databaseType);
