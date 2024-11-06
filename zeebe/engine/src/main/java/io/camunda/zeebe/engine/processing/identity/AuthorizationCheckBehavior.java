@@ -63,7 +63,7 @@ public final class AuthorizationCheckBehavior {
 
     final var userKey = getUserKey(request);
     if (userKey.isPresent()) {
-      authorizedResourceIdentifiers = getAuthorizedResourceIdentifiers(userKey.get(), request);
+      authorizedResourceIdentifiers = getUserAuthorizedResourceIdentifiers(userKey.get(), request);
     }
 
     // Check if authorizations contain a resource identifier that matches the required resource
@@ -86,20 +86,11 @@ public final class AuthorizationCheckBehavior {
       return Collections.emptySet();
     }
 
-    return getAuthorizedResourceIdentifiers(
-        userKey.get(), request.getResourceType(), request.getPermissionType());
+    return getUserAuthorizedResourceIdentifiers(userKey.get(), request);
   }
 
-  private Set<String> getAuthorizedResourceIdentifiers(
+  private Set<String> getUserAuthorizedResourceIdentifiers(
       final long userKey, final AuthorizationRequest request) {
-    return getAuthorizedResourceIdentifiers(
-        userKey, request.getResourceType(), request.getPermissionType());
-  }
-
-  private Set<String> getAuthorizedResourceIdentifiers(
-      final long userKey,
-      final AuthorizationResourceType resourceType,
-      final PermissionType permissionType) {
     final var userOptional = userState.getUser(userKey);
     if (userOptional.isEmpty()) {
       return Collections.emptySet();
@@ -113,7 +104,8 @@ public final class AuthorizationCheckBehavior {
     }
 
     // Get resource identifiers for this user, resource type and permission type from state
-    return authorizationState.getResourceIdentifiers(userKey, resourceType, permissionType);
+    return authorizationState.getResourceIdentifiers(
+        userKey, request.getResourceType(), request.getPermissionType());
   }
 
   private boolean hasRequiredPermission(
