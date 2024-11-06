@@ -67,7 +67,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-import org.apache.commons.lang3.NotImplementedException;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.json.ObjectDeserializer;
 import org.opensearch.client.json.jackson.JacksonJsonpGenerator;
@@ -242,10 +241,32 @@ public class OpenSearchSchemaManager
 
   @Override
   public void createOrUpdateTemplateWithoutAliases(
-      final OptimizeOpenSearchClient dbClient,
-      final IndexMappingCreator<IndexSettings.Builder> mappingCreator) {
-    // TODO?
-    throw new NotImplementedException("Not implemented in OpenSearch");
+      final OptimizeOpenSearchClient dbClient, final IndexMappingCreator<Builder> mappingCreator) {
+    final String templateName =
+        indexNameService.getOptimizeIndexTemplateNameWithVersion(mappingCreator);
+    final IndexSettings indexSettings = createIndexSettings(mappingCreator);
+
+    LOG.debug("Creating or updating template with name {}.", templateName);
+    try {
+      dbClient
+          .getOpenSearchClient()
+          .indices()
+          .putTemplate(
+              (PutTemplateRequest.of(
+                  b ->
+                      b.name(templateName)
+                          .version((long) mappingCreator.getVersion())
+                          .mappings(getMappings(mappingCreator.getSource().toString()))
+                          .settings(convertToMap(indexSettings))
+                          .indexPatterns(
+                              Collections.singletonList(
+                                  indexNameService
+                                      .getOptimizeIndexNameWithVersionWithWildcardSuffix(
+                                          mappingCreator))))));
+    } catch (final Exception e) {
+      final String message = String.format("Could not create or update template %s.", templateName);
+      throw new OptimizeRuntimeException(message, e);
+    }
   }
 
   @Override
@@ -721,7 +742,6 @@ public class OpenSearchSchemaManager
   }
 
   public static List<IndexMappingCreator<IndexSettings.Builder>> getAllNonDynamicMappings() {
-    // TODO Add test that all indexes are created when doing OPT-7225
     return Arrays.asList(
         new AlertIndexOS(),
         new BusinessKeyIndexOS(),
