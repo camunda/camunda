@@ -40,6 +40,7 @@ tags:
   - name: Process definition
   - name: Process instance
   - name: Resource
+  - name: Role
   - name: Signal
   - name: User
   - name: User task
@@ -1895,6 +1896,101 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /roles:
+    post:
+      tags:
+        - Role
+      operationId: createRole
+      summary: Create role
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoleCreateRequest"
+      responses:
+        "202":
+          description: |
+            The role was created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleCreateResponse"
+        "400":
+          description: |
+            The role could not be created.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: |
+            The request to create a role was unauthorized.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: |
+            The request to create a role was denied.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+
+  /roles/{roleKey}:
+    patch:
+      tags:
+        - Role
+      operationId: updateRole
+      summary: Update role
+      description: Update a role with the given key.
+      parameters:
+        - name: roleKey
+          in: path
+          required: true
+          description: The key of the role to update.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoleUpdateRequest"
+      responses:
+        "204":
+          description: The role was updated successfully.
+        "400":
+          description: >
+            The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: The role with the roleKey is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+
   /messages/publication:
     post:
       tags:
@@ -3745,6 +3841,30 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/UserResponse"
+    RoleCreateRequest:
+      type: "object"
+      properties:
+        name:
+          type: "string"
+    RoleCreateResponse:
+      type: "object"
+      properties:
+        roleKey:
+          description: The key of the created role
+          type: "integer"
+          format: "int64"
+    RoleUpdateRequest:
+      type: object
+      properties:
+        changeset:
+          $ref: "#/components/schemas/RoleChangeset"
+      required:
+        - changeset
+    RoleChangeset:
+      type: object
+      properties:
+        name:
+          type: string
     TopologyResponse:
       description: The response of a topology request.
       type: object

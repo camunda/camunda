@@ -71,12 +71,15 @@ import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ModifyProcessInstanceActivateInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ModifyProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SetVariableRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
+import io.camunda.zeebe.gateway.rest.validator.RoleRequestValidator;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
@@ -243,6 +246,20 @@ public class RequestMapper {
                 new UpdateJobChangeset(
                     updateRequest.getChangeset().getRetries(),
                     updateRequest.getChangeset().getTimeout())));
+  }
+
+  public static Either<ProblemDetail, UpdateRoleRequest> toRoleUpdateRequest(
+      final RoleUpdateRequest roleUpdateRequest, final long roleKey) {
+    return getResult(
+        RoleRequestValidator.validateUpdateRequest(roleUpdateRequest),
+        () -> new UpdateRoleRequest(roleKey, roleUpdateRequest.getChangeset().getName()));
+  }
+
+  public static Either<ProblemDetail, CreateRoleRequest> toRoleCreateRequest(
+      final RoleCreateRequest roleCreateRequest) {
+    return getResult(
+        RoleRequestValidator.validateCreateRequest(roleCreateRequest),
+        () -> new CreateRoleRequest(roleCreateRequest.getName()));
   }
 
   public static Either<ProblemDetail, PatchAuthorizationRequest> toAuthorizationPatchRequest(
@@ -725,4 +742,8 @@ public class RequestMapper {
 
   public record DecisionEvaluationRequest(
       String decisionId, Long decisionKey, Map<String, Object> variables, String tenantId) {}
+
+  public record CreateRoleRequest(String name) {}
+
+  public record UpdateRoleRequest(long roleKey, String name) {}
 }
