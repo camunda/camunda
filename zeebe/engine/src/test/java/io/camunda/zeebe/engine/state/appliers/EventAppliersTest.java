@@ -18,7 +18,6 @@ import io.camunda.zeebe.engine.state.EventApplier.NoSuchEventApplier;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.record.RecordValue;
-import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
@@ -172,7 +171,6 @@ public class EventAppliersTest {
             // CheckpointIntent is not handled by the engine
             .filter(intent -> !(intent instanceof CheckpointIntent))
             .filter(intent -> !(intent instanceof TenantIntent))
-            .filter(intent -> !(intent instanceof GroupIntent))
             // todo delete this filter after all the appliers are implemented
             .filter(intent -> !(intent instanceof MappingIntent));
 

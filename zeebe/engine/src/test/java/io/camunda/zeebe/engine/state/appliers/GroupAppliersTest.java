@@ -35,18 +35,29 @@ public class GroupAppliersTest {
   private MutableUserState userState;
   private MutableMappingState mappingState;
 
+  private GroupCreatedApplier groupCreatedApplier;
+  private GroupUpdatedApplier groupUpdatedApplier;
+  private GroupEntityAddedApplier groupEntityAddedApplier;
+  private GroupEntityRemovedApplier groupEntityRemovedApplier;
+  private GroupDeletedApplier groupDeletedApplier;
+
   @BeforeEach
   public void setup() {
     groupState = processingState.getGroupState();
     authorizationState = processingState.getAuthorizationState();
     userState = processingState.getUserState();
     mappingState = processingState.getMappingState();
+
+    groupCreatedApplier = new GroupCreatedApplier(groupState, authorizationState);
+    groupUpdatedApplier = new GroupUpdatedApplier(groupState);
+    groupEntityAddedApplier = new GroupEntityAddedApplier(processingState);
+    groupEntityRemovedApplier = new GroupEntityRemovedApplier(processingState);
+    groupDeletedApplier = new GroupDeletedApplier(processingState);
   }
 
   @Test
   void shouldCreateGroup() {
     // given
-    final var groupCreatedApplier = new GroupCreatedApplier(groupState, authorizationState);
     final var groupKey = 1L;
     final var groupName = "group";
     final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
@@ -65,7 +76,6 @@ public class GroupAppliersTest {
   @Test
   void shouldUpdateGroup() {
     // given
-    final var groupUpdatedApplier = new GroupUpdatedApplier(groupState);
     final var groupKey = 1L;
     final var groupName = "group";
     final var updatedGroupName = "updatedGroup";
@@ -100,7 +110,6 @@ public class GroupAppliersTest {
             .setPassword("password")
             .setEmail("test@example.com");
     userState.create(userRecord);
-    final var groupEntityAddedApplier = new GroupEntityAddedApplier(processingState);
     final var groupKey = 2L;
     final var groupName = "group";
     final var entityType = EntityType.USER;
@@ -128,7 +137,6 @@ public class GroupAppliersTest {
             .setClaimName("claimName")
             .setClaimValue("claimValue");
     mappingState.create(mappingRecord);
-    final var groupEntityAddedApplier = new GroupEntityAddedApplier(processingState);
     final var groupKey = 2L;
     final var groupName = "group";
     final var entityType = EntityType.MAPPING;
@@ -158,8 +166,6 @@ public class GroupAppliersTest {
             .setPassword("password")
             .setEmail("test@example.com");
     userState.create(userRecord);
-    final var groupEntityAddedApplier = new GroupEntityAddedApplier(processingState);
-    final var groupEnetityRemovedApplier = new GroupEntityRemovedApplier(processingState);
     final var groupKey = 2L;
     final var groupName = "group";
     final var entityType = EntityType.USER;
@@ -169,7 +175,7 @@ public class GroupAppliersTest {
     groupEntityAddedApplier.applyState(groupKey, groupRecord);
 
     // when
-    groupEnetityRemovedApplier.applyState(groupKey, groupRecord);
+    groupEntityRemovedApplier.applyState(groupKey, groupRecord);
 
     // then
     final var entitiesByType = groupState.getEntitiesByType(groupKey);
@@ -188,8 +194,6 @@ public class GroupAppliersTest {
             .setClaimName("claimName")
             .setClaimValue("claimValue");
     mappingState.create(mappingRecord);
-    final var groupEntityAddedApplier = new GroupEntityAddedApplier(processingState);
-    final var groupEnetityRemovedApplier = new GroupEntityRemovedApplier(processingState);
     final var groupKey = 2L;
     final var groupName = "group";
     final var entityType = EntityType.MAPPING;
@@ -199,12 +203,62 @@ public class GroupAppliersTest {
     groupEntityAddedApplier.applyState(groupKey, groupRecord);
 
     // when
-    groupEnetityRemovedApplier.applyState(groupKey, groupRecord);
+    groupEntityRemovedApplier.applyState(groupKey, groupRecord);
 
     // then
     final var entitiesByType = groupState.getEntitiesByType(groupKey);
     assertThat(entitiesByType).isEmpty();
     final var persistedMapping = mappingState.get(entityKey).get();
     assertThat(persistedMapping.getGroupKeysList()).isEmpty();
+  }
+
+  @Test
+  void shouldDeleteGroup() {
+    // given
+    // a group
+    final var groupKey = 1L;
+    final var groupName = "group";
+    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
+    groupCreatedApplier.applyState(groupKey, groupRecord);
+    // a mapping entry
+    final var mappingKey = 2L;
+    final var mappingRecord =
+        new MappingRecord()
+            .setMappingKey(mappingKey)
+            .setClaimName("claimName")
+            .setClaimValue("claimValue");
+    mappingState.create(mappingRecord);
+    groupEntityAddedApplier.applyState(
+        groupKey, groupRecord.setEntityKey(mappingKey).setEntityType(EntityType.MAPPING));
+    // a user entry
+    final var userKey = 3L;
+    final var userRecord =
+        new UserRecord()
+            .setUserKey(userKey)
+            .setName("test")
+            .setUsername("username")
+            .setPassword("password")
+            .setEmail("test@example.com");
+    userState.create(userRecord);
+    groupEntityAddedApplier.applyState(
+        groupKey, groupRecord.setEntityKey(userKey).setEntityType(EntityType.USER));
+
+    // when
+    groupDeletedApplier.applyState(groupKey, groupRecord);
+
+    // then
+    // the group state is cleaned up
+    final var group = groupState.get(groupKey);
+    assertThat(group.isPresent()).isFalse();
+    final var groupKeyByName = groupState.getGroupKeyByName(groupName);
+    assertThat(groupKeyByName.isPresent()).isFalse();
+    final var entitiesByGroup = groupState.getEntitiesByType(groupKey);
+    assertThat(entitiesByGroup).isEmpty();
+    // the mapping state is cleaned up
+    final var groupKeysByMapping = mappingState.get(mappingKey).get().getGroupKeysList();
+    assertThat(groupKeysByMapping).isEmpty();
+    // the user state is cleaned up
+    final var groupKeysByUser = userState.getUser(userKey).get().getGroupKeysList();
+    assertThat(groupKeysByUser).isEmpty();
   }
 }

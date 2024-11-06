@@ -179,4 +179,30 @@ public class GroupStateTest {
     final var entityType = groupState.getEntitiesByType(groupKey);
     assertThat(entityType).containsOnly(Map.entry(EntityType.MAPPING, List.of(mappingKey)));
   }
+
+  @Test
+  void shouldDeleteGroup() {
+    // given
+    final var groupKey = 1L;
+    final var groupName = "group";
+    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
+    groupState.create(groupKey, groupRecord);
+    groupRecord.setEntityKey(2L).setEntityType(EntityType.USER);
+    groupState.addEntity(groupKey, groupRecord);
+    groupRecord.setEntityKey(3L).setEntityType(EntityType.MAPPING);
+    groupState.addEntity(groupKey, groupRecord);
+
+    // when
+    groupState.delete(groupKey);
+
+    // then
+    final var group = groupState.get(groupKey);
+    assertThat(group).isEmpty();
+
+    final var groupKeyByName = groupState.getGroupKeyByName(groupName);
+    assertThat(groupKeyByName).isEmpty();
+
+    final var entitiesByGroup = groupState.getEntitiesByType(groupKey);
+    assertThat(entitiesByGroup).isEmpty();
+  }
 }
