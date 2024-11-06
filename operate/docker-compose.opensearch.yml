@@ -26,7 +26,7 @@ services:
       - ./os-snapshots:/usr/local/os-snapshots
   zeebe-opensearch:
     container_name: zeebe-opensearch
-    image: camunda/zeebe:8.5.8
+    image: camunda/zeebe:8.5.9
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_HOST=${ZEEBE_HOST:-}
