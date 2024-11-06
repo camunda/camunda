@@ -18,10 +18,43 @@ import io.camunda.exporter.CamundaExporter;
 import io.camunda.exporter.DefaultExporterResourceProvider;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.handlers.AuthorizationHandler;
+import io.camunda.exporter.handlers.DecisionEvaluationHandler;
+import io.camunda.exporter.handlers.DecisionHandler;
+import io.camunda.exporter.handlers.DecisionRequirementsHandler;
+import io.camunda.exporter.handlers.EventFromIncidentHandler;
+import io.camunda.exporter.handlers.EventFromJobHandler;
+import io.camunda.exporter.handlers.EventFromProcessInstanceHandler;
+import io.camunda.exporter.handlers.EventFromProcessMessageSubscriptionHandler;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.FlowNodeInstanceIncidentHandler;
+import io.camunda.exporter.handlers.FlowNodeInstanceProcessInstanceHandler;
+import io.camunda.exporter.handlers.FormHandler;
+import io.camunda.exporter.handlers.IncidentHandler;
+import io.camunda.exporter.handlers.ListViewFlowNodeFromIncidentHandler;
+import io.camunda.exporter.handlers.ListViewFlowNodeFromJobHandler;
+import io.camunda.exporter.handlers.ListViewFlowNodeFromProcessInstanceHandler;
+import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHandler;
+import io.camunda.exporter.handlers.ListViewVariableFromVariableHandler;
+import io.camunda.exporter.handlers.MetricFromProcessInstanceHandler;
+import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
+import io.camunda.exporter.handlers.ProcessHandler;
+import io.camunda.exporter.handlers.SequenceFlowHandler;
+import io.camunda.exporter.handlers.TaskCompletedMetricHandler;
+import io.camunda.exporter.handlers.UserHandler;
+import io.camunda.exporter.handlers.UserTaskCompletionVariableHandler;
+import io.camunda.exporter.handlers.UserTaskHandler;
+import io.camunda.exporter.handlers.UserTaskProcessInstanceHandler;
+import io.camunda.exporter.handlers.UserTaskVariableHandler;
+import io.camunda.exporter.handlers.VariableHandler;
+import io.camunda.exporter.handlers.operation.OperationFromIncidentHandler;
+import io.camunda.exporter.handlers.operation.OperationFromProcessInstanceHandler;
+import io.camunda.exporter.handlers.operation.OperationFromVariableDocumentHandler;
 import io.camunda.exporter.utils.CamundaExporterITInvocationProvider;
 import io.camunda.exporter.utils.SearchClientAdapter;
 import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.webapps.schema.entities.operation.OperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
@@ -43,22 +76,26 @@ import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.MockedStatic;
 
 @ExtendWith(CamundaExporterITInvocationProvider.class)
 public class CamundaExporterHandlerIT {
   static MockedStatic<OffsetDateTime> offsetDateTimeMockedStatic;
+  private static final OffsetDateTime currentTime =
+      OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS);
   private final ProtocolFactory factory = new ProtocolFactory();
 
   @BeforeAll
   static void init() {
-    final var currentTime = OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS);
     offsetDateTimeMockedStatic = mockStatic(OffsetDateTime.class, CALLS_REAL_METHODS);
     offsetDateTimeMockedStatic.when(OffsetDateTime::now).thenReturn(currentTime);
   }
@@ -66,6 +103,264 @@ public class CamundaExporterHandlerIT {
   @AfterAll
   static void tearDown() {
     offsetDateTimeMockedStatic.close();
+  }
+
+  @TestTemplate
+  void shouldExportUsingUserHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, UserHandler.class);
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        handler, config, clientAdapter, defaultRecordGenerator(handler));
+  }
+
+  @TestTemplate
+  void shouldExportUsingAuthorizationHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, AuthorizationHandler.class);
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        handler, config, clientAdapter, defaultRecordGenerator(handler));
+  }
+
+  @TestTemplate
+  void shouldExportUsingDecisionEvaluationHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, DecisionEvaluationHandler.class);
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        handler, config, clientAdapter, decisionEvalRecordGenerator(handler));
+  }
+
+  @TestTemplate
+  void shouldExportUsingDecisionHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, DecisionHandler.class);
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        handler, config, clientAdapter, defaultRecordGenerator(handler));
+  }
+
+  @TestTemplate
+  void shouldExportUsingDecisionRequirementsHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, DecisionRequirementsHandler.class);
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        handler, config, clientAdapter, defaultRecordGenerator(handler));
+  }
+
+  @TestTemplate
+  void shouldExportUsingEventFromIncidentHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, EventFromIncidentHandler.class);
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        handler, config, clientAdapter, defaultRecordGenerator(handler));
+  }
+
+  @TestTemplate
+  void shouldExportUsingEventFromJobHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, EventFromJobHandler.class);
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        handler, config, clientAdapter, jobRecordGenerator(handler));
+  }
+
+  @TestTemplate
+  void shouldExportUsingEventFromProcessInstanceHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, EventFromProcessInstanceHandler.class);
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        handler, config, clientAdapter, defaultRecordGenerator(handler));
+  }
+
+  @TestTemplate
+  void shouldExportUsingEventFromProcessMessageSubscriptionHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, EventFromProcessMessageSubscriptionHandler.class);
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        handler, config, clientAdapter, defaultRecordGenerator(handler));
+  }
+
+  @TestTemplate
+  void shouldExportUsingFlowNodeInstanceIncidentHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, FlowNodeInstanceIncidentHandler.class);
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        handler, config, clientAdapter, defaultRecordGenerator(handler));
+  }
+
+  @TestTemplate
+  void shouldExportUsingFlowNodeInstanceProcessInstanceHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, FlowNodeInstanceProcessInstanceHandler.class);
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        handler, config, clientAdapter, defaultRecordGenerator(handler));
+  }
+
+  @TestTemplate
+  void shouldExportUsingFormHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, FormHandler.class);
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        handler, config, clientAdapter, defaultRecordGenerator(handler));
+  }
+
+  @TestTemplate
+  void shouldExportUsingIncidentHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, IncidentHandler.class);
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        handler, config, clientAdapter, defaultRecordGenerator(handler));
+  }
+
+  @TestTemplate
+  void shouldExportUsingListViewFlowNodeFromIncidentHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, ListViewFlowNodeFromIncidentHandler.class);
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        handler, config, clientAdapter, defaultRecordGenerator(handler));
+  }
+
+  @TestTemplate
+  void shouldExportUsingListViewFlowNodeFromJobHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, ListViewFlowNodeFromJobHandler.class);
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        handler, config, clientAdapter, defaultRecordGenerator(handler));
+  }
+
+  @TestTemplate
+  void shouldExportUsingListViewFlowNodeFromProcessInstanceHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, ListViewFlowNodeFromProcessInstanceHandler.class);
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        handler, config, clientAdapter, defaultRecordGenerator(handler));
+  }
+
+  @TestTemplate
+  void shouldExportUsingListViewProcessInstanceFromProcessInstanceHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, ListViewProcessInstanceFromProcessInstanceHandler.class);
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        handler,
+        config,
+        clientAdapter,
+        processInstanceRecordGenerator(handler, BpmnElementType.PROCESS));
+  }
+
+  @TestTemplate
+  void shouldExportUsingListViewVariableFromVariableHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, ListViewVariableFromVariableHandler.class);
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        handler, config, clientAdapter, defaultRecordGenerator(handler));
+  }
+
+  @TestTemplate
+  void shouldExportUsingMetricFromProcessInstanceHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, MetricFromProcessInstanceHandler.class);
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        handler,
+        config,
+        clientAdapter,
+        processInstanceRecordGenerator(handler, BpmnElementType.PROCESS));
+  }
+
+  @TestTemplate
+  void shouldExportUsingPostImporterQueueFromIncidentHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, PostImporterQueueFromIncidentHandler.class);
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        handler, config, clientAdapter, defaultRecordGenerator(handler));
+  }
+
+  @TestTemplate
+  void shouldExportUsingProcessHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, ProcessHandler.class);
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        handler, config, clientAdapter, defaultRecordGenerator(handler));
+  }
+
+  @TestTemplate
+  void shouldExportUsingSequenceFlowHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, SequenceFlowHandler.class);
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        handler, config, clientAdapter, defaultRecordGenerator(handler));
+  }
+
+  @TestTemplate
+  void shouldExportUsingTaskCompletedMetricHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, TaskCompletedMetricHandler.class);
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        handler, config, clientAdapter, defaultRecordGenerator(handler));
+  }
+
+  @TestTemplate
+  void shouldExportUsingUserTaskCompletionVariableHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, UserTaskCompletionVariableHandler.class);
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        handler, config, clientAdapter, defaultRecordGenerator(handler));
+  }
+
+  @TestTemplate
+  void shouldExportUsingUserTaskHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, UserTaskHandler.class);
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        handler, config, clientAdapter, defaultRecordGenerator(handler));
+  }
+
+  @TestTemplate
+  void shouldExportUsingUserTaskProcessInstanceHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, UserTaskProcessInstanceHandler.class);
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        handler, config, clientAdapter, defaultRecordGenerator(handler));
+  }
+
+  @TestTemplate
+  void shouldExportUsingUserTaskVariableHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, UserTaskVariableHandler.class);
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        handler, config, clientAdapter, defaultRecordGenerator(handler));
+  }
+
+  @TestTemplate
+  void shouldExportUsingVariableHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, VariableHandler.class);
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        handler, config, clientAdapter, defaultRecordGenerator(handler));
   }
 
   @SuppressWarnings("unchecked")
@@ -110,17 +405,17 @@ public class CamundaExporterHandlerIT {
 
   private <S extends ExporterEntity<S>, T extends RecordValue>
       void basicAssertWhereHandlerCreatesDefaultEntity(
-          final Class<?> handlerClass,
+          final ExportHandler<S, T> handler,
           final ExporterConfiguration config,
-          final SearchClientAdapter clientAdapter)
+          final SearchClientAdapter clientAdapter,
+          final Record<T> record)
           throws IOException {
 
-    final ExportHandler<S, T> handler = getHandler(config, handlerClass);
-    final Record<T> record = defaultRecordGenerator(handler);
+    final var exporter = getExporter(config, handler);
 
     final var expectedEntity = getExpectedEntity(record, handler);
 
-    getExporter(config, handler).export(record);
+    exporter.export(record);
 
     final var responseEntity =
         clientAdapter.get(expectedEntity.getId(), handler.getIndexName(), handler.getEntityType());
