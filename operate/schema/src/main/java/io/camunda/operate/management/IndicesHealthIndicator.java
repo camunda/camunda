@@ -7,7 +7,6 @@
  */
 package io.camunda.operate.management;
 
-import io.camunda.operate.property.OperateProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.health.Health;
@@ -20,12 +19,9 @@ public class IndicesHealthIndicator implements HealthIndicator {
   private static final Logger LOGGER = LoggerFactory.getLogger(IndicesHealthIndicator.class);
 
   private final IndicesCheck indicesCheck;
-  private final OperateProperties properties;
 
-  public IndicesHealthIndicator(
-      final IndicesCheck indicesCheck, final OperateProperties operateProperties) {
+  public IndicesHealthIndicator(final IndicesCheck indicesCheck) {
     this.indicesCheck = indicesCheck;
-    properties = operateProperties;
   }
 
   @Override
@@ -36,7 +32,7 @@ public class IndicesHealthIndicator implements HealthIndicator {
   @Override
   public Health health() {
     LOGGER.debug("Indices check is called");
-    if (indicesCheck.isHealthy() && indicesCheck.indicesArePresent()) {
+    if (indicesCheck.isHealthy()) {
       return Health.up().build();
     } else {
       return Health.down().build();
