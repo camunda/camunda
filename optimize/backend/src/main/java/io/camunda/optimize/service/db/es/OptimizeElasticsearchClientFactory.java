@@ -44,19 +44,14 @@ public class OptimizeElasticsearchClientFactory {
     final ElasticsearchClient build =
         ElasticsearchClientBuilder.build(configurationService, OPTIMIZE_MAPPER, pluginRepository);
 
-<<<<<<< HEAD
-    waitForElasticsearch(build, backoffCalculator, transportOptionsProvider.getTransportOptions());
-    log.info("Elasticsearch client has successfully been started");
-=======
-    boolean healthCheckEnabled = configurationService.getElasticSearchConfiguration()
+    final boolean healthCheckEnabled = configurationService.getElasticSearchConfiguration()
         .getConnection().isHealthCheckEnabled();
     if (healthCheckEnabled) {
       waitForElasticsearch(build, backoffCalculator,
           transportOptionsProvider.getTransportOptions());
       LOG.info("Elasticsearch client has successfully been started");
     }
->>>>>>> 0bfd7e18 (feat: add property for permissions)
-
+        
     final OptimizeElasticsearchClient prefixedClient =
         new OptimizeElasticsearchClient(
             ElasticsearchClientBuilder.restClient(configurationService, pluginRepository),
@@ -67,7 +62,7 @@ public class OptimizeElasticsearchClientFactory {
 
     elasticSearchSchemaManager.validateDatabaseMetadata(prefixedClient);
 
-    boolean initSchemaEnabled = configurationService.getElasticSearchConfiguration()
+    final boolean initSchemaEnabled = configurationService.getElasticSearchConfiguration()
         .getConnection().isInitSchemaEnabled();
     if (initSchemaEnabled) {
       elasticSearchSchemaManager.initializeSchema(prefixedClient);
