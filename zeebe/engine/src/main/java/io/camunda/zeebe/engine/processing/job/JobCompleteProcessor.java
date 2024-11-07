@@ -114,7 +114,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
 
           if (value.getResult().isDenied()) {
             commandWriter.appendFollowUpCommand(
-                userTask.getUserTaskKey(), UserTaskIntent.REJECT_TASK_LISTENER, userTask);
+                userTask.getUserTaskKey(), UserTaskIntent.DENY_TASK_LISTENER, userTask);
             return;
           }
 

@@ -80,7 +80,7 @@ public final class UserTaskCommandProcessors {
             // dedicated processor.
             // This intent is handled internally within UserTaskProcessor
             .filter(intent -> intent != UserTaskIntent.COMPLETE_TASK_LISTENER)
-            .filter(intent -> intent != UserTaskIntent.REJECT_TASK_LISTENER)
+            .filter(intent -> intent != UserTaskIntent.DENY_TASK_LISTENER)
             .filter(intent -> !commandToProcessor.containsKey(intent))
             .collect(Collectors.toSet());
 

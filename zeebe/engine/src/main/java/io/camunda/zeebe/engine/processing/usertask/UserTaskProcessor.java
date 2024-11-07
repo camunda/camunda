@@ -79,18 +79,17 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
   @Override
   public void processRecord(final TypedRecord<UserTaskRecord> command) {
-    final var lifecycleState = userTaskState.getLifecycleState(command.getKey());
     final UserTaskIntent intent = (UserTaskIntent) command.getIntent();
     switch (intent) {
       case ASSIGN, CLAIM, COMPLETE, UPDATE -> processOperationCommand(command, intent);
-      case COMPLETE_TASK_LISTENER -> processCompleteTaskListener(command, lifecycleState);
-      case REJECT_TASK_LISTENER -> processRejectTaskListener(command, lifecycleState);
+      case COMPLETE_TASK_LISTENER -> processCompleteTaskListener(command);
+      case DENY_TASK_LISTENER -> processRejectTaskListener(command);
       default -> throw new UnsupportedOperationException("Unexpected user task intent: " + intent);
     }
   }
 
-  private void processCompleteTaskListener(
-      final TypedRecord<UserTaskRecord> command, final LifecycleState lifecycleState) {
+  private void processCompleteTaskListener(final TypedRecord<UserTaskRecord> command) {
+    final var lifecycleState = userTaskState.getLifecycleState(command.getKey());
     final var userTaskIntent = mapLifecycleStateToIntent(lifecycleState);
     final var commandProcessor = commandProcessors.getCommandProcessor(userTaskIntent);
     final var persistedRecord = userTaskState.getUserTask(command.getKey());
@@ -105,8 +104,8 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
             () -> commandProcessor.onFinalizeCommand(command, persistedRecord));
   }
 
-  private void processRejectTaskListener(
-      final TypedRecord<UserTaskRecord> command, final LifecycleState lifecycleState) {
+  private void processRejectTaskListener(final TypedRecord<UserTaskRecord> command) {
+    final var lifecycleState = userTaskState.getLifecycleState(command.getKey());
     final var persistedRecord = userTaskState.getUserTask(command.getKey());
 
     // Improvement: introduce switch case based on lifecycle stages in the future
@@ -114,7 +113,8 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
       writeRejectionForCommand(command, persistedRecord, UserTaskIntent.COMPLETION_DENIED);
     } else {
       throw new IllegalArgumentException(
-          "Unexpected user task lifecycle state: '%s'".formatted(lifecycleState));
+          "Expected to reject operation for user task: '%d', but operation could not be determined from the task's current lifecycle state: '%s'"
+              .formatted(command.getValue().getUserTaskKey(), lifecycleState));
     }
   }
 
@@ -209,10 +209,16 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
       final TypedRecord<UserTaskRecord> command,
       final UserTaskRecord persistedRecord,
       final UserTaskIntent intent) {
-    stateWriter.appendFollowUpEvent(persistedRecord.getUserTaskKey(), intent, persistedRecord);
 
     final var recordRequestMetadata =
         userTaskState.findRecordRequestMetadata(persistedRecord.getUserTaskKey());
+
+    stateWriter.appendFollowUpEvent(persistedRecord.getUserTaskKey(), intent, persistedRecord);
+
+    rejectionWriter.appendRejection(
+        command,
+        RejectionType.INVALID_STATE,
+        USER_TASK_COMPLETION_REJECTION.formatted(persistedRecord.getUserTaskKey()));
 
     recordRequestMetadata.ifPresent(
         metadata -> {

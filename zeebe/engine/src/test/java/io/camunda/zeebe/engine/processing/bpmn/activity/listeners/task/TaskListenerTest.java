@@ -530,61 +530,46 @@ public class TaskListenerTest {
   }
 
   @Test
-  public void shouldCompleteTaskWithTaskListenerWhenJobResultDeniedIsNotSet() {
+  public void shouldCompleteTaskWithTaskListenerWhenJobResultDeniedIsFalse() {
     // given
     final long processInstanceKey =
-        createProcessInstance(createProcessWithCompleteTaskListeners(LISTENER_TYPE));
+        createProcessInstance(
+            createProcessWithCompleteTaskListeners(
+                LISTENER_TYPE, LISTENER_TYPE + "_2", LISTENER_TYPE + "_3"));
 
+    // when
     ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType(LISTENER_TYPE).complete();
+
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
-        .withType(LISTENER_TYPE)
+        .withType(LISTENER_TYPE + "_2")
         .withResult(new JobResult())
         .complete();
 
-    // then
-    assertThat(
-            RecordingExporter.userTaskRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .limit(r -> r.getIntent() == UserTaskIntent.COMPLETED))
-        .extracting(Record::getIntent)
-        .describedAs(
-            "Ensure that `COMPLETE_TASK_LISTENER` events were triggered between user task"
-                + " `COMPLETING` and `COMPLETED` events")
-        .containsSubsequence(
-            UserTaskIntent.COMPLETING,
-            UserTaskIntent.COMPLETE_TASK_LISTENER,
-            UserTaskIntent.COMPLETED);
-  }
-
-  @Test
-  public void shouldCompleteUserTaskWhenTaskListenerAcceptsTheOperation() {
-    // given
-    final long processInstanceKey =
-        createProcessInstance(createProcessWithCompleteTaskListeners(LISTENER_TYPE));
-
-    ENGINE.userTask().ofInstance(processInstanceKey).complete();
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
-        .withType(LISTENER_TYPE)
+        .withType(LISTENER_TYPE + "_3")
         .withResult(new JobResult().setDenied(false))
         .complete();
 
     // then
     assertThat(
-            RecordingExporter.userTaskRecords()
+            RecordingExporter.jobRecords()
                 .withProcessInstanceKey(processInstanceKey)
-                .limit(r -> r.getIntent() == UserTaskIntent.COMPLETED))
-        .extracting(Record::getIntent)
-        .describedAs(
-            "Ensure that `COMPLETE_TASK_LISTENER` events were triggered between user "
-                + "task `COMPLETING` and `COMPLETED` events")
-        .containsSubsequence(
-            UserTaskIntent.COMPLETING,
-            UserTaskIntent.COMPLETE_TASK_LISTENER,
-            UserTaskIntent.COMPLETED);
+                .withJobKind(JobKind.TASK_LISTENER)
+                .withJobListenerEventType(JobListenerEventType.COMPLETE)
+                .withIntent(JobIntent.COMPLETED)
+                .limit(3))
+        .extracting(Record::getValue)
+        .extracting(JobRecordValue::getType, v -> v.getResult().isDenied())
+        .describedAs("Verify that all task listeners were completed with `denied=false`")
+        .containsExactly(
+            tuple(LISTENER_TYPE, false),
+            tuple(LISTENER_TYPE + "_2", false),
+            tuple(LISTENER_TYPE + "_3", false));
   }
 
   @Test
@@ -605,14 +590,14 @@ public class TaskListenerTest {
     assertThat(
             RecordingExporter.userTaskRecords()
                 .withProcessInstanceKey(processInstanceKey)
-                .limit(r -> r.getIntent() == UserTaskIntent.COMPLETED))
+                .limit(r -> r.getIntent() == UserTaskIntent.COMPLETION_DENIED))
         .extracting(Record::getIntent)
         .describedAs(
             "Ensure that `REJECT_TASK_LISTENER` and `COMPLETION_DENIED` are written "
                 + "after `COMPLETING` event")
         .containsSubsequence(
             UserTaskIntent.COMPLETING,
-            UserTaskIntent.REJECT_TASK_LISTENER,
+            UserTaskIntent.DENY_TASK_LISTENER,
             UserTaskIntent.COMPLETION_DENIED);
   }
 
@@ -645,7 +630,7 @@ public class TaskListenerTest {
                 + "` events are present after `REJECT_TASK_LISTENER` and `COMPLETION_DENIED` events")
         .containsSubsequence(
             UserTaskIntent.COMPLETING,
-            UserTaskIntent.REJECT_TASK_LISTENER,
+            UserTaskIntent.DENY_TASK_LISTENER,
             UserTaskIntent.COMPLETION_DENIED,
             UserTaskIntent.COMPLETING,
             UserTaskIntent.COMPLETE_TASK_LISTENER,
@@ -683,7 +668,7 @@ public class TaskListenerTest {
                 + "rejection from the first Task Listener")
         .containsSubsequence(
             UserTaskIntent.COMPLETING,
-            UserTaskIntent.REJECT_TASK_LISTENER,
+            UserTaskIntent.DENY_TASK_LISTENER,
             UserTaskIntent.COMPLETION_DENIED,
             UserTaskIntent.COMPLETING,
             UserTaskIntent.COMPLETE_TASK_LISTENER,
@@ -723,7 +708,7 @@ public class TaskListenerTest {
                 + " and `COMPLETE_TASK_LISTENER` event was triggered successfully")
         .containsSubsequence(
             UserTaskIntent.COMPLETING,
-            UserTaskIntent.REJECT_TASK_LISTENER,
+            UserTaskIntent.DENY_TASK_LISTENER,
             UserTaskIntent.COMPLETION_DENIED,
             UserTaskIntent.ASSIGNING,
             UserTaskIntent.ASSIGNED,

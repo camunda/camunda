@@ -60,10 +60,10 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
    * successfully.
    *
    * <p>Until this intent is written, the processing of the user task is paused, ensuring that the
-   * operations defined by the listener are fully executed before proceeding with the original task
-   * command.
+   * operations defined by the listener are fully executed before reverting the User Task to the
+   * CREATED state.
    */
-  REJECT_TASK_LISTENER(16),
+  DENY_TASK_LISTENER(16),
   /**
    * Represents the intent indicating that the User Task will not be completed, but rather will be
    * reverted to the CREATED state.
@@ -121,7 +121,7 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
       case 15:
         return COMPLETE_TASK_LISTENER;
       case 16:
-        return REJECT_TASK_LISTENER;
+        return DENY_TASK_LISTENER;
       case 17:
         return COMPLETION_DENIED;
       default:
