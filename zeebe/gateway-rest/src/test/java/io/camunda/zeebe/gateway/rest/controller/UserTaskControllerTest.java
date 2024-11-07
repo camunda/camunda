@@ -87,7 +87,7 @@ public class UserTaskControllerTest extends RestControllerTest {
                         "2023-11-11T10:10:10.1010Z",
                         "2023-11-11T10:10:10Z",
                         "2023-11-11T10:10:10.1010+01:00",
-                        "2023-11-11T10:10:10.1010+01:00[Europe/Paris]")
+                        "2023-11-11T10:10:10.101010101+01:00")
                     .flatMap(date -> Stream.of(Pair.of(date, url))));
   }
 
@@ -580,7 +580,8 @@ public class UserTaskControllerTest extends RestControllerTest {
         """
             {
               "changeset": {
-                "followUpDate": "2023-11-11T12:12:12.1234+0100"
+                "followUpDate": "2023-11-11T12:12:12.1234+0100",
+                "dueDate": "2023-11-11T10:10:10.1010+01:00[Europe/Paris]"
               }
             }""";
 
@@ -590,7 +591,10 @@ public class UserTaskControllerTest extends RestControllerTest {
               "type": "about:blank",
               "status": 400,
               "title": "INVALID_ARGUMENT",
-              "detail": "The provided follow-up date '2023-11-11T12:12:12.1234+0100' cannot be parsed as a date according to RFC 3339, section 5.6.",
+              "detail": "The provided due date '2023-11-11T10:10:10.1010+01:00[Europe/Paris]' \
+            cannot be parsed as a date according to RFC 3339, section 5.6. The provided follow-up \
+            date '2023-11-11T12:12:12.1234+0100' cannot be parsed as a date according to RFC 3339, \
+            section 5.6.",
               "instance": "%s"
             }"""
             .formatted(baseUrl + "/1");
