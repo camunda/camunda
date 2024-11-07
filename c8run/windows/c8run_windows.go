@@ -251,8 +251,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		elasticsearchCmdString := filepath.Join(parentDir, "elasticsearch-"+elasticsearchVersion, "bin", "elasticsearch.bat") + " -E xpack.ml.enabled=false -E xpack.security.enabled=false"
-		elasticsearchCmd := exec.Command("cmd", "/C", elasticsearchCmdString)
+		elasticsearchCmd := exec.Command(filepath.Join(parentDir, "elasticsearch-"+elasticsearchVersion, "bin", "elasticsearch.bat"), "-E", "xpack.ml.enabled=false", "-E", "xpack.security.enabled=false")
 
 		elasticsearchCmd.SysProcAttr = &syscall.SysProcAttr{
 			CreationFlags: 0x08000000 | 0x00000200, // CREATE_NO_WINDOW, CREATE_NEW_PROCESS_GROUP : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
@@ -300,9 +299,7 @@ func main() {
 		} else {
 			extraArgs = "--spring.config.location=" + filepath.Join(parentDir, "configuration")
 		}
-		camundaCmdString := parentDir + "\\camunda-zeebe-" + camundaVersion + "\\bin\\camunda " + extraArgs
-		fmt.Println(camundaCmdString)
-		camundaCmd := exec.Command("cmd", "/C", camundaCmdString)
+		camundaCmd := exec.Command(parentDir + "\\camunda-zeebe-" + camundaVersion + "\\bin\\camunda", extraArgs)
 		camundaLogPath := filepath.Join(parentDir, "log", "camunda.log")
 		camundaLogFile, err := os.OpenFile(camundaLogPath, os.O_RDWR|os.O_CREATE, 0644)
 		if err != nil {
