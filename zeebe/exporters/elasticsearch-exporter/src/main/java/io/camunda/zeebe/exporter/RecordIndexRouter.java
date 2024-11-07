@@ -10,6 +10,7 @@ package io.camunda.zeebe.exporter;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.IndexConfiguration;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -40,7 +41,17 @@ final class RecordIndexRouter {
    */
   String indexFor(final Record<?> record) {
     final Instant timestamp = Instant.ofEpochMilli(record.getTimestamp());
-    return (indexPrefixForValueType(record.getValueType(), record.getBrokerVersion())
+
+    final var recordVersion = SemanticVersion.parse(record.getBrokerVersion());
+    var indexVersion = SemanticVersion.parse(VersionUtil.getVersionLowerCase()).orElseThrow();
+
+    // if the record version is less than the current version use that as the record should be
+    // written to old versioned index.
+    if (recordVersion.isPresent() && recordVersion.get().compareTo(indexVersion) < 0) {
+      indexVersion = recordVersion.get();
+    }
+
+    return (indexPrefixForValueType(record.getValueType(), indexVersion.toString().toLowerCase())
             + INDEX_DELIMITER)
         + formatter.format(timestamp);
   }
