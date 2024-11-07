@@ -84,17 +84,17 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       client.indices().putIndexTemplate(request);
       LOG.debug("Template [{}] was successfully created", templateDescriptor.getTemplateName());
     } catch (final IOException | ElasticsearchException e) {
-      if (e.getMessage()
-          .contains(
-              String.format(
-                  "index template [%s] already exists", templateDescriptor.getTemplateName()))) {
+      if (e instanceof ElasticsearchException) {
         // Creation should only occur once during initialisation but multiple partitions with
         // their own exporter will create race conditions where multiple exporters try to
         // create the same template
-        LOG.debug(
-            "Did not create index template [{}] as it already exists",
-            templateDescriptor.getTemplateName());
-        return;
+        final var errorReason = ((ElasticsearchException) e).error().reason();
+        if (errorReason != null
+            && errorReason.equals(
+                "index template [" + templateDescriptor.getTemplateName() + "] already exists")) {
+          LOG.debug(errorReason);
+          return;
+        }
       }
       final var errMsg =
           String.format("Template [%s] was NOT created", templateDescriptor.getTemplateName());
