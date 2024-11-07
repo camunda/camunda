@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.document.store;
+package io.camunda.document.store.inmemory;
 
 import io.camunda.document.api.DocumentCreationRequest;
 import io.camunda.document.api.DocumentError;
