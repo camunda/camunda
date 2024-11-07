@@ -16,13 +16,15 @@ public interface MutableMappingState extends MappingState {
 
   void addRole(final long mappingKey, final long roleKey);
 
-  void addGroup(final long mappingKey, final long groupKey);
+  void addTenant(final long mappingKey, final long tenantKey);
 
-  void addTenant(final long mappingKey, final String tenantId);
+  void addGroup(final long mappingKey, final long groupKey);
 
   void removeRole(final long mappingKey, final long roleKey);
 
+  void removeTenant(final long mappingKey, final long tenantKey);
+
   void removeGroup(final long mappingKey, final long groupKey);
 
-  void removeTenant(final long mappingKey, final String tenantId);
+  void delete(final long key);
 }

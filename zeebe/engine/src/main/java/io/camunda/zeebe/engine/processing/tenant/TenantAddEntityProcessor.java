@@ -82,11 +82,10 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
     }
 
     final var entityKey = record.getEntityKey();
-    final var tenantId = persistedRecord.get().getTenantId();
-    if (!isEntityPresentAndNotAssigned(entityKey, record.getEntityType(), command, tenantId)) {
+    if (!isEntityPresentAndNotAssigned(
+        entityKey, record.getEntityType(), command, tenantKey, record.getTenantId())) {
       return;
     }
-    record.setTenantId(tenantId);
 
     stateWriter.appendFollowUpEvent(tenantKey, TenantIntent.ENTITY_ADDED, record);
     responseWriter.writeEventOnCommand(tenantKey, TenantIntent.ENTITY_ADDED, record, command);
@@ -105,59 +104,64 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
       final long entityKey,
       final EntityType entityType,
       final TypedRecord<TenantRecord> command,
+      final long tenantKey,
       final String tenantId) {
     return switch (entityType) {
-      case USER -> checkUserAssignment(entityKey, command, tenantId);
-      case MAPPING -> checkMappingAssignment(entityKey, command, tenantId);
+      case USER -> checkUserAssignment(entityKey, command, tenantId, tenantKey);
+      case MAPPING -> checkMappingAssignment(entityKey, command, tenantKey);
       default ->
-          throw new IllegalStateException(formatErrorMessage(entityKey, tenantId, "doesn't exist"));
+          throw new IllegalStateException(
+              formatErrorMessage(entityKey, tenantKey, "doesn't exist"));
     };
   }
 
   private boolean checkUserAssignment(
-      final long entityKey, final TypedRecord<TenantRecord> command, final String tenantId) {
+      final long entityKey,
+      final TypedRecord<TenantRecord> command,
+      final String tenantId,
+      final long tenantKey) {
     final var user = userState.getUser(entityKey);
     if (user.isEmpty()) {
       rejectCommand(
           command,
           RejectionType.NOT_FOUND,
-          formatErrorMessage(entityKey, tenantId, "doesn't exist"));
+          formatErrorMessage(entityKey, tenantKey, "doesn't exist"));
       return false;
     }
     if (user.get().getTenantIdsList().contains(tenantId)) {
       rejectCommand(
           command,
           RejectionType.INVALID_ARGUMENT,
-          formatErrorMessage(entityKey, tenantId, "is already assigned to the tenant"));
+          formatErrorMessage(entityKey, tenantKey, "is already assigned to the tenant"));
       return false;
     }
     return true;
   }
 
   private boolean checkMappingAssignment(
-      final long entityKey, final TypedRecord<TenantRecord> command, final String tenantId) {
+      final long entityKey, final TypedRecord<TenantRecord> command, final long tenantKey) {
     final var mapping = mappingState.get(entityKey);
     if (mapping.isEmpty()) {
       rejectCommand(
           command,
           RejectionType.NOT_FOUND,
-          formatErrorMessage(entityKey, tenantId, "doesn't exist"));
+          formatErrorMessage(entityKey, tenantKey, "doesn't exist"));
       return false;
     }
-    if (mapping.get().getTenantIdsList().contains(tenantId)) {
+    if (mapping.get().getTenantKeysList().contains(tenantKey)) {
       rejectCommand(
           command,
           RejectionType.INVALID_ARGUMENT,
-          formatErrorMessage(entityKey, tenantId, "is already assigned to the tenant"));
+          formatErrorMessage(entityKey, tenantKey, "is already assigned to the tenant"));
       return false;
     }
     return true;
   }
 
   private String formatErrorMessage(
-      final long entityKey, final String tenantId, final String reason) {
-    return "Expected to add entity with key '%s' to tenant with id '%s', but the entity %s."
-        .formatted(entityKey, tenantId, reason);
+      final long entityKey, final long tenantKey, final String reason) {
+    return "Expected to add entity with key '%s' to tenant with key '%s', but the entity %s."
+        .formatted(entityKey, tenantKey, reason);
   }
 
   private void rejectCommandWithUnauthorizedError(

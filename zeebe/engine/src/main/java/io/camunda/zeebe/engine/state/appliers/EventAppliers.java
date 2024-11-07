@@ -513,6 +513,7 @@ public final class EventAppliers implements EventApplier {
     register(
         MappingIntent.CREATED,
         new MappingCreatedApplier(state.getMappingState(), state.getAuthorizationState()));
+    register(MappingIntent.DELETED, new MappingDeletedApplier(state));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {
