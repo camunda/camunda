@@ -18,15 +18,8 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.elasticsearch.client</groupId>
-      <artifactId>elasticsearch-rest-high-level-client</artifactId>
-      <version>7.17.25</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.elasticsearch.client</groupId>
-      <artifactId>elasticsearch-rest-client</artifactId>
-      <scope>test</scope>
+      <groupId>co.elastic.clients</groupId>
+      <artifactId>elasticsearch-java</artifactId>
     </dependency>
 
     <!-- scope here is wider than test. Dependency:analyze error suppressed -->
@@ -111,13 +104,6 @@
       <artifactId>httpclient</artifactId>
       <version>${httpclient.version}</version>
       <scope>runtime</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.elasticsearch</groupId>
-      <artifactId>elasticsearch</artifactId>
-      <version>${elasticsearch.client.test.version}</version>
-      <scope>test</scope>
     </dependency>
 
     <dependency>

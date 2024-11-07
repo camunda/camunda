@@ -9,87 +9,97 @@ package io.camunda.optimize.test.upgrade.client;
 
 import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.analysis.TokenChar;
+import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
+import co.elastic.clients.elasticsearch.indices.DeleteIndexTemplateRequest;
+import co.elastic.clients.elasticsearch.indices.GetAliasRequest;
+import co.elastic.clients.elasticsearch.indices.GetIndexTemplateRequest;
+import co.elastic.clients.elasticsearch.indices.GetMappingRequest;
+import co.elastic.clients.elasticsearch.indices.RefreshRequest;
+import co.elastic.clients.elasticsearch.indices.get_alias.IndexAliases;
+import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplateItem;
+import co.elastic.clients.elasticsearch.indices.get_mapping.IndexMappingRecord;
+import co.elastic.clients.elasticsearch.snapshot.CreateRepositoryRequest;
+import co.elastic.clients.elasticsearch.snapshot.DeleteRepositoryRequest;
+import co.elastic.clients.elasticsearch.snapshot.DeleteSnapshotRequest;
+import co.elastic.clients.elasticsearch.snapshot.RestoreRequest;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.transport.ElasticsearchTransport;
+import co.elastic.clients.transport.rest_client.RestClientTransport;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.apache.http.HttpHost;
 import org.apache.http.client.methods.HttpGet;
-import org.elasticsearch.action.admin.cluster.repositories.delete.DeleteRepositoryRequest;
-import org.elasticsearch.action.admin.cluster.repositories.put.PutRepositoryRequest;
-import org.elasticsearch.action.admin.cluster.snapshots.delete.DeleteSnapshotRequest;
-import org.elasticsearch.action.admin.cluster.snapshots.restore.RestoreSnapshotRequest;
-import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
-import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.admin.indices.template.delete.DeleteIndexTemplateRequest;
 import org.elasticsearch.client.Request;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.indices.GetIndexTemplatesRequest;
-import org.elasticsearch.client.indices.GetMappingsRequest;
-import org.elasticsearch.client.indices.IndexTemplateMetadata;
-import org.elasticsearch.cluster.metadata.AliasMetadata;
-import org.elasticsearch.cluster.metadata.MappingMetadata;
-import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.repositories.fs.FsRepository;
 
 public class ElasticsearchSchemaTestClient extends AbstractDatabaseSchemaTestClient {
 
   private static final org.slf4j.Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ElasticsearchSchemaTestClient.class);
-  private final RestHighLevelClient client;
+  private final ElasticsearchClient client;
+  private final RestClient restClient;
 
   public ElasticsearchSchemaTestClient(final String name, final int port) {
     super(name);
-    client =
-        new RestHighLevelClient(
-            RestClient.builder(new HttpHost("localhost", port, "http"))
-                .setRequestConfigCallback(
-                    requestConfigBuilder ->
-                        requestConfigBuilder.setConnectTimeout(5000).setSocketTimeout(0)));
+
+    restClient =
+        RestClient.builder(new HttpHost("localhost", port, "http"))
+            .setRequestConfigCallback(
+                requestConfigBuilder ->
+                    requestConfigBuilder.setConnectTimeout(5000).setSocketTimeout(0))
+            .build();
+
+    // Create the transport with a Jackson mapper
+    final ElasticsearchTransport transport =
+        new RestClientTransport(restClient, new JacksonJsonpMapper());
+
+    // And create the API client
+    client = new ElasticsearchClient(transport);
   }
 
   @Override
   public void close() throws IOException {
-    client.close();
+    client._transport().close();
   }
 
   @Override
   public void refreshAll() throws IOException {
     LOG.info("Refreshing all indices of {} Elasticsearch...", name);
-    client.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+    client.indices().refresh(RefreshRequest.of(b -> b.index("*")));
     LOG.info("Successfully refreshed all indices of {} Elasticsearch!", name);
   }
 
   @Override
   public void cleanIndicesAndTemplates() throws IOException {
     LOG.info("Wiping all indices & templates from {} Elasticsearch...", name);
-    client.indices().delete(new DeleteIndexRequest("_all"), RequestOptions.DEFAULT);
-    client.indices().deleteTemplate(new DeleteIndexTemplateRequest("*"), RequestOptions.DEFAULT);
+    client.indices().delete(DeleteIndexRequest.of(b -> b.index("_all")));
+    client.indices().deleteIndexTemplate(DeleteIndexTemplateRequest.of(b -> b.name("*")));
     LOG.info("Successfully wiped all indices & templates from {} Elasticsearch!", name);
   }
 
   @Override
   public void createSnapshotRepository() throws IOException {
     LOG.info("Creating snapshot repository on {} Elasticsearch...", name);
-    final Settings settings =
-        Settings.builder()
-            .put(FsRepository.LOCATION_SETTING.getKey(), "/var/tmp")
-            .put(FsRepository.COMPRESS_SETTING.getKey(), true)
-            .put(FsRepository.READONLY_SETTING_KEY, false)
-            .build();
     client
         .snapshot()
         .createRepository(
-            new PutRepositoryRequest(SNAPSHOT_REPOSITORY_NAME)
-                .settings(settings)
-                .type(FsRepository.TYPE),
-            RequestOptions.DEFAULT);
+            CreateRepositoryRequest.of(
+                b ->
+                    b.name(SNAPSHOT_REPOSITORY_NAME)
+                        .repository(
+                            r ->
+                                r.fs(
+                                    f ->
+                                        f.settings(
+                                            s ->
+                                                s.location("/var/tmp")
+                                                    .readonly(false)
+                                                    .compress(true))))));
     LOG.info("Done creating snapshot repository on {} Elasticsearch!", name);
   }
 
@@ -98,8 +108,7 @@ public class ElasticsearchSchemaTestClient extends AbstractDatabaseSchemaTestCli
     LOG.info("Removing snapshot repository on {} Elasticsearch...", name);
     client
         .snapshot()
-        .deleteRepository(
-            new DeleteRepositoryRequest().name(SNAPSHOT_REPOSITORY_NAME), RequestOptions.DEFAULT);
+        .deleteRepository(DeleteRepositoryRequest.of(b -> b.name(SNAPSHOT_REPOSITORY_NAME)));
     LOG.info("Done removing snapshot repository on {} Elasticsearch!", name);
   }
 
@@ -113,7 +122,7 @@ public class ElasticsearchSchemaTestClient extends AbstractDatabaseSchemaTestCli
     createSnapshotRequest.addParameter("wait_for_completion", String.valueOf(true));
     createSnapshotRequest.setJsonEntity(
         "{\"indices\":\"optimize-*\",\n\"include_global_state\":true}");
-    final Response response = client.getLowLevelClient().performRequest(createSnapshotRequest);
+    final Response response = restClient.performRequest(createSnapshotRequest);
     if (HttpURLConnection.HTTP_OK != response.getStatusLine().getStatusCode()) {
       throw new RuntimeException(
           "Failed Creating Snapshot, statusCode: " + response.getStatusLine().getStatusCode());
@@ -130,7 +139,7 @@ public class ElasticsearchSchemaTestClient extends AbstractDatabaseSchemaTestCli
         new Request("PUT", "/_snapshot/" + SNAPSHOT_REPOSITORY_NAME + "/" + SNAPSHOT_NAME_2);
     createSnapshotRequest.addParameter("wait_for_completion", String.valueOf(false));
     createSnapshotRequest.setJsonEntity("{\"include_global_state\":true}");
-    final Response response = client.getLowLevelClient().performRequest(createSnapshotRequest);
+    final Response response = restClient.performRequest(createSnapshotRequest);
     if (HttpURLConnection.HTTP_OK != (response.getStatusLine().getStatusCode())) {
       throw new RuntimeException(
           "Failed Creating Snapshot, statusCode: " + response.getStatusLine().getStatusCode());
@@ -144,10 +153,12 @@ public class ElasticsearchSchemaTestClient extends AbstractDatabaseSchemaTestCli
     client
         .snapshot()
         .restore(
-            new RestoreSnapshotRequest(SNAPSHOT_REPOSITORY_NAME, SNAPSHOT_NAME_1)
-                .includeGlobalState(true)
-                .waitForCompletion(true),
-            RequestOptions.DEFAULT);
+            RestoreRequest.of(
+                b ->
+                    b.repository(SNAPSHOT_REPOSITORY_NAME)
+                        .snapshot(SNAPSHOT_NAME_1)
+                        .includeGlobalState(true)
+                        .waitForCompletion(true)));
     LOG.info("Done restoring snapshot on {} Elasticsearch!", name);
   }
 
@@ -167,8 +178,8 @@ public class ElasticsearchSchemaTestClient extends AbstractDatabaseSchemaTestCli
     client
         .snapshot()
         .delete(
-            new DeleteSnapshotRequest(SNAPSHOT_REPOSITORY_NAME, snapshotName),
-            RequestOptions.DEFAULT);
+            DeleteSnapshotRequest.of(
+                b -> b.snapshot(snapshotName).repository(SNAPSHOT_REPOSITORY_NAME)));
     LOG.info("Done deleting {} snapshot on {} Elasticsearch!", snapshotName, name);
   }
 
@@ -180,7 +191,7 @@ public class ElasticsearchSchemaTestClient extends AbstractDatabaseSchemaTestCli
                 + DEFAULT_OPTIMIZE_INDEX_PATTERN
                 + "/_settings/"
                 + String.join(",", SETTINGS_FILTER));
-    final Response response = client.getLowLevelClient().performRequest(request);
+    final Response response = restClient.performRequest(request);
     final Map<String, Map> map =
         OPTIMIZE_MAPPER.readValue(response.getEntity().getContent(), Map.class);
     for (final Map stringStringEntry : map.values()) {
@@ -209,28 +220,24 @@ public class ElasticsearchSchemaTestClient extends AbstractDatabaseSchemaTestCli
     return map;
   }
 
-  public Map<String, MappingMetadata> getMappings() throws IOException {
+  public Map<String, IndexMappingRecord> getMappings() throws IOException {
     return client
         .indices()
-        .getMapping(
-            new GetMappingsRequest().indices(DEFAULT_OPTIMIZE_INDEX_PATTERN),
-            RequestOptions.DEFAULT)
-        .mappings();
+        .getMapping(GetMappingRequest.of(b -> b.index(DEFAULT_OPTIMIZE_INDEX_PATTERN)))
+        .result();
   }
 
-  public Map<String, Set<AliasMetadata>> getAliases() throws IOException {
+  public Map<String, IndexAliases> getAliases() throws IOException {
     return client
         .indices()
-        .getAlias(
-            new GetAliasesRequest().indices(DEFAULT_OPTIMIZE_INDEX_PATTERN), RequestOptions.DEFAULT)
-        .getAliases();
+        .getAlias(GetAliasRequest.of(b -> b.index(DEFAULT_OPTIMIZE_INDEX_PATTERN)))
+        .result();
   }
 
-  public List<IndexTemplateMetadata> getTemplates() throws IOException {
+  public List<IndexTemplateItem> getTemplates() throws IOException {
     return client
         .indices()
-        .getIndexTemplate(
-            new GetIndexTemplatesRequest(DEFAULT_OPTIMIZE_INDEX_PATTERN), RequestOptions.DEFAULT)
-        .getIndexTemplates();
+        .getIndexTemplate(GetIndexTemplateRequest.of(b -> b.name(DEFAULT_OPTIMIZE_INDEX_PATTERN)))
+        .indexTemplates();
   }
 }
