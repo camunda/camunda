@@ -65,26 +65,12 @@ jobs:
           echo "PR_IMAGE_TAG=pr-$GIT_COMMIT_HASH" >> $GITHUB_ENV
 
       #########################################################################
-      # Setup: import secrets from vault
-      - name: Import Secrets
-        id: secrets  # important to refer to it in later steps
-        uses: hashicorp/vault-action@a1b77a09293a4366e48a5067a86692ac6e94fdc0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false # we rely on step outputs, no need for environment variables
-          secrets: |
-            secret/data/github.com/organizations/camunda NEXUS_USR;
-            secret/data/github.com/organizations/camunda NEXUS_PSW;
-
-      #########################################################################
       # Setup and configure Maven, Docker, and settings
       - uses: ./.github/actions/setup-build
         name: Build setup
         with:
           dockerhub: ${{ env.IS_DEFAULT_BRANCH == 'true' }}
+          harbor: true
           java-distribution: adopt
           maven-cache-key-modifier: tasklist
           maven-version: 3.8.6
@@ -101,15 +87,6 @@ jobs:
       - name: Build backend
         run: |
           ./mvnw -T1C clean deploy -B -PskipFrontendBuild -DskipTests -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
-
-      #########################################################################
-      # Docker login and image tagging
-      - name: Login to Harbor docker registry
-        uses: docker/login-action@v3
-        with:
-          registry: registry.camunda.cloud
-          username: ${{ steps.secrets.outputs.NEXUS_USR }}
-          password: ${{ steps.secrets.outputs.NEXUS_PSW }}
 
       #########################################################################
       # Build Docker image

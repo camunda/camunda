@@ -76,8 +76,6 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           exportEnv: false # we rely on step outputs, no need for environment variables
           secrets: |
-            secret/data/github.com/organizations/camunda NEXUS_USR;
-            secret/data/github.com/organizations/camunda NEXUS_PSW;
             secret/data/products/operate/ci/github-actions OPERATE_CI_ALERT_WEBHOOK_URL;
 
       #########################################################################
@@ -86,6 +84,7 @@ jobs:
         name: Build setup
         with:
           dockerhub: ${{ env.IS_DEFAULT_BRANCH == 'true' }}
+          harbor: true
           java-distribution: adopt
           maven-cache-key-modifier: operate
           maven-version: 3.8.6
@@ -103,15 +102,6 @@ jobs:
       - name: Build Maven
         run: |
           ./mvnw clean deploy -B -T1C -P -docker,skipFrontendBuild -DskipTests -D skipOptimize -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
-
-      #########################################################################
-      # Docker login and image tagging
-      - name: Login to Harbor docker registry
-        uses: docker/login-action@v3
-        with:
-          registry: registry.camunda.cloud
-          username: ${{ steps.secrets.outputs.NEXUS_USR }}
-          password: ${{ steps.secrets.outputs.NEXUS_PSW }}
 
       #########################################################################
       # Build Docker image
