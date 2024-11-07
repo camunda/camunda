@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.activity.listeners.task;
 
+import static io.camunda.zeebe.engine.processing.job.JobCompleteProcessor.TL_JOB_COMPLETION_WITH_VARS_NOT_SUPPORTED_MESSAGE;
 import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static io.camunda.zeebe.test.util.record.RecordingExporter.records;
 import static java.util.Map.entry;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -47,6 +49,7 @@ import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -260,6 +263,8 @@ public class TaskListenerTest {
   }
 
   @Test
+  @Ignore(
+      "Ignored due to task listener job completion rejection when variables payload is provided (issue #24056). Re-enable after implementing issue #23702.")
   public void shouldMakeVariablesFromPreviousTaskListenersAvailableToSubsequentListeners() {
     final long processInstanceKey =
         createProcessInstance(
@@ -281,8 +286,10 @@ public class TaskListenerTest {
   }
 
   @Test
+  @Ignore(
+      "Ignored due to task listener job completion rejection when variables payload is provided (issue #24056). Re-enable after implementing issue #23702.")
   public void shouldNotExposeTaskListenerVariablesOutsideUserTaskScope() {
-    // given: deploy process with a user task having complete TL and service task following it
+    // given: deploy a process with a user task having complete TL and service task following it
     final long processInstanceKey =
         createProcessInstance(
             createProcess(
@@ -307,15 +314,17 @@ public class TaskListenerTest {
         .withVariable("my_listener_var", "bar")
         .complete();
 
-    // then: assert the variable 'my_listener_var' is not accessible in the subsequent element
+    // then: assert the variable 'my_listener_var' isn't accessible in the subsequent element
     final var subsequentServiceTaskJob = activateJob(processInstanceKey, "subsequent_service_task");
     assertThat(subsequentServiceTaskJob.getVariables()).doesNotContainKey("my_listener_var");
     completeJobs(processInstanceKey, "subsequent_service_task");
   }
 
   @Test
+  @Ignore(
+      "Ignored due to task listener job completion rejection when variables payload is provided (issue #24056). Re-enable after implementing issue #23702.")
   public void shouldAllowTaskListenerVariablesInUserTaskOutputMappings() {
-    // given: deploy process with a user task having complete TL and service task following it
+    // given: deploy a process with a user task having complete TL and service task following it
     final long processInstanceKey =
         createProcessInstance(
             createProcess(
@@ -486,6 +495,37 @@ public class TaskListenerTest {
         .describedAs("Expect that only the specified variable foo is provided to the job")
         .allSatisfy(
             job -> assertThat(job.getVariables()).containsExactly(Map.entry("foo", "overwritten")));
+  }
+
+  @Test
+  public void shouldRejectCompleteTaskListenerJobCompletionWhenVariablesAreSet() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(createProcessWithCompleteTaskListeners(LISTENER_TYPE));
+
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+
+    // when: try to complete TL job with a variable payload
+    final var result =
+        ENGINE
+            .job()
+            .ofInstance(processInstanceKey)
+            .withType(LISTENER_TYPE)
+            .withVariable("my_listener_var", "foo")
+            .complete();
+
+    Assertions.assertThat(result)
+        .describedAs(
+            "Task Listener job completion should be rejected when variable payload provided")
+        .hasIntent(JobIntent.COMPLETE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            TL_JOB_COMPLETION_WITH_VARS_NOT_SUPPORTED_MESSAGE.formatted(
+                result.getKey(), LISTENER_TYPE, processInstanceKey));
+
+    // complete the listener job without variables to have a completed process
+    // and prevent flakiness in other tests
+    ENGINE.job().ofInstance(processInstanceKey).withType(LISTENER_TYPE).complete();
   }
 
   private void assertThatProcessInstanceCompleted(final long processInstanceKey) {
