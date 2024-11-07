@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import io.camunda.zeebe.util.VersionUtil;
 import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -43,6 +44,7 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mockito;
 import org.opensearch.client.ResponseException;
 import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.testcontainers.OpensearchContainer;
@@ -442,6 +444,25 @@ final class OpensearchExporterIT {
 
         assertHasISMPolicy(response);
       }
+    }
+
+    @Test
+    void shouldExportRecordToIndexSpecifiedByRecordBrokerVersion() {
+      configureExporter(false);
+      final var oldRecord =
+          factory.generateRecord(ValueType.JOB, r -> r.withBrokerVersion("8.6.0"));
+
+      try (final var mockVersion =
+          Mockito.mockStatic(VersionUtil.class, Mockito.CALLS_REAL_METHODS)) {
+        mockVersion.when(VersionUtil::getVersionLowerCase).thenReturn("8.7.0");
+
+        await("New record is exported, and existing indices are updated")
+            .atMost(Duration.ofSeconds(30))
+            .until(() -> export(oldRecord));
+      }
+
+      final var document = testClient.getExportedDocumentFor(oldRecord);
+      assertThat(document.index().contains(oldRecord.getBrokerVersion())).isTrue();
     }
 
     private void assertHasISMPolicy(final Optional<IndexISMPolicyDto> indexSettings) {

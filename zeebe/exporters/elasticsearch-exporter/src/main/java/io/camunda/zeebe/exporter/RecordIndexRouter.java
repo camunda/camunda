@@ -40,7 +40,8 @@ final class RecordIndexRouter {
    */
   String indexFor(final Record<?> record) {
     final Instant timestamp = Instant.ofEpochMilli(record.getTimestamp());
-    return (indexPrefixForValueType(record.getValueType()) + INDEX_DELIMITER)
+    return (indexPrefixForValueType(record.getValueType(), record.getBrokerVersion())
+            + INDEX_DELIMITER)
         + formatter.format(timestamp);
   }
 
@@ -61,6 +62,10 @@ final class RecordIndexRouter {
   /** Returns the index for this value type, minus the current date. */
   String indexPrefixForValueType(final ValueType valueType) {
     final String version = VersionUtil.getVersionLowerCase();
+    return indexPrefixForValueType(valueType, version);
+  }
+
+  String indexPrefixForValueType(final ValueType valueType, final String version) {
     return config.prefix
         + INDEX_DELIMITER
         + valueTypeToString(valueType)
