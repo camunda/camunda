@@ -58,6 +58,7 @@ public class UserTaskListenersTest {
   @Test
   void shouldCompleteUserTaskWithCompleteTaskListener() {
     // given
+    final var action = "my_complete_action";
     final var userTaskKey =
         resourcesHelper.createSingleUserTask(
             t -> t.zeebeTaskListener(l -> l.complete().type("my_listener")));
@@ -67,7 +68,8 @@ public class UserTaskListenersTest {
     client.newWorker().jobType("my_listener").handler(completeJobHandler).open();
 
     // when: invoke complete user task command
-    final var completeUserTaskFuture = client.newUserTaskCompleteCommand(userTaskKey).send();
+    final var completeUserTaskFuture =
+        client.newUserTaskCompleteCommand(userTaskKey).action(action).send();
 
     // wait for successful `COMPLETE` user task command completion
     assertThatCode(completeUserTaskFuture::join).doesNotThrowAnyException();
@@ -77,7 +79,7 @@ public class UserTaskListenersTest {
         userTaskKey,
         (userTask) -> {
           assertThat(userTask.getVariables()).isEmpty();
-          assertThat(userTask.getAction()).isEqualTo("complete");
+          assertThat(userTask.getAction()).isEqualTo(action);
         });
   }
 
@@ -120,7 +122,7 @@ public class UserTaskListenersTest {
     final var isCompletingWithVar = new AtomicBoolean(true);
     final JobHandler completeJobWithVariableHandler =
         (jobClient, job) -> {
-          final var request = jobClient.newCompleteCommand(job.getKey());
+          final var request = jobClient.newCompleteCommand(job);
           if (isCompletingWithVar.get()) {
             request.variable("my_variable", 123);
           }
@@ -133,15 +135,7 @@ public class UserTaskListenersTest {
     // when
     final var completeUserTaskFuture =
         client.newUserTaskCompleteCommand(userTaskKey).send().toCompletableFuture();
-    await("until all retries are exhausted")
-        .untilAsserted(
-            () ->
-                assertThat(recordingHandler.getHandledJobs())
-                    .describedAs(
-                        "TL job should be retried until reaching the final attempt with retries set to 1")
-                    .last()
-                    .extracting(ActivatedJob::getRetries)
-                    .isEqualTo(1));
+    waitForJobRetriesToBeExhausted(recordingHandler);
 
     // then
     final var handledJobs = recordingHandler.getHandledJobs();
@@ -169,11 +163,12 @@ public class UserTaskListenersTest {
 
     // assert that an incident was created after exhausting all retries with a message
     // describing that the reason is the rejection of TL job completion with variables
+    final long jobKey = handledJobs.getLast().getKey();
     final long incidentKey =
         ZeebeAssertHelper.assertIncidentCreated(
             incident ->
                 assertThat(incident)
-                    .hasJobKey(handledJobs.getLast().getKey())
+                    .hasJobKey(jobKey)
                     .hasErrorType(ErrorType.JOB_NO_RETRIES)
                     .extracting(
                         IncidentRecordValue::getErrorMessage, as(InstanceOfAssertFactories.STRING))
@@ -184,7 +179,7 @@ public class UserTaskListenersTest {
     // tune JobHandler not to provide variables while completing the job
     isCompletingWithVar.set(false);
     // update retries for the job and resolve incident
-    client.newUpdateRetriesCommand(handledJobs.getLast().getKey()).retries(1).send().join();
+    client.newUpdateRetriesCommand(jobKey).retries(1).send().join();
     client.newResolveIncidentCommand(incidentKey).send().join();
 
     // `COMPLETE` user task command request was completed successfully
@@ -196,5 +191,16 @@ public class UserTaskListenersTest {
           assertThat(userTask.getVariables()).isEmpty();
           assertThat(userTask.getAction()).isEqualTo("complete");
         });
+  }
+
+  private void waitForJobRetriesToBeExhausted(final RecordingJobHandler recordingHandler) {
+    await("until all retries are exhausted")
+        .untilAsserted(
+            () ->
+                assertThat(recordingHandler.getHandledJobs())
+                    .describedAs("Job should be retried until retries are exhausted")
+                    .last()
+                    .extracting(ActivatedJob::getRetries)
+                    .isEqualTo(1));
   }
 }
