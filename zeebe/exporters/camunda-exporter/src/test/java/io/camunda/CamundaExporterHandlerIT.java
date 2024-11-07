@@ -41,7 +41,6 @@ import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
 import io.camunda.exporter.handlers.ProcessHandler;
 import io.camunda.exporter.handlers.SequenceFlowHandler;
 import io.camunda.exporter.handlers.TaskCompletedMetricHandler;
-import io.camunda.exporter.handlers.UserHandler;
 import io.camunda.exporter.handlers.UserTaskCompletionVariableHandler;
 import io.camunda.exporter.handlers.UserTaskHandler;
 import io.camunda.exporter.handlers.UserTaskProcessInstanceHandler;
@@ -103,15 +102,6 @@ public class CamundaExporterHandlerIT {
   @AfterAll
   static void tearDown() {
     offsetDateTimeMockedStatic.close();
-  }
-
-  @TestTemplate
-  void shouldExportUsingUserHandler(
-      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
-      throws IOException {
-    final var handler = getHandler(config, UserHandler.class);
-    basicAssertWhereHandlerCreatesDefaultEntity(
-        handler, config, clientAdapter, defaultRecordGenerator(handler));
   }
 
   @TestTemplate
