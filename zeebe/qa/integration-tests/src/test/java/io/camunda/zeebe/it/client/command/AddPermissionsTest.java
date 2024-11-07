@@ -62,8 +62,8 @@ public class AddPermissionsTest {
     final var recordValue =
         RecordingExporter.authorizationRecords(AuthorizationIntent.PERMISSION_ADDED)
             .withOwnerKey(ownerKey)
-            .limit(1)
-            .getFirst()
+            .limit(2)
+            .getLast()
             .getValue();
     assertThat(recordValue.getAction()).isEqualTo(PermissionAction.ADD);
     assertThat(recordValue.getResourceType()).isEqualTo(AuthorizationResourceType.DEPLOYMENT);
