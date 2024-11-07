@@ -215,4 +215,50 @@ public class AuthorizationStateTest {
     assertThat(resourceIds1).isEmpty();
     assertThat(resourceIds2).isNotEmpty();
   }
+
+  @Test
+  void shouldRemoveSinglePermissionsByOwnerKey() {
+    // given
+    final var ownerKey = 1L;
+    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var permissionType = PermissionType.CREATE;
+    final var resourceId1 = "foo";
+    final var resourceId2 = "bar";
+    authorizationState.createOrAddPermission(
+        ownerKey, resourceType, permissionType, List.of(resourceId1, resourceId2));
+
+    // when
+    authorizationState.removePermission(
+        ownerKey, resourceType, permissionType, List.of(resourceId1));
+
+    // then
+    assertThat(authorizationState.getResourceIdentifiers(ownerKey, resourceType, permissionType))
+        .containsOnly(resourceId2);
+    assertThat(authorizationState.getAuthorizationKeysByResourceId(resourceId1)).isEmpty();
+    assertThat(authorizationState.getAuthorizationKeysByResourceId(resourceId2))
+        .containsExactly(
+            new AuthorizationKey(ownerKey, resourceType.toString(), permissionType.toString()));
+  }
+
+  @Test
+  void shouldRemoveAllPermissionsByOwnerKey() {
+    // given
+    final var ownerKey = 1L;
+    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var permissionType = PermissionType.CREATE;
+    final var resourceId1 = "foo";
+    final var resourceId2 = "bar";
+    authorizationState.createOrAddPermission(
+        ownerKey, resourceType, permissionType, List.of(resourceId1, resourceId2));
+
+    // when
+    authorizationState.removePermission(
+        ownerKey, resourceType, permissionType, List.of("foo", "bar"));
+
+    // then
+    assertThat(authorizationState.getResourceIdentifiers(ownerKey, resourceType, permissionType))
+        .isEmpty();
+    assertThat(authorizationState.getAuthorizationKeysByResourceId(resourceId1)).isEmpty();
+    assertThat(authorizationState.getAuthorizationKeysByResourceId(resourceId2)).isEmpty();
+  }
 }

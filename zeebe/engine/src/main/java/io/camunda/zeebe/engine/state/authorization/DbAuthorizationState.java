@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -162,6 +163,7 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
         (compositeKey, resourceIdentifiers) -> {
           resourceIdsByOwnerKeyResourceTypeAndPermissionColumnFamily.deleteExisting(compositeKey);
         });
+    // TODO remove from other CFs
   }
 
   @Override
@@ -198,5 +200,20 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
     }
 
     return Optional.of(AuthorizationOwnerType.valueOf(ownerType.toString()));
+  }
+
+  @Override
+  public List<AuthorizationKey> getAuthorizationKeysByResourceId(final String resourceId) {
+    final var authorizationKeys = new ArrayList<AuthorizationKey>();
+    this.resourceId.wrapString(resourceId);
+    authorizationKeyByResourceIdColumnFamily.whileEqualPrefix(
+        this.resourceId,
+        (key, value) -> {
+          final var ownerKey = key.second().first().getValue();
+          final var resourceType = key.second().second().first().toString();
+          final var permissionType = key.second().second().second().toString();
+          authorizationKeys.add(new AuthorizationKey(ownerKey, resourceType, permissionType));
+        });
+    return authorizationKeys;
   }
 }
