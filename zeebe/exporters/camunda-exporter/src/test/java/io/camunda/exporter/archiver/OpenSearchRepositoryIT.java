@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
@@ -27,6 +28,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.http.HttpHost;
 import org.junit.jupiter.api.Test;
 import org.opensearch.client.RestClient;
@@ -36,12 +39,15 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.mapping.Property;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch.core.search.Hit;
+import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
+import org.opensearch.client.opensearch.generic.Requests;
 import org.opensearch.client.transport.rest_client.RestClientTransport;
 import org.opensearch.testcontainers.OpensearchContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.shaded.org.awaitility.Awaitility;
 
 @SuppressWarnings("resource")
 @Testcontainers
@@ -87,6 +93,81 @@ final class OpenSearchRepositoryIT {
         .first()
         .extracting(Hit::id)
         .isEqualTo("3");
+  }
+
+  @Test
+  void shouldSetIndexLifeCycle() throws IOException {
+    // given
+    final var indexName = UUID.randomUUID().toString();
+    final var repository = createRepository();
+    testClient.indices().create(r -> r.index(indexName));
+
+    final OpensearchEngineClient engineClient = new OpensearchEngineClient(testClient);
+    final OpenSearchGenericClient genericClient =
+        new OpenSearchGenericClient(testClient._transport(), testClient._transportOptions());
+
+    retention.setEnabled(true);
+    retention.setPolicyName("operate_delete_archived_indices");
+
+    // when
+    engineClient.putIndexLifeCyclePolicy(retention.getPolicyName(), retention.getMinimumAge());
+    final var result = repository.setIndexLifeCycle(indexName);
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+
+    // Takes a while for the policy to be applied
+    Awaitility.await()
+        .atMost(3, TimeUnit.SECONDS)
+        .pollInterval(1, TimeUnit.SECONDS)
+        .until(() -> indexContainsRetentionPolicy(indexName, genericClient));
+  }
+
+  @Test
+  void shouldNotSetIndexLifecycleIfRetentionIsDisabled() throws IOException {
+    // given
+    final var indexName = UUID.randomUUID().toString();
+    final var repository = createRepository();
+    testClient.indices().create(r -> r.index(indexName));
+
+    final OpensearchEngineClient engineClient = new OpensearchEngineClient(testClient);
+    final OpenSearchGenericClient genericClient =
+        new OpenSearchGenericClient(testClient._transport(), testClient._transportOptions());
+
+    retention.setEnabled(false);
+    retention.setPolicyName("operate_delete_archived_indices");
+
+    // when
+    engineClient.putIndexLifeCyclePolicy(retention.getPolicyName(), retention.getMinimumAge());
+    final var result = repository.setIndexLifeCycle(indexName);
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+
+    // we query the index lifecycle policy a few times to ensure it's not set
+    // since it takes a while for the policy to be applied.
+    final AtomicInteger attemptCounter = new AtomicInteger(0);
+    Awaitility.await()
+        .atMost(4, TimeUnit.SECONDS)
+        .pollInterval(1, TimeUnit.SECONDS)
+        .until(
+            () -> {
+              attemptCounter.incrementAndGet();
+              return indexContainsRetentionPolicy(indexName, genericClient)
+                  || attemptCounter.get() >= 3;
+            });
+  }
+
+  boolean indexContainsRetentionPolicy(
+      final String indexName, final OpenSearchGenericClient genericClient) {
+    return genericClient
+        .executeAsync(
+            Requests.builder().method("get").endpoint("_plugins/_ism/explain/" + indexName).build())
+        .join()
+        .getBody()
+        .get()
+        .bodyAsString()
+        .contains(retention.getPolicyName());
   }
 
   @Test
