@@ -54,11 +54,12 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
   @Override
   public void processNewCommand(final TypedRecord<GroupRecord> command) {
     final var record = command.getValue();
-    final var persistedRecord = groupState.get(record.getGroupKey());
+    final var groupKey = record.getGroupKey();
+    final var persistedRecord = groupState.get(groupKey);
     if (persistedRecord.isEmpty()) {
       final var errorMessage =
           "Expected to update group with key '%s', but a group with this key does not exist."
-              .formatted(record.getGroupKey());
+              .formatted(groupKey);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
@@ -86,8 +87,8 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
       return;
     }
 
-    stateWriter.appendFollowUpEvent(record.getGroupKey(), GroupIntent.UPDATED, record);
-    responseWriter.writeEventOnCommand(record.getGroupKey(), GroupIntent.UPDATED, record, command);
+    stateWriter.appendFollowUpEvent(groupKey, GroupIntent.UPDATED, record);
+    responseWriter.writeEventOnCommand(groupKey, GroupIntent.UPDATED, record, command);
 
     final long distributionKey = keyGenerator.nextKey();
     commandDistributionBehavior

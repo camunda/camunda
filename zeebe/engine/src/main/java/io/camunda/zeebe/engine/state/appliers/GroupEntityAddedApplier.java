@@ -29,15 +29,21 @@ public class GroupEntityAddedApplier implements TypedEventApplier<GroupIntent, G
 
   @Override
   public void applyState(final long key, final GroupRecord value) {
-    groupState.addEntity(key, value);
-    switch (value.getEntityType()) {
-      case USER -> userState.addGroup(value.getEntityKey(), key);
-      case MAPPING -> mappingState.addGroup(value.getEntityKey(), key);
+    // get the record key from the GroupRecord, as the key argument
+    // may belong to the distribution command
+    final var groupKey = value.getGroupKey();
+    groupState.addEntity(groupKey, value);
+
+    final var entityKey = value.getEntityKey();
+    final var entityType = value.getEntityType();
+    switch (entityType) {
+      case USER -> userState.addGroup(entityKey, groupKey);
+      case MAPPING -> mappingState.addGroup(entityKey, groupKey);
       default ->
           throw new IllegalStateException(
               String.format(
                   "Expected to add entity '%d' to group '%d', but entities of type '%s' cannot be added to groups.",
-                  value.getEntityKey(), key, value.getEntityType()));
+                  entityKey, groupKey, entityType));
     }
   }
 }

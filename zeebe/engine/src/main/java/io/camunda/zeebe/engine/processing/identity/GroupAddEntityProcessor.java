@@ -63,8 +63,8 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
   @Override
   public void processNewCommand(final TypedRecord<GroupRecord> command) {
     final var record = command.getValue();
-    final var persistedRecord = groupState.get(record.getGroupKey());
     final var groupKey = record.getGroupKey();
+    final var persistedRecord = groupState.get(groupKey);
     if (persistedRecord.isEmpty()) {
       final var errorMessage =
           "Expected to update group with key '%s', but a group with this key does not exist."
