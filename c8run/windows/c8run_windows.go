@@ -185,6 +185,15 @@ func main() {
                 if javaBinary == "" {
 	                javaBinary = filepath.Join(javaHome, "bin", "java.exe")
                 }
+        } else {
+                path, err := exec.LookPath("java")
+                if err == nil {
+                        fmt.Println("Failed to find JAVA_HOME or java program.")
+                        os.Exit(1)
+                }
+
+                // go up 2 directories since it's not guaranteed that java is in a bin folder
+                javaHome = filepath.Dir(filepath.Dir(path))
         }
         os.Setenv("ES_JAVA_HOME", javaHome)
 
