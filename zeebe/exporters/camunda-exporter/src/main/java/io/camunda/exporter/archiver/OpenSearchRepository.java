@@ -11,6 +11,7 @@ import io.camunda.exporter.archiver.ArchiverRepository.NoopArchiverRepository;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.micrometer.core.instrument.Timer;
 import java.io.IOException;
@@ -19,17 +20,26 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import javax.annotation.WillCloseWhenClosed;
+import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch._types.Conflicts;
 import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.Time;
+import org.opensearch.client.opensearch._types.aggregations.Aggregation;
+import org.opensearch.client.opensearch._types.aggregations.AggregationBuilders;
 import org.opensearch.client.opensearch._types.aggregations.CalendarInterval;
+import org.opensearch.client.opensearch._types.aggregations.DateHistogramBucket;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch._types.query_dsl.TermsQuery;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
 import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
 import org.opensearch.client.opensearch.core.ReindexRequest;
+import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.reindex.Source;
+import org.opensearch.client.opensearch.core.search.Hit;
 import org.slf4j.Logger;
 
 public final class OpenSearchRepository extends NoopArchiverRepository {
@@ -72,6 +82,18 @@ public final class OpenSearchRepository extends NoopArchiverRepository {
     this.logger = logger;
 
     rolloverInterval = mapCalendarInterval(config.getRolloverInterval());
+  }
+
+  @Override
+  public CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch() {
+    final var aggregation =
+        createFinishedEntityAggregation(ListViewTemplate.END_DATE, ListViewTemplate.ID);
+    final var request = createFinishedInstancesSearchRequest(aggregation);
+
+    final var timer = Timer.start();
+    return sendRequestAsync(() -> client.search(request, Object.class))
+        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
+        .thenApplyAsync(this::createArchiveBatch, executor);
   }
 
   @Override
@@ -121,6 +143,23 @@ public final class OpenSearchRepository extends NoopArchiverRepository {
         .thenApplyAsync(ignored -> null, executor);
   }
 
+  private ArchiveBatch createArchiveBatch(final SearchResponse<?> search) {
+    final List<DateHistogramBucket> buckets =
+        search.aggregations().get(DATES_AGG).dateHistogram().buckets().array();
+
+    if (buckets.isEmpty()) {
+      return null;
+    }
+
+    final var bucket = buckets.getFirst();
+    final var finishDate = bucket.keyAsString();
+    final List<String> ids =
+        bucket.aggregations().get(INSTANCES_AGG).topHits().hits().hits().stream()
+            .map(Hit::id)
+            .toList();
+    return new ArchiveBatch(finishDate, ids);
+  }
+
   private TermsQuery buildIdTermsQuery(final String idFieldName, final List<String> idValues) {
     return QueryBuilders.terms()
         .field(idFieldName)
@@ -144,6 +183,80 @@ public final class OpenSearchRepository extends NoopArchiverRepository {
           new ExporterException(
               "Failed to send request, likely because we failed to parse the request", e));
     }
+  }
+
+  private SearchRequest createFinishedInstancesSearchRequest(final Aggregation aggregation) {
+    final var endDateQ =
+        QueryBuilders.range()
+            .field(ListViewTemplate.END_DATE)
+            .lte(JsonData.of(config.getArchivingTimePoint()))
+            .build();
+    final var isProcessInstanceQ =
+        QueryBuilders.term()
+            .field(ListViewTemplate.JOIN_RELATION)
+            .value(FieldValue.of(ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION))
+            .build();
+    final var partitionQ =
+        QueryBuilders.term()
+            .field(ListViewTemplate.PARTITION_ID)
+            .value(FieldValue.of(partitionId))
+            .build();
+    final var combinedQuery =
+        QueryBuilders.bool()
+            .must(endDateQ.toQuery(), isProcessInstanceQ.toQuery(), partitionQ.toQuery())
+            .build();
+
+    return createSearchRequest(
+        processInstanceIndex, combinedQuery.toQuery(), aggregation, ListViewTemplate.END_DATE);
+  }
+
+  private Aggregation createFinishedEntityAggregation(final String endDate, final String id) {
+    final var dateAggregation =
+        AggregationBuilders.dateHistogram()
+            .field(endDate)
+            .calendarInterval(rolloverInterval)
+            .format(config.getElsRolloverDateFormat())
+            .keyed(false) // get result as an array (not a map)
+            .build();
+    final var sortAggregation =
+        AggregationBuilders.bucketSort()
+            .sort(sort -> sort.field(b -> b.field("_key")))
+            .size(1) // we want to get only one bucket at a time
+            .build();
+    final var instanceAggregation =
+        AggregationBuilders.topHits()
+            .size(config.getRolloverBatchSize())
+            .sort(sort -> sort.field(b -> b.field(id).order(SortOrder.Asc)))
+            .source(source -> source.filter(filter -> filter.includes(id)))
+            .build();
+    return new Aggregation.Builder()
+        .dateHistogram(dateAggregation)
+        .aggregations(DATES_SORTED_AGG, Aggregation.of(b -> b.bucketSort(sortAggregation)))
+        .aggregations(INSTANCES_AGG, Aggregation.of(b -> b.topHits(instanceAggregation)))
+        .build();
+  }
+
+  private SearchRequest createSearchRequest(
+      final String indexName,
+      final Query filterQuery,
+      final Aggregation aggregation,
+      final String sortField) {
+    logger.trace(
+        "Finished entities for archiving request: \n{}\n and aggregation: \n{}",
+        filterQuery.toString(),
+        aggregation.toString());
+
+    return new SearchRequest.Builder()
+        .index(indexName)
+        .requestCache(false)
+        .allowNoIndices(true)
+        .ignoreUnavailable(true)
+        .source(source -> source.fetch(false))
+        .query(query -> query.constantScore(q -> q.filter(filterQuery)))
+        .aggregations(DATES_AGG, aggregation)
+        .sort(sort -> sort.field(field -> field.field(sortField).order(SortOrder.Asc)))
+        .size(0)
+        .build();
   }
 
   @FunctionalInterface
