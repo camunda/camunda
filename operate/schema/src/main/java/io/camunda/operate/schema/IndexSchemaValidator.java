@@ -8,10 +8,11 @@
 package io.camunda.operate.schema;
 
 import static io.camunda.operate.util.CollectionUtil.map;
+import static io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor.formatIndexPrefix;
+import static io.camunda.webapps.schema.descriptors.ComponentNames.OPERATE;
 
 import com.google.common.collect.Maps;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.operate.schema.migration.SemanticVersion;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
@@ -35,22 +36,16 @@ public class IndexSchemaValidator {
 
   @Autowired SchemaManager schemaManager;
 
-  @Autowired private OperateProperties operateProperties;
-
-  private Set<String> getAllIndexNamesForIndex(final String index) {
-    final String indexPattern = String.format("%s-%s*", getIndexPrefix(), index);
+  private Set<String> getAllIndexNamesForIndex(final IndexDescriptor index) {
+    final String indexPattern = getOperateIndexPattern();
     LOGGER.debug("Getting all indices for {}", indexPattern);
     final Set<String> indexNames = schemaManager.getIndexNames(indexPattern);
     // since we have indices with similar names, we need to additionally filter index names
     // e.g. task and task-variable
-    final String patternWithVersion = String.format("%s-%s-\\d.*", getIndexPrefix(), index);
+    final String patternWithVersion = index.getAllVersionsIndexNameRegexPattern();
     return indexNames.stream()
         .filter(n -> n.matches(patternWithVersion))
         .collect(Collectors.toSet());
-  }
-
-  private String getIndexPrefix() {
-    return schemaManager.getIndexPrefix();
   }
 
   public Set<String> newerVersionsForIndex(final IndexDescriptor indexDescriptor) {
@@ -72,7 +67,7 @@ public class IndexSchemaValidator {
   }
 
   private Set<String> versionsForIndex(final IndexDescriptor indexDescriptor) {
-    final Set<String> allIndexNames = getAllIndexNamesForIndex(indexDescriptor.getIndexName());
+    final Set<String> allIndexNames = getAllIndexNamesForIndex(indexDescriptor);
     return allIndexNames.stream()
         .map(this::getVersionFromIndexName)
         .filter(Optional::isPresent)
@@ -121,18 +116,17 @@ public class IndexSchemaValidator {
   }
 
   public boolean hasAnyOperateIndices() {
-    final Set<String> indices = schemaManager.getIndexNames(schemaManager.getIndexPrefix() + "*");
+    final Set<String> indices = schemaManager.getIndexNames(getOperateIndexPattern());
     return !indices.isEmpty();
   }
 
   public boolean schemaExists() {
     try {
-      final Set<String> indices = schemaManager.getIndexNames(schemaManager.getIndexPrefix() + "*");
+      final Set<String> indices = schemaManager.getIndexNames(getOperateIndexPattern());
       final List<String> allIndexNames =
           map(indexDescriptors, IndexDescriptor::getFullQualifiedName);
 
-      final Set<String> aliases =
-          schemaManager.getAliasesNames(schemaManager.getIndexPrefix() + "*");
+      final Set<String> aliases = schemaManager.getAliasesNames(getOperateIndexPattern());
       final List<String> allAliasesNames = map(indexDescriptors, IndexDescriptor::getAlias);
 
       return indices.containsAll(allIndexNames) && aliases.containsAll(allAliasesNames);
@@ -152,7 +146,7 @@ public class IndexSchemaValidator {
   public Map<IndexDescriptor, Set<IndexMappingProperty>> validateIndexMappings() {
     final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields = new HashMap<>();
     final Map<String, IndexMapping> indexMappings =
-        schemaManager.getIndexMappings(schemaManager.getIndexPrefix() + "*");
+        schemaManager.getIndexMappings(getOperateIndexPattern());
     for (final IndexDescriptor indexDescriptor : indexDescriptors) {
       final Map<String, IndexMapping> indexMappingsGroup =
           filterIndexMappings(indexMappings, indexDescriptor);
@@ -164,6 +158,10 @@ public class IndexSchemaValidator {
       }
     }
     return newFields;
+  }
+
+  private String getOperateIndexPattern() {
+    return formatIndexPrefix(schemaManager.getIndexPrefix()) + OPERATE + "*";
   }
 
   private IndexMappingDifference getDifference(
