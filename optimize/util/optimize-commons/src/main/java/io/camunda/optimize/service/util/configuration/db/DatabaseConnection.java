@@ -27,4 +27,8 @@ public class DatabaseConnection {
 
   private ProxyConfiguration proxy;
   private Boolean awsEnabled;
+
+  private Boolean clusterTaskCheckingEnabled;
+
+  private Boolean initSchemaEnabled;
 }
