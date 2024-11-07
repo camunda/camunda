@@ -74,7 +74,7 @@ class ProcessAuthorizationIT {
   }
 
   @TestTemplate
-  void shouldReturnAuthorizedProcessDefinitions(
+  void searchShouldReturnAuthorizedProcessDefinitions(
       @Authenticated(RESTRICTED) final ZeebeClient userClient) {
     // when
     final var processDefinitions = userClient.newProcessDefinitionQuery().send().join().items();
@@ -86,7 +86,7 @@ class ProcessAuthorizationIT {
   }
 
   @TestTemplate
-  void shouldReturnForbiddenForUnauthorizedProcessDefinition(
+  void getByKeyShouldReturnForbiddenForUnauthorizedProcessDefinition(
       @Authenticated(ADMIN) final ZeebeClient adminClient,
       @Authenticated(RESTRICTED) final ZeebeClient userClient) {
     // given
@@ -104,7 +104,7 @@ class ProcessAuthorizationIT {
   }
 
   @TestTemplate
-  void shouldReturnAuthorizedProcessDefinition(
+  void getByKeShouldReturnAuthorizedProcessDefinition(
       @Authenticated(ADMIN) final ZeebeClient adminClient,
       @Authenticated(RESTRICTED) final ZeebeClient userClient) {
     // given

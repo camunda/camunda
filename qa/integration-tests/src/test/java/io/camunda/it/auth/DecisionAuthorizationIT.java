@@ -81,7 +81,7 @@ class DecisionAuthorizationIT {
   }
 
   @TestTemplate
-  void shouldReturnAuthorizedDecisionDefinitions(
+  void searchShouldReturnAuthorizedDecisionDefinitions(
       @Authenticated(RESTRICTED) final ZeebeClient userClient) {
     // when
     final var decisionDefinitions = userClient.newDecisionDefinitionQuery().send().join().items();
@@ -93,7 +93,7 @@ class DecisionAuthorizationIT {
   }
 
   @TestTemplate
-  void shouldReturnForbiddenForUnauthorizedDecisionDefinition(
+  void getByKeyShouldReturnForbiddenForUnauthorizedDecisionDefinition(
       @Authenticated(ADMIN) final ZeebeClient adminClient,
       @Authenticated(RESTRICTED) final ZeebeClient userClient) {
     // given
@@ -112,7 +112,7 @@ class DecisionAuthorizationIT {
   }
 
   @TestTemplate
-  void shouldReturnAuthorizedDecisionDefinition(
+  void getByKeyShouldReturnAuthorizedDecisionDefinition(
       @Authenticated(ADMIN) final ZeebeClient adminClient,
       @Authenticated(RESTRICTED) final ZeebeClient userClient) {
     // given
@@ -129,7 +129,7 @@ class DecisionAuthorizationIT {
   }
 
   @TestTemplate
-  void shouldReturnAuthorizedDecisionRequirements(
+  void searchShouldReturnAuthorizedDecisionRequirements(
       @Authenticated(RESTRICTED) final ZeebeClient userClient) {
     // when
     final var decisionRequirements =
@@ -142,7 +142,7 @@ class DecisionAuthorizationIT {
   }
 
   @TestTemplate
-  void shouldReturnForbiddenForUnauthorizedDecisionRequirements(
+  void getByKeyShouldReturnForbiddenForUnauthorizedDecisionRequirements(
       @Authenticated(ADMIN) final ZeebeClient adminClient,
       @Authenticated(RESTRICTED) final ZeebeClient userClient) {
     // given
@@ -162,7 +162,7 @@ class DecisionAuthorizationIT {
   }
 
   @TestTemplate
-  void shouldReturnAuthorizedDecisionRequirements(
+  void getByKeyShouldReturnAuthorizedDecisionRequirements(
       @Authenticated(ADMIN) final ZeebeClient adminClient,
       @Authenticated(RESTRICTED) final ZeebeClient userClient) {
     // given
