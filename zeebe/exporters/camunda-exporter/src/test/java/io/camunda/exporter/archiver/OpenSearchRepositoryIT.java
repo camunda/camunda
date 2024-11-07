@@ -110,7 +110,7 @@ final class OpenSearchRepositoryIT {
     retention.setPolicyName("operate_delete_archived_indices");
 
     // when
-    engineClient.putIndexLifeCyclePolicy(retention.getPolicyName(), retention.getMinimumAge());
+    createLifeCyclePolicy(engineClient);
     final var result = repository.setIndexLifeCycle(indexName);
 
     // then
@@ -138,7 +138,7 @@ final class OpenSearchRepositoryIT {
     retention.setPolicyName("operate_delete_archived_indices");
 
     // when
-    engineClient.putIndexLifeCyclePolicy(retention.getPolicyName(), retention.getMinimumAge());
+    createLifeCyclePolicy(engineClient);
     final var result = repository.setIndexLifeCycle(indexName);
 
     // then
@@ -297,6 +297,14 @@ final class OpenSearchRepositoryIT {
       testClient.index(b -> b.index(index).document(document).id(document.id()));
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
+    }
+  }
+
+  void createLifeCyclePolicy(final OpensearchEngineClient engineClient) throws IOException {
+    try {
+      engineClient.putIndexLifeCyclePolicy(retention.getPolicyName(), retention.getMinimumAge());
+    } catch (final Exception e) {
+      // policy was already created
     }
   }
 
