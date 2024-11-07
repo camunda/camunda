@@ -169,6 +169,8 @@ global:
       optimize:
         # will be replaced by the preview-env-deploy workflow
         redirectUrl: "https://test.camunda.camunda.cloud/optimize"
+        existingSecret:
+          name: identity-secret-for-components
       webModeler:
         # will be replaced by the preview-env-deploy workflow
         redirectUrl: "https:/test.camunda.camunda.cloud/modeler"
@@ -451,8 +453,6 @@ camunda-platform:
         effect: "NoSchedule"
 
   connectors:
-    # temporarily disabled until solution for problem from https://github.com/camunda/camunda/pull/24253 is found
-    enabled: false
     contextPath: "/connectors"
     nodeSelector:
       cloud.google.com/gke-nodepool: previews
