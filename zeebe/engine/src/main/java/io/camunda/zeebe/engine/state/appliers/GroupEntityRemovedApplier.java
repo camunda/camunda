@@ -30,15 +30,21 @@ public class GroupEntityRemovedApplier implements TypedEventApplier<GroupIntent,
   @Override
   public void applyState(final long key, final GroupRecord value) {
     final var entityKey = value.getEntityKey();
-    groupState.removeEntity(key, entityKey);
-    switch (value.getEntityType()) {
+    final var entityType = value.getEntityType();
+
+    // get the record key from the GroupRecord, as the key argument
+    // may belong to the distribution command
+    final var groupKey = value.getGroupKey();
+    groupState.removeEntity(groupKey, entityKey);
+
+    switch (entityType) {
       case USER -> userState.removeGroup(entityKey, key);
       case MAPPING -> mappingState.removeGroup(entityKey, key);
       default ->
           throw new IllegalStateException(
               String.format(
                   "Expected to remove entity '%d' from group '%d', but entities of type '%s' cannot be removed from groups.",
-                  entityKey, key, value.getEntityType()));
+                  entityKey, groupKey, entityType));
     }
   }
 }

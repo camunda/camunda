@@ -52,5 +52,16 @@ public class GroupProcessors {
             keyGenerator,
             writers,
             commandDistributionBehavior));
+    typedRecordProcessors.onCommand(
+        ValueType.GROUP,
+        GroupIntent.REMOVE_ENTITY,
+        new GroupRemoveEntityProcessor(
+            processingState.getGroupState(),
+            processingState.getUserState(),
+            processingState.getMappingState(),
+            authCheckBehavior,
+            keyGenerator,
+            writers,
+            commandDistributionBehavior));
   }
 }

@@ -172,4 +172,75 @@ public class GroupTest {
             "Expected to add an entity with key '%s' and type '%s' to group with key '%s', but the entity does not exist."
                 .formatted(1L, EntityType.USER, groupKey));
   }
+
+  @Test
+  public void shouldRemoveEntityToGroup() {
+    final var userKey =
+        engine
+            .user()
+            .newUser("foo")
+            .withEmail("foo@bar")
+            .withName("Foo Bar")
+            .withPassword("zabraboof")
+            .create()
+            .getKey();
+    final var name = UUID.randomUUID().toString();
+    final var groupKey = engine.group().newGroup(name).create().getValue().getGroupKey();
+    engine.group().addEntity(groupKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    final var removedEntity =
+        engine
+            .group()
+            .removeEntity(groupKey)
+            .withEntityKey(userKey)
+            .withEntityType(EntityType.USER)
+            .remove()
+            .getValue();
+
+    Assertions.assertThat(removedEntity)
+        .isNotNull()
+        .hasFieldOrPropertyWithValue("groupKey", groupKey)
+        .hasFieldOrPropertyWithValue("entityKey", userKey)
+        .hasFieldOrPropertyWithValue("entityType", EntityType.USER);
+  }
+
+  @Test
+  public void shouldRejectIfGroupIsNotPresentEntityRemoval() {
+    // when
+    final var notPresentGroupKey = 1L;
+    final var notPresentUpdateRecord =
+        engine.group().addEntity(notPresentGroupKey).expectRejection().add();
+
+    assertThat(notPresentUpdateRecord)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to update group with key '%d', but a group with this key does not exist."
+                .formatted(notPresentGroupKey));
+  }
+
+  @Test
+  public void shouldRejectIfEntityIsNotPresentEntityRemoval() {
+    // given
+    final var name = UUID.randomUUID().toString();
+    final var groupRecord = engine.group().newGroup(name).create();
+
+    // when
+    final var createdGroup = groupRecord.getValue();
+    final var groupKey = createdGroup.getGroupKey();
+    final var notPresentUpdateRecord =
+        engine
+            .group()
+            .removeEntity(groupKey)
+            .withEntityKey(1L)
+            .withEntityType(EntityType.USER)
+            .expectRejection()
+            .remove();
+
+    Assertions.assertThat(createdGroup).isNotNull().hasFieldOrPropertyWithValue("name", name);
+
+    assertThat(notPresentUpdateRecord)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to remove an entity with key '%s' and type '%s' from group with key '%s', but the entity does not exist."
+                .formatted(1L, EntityType.USER, groupKey));
+  }
 }
