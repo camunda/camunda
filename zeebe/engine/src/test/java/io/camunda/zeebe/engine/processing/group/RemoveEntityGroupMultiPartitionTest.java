@@ -122,7 +122,7 @@ public class RemoveEntityGroupMultiPartitionTest {
     // then
     assertThat(
             RecordingExporter.commandDistributionRecords()
-                .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 2)
+                .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 4)
                 .withIntent(CommandDistributionIntent.ENQUEUED))
         .extracting(r -> r.getValue().getQueueId())
         .containsOnly(DistributionQueue.IDENTITY.getQueueId());

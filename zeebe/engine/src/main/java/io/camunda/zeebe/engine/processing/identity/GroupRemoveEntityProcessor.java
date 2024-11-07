@@ -90,7 +90,7 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
     final var entityType = record.getEntityType();
     if (!isEntityPresent(entityKey, entityType)) {
       final var errorMessage =
-          "Expected to remove an entity with key '%s' and type '%s' from group with key '%s', but the entity doesn't exist."
+          "Expected to remove an entity with key '%s' and type '%s' from group with key '%s', but the entity does not exist."
               .formatted(entityKey, entityType, groupKey);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
