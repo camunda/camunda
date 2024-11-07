@@ -27,8 +27,6 @@ public class DatabaseConnection {
 
   private ProxyConfiguration proxy;
   private Boolean awsEnabled;
-<<<<<<< HEAD
-=======
 
   /** Indicates whether optimize does a proper health check for ES/OS clusters. */
   private boolean healthCheckEnabled = true;
@@ -139,5 +137,4 @@ public class DatabaseConnection {
         + this.getAwsEnabled()
         + ")";
   }
->>>>>>> 0bfd7e18 (feat: add property for permissions)
 }
