@@ -4298,6 +4298,7 @@ components:
         - DELETE_PROCESS
         - DELETE_DRD
         - DELETE_FORM
+        - DELETE_PROCESS_INSTANCE
     ResourceTypeEnum:
       description: The type of resource to add/remove permissions to/from.
       enum:

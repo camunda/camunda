@@ -33,7 +33,7 @@ import io.camunda.operate.webapp.rest.dto.incidents.IncidentByProcessStatisticsD
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByErrorMsgStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByProcessGroupStatisticsDto;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
-import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;

@@ -54,7 +54,7 @@ import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDt
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListResponseDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
-import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;

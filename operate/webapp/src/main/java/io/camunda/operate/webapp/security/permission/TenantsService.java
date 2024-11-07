@@ -5,25 +5,14 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.protocol.record.value;
+package io.camunda.operate.webapp.security.permission;
 
-public enum PermissionType {
-  CREATE,
-  CREATE_PROCESS_INSTANCE,
-  CREATE_DECISION_INSTANCE,
+import io.camunda.authentication.tenant.TenantAttributeHolder;
+import java.util.List;
 
-  READ,
-  READ_PROCESS_INSTANCE,
-  READ_USER_TASK,
-  READ_DECISION_INSTANCE,
+public class TenantsService {
 
-  UPDATE,
-  UPDATE_PROCESS_INSTANCE,
-  UPDATE_USER_TASK,
-
-  DELETE,
-  DELETE_PROCESS,
-  DELETE_DRD,
-  DELETE_FORM,
-  DELETE_PROCESS_INSTANCE
+  public List<String> tenantIds() {
+    return TenantAttributeHolder.tenantIds();
+  }
 }
