@@ -175,7 +175,6 @@ func main() {
                 filepath.Walk(javaHome, func(path string, info os.FileInfo, err error) error {
                         _, filename := filepath.Split(path)
                         if strings.Compare(filename, "java.exe") == 0 || strings.Compare(filename, "java") == 0 {
-                                fmt.Println("found file " + path)
                                 javaBinary = path
                                 return filepath.SkipAll
                         }
@@ -184,7 +183,6 @@ func main() {
                 })
                 // fallback to bin/java.exe
                 if javaBinary == "" {
-                        fmt.Println("using default filepath")
 	                javaBinary = filepath.Join(javaHome, "bin", "java.exe")
                 }
         }
