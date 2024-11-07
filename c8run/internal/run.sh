@@ -129,6 +129,15 @@ if [ "$1" = "start" ] ; then
     export JAVA_HOME=$(which "$JAVA" | xargs dirname | xargs dirname)
   fi
 
+  JAVA_VERSION=$("$JAVA" -version 2>&1 | head -1 | cut -d'"' -f2 | sed '/^0\./s///' | cut -d'.' -f1)
+  echo Java version is $("$JAVA" -version 2>&1 | head -1 | cut -d'"' -f2)
+
+  if [[ "$JAVA_VERSION" -lt "$EXPECTED_JAVA_VERSION" ]]; then
+    echo "You must use at least JDK $EXPECTED_JAVA_VERSION to start Camunda Platform Run."
+    childExitHandler $$ 1
+    exit 1
+  fi
+
   if [ "x$JAVA_OPTS" != "x" ]; then
     echo JAVA_OPTS: $JAVA_OPTS
   fi
