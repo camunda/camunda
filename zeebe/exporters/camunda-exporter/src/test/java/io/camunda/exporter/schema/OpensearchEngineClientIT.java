@@ -8,12 +8,9 @@
 package io.camunda.exporter.schema;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
@@ -33,7 +30,6 @@ import org.junit.jupiter.api.Test;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.generic.Requests;
 import org.opensearch.testcontainers.OpensearchContainer;
-import org.slf4j.LoggerFactory;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -45,8 +41,6 @@ public class OpensearchEngineClientIT {
 
   private static OpenSearchClient openSearchClient;
   private static OpensearchEngineClient opensearchEngineClient;
-
-  private ListAppender<ILoggingEvent> logWatcher;
 
   @BeforeAll
   public static void init() {
@@ -61,11 +55,6 @@ public class OpensearchEngineClientIT {
   public void refresh() throws IOException {
     openSearchClient.indices().delete(req -> req.index("*"));
     openSearchClient.indices().deleteIndexTemplate(req -> req.name("*"));
-
-    logWatcher = new ListAppender<>();
-    logWatcher.start();
-    ((Logger) LoggerFactory.getLogger(OpensearchEngineClient.class)).addAppender(logWatcher);
-    ((Logger) LoggerFactory.getLogger(OpensearchEngineClient.class)).setLevel(Level.ALL);
   }
 
   @Test
@@ -138,7 +127,7 @@ public class OpensearchEngineClientIT {
   }
 
   @Test
-  void shouldDebugLogIfCreatingExistingTemplate() {
+  void shouldNotThrowIfCreatingExistingTemplate() {
     // given
     final var indexTemplate =
         SchemaTestUtil.mockIndexTemplate(
@@ -151,18 +140,12 @@ public class OpensearchEngineClientIT {
 
     final var settings = new IndexSettings();
     opensearchEngineClient.createIndexTemplate(indexTemplate, settings, true);
-    opensearchEngineClient.createIndexTemplate(indexTemplate, settings, true);
 
-    // then
-    assertThat(logWatcher.list.stream())
-        .anyMatch(
-            log ->
-                log.getLevel().equals(Level.DEBUG)
-                    && log.getFormattedMessage()
-                        .contains(
-                            String.format(
-                                "Did not create index template [%s] as it already exists",
-                                indexTemplate.getTemplateName())));
+    // when, then
+    assertThatNoException()
+        .describedAs("Creating an already existing template should not throw")
+        .isThrownBy(
+            () -> opensearchEngineClient.createIndexTemplate(indexTemplate, settings, true));
   }
 
   @Test

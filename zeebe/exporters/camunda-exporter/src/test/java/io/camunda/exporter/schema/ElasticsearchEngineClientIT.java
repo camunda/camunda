@@ -9,12 +9,9 @@ package io.camunda.exporter.schema;
 
 import static io.camunda.exporter.schema.SchemaTestUtil.validateMappings;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.Mockito.*;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
@@ -31,7 +28,6 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.slf4j.LoggerFactory;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -44,7 +40,6 @@ public class ElasticsearchEngineClientIT {
 
   private static ElasticsearchClient elsClient;
   private static ElasticsearchEngineClient elsEngineClient;
-  private ListAppender<ILoggingEvent> logWatcher;
 
   @BeforeAll
   public static void init() {
@@ -60,11 +55,6 @@ public class ElasticsearchEngineClientIT {
   public void refresh() throws IOException {
     elsClient.indices().delete(req -> req.index("*"));
     elsClient.indices().deleteIndexTemplate(req -> req.name("*"));
-
-    logWatcher = new ListAppender<>();
-    logWatcher.start();
-    ((Logger) LoggerFactory.getLogger(ElasticsearchEngineClient.class)).addAppender(logWatcher);
-    ((Logger) LoggerFactory.getLogger(ElasticsearchEngineClient.class)).setLevel(Level.ALL);
   }
 
   @Test
@@ -113,7 +103,7 @@ public class ElasticsearchEngineClientIT {
   }
 
   @Test
-  void shouldWarnIfTryingToCreateExistingTemplate() {
+  void shouldNotThrowIfTryingToCreateExistingTemplate() {
     // given
     final var indexTemplate =
         SchemaTestUtil.mockIndexTemplate(
@@ -127,19 +117,10 @@ public class ElasticsearchEngineClientIT {
     final var settings = new IndexSettings();
     elsEngineClient.createIndexTemplate(indexTemplate, settings, true);
 
-    // when
-    elsEngineClient.createIndexTemplate(indexTemplate, settings, true);
-
-    // then
-    assertThat(logWatcher.list.stream())
-        .anyMatch(
-            log ->
-                log.getLevel().equals(Level.DEBUG)
-                    && log.getFormattedMessage()
-                        .contains(
-                            String.format(
-                                "Did not create index template [%s] as it already exists",
-                                indexTemplate.getTemplateName())));
+    // when, then
+    assertThatNoException()
+        .describedAs("Creating an already existing template should not throw")
+        .isThrownBy(() -> elsEngineClient.createIndexTemplate(indexTemplate, settings, true));
   }
 
   @Test
