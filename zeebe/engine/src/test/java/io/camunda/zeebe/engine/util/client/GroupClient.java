@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.util.client;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.function.Function;
@@ -28,6 +29,10 @@ public class GroupClient {
 
   public GroupUpdateClient updateGroup(final long groupKey) {
     return new GroupUpdateClient(writer, groupKey);
+  }
+
+  public GroupAddEntityClient addEntity(final long groupKey) {
+    return new GroupAddEntityClient(writer, groupKey);
   }
 
   public static class GroupCreateClient {
@@ -105,6 +110,55 @@ public class GroupClient {
     }
 
     public GroupUpdateClient expectRejection() {
+      expectation = REJECTION_SUPPLIER;
+      return this;
+    }
+  }
+
+  public static class GroupAddEntityClient {
+
+    private static final Function<Long, Record<GroupRecordValue>> SUCCESS_SUPPLIER =
+        (position) ->
+            RecordingExporter.groupRecords()
+                .withIntent(GroupIntent.ENTITY_ADDED)
+                .withSourceRecordPosition(position)
+                .getFirst();
+
+    private static final Function<Long, Record<GroupRecordValue>> REJECTION_SUPPLIER =
+        (position) ->
+            RecordingExporter.groupRecords()
+                .onlyCommandRejections()
+                .withIntent(GroupIntent.ADD_ENTITY)
+                .withSourceRecordPosition(position)
+                .getFirst();
+
+    private final CommandWriter writer;
+    private final GroupRecord groupRecord;
+
+    private Function<Long, Record<GroupRecordValue>> expectation = SUCCESS_SUPPLIER;
+
+    public GroupAddEntityClient(final CommandWriter writer, final long groupKey) {
+      this.writer = writer;
+      groupRecord = new GroupRecord();
+      groupRecord.setGroupKey(groupKey);
+    }
+
+    public GroupAddEntityClient withEntityKey(final long entityKey) {
+      groupRecord.setEntityKey(entityKey);
+      return this;
+    }
+
+    public GroupAddEntityClient withEntityType(final EntityType entityType) {
+      groupRecord.setEntityType(entityType);
+      return this;
+    }
+
+    public Record<GroupRecordValue> add() {
+      final long position = writer.writeCommand(GroupIntent.ADD_ENTITY, groupRecord);
+      return expectation.apply(position);
+    }
+
+    public GroupAddEntityClient expectRejection() {
       expectation = REJECTION_SUPPLIER;
       return this;
     }
