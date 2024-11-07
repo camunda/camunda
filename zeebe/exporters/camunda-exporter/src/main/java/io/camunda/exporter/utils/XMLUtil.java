@@ -65,7 +65,6 @@ public class XMLUtil {
         return Optional.empty();
       }
       final ProcessEntity processEntity = processEntityOpt.get();
-      processEntity.setVersionTag(handler.versionTag);
       processEntity.setIsPublic(handler.isPublic);
       processEntity.setFormId(handler.formId);
       final Set<String> processChildrenIds = handler.getProcessChildrenIds(bpmnProcessId);
@@ -97,7 +96,6 @@ public class XMLUtil {
     private final Map<String, Set<String>> processChildrenIds = new LinkedHashMap<>();
     private String currentProcessId = null;
     private boolean isStartEvent = false;
-    private String versionTag = null;
     private boolean isPublic = false;
     private String formId = null;
 
@@ -118,8 +116,6 @@ public class XMLUtil {
         isStartEvent = true;
       } else if (currentProcessId != null && elementId != null) {
         processChildrenIds.get(currentProcessId).add(elementId);
-      } else if ("versionTag".equalsIgnoreCase(localName)) {
-        versionTag = attributes.getValue("value");
       } else if (isStartEvent) {
         if (formDefinitionProperty.equalsIgnoreCase(localName)) {
           if (attributes.getValue("formKey") != null) {
