@@ -439,7 +439,7 @@ jobs:
     if: |
       github.repository == 'camunda/camunda' &&
       github.event_name == 'pull_request' &&
-      (github.actor == 'backport-action' || github.actor == 'camundait')
+      (github.actor == 'backport-action')
     permissions:
       checks: read
       pull-requests: write
