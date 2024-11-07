@@ -55,7 +55,7 @@ public class FormHandler implements ExportHandler<FormEntity, Form> {
     entity
         .setVersion((long) value.getVersion())
         .setKey(value.getFormKey())
-        .setBpmnId(value.getFormId())
+        .setFormId(value.getFormId())
         .setSchema(new String(value.getResource(), StandardCharsets.UTF_8))
         .setTenantId(value.getTenantId())
         .setIsDeleted(record.getIntent().name().equals(FormIntent.DELETED.name()));
