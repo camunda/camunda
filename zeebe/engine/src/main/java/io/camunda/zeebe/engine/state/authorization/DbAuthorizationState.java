@@ -27,7 +27,6 @@ import java.util.Optional;
 import java.util.Set;
 
 public class DbAuthorizationState implements AuthorizationState, MutableAuthorizationState {
-  private final PersistedAuthorization persistedAuthorization = new PersistedAuthorization();
 
   private final ResourceIdentifiers resourceIdentifiers = new ResourceIdentifiers();
 
