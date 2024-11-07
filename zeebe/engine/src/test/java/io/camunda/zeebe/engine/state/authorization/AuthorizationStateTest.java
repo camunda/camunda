@@ -198,22 +198,25 @@ public class AuthorizationStateTest {
     final var ownerKey2 = 2L;
     final var resourceType = AuthorizationResourceType.DEPLOYMENT;
     final var permissionType = PermissionType.CREATE;
+    final var resourceId1 = "foo";
+    final var resourceId2 = "bar";
     authorizationState.createOrAddPermission(
-        ownerKey1, resourceType, permissionType, List.of("foo"));
+        ownerKey1, resourceType, permissionType, List.of(resourceId1));
     authorizationState.createOrAddPermission(
-        ownerKey2, resourceType, permissionType, List.of("bar"));
+        ownerKey2, resourceType, permissionType, List.of(resourceId2));
 
     // when
     authorizationState.deleteAuthorizationsByOwnerKeyPrefix(ownerKey1);
 
     // then
-    final var resourceIds1 =
-        authorizationState.getResourceIdentifiers(ownerKey1, resourceType, permissionType);
-    final var resourceIds2 =
-        authorizationState.getResourceIdentifiers(ownerKey2, resourceType, permissionType);
-
-    assertThat(resourceIds1).isEmpty();
-    assertThat(resourceIds2).isNotEmpty();
+    assertThat(authorizationState.getResourceIdentifiers(ownerKey1, resourceType, permissionType))
+        .isEmpty();
+    assertThat(authorizationState.getResourceIdentifiers(ownerKey2, resourceType, permissionType))
+        .isNotEmpty();
+    assertThat(authorizationState.getAuthorizationKeysByResourceId(resourceId1)).isEmpty();
+    assertThat(authorizationState.getAuthorizationKeysByResourceId(resourceId2))
+        .containsExactly(
+            new AuthorizationKey(ownerKey2, resourceType.toString(), permissionType.toString()));
   }
 
   @Test

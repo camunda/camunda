@@ -161,6 +161,18 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
     resourceIdsByOwnerKeyResourceTypeAndPermissionColumnFamily.whileEqualPrefix(
         this.ownerKey,
         (compositeKey, resourceIdentifiers) -> {
+          resourceType.wrapString(compositeKey.second().first().toString());
+          permissionType.wrapString(compositeKey.second().second().toString());
+
+          resourceIdentifiers
+              .getResourceIdentifiers()
+              .forEach(
+                  resourceId -> {
+                    this.resourceId.wrapString(resourceId);
+                    authorizationKeyByResourceIdColumnFamily.deleteExisting(
+                        resourceIdAndOwnerKeyAndResourceTypeAndPermissionTypeCompositeKey);
+                  });
+
           resourceIdsByOwnerKeyResourceTypeAndPermissionColumnFamily.deleteExisting(compositeKey);
         });
     // TODO remove from other CFs
