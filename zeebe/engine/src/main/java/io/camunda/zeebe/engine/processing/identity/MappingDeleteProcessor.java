@@ -53,18 +53,6 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
 
   @Override
   public void processNewCommand(final TypedRecord<MappingRecord> command) {
-    final var authorizationRequest =
-        new AuthorizationRequest(
-            command, AuthorizationResourceType.MAPPING_RULE, PermissionType.DELETE);
-    if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
-      final var errorMessage =
-          UNAUTHORIZED_ERROR_MESSAGE.formatted(
-              authorizationRequest.getPermissionType(), authorizationRequest.getResourceType());
-      rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, errorMessage);
-      return;
-    }
-
     final var record = command.getValue();
     final long mappingKey = record.getMappingKey();
     final var persistedMapping = mappingState.get(mappingKey);
@@ -74,6 +62,19 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
               .formatted(mappingKey);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+      return;
+    }
+
+    final var authorizationRequest =
+        new AuthorizationRequest(
+                command, AuthorizationResourceType.MAPPING_RULE, PermissionType.DELETE)
+            .addResourceId(persistedMapping.get().getClaimName());
+    if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
+      final var errorMessage =
+          UNAUTHORIZED_ERROR_MESSAGE.formatted(
+              authorizationRequest.getPermissionType(), authorizationRequest.getResourceType());
+      rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, errorMessage);
       return;
     }
 
