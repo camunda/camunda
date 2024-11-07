@@ -16,7 +16,9 @@ import co.elastic.clients.elasticsearch.indices.DeleteIndexTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.GetAliasRequest;
 import co.elastic.clients.elasticsearch.indices.GetIndexTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.GetMappingRequest;
+import co.elastic.clients.elasticsearch.indices.GetTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.RefreshRequest;
+import co.elastic.clients.elasticsearch.indices.TemplateMapping;
 import co.elastic.clients.elasticsearch.indices.get_alias.IndexAliases;
 import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplateItem;
 import co.elastic.clients.elasticsearch.indices.get_mapping.IndexMappingRecord;
@@ -234,10 +236,11 @@ public class ElasticsearchSchemaTestClient extends AbstractDatabaseSchemaTestCli
         .result();
   }
 
-  public List<IndexTemplateItem> getTemplates() throws IOException {
+  public Map<String, TemplateMapping> getTemplates() throws IOException {
     return client
         .indices()
-        .getIndexTemplate(GetIndexTemplateRequest.of(b -> b.name(DEFAULT_OPTIMIZE_INDEX_PATTERN)))
-        .indexTemplates();
+        .getTemplate(GetTemplateRequest.of(b -> b.name(
+            List.of(DEFAULT_OPTIMIZE_INDEX_PATTERN.split(",")))))
+        .result();
   }
 }

@@ -9,13 +9,12 @@ package io.camunda.optimize.test.upgrade;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import co.elastic.clients.elasticsearch.indices.TemplateMapping;
 import co.elastic.clients.elasticsearch.indices.get_alias.IndexAliases;
-import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplateItem;
 import co.elastic.clients.elasticsearch.indices.get_mapping.IndexMappingRecord;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.test.upgrade.client.ElasticsearchSchemaTestClient;
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +26,7 @@ public class UpgradeElasticsearchSchemaIT
   Map<String, Map> expectedSettings;
   Map<String, IndexMappingRecord> expectedMappings;
   Map<String, IndexAliases> expectedAliases;
-  List<IndexTemplateItem> expectedTemplates;
+  Map<String, TemplateMapping> expectedTemplates;
 
   @Override
   protected String getOptimizeUpdateLogPath() {
@@ -68,13 +67,13 @@ public class UpgradeElasticsearchSchemaIT
     LOG.info(
         "Expected templates size: {}, names: {}",
         expectedTemplates.size(),
-        expectedTemplates.stream().map(IndexTemplateItem::name).toList());
-    final List<IndexTemplateItem> newTemplates = newDatabaseSchemaClient.getTemplates();
+        expectedTemplates.keySet());
+    final Map<String, TemplateMapping> newTemplates = newDatabaseSchemaClient.getTemplates();
     LOG.info(
         "Actual templates size: {}, names: {}",
         newTemplates.size(),
-        newTemplates.stream().map(IndexTemplateItem::name).toList());
-    assertThat(newTemplates).containsExactlyInAnyOrderElementsOf(expectedTemplates);
+        newTemplates.keySet());
+    assertThat(newTemplates.keySet()).containsExactlyInAnyOrderElementsOf(expectedTemplates.keySet());
   }
 
   @Override
