@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -19,6 +20,16 @@ public interface TypedResponseWriter {
 
   void writeRejection(
       final TypedRecord<?> command,
+      final RejectionType type,
+      final String reason,
+      final long requestId,
+      final int requestStreamId);
+
+  void writeRejection(
+      final Intent intent,
+      final long key,
+      final UnifiedRecordValue value,
+      final ValueType valueType,
       final RejectionType type,
       final String reason,
       final long requestId,

@@ -215,15 +215,13 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
     stateWriter.appendFollowUpEvent(persistedRecord.getUserTaskKey(), intent, persistedRecord);
 
-    rejectionWriter.appendRejection(
-        command,
-        RejectionType.INVALID_STATE,
-        USER_TASK_COMPLETION_REJECTION.formatted(persistedRecord.getUserTaskKey()));
-
     recordRequestMetadata.ifPresent(
         metadata -> {
           responseWriter.writeRejection(
-              command,
+              UserTaskIntent.COMPLETE,
+              command.getKey(),
+              command.getValue(),
+              command.getValueType(),
               RejectionType.INVALID_STATE,
               USER_TASK_COMPLETION_REJECTION.formatted(persistedRecord.getUserTaskKey()),
               metadata.getRequestId(),
