@@ -90,7 +90,7 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
     final var entityType = record.getEntityType();
     if (!isEntityPresent(entityKey, entityType)) {
       final var errorMessage =
-          "Expected to add an entity with key '%s' and type '%s' to group with key '%d', but the entity doesn't exist."
+          "Expected to add an entity with key '%s' and type '%s' to group with key '%d', but the entity does not exist."
               .formatted(entityKey, entityType, groupKey);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);

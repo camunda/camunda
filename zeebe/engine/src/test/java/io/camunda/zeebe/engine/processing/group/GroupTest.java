@@ -134,24 +134,16 @@ public class GroupTest {
 
   @Test
   public void shouldRejectIfGroupIsNotPresentWhileAddingEntity() {
-    // given
-    final var name = UUID.randomUUID().toString();
-    final var groupRecord = engine.group().newGroup(name).create();
-
     // when
     final var notPresentGroupKey = 1L;
     final var notPresentUpdateRecord =
         engine.group().addEntity(notPresentGroupKey).expectRejection().add();
 
-    final var createdGroup = groupRecord.getValue();
-    Assertions.assertThat(createdGroup).isNotNull().hasFieldOrPropertyWithValue("name", name);
-
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to update group with key '"
-                + notPresentGroupKey
-                + "', but a group with this key does not exist.");
+            "Expected to update group with key '%d', but a group with this key does not exist."
+                .formatted(notPresentGroupKey));
   }
 
   @Test
@@ -177,7 +169,7 @@ public class GroupTest {
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to add an entity with key '%s' and type '%s' to group with key '%s', but the entity doesn't exist."
+            "Expected to add an entity with key '%s' and type '%s' to group with key '%s', but the entity does not exist."
                 .formatted(1L, EntityType.USER, groupKey));
   }
 }
