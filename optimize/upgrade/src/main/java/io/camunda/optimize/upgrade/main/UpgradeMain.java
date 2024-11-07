@@ -62,7 +62,8 @@ public class UpgradeMain {
               .getElasticSearchConfiguration()
               .getConnection()
               .isClusterTaskCheckingEnabled();
-      if (!initSchemaEnabled || !clusterTaskCheckingEnabled) {
+      if (databaseType == DatabaseType.ELASTICSEARCH
+          && (!initSchemaEnabled || !clusterTaskCheckingEnabled)) {
         throw new UpgradeRuntimeException(
             "Upgrade cannot be performed without cluster checking and schema initialization enabled");
       }
