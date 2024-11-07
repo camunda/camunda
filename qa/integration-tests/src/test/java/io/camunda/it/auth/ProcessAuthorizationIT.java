@@ -67,15 +67,14 @@ class ProcessAuthorizationIT {
       final List<String> processes =
           List.of("service_tasks_v1.bpmn", "service_tasks_v2.bpmn", "incident_process_v1.bpmn");
       processes.forEach(
-          process ->
-              deployResource(adminClient, String.format("process/%s", process)).getProcesses());
+          process -> deployResource(adminClient, String.format("process/%s", process)));
       waitForProcessesToBeDeployed(adminClient, processes.size());
       initialized = true;
     }
   }
 
   @TestTemplate
-  void shouldReturnAuthorizedProcessDefinitions(
+  void searchShouldReturnAuthorizedProcessDefinitions(
       @Authenticated(RESTRICTED) final ZeebeClient userClient) {
     // when
     final var processDefinitions = userClient.newProcessDefinitionQuery().send().join().items();
@@ -87,7 +86,7 @@ class ProcessAuthorizationIT {
   }
 
   @TestTemplate
-  void shouldReturnForbiddenForUnauthorizedProcessDefinition(
+  void getByKeyShouldReturnForbiddenForUnauthorizedProcessDefinition(
       @Authenticated(ADMIN) final ZeebeClient adminClient,
       @Authenticated(RESTRICTED) final ZeebeClient userClient) {
     // given
@@ -105,7 +104,7 @@ class ProcessAuthorizationIT {
   }
 
   @TestTemplate
-  void shouldReturnAuthorizedProcessDefinition(
+  void getByKeShouldReturnAuthorizedProcessDefinition(
       @Authenticated(ADMIN) final ZeebeClient adminClient,
       @Authenticated(RESTRICTED) final ZeebeClient userClient) {
     // given

@@ -207,7 +207,7 @@ class DecisionQueryTest {
     // then
     assertThat(problemException.code()).isEqualTo(404);
     assertThat(problemException.details().getDetail())
-        .isEqualTo("Decision Definition with decisionKey=%d not found".formatted(decisionKey));
+        .isEqualTo("Decision definition with key %d not found".formatted(decisionKey));
   }
 
   @Test
@@ -231,7 +231,7 @@ class DecisionQueryTest {
     // then
     assertThat(problemException.code()).isEqualTo(404);
     assertThat(problemException.details().getDetail())
-        .isEqualTo("Decision Definition with decisionKey=%d not found".formatted(decisionKey));
+        .isEqualTo("Decision definition with key %d not found".formatted(decisionKey));
   }
 
   @Test
@@ -693,8 +693,7 @@ class DecisionQueryTest {
     assertThat(problemException.code()).isEqualTo(404);
     assertThat(problemException.details().getDetail())
         .isEqualTo(
-            "Decision requirements with decisionRequirementsKey=%d not found"
-                .formatted(decisionRequirementsKey));
+            "Decision requirements with key %d not found".formatted(decisionRequirementsKey));
   }
 
   @Test

@@ -69,7 +69,9 @@ public class DecisionRequirementsQueryController {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toDecisionRequirements(
-                  decisionRequirementsServices.getByKey(decisionRequirementsKey)));
+                  decisionRequirementsServices
+                      .withAuthentication(RequestMapper.getAuthentication())
+                      .getByKey(decisionRequirementsKey)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -83,7 +85,10 @@ public class DecisionRequirementsQueryController {
     try {
       return ResponseEntity.ok()
           .contentType(new MediaType(MediaType.TEXT_XML, StandardCharsets.UTF_8))
-          .body(decisionRequirementsServices.getDecisionRequirementsXml(decisionRequirementsKey));
+          .body(
+              decisionRequirementsServices
+                  .withAuthentication(RequestMapper.getAuthentication())
+                  .getDecisionRequirementsXml(decisionRequirementsKey));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
