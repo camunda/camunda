@@ -660,7 +660,14 @@ public class PassiveRole extends InactiveRole {
 
         final boolean failedToAppend = tryToAppend(future, entry, index, lastEntry);
         if (failedToAppend) {
-          flush(lastLogIndex - 1, request.prevLogIndex());
+          try {
+            flush(lastLogIndex - 1, request.prevLogIndex());
+          } catch (final Exception e) {
+            log.warn(
+                "Failed to flush when append failed: lastFlushedIndex={}, prevEntryIndex={}",
+                lastLogIndex - 1,
+                request.prevLogIndex());
+          }
           return;
         }
 
@@ -681,8 +688,18 @@ public class PassiveRole extends InactiveRole {
       log.trace("Committed entries up to index {}", commitIndex);
     }
 
-    // Make sure all entries are flushed before ack to ensure we have persisted what we acknowledge
-    flush(lastLogIndex, request.prevLogIndex());
+    try {
+      //     Make sure all entries are flushed before ack to ensure we have persisted what we
+      //     acknowledge
+      flush(lastLogIndex, request.prevLogIndex());
+    } catch (final Exception e) {
+      log.warn(
+          "Failed to flush appended entries to the log, cannot guarantee durability; leader will retry the append operation",
+          e);
+      // Flush failed, return error to the leader so we can retry.
+      failAppend(request.prevLogIndex(), future);
+      return;
+    }
 
     // Return a successful append response.
     succeedAppend(lastLogIndex, future);
