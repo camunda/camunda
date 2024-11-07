@@ -28,9 +28,6 @@ public final class StackdriverLogEntry {
   @JsonProperty("severity")
   private String severity;
 
-  @JsonProperty("logging.googleapis.com/sourceLocation")
-  private SourceLocation sourceLocation;
-
   @JsonProperty(value = "message", required = true)
   private String message;
 
@@ -64,14 +61,6 @@ public final class StackdriverLogEntry {
 
   public void setSeverity(final String severity) {
     this.severity = severity;
-  }
-
-  public SourceLocation getSourceLocation() {
-    return sourceLocation;
-  }
-
-  public void setSourceLocation(final SourceLocation sourceLocation) {
-    this.sourceLocation = sourceLocation;
   }
 
   public String getMessage() {

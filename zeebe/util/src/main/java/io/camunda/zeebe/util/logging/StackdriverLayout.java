@@ -129,11 +129,6 @@ public final class StackdriverLayout extends AbstractLayout<byte[]> implements L
             .withServiceName(serviceName)
             .withServiceVersion(serviceVersion);
 
-    final var source = event.getSource();
-    if (source != null) {
-      builder.withSource(source);
-    }
-
     final var thrownProxy = event.getThrownProxy();
     if (thrownProxy != null) {
       builder.withException(thrownProxy);

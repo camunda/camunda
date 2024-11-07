@@ -21,7 +21,6 @@ public final class StackdriverLogEntryBuilder {
   private final ServiceContext service;
   private final Map<String, Object> context;
 
-  private SourceLocation sourceLocation;
   private Severity severity;
   private String message;
   private StackTraceElement traceElement;
@@ -59,11 +58,6 @@ public final class StackdriverLogEntryBuilder {
         break;
     }
 
-    return this;
-  }
-
-  public StackdriverLogEntryBuilder withSource(final StackTraceElement traceElement) {
-    this.traceElement = traceElement;
     return this;
   }
 
@@ -130,15 +124,6 @@ public final class StackdriverLogEntryBuilder {
   public StackdriverLogEntry build() {
     final StackdriverLogEntry stackdriverLogEntry = new StackdriverLogEntry();
 
-    if (traceElement != null) {
-      sourceLocation = mapStackTraceToSourceLocation(traceElement);
-
-      if (severity == Severity.ERROR && exception == null) {
-        context.putIfAbsent(
-            ERROR_REPORT_LOCATION_CONTEXT_KEY, mapStackTraceToReportLocation(traceElement));
-      }
-    }
-
     if (severity == Severity.ERROR && type == null) {
       type = StackdriverLogEntry.ERROR_REPORT_TYPE;
     }
@@ -149,7 +134,6 @@ public final class StackdriverLogEntryBuilder {
     }
 
     stackdriverLogEntry.setSeverity(severity.name());
-    stackdriverLogEntry.setSourceLocation(sourceLocation);
     stackdriverLogEntry.setMessage(Objects.requireNonNull(message));
     stackdriverLogEntry.setService(service);
     stackdriverLogEntry.setContext(context);
