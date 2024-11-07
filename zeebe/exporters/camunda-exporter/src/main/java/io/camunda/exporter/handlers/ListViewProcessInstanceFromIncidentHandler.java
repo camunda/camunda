@@ -113,7 +113,6 @@ public class ListViewProcessInstanceFromIncidentHandler
   public void flush(
       final ProcessInstanceForListViewEntity entity, final BatchRequest batchRequest) {
 
-    LOGGER.debug("Flow node instance for list view: id {}", entity.getId());
     final Map<String, Object> updateFields = new LinkedHashMap<>();
     updateFields.put(TREE_PATH, entity.getTreePath());
 
