@@ -343,7 +343,7 @@ jobs:
 
   upgrade-tests:
     name: Upgrade
-    runs-on: gcp-core-16-default
+    runs-on: gcp-core-8-default
     timeout-minutes: 10
     strategy:
       matrix:
