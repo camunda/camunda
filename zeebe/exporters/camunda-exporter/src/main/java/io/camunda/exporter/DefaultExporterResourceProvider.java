@@ -28,6 +28,7 @@ import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.FlowNodeInstanceIncidentHandler;
 import io.camunda.exporter.handlers.FlowNodeInstanceProcessInstanceHandler;
 import io.camunda.exporter.handlers.FormHandler;
+import io.camunda.exporter.handlers.GroupCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.IncidentHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromIncidentHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromJobHandler;
@@ -75,6 +76,7 @@ import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
@@ -150,7 +152,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             MappingIndex.class,
             new MappingIndex(globalPrefix, isElasticsearch),
             TenantIndex.class,
-            new TenantIndex(globalPrefix, isElasticsearch));
+            new TenantIndex(globalPrefix, isElasticsearch),
+            GroupIndex.class,
+            new GroupIndex(globalPrefix, isElasticsearch));
 
     final var processCache =
         new ExporterEntityCacheImpl<Long, CachedProcessEntity>(
@@ -173,6 +177,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptorsMap.get(AuthorizationIndex.class).getFullQualifiedName()),
             new TenantCreateUpdateHandler(
                 indexDescriptorsMap.get(TenantIndex.class).getFullQualifiedName()),
+            new GroupCreatedUpdatedHandler(
+                indexDescriptorsMap.get(GroupIndex.class).getFullQualifiedName()),
             new DecisionHandler(
                 indexDescriptorsMap.get(DecisionIndex.class).getFullQualifiedName()),
             new ListViewProcessInstanceFromProcessInstanceHandler(
