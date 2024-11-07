@@ -60,19 +60,19 @@ import org.slf4j.LoggerFactory;
 
 public class RdbmsSearchClient
     implements AuthorizationSearchClient,
-    DecisionDefinitionSearchClient,
-    DecisionInstanceSearchClient,
-    DecisionRequirementSearchClient,
-    FlowNodeInstanceSearchClient,
-    FormSearchClient,
-    IncidentSearchClient,
-    ProcessInstanceSearchClient,
-    ProcessDefinitionSearchClient,
-    UserTaskSearchClient,
-    UserSearchClient,
-    VariableSearchClient,
-    RoleSearchClient,
-    TenantSearchClient {
+        DecisionDefinitionSearchClient,
+        DecisionInstanceSearchClient,
+        DecisionRequirementSearchClient,
+        FlowNodeInstanceSearchClient,
+        FormSearchClient,
+        IncidentSearchClient,
+        ProcessInstanceSearchClient,
+        ProcessDefinitionSearchClient,
+        UserTaskSearchClient,
+        UserSearchClient,
+        VariableSearchClient,
+        RoleSearchClient,
+        TenantSearchClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsSearchClient.class);
 
