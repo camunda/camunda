@@ -7,10 +7,14 @@
  */
 package io.camunda.webapps.schema.entities.tasklist;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Objects;
 
 public class FormEntity extends TasklistEntity<FormEntity> {
+
+  @JsonProperty("bpmnId")
   private String formId;
+
   private String schema;
   private Long version;
   private Boolean isDeleted;
