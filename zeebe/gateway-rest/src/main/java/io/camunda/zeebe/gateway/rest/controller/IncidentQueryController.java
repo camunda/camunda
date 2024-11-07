@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import static io.camunda.zeebe.gateway.rest.Loggers.REST_LOGGER;
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.IncidentQuery;
@@ -60,7 +59,6 @@ public class IncidentQueryController {
           .contentType(new MediaType(MediaType.APPLICATION_JSON, StandardCharsets.UTF_8))
           .body(SearchQueryResponseMapper.toIncident(incidentServices.getByKey(incidentKey)));
     } catch (final Exception e) {
-      REST_LOGGER.debug("An exception occurred in getIncident.", e);
       return mapErrorToResponse(e);
     }
   }
@@ -78,7 +76,6 @@ public class IncidentQueryController {
               "Validation failed for Incident Search Query");
       return RestErrorMapper.mapProblemToResponse(problemDetail);
     } catch (final Exception e) {
-      REST_LOGGER.debug("An exception occurred in searchIncidents.", e);
       return mapErrorToResponse(e);
     }
   }

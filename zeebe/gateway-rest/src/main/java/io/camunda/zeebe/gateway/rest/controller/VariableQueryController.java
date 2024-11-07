@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import static io.camunda.zeebe.gateway.rest.Loggers.REST_LOGGER;
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.VariableQuery;
@@ -51,7 +50,6 @@ public class VariableQueryController {
           variableServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toVariableSearchQueryResponse(result));
     } catch (final Exception e) {
-      REST_LOGGER.debug("An exception occurred in searchVariables.", e);
       return mapErrorToResponse(e);
     }
   }
@@ -65,7 +63,6 @@ public class VariableQueryController {
       return ResponseEntity.ok()
           .body(SearchQueryResponseMapper.toVariable(variableServices.getByKey(variableKey)));
     } catch (final Exception e) {
-      REST_LOGGER.debug("An exception occurred in getVariable.", e);
       return mapErrorToResponse(e);
     }
   }

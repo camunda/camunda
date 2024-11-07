@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import static io.camunda.zeebe.gateway.rest.Loggers.REST_LOGGER;
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.ProcessInstanceQuery;
@@ -52,7 +51,6 @@ public class ProcessInstanceQueryController {
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toProcessInstanceSearchQueryResponse(result));
     } catch (final Exception e) {
-      REST_LOGGER.debug("An exception occurred in searchProcessInstances", e);
       return mapErrorToResponse(e);
     }
   }
@@ -69,7 +67,6 @@ public class ProcessInstanceQueryController {
               SearchQueryResponseMapper.toProcessInstance(
                   processInstanceServices.getByKey(processInstanceKey)));
     } catch (final Exception e) {
-      REST_LOGGER.debug("An exception occurred in getProcessInstance", e);
       return mapErrorToResponse(e);
     }
   }

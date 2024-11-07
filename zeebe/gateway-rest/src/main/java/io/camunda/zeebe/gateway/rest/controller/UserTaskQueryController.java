@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import static io.camunda.zeebe.gateway.rest.Loggers.REST_LOGGER;
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.UserTaskQuery;
@@ -80,7 +79,6 @@ public class UserTaskQueryController {
               "Validation failed for UserTask Search Query");
       return RestErrorMapper.mapProblemToResponse(problemDetail);
     } catch (final Exception e) {
-      REST_LOGGER.debug("An exception occurred in searchUserTasks.", e);
       return mapErrorToResponse(e);
     }
   }
@@ -94,7 +92,6 @@ public class UserTaskQueryController {
       return ResponseEntity.ok()
           .body(SearchQueryResponseMapper.toUserTask(userTaskServices.getByKey(userTaskKey)));
     } catch (final Exception e) {
-      REST_LOGGER.debug("An exception occurred in getUserTask.", e);
       return mapErrorToResponse(e);
     }
   }
@@ -114,7 +111,6 @@ public class UserTaskQueryController {
       return ResponseEntity.ok()
           .body(SearchQueryResponseMapper.toFormItem(formServices.getByKey(formKey)));
     } catch (final Exception e) {
-      REST_LOGGER.debug("An exception occurred in getUserTaskForm.", e);
       return mapErrorToResponse(e);
     }
   }
@@ -152,7 +148,6 @@ public class UserTaskQueryController {
 
       return ResponseEntity.ok(SearchQueryResponseMapper.toVariableSearchQueryResponse(result));
     } catch (final Exception e) {
-      REST_LOGGER.debug("An exception occurred in searchUserTaskVariables.", e);
       return mapErrorToResponse(e);
     }
   }

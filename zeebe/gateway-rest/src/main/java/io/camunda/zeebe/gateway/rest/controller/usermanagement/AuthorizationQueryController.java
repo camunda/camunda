@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
-import static io.camunda.zeebe.gateway.rest.Loggers.REST_LOGGER;
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.AuthorizationQuery;
@@ -69,7 +68,6 @@ public class AuthorizationQueryController {
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toAuthorizationSearchQueryResponse(result));
     } catch (final Exception e) {
-      REST_LOGGER.debug("An exception occurred in searchAuthorizations.", e);
       return mapErrorToResponse(e);
     }
   }

@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import static io.camunda.zeebe.gateway.rest.Loggers.REST_LOGGER;
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.entities.ProcessDefinitionEntity;
@@ -64,7 +63,6 @@ public class ProcessDefinitionQueryController {
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toProcessDefinitionSearchQueryResponse(result));
     } catch (final Exception e) {
-      REST_LOGGER.debug("An exception occurred in searchProcessDefinitions.", e);
       return mapErrorToResponse(e);
     }
   }
@@ -82,7 +80,6 @@ public class ProcessDefinitionQueryController {
               SearchQueryResponseMapper.toProcessDefinition(
                   processDefinitionServices.getByKey(processDefinitionKey)));
     } catch (final Exception e) {
-      REST_LOGGER.debug("An exception occurred in getProcessDefinition.", e);
       return mapErrorToResponse(e);
     }
   }
@@ -103,7 +100,6 @@ public class ProcessDefinitionQueryController {
                       .body(s))
           .orElseGet(() -> ResponseEntity.status(HttpStatus.NO_CONTENT).build());
     } catch (final Exception e) {
-      REST_LOGGER.debug("An exception occurred in getProcessDefinitionXml.", e);
       return mapErrorToResponse(e);
     }
   }
@@ -126,7 +122,6 @@ public class ProcessDefinitionQueryController {
         return ResponseEntity.noContent().build();
       }
     } catch (final Exception e) {
-      REST_LOGGER.debug("An exception occurred in getProcessDefinitionForm.", e);
       return mapErrorToResponse(e);
     }
   }

@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import static io.camunda.zeebe.gateway.rest.Loggers.REST_LOGGER;
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.FlowNodeInstanceQuery;
@@ -58,7 +57,6 @@ public class FlowNodeInstanceQueryController {
               SearchQueryResponseMapper.toFlowNodeInstance(
                   flownodeInstanceServices.getByKey(flowNodeInstanceKey)));
     } catch (final Exception e) {
-      REST_LOGGER.debug("An exception occurred in getFlowNodeInstance.", e);
       return mapErrorToResponse(e);
     }
   }
@@ -73,7 +71,6 @@ public class FlowNodeInstanceQueryController {
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toFlownodeInstanceSearchQueryResponse(result));
     } catch (final Exception e) {
-      REST_LOGGER.debug("An exception occurred in searchFlowNodeInstance.", e);
       return mapErrorToResponse(e);
     }
   }
