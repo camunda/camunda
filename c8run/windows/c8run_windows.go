@@ -172,7 +172,6 @@ func main() {
         javaHome := os.Getenv("JAVA_HOME")
 	javaBinary := "java"
         if javaHome != "" {
-                var javaBinary string
                 filepath.Walk(javaHome, func(path string, info os.FileInfo, err error) error {
                         _, filename := filepath.Split(path)
                         if strings.Compare(filename, "java.exe") == 0 || strings.Compare(filename, "java") == 0 {
@@ -195,13 +194,14 @@ func main() {
 
                 // go up 2 directories since it's not guaranteed that java is in a bin folder
                 javaHome = filepath.Dir(filepath.Dir(path))
+                javaBinary = path
         }
         os.Setenv("ES_JAVA_HOME", javaHome)
 
 	if baseCommand == "start" {
 		javaVersion := os.Getenv("JAVA_VERSION")
 		if javaVersion == "" {
-			javaVersionCmd := exec.Command("cmd", "/C", javaBinary + " --version")
+			javaVersionCmd := exec.Command("cmd", "/C", "\"" + javaBinary + "\"" + " --version")
 			var out strings.Builder
                         var stderr strings.Builder
 			javaVersionCmd.Stdout = &out
@@ -272,7 +272,7 @@ func main() {
 		elasticsearchPidFile.Write([]byte(strconv.Itoa(elasticsearchCmd.Process.Pid)))
 		queryElasticsearchHealth("Elasticsearch", "http://localhost:9200/_cluster/health?wait_for_status=green&wait_for_active_shards=all&wait_for_no_initializing_shards=true&timeout=120s")
 
-		connectorsCmdString := javaBinary + " -classpath " + parentDir + "\\*;" + parentDir + "\\custom_connectors\\*;" + parentDir + "\\camunda-zeebe-" + camundaVersion + "\\lib\\* io.camunda.connector.runtime.app.ConnectorRuntimeApplication --spring.config.location=" + parentDir + "\\connectors-application.properties"
+		connectorsCmdString := "\"" + javaBinary + "\"" + " -classpath " + parentDir + "\\*;" + parentDir + "\\custom_connectors\\*;" + parentDir + "\\camunda-zeebe-" + camundaVersion + "\\lib\\* io.camunda.connector.runtime.app.ConnectorRuntimeApplication --spring.config.location=" + parentDir + "\\connectors-application.properties"
 		connectorsCmd := exec.Command("cmd", "/C", connectorsCmdString)
 		connectorsLogPath := filepath.Join(parentDir, "log", "connectors.log")
 		connectorsLogFile, err := os.OpenFile(connectorsLogPath, os.O_RDWR|os.O_CREATE, 0644)
