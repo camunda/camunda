@@ -188,7 +188,7 @@ func main() {
                 }
         } else {
                 path, err := exec.LookPath("java")
-                if err == nil {
+                if err != nil {
                         fmt.Println("Failed to find JAVA_HOME or java program.")
                         os.Exit(1)
                 }
