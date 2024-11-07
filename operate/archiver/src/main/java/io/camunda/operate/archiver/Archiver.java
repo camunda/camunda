@@ -18,12 +18,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 
 @Component
-@DependsOn("schemaStartup")
 public class Archiver {
   protected static final String INDEX_NAME_PATTERN = "%s%s";
   private static final Logger LOGGER = LoggerFactory.getLogger(Archiver.class);

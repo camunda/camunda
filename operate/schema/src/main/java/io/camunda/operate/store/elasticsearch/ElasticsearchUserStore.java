@@ -31,13 +31,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Conditional(ElasticsearchCondition.class)
 @Component
-@DependsOn("schemaStartup")
 @Profile(
     "!"
         + OperateProfileService.LDAP_AUTH_PROFILE
@@ -59,12 +57,12 @@ public class ElasticsearchUserStore implements UserStore {
 
   @Autowired private UserIndex userIndex;
 
-  protected String userEntityToJSONString(UserEntity aUser) throws JsonProcessingException {
+  protected String userEntityToJSONString(final UserEntity aUser) throws JsonProcessingException {
     return objectMapper.writeValueAsString(aUser);
   }
 
   @Override
-  public UserEntity getById(String id) {
+  public UserEntity getById(final String id) {
     final SearchRequest searchRequest =
         new SearchRequest(userIndex.getAlias())
             .source(
@@ -80,7 +78,7 @@ public class ElasticsearchUserStore implements UserStore {
       } else {
         throw new NotFoundException(String.format("Could not find user with userId '%s'.", id));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining the user: %s", e.getMessage());
       throw new OperateRuntimeException(message, e);
@@ -88,14 +86,14 @@ public class ElasticsearchUserStore implements UserStore {
   }
 
   @Override
-  public void save(UserEntity user) {
+  public void save(final UserEntity user) {
     try {
       final IndexRequest request =
           new IndexRequest(userIndex.getFullQualifiedName())
               .id(user.getId())
               .source(userEntityToJSONString(user), XCONTENT_TYPE);
       esClient.index(request, RequestOptions.DEFAULT);
-    } catch (Exception t) {
+    } catch (final Exception t) {
       LOGGER.error("Could not create user with userId {}", user.getUserId(), t);
     }
   }

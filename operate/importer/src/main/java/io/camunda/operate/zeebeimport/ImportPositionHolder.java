@@ -23,12 +23,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 
 @Component
-@DependsOn("schemaStartup")
 public class ImportPositionHolder {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ImportPositionHolder.class);
@@ -59,12 +57,12 @@ public class ImportPositionHolder {
     scheduleImportPositionUpdateTask();
   }
 
-  public void setConcurrencyMode(boolean concurrencyMode) {
-    importStore.setConcurrencyMode(concurrencyMode);
-  }
-
   public boolean getConcurrencyMode() {
     return importStore.getConcurrencyMode();
+  }
+
+  public void setConcurrencyMode(final boolean concurrencyMode) {
+    importStore.setConcurrencyMode(concurrencyMode);
   }
 
   public void scheduleImportPositionUpdateTask() {

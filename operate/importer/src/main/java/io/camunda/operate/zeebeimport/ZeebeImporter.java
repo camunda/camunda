@@ -16,13 +16,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 
 @Component
 @Configuration
-@DependsOn("schemaStartup")
 public class ZeebeImporter {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ZeebeImporter.class);
