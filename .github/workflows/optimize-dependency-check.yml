@@ -55,4 +55,4 @@ jobs:
              }]
           mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
       - name: Run dependency analysis
-        run: ./mvnw -f optimize/pom.xml dependency:analyze -DskipTests -DskipDocker -DdependencyAnalyzeFailOnWarning
+        run: ./mvnw -f optimize/pom.xml dependency:analyze -DskipTests -DskipDocker -DdependencyAnalyzeFailOnWarning -PskipFrontendBuild
