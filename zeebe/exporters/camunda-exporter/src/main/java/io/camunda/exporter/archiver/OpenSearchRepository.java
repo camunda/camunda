@@ -11,6 +11,7 @@ import io.camunda.exporter.archiver.ArchiverRepository.NoopArchiverRepository;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.micrometer.core.instrument.Timer;
@@ -35,11 +36,11 @@ import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch._types.query_dsl.TermsQuery;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
 import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
-import org.opensearch.client.opensearch.core.ReindexRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
-import org.opensearch.client.opensearch.core.reindex.Source;
 import org.opensearch.client.opensearch.core.search.Hit;
+import org.opensearch.client.opensearch.core.ReindexRequest;
+import org.opensearch.client.opensearch.core.reindex.Source;
 import org.slf4j.Logger;
 
 public final class OpenSearchRepository extends NoopArchiverRepository {
@@ -97,6 +98,18 @@ public final class OpenSearchRepository extends NoopArchiverRepository {
   }
 
   @Override
+  public CompletableFuture<ArchiveBatch> getBatchOperationsNextBatch() {
+    final var aggregation =
+        createFinishedEntityAggregation(BatchOperationTemplate.END_DATE, BatchOperationTemplate.ID);
+    final var searchRequest = createFinishedBatchOperationsSearchRequest(aggregation);
+
+    final var timer = Timer.start();
+    return sendRequestAsync(() -> client.search(searchRequest, Object.class))
+        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
+        .thenApplyAsync(this::createArchiveBatch, executor);
+  }
+
+  @Override
   public CompletableFuture<Void> deleteDocuments(
       final String sourceIndexName,
       final String idFieldName,
@@ -115,6 +128,17 @@ public final class OpenSearchRepository extends NoopArchiverRepository {
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverDelete(timer), executor)
         .thenApplyAsync(DeleteByQueryResponse::total, executor)
         .thenApplyAsync(ok -> null, executor);
+  }
+
+  private SearchRequest createFinishedBatchOperationsSearchRequest(final Aggregation aggregation) {
+    final var endDateQ =
+        QueryBuilders.range()
+            .field(BatchOperationTemplate.END_DATE)
+            .lte(JsonData.of(config.getArchivingTimePoint()))
+            .build();
+
+    return createSearchRequest(
+        batchOperationIndex, endDateQ.toQuery(), aggregation, BatchOperationTemplate.END_DATE);
   }
 
   @Override
