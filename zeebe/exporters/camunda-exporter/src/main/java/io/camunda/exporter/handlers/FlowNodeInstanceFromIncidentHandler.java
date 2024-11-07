@@ -7,8 +7,6 @@
  */
 package io.camunda.exporter.handlers;
 
-import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
-
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
@@ -19,9 +17,14 @@ import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FlowNodeInstanceFromIncidentHandler
     implements ExportHandler<FlowNodeInstanceEntity, IncidentRecordValue> {
+
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(FlowNodeInstanceFromIncidentHandler.class);
 
   private final String indexName;
 
@@ -41,13 +44,18 @@ public class FlowNodeInstanceFromIncidentHandler
 
   @Override
   public boolean handlesRecord(final Record<IncidentRecordValue> record) {
-    return true;
+    final String intentStr = record.getIntent().name();
+    return intentStr.equals(IncidentIntent.CREATED.toString())
+        || intentStr.equals(IncidentIntent.MIGRATED.toString());
   }
 
   @Override
   public List<String> generateIds(final Record<IncidentRecordValue> record) {
+    // in case of incident we update tree path in all flow node instances in call hierarchy
     final IncidentRecordValue recordValue = record.getValue();
-    return List.of(String.valueOf(recordValue.getElementInstanceKey()));
+    final List<Long> callHierarchy = recordValue.getElementInstancePath().getLast();
+    // we skip the 1st element, as it contains process instance key
+    return callHierarchy.stream().skip(1).map(String::valueOf).toList();
   }
 
   @Override
@@ -59,29 +67,35 @@ public class FlowNodeInstanceFromIncidentHandler
   public void updateEntity(
       final Record<IncidentRecordValue> record, final FlowNodeInstanceEntity entity) {
     final IncidentRecordValue recordValue = record.getValue();
-    entity
-        .setId(String.valueOf(recordValue.getElementInstanceKey()))
-        .setKey(recordValue.getElementInstanceKey())
-        .setPartitionId(record.getPartitionId())
-        .setFlowNodeId(recordValue.getElementId())
-        .setProcessInstanceKey(recordValue.getProcessInstanceKey())
-        .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
-        .setBpmnProcessId(recordValue.getBpmnProcessId())
-        .setTenantId(tenantOrDefault(recordValue.getTenantId()));
-
-    final String intentStr = record.getIntent().name();
-    if (intentStr.equals(IncidentIntent.CREATED.name())
-        || intentStr.equals(IncidentIntent.MIGRATED.name())) {
-      entity.setIncidentKey(record.getKey());
-    } else if (intentStr.equals(IncidentIntent.RESOLVED.name())) {
-      entity.setIncidentKey(null);
+    // build the treePath in the format
+    // <processInstanceKey>/<flowNodeInstanceKey>/.../<flowNodeInstanceKey>
+    // where upper level flowNodeInstanceKeys are normally subprocess(es) or multi-instance body
+    if (recordValue.getElementInstancePath() != null
+        && !recordValue.getElementInstancePath().isEmpty()) {
+      final Long currentProcessInstanceKey = Long.valueOf(entity.getId());
+      // call hierarchy for current process instance
+      final List<Long> elementInstancePath = recordValue.getElementInstancePath().getLast();
+      // we need to stop appending treePath on the current flowNodeInstanceKey
+      // e.g. incident returns call hierarchy [111,222,333] and we're currently building the
+      // treePath for
+      // flow node with id 222, then the treePath = 111/222
+      final int i = elementInstancePath.indexOf(currentProcessInstanceKey);
+      final List<String> treePathEntries =
+          elementInstancePath.stream().limit(i + 1).map(String::valueOf).toList();
+      entity.setTreePath(String.join("/", treePathEntries));
+      entity.setLevel(treePathEntries.size() - 1);
+    } else {
+      LOGGER.debug(
+          "No elementInstancePath was provided in the incident. Tree path for process instance {} will be default.");
+      entity.setTreePath(
+          recordValue.getProcessInstanceKey() + "/" + recordValue.getElementInstanceKey());
     }
   }
 
   @Override
   public void flush(final FlowNodeInstanceEntity entity, final BatchRequest batchRequest) {
     final Map<String, Object> updateFields = new HashMap<>();
-    updateFields.put(FlowNodeInstanceTemplate.INCIDENT_KEY, entity.getIncidentKey());
+    updateFields.put(FlowNodeInstanceTemplate.TREE_PATH, entity.getTreePath());
     batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
   }
 

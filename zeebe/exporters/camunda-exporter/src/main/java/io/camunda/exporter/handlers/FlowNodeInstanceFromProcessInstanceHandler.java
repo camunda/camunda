@@ -88,11 +88,11 @@ public class FlowNodeInstanceFromProcessInstanceHandler
     entity.setBpmnProcessId(recordValue.getBpmnProcessId());
     entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
-    // Parent tree path is intentionally not calculated here, we set the value as if the instance is
-    // on the 1st level
-    // will be changed within https://github.com/camunda/camunda/issues/18378
-    entity.setTreePath(recordValue.getProcessInstanceKey() + "/" + record.getKey());
-    entity.setLevel(1);
+    if (intentStr.equals(ELEMENT_ACTIVATING.name())) {
+      // we set the default value here, which may be updated later within incident export
+      entity.setTreePath(recordValue.getProcessInstanceKey() + "/" + record.getKey());
+      entity.setLevel(1);
+    }
 
     final OffsetDateTime recordTime =
         OffsetDateTime.ofInstant(Instant.ofEpochMilli(record.getTimestamp()), ZoneOffset.UTC);
