@@ -5,16 +5,21 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.archiver;
+package io.camunda.exporter.tasks;
 
 import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 
 import io.camunda.exporter.ExporterResourceProvider;
-import io.camunda.exporter.archiver.ArchiverRepository.NoopArchiverRepository;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.archiver.ArchiverJob;
+import io.camunda.exporter.tasks.archiver.ArchiverRepository;
+import io.camunda.exporter.tasks.archiver.ArchiverRepository.NoopArchiverRepository;
+import io.camunda.exporter.tasks.archiver.BatchOperationArchiverJob;
+import io.camunda.exporter.tasks.archiver.ElasticsearchRepository;
+import io.camunda.exporter.tasks.archiver.ProcessInstancesArchiverJob;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
@@ -33,14 +38,14 @@ import javax.annotation.WillCloseWhenClosed;
 import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 
-public final class Archiver implements CloseableSilently {
+public final class BackgroundTaskManager implements CloseableSilently {
   private final int partitionId;
   private final ArchiverRepository repository;
   private final Logger logger;
   private final ScheduledExecutorService executor;
 
   @VisibleForTesting
-  Archiver(
+  BackgroundTaskManager(
       final int partitionId,
       final @WillCloseWhenClosed ArchiverRepository repository,
       final Logger logger,
@@ -77,22 +82,22 @@ public final class Archiver implements CloseableSilently {
     }
   }
 
-  public static Archiver create(
+  public static BackgroundTaskManager create(
       final int partitionId,
       final String exporterId,
       final ExporterConfiguration config,
       final ExporterResourceProvider resourceProvider,
-      final CamundaExporterMetrics metrics,
+      final io.camunda.exporter.metrics.CamundaExporterMetrics metrics,
       final Logger logger) {
     final var threadFactory =
         Thread.ofPlatform()
-            .name("exporter-" + exporterId + "-p" + partitionId + "-bg-", 0)
+            .name("exporter-" + exporterId + "-p" + partitionId + "-tasks-", 0)
             .uncaughtExceptionHandler(FatalErrorHandler.uncaughtExceptionHandler(logger))
             .factory();
     final var executor = defaultExecutor(threadFactory, partitionId);
     final var repository =
         createRepository(config, resourceProvider, partitionId, executor, metrics, logger);
-    final var archiver = new Archiver(partitionId, repository, logger, executor);
+    final var archiver = new BackgroundTaskManager(partitionId, repository, logger, executor);
     final var processInstanceJob =
         createProcessInstanceJob(metrics, logger, resourceProvider, repository, executor);
     if (partitionId == START_PARTITION_ID) {
@@ -107,7 +112,7 @@ public final class Archiver implements CloseableSilently {
   }
 
   private static ProcessInstancesArchiverJob createProcessInstanceJob(
-      final CamundaExporterMetrics metrics,
+      final io.camunda.exporter.metrics.CamundaExporterMetrics metrics,
       final Logger logger,
       final ExporterResourceProvider resourceProvider,
       final ArchiverRepository repository,
@@ -134,7 +139,7 @@ public final class Archiver implements CloseableSilently {
   }
 
   private static BatchOperationArchiverJob createBatchOperationJob(
-      final CamundaExporterMetrics metrics,
+      final io.camunda.exporter.metrics.CamundaExporterMetrics metrics,
       final Logger logger,
       final ExporterResourceProvider resourceProvider,
       final ArchiverRepository repository,

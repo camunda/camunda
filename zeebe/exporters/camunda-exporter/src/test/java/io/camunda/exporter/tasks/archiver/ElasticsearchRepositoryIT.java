@@ -5,15 +5,23 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.archiver;
+package io.camunda.exporter.tasks.archiver;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.mapping.Property;
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
+import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.elasticsearch.ilm.Phase;
+import co.elastic.clients.elasticsearch.indices.IndexSettingsLifecycle;
+import co.elastic.clients.json.JsonData;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
-import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
@@ -30,43 +38,31 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.http.HttpHost;
-import org.awaitility.Awaitility;
+import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import org.opensearch.client.RestClient;
-import org.opensearch.client.json.jackson.JacksonJsonpMapper;
-import org.opensearch.client.opensearch.OpenSearchAsyncClient;
-import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.client.opensearch._types.mapping.Property;
-import org.opensearch.client.opensearch._types.mapping.TypeMapping;
-import org.opensearch.client.opensearch.core.search.Hit;
-import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
-import org.opensearch.client.opensearch.generic.Requests;
-import org.opensearch.client.transport.rest_client.RestClientTransport;
-import org.opensearch.testcontainers.OpensearchContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @SuppressWarnings("resource")
 @Testcontainers
 @AutoCloseResources
-final class OpenSearchRepositoryIT {
-  private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchRepositoryIT.class);
+final class ElasticsearchRepositoryIT {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchRepositoryIT.class);
 
   @Container
-  private static final OpensearchContainer<?> OPENSEARCH =
-      TestSearchContainers.createDefaultOpensearchContainer();
+  private static final ElasticsearchContainer ELASTIC =
+      TestSearchContainers.createDefeaultElasticsearchContainer();
 
-  private static final ObjectMapper MAPPER = new ObjectMapper();
-  @AutoCloseResource private final RestClientTransport transport = Mockito.spy(createRestClient());
+  @AutoCloseResource private final RestClientTransport transport = createRestClient();
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final ArchiverConfiguration config = new ArchiverConfiguration();
   private final RetentionConfiguration retention = new RetentionConfiguration();
   private final String processInstanceIndex = "process-instance-" + UUID.randomUUID();
   private final String batchOperationIndex = "batch-operation-" + UUID.randomUUID();
-  private final OpenSearchClient testClient = new OpenSearchClient(transport);
+  private final ElasticsearchClient testClient = new ElasticsearchClient(transport);
 
   @Test
   void shouldDeleteDocuments() throws IOException {
@@ -102,37 +98,69 @@ final class OpenSearchRepositoryIT {
     final var indexName = UUID.randomUUID().toString();
     final var repository = createRepository();
     testClient.indices().create(r -> r.index(indexName));
-
+    final var initialLifecycle =
+        testClient
+            .indices()
+            .getSettings(r -> r.index(indexName))
+            .get(indexName)
+            .settings()
+            .lifecycle();
+    assertThat(initialLifecycle).isNull();
     retention.setEnabled(true);
     retention.setPolicyName("operate_delete_archived_indices");
+    putLifecyclePolicy();
 
     // when
-    createLifeCyclePolicy();
     final var result = repository.setIndexLifeCycle(indexName);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
-
-    // Takes a while for the policy to be applied
-    Awaitility.await("until the policy has been visibly applied")
-        .untilAsserted(
-            () -> assertThat(fetchPolicyForIndex(indexName)).isEqualTo(retention.getPolicyName()));
+    final var actualLifecycle =
+        testClient
+            .indices()
+            .getSettings(r -> r.index(indexName))
+            .get(indexName)
+            .settings()
+            .index()
+            .lifecycle();
+    assertThat(actualLifecycle)
+        .isNotNull()
+        .extracting(IndexSettingsLifecycle::name)
+        .isEqualTo("operate_delete_archived_indices");
   }
 
   @Test
-  void shouldNotSetIndexLifecycleIfRetentionIsDisabled() {
+  void shouldNotSetIndexLifecycleIfRetentionIsDisabled() throws IOException {
     // given
     final var indexName = UUID.randomUUID().toString();
     final var repository = createRepository();
+    testClient.indices().create(r -> r.index(indexName));
+    final var initialLifecycle =
+        testClient
+            .indices()
+            .getSettings(r -> r.index(indexName))
+            .get(indexName)
+            .settings()
+            .lifecycle();
+    assertThat(initialLifecycle).isNull();
     retention.setEnabled(false);
+    retention.setPolicyName("operate_delete_archived_indices");
+    putLifecyclePolicy();
 
     // when
     final var result = repository.setIndexLifeCycle(indexName);
 
     // then
-    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
-    Mockito.verify(transport, Mockito.never())
-        .performRequestAsync(Mockito.any(), Mockito.any(), Mockito.any());
+    assertThat(result).succeedsWithin(Duration.ZERO);
+    final var actualLifecycle =
+        testClient
+            .indices()
+            .getSettings(r -> r.index(indexName))
+            .get(indexName)
+            .settings()
+            .index()
+            .lifecycle();
+    assertThat(actualLifecycle).isNull();
   }
 
   @Test
@@ -241,22 +269,6 @@ final class OpenSearchRepositoryIT {
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
   }
 
-  private void createBatchOperationIndex() throws IOException {
-    final var idProp = Property.of(p -> p.keyword(k -> k.index(true)));
-    final var endDateProp =
-        Property.of(p -> p.date(d -> d.index(true).format("date_time || epoch_millis")));
-    final var properties =
-        TypeMapping.of(
-            m ->
-                m.properties(
-                    Map.of(
-                        BatchOperationTemplate.ID,
-                        idProp,
-                        BatchOperationTemplate.END_DATE,
-                        endDateProp)));
-    testClient.indices().create(r -> r.index(batchOperationIndex).mappings(properties));
-  }
-
   private <T extends TDocument> void index(final String index, final T document) {
     try {
       testClient.index(b -> b.index(index).document(document).id(document.id()));
@@ -265,43 +277,21 @@ final class OpenSearchRepositoryIT {
     }
   }
 
-  private void createLifeCyclePolicy() {
-    final var engineClient = new OpensearchEngineClient(testClient);
-    try {
-      engineClient.putIndexLifeCyclePolicy(retention.getPolicyName(), retention.getMinimumAge());
-    } catch (final Exception e) {
-      // policy was already created
-    }
-  }
-
-  private String fetchPolicyForIndex(final String indexName) {
-    final var genericClient =
-        new OpenSearchGenericClient(testClient._transport(), testClient._transportOptions());
-    final var request =
-        Requests.builder().method("get").endpoint("_plugins/_ism/explain/" + indexName).build();
-    try {
-      final var response = genericClient.execute(request);
-      final var jsonString = response.getBody().orElseThrow().bodyAsString();
-      final var json = MAPPER.readTree(jsonString);
-      final var index = json.get(indexName);
-      if (index == null) {
-        throw new AssertionError(
-            "Failed to explain non-existent index '%s'; see response: %s"
-                .formatted(indexName, jsonString));
-      }
-
-      return index.findPath("index.plugins.index_state_management.policy_id").asText();
-    } catch (final IOException e) {
-      throw new AssertionError("Failed to fetch policy for index " + indexName, e);
-    }
+  private void putLifecyclePolicy() throws IOException {
+    final var ilmClient = testClient.ilm();
+    final var phase =
+        Phase.of(
+            d -> d.minAge(t -> t.time("30d")).actions(JsonData.of(Map.of("delete", Map.of()))));
+    ilmClient.putLifecycle(
+        l -> l.name(retention.getPolicyName()).policy(p -> p.phases(h -> h.delete(phase))));
   }
 
   // no need to close resource returned here, since the transport is closed above anyway
-  private OpenSearchRepository createRepository() {
-    final var client = new OpenSearchAsyncClient(transport);
+  private ElasticsearchRepository createRepository() {
+    final var client = new ElasticsearchAsyncClient(transport);
     final var metrics = new CamundaExporterMetrics(meterRegistry);
 
-    return new OpenSearchRepository(
+    return new ElasticsearchRepository(
         1,
         config,
         retention,
@@ -311,6 +301,12 @@ final class OpenSearchRepositoryIT {
         Runnable::run,
         metrics,
         LOGGER);
+  }
+
+  private RestClientTransport createRestClient() {
+    final var restClient =
+        RestClient.builder(HttpHost.create(ELASTIC.getHttpHostAddress())).build();
+    return new RestClientTransport(restClient, new JacksonJsonpMapper());
   }
 
   private void createProcessInstanceIndex() throws IOException {
@@ -332,15 +328,25 @@ final class OpenSearchRepositoryIT {
     testClient.indices().create(r -> r.index(processInstanceIndex).mappings(properties));
   }
 
-  private RestClientTransport createRestClient() {
-    final var restClient =
-        RestClient.builder(HttpHost.create(OPENSEARCH.getHttpHostAddress())).build();
-    return new RestClientTransport(restClient, new JacksonJsonpMapper());
+  private void createBatchOperationIndex() throws IOException {
+    final var idProp = Property.of(p -> p.keyword(k -> k.index(true)));
+    final var endDateProp =
+        Property.of(p -> p.date(d -> d.index(true).format("date_time || epoch_millis")));
+    final var properties =
+        TypeMapping.of(
+            m ->
+                m.properties(
+                    Map.of(
+                        BatchOperationTemplate.ID,
+                        idProp,
+                        BatchOperationTemplate.END_DATE,
+                        endDateProp)));
+    testClient.indices().create(r -> r.index(batchOperationIndex).mappings(properties));
   }
 
-  private record TestBatchOperation(String id, String endDate) implements TDocument {}
-
   private record TestDocument(String id) implements TDocument {}
+
+  private record TestBatchOperation(String id, String endDate) implements TDocument {}
 
   private record TestProcessInstance(
       String id, String endDate, String joinRelation, int partitionId) implements TDocument {}

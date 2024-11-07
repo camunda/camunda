@@ -5,10 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.archiver;
+package io.camunda.exporter.tasks.archiver;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.camunda.exporter.archiver.ArchiverRepository.NoopArchiverRepository;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
@@ -46,7 +45,7 @@ import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.opensearch.client.opensearch.generic.Requests;
 import org.slf4j.Logger;
 
-public final class OpenSearchRepository extends NoopArchiverRepository {
+public final class OpenSearchRepository implements ArchiverRepository {
   private static final String DATES_AGG = "datesAgg";
   private static final String INSTANCES_AGG = "instancesAgg";
   private static final String DATES_SORTED_AGG = "datesSortedAgg";
@@ -189,6 +188,11 @@ public final class OpenSearchRepository extends NoopArchiverRepository {
     return sendRequestAsync(() -> client.reindex(request))
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverReindex(timer), executor)
         .thenApplyAsync(ignored -> null, executor);
+  }
+
+  @Override
+  public void close() throws Exception {
+    client._transport().close();
   }
 
   private SearchRequest createFinishedBatchOperationsSearchRequest(final Aggregation aggregation) {
