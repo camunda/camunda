@@ -32,5 +32,14 @@ public class MappingProcessors {
             keyGenerator,
             writers,
             commandDistributionBehavior));
+    typedRecordProcessors.onCommand(
+        ValueType.MAPPING,
+        MappingIntent.DELETE,
+        new MappingDeleteProcessor(
+            processingState.getMappingState(),
+            authCheckBehavior,
+            keyGenerator,
+            writers,
+            commandDistributionBehavior));
   }
 }
