@@ -20,7 +20,7 @@ import io.camunda.operate.webapp.reader.DecisionReader;
 import io.camunda.operate.webapp.rest.dto.DecisionRequestDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
-import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
@@ -46,8 +46,7 @@ public class OpensearchDecisionReader implements DecisionReader {
 
   @Autowired private DecisionRequirementsIndex decisionRequirementsIndex;
 
-  @Autowired(required = false)
-  private PermissionsService permissionsService;
+  @Autowired private PermissionsService permissionsService;
 
   @Autowired private OperateProperties operateProperties;
 
@@ -173,7 +172,7 @@ public class OpensearchDecisionReader implements DecisionReader {
 
   private Query buildQuery(final String tenantId) {
     Query decisionIdQuery = null;
-    if (permissionsService != null) {
+    if (permissionsService.permissionsEnabled()) {
       final var allowed = permissionsService.getDecisionsWithPermission(IdentityPermission.READ);
       if (allowed != null && !allowed.isAll()) {
         decisionIdQuery = stringTerms(DecisionIndex.DECISION_ID, allowed.getIds());

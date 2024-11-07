@@ -12,7 +12,7 @@ import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
-import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
@@ -133,7 +133,7 @@ public class ListViewProcessInstanceDto {
     processInstance.setPermissions(
         permissionsService == null
             ? new HashSet<>()
-            : permissionsService.getProcessDefinitionPermission(
+            : permissionsService.getProcessDefinitionPermissions(
                 processInstanceEntity.getBpmnProcessId()));
     return processInstance;
   }

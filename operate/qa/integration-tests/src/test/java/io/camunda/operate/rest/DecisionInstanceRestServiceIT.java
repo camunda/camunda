@@ -20,7 +20,7 @@ import io.camunda.operate.webapp.reader.DecisionInstanceReader;
 import io.camunda.operate.webapp.rest.DecisionInstanceRestService;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionInstanceDto;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
-import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -51,6 +51,7 @@ public class DecisionInstanceRestServiceIT extends OperateAbstractIT {
     // when
     when(decisionInstanceReader.getDecisionInstance(decisionInstanceId))
         .thenReturn(new DecisionInstanceDto().setDecisionId(bpmnDecisionId));
+    when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.hasPermissionForDecision(bpmnDecisionId, IdentityPermission.READ))
         .thenReturn(false);
     final MvcResult mvcResult =
@@ -67,6 +68,7 @@ public class DecisionInstanceRestServiceIT extends OperateAbstractIT {
     // when
     when(decisionInstanceReader.getDecisionInstance(decisionInstanceId))
         .thenReturn(new DecisionInstanceDto().setDecisionId(bpmnDecisionId));
+    when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.hasPermissionForDecision(bpmnDecisionId, IdentityPermission.READ))
         .thenReturn(false);
     final MvcResult mvcResult =

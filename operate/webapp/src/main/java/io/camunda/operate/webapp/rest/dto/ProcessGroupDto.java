@@ -8,7 +8,7 @@
 package io.camunda.operate.webapp.rest.dto;
 
 import io.camunda.operate.store.ProcessStore;
-import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.ArrayList;
@@ -53,7 +53,7 @@ public class ProcessGroupDto {
               groupDto.setPermissions(
                   permissionsService == null
                       ? new HashSet<>()
-                      : permissionsService.getProcessDefinitionPermission(
+                      : permissionsService.getProcessDefinitionPermissions(
                           process0.getBpmnProcessId()));
               groupDto.setProcesses(DtoCreator.create(group, ProcessDto.class));
               groups.add(groupDto);
