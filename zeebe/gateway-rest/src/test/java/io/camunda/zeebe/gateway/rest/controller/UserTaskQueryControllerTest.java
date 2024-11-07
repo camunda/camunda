@@ -22,6 +22,7 @@ import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.UserTaskEntity.UserTaskState;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.query.UserTaskQuery;
@@ -32,19 +33,26 @@ import io.camunda.service.FlowNodeInstanceServices;
 import io.camunda.service.FormServices;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.VariableServices;
+import io.camunda.zeebe.gateway.rest.JacksonConfig;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 
 @WebMvcTest(value = UserTaskQueryController.class, properties = "camunda.rest.query.enabled=true")
+@Import(JacksonConfig.class)
 public class UserTaskQueryControllerTest extends RestControllerTest {
 
   private static final Long VALID_USER_TASK_KEY = 0L;
@@ -632,5 +640,48 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
 
     // Verify that the service was called with the invalid userTaskKey
     verify(userTaskServices).getByKey(VALID_USER_TASK_KEY);
+  }
+
+  private static Stream<Arguments> provideAdvancedSearchParameters() {
+    final var streamBuilder = Stream.<Arguments>builder();
+
+    integerOperationTestCases(
+        streamBuilder,
+        "priority",
+        ops -> new UserTaskFilter.Builder().priorityOperations(ops).build());
+
+    return streamBuilder.build();
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideAdvancedSearchParameters")
+  void shouldSearchVariablesWithAdvancedFilter(
+      final String filterString, final UserTaskFilter filter) {
+    // given
+    final var request =
+        """
+            {
+                "filter": %s
+            }"""
+            .formatted(filterString);
+    System.out.println("request = " + request);
+    when(userTaskServices.search(any(UserTaskQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
+
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE);
+
+    verify(userTaskServices).search(new UserTaskQuery.Builder().filter(filter).build());
   }
 }

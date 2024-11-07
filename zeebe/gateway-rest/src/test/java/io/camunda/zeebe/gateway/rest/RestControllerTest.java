@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest;
 
 import io.camunda.search.filter.Operation;
+import io.camunda.search.filter.Operator;
 import io.camunda.security.auth.Authentication;
 import java.util.List;
 import java.util.function.Function;
@@ -112,7 +113,7 @@ public abstract class RestControllerTest {
             .map(
                 op ->
                     switch (op.operator()) {
-                      case EQUALS -> filterTemplate.formatted("$eq", op.value());
+                      case EQUALS -> "%s".formatted(op.value());
                       case NOT_EQUALS -> filterTemplate.formatted("$neq", op.value());
                       case EXISTS -> filterTemplate.formatted("$exists", true);
                       case NOT_EXISTS -> filterTemplate.formatted("$exists", false);
@@ -124,6 +125,10 @@ public abstract class RestControllerTest {
                       case LIKE -> filterTemplate.formatted("$like", op.value());
                     })
             .collect(Collectors.joining(","));
+    if (operations.size() == 1 && operations.getFirst().operator().equals(Operator.EQUALS)) {
+      // implicit case
+      return "{\"%s\": %s}".formatted(filterKey, filterValue);
+    }
     return "{\"%s\": {%s}}".formatted(filterKey, filterValue);
   }
 }

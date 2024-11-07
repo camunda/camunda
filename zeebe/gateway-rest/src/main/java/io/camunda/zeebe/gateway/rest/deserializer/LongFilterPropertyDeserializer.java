@@ -7,33 +7,25 @@
  */
 package io.camunda.zeebe.gateway.rest.deserializer;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.NumericNode;
 import io.camunda.zeebe.gateway.protocol.rest.AdvancedLongFilter;
 import io.camunda.zeebe.gateway.protocol.rest.LongFilterProperty;
-import java.io.IOException;
 
-public class LongFilterPropertyDeserializer extends FilterDeserializer<LongFilterProperty> {
+public class LongFilterPropertyDeserializer extends FilterDeserializer<LongFilterProperty, Long> {
 
-  public LongFilterPropertyDeserializer(final ObjectMapper objectMapper) {
-    super(objectMapper);
+  @Override
+  protected Class<? extends LongFilterProperty> getFinalType() {
+    return AdvancedLongFilter.class;
   }
 
   @Override
-  public LongFilterProperty deserialize(
-      final JsonParser parser, final DeserializationContext context) throws IOException {
+  protected Class<Long> getImplicitValueType() {
+    return Long.class;
+  }
 
-    final var treeNode = parser.getCodec().readTree(parser);
+  @Override
+  protected LongFilterProperty createFromImplicitValue(final Long value) {
     final var filter = new AdvancedLongFilter();
-
-    if (treeNode instanceof NumericNode) {
-      filter.set$Eq(((NumericNode) treeNode).longValue());
-      return filter;
-    }
-
-    // this part can be deserialized automatically
-    return deserialize(treeNode, AdvancedLongFilter.class);
+    filter.set$Eq(value);
+    return filter;
   }
 }

@@ -7,21 +7,45 @@
  */
 package io.camunda.zeebe.gateway.rest.deserializer;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.core.TreeNode;
+import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ValueNode;
 import java.io.IOException;
 
-public abstract class FilterDeserializer<T> extends JsonDeserializer<T> {
+/**
+ * @param <T> Base type to register deserializer for.
+ * @param <E> Explicit value type.
+ */
+public abstract class FilterDeserializer<T, E> extends JsonDeserializer<T> {
 
-  private final ObjectMapper objectMapper;
-
-  public FilterDeserializer(final ObjectMapper objectMapper) {
-    this.objectMapper = objectMapper;
+  protected <C> C deserialize(final ObjectCodec codec, final TreeNode node, final Class<C> clazz)
+      throws IOException {
+    return codec.readValue(node.traverse(codec), clazz);
   }
 
-  protected <S extends T> S deserialize(final TreeNode node, final Class<S> clazz)
+  /** Actual type that the deserializer finally returns. */
+  protected abstract Class<? extends T> getFinalType();
+
+  /** Implicit filter type. */
+  protected abstract Class<E> getImplicitValueType();
+
+  /** Create filter from implicit value. */
+  protected abstract T createFromImplicitValue(E value);
+
+  @Override
+  public T deserialize(final JsonParser parser, final DeserializationContext context)
       throws IOException {
-    return objectMapper.readValue(node.traverse(objectMapper), clazz);
+
+    final var codec = parser.getCodec();
+    final var treeNode = codec.readTree(parser);
+
+    if (treeNode instanceof ValueNode) {
+      return createFromImplicitValue(deserialize(codec, treeNode, getImplicitValueType()));
+    }
+
+    return deserialize(codec, treeNode, getFinalType());
   }
 }

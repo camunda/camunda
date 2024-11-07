@@ -43,7 +43,7 @@ public class ProcessInstanceFilterImpl
   public ProcessInstanceFilter processInstanceKey(
       final LongFilterProperty processInstanceKeyFilter) {
     filter.setProcessInstanceKey(processInstanceKeyFilter);
-    return null;
+    return this;
   }
 
   @Override

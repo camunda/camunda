@@ -7,33 +7,26 @@
  */
 package io.camunda.zeebe.gateway.rest.deserializer;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.IntNode;
 import io.camunda.zeebe.gateway.protocol.rest.AdvancedIntegerFilter;
 import io.camunda.zeebe.gateway.protocol.rest.IntegerFilterProperty;
-import java.io.IOException;
 
-public class IntegerFilterPropertyDeserializer extends FilterDeserializer<IntegerFilterProperty> {
+public class IntegerFilterPropertyDeserializer
+    extends FilterDeserializer<IntegerFilterProperty, Integer> {
 
-  public IntegerFilterPropertyDeserializer(final ObjectMapper objectMapper) {
-    super(objectMapper);
+  @Override
+  protected Class<? extends IntegerFilterProperty> getFinalType() {
+    return AdvancedIntegerFilter.class;
   }
 
   @Override
-  public IntegerFilterProperty deserialize(
-      final JsonParser parser, final DeserializationContext context) throws IOException {
+  protected Class<Integer> getImplicitValueType() {
+    return Integer.class;
+  }
 
-    final var treeNode = parser.getCodec().readTree(parser);
+  @Override
+  protected IntegerFilterProperty createFromImplicitValue(final Integer value) {
     final var filter = new AdvancedIntegerFilter();
-
-    if (treeNode instanceof IntNode) {
-      filter.set$Eq(((IntNode) treeNode).intValue());
-      return filter;
-    }
-
-    // this part can be deserialized automatically
-    return deserialize(treeNode, AdvancedIntegerFilter.class);
+    filter.set$Eq(value);
+    return filter;
   }
 }

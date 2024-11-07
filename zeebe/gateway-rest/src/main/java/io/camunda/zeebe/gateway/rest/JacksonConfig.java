@@ -24,23 +24,20 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 public class JacksonConfig {
 
   @Bean("gatewayRestObjectMapperCustomizer")
-  public Consumer<ObjectMapper> gatewayRestObjectMapperCustomizer() {
-    return objectMapper -> {
-      final var module = new SimpleModule("gateway-rest-module");
-      module.addDeserializer(
-          LongFilterProperty.class, new LongFilterPropertyDeserializer(objectMapper));
-      module.addDeserializer(
-          BasicLongFilterProperty.class, new BasicLongFilterPropertyDeserializer(objectMapper));
-      module.addDeserializer(
-          IntegerFilterProperty.class, new IntegerFilterPropertyDeserializer(objectMapper));
-      objectMapper.registerModule(module);
-    };
+  public Consumer<Jackson2ObjectMapperBuilder> gatewayRestObjectMapperCustomizer() {
+    final var module = new SimpleModule("gateway-rest-module");
+    module.addDeserializer(LongFilterProperty.class, new LongFilterPropertyDeserializer());
+    module.addDeserializer(
+        BasicLongFilterProperty.class, new BasicLongFilterPropertyDeserializer());
+    module.addDeserializer(IntegerFilterProperty.class, new IntegerFilterPropertyDeserializer());
+
+    return builder -> builder.modules(modules -> modules.add(module));
   }
 
   @Bean("gatewayRestObjectMapper")
   public ObjectMapper objectMapper() {
-    final ObjectMapper objectMapper = Jackson2ObjectMapperBuilder.json().build();
-    gatewayRestObjectMapperCustomizer().accept(objectMapper);
-    return objectMapper;
+    final var builder = Jackson2ObjectMapperBuilder.json();
+    gatewayRestObjectMapperCustomizer().accept(builder);
+    return builder.build();
   }
 }
