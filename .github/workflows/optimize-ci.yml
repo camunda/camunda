@@ -67,16 +67,13 @@ jobs:
       - name: Setup Maven
         uses: ./.github/actions/setup-build
         with:
+          harbor: true
           maven-cache-key-modifier: optimize-tests
           maven-version: 3.8.6
           time-zone: Europe/Berlin
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - name: Login to Harbor registry
-        uses: ./.github/actions/login-registry
-        with:
-          secrets: ${{ toJSON(secrets) }}
       - name: "Read Java / Version Info"
         id: "pom-info"
         uses: YunaBraska/java-info-action@main
@@ -133,16 +130,13 @@ jobs:
       - name: Setup Maven
         uses: ./.github/actions/setup-build
         with:
+          harbor: true
           maven-cache-key-modifier: optimize-tests
           maven-version: 3.8.6
           time-zone: Europe/Berlin
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - name: Login to Harbor registry
-        uses: ./.github/actions/login-registry
-        with:
-          secrets: ${{ toJSON(secrets) }}
       - name: "Read Java / Version Info"
         id: "pom-info"
         uses: YunaBraska/java-info-action@main
@@ -215,17 +209,13 @@ jobs:
       - name: Setup Maven
         uses: ./.github/actions/setup-build
         with:
+          harbor: true
           maven-cache-key-modifier: optimize-tests
           maven-version: 3.8.6
           time-zone: Europe/Berlin
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-
-      - name: Login to Harbor registry
-        uses: ./.github/actions/login-registry
-        with:
-          secrets: ${{ toJSON(secrets) }}
 
       - name: "Read Java / Version Info"
         id: "pom-info"
@@ -299,17 +289,13 @@ jobs:
       - name: Setup Maven
         uses: ./.github/actions/setup-build
         with:
+          harbor: true
           maven-cache-key-modifier: optimize-tests
           maven-version: 3.8.6
           time-zone: Europe/Berlin
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-
-      - name: Login to Harbor registry
-        uses: ./.github/actions/login-registry
-        with:
-          secrets: ${{ toJSON(secrets) }}
 
       - name: "Read Java / Version Info"
         id: "pom-info"

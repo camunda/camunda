@@ -40,15 +40,12 @@ jobs:
           echo "IS_MAIN=${{ steps.define-values.outputs.is_main_branch }}"
           echo "REVISION=${{ steps.define-values.outputs.git_commit_hash }}"
         } >> "$GITHUB_ENV"
-    - name: Login to Harbor registry
-      uses: ./.github/actions/login-registry
-      with:
-        secrets: ${{ toJSON(secrets) }}
     # Generating a production build
     - name: Setup Maven
       uses: ./.github/actions/setup-build
       with:
         dockerhub: true
+        harbor: true
         maven-cache-key-modifier: optimize
         maven-version: 3.8.6
         time-zone: Europe/Berlin
