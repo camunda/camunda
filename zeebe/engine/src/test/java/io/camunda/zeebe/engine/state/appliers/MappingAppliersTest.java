@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
@@ -102,5 +103,18 @@ public class MappingAppliersTest {
     assertThat(tenantState.getEntitiesByType(tenantKey)).isEmpty();
     assertThat(authorizationState.getOwnerType(mappingKey)).isEmpty();
     assertThat(groupState.getEntitiesByType(groupKey)).isEmpty();
+  }
+
+  @Test
+  public void shouldThrowExceptionIfMappingIsNotFound() {
+    // given
+    final long mappingKey = 1L;
+    final var mappingRecord = new MappingRecord().setMappingKey(mappingKey);
+
+    // when + then
+    assertThatThrownBy(() -> mappingDeletedApplier.applyState(mappingKey, mappingRecord))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining(
+            "Expected to delete mapping with key '1', but a mapping with this key does not exist.");
   }
 }

@@ -37,17 +37,21 @@ public class MappingDeletedApplier implements TypedEventApplier<MappingIntent, M
   @Override
   public void applyState(final long key, final MappingRecord value) {
     // retrieve mapping from the state
-    final var mapping = mappingState.get(key);
-    if (!mapping.isPresent()) {
-      return;
+    final var mappingKey = value.getMappingKey();
+    final var mapping = mappingState.get(mappingKey);
+    if (mapping.isEmpty()) {
+      throw new IllegalStateException(
+          String.format(
+              "Expected to delete mapping with key '%s', but a mapping with this key does not exist.",
+              value.getMappingKey()));
     }
     final var persistedMapping = mapping.get();
     removeMappingFromRoleState(persistedMapping);
     removeMappingFromGroupState(persistedMapping);
     removeMappingFromTenantState(persistedMapping);
     // remove mapping from authorization state
-    authorizationState.deleteOwnerTypeByKey(key);
-    mappingState.delete(key);
+    authorizationState.deleteOwnerTypeByKey(mappingKey);
+    mappingState.delete(mappingKey);
   }
 
   private void removeMappingFromRoleState(final PersistedMapping mapping) {
