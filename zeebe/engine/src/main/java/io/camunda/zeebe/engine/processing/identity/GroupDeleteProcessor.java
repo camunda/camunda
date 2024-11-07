@@ -58,7 +58,7 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
     final var persistedRecord = groupState.get(groupKey);
     if (persistedRecord.isEmpty()) {
       final var errorMessage =
-          "Expected to delete group with key '%s', but a group with this key doesn't exist."
+          "Expected to delete group with key '%s', but a group with this key does not exist."
               .formatted(groupKey);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);

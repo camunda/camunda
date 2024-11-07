@@ -279,7 +279,7 @@ public class GroupTest {
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to delete group with key '%s', but a group with this key doesn't exist."
+            "Expected to delete group with key '%s', but a group with this key does not exist."
                 .formatted(notPresentGroupKey));
   }
 }
