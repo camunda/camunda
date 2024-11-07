@@ -100,7 +100,7 @@ final class RecordIndexRouterTest {
     final var valueType = ValueType.PROCESS;
 
     // when
-    final var prefix = router.indexPrefixForValueType(valueType);
+    final var prefix = router.indexPrefixForValueType(valueType, VersionUtil.getVersionLowerCase());
 
     // then
     assertThat(prefix).isEqualTo("foo-bar_process_" + VersionUtil.getVersionLowerCase());
@@ -113,7 +113,7 @@ final class RecordIndexRouterTest {
     final var valueType = ValueType.PROCESS_MESSAGE_SUBSCRIPTION;
 
     // when
-    final var prefix = router.indexPrefixForValueType(valueType);
+    final var prefix = router.indexPrefixForValueType(valueType, VersionUtil.getVersionLowerCase());
 
     // then
     assertThat(prefix)

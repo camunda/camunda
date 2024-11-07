@@ -60,11 +60,6 @@ final class RecordIndexRouter {
   }
 
   /** Returns the index for this value type, minus the current date. */
-  String indexPrefixForValueType(final ValueType valueType) {
-    final String version = VersionUtil.getVersionLowerCase();
-    return indexPrefixForValueType(valueType, version);
-  }
-
   String indexPrefixForValueType(final ValueType valueType, final String version) {
     return config.prefix
         + INDEX_DELIMITER
@@ -79,7 +74,9 @@ final class RecordIndexRouter {
    * all indices regardless of their date.
    */
   String searchPatternForValueType(final ValueType valueType) {
-    return indexPrefixForValueType(valueType) + INDEX_DELIMITER + "*";
+    return indexPrefixForValueType(valueType, VersionUtil.getVersionLowerCase())
+        + INDEX_DELIMITER
+        + "*";
   }
 
   /**

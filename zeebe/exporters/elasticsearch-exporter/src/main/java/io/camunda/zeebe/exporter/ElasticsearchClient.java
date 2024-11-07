@@ -26,6 +26,7 @@ import io.camunda.zeebe.exporter.dto.PutIndexTemplateResponse;
 import io.camunda.zeebe.exporter.dto.Template;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer.Sample;
 import java.io.IOException;
@@ -163,7 +164,8 @@ class ElasticsearchClient implements AutoCloseable {
    * @return true if request was acknowledged
    */
   public boolean putIndexTemplate(final ValueType valueType) {
-    final String templateName = indexRouter.indexPrefixForValueType(valueType);
+    final String templateName =
+        indexRouter.indexPrefixForValueType(valueType, VersionUtil.getVersionLowerCase());
     final Template template =
         templateReader.readIndexTemplate(
             valueType,

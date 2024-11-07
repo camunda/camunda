@@ -187,7 +187,8 @@ final class OpensearchExporterIT {
 
     // given
     final var record = factory.generateRecord(valueType);
-    final var expectedIndexTemplateName = indexRouter.indexPrefixForValueType(valueType);
+    final var expectedIndexTemplateName =
+        indexRouter.indexPrefixForValueType(valueType, VersionUtil.getVersionLowerCase());
 
     // when - export a single record to enforce installing all index templatesWrapper
     export(record);

@@ -18,6 +18,7 @@ import io.camunda.zeebe.exporter.dto.Template;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
@@ -101,7 +102,8 @@ final class ElasticsearchClientIT {
   void shouldPutIndexTemplate() {
     // given
     final var valueType = ValueType.VARIABLE;
-    final String indexTemplateName = indexRouter.indexPrefixForValueType(valueType);
+    final String indexTemplateName =
+        indexRouter.indexPrefixForValueType(valueType, VersionUtil.getVersionLowerCase());
     final String indexTemplateAlias = indexRouter.aliasNameForValueType(valueType);
     final Template expectedTemplate =
         templateReader.readIndexTemplate(
