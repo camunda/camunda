@@ -69,11 +69,9 @@ public class UpgradeElasticsearchSchemaIT
         expectedTemplates.size(),
         expectedTemplates.keySet());
     final Map<String, TemplateMapping> newTemplates = newDatabaseSchemaClient.getTemplates();
-    LOG.info(
-        "Actual templates size: {}, names: {}",
-        newTemplates.size(),
-        newTemplates.keySet());
-    assertThat(newTemplates.keySet()).containsExactlyInAnyOrderElementsOf(expectedTemplates.keySet());
+    LOG.info("Actual templates size: {}, names: {}", newTemplates.size(), newTemplates.keySet());
+    assertThat(newTemplates.keySet())
+        .containsExactlyInAnyOrderElementsOf(expectedTemplates.keySet());
   }
 
   @Override

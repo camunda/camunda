@@ -14,13 +14,11 @@ import co.elastic.clients.elasticsearch._types.analysis.TokenChar;
 import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
 import co.elastic.clients.elasticsearch.indices.DeleteIndexTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.GetAliasRequest;
-import co.elastic.clients.elasticsearch.indices.GetIndexTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.GetMappingRequest;
 import co.elastic.clients.elasticsearch.indices.GetTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.RefreshRequest;
 import co.elastic.clients.elasticsearch.indices.TemplateMapping;
 import co.elastic.clients.elasticsearch.indices.get_alias.IndexAliases;
-import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplateItem;
 import co.elastic.clients.elasticsearch.indices.get_mapping.IndexMappingRecord;
 import co.elastic.clients.elasticsearch.snapshot.CreateRepositoryRequest;
 import co.elastic.clients.elasticsearch.snapshot.DeleteRepositoryRequest;
@@ -239,8 +237,8 @@ public class ElasticsearchSchemaTestClient extends AbstractDatabaseSchemaTestCli
   public Map<String, TemplateMapping> getTemplates() throws IOException {
     return client
         .indices()
-        .getTemplate(GetTemplateRequest.of(b -> b.name(
-            List.of(DEFAULT_OPTIMIZE_INDEX_PATTERN.split(",")))))
+        .getTemplate(
+            GetTemplateRequest.of(b -> b.name(List.of(DEFAULT_OPTIMIZE_INDEX_PATTERN.split(",")))))
         .result();
   }
 }
