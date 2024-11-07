@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class FlowNodeInstanceProcessInstanceHandler
+public class FlowNodeInstanceFromProcessInstanceHandler
     implements ExportHandler<FlowNodeInstanceEntity, ProcessInstanceRecordValue> {
 
   private static final Set<Intent> AI_FINISH_STATES = Set.of(ELEMENT_COMPLETED, ELEMENT_TERMINATED);
@@ -39,7 +39,7 @@ public class FlowNodeInstanceProcessInstanceHandler
 
   private final String indexName;
 
-  public FlowNodeInstanceProcessInstanceHandler(final String indexName) {
+  public FlowNodeInstanceFromProcessInstanceHandler(final String indexName) {
     this.indexName = indexName;
   }
 

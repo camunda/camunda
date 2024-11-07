@@ -24,12 +24,12 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-public class FlowNodeInstanceIncidentHandlerTest {
+public class FlowNodeInstanceFromIncidentHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-flownode-instance";
-  private final FlowNodeInstanceIncidentHandler underTest =
-      new FlowNodeInstanceIncidentHandler(indexName);
+  private final FlowNodeInstanceFromIncidentHandler underTest =
+      new FlowNodeInstanceFromIncidentHandler(indexName);
 
   @Test
   public void testGetHandledValueType() {

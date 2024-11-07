@@ -20,12 +20,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class FlowNodeInstanceIncidentHandler
+public class FlowNodeInstanceFromIncidentHandler
     implements ExportHandler<FlowNodeInstanceEntity, IncidentRecordValue> {
 
   private final String indexName;
 
-  public FlowNodeInstanceIncidentHandler(final String indexName) {
+  public FlowNodeInstanceFromIncidentHandler(final String indexName) {
     this.indexName = indexName;
   }
 
