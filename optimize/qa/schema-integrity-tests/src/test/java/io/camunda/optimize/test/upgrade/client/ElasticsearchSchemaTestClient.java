@@ -13,6 +13,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.analysis.TokenChar;
 import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
 import co.elastic.clients.elasticsearch.indices.DeleteIndexTemplateRequest;
+import co.elastic.clients.elasticsearch.indices.DeleteTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.GetAliasRequest;
 import co.elastic.clients.elasticsearch.indices.GetMappingRequest;
 import co.elastic.clients.elasticsearch.indices.GetTemplateRequest;
@@ -78,7 +79,7 @@ public class ElasticsearchSchemaTestClient extends AbstractDatabaseSchemaTestCli
   public void cleanIndicesAndTemplates() throws IOException {
     LOG.info("Wiping all indices & templates from {} Elasticsearch...", name);
     client.indices().delete(DeleteIndexRequest.of(b -> b.index("_all")));
-    client.indices().deleteIndexTemplate(DeleteIndexTemplateRequest.of(b -> b.name("*")));
+    client.indices().deleteTemplate(DeleteTemplateRequest.of(b -> b.name("*")));
     LOG.info("Successfully wiped all indices & templates from {} Elasticsearch!", name);
   }
 
