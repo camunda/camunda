@@ -28,20 +28,42 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch }}
-      - uses: google-github-actions/auth@v2
-        id: auth
+      - name: Authenticate for zeebe image registry
+        uses: google-github-actions/auth@v2
+        id: auth-zeebe
         with:
           token_format: 'access_token'
           workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
           service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
+      - name: Authenticate for saas image registry
+        id: auth-saas
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/618877442292/locations/global/workloadIdentityPools/github/providers/camunda'
+          service_account: 'github-actions@camunda-saas-registry.iam.gserviceaccount.com'
       - name: Setup BuildKit
         uses: docker/setup-buildx-action@v3
-      - name: Login to GCR
+      - name: Login to SaaS image registry
+        uses: docker/login-action@v3
+        with:
+          registry: europe-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth-saas.outputs.access_token }}
+      - name: Login to Zeebe image registry
         uses: docker/login-action@v3
         with:
           registry: gcr.io
           username: oauth2accesstoken
+<<<<<<< HEAD
           password: ${{ steps.auth.outputs.access_token }}
+=======
+          password: ${{ steps.auth-zeebe.outputs.access_token }}
+      - uses: ./.github/actions/setup-zeebe
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+>>>>>>> 8aa65ec5 (ci: push testbench images to SaaS registry)
       - id: image-tag
         name: Calculate image tag
         shell: bash
@@ -62,7 +84,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe-docker
         id: build-zeebe-docker
         with:
-          repository: gcr.io/zeebe-io/zeebe
+          repository: europe-docker.pkg.dev/camunda-saas-registry/zeebe/zeebe
           version: ${{ steps.image-tag.outputs.image-tag }}
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
