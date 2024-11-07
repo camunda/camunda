@@ -21,6 +21,7 @@ import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,7 +49,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           333L,
           777L,
           "PI_1/PI_2",
-          "2024-01-01T00:00:00Z",
+          OffsetDateTime.parse("2024-01-01T00:00:00Z"),
           null,
           ProcessInstanceEntity.ProcessInstanceState.ACTIVE,
           false,
@@ -66,7 +67,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             "parentProcessInstanceKey": 333,
             "parentFlowNodeInstanceKey": 777,
             "treePath": "PI_1/PI_2",
-            "startDate": "2024-01-01T00:00:00Z",
+            "startDate": "2024-01-01T00:00:00.000Z",
             "state": "ACTIVE",
             "hasIncident": false,
             "tenantId": "tenant"
@@ -87,7 +88,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "parentProcessInstanceKey": 333,
                   "parentFlowNodeInstanceKey": 777,
                   "treePath": "PI_1/PI_2",
-                  "startDate": "2024-01-01T00:00:00Z",
+                  "startDate": "2024-01-01T00:00:00.000Z",
                   "state": "ACTIVE",
                   "hasIncident": false,
                   "tenantId": "tenant"

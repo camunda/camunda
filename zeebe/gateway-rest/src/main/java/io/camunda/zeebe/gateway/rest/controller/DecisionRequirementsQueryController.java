@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import static io.camunda.zeebe.gateway.rest.Loggers.REST_LOGGER;
+import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.service.DecisionRequirementsServices;
@@ -17,9 +17,7 @@ import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
-import jakarta.validation.ValidationException;
 import java.nio.charset.StandardCharsets;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -57,20 +55,8 @@ public class DecisionRequirementsQueryController {
               .search(query);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toDecisionRequirementsSearchQueryResponse(result));
-    } catch (final ValidationException e) {
-      final var problemDetail =
-          RestErrorMapper.createProblemDetail(
-              HttpStatus.BAD_REQUEST,
-              e.getMessage(),
-              "Validation failed for Decision Requirement Search Query");
-      return RestErrorMapper.mapProblemToResponse(problemDetail);
     } catch (final Exception e) {
-      final var problemDetail =
-          RestErrorMapper.createProblemDetail(
-              HttpStatus.INTERNAL_SERVER_ERROR,
-              e.getMessage(),
-              "Failed to execute Decision Requirement Search Query");
-      return RestErrorMapper.mapProblemToResponse(problemDetail);
+      return mapErrorToResponse(e);
     }
   }
 
@@ -84,11 +70,8 @@ public class DecisionRequirementsQueryController {
           .body(
               SearchQueryResponseMapper.toDecisionRequirements(
                   decisionRequirementsServices.getByKey(decisionRequirementsKey)));
-    } catch (final Exception exc) {
-      REST_LOGGER.warn("An exception occurred in get Form by key.", exc);
-      final var problemDetail =
-          RestErrorMapper.mapErrorToProblem(exc, RestErrorMapper.DEFAULT_REJECTION_MAPPER);
-      return RestErrorMapper.mapProblemToResponse(problemDetail);
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
     }
   }
 
@@ -101,11 +84,8 @@ public class DecisionRequirementsQueryController {
       return ResponseEntity.ok()
           .contentType(new MediaType(MediaType.TEXT_XML, StandardCharsets.UTF_8))
           .body(decisionRequirementsServices.getDecisionRequirementsXml(decisionRequirementsKey));
-    } catch (final Exception exc) {
-      REST_LOGGER.warn("An exception occurred in getDecisionRequirementsXml.", exc);
-      final var problemDetail =
-          RestErrorMapper.mapErrorToProblem(exc, RestErrorMapper.DEFAULT_REJECTION_MAPPER);
-      return RestErrorMapper.mapProblemToResponse(problemDetail);
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
     }
   }
 }

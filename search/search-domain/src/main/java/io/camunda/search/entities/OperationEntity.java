@@ -8,6 +8,7 @@
 package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.time.OffsetDateTime;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record OperationEntity(
@@ -16,4 +17,4 @@ public record OperationEntity(
     String type,
     String state,
     String errorMessage,
-    String completedDate) {}
+    OffsetDateTime completedDate) {}

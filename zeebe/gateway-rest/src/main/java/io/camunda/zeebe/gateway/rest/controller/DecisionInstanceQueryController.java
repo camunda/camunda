@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import static io.camunda.zeebe.gateway.rest.Loggers.REST_LOGGER;
-
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.service.DecisionInstanceServices;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceGetQueryResponse;
@@ -52,7 +50,6 @@ public class DecisionInstanceQueryController {
           SearchQueryResponseMapper.toDecisionInstanceGetQueryResponse(
               decisionInstanceServices.getByKey(decisionInstanceKey)));
     } catch (final Exception e) {
-      REST_LOGGER.debug("An exception occurred in getDecisionInstance.", e);
       return RestErrorMapper.mapErrorToResponse(e);
     }
   }
@@ -64,7 +61,6 @@ public class DecisionInstanceQueryController {
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toDecisionInstanceSearchQueryResponse(decisionInstances));
     } catch (final Exception e) {
-      REST_LOGGER.debug("An exception occurred in searchDecisionInstances.", e);
       return RestErrorMapper.mapErrorToResponse(e);
     }
   }

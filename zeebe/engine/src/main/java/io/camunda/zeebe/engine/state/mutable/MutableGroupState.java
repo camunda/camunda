@@ -17,4 +17,8 @@ public interface MutableGroupState extends GroupState {
   void update(final long groupKey, final GroupRecord group);
 
   void addEntity(final long groupKey, final GroupRecord group);
+
+  void removeEntity(final long groupKey, final long entityKey);
+
+  void delete(final long groupKey);
 }

@@ -19,7 +19,7 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.time.Duration;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -196,7 +196,7 @@ public class CreateDocumentTest {
 
     // then
     assertThat(documentReference.getMetadata().getExpiresAt())
-        .isCloseTo(ZonedDateTime.now().plus(timeToLive), within(1, ChronoUnit.SECONDS));
+        .isCloseTo(OffsetDateTime.now().plus(timeToLive), within(1, ChronoUnit.SECONDS));
   }
 
   @Test

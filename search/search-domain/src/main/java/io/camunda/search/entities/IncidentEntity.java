@@ -8,6 +8,7 @@
 package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.time.OffsetDateTime;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record IncidentEntity(
@@ -19,7 +20,7 @@ public record IncidentEntity(
     String errorMessage,
     String flowNodeId,
     Long flowNodeInstanceKey,
-    String creationTime,
+    OffsetDateTime creationTime,
     IncidentState state,
     Long jobKey,
     String treePath,

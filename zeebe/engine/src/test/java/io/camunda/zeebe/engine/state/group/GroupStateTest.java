@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -155,5 +156,53 @@ public class GroupStateTest {
     assertThat(entities)
         .containsEntry(EntityType.USER, List.of(userKey))
         .containsEntry(EntityType.MAPPING, List.of(mappingKey));
+  }
+
+  @Test
+  void shouldRemoveEntity() {
+    // given
+    final var groupKey = 1L;
+    final var groupName = "group";
+    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
+    groupState.create(groupKey, groupRecord);
+    final var userKey = 2L;
+    groupRecord.setEntityKey(userKey).setEntityType(EntityType.USER);
+    groupState.addEntity(groupKey, groupRecord);
+    final var mappingKey = 3L;
+    groupRecord.setEntityKey(mappingKey).setEntityType(EntityType.MAPPING);
+    groupState.addEntity(groupKey, groupRecord);
+
+    // when
+    groupState.removeEntity(groupKey, userKey);
+
+    // then
+    final var entityType = groupState.getEntitiesByType(groupKey);
+    assertThat(entityType).containsOnly(Map.entry(EntityType.MAPPING, List.of(mappingKey)));
+  }
+
+  @Test
+  void shouldDeleteGroup() {
+    // given
+    final var groupKey = 1L;
+    final var groupName = "group";
+    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
+    groupState.create(groupKey, groupRecord);
+    groupRecord.setEntityKey(2L).setEntityType(EntityType.USER);
+    groupState.addEntity(groupKey, groupRecord);
+    groupRecord.setEntityKey(3L).setEntityType(EntityType.MAPPING);
+    groupState.addEntity(groupKey, groupRecord);
+
+    // when
+    groupState.delete(groupKey);
+
+    // then
+    final var group = groupState.get(groupKey);
+    assertThat(group).isEmpty();
+
+    final var groupKeyByName = groupState.getGroupKeyByName(groupName);
+    assertThat(groupKeyByName).isEmpty();
+
+    final var entitiesByGroup = groupState.getEntitiesByType(groupKey);
+    assertThat(entitiesByGroup).isEmpty();
   }
 }

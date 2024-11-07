@@ -52,22 +52,22 @@ public class RaftFlushErrorTest {
     // the priority election config should avoid this happening.
     assertThat(Integer.parseInt(leader.name())).isGreaterThan(failingNodes);
 
-    raftRule.appendEntry();
+    final var index = raftRule.appendEntry();
+    // await all nodes have processed this entry, otherwise we could set the flusher as faulty
+    // before the faulty node had time to append this entry
+    raftRule.awaitSameLogSizeOnAllNodes(index);
 
     // when
     // faulty nodes can't flush anymore
+    LOG.debug("Setting flusher to faulty");
     isFaulty.set(true);
 
     // then
     final var commitListener = raftRule.appendEntryAsync();
-    final var index = commitListener.awaitCommit(Duration.ofSeconds(5));
+    final var lastIndex = commitListener.awaitCommit(Duration.ofSeconds(5));
 
     Awaitility.await("Flush failed for all faulty nodes at least once")
-        .until(
-            () -> {
-              System.out.println(flushFailedCount.get());
-              return flushFailedCount.get() > failingNodes;
-            });
+        .until(() -> flushFailedCount.get() > failingNodes);
 
     // when
     // the faulty nodes can flush again successfully
@@ -75,7 +75,7 @@ public class RaftFlushErrorTest {
 
     // then
     // all logs eventually converge
-    raftRule.awaitSameLogSizeOnAllNodes(index);
+    raftRule.awaitSameLogSizeOnAllNodes(lastIndex);
 
     // all members are still registered
     assertThat(raftRule.getMemberLogs().size()).isEqualTo(MEMBERS);
