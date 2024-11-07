@@ -160,4 +160,22 @@ public class MappingStateTest {
     final var persistedMapping = mappingState.get(key).get();
     assertThat(persistedMapping.getTenantKeysList()).isEmpty();
   }
+
+  @Test
+  void shouldDeleteMapping() {
+    // given
+    final long key = 1L;
+    final String claimName = "foo";
+    final String claimValue = "bar";
+    final var mapping =
+        new MappingRecord().setMappingKey(key).setClaimName(claimName).setClaimValue(claimValue);
+    mappingState.create(mapping);
+
+    // when
+    mappingState.delete(key);
+
+    // then
+    assertThat(mappingState.get(key)).isEmpty();
+    assertThat(mappingState.get(claimName, claimValue)).isEmpty();
+  }
 }

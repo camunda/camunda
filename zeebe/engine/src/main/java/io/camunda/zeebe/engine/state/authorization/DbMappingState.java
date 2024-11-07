@@ -146,6 +146,16 @@ public class DbMappingState implements MutableMappingState {
   }
 
   @Override
+  public void delete(final long key) {
+    mappingKey.wrapLong(key);
+    final var claimKey = claimByKeyColumnFamily.get(mappingKey);
+    if (claimKey != null) {
+      claimByKeyColumnFamily.deleteExisting(mappingKey);
+      mappingColumnFamily.deleteExisting(claimKey.inner());
+    }
+  }
+
+  @Override
   public Optional<PersistedMapping> get(final long key) {
     mappingKey.wrapLong(key);
     final var fk = claimByKeyColumnFamily.get(mappingKey);

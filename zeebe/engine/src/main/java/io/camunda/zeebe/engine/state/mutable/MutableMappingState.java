@@ -25,4 +25,6 @@ public interface MutableMappingState extends MappingState {
   void removeTenant(final long mappingKey, final long tenantKey);
 
   void removeGroup(final long mappingKey, final long groupKey);
+
+  void delete(final long key);
 }
