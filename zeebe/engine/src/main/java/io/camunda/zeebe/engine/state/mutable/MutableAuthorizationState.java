@@ -24,10 +24,25 @@ public interface MutableAuthorizationState extends AuthorizationState {
    *     a groupKey
    * @param resourceType the type of resource the permissions are for (Eg. Process definition, Job)
    * @param permissionType The type of permission being granted (Eg. READ, WRITE)
-   * @param resourceIds A list of resourceIds the permissions are granted for (Eg.
-   *     bpmnProcessId:foo, *)
+   * @param resourceIds A list of resourceIds the permissions are granted for (Eg. bpmnProcessId, *)
    */
   void createOrAddPermission(
+      long ownerKey,
+      AuthorizationResourceType resourceType,
+      PermissionType permissionType,
+      List<String> resourceIds);
+
+  /**
+   * Removes the resource ids for the provided ownerKey, resourceType, permissionType. If there are
+   * no other resourceIds left for this entry, the entire entry will be deleted.
+   *
+   * @param ownerKey the key of the owner of the permissions. This could be a userKey, a roleKey or
+   *     a groupKey
+   * @param resourceType the type of resource the permissions are for (Eg. Process definition, Job)
+   * @param permissionType The type of permission being granted (Eg. READ, WRITE)
+   * @param resourceIds A list of resourceIds the permissions are granted for (Eg. bpmnProcessId, *)
+   */
+  void removePermission(
       long ownerKey,
       AuthorizationResourceType resourceType,
       PermissionType permissionType,

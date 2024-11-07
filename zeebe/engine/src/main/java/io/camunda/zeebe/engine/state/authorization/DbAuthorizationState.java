@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -112,6 +113,39 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
           authorizationKeyByResourceIdColumnFamily.insert(
               resourceIdAndOwnerKeyAndResourceTypeAndPermissionTypeCompositeKey, DbNil.INSTANCE);
         });
+  }
+
+  @Override
+  public void removePermission(
+      final long ownerKey,
+      final AuthorizationResourceType resourceType,
+      final PermissionType permissionType,
+      final List<String> resourceIds) {
+    this.ownerKey.wrapLong(ownerKey);
+    this.resourceType.wrapString(resourceType.name());
+    this.permissionType.wrapString(permissionType.name());
+
+    final var identifiers =
+        resourceIdsByOwnerKeyResourceTypeAndPermissionColumnFamily.get(
+            ownerKeyAndResourceTypeAndPermissionCompositeKey);
+
+    resourceIds.forEach(
+        resourceId -> {
+          this.resourceId.wrapString(resourceId);
+          authorizationKeyByResourceIdColumnFamily.deleteExisting(
+              resourceIdAndOwnerKeyAndResourceTypeAndPermissionTypeCompositeKey);
+        });
+
+    // Calling containsAll on a List is not performant. By using a Set we circumvent this problem.
+    final var resourceIdsSet = new HashSet<>(resourceIds);
+    if (resourceIdsSet.containsAll(identifiers.getResourceIdentifiers())) {
+      resourceIdsByOwnerKeyResourceTypeAndPermissionColumnFamily.deleteExisting(
+          ownerKeyAndResourceTypeAndPermissionCompositeKey);
+    } else {
+      identifiers.removeResourceIdentifiers(resourceIds);
+      resourceIdsByOwnerKeyResourceTypeAndPermissionColumnFamily.update(
+          ownerKeyAndResourceTypeAndPermissionCompositeKey, identifiers);
+    }
   }
 
   @Override
