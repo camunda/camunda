@@ -81,6 +81,45 @@ final class OpenSearchRepositoryIT {
         .isEqualTo("3");
   }
 
+  @Test
+  void shouldReindexDocuments() throws IOException {
+    // given
+    final var sourceIndexName = UUID.randomUUID().toString();
+    final var destIndexName = UUID.randomUUID().toString();
+    final var repository = createRepository();
+    final var documents =
+        List.of(new TestDocument("1"), new TestDocument("2"), new TestDocument("3"));
+    documents.forEach(doc -> index(sourceIndexName, doc));
+    testClient.indices().refresh(r -> r.index(sourceIndexName));
+    testClient.indices().create(r -> r.index(destIndexName));
+
+    // when - delete the first two documents
+    final var result =
+        repository.reindexDocuments(
+            sourceIndexName,
+            destIndexName,
+            "id",
+            documents.stream().limit(2).map(TestDocument::id).toList());
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+    testClient.indices().refresh(r -> r.index(destIndexName));
+    final var remaining =
+        testClient.search(r -> r.index(sourceIndexName).requestCache(false), TestDocument.class);
+    final var reindexed =
+        testClient.search(r -> r.index(destIndexName).requestCache(false), TestDocument.class);
+    assertThat(reindexed.hits().hits())
+        .as("only first two documents were reindexed")
+        .hasSize(2)
+        .map(Hit::id)
+        .containsExactlyInAnyOrder("1", "2");
+    assertThat(remaining.hits().hits())
+        .as("all documents are remaining")
+        .hasSize(3)
+        .extracting(Hit::id)
+        .containsExactlyInAnyOrder("1", "2", "3");
+  }
+
   private <T extends TDocument> void index(final String index, final T document) {
     try {
       testClient.index(b -> b.index(index).document(document).id(document.id()));

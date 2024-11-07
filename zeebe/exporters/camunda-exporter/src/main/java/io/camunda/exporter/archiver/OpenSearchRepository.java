@@ -28,6 +28,8 @@ import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch._types.query_dsl.TermsQuery;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
 import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
+import org.opensearch.client.opensearch.core.ReindexRequest;
+import org.opensearch.client.opensearch.core.reindex.Source;
 import org.slf4j.Logger;
 
 public final class OpenSearchRepository extends NoopArchiverRepository {
@@ -91,6 +93,32 @@ public final class OpenSearchRepository extends NoopArchiverRepository {
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverDelete(timer), executor)
         .thenApplyAsync(DeleteByQueryResponse::total, executor)
         .thenApplyAsync(ok -> null, executor);
+  }
+
+  @Override
+  public CompletableFuture<Void> reindexDocuments(
+      final String sourceIndexName,
+      final String destinationIndexName,
+      final String idFieldName,
+      final List<String> processInstanceKeys) {
+    final var source =
+        new Source.Builder()
+            .index(sourceIndexName)
+            .query(q -> q.terms(buildIdTermsQuery(idFieldName, processInstanceKeys)))
+            .build();
+    final var request =
+        new ReindexRequest.Builder()
+            .source(source)
+            .dest(dest -> dest.index(destinationIndexName))
+            .conflicts(Conflicts.Proceed)
+            .scroll(REINDEX_SCROLL_TIMEOUT)
+            .slices(AUTO_SLICES)
+            .build();
+
+    final var timer = Timer.start();
+    return sendRequestAsync(() -> client.reindex(request))
+        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverReindex(timer), executor)
+        .thenApplyAsync(ignored -> null, executor);
   }
 
   private TermsQuery buildIdTermsQuery(final String idFieldName, final List<String> idValues) {
