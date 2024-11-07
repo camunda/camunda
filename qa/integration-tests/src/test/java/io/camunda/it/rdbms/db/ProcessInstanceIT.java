@@ -64,7 +64,7 @@ public class ProcessInstanceIT {
     assertThat(instance.bpmnProcessId()).isEqualTo("test-process");
     assertThat(instance.processDefinitionKey()).isEqualTo(1337L);
     assertThat(instance.state()).isEqualTo(ProcessInstanceState.ACTIVE);
-    assertThat(OffsetDateTime.parse(instance.startDate()))
+    assertThat(instance.startDate())
         .isCloseTo(NOW, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
     assertThat(instance.parentProcessInstanceKey()).isEqualTo(-1L);
     assertThat(instance.parentFlowNodeInstanceKey()).isEqualTo(-1L);
@@ -111,7 +111,7 @@ public class ProcessInstanceIT {
     assertThat(instance.bpmnProcessId()).isEqualTo("test-process-unique");
     assertThat(instance.processDefinitionKey()).isEqualTo(1338L);
     assertThat(instance.state()).isEqualTo(ProcessInstanceState.ACTIVE);
-    assertThat(OffsetDateTime.parse(instance.startDate()))
+    assertThat(instance.startDate())
         .isCloseTo(NOW, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
     assertThat(instance.parentProcessInstanceKey()).isEqualTo(-1L);
     assertThat(instance.parentFlowNodeInstanceKey()).isEqualTo(-1L);

@@ -41,14 +41,6 @@ public final class RangeQueryTransformer
       builder.lte(of(value.lte()));
     }
 
-    if (value.from() != null) {
-      builder.from(value.from());
-    }
-
-    if (value.to() != null) {
-      builder.to(value.to());
-    }
-
     if (value.format() != null) {
       builder.format(value.format());
     }

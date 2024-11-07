@@ -8,6 +8,7 @@
 package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.time.OffsetDateTime;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record ProcessInstanceEntity(
@@ -20,8 +21,8 @@ public record ProcessInstanceEntity(
     Long parentProcessInstanceKey,
     Long parentFlowNodeInstanceKey,
     String treePath,
-    String startDate,
-    String endDate,
+    OffsetDateTime startDate,
+    OffsetDateTime endDate,
     ProcessInstanceState state,
     Boolean incident,
     String tenantId) {
@@ -31,8 +32,8 @@ public record ProcessInstanceEntity(
     COMPLETED,
     CANCELED;
 
-    public static ProcessInstanceState fromValue(String value) {
-      for (ProcessInstanceState state : ProcessInstanceState.values()) {
+    public static ProcessInstanceState fromValue(final String value) {
+      for (final ProcessInstanceState state : ProcessInstanceState.values()) {
         if (state.name().equals(value)) {
           return state;
         }

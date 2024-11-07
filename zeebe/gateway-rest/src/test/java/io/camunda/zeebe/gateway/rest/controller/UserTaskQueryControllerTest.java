@@ -33,6 +33,7 @@ import io.camunda.service.FormServices;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.VariableServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -66,10 +67,10 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       "candidateGroups": [],
                       "formKey": 0,
                       "elementId": "e",
-                      "creationDate": "00:00:00.000Z+00:00",
-                      "completionDate": "00:00:00.000Z+00:00",
-                      "dueDate": "00:00:00.000Z+00:00",
-                      "followUpDate": "00:00:00.000Z+00:00",
+                      "creationDate": "2020-11-11T00:00:00.000Z",
+                      "completionDate": "2020-11-11T00:00:00.000Z",
+                      "dueDate": "2020-11-11T00:00:00.000Z",
+                      "followUpDate": "2020-11-11T00:00:00.000Z",
                       "externalFormReference": "efr",
                       "processDefinitionVersion": 1,
                       "customHeaders": {},
@@ -125,10 +126,10 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       "candidateGroups": [],
                       "formKey": 0,
                       "elementId": "e",
-                      "creationDate": "00:00:00.000Z+00:00",
-                      "completionDate": "00:00:00.000Z+00:00",
-                      "dueDate": "00:00:00.000Z+00:00",
-                      "followUpDate": "00:00:00.000Z+00:00",
+                      "creationDate": "2020-11-11T00:00:00.000Z",
+                      "completionDate": "2020-11-11T00:00:00.000Z",
+                      "dueDate": "2020-11-11T00:00:00.000Z",
+                      "followUpDate": "2020-11-11T00:00:00.000Z",
                       "externalFormReference": "efr",
                       "processDefinitionVersion": 1,
                       "customHeaders": {},
@@ -158,8 +159,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       0L, // key
                       "e", // flowNodeBpmnId
                       "b", // bpmnProcessId
-                      "00:00:00.000Z+00:00", // creationTime
-                      "00:00:00.000Z+00:00", // completionTime
+                      OffsetDateTime.parse("2020-11-11T00:00:00.000Z"), // creationTime
+                      OffsetDateTime.parse("2020-11-11T00:00:00.000Z"), // completionTime
                       "a", // assignee
                       UserTaskState.CREATED, // state
                       0L, // formKey (adjusted to match expected value)
@@ -167,8 +168,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       1L, // processInstanceId
                       3L, // flowNodeInstanceId
                       "t", // tenantId
-                      "00:00:00.000Z+00:00", // dueDate
-                      "00:00:00.000Z+00:00", // followUpDate
+                      OffsetDateTime.parse("2020-11-11T00:00:00.000Z"), // dueDate
+                      OffsetDateTime.parse("2020-11-11T00:00:00.000Z"), // followUpDate
                       new ArrayList<>(), // candidateGroups
                       new ArrayList<>(), // candidateUsers
                       "efr", // externalFormReference
@@ -219,8 +220,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 0L,
                 "e",
                 "b",
-                "00:00:00.000Z+00:00",
-                "00:00:00.000Z+00:00",
+                OffsetDateTime.parse("2020-11-11T00:00:00.000Z"),
+                OffsetDateTime.parse("2020-11-11T00:00:00.000Z"),
                 "a",
                 UserTaskState.CREATED,
                 0L,
@@ -228,8 +229,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 1L,
                 3L,
                 "t",
-                "00:00:00.000Z+00:00",
-                "00:00:00.000Z+00:00",
+                OffsetDateTime.parse("2020-11-11T00:00:00.000Z"),
+                OffsetDateTime.parse("2020-11-11T00:00:00.000Z"),
                 List.of(),
                 List.of(),
                 "efr",
@@ -248,8 +249,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 0L,
                 1L,
                 2L,
-                "00:00:00.000Z+00:00",
-                "00:00:00.000Z+00:00",
+                OffsetDateTime.parse("2020-11-11T00:00:00.000Z"),
+                OffsetDateTime.parse("2020-11-11T00:00:00.000Z"),
                 "a",
                 "1/2/3",
                 FlowNodeType.TASK,

@@ -16,7 +16,7 @@
 package io.camunda.zeebe.client.api.response;
 
 import io.camunda.zeebe.client.api.ExperimentalApi;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 @ExperimentalApi("https://github.com/camunda/issues/issues/841")
 public interface DocumentLinkResponse {
@@ -29,5 +29,5 @@ public interface DocumentLinkResponse {
   /**
    * @return the expiration date of the document link
    */
-  ZonedDateTime getExpiresAt();
+  OffsetDateTime getExpiresAt();
 }

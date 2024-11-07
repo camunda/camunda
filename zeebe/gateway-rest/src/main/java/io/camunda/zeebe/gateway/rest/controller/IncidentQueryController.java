@@ -21,7 +21,6 @@ import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import jakarta.validation.ValidationException;
-import java.nio.charset.StandardCharsets;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -58,7 +57,6 @@ public class IncidentQueryController {
       @PathVariable("incidentKey") final Long incidentKey) {
     try {
       return ResponseEntity.ok()
-          .contentType(new MediaType(MediaType.APPLICATION_JSON, StandardCharsets.UTF_8))
           .body(SearchQueryResponseMapper.toIncident(incidentServices.getByKey(incidentKey)));
     } catch (final NotFoundException nfe) {
       final var problemDetail =
