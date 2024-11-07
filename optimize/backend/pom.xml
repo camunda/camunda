@@ -102,12 +102,12 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol</artifactId>
-      <version>${zeebe.version}</version>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-client-java</artifactId>
-      <version>${zeebe.version}</version>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
 
@@ -157,7 +157,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>identity-spring-boot-starter</artifactId>
-      <version>${identity.version}</version>
+      <version>${project.version}</version>
       <exclusions>
         <exclusion>
           <groupId>org.apache.logging.log4j</groupId>
