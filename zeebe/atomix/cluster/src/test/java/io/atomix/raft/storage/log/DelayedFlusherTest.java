@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.utils.concurrent.Scheduled;
 import io.atomix.utils.concurrent.Scheduler;
+import io.camunda.zeebe.journal.CheckedJournalException;
 import io.camunda.zeebe.journal.Journal;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -32,7 +33,7 @@ final class DelayedFlusherTest {
   }
 
   @Test
-  void shouldDelayFlushByInterval() {
+  void shouldDelayFlushByInterval() throws CheckedJournalException {
     // given
     final var journal = Mockito.mock(Journal.class);
     Mockito.when(journal.isOpen()).thenReturn(true);
@@ -51,7 +52,7 @@ final class DelayedFlusherTest {
   }
 
   @Test
-  void shouldFlushWhenScheduledTaskIsRun() {
+  void shouldFlushWhenScheduledTaskIsRun() throws CheckedJournalException {
     // given
     final var journal = Mockito.mock(Journal.class);
     Mockito.when(journal.isOpen()).thenReturn(true);
@@ -99,7 +100,7 @@ final class DelayedFlusherTest {
   }
 
   @Test
-  void shouldNotScheduleFlushWhenClosed() {
+  void shouldNotScheduleFlushWhenClosed() throws CheckedJournalException {
     // given
     final var journal = Mockito.mock(Journal.class);
     Mockito.when(journal.isOpen()).thenReturn(true);
@@ -113,7 +114,7 @@ final class DelayedFlusherTest {
   }
 
   @Test
-  void shouldRescheduleOnFlushError() {
+  void shouldRescheduleOnFlushError() throws CheckedJournalException {
     // given
     final var journal = Mockito.mock(Journal.class);
     Mockito.doThrow(new UncheckedIOException(new IOException("Cannot allocate memory")))
@@ -131,7 +132,7 @@ final class DelayedFlusherTest {
   }
 
   @Test
-  void shouldNotRescheduleOnFlushErrorIfClosed() {
+  void shouldNotRescheduleOnFlushErrorIfClosed() throws CheckedJournalException {
     // given
     final var journal = Mockito.mock(Journal.class);
     Mockito.doThrow(new UncheckedIOException(new IOException("Cannot allocate memory")))
