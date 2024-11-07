@@ -49,7 +49,13 @@ public class UpdateGroupMultiPartitionTest {
             RecordingExporter.records()
                 .withPartitionId(1)
                 .limitByCount(
-                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 2))
+                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 2)
+                .filter(
+                    record ->
+                        record.getValueType() == ValueType.GROUP
+                            || (record.getValueType() == ValueType.COMMAND_DISTRIBUTION
+                                && ((CommandDistributionRecordValue) record.getValue()).getIntent()
+                                    == GroupIntent.UPDATE)))
         .extracting(
             io.camunda.zeebe.protocol.record.Record::getIntent,
             io.camunda.zeebe.protocol.record.Record::getRecordType,
