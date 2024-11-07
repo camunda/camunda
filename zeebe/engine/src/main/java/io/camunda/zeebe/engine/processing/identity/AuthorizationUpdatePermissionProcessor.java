@@ -12,7 +12,6 @@ import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBeha
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -28,7 +27,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
-public final class AuthorizationAddPermissionProcessor
+public final class AuthorizationUpdatePermissionProcessor
     implements DistributedTypedRecordProcessor<AuthorizationRecord> {
 
   private final KeyGenerator keyGenerator;
@@ -39,7 +38,7 @@ public final class AuthorizationAddPermissionProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final AuthorizationCheckBehavior authCheckBehavior;
 
-  public AuthorizationAddPermissionProcessor(
+  public AuthorizationUpdatePermissionProcessor(
       final Writers writers,
       final KeyGenerator keyGenerator,
       final ProcessingState processingState,
@@ -77,19 +76,20 @@ public final class AuthorizationAddPermissionProcessor
     authorizationRecord.setOwnerType(ownerType);
 
     final long key = keyGenerator.nextKey();
-    stateWriter.appendFollowUpEvent(key, AuthorizationIntent.PERMISSION_ADDED, authorizationRecord);
+    stateWriter.appendFollowUpEvent(
+        key, AuthorizationIntent.PERMISSION_UPDATED, authorizationRecord);
     distributionBehavior
         .withKey(key)
         .inQueue(DistributionQueue.IDENTITY.getQueueId())
         .distribute(command);
     responseWriter.writeEventOnCommand(
-        key, AuthorizationIntent.PERMISSION_ADDED, authorizationRecord, command);
+        key, AuthorizationIntent.PERMISSION_UPDATED, authorizationRecord, command);
   }
 
   @Override
   public void processDistributedCommand(final TypedRecord<AuthorizationRecord> command) {
     stateWriter.appendFollowUpEvent(
-        command.getKey(), AuthorizationIntent.PERMISSION_ADDED, command.getValue());
+        command.getKey(), AuthorizationIntent.PERMISSION_UPDATED, command.getValue());
     distributionBehavior.acknowledgeCommand(command);
   }
 

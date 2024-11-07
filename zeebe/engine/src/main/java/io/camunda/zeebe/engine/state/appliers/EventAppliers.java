@@ -450,7 +450,8 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerAuthorizationAppliers(final MutableProcessingState state) {
-    register(AuthorizationIntent.PERMISSION_ADDED, new AuthorizationPermissionAddedApplier(state));
+    register(
+        AuthorizationIntent.PERMISSION_UPDATED, new AuthorizationPermissionUpdatedApplier(state));
   }
 
   private void registerEscalationAppliers() {

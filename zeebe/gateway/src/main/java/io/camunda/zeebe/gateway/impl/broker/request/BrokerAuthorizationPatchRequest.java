@@ -23,7 +23,7 @@ public class BrokerAuthorizationPatchRequest extends BrokerExecuteCommand<Author
   private final AuthorizationRecord requestDto = new AuthorizationRecord();
 
   public BrokerAuthorizationPatchRequest() {
-    super(ValueType.AUTHORIZATION, AuthorizationIntent.ADD_PERMISSION);
+    super(ValueType.AUTHORIZATION, AuthorizationIntent.UPDATE_PERMISSION);
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
   }
 

@@ -34,6 +34,23 @@ public interface MutableAuthorizationState extends AuthorizationState {
       List<String> resourceIds);
 
   /**
+   * Checks if a Permission exists for the provided ownerKey, resourceType and permissionType. If it
+   * does, remove the resourceIds to this entry. If it does not, ignore the command.
+   *
+   * @param ownerKey the key of the owner of the permissions. This could be a userKey, a roleKey or
+   *     a groupKey
+   * @param resourceType the type of resource the permissions are for (Eg. Process definition, Job)
+   * @param permissionType The type of permission being granted (Eg. READ, WRITE)
+   * @param resourceIds A list of resourceIds the permissions are granted for (Eg.
+   *     bpmnProcessId:foo, *)
+   */
+  void removePermission(
+      Long ownerKey,
+      AuthorizationResourceType resourceType,
+      PermissionType permissionType,
+      List<String> resourceIds);
+
+  /**
    * Stores the owner type for a new owner in the state.
    *
    * @param ownerKey the key of the owner

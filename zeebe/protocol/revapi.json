@@ -89,6 +89,16 @@
           "justification": "USER_TASK was added and released with 8.6 without any way to use it. For 8.7 the definitive types became available and USER_TASK is not one of them.",
           "old": "field io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.USER_TASK",
           "code": "java.field.removed"
+        },
+        {
+          "justification": "ADD_PERMISSION was added and released with 8.6 without any way to use it. For 8.7 the authorizations became available and ADD_PERMISSION is not one of them.",
+          "code": "java.field.removed",
+          "old": "field io.camunda.zeebe.protocol.record.intent.AuthorizationIntent.ADD_PERMISSION"
+        },
+        {
+          "justification": "PERMISSION_ADDED was added and released with 8.6 without any way to use it. For 8.7 the authorizations became available and PERMISSION_ADDED is not one of them.",
+          "code": "java.field.removed",
+          "old": "field io.camunda.zeebe.protocol.record.intent.AuthorizationIntent.PERMISSION_ADDED"
         }
       ]
     }

@@ -115,6 +115,28 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
   }
 
   @Override
+  public void removePermission(
+      final Long ownerKey,
+      final AuthorizationResourceType resourceType,
+      final PermissionType permissionType,
+      final List<String> resourceIds) {
+    this.ownerKey.wrapLong(ownerKey);
+    this.resourceType.wrapString(resourceType.name());
+    this.permissionType.wrapString(permissionType.name());
+    final var identifiers = new ResourceIdentifiers();
+
+    final var existing =
+        resourceIdsByOwnerKeyResourceTypeAndPermissionColumnFamily
+            .get(ownerKeyAndResourceTypeAndPermissionCompositeKey)
+            .getResourceIdentifiers();
+    resourceIds.forEach(existing::remove);
+
+    identifiers.addResourceIdentifiers(existing.stream().toList());
+    resourceIdsByOwnerKeyResourceTypeAndPermissionColumnFamily.upsert(
+        ownerKeyAndResourceTypeAndPermissionCompositeKey, identifiers);
+  }
+
+  @Override
   public void insertOwnerTypeByKey(final long ownerKey, final AuthorizationOwnerType ownerType) {
     this.ownerKey.wrapLong(ownerKey);
     this.ownerType.wrapString(ownerType.name());
