@@ -201,7 +201,7 @@ func main() {
 	if baseCommand == "start" {
 		javaVersion := os.Getenv("JAVA_VERSION")
 		if javaVersion == "" {
-			javaVersionCmd := exec.Command("cmd", "/C", "\"" + javaBinary + "\"" + " --version")
+			javaVersionCmd := exec.Command(javaBinary, "--version")
 			var out strings.Builder
                         var stderr strings.Builder
 			javaVersionCmd.Stdout = &out
@@ -272,8 +272,7 @@ func main() {
 		elasticsearchPidFile.Write([]byte(strconv.Itoa(elasticsearchCmd.Process.Pid)))
 		queryElasticsearchHealth("Elasticsearch", "http://localhost:9200/_cluster/health?wait_for_status=green&wait_for_active_shards=all&wait_for_no_initializing_shards=true&timeout=120s")
 
-		connectorsCmdString := "\"" + javaBinary + "\"" + " -classpath " + parentDir + "\\*;" + parentDir + "\\custom_connectors\\*;" + parentDir + "\\camunda-zeebe-" + camundaVersion + "\\lib\\* io.camunda.connector.runtime.app.ConnectorRuntimeApplication --spring.config.location=" + parentDir + "\\connectors-application.properties"
-		connectorsCmd := exec.Command("cmd", "/C", connectorsCmdString)
+		connectorsCmd := exec.Command(javaBinary, "-classpath", parentDir + "\\*;" + parentDir + "\\custom_connectors\\*;" + parentDir + "\\camunda-zeebe-" + camundaVersion + "\\lib\\*", "io.connector.runtime.app.ConnectorRuntimeApplication", "--spring.config.location=" + parentDir + "\\connectors-application.properties")
 		connectorsLogPath := filepath.Join(parentDir, "log", "connectors.log")
 		connectorsLogFile, err := os.OpenFile(connectorsLogPath, os.O_RDWR|os.O_CREATE, 0644)
 		if err != nil {
