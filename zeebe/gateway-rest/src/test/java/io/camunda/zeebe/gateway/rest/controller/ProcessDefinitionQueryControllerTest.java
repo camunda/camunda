@@ -26,8 +26,13 @@ import io.camunda.service.exception.ForbiddenException;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiFunction;
+import java.util.stream.Stream;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentMatchers;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -192,16 +197,20 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
     verify(processDefinitionServices).getByKey(23L);
   }
 
-  @Test
-  public void shouldReturn403ForForbiddenProcessDefinitionKey() {
+  @ParameterizedTest
+  @MethodSource("getProcessDefinitionTestCasesParameters")
+  public void shouldReturn403ForForbiddenProcessDefinitionKey(
+      final Pair<String, BiFunction<ProcessDefinitionServices, Long, ?>> testParameter) {
     // given
-    when(processDefinitionServices.getByKey(17L))
+    final var url = testParameter.getLeft();
+    final var service = testParameter.getRight();
+    final long processDefinitionKey = 17L;
+    when(service.apply(processDefinitionServices, processDefinitionKey))
         .thenThrow(new ForbiddenException(Authorization.of(a -> a.processDefinition().read())));
     // when / then
     webClient
         .get()
-        .uri(PROCESS_DEFINITION_URL + "17")
-        .accept(MediaType.APPLICATION_JSON)
+        .uri(url.formatted(processDefinitionKey))
         .exchange()
         .expectStatus()
         .isForbidden()
@@ -217,7 +226,16 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
                 """);
 
     // Verify that the service was called with the invalid key
-    verify(processDefinitionServices).getByKey(17L);
+    service.apply(verify(processDefinitionServices), processDefinitionKey);
+  }
+
+  private static Stream<Pair<String, BiFunction<ProcessDefinitionServices, Long, ?>>>
+      getProcessDefinitionTestCasesParameters() {
+    return Stream.of(
+        Pair.of(PROCESS_DEFINITION_URL + "%d", ProcessDefinitionServices::getByKey),
+        Pair.of(
+            PROCESS_DEFINITION_URL + "%d/xml", ProcessDefinitionServices::getProcessDefinitionXml),
+        Pair.of(PROCESS_DEFINITION_URL + "%d/form", ProcessDefinitionServices::getByKey));
   }
 
   @Test

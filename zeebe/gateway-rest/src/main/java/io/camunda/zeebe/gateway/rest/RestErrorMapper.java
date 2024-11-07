@@ -94,6 +94,7 @@ public class RestErrorMapper {
         yield createProblemDetail(
             HttpStatus.NOT_FOUND, nfe.getMessage(), RejectionType.NOT_FOUND.name());
       case final ForbiddenException fe:
+        REST_GATEWAY_LOGGER.trace("Expected to handle REST request, but was forbidden", fe);
         yield createProblemDetail(HttpStatus.FORBIDDEN, fe.getMessage(), fe.getClass().getName());
       case final CamundaSearchException cse:
         yield cse.getCause() != null ? mapErrorToProblem(cse.getCause(), rejectionMapper) : null;

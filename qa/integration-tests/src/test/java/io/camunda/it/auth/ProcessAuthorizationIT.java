@@ -61,9 +61,6 @@ class ProcessAuthorizationIT {
 
   private boolean initialized;
 
-  /**
-   * @param adminClient
-   */
   @BeforeEach
   void setUp(@Authenticated(ADMIN) final ZeebeClient adminClient) {
     if (!initialized) {
