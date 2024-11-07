@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
@@ -163,6 +164,53 @@ final class OpenSearchRepositoryIT {
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
   }
 
+  @Test
+  void shouldGetBatchOperationsNextBatch() throws IOException {
+    // given - 3 documents, two of which were created over an hour ago, one of which was created
+    final var now = Instant.now();
+    final var twoHoursAgo = now.minus(Duration.ofHours(2)).toString();
+    final var repository = createRepository();
+    final var documents =
+        List.of(
+            new TestBatchOperation("1", twoHoursAgo),
+            new TestBatchOperation("2", twoHoursAgo),
+            new TestBatchOperation("3", now.toString()));
+
+    // create the index template first to ensure ID is a keyword, otherwise the surrounding
+    // aggregation will fail
+    createBatchOperationIndex();
+    documents.forEach(doc -> index(batchOperationIndex, doc));
+    testClient.indices().refresh(r -> r.index(batchOperationIndex));
+    config.setRolloverBatchSize(3);
+
+    // when
+    final var result = repository.getBatchOperationsNextBatch();
+
+    // then - we expect only the first two documents created two hours ago to be returned
+    final var dateFormatter =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+    final var batch = result.join();
+    assertThat(batch.ids()).containsExactly("1", "2");
+    assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
+  }
+
+  private void createBatchOperationIndex() throws IOException {
+    final var idProp = Property.of(p -> p.keyword(k -> k.index(true)));
+    final var endDateProp =
+        Property.of(p -> p.date(d -> d.index(true).format("date_time || epoch_millis")));
+    final var properties =
+        TypeMapping.of(
+            m ->
+                m.properties(
+                    Map.of(
+                        BatchOperationTemplate.ID,
+                        idProp,
+                        BatchOperationTemplate.END_DATE,
+                        endDateProp)));
+    testClient.indices().create(r -> r.index(batchOperationIndex).mappings(properties));
+  }
+
   private <T extends TDocument> void index(final String index, final T document) {
     try {
       testClient.index(b -> b.index(index).document(document).id(document.id()));
@@ -212,6 +260,8 @@ final class OpenSearchRepositoryIT {
         RestClient.builder(HttpHost.create(OPENSEARCH.getHttpHostAddress())).build();
     return new RestClientTransport(restClient, new JacksonJsonpMapper());
   }
+
+  private record TestBatchOperation(String id, String endDate) implements TDocument {}
 
   private record TestDocument(String id) implements TDocument {}
 
