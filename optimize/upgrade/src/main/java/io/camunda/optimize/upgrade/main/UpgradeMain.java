@@ -55,13 +55,13 @@ public class UpgradeMain {
           ConfigurationServiceBuilder.createDefaultConfiguration()
               .getElasticSearchConfiguration()
               .getConnection()
-              .isInitSchemaEnabled();
+              .getInitSchemaEnabled();
 
       final boolean clusterTaskCheckingEnabled =
           ConfigurationServiceBuilder.createDefaultConfiguration()
               .getElasticSearchConfiguration()
               .getConnection()
-              .isClusterTaskCheckingEnabled();
+              .getClusterTaskCheckingEnabled();
 
       if (databaseType == DatabaseType.ELASTICSEARCH
           && (!initSchemaEnabled || !clusterTaskCheckingEnabled)) {

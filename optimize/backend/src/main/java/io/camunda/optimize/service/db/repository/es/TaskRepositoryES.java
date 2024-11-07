@@ -82,7 +82,7 @@ public class TaskRepositoryES extends TaskRepository {
         configurationService
             .getElasticSearchConfiguration()
             .getConnection()
-            .isClusterTaskCheckingEnabled();
+            .getClusterTaskCheckingEnabled();
 
     final UpdateByQueryRequest updateByQueryRequest =
         UpdateByQueryRequest.of(
@@ -111,7 +111,7 @@ public class TaskRepositoryES extends TaskRepository {
         configurationService
             .getElasticSearchConfiguration()
             .getConnection()
-            .isClusterTaskCheckingEnabled();
+            .getClusterTaskCheckingEnabled();
 
     final DeleteByQueryRequest request =
         DeleteByQueryRequest.of(

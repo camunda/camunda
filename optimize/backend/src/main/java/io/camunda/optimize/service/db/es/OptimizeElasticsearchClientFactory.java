@@ -48,7 +48,7 @@ public class OptimizeElasticsearchClientFactory {
         configurationService
             .getElasticSearchConfiguration()
             .getConnection()
-            .isClusterTaskCheckingEnabled();
+            .getClusterTaskCheckingEnabled();
     if (clusterTaskCheckingEnabled) {
       waitForElasticsearch(
           build, backoffCalculator, transportOptionsProvider.getTransportOptions());
@@ -68,7 +68,7 @@ public class OptimizeElasticsearchClientFactory {
     elasticSearchSchemaManager.validateDatabaseMetadata(prefixedClient);
 
     final boolean initSchemaEnabled =
-        configurationService.getElasticSearchConfiguration().getConnection().isInitSchemaEnabled();
+        configurationService.getElasticSearchConfiguration().getConnection().getInitSchemaEnabled();
     if (initSchemaEnabled) {
       elasticSearchSchemaManager.initializeSchema(prefixedClient);
     } else {
