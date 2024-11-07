@@ -67,8 +67,7 @@ class ProcessAuthorizationIT {
       final List<String> processes =
           List.of("service_tasks_v1.bpmn", "service_tasks_v2.bpmn", "incident_process_v1.bpmn");
       processes.forEach(
-          process ->
-              deployResource(adminClient, String.format("process/%s", process)).getProcesses());
+          process -> deployResource(adminClient, String.format("process/%s", process)));
       waitForProcessesToBeDeployed(adminClient, processes.size());
       initialized = true;
     }
