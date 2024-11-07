@@ -49,6 +49,7 @@ import io.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
 import io.camunda.optimize.service.db.repository.es.TaskRepositoryES;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
@@ -74,6 +75,7 @@ public class SchemaUpgradeClientES
   public SchemaUpgradeClientES(
       final ElasticSearchSchemaManager schemaManager,
       final ElasticSearchMetadataService metadataService,
+      final ConfigurationService configurationService,
       final OptimizeElasticsearchClient elasticsearchClient,
       final ObjectMapper objectMapper) {
     super(
@@ -81,7 +83,7 @@ public class SchemaUpgradeClientES
         metadataService,
         DatabaseType.ELASTICSEARCH,
         elasticsearchClient,
-        new TaskRepositoryES(elasticsearchClient));
+        new TaskRepositoryES(elasticsearchClient, configurationService));
     this.objectMapper = objectMapper;
   }
 
