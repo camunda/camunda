@@ -32,7 +32,7 @@ public class VariableReader {
             new VariableQuery(
                 new Builder().variableKeys(key).build(),
                 VariableSort.of(b -> b),
-                SearchQueryPage.of(b -> b.from(0).size(10))))
+                SearchQueryPage.of(b -> b.from(0).size(1))))
         .hits
         .getFirst();
   }

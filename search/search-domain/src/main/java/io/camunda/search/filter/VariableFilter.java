@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.Objects;
 
 public record VariableFilter(
-    Map<String, List<Operation<Object>>> variableOperations,
+    Map<String, List<UntypedOperation>> variableOperations,
     List<Operation<Long>> scopeKeyOperations,
     List<Operation<Long>> processInstanceKeyOperations,
     List<Operation<Long>> variableKeyOperations,
@@ -29,7 +29,7 @@ public record VariableFilter(
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<VariableFilter> {
-    private Map<String, List<Operation<Object>>> variableOperations;
+    private Map<String, List<UntypedOperation>> variableOperations;
     private List<Operation<Long>> scopeKeyOperations;
     private List<Operation<Long>> processInstanceKeyOperations;
     private List<Operation<Long>> variableKeyOperations;
@@ -39,7 +39,7 @@ public record VariableFilter(
     public Builder variableOperations(final String name, final List<Operation<Object>> operations) {
       variableOperations = Objects.requireNonNullElse(variableOperations, new HashMap<>());
       final var values = variableOperations.getOrDefault(name, new ArrayList<>());
-      values.addAll(operations);
+      values.addAll(operations.stream().map(UntypedOperation::of).toList());
       variableOperations.put(name, values);
       return this;
     }

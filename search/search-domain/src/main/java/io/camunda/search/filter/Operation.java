@@ -10,18 +10,13 @@ package io.camunda.search.filter;
 import io.camunda.util.CollectionUtil;
 import java.util.List;
 
-public record Operation<T>(Operator operator, List<T> values, boolean numericNeeded) {
+public record Operation<T>(Operator operator, List<T> values) {
 
   public Operation(final Operator operator, final T value) {
-    this(operator, CollectionUtil.collectValuesAsList(value), false);
+    this(operator, CollectionUtil.collectValuesAsList(value));
   }
 
-  public Operation(final Operator operator, final T value, final boolean numericNeeded) {
-    this(operator, CollectionUtil.collectValuesAsList(value), numericNeeded);
-  }
-
-  public static <T> Operation<T> of(
-      final Operator operator, final T value, final boolean numericNeeded) {
+  public static <T> Operation<T> of(final Operator operator, final T value) {
     return new Operation<>(operator, value);
   }
 
@@ -38,28 +33,28 @@ public record Operation<T>(Operator operator, List<T> values, boolean numericNee
   }
 
   public static <T> Operation<T> gt(final T value) {
-    return new Operation<>(Operator.GREATER_THAN, value, true);
+    return new Operation<>(Operator.GREATER_THAN, value);
   }
 
   public static <T> Operation<T> gte(final T value) {
-    return new Operation<>(Operator.GREATER_THAN_EQUALS, value, true);
+    return new Operation<>(Operator.GREATER_THAN_EQUALS, value);
   }
 
   public static <T> Operation<T> lt(final T value) {
-    return new Operation<>(Operator.LOWER_THAN, value, true);
+    return new Operation<>(Operator.LOWER_THAN, value);
   }
 
   public static <T> Operation<T> lte(final T value) {
-    return new Operation<>(Operator.LOWER_THAN_EQUALS, value, true);
+    return new Operation<>(Operator.LOWER_THAN_EQUALS, value);
   }
 
   @SafeVarargs
   public static <T> Operation<T> in(final T... values) {
-    return new Operation<>(Operator.IN, List.of(values), false);
+    return new Operation<>(Operator.IN, List.of(values));
   }
 
   public static <T> Operation<T> in(final List<T> values) {
-    return new Operation<>(Operator.IN, values, false);
+    return new Operation<>(Operator.IN, values);
   }
 
   public static <T> Operation<T> like(final T value) {
@@ -67,6 +62,9 @@ public record Operation<T>(Operator operator, List<T> values, boolean numericNee
   }
 
   public T value() {
+    if (values == null || values.isEmpty()) {
+      return null;
+    }
     return values.getFirst();
   }
 

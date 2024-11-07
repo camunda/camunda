@@ -67,6 +67,40 @@ public class VariableValueFilterIT {
   }
 
   @TestTemplate
+  public void shouldFindVariableWithNameAndEqNumberValue(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given 21 variables
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final String varName = "var-name-" + nextStringId();
+    final var randomizedVariable =
+        prepareRandomVariablesAndReturnOne(testApplication, varName, "42");
+
+    // and an eq value filter
+    final Operation<Object> operation = Operation.eq(42);
+
+    // when we search for it, we should find one
+    searchAndAssertVariableValueFilter(
+        rdbmsService, randomizedVariable, randomizedVariable.name(), operation);
+  }
+
+  @TestTemplate
+  public void shouldFindVariableWithNameAndEqBooleanValue(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given 21 variables
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final String varName = "var-name-" + nextStringId();
+    final var randomizedVariable =
+        prepareRandomVariablesAndReturnOne(testApplication, varName, "true");
+
+    // and an eq value filter
+    final Operation<Object> operation = Operation.eq(true);
+
+    // when we search for it, we should find one
+    searchAndAssertVariableValueFilter(
+        rdbmsService, randomizedVariable, randomizedVariable.name(), operation);
+  }
+
+  @TestTemplate
   public void shouldFindVariableWithNameAndNeqValue(
       final CamundaRdbmsTestApplication testApplication) {
     // given 20 random variables
@@ -103,6 +137,22 @@ public class VariableValueFilterIT {
   }
 
   @TestTemplate
+  public void shouldFindVariableWithNameAndGtStringValue(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given 21 variables
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final String varName = "var-name-" + nextStringId();
+    final var randomizedVariable =
+        prepareRandomVariablesAndReturnOne(testApplication, varName, "42000");
+
+    // and a gt value filter
+    final Operation<Object> operation = Operation.gt("40000");
+
+    // when we search for it, we should find one
+    searchAndAssertVariableValueFilter(rdbmsService, randomizedVariable, varName, operation);
+  }
+
+  @TestTemplate
   public void shouldFindVariableWithNameAndGteValue(
       final CamundaRdbmsTestApplication testApplication) {
     // given 21 variables
@@ -113,6 +163,22 @@ public class VariableValueFilterIT {
 
     // and a gte value filter
     final Operation<Object> operation = Operation.gte(42000);
+
+    // when we search for it, we should find one
+    searchAndAssertVariableValueFilter(rdbmsService, randomizedVariable, varName, operation);
+  }
+
+  @TestTemplate
+  public void shouldFindVariableWithNameAndGteStringValue(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given 21 variables
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final String varName = "var-name-" + nextStringId();
+    final var randomizedVariable =
+        prepareRandomVariablesAndReturnOne(testApplication, varName, "42000");
+
+    // and a gte value filter
+    final Operation<Object> operation = Operation.gte("42000");
 
     // when we search for it, we should find one
     searchAndAssertVariableValueFilter(rdbmsService, randomizedVariable, varName, operation);
@@ -135,6 +201,22 @@ public class VariableValueFilterIT {
   }
 
   @TestTemplate
+  public void shouldFindVariableWithNameAndLtStringValue(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given 21 variables
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final String varName = "var-name-" + nextStringId();
+    final var randomizedVariable =
+        prepareRandomVariablesAndReturnOne(testApplication, varName, "-42000");
+
+    // and a lt value filter
+    final Operation<Object> operation = Operation.lt("-40000");
+
+    // when we search for it, we should find one
+    searchAndAssertVariableValueFilter(rdbmsService, randomizedVariable, varName, operation);
+  }
+
+  @TestTemplate
   public void shouldFindVariableWithNameAndLteValue(
       final CamundaRdbmsTestApplication testApplication) {
     // given 21 variables
@@ -145,6 +227,22 @@ public class VariableValueFilterIT {
 
     // and a lte value filter
     final Operation<Object> operation = Operation.lte(-42000);
+
+    // when we search for it, we should find one
+    searchAndAssertVariableValueFilter(rdbmsService, randomizedVariable, varName, operation);
+  }
+
+  @TestTemplate
+  public void shouldFindVariableWithNameAndLteStringValue(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given 21 variables
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final String varName = "var-name-" + nextStringId();
+    final var randomizedVariable =
+        prepareRandomVariablesAndReturnOne(testApplication, varName, "-42000");
+
+    // and a lte value filter
+    final Operation<Object> operation = Operation.lte("-42000");
 
     // when we search for it, we should find one
     searchAndAssertVariableValueFilter(rdbmsService, randomizedVariable, varName, operation);

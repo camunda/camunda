@@ -9,6 +9,7 @@ package io.camunda.db.rdbms.write.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.search.entities.ValueTypeEnum;
 import org.junit.jupiter.api.Test;
 
 public class VariableDbModelTest {
@@ -33,7 +34,7 @@ public class VariableDbModelTest {
     // then
     assertThat(model.key()).isEqualTo(1L);
     assertThat(model.name()).isEqualTo("test");
-    assertThat(model.type()).isEqualTo(VariableDbModel.ValueTypeEnum.LONG);
+    assertThat(model.type()).isEqualTo(ValueTypeEnum.LONG);
     assertThat(model.doubleValue()).isNull();
     assertThat(model.longValue()).isEqualTo(123456L);
     assertThat(model.value()).isEqualTo("123456");
@@ -64,7 +65,7 @@ public class VariableDbModelTest {
     // then
     assertThat(model.key()).isEqualTo(1L);
     assertThat(model.name()).isEqualTo("test");
-    assertThat(model.type()).isEqualTo(VariableDbModel.ValueTypeEnum.LONG);
+    assertThat(model.type()).isEqualTo(ValueTypeEnum.LONG);
     assertThat(model.doubleValue()).isNull();
     assertThat(model.longValue()).isEqualTo(-123456L);
     assertThat(model.value()).isEqualTo("-123456");
@@ -95,7 +96,7 @@ public class VariableDbModelTest {
     // then
     assertThat(model.key()).isEqualTo(1L);
     assertThat(model.name()).isEqualTo("test");
-    assertThat(model.type()).isEqualTo(VariableDbModel.ValueTypeEnum.DOUBLE);
+    assertThat(model.type()).isEqualTo(ValueTypeEnum.DOUBLE);
     assertThat(model.doubleValue()).isEqualTo(123.456);
     assertThat(model.longValue()).isNull();
     assertThat(model.value()).isEqualTo("123.456");
@@ -126,7 +127,7 @@ public class VariableDbModelTest {
     // then
     assertThat(model.key()).isEqualTo(1L);
     assertThat(model.name()).isEqualTo("test");
-    assertThat(model.type()).isEqualTo(VariableDbModel.ValueTypeEnum.DOUBLE);
+    assertThat(model.type()).isEqualTo(ValueTypeEnum.DOUBLE);
     assertThat(model.doubleValue()).isEqualTo(-123.456);
     assertThat(model.longValue()).isNull();
     assertThat(model.value()).isEqualTo("-123.456");
@@ -157,7 +158,7 @@ public class VariableDbModelTest {
     // then
     assertThat(model.key()).isEqualTo(1L);
     assertThat(model.name()).isEqualTo("test");
-    assertThat(model.type()).isEqualTo(VariableDbModel.ValueTypeEnum.STRING);
+    assertThat(model.type()).isEqualTo(ValueTypeEnum.STRING);
     assertThat(model.doubleValue()).isNull();
     assertThat(model.longValue()).isNull();
     assertThat(model.value()).isEqualTo("non-numeric");
@@ -189,7 +190,7 @@ public class VariableDbModelTest {
     // then
     assertThat(model.key()).isEqualTo(1L);
     assertThat(model.name()).isEqualTo("test");
-    assertThat(model.type()).isEqualTo(VariableDbModel.ValueTypeEnum.STRING);
+    assertThat(model.type()).isEqualTo(ValueTypeEnum.STRING);
     assertThat(model.doubleValue()).isNull();
     assertThat(model.longValue()).isNull();
     assertThat(model.value())

@@ -7,7 +7,10 @@
  */
 package io.camunda.db.rdbms.write.domain;
 
-import org.apache.commons.lang3.math.NumberUtils;
+import static io.camunda.util.ValueTypeUtil.mapBoolean;
+
+import io.camunda.search.entities.ValueTypeEnum;
+import io.camunda.util.ValueTypeUtil;
 
 public record VariableDbModel(
     Long key,
@@ -72,15 +75,16 @@ public record VariableDbModel(
       if (value != null && value.length() > DEFAULT_VARIABLE_SIZE_THRESHOLD) {
         return getModelWithPreview();
       } else {
-        if (!NumberUtils.isParsable(value)) {
-          return getModel();
-        } else {
-          return getNumericModel();
-        }
+        return switch (ValueTypeUtil.getValueType(value)) {
+          case LONG -> getLongModel();
+          case DOUBLE -> getDoubleModel();
+          case BOOLEAN -> getModel(mapBoolean(value));
+          default -> getModel(value);
+        };
       }
     }
 
-    private VariableDbModel getModel() {
+    private VariableDbModel getModel(final String value) {
       return new VariableDbModel(
           key,
           name,
@@ -110,40 +114,34 @@ public record VariableDbModel(
           tenantId);
     }
 
-    private VariableDbModel getNumericModel() {
-      if (value.contains(".")) {
-        return new VariableDbModel(
-            key,
-            name,
-            ValueTypeEnum.DOUBLE,
-            Double.parseDouble(value),
-            null,
-            value,
-            null,
-            false,
-            scopeKey,
-            processInstanceKey,
-            tenantId);
-      } else {
-        return new VariableDbModel(
-            key,
-            name,
-            ValueTypeEnum.LONG,
-            null,
-            Long.parseLong(value),
-            value,
-            null,
-            false,
-            scopeKey,
-            processInstanceKey,
-            tenantId);
-      }
+    private VariableDbModel getLongModel() {
+      return new VariableDbModel(
+          key,
+          name,
+          ValueTypeEnum.LONG,
+          null,
+          Long.parseLong(value),
+          value,
+          null,
+          false,
+          scopeKey,
+          processInstanceKey,
+          tenantId);
     }
-  }
 
-  enum ValueTypeEnum {
-    STRING,
-    LONG,
-    DOUBLE
+    private VariableDbModel getDoubleModel() {
+      return new VariableDbModel(
+          key,
+          name,
+          ValueTypeEnum.DOUBLE,
+          Double.parseDouble(value),
+          null,
+          value,
+          null,
+          false,
+          scopeKey,
+          processInstanceKey,
+          tenantId);
+    }
   }
 }
