@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
@@ -19,7 +20,11 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.http.HttpHost;
 import org.junit.jupiter.api.Test;
@@ -27,6 +32,8 @@ import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.mapping.Property;
+import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.transport.rest_client.RestClientTransport;
 import org.opensearch.testcontainers.OpensearchContainer;
@@ -120,6 +127,42 @@ final class OpenSearchRepositoryIT {
         .containsExactlyInAnyOrder("1", "2", "3");
   }
 
+  @Test
+  void shouldGetProcessInstancesNextBatch() throws IOException {
+    // given - 4 documents, where 2 is on a different partition, 3 is the wrong join relation type,
+    // and 4 was finished too recently: we then expect only 1 to be returned
+    final var now = Instant.now();
+    final var twoHoursAgo = now.minus(Duration.ofHours(2)).toString();
+    final var repository = createRepository();
+    final var documents =
+        List.of(
+            new TestProcessInstance(
+                "1", twoHoursAgo, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION, 1),
+            new TestProcessInstance(
+                "2", twoHoursAgo, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION, 2),
+            new TestProcessInstance("3", twoHoursAgo, ListViewTemplate.ACTIVITIES_JOIN_RELATION, 1),
+            new TestProcessInstance(
+                "4", now.toString(), ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION, 1));
+
+    // create the index template first to ensure ID is a keyword, otherwise the surrounding
+    // aggregation will fail
+    createProcessInstanceIndex();
+    documents.forEach(doc -> index(processInstanceIndex, doc));
+    testClient.indices().refresh(r -> r.index(processInstanceIndex));
+    config.setRolloverBatchSize(3);
+
+    // when
+    final var result = repository.getProcessInstancesNextBatch();
+
+    // then - we expect only the first document created two hours ago to be returned
+    final var dateFormatter =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+    final var batch = result.join();
+    assertThat(batch.ids()).containsExactly("1");
+    assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
+  }
+
   private <T extends TDocument> void index(final String index, final T document) {
     try {
       testClient.index(b -> b.index(index).document(document).id(document.id()));
@@ -145,6 +188,25 @@ final class OpenSearchRepositoryIT {
         LOGGER);
   }
 
+  private void createProcessInstanceIndex() throws IOException {
+    final var idProp = Property.of(p -> p.keyword(k -> k.index(true)));
+    final var endDateProp =
+        Property.of(p -> p.date(d -> d.index(true).format("date_time || epoch_millis")));
+    final var joinRelationProp = Property.of(p -> p.keyword(k -> k.index(true)));
+    final var properties =
+        TypeMapping.of(
+            m ->
+                m.properties(
+                    Map.of(
+                        ListViewTemplate.ID,
+                        idProp,
+                        ListViewTemplate.END_DATE,
+                        endDateProp,
+                        ListViewTemplate.JOIN_RELATION,
+                        joinRelationProp)));
+    testClient.indices().create(r -> r.index(processInstanceIndex).mappings(properties));
+  }
+
   private RestClientTransport createRestClient() {
     final var restClient =
         RestClient.builder(HttpHost.create(OPENSEARCH.getHttpHostAddress())).build();
@@ -152,6 +214,9 @@ final class OpenSearchRepositoryIT {
   }
 
   private record TestDocument(String id) implements TDocument {}
+
+  private record TestProcessInstance(
+      String id, String endDate, String joinRelation, int partitionId) implements TDocument {}
 
   private interface TDocument {
     String id();
