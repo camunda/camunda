@@ -36,11 +36,11 @@ import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch._types.query_dsl.TermsQuery;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
 import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
+import org.opensearch.client.opensearch.core.ReindexRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
-import org.opensearch.client.opensearch.core.search.Hit;
-import org.opensearch.client.opensearch.core.ReindexRequest;
 import org.opensearch.client.opensearch.core.reindex.Source;
+import org.opensearch.client.opensearch.core.search.Hit;
 import org.slf4j.Logger;
 
 public final class OpenSearchRepository extends NoopArchiverRepository {
