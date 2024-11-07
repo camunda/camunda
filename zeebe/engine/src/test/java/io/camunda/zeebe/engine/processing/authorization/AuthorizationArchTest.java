@@ -22,6 +22,7 @@ import com.tngtech.archunit.lang.conditions.ArchConditions;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.job.DefaultJobCommandPreconditionGuard;
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
@@ -102,6 +103,10 @@ public class AuthorizationArchTest {
             .or(
                 ArchConditions.callMethod(
                     UserTaskCommandPreconditionChecker.class, "check", TypedRecord.class))
+            // Or the processor should have delegate authorization to the PermissionsBehavior
+            .or(
+                ArchConditions.callMethod(
+                    PermissionsBehavior.class, "isAuthorized", TypedRecord.class))
             .check(item, events);
       }
     };
@@ -111,8 +116,10 @@ public class AuthorizationArchTest {
     return new DescribedPredicate<>("process commands") {
       @Override
       public boolean test(final JavaClass javaClass) {
-        return Predicates.assignableFrom(DefaultJobCommandPreconditionGuard.class)
+        return Predicates.assignableFrom(JobUpdateBehaviour.class)
+            .or(Predicates.assignableFrom(DefaultJobCommandPreconditionGuard.class))
             .or(Predicates.assignableFrom(UserTaskCommandPreconditionChecker.class))
+            .or(Predicates.assignableFrom(PermissionsBehavior.class))
             .test(javaClass);
       }
     };
