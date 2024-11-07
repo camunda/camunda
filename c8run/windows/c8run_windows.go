@@ -138,7 +138,6 @@ func main() {
 	// deploymentDir := filepath.Join(parentDir, "configuration", "resources")
 	elasticsearchVersion := "8.13.4"
 	camundaVersion := "8.6.2"
-	expectedJavaVersion := 21
 
 	elasticsearchPidPath := filepath.Join(baseDir, "elasticsearch.pid")
 	connectorsPidPath := filepath.Join(baseDir, "connectors.pid")
