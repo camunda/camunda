@@ -100,6 +100,7 @@ public class ProcessInstanceMigrationMigrateProcessor
         new ProcessInstanceMigrationCatchEventBehaviour(
             processingState.getProcessMessageSubscriptionState(),
             bpmnBehaviors.catchEventBehavior(),
+            bpmnBehaviors.compensationSubscriptionBehaviour(),
             writers.command(),
             commandDistributionBehavior,
             processingState.getDistributionState(),
@@ -251,7 +252,8 @@ public class ProcessInstanceMigrationMigrateProcessor
             BpmnEventType.TIMER,
             BpmnEventType.SIGNAL,
             BpmnEventType.ERROR,
-            BpmnEventType.ESCALATION));
+            BpmnEventType.ESCALATION,
+            BpmnEventType.COMPENSATION));
     requireNoBoundaryEventInTarget(
         targetProcessDefinition,
         targetElementId,
@@ -261,7 +263,8 @@ public class ProcessInstanceMigrationMigrateProcessor
             BpmnEventType.TIMER,
             BpmnEventType.SIGNAL,
             BpmnEventType.ERROR,
-            BpmnEventType.ESCALATION));
+            BpmnEventType.ESCALATION,
+            BpmnEventType.COMPENSATION));
     requireMappedCatchEventsToStayAttachedToSameElement(
         processInstanceKey,
         sourceProcessDefinition,
@@ -372,6 +375,7 @@ public class ProcessInstanceMigrationMigrateProcessor
       migrationCatchEventBehaviour.handleCatchEvents(
           elementInstance,
           targetProcessDefinition,
+          sourceProcessDefinition,
           sourceElementIdToTargetElementId,
           elementInstanceRecord,
           targetElementId,
