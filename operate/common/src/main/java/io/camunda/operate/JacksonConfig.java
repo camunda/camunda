@@ -46,7 +46,7 @@ public class JacksonConfig {
 
     return builder ->
         builder
-            .modules(modules -> modules.addAll(List.of(javaTimeModule, new Jdk8Module())))
+            .modulesToInstall(modules -> modules.addAll(List.of(javaTimeModule, new Jdk8Module())))
             .featuresToDisable(
                 SerializationFeature.INDENT_OUTPUT,
                 SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,

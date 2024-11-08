@@ -30,8 +30,7 @@ public class JacksonConfig {
     module.addDeserializer(
         BasicLongFilterProperty.class, new BasicLongFilterPropertyDeserializer());
     module.addDeserializer(IntegerFilterProperty.class, new IntegerFilterPropertyDeserializer());
-
-    return builder -> builder.modules(modules -> modules.add(module));
+    return builder -> builder.modulesToInstall(modules -> modules.add(module));
   }
 
   @Bean("gatewayRestObjectMapper")
