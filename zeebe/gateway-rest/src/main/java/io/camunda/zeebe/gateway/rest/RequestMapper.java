@@ -95,6 +95,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -247,15 +248,14 @@ public class RequestMapper {
     return getResult(
         validateAuthorizationAssignRequest(authorizationPatchRequest),
         () -> {
-          final Map<PermissionType, List<String>> permissions = new HashMap<>();
+          final Map<PermissionType, Set<String>> permissions = new HashMap<>();
           authorizationPatchRequest
               .getPermissions()
               .forEach(
-                  permission -> {
-                    permissions.put(
-                        PermissionType.valueOf(permission.getPermissionType().name()),
-                        permission.getResourceIds());
-                  });
+                  permission ->
+                      permissions.put(
+                          PermissionType.valueOf(permission.getPermissionType().name()),
+                          permission.getResourceIds()));
 
           return new PatchAuthorizationRequest(
               ownerKey,

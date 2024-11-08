@@ -22,7 +22,6 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -92,7 +91,7 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
       final long ownerKey,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType,
-      final List<String> resourceIds) {
+      final Set<String> resourceIds) {
     this.ownerKey.wrapLong(ownerKey);
     this.resourceType.wrapString(resourceType.name());
     this.permissionType.wrapString(permissionType.name());
@@ -120,7 +119,7 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
       final long ownerKey,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType,
-      final List<String> resourceIds) {
+      final Set<String> resourceIds) {
     this.ownerKey.wrapLong(ownerKey);
     this.resourceType.wrapString(resourceType.name());
     this.permissionType.wrapString(permissionType.name());
@@ -136,9 +135,7 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
               resourceIdAndOwnerKeyAndResourceTypeAndPermissionTypeCompositeKey);
         });
 
-    // Calling containsAll on a List is not performant. By using a Set we circumvent this problem.
-    final var resourceIdsSet = new HashSet<>(resourceIds);
-    if (resourceIdsSet.containsAll(identifiers.getResourceIdentifiers())) {
+    if (resourceIds.containsAll(identifiers.getResourceIdentifiers())) {
       resourceIdsByOwnerKeyResourceTypeAndPermissionColumnFamily.deleteExisting(
           ownerKeyAndResourceTypeAndPermissionCompositeKey);
     } else {

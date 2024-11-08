@@ -18,6 +18,7 @@ package io.camunda.zeebe.protocol.record.value;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import java.util.List;
+import java.util.Set;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -42,6 +43,6 @@ public interface AuthorizationRecordValue extends RecordValue {
     PermissionType getPermissionType();
 
     /** Returns the resourceIds of this permission */
-    List<String> getResourceIds();
+    Set<String> getResourceIds();
   }
 }

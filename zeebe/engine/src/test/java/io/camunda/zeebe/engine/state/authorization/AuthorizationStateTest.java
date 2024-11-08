@@ -17,7 +17,7 @@ import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -50,7 +50,7 @@ public class AuthorizationStateTest {
     final var ownerKey = 1L;
     final var resourceType = AuthorizationResourceType.DEPLOYMENT;
     final var permissionType = PermissionType.CREATE;
-    final var resourceIds = List.of("foo", "bar");
+    final var resourceIds = Set.of("foo", "bar");
 
     // when
     authorizationState.createOrAddPermission(ownerKey, resourceType, permissionType, resourceIds);
@@ -67,12 +67,11 @@ public class AuthorizationStateTest {
     final var ownerKey = 1L;
     final var resourceType = AuthorizationResourceType.DEPLOYMENT;
     final var permissionType = PermissionType.CREATE;
-    final var resourceIds = List.of("foo", "bar");
+    final var resourceIds = Set.of("foo", "bar");
     authorizationState.createOrAddPermission(ownerKey, resourceType, permissionType, resourceIds);
 
     // when
-    authorizationState.createOrAddPermission(
-        ownerKey, resourceType, permissionType, List.of("baz"));
+    authorizationState.createOrAddPermission(ownerKey, resourceType, permissionType, Set.of("baz"));
 
     // then
     final var resourceIdentifiers =
@@ -88,9 +87,9 @@ public class AuthorizationStateTest {
     final var resourceType = AuthorizationResourceType.DEPLOYMENT;
     final var permissionType = PermissionType.CREATE;
     authorizationState.createOrAddPermission(
-        ownerKey1, resourceType, permissionType, List.of("foo"));
+        ownerKey1, resourceType, permissionType, Set.of("foo"));
     authorizationState.createOrAddPermission(
-        ownerKey2, resourceType, permissionType, List.of("bar"));
+        ownerKey2, resourceType, permissionType, Set.of("bar"));
 
     // when
     final var resourceIds1 =
@@ -110,9 +109,9 @@ public class AuthorizationStateTest {
     final var resourceType2 = AuthorizationResourceType.PROCESS_DEFINITION;
     final var permissionType = PermissionType.CREATE;
     authorizationState.createOrAddPermission(
-        ownerKey, resourceType1, permissionType, List.of("foo"));
+        ownerKey, resourceType1, permissionType, Set.of("foo"));
     authorizationState.createOrAddPermission(
-        ownerKey, resourceType2, permissionType, List.of("bar"));
+        ownerKey, resourceType2, permissionType, Set.of("bar"));
 
     // when
     final var resourceIds1 =
@@ -132,9 +131,9 @@ public class AuthorizationStateTest {
     final var permissionType1 = PermissionType.CREATE;
     final var permissionType2 = PermissionType.UPDATE;
     authorizationState.createOrAddPermission(
-        ownerKey, resourceType, permissionType1, List.of("foo"));
+        ownerKey, resourceType, permissionType1, Set.of("foo"));
     authorizationState.createOrAddPermission(
-        ownerKey, resourceType, permissionType2, List.of("bar"));
+        ownerKey, resourceType, permissionType2, Set.of("bar"));
 
     // when
     final var resourceIds1 =
@@ -201,9 +200,9 @@ public class AuthorizationStateTest {
     final var resourceId1 = "foo";
     final var resourceId2 = "bar";
     authorizationState.createOrAddPermission(
-        ownerKey1, resourceType, permissionType, List.of(resourceId1));
+        ownerKey1, resourceType, permissionType, Set.of(resourceId1));
     authorizationState.createOrAddPermission(
-        ownerKey2, resourceType, permissionType, List.of(resourceId2));
+        ownerKey2, resourceType, permissionType, Set.of(resourceId2));
 
     // when
     authorizationState.deleteAuthorizationsByOwnerKeyPrefix(ownerKey1);
@@ -228,11 +227,11 @@ public class AuthorizationStateTest {
     final var resourceId1 = "foo";
     final var resourceId2 = "bar";
     authorizationState.createOrAddPermission(
-        ownerKey, resourceType, permissionType, List.of(resourceId1, resourceId2));
+        ownerKey, resourceType, permissionType, Set.of(resourceId1, resourceId2));
 
     // when
     authorizationState.removePermission(
-        ownerKey, resourceType, permissionType, List.of(resourceId1));
+        ownerKey, resourceType, permissionType, Set.of(resourceId1));
 
     // then
     assertThat(authorizationState.getResourceIdentifiers(ownerKey, resourceType, permissionType))
@@ -252,11 +251,11 @@ public class AuthorizationStateTest {
     final var resourceId1 = "foo";
     final var resourceId2 = "bar";
     authorizationState.createOrAddPermission(
-        ownerKey, resourceType, permissionType, List.of(resourceId1, resourceId2));
+        ownerKey, resourceType, permissionType, Set.of(resourceId1, resourceId2));
 
     // when
     authorizationState.removePermission(
-        ownerKey, resourceType, permissionType, List.of("foo", "bar"));
+        ownerKey, resourceType, permissionType, Set.of("foo", "bar"));
 
     // then
     assertThat(authorizationState.getResourceIdentifiers(ownerKey, resourceType, permissionType))

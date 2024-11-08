@@ -89,6 +89,20 @@
           "justification": "USER_TASK was added and released with 8.6 without any way to use it. For 8.7 the definitive types became available and USER_TASK is not one of them.",
           "old": "field io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.USER_TASK",
           "code": "java.field.removed"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method java.util.List<java.lang.String> io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.PermissionValue::getResourceIds()",
+          "new": "method java.util.Set<java.lang.String> io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.PermissionValue::getResourceIds()",
+          "justification": "This method was added and released with 8.6 without any way to use it. We can safely change the return type in 8.7."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method java.util.List<java.lang.String> io.camunda.zeebe.protocol.record.value.ImmutablePermissionValue::getResourceIds()",
+          "new": "method java.util.Set<java.lang.String> io.camunda.zeebe.protocol.record.value.ImmutablePermissionValue::getResourceIds()",
+          "justification": "This method was added and released with 8.6 without any way to use it. We can safely change the return type in 8.7."
         }
       ]
     }
