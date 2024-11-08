@@ -11,16 +11,45 @@ import type {License} from 'modules/types';
 const validLicense: License = {
   validLicense: true,
   licenseType: 'production',
+  isCommercial: false,
+  expiresAt: new Date().toISOString(),
 };
 
 const saasLicense: License = {
   validLicense: true,
   licenseType: 'saas',
+  isCommercial: false,
+  expiresAt: new Date().toISOString(),
 };
 
 const invalidLicense: License = {
   validLicense: false,
   licenseType: 'production',
+  isCommercial: false,
+  expiresAt: null,
 };
 
-export {validLicense, invalidLicense, saasLicense};
+const commercialExpired: License = {
+  validLicense: true,
+  licenseType: 'production',
+  isCommercial: true,
+  expiresAt: new Date().toISOString(),
+};
+
+const date = new Date();
+date.setUTCDate(date.getUTCDate() + 1); // add one day
+
+const validNonCommercial = {
+  validLicense: true,
+  licenseType: 'production',
+  isCommercial: false,
+  expiresAt: date.toISOString(),
+};
+
+export {
+  validLicense,
+  invalidLicense,
+  saasLicense,
+  commercialExpired,
+  validNonCommercial,
+};
