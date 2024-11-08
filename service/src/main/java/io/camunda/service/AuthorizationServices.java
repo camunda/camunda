@@ -89,7 +89,6 @@ public class AuthorizationServices
     final var brokerRequest =
         new BrokerAuthorizationPatchRequest(intent)
             .setOwnerKey(request.ownerKey())
-            .setAction(request.action())
             .setResourceType(request.resourceType());
     request.permissions().forEach(brokerRequest::addPermissions);
     return sendBrokerRequest(brokerRequest);

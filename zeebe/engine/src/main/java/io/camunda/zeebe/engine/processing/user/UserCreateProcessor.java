@@ -27,7 +27,6 @@ import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -107,7 +106,6 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
   private void addUserPermissions(final long key, final String username) {
     final var authorizationRecord =
         new AuthorizationRecord()
-            .setAction(PermissionAction.ADD)
             .setOwnerKey(key)
             .setOwnerType(AuthorizationOwnerType.USER)
             .setResourceType(AuthorizationResourceType.USER)
