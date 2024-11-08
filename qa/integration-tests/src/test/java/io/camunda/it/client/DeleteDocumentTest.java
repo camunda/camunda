@@ -33,7 +33,7 @@ public class DeleteDocumentTest {
 
   @SuppressWarnings("unused")
   static void initTestStandaloneCamunda() {
-    testStandaloneCamunda = new TestStandaloneCamunda();
+    testStandaloneCamunda = new TestStandaloneCamunda().withCamundaExporter();
   }
 
   @BeforeEach

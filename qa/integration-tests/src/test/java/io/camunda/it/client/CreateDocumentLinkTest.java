@@ -32,7 +32,7 @@ public class CreateDocumentLinkTest {
 
   @SuppressWarnings("unused")
   static void initTestStandaloneCamunda() {
-    testStandaloneCamunda = new TestStandaloneCamunda();
+    testStandaloneCamunda = new TestStandaloneCamunda().withCamundaExporter();
   }
 
   @BeforeAll
