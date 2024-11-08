@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.archiver;
 
+import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
+
 import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.archiver.ArchiverRepository.NoopArchiverRepository;
 import io.camunda.exporter.config.ConnectionTypes;
@@ -87,16 +89,20 @@ public final class Archiver implements CloseableSilently {
             .name("exporter-" + exporterId + "-p" + partitionId + "-bg-", 0)
             .uncaughtExceptionHandler(FatalErrorHandler.uncaughtExceptionHandler(logger))
             .factory();
-    final var executor = defaultExecutor(threadFactory);
+    final var executor = defaultExecutor(threadFactory, partitionId);
     final var repository =
         createRepository(config, resourceProvider, partitionId, executor, metrics, logger);
     final var archiver = new Archiver(partitionId, repository, logger, executor);
     final var processInstanceJob =
         createProcessInstanceJob(metrics, logger, resourceProvider, repository, executor);
-    final var batchOperationJob =
-        createBatchOperationJob(metrics, logger, resourceProvider, repository, executor);
+    if (partitionId == START_PARTITION_ID) {
+      final var batchOperationJob =
+          createBatchOperationJob(metrics, logger, resourceProvider, repository, executor);
+      archiver.start(config.getArchiver(), processInstanceJob, batchOperationJob);
+    } else {
+      archiver.start(config.getArchiver(), processInstanceJob);
+    }
 
-    archiver.start(config.getArchiver(), processInstanceJob, batchOperationJob);
     return archiver;
   }
 
@@ -142,9 +148,11 @@ public final class Archiver implements CloseableSilently {
         executor);
   }
 
-  private static ScheduledThreadPoolExecutor defaultExecutor(final ThreadFactory threadFactory) {
-    // TODO: set size to 2 in case we need to do batch operations
-    final var executor = new ScheduledThreadPoolExecutor(1, threadFactory);
+  private static ScheduledThreadPoolExecutor defaultExecutor(
+      final ThreadFactory threadFactory, final int partitionId) {
+    // if we are present on partition 1, we need to have 2 threads to handle both jobs
+    final var executor =
+        new ScheduledThreadPoolExecutor(partitionId == START_PARTITION_ID ? 2 : 1, threadFactory);
     executor.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
     executor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
     executor.setRemoveOnCancelPolicy(true);
