@@ -25,12 +25,12 @@ import {authenticationStore} from 'modules/stores/authentication';
 import {themeStore} from 'modules/stores/theme';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {getStateLocally} from 'modules/utils/localStorage';
-import styles from './styles.module.scss';
+import {useLicense} from 'modules/queries/useLicense';
 import {
   languageItems,
   type SelectionOption,
 } from 'modules/internationalization';
-import {useLicense} from '../../modules/queries/useLicense';
+import styles from './styles.module.scss';
 
 function getInfoSidebarItems(isPaidPlan: boolean) {
   const BASE_INFO_SIDEBAR_ITEMS = [
@@ -178,6 +178,8 @@ const Header: React.FC = observer(() => {
         licenseTag: {
           show: license !== undefined && license.licenseType !== 'saas',
           isProductionLicense: license?.validLicense ?? false,
+          isCommercial: license?.isCommercial,
+          expiresAt: license?.expiresAt ?? undefined,
         },
       }}
       infoSideBar={{
