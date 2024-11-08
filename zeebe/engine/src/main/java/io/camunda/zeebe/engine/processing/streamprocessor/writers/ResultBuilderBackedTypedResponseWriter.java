@@ -52,6 +52,29 @@ public class ResultBuilderBackedTypedResponseWriter extends AbstractResultBuilde
   }
 
   @Override
+  public void writeRejection(
+      final long key,
+      final Intent intent,
+      final UnifiedRecordValue value,
+      final ValueType valueType,
+      final RejectionType type,
+      final String reason,
+      final long requestId,
+      final int requestStreamId) {
+    resultBuilder()
+        .withResponse(
+            RecordType.COMMAND_REJECTION,
+            key,
+            intent,
+            value,
+            valueType,
+            type,
+            reason,
+            requestId,
+            requestStreamId);
+  }
+
+  @Override
   public void writeEvent(final TypedRecord<?> event) {
     writeResponse(
         event.getKey(),
@@ -95,29 +118,6 @@ public class ResultBuilderBackedTypedResponseWriter extends AbstractResultBuilde
             valueType,
             RejectionType.NULL_VAL,
             "",
-            requestId,
-            requestStreamId);
-  }
-
-  @Override
-  public void writeRejection(
-      final Intent intent,
-      final long key,
-      final UnifiedRecordValue value,
-      final ValueType valueType,
-      final RejectionType type,
-      final String reason,
-      final long requestId,
-      final int requestStreamId) {
-    resultBuilder()
-        .withResponse(
-            RecordType.COMMAND_REJECTION,
-            key,
-            intent,
-            value,
-            valueType,
-            type,
-            reason,
             requestId,
             requestStreamId);
   }

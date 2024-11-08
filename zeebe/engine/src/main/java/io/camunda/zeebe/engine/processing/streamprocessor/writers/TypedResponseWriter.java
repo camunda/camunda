@@ -26,8 +26,8 @@ public interface TypedResponseWriter {
       final int requestStreamId);
 
   void writeRejection(
-      final Intent intent,
       final long key,
+      final Intent intent,
       final UnifiedRecordValue value,
       final ValueType valueType,
       final RejectionType type,

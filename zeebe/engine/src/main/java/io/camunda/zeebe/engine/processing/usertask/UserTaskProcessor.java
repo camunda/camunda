@@ -83,7 +83,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     switch (intent) {
       case ASSIGN, CLAIM, COMPLETE, UPDATE -> processOperationCommand(command, intent);
       case COMPLETE_TASK_LISTENER -> processCompleteTaskListener(command);
-      case DENY_TASK_LISTENER -> processRejectTaskListener(command);
+      case DENY_TASK_LISTENER -> processDenyTaskListener(command);
       default -> throw new UnsupportedOperationException("Unexpected user task intent: " + intent);
     }
   }
@@ -104,7 +104,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
             () -> commandProcessor.onFinalizeCommand(command, persistedRecord));
   }
 
-  private void processRejectTaskListener(final TypedRecord<UserTaskRecord> command) {
+  private void processDenyTaskListener(final TypedRecord<UserTaskRecord> command) {
     final var lifecycleState = userTaskState.getLifecycleState(command.getKey());
     final var persistedRecord = userTaskState.getUserTask(command.getKey());
 
@@ -218,8 +218,8 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     recordRequestMetadata.ifPresent(
         metadata -> {
           responseWriter.writeRejection(
-              UserTaskIntent.COMPLETE,
               command.getKey(),
+              UserTaskIntent.COMPLETE,
               command.getValue(),
               command.getValueType(),
               RejectionType.INVALID_STATE,
