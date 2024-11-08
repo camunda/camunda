@@ -171,6 +171,12 @@ func main() {
 
         javaHome := os.Getenv("JAVA_HOME")
 	javaBinary := "java"
+        javaHomeAfterSymlink, err := filepath.EvalSymlinks(javaHome)
+        if err != nil {
+                fmt.Println("Failed to check if filepath is a symlink")
+                os.Exit(1)
+        }
+        javaHome = javaHomeAfterSymlink
         if javaHome != "" {
                 filepath.Walk(javaHome, func(path string, info os.FileInfo, err error) error {
                         _, filename := filepath.Split(path)
