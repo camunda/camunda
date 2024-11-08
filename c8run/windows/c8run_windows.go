@@ -299,7 +299,7 @@ func main() {
 		} else {
 			extraArgs = "--spring.config.location=" + filepath.Join(parentDir, "configuration")
 		}
-		camundaCmd := exec.Command(parentDir + "\\camunda-zeebe-" + camundaVersion + "\\bin\\camunda", extraArgs)
+		camundaCmd := exec.Command(".\\camunda-zeebe-" + camundaVersion + "\\bin\\camunda.bat", extraArgs)
 		camundaLogPath := filepath.Join(parentDir, "log", "camunda.log")
 		camundaLogFile, err := os.OpenFile(camundaLogPath, os.O_RDWR|os.O_CREATE, 0644)
 		if err != nil {
