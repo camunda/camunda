@@ -54,7 +54,7 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
   }
 
   private String formattedIndexPrefix() {
-    return getIndexPrefix() != null && !getIndexPrefix().isBlank() ? getIndexPrefix() + "-" : "";
+    return formatIndexPrefix(getIndexPrefix());
   }
 
   public String getIndexPrefix() {
@@ -62,4 +62,8 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
   }
 
   public abstract String getComponentName();
+
+  public static String formatIndexPrefix(final String indexPrefix) {
+    return indexPrefix != null && !indexPrefix.isBlank() ? indexPrefix + "-" : "";
+  }
 }
