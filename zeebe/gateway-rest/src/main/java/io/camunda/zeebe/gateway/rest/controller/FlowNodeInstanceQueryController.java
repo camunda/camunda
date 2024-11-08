@@ -55,7 +55,9 @@ public class FlowNodeInstanceQueryController {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toFlowNodeInstance(
-                  flownodeInstanceServices.getByKey(flowNodeInstanceKey)));
+                  flownodeInstanceServices
+                      .withAuthentication(RequestMapper.getAuthentication())
+                      .getByKey(flowNodeInstanceKey)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

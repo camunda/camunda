@@ -7,16 +7,16 @@
  */
 package io.camunda.service;
 
+import static io.camunda.search.query.SearchQueryBuilders.variableSearchQuery;
+
 import io.camunda.search.clients.VariableSearchClient;
 import io.camunda.search.entities.VariableEntity;
-import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.search.exception.NotFoundException;
-import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.search.query.VariableQuery.Builder;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.util.ObjectBuilder;
@@ -54,19 +54,20 @@ public final class VariableServices
 
   public SearchQueryResult<VariableEntity> search(
       final Function<Builder, ObjectBuilder<VariableQuery>> fn) {
-    return search(SearchQueryBuilders.variableSearchQuery(fn));
+    return search(variableSearchQuery(fn));
   }
 
   public VariableEntity getByKey(final Long key) {
-    final SearchQueryResult<VariableEntity> result =
-        search(SearchQueryBuilders.variableSearchQuery().filter(f -> f.variableKeys(key)).build());
-    if (result.total() < 1) {
-      throw new NotFoundException(String.format("Variable with key %d not found", key));
-    } else if (result.total() > 1) {
-      throw new CamundaSearchException(
-          String.format("Found Variable with key %d more than once", key));
-    } else {
-      return result.items().stream().findFirst().orElseThrow();
+    final var result =
+        variableSearchClient
+            .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
+            .searchVariables(variableSearchQuery(q -> q.filter(f -> f.variableKeys(key))));
+    final var variableEntity = getSingleResultOrThrow(result, key, "Variable");
+    final var authorization = Authorization.of(a -> a.processDefinition().readInstance());
+    if (!securityContextProvider.isAuthorized(
+        variableEntity.bpmnProcessId(), authentication, authorization)) {
+      throw new ForbiddenException(authorization);
     }
+    return variableEntity;
   }
 }

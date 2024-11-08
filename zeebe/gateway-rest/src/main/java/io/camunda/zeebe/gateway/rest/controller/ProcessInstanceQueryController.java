@@ -65,7 +65,9 @@ public class ProcessInstanceQueryController {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toProcessInstance(
-                  processInstanceServices.getByKey(processInstanceKey)));
+                  processInstanceServices
+                      .withAuthentication(RequestMapper.getAuthentication())
+                      .getByKey(processInstanceKey)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
