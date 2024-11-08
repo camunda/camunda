@@ -12,13 +12,18 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.usermanagement.TenantEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import java.util.List;
+import java.util.Set;
 
-public class TenantHandler implements ExportHandler<TenantEntity, TenantRecordValue> {
+public class TenantCreateUpdateHandler implements ExportHandler<TenantEntity, TenantRecordValue> {
+  private static final Set<Intent> SUPPORTED_INTENTS =
+      Set.of(TenantIntent.CREATED, TenantIntent.UPDATED);
   private final String indexName;
 
-  public TenantHandler(final String indexName) {
+  public TenantCreateUpdateHandler(final String indexName) {
     this.indexName = indexName;
   }
 
@@ -34,7 +39,8 @@ public class TenantHandler implements ExportHandler<TenantEntity, TenantRecordVa
 
   @Override
   public boolean handlesRecord(final Record<TenantRecordValue> record) {
-    return getHandledValueType().equals(record.getValueType());
+    return getHandledValueType().equals(record.getValueType())
+        && SUPPORTED_INTENTS.contains(record.getIntent());
   }
 
   @Override
