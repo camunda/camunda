@@ -2632,7 +2632,7 @@ final class JsonSerializableToJsonTest {
           "permissions": [
             {
               "permissionType": "CREATE",
-              "resourceIds": ["*", "bpmnProcessId:foo"]
+              "resourceIds": ["bpmnProcessId:foo", "*"]
             },
             {
               "permissionType": "READ",
