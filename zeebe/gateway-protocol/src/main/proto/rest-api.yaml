@@ -2782,37 +2782,37 @@ paths:
 
   /users/{userKey}:
     delete:
-        tags:
-            - User
-        operationId: deleteUser
-        summary: Delete user
-        description: |
-            Deletes a user.
-        parameters:
-            - name: userKey
-              in: path
-              required: true
-              description: The key of the user to delete.
+      tags:
+        - User
+      operationId: deleteUser
+      summary: Delete user
+      description: |
+        Deletes a user.
+      parameters:
+        - name: userKey
+          in: path
+          required: true
+          description: The key of the user to delete.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "204":
+          description: The user was deleted successfully.
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
               schema:
-                  type: integer
-                  format: int64
-        responses:
-            "204":
-              description: The user was deleted successfully.
-            "400":
-              description: The provided data is not valid.
-              content:
-                application/problem+json:
-                  schema:
-                    $ref: "#/components/schemas/ProblemDetail"
-            "404":
-              description: The user is not found.
-              content:
-                application/problem+json:
-                  schema:
-                    $ref: "#/components/schemas/ProblemDetail"
-            "500":
-              $ref: "#/components/responses/InternalServerError"
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: The user is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /incidents/search:
     post:
@@ -3186,7 +3186,7 @@ components:
       type: object
       properties:
         items:
-          description: sjh
+          description: The matching user tasks.
           type: array
           items:
             $ref: "#/components/schemas/UserTaskItem"
@@ -3245,7 +3245,7 @@ components:
           format: int64
         variables:
           type: array
-          description: sjh
+          description: Variables associated with the user task.
           items:
             $ref: "#/components/schemas/UserTaskVariableFilterRequest"
     UserTaskVariableFilterRequest:
@@ -3261,7 +3261,7 @@ components:
       type: object
       properties:
         userTaskKey:
-          description: sjh
+          description: The key of the user task.
           type: integer
           format: int64
         state:
@@ -3273,7 +3273,7 @@ components:
             - CANCELED
             - FAILED
         assignee:
-          description: sjh
+          description: The assignee of the user task.
           type: string
         elementId:
           type: string
@@ -3389,7 +3389,7 @@ components:
       type: object
       properties:
         items:
-          description: sjh
+          description: The matching variables.
           type: array
           items:
             $ref: "#/components/schemas/VariableItem"
@@ -3430,10 +3430,9 @@ components:
       type: object
       properties:
         filter:
-          description: sjh
-          allOf:
-            - $ref: "#/components/schemas/ProcessDefinitionFilterRequest"
+          $ref: "#/components/schemas/ProcessDefinitionFilterRequest"
     ProcessDefinitionFilterRequest:
+      description: Process definition search filter.
       type: object
       properties:
         processDefinitionKey:
@@ -3465,7 +3464,7 @@ components:
       type: object
       properties:
         items:
-          description: sjh
+          description: The matching process definitions.
           type: array
           items:
             $ref: "#/components/schemas/ProcessDefinitionItem"
@@ -3502,9 +3501,7 @@ components:
       type: object
       properties:
         filter:
-          description: sjh
-          allOf:
-            - $ref: "#/components/schemas/ProcessInstanceFilterRequest"
+          $ref: "#/components/schemas/ProcessInstanceFilterRequest"
     AdvancedIntegerFilter:
       description: Advanced integer (int32) filter.
       type: object
@@ -3788,7 +3785,7 @@ components:
       type: object
       properties:
         items:
-          description: sjh
+          description: The matching process instances.
           type: array
           items:
             $ref: "#/components/schemas/ProcessInstanceItem"
@@ -3868,10 +3865,9 @@ components:
       type: object
       properties:
         filter:
-          description: sjh
-          allOf:
-            - $ref: "#/components/schemas/FlowNodeInstanceFilterRequest"
+          $ref: "#/components/schemas/FlowNodeInstanceFilterRequest"
     FlowNodeInstanceFilterRequest:
+      description: Flow node instance filter.
       type: object
       properties:
         flowNodeInstanceKey:
@@ -3950,7 +3946,7 @@ components:
       type: object
       properties:
         items:
-          description: sjh
+          description: The matching flow node instances.
           type: array
           items:
             $ref: "#/components/schemas/FlowNodeInstanceItem"
@@ -4038,10 +4034,9 @@ components:
       type: object
       properties:
         filter:
-          description: sjh
-          allOf:
-            - $ref: "#/components/schemas/DecisionDefinitionFilterRequest"
+          $ref: "#/components/schemas/DecisionDefinitionFilterRequest"
     DecisionDefinitionFilterRequest:
+      description: Decision definition search filter.
       type: object
       properties:
         decisionDefinitionKey:
@@ -4074,10 +4069,9 @@ components:
       type: object
       properties:
         filter:
-          description: sjh
-          allOf:
-            - $ref: "#/components/schemas/IncidentFilterRequest"
+          $ref: "#/components/schemas/IncidentFilterRequest"
     IncidentFilterRequest:
+      description: Incident search filter.
       type: object
       properties:
         incidentKey:
@@ -4149,7 +4143,7 @@ components:
       type: object
       properties:
         items:
-          description: sjh
+          description: The matching incidents.
           type: array
           items:
             $ref: "#/components/schemas/IncidentItem"
@@ -4226,7 +4220,7 @@ components:
       type: object
       properties:
         items:
-          description: sjh
+          description: The matching decision definitions.
           type: array
           items:
             $ref: "#/components/schemas/DecisionDefinitionItem"
@@ -4339,10 +4333,9 @@ components:
       type: object
       properties:
         filter:
-          description: sjh
-          allOf:
-            - $ref: "#/components/schemas/AuthorizationFilterRequest"
+          $ref: "#/components/schemas/AuthorizationFilterRequest"
     AuthorizationFilterRequest:
+      description: Authorization search filter.
       type: object
       properties:
         ownerType:
@@ -4382,7 +4375,7 @@ components:
         - $ref: "#/components/schemas/SearchQueryResponse"
       properties:
         items:
-          description: sjh
+          description: The matching authorizations.
           type: array
           items:
             $ref: "#/components/schemas/AuthorizationResponse"
@@ -4390,16 +4383,16 @@ components:
       type: "object"
       properties:
         password:
-          description: sjh
+          description: The password of the user.
           type: "string"
         username:
-          description: sjh
+          description: The username of the user.
           type: "string"
         name:
-          description: sjh
+          description: The name of the user.
           type: "string"
         email:
-          description: sjh
+          description: The email of the user.
           type: "string"
     UserCreateResponse:
       type: "object"
@@ -4414,40 +4407,39 @@ components:
       type: object
       properties:
         filter:
-          description: sjh
-          allOf:
-            - $ref: "#/components/schemas/UserFilterRequest"
+          $ref: "#/components/schemas/UserFilterRequest"
     UserFilterRequest:
+      description: User search filter.
       type: object
       properties:
         username:
-          description: sjh
+          description: The username of the user.
           type: "string"
         name:
-          description: sjh
+          description: The name of the user.
           type: "string"
         email:
-          description: sjh
+          description: The email of the user.
           type: "string"
     UserResponse:
       type: "object"
       properties:
         id:
-          description: sjh
+          description: The ID of the user.
           type: "integer"
           format: "int64"
         key:
-          description: sjh
+          description: The key of the user.
           type: "integer"
           format: "int64"
         username:
-          description: sjh
+          description: The username of the user.
           type: "string"
         name:
-          description: sjh
+          description: The name of the user.
           type: "string"
         email:
-          description: sjh
+          description: The email of the user.
           type: "string"
     UserSearchResponse:
       type: object
@@ -4455,7 +4447,7 @@ components:
         - $ref: "#/components/schemas/SearchQueryResponse"
       properties:
         items:
-          description: sjh
+          description: The matching users.
           type: array
           items:
             $ref: "#/components/schemas/UserResponse"
@@ -4754,14 +4746,14 @@ components:
           maximum: 100
           nullable: true
     ClockPinRequest:
-            type: object
-            properties:
-              timestamp:
-                description: The exact time in epoch milliseconds to which the clock should be pinned.
-                type: integer
-                format: int64
-            required:
-              - timestamp
+      type: object
+      properties:
+        timestamp:
+          description: The exact time in epoch milliseconds to which the clock should be pinned.
+          type: integer
+          format: int64
+      required:
+        - timestamp
     JobActivationRequest:
       type: object
       properties:
@@ -4817,7 +4809,7 @@ components:
       type: object
       properties:
         jobs:
-          description: sjh
+          description: The activated jobs.
           type: array
           items:
             $ref: "#/components/schemas/ActivatedJob"
@@ -5013,13 +5005,13 @@ components:
       type: object
       properties:
         sort:
-          description: sjh
+          description: Sort field criteria.
           type: array
           items:
             allOf:
               - $ref: "#/components/schemas/SearchQuerySortRequest"
         page:
-          description: sjh
+          description: Pagination criteria.
           allOf:
             - $ref: "#/components/schemas/SearchQueryPageRequest"
           type: object
@@ -5027,20 +5019,20 @@ components:
       type: object
       properties:
         from:
-          description: sjh
+          description: The index to start searching from.
           type: integer
           format: int32
         limit:
-          description: sjh
+          description: The number of items to return in one page.
           type: integer
           format: int32
         searchAfter:
-          description: sjh
+          description: Items to search after.
           type: array
           items:
             type: object
         searchBefore:
-          description: sjh
+          description: Items to search before.
           type: array
           items:
             type: object
@@ -5048,10 +5040,10 @@ components:
       type: object
       properties:
         field:
-          description: sjh
+          description: The field to sort by.
           type: string
         order:
-          description: sjh
+          description: The order in which to sort the field.
           type: string
           default: asc
       required:
@@ -5060,15 +5052,13 @@ components:
       type: object
       properties:
         page:
-          description: sjh
-          allOf:
-            - $ref: "#/components/schemas/SearchQueryPageResponse"
-          type: object
+          $ref: "#/components/schemas/SearchQueryPageResponse"
     SearchQueryPageResponse:
+      description: Pagination information about the search results.
       type: object
       properties:
         totalItems:
-          description: sjh
+          description: Total items matching the criteria.
           type: integer
           format: int64
         firstSortValues:
@@ -5519,7 +5509,6 @@ components:
         tenantId:
           description: The tenant ID of the message.
           type: string
-          description: sjh
     DocumentReference:
       type: object
       properties:
@@ -5564,7 +5553,6 @@ components:
           type: object
           description: Custom properties of the document.
           additionalProperties: true
-
     DocumentLinkRequest:
       type: object
       properties:
