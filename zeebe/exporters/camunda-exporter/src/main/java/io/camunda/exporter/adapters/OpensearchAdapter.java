@@ -8,6 +8,8 @@
 package io.camunda.exporter.adapters;
 
 import com.github.benmanes.caffeine.cache.CacheLoader;
+import io.camunda.exporter.cache.form.CachedFormEntity;
+import io.camunda.exporter.cache.form.OpenSearchFormCacheLoader;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.cache.process.OpenSearchProcessCacheLoader;
 import io.camunda.exporter.config.ExporterConfiguration;
@@ -46,6 +48,11 @@ class OpensearchAdapter implements ClientAdapter {
   public CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(
       final String processIndexName) {
     return new OpenSearchProcessCacheLoader(client, processIndexName);
+  }
+
+  @Override
+  public CacheLoader<String, CachedFormEntity> getFormCacheLoader(final String formIndexName) {
+    return new OpenSearchFormCacheLoader(client, formIndexName);
   }
 
   @Override

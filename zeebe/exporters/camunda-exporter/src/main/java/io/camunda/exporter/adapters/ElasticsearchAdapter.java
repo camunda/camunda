@@ -10,6 +10,8 @@ package io.camunda.exporter.adapters;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import com.github.benmanes.caffeine.cache.CacheLoader;
+import io.camunda.exporter.cache.form.CachedFormEntity;
+import io.camunda.exporter.cache.form.ElasticSearchFormCacheLoader;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.cache.process.ElasticSearchProcessCacheLoader;
 import io.camunda.exporter.config.ExporterConfiguration;
@@ -46,6 +48,11 @@ class ElasticsearchAdapter implements ClientAdapter {
   public CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(
       final String processIndexName) {
     return new ElasticSearchProcessCacheLoader(client, processIndexName);
+  }
+
+  @Override
+  public CacheLoader<String, CachedFormEntity> getFormCacheLoader(final String formIndexName) {
+    return new ElasticSearchFormCacheLoader(client, formIndexName);
   }
 
   @Override

@@ -8,6 +8,7 @@
 package io.camunda.exporter.adapters;
 
 import com.github.benmanes.caffeine.cache.CacheLoader;
+import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
@@ -29,6 +30,8 @@ public interface ClientAdapter {
   BatchRequest createBatchRequest();
 
   CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(String processIndexName);
+
+  CacheLoader<String, CachedFormEntity> getFormCacheLoader(String formIndexName);
 
   void close() throws IOException;
 }
