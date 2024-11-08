@@ -27,7 +27,7 @@ public class MigrateEscalationEventTest {
   private static final String ESCALATION_CODE_NUMBER_2 = "405";
   private static final String ESCALATION_CODE_NUMBER_3 = "406";
   private static final String ESCALATION_CODE_NUMBER_4 = "407";
-  @Rule public final EngineRule engine = EngineRule.singlePartition();
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
