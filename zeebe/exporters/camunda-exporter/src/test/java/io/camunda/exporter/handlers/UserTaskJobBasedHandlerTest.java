@@ -12,6 +12,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.exporter.cache.TestFormCache;
+import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
@@ -47,7 +49,9 @@ public class UserTaskJobBasedHandlerTest {
           JobIntent.FAILED);
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-tasklist-task";
-  private final UserTaskJobBasedHandler underTest = new UserTaskJobBasedHandler(indexName);
+  private final TestFormCache formCache = new TestFormCache();
+  private final UserTaskJobBasedHandler underTest =
+      new UserTaskJobBasedHandler(indexName, formCache);
 
   @Test
   void testGetHandledValueType() {
@@ -165,6 +169,8 @@ public class UserTaskJobBasedHandlerTest {
                     .withValue(jobRecordValue)
                     .withTimestamp(System.currentTimeMillis()));
 
+    formCache.put(formKey, new CachedFormEntity("my-form", 987L));
+
     // when
     final TaskEntity taskEntity = new TaskEntity().setId(String.valueOf(jobKey));
     underTest.updateEntity(jobRecord, taskEntity);
@@ -183,6 +189,9 @@ public class UserTaskJobBasedHandlerTest {
     assertThat(taskEntity.getProcessDefinitionVersion())
         .isEqualTo(jobRecordValue.getProcessDefinitionVersion());
     assertThat(taskEntity.getFormKey()).isEqualTo(formKey);
+    assertThat(taskEntity.getFormId()).isEqualTo("my-form");
+    assertThat(taskEntity.getFormVersion()).isEqualTo(987L);
+    assertThat(taskEntity.getIsFormEmbedded()).isFalse();
     assertThat(taskEntity.getExternalFormReference()).isNull();
     assertThat(taskEntity.getCustomHeaders()).isNull();
     assertThat(taskEntity.getPriority()).isNull();
@@ -201,6 +210,45 @@ public class UserTaskJobBasedHandlerTest {
         .isEqualTo(
             ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(jobRecord.getTimestamp())));
     assertThat(taskEntity.getImplementation()).isEqualTo(TaskImplementation.JOB_WORKER);
+  }
+
+  @Test
+  void shouldNotSetFormIdAndVersionIfCamundaEmbeddedForm() {
+    // given
+    final long processInstanceKey = 123;
+    final long jobKey = 456;
+    final var formKey = "camunda-forms:bpmn:my-form";
+
+    final var customerHeaders = new HashMap<String, String>();
+    customerHeaders.put(Protocol.USER_TASK_FORM_KEY_HEADER_NAME, formKey);
+
+    final JobRecordValue jobRecordValue =
+        ImmutableJobRecordValue.builder()
+            .from(factory.generateObject(JobRecordValue.class))
+            .withCustomHeaders(customerHeaders)
+            .withProcessInstanceKey(processInstanceKey)
+            .build();
+
+    final Record<JobRecordValue> jobRecord =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.CREATED)
+                    .withKey(jobKey)
+                    .withValue(jobRecordValue)
+                    .withTimestamp(System.currentTimeMillis()));
+
+    formCache.put("formId", new CachedFormEntity("my-form", 987L));
+
+    // when
+    final TaskEntity taskEntity = new TaskEntity().setId(String.valueOf(jobKey));
+    underTest.updateEntity(jobRecord, taskEntity);
+
+    // then
+    assertThat(taskEntity.getFormKey()).isEqualTo(formKey);
+    assertThat(taskEntity.getFormId()).isNull();
+    assertThat(taskEntity.getFormVersion()).isNull();
+    assertThat(taskEntity.getIsFormEmbedded()).isTrue();
   }
 
   @Test

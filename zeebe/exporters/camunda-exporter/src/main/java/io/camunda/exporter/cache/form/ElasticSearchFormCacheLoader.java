@@ -34,7 +34,7 @@ public class ElasticSearchFormCacheLoader implements CacheLoader<String, CachedF
 
   @Override
   public CachedFormEntity load(final String formKey) throws IOException {
-    final var termQuery = QueryBuilders.term(t -> t.field(FormIndex.ID).value(formKey));
+    final var termQuery = QueryBuilders.ids(i -> i.values(formKey));
     final var sorting =
         SortOptionsBuilders.field(f -> f.field(FormIndex.VERSION).order(SortOrder.Desc));
     final var sourceFilter =
@@ -53,7 +53,7 @@ public class ElasticSearchFormCacheLoader implements CacheLoader<String, CachedF
             FormEntity.class);
     if (response.hits() != null && !response.hits().hits().isEmpty()) {
       final var formEntity = response.hits().hits().getFirst().source();
-      return new CachedFormEntity(formEntity.getBpmnId(), formEntity.getVersion());
+      return new CachedFormEntity(formEntity.getFormId(), formEntity.getVersion());
     } else {
       LOG.debug("Form '{}' not found in Elasticsearch", formKey);
       return null;

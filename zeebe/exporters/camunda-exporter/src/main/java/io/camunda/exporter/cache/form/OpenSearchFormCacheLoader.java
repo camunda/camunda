@@ -12,7 +12,6 @@ import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import java.io.IOException;
 import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.SortOptionsBuilders;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
@@ -33,8 +32,7 @@ public class OpenSearchFormCacheLoader implements CacheLoader<String, CachedForm
 
   @Override
   public CachedFormEntity load(final String formKey) throws IOException {
-    final var termQuery =
-        QueryBuilders.term().field(FormIndex.ID).value(FieldValue.of(formKey)).build();
+    final var idQuery = QueryBuilders.ids().values(formKey).build();
     final var sorting =
         SortOptionsBuilders.field().field(FormIndex.VERSION).order(SortOrder.Desc).build();
     final var sourceFilter =
@@ -46,14 +44,14 @@ public class OpenSearchFormCacheLoader implements CacheLoader<String, CachedForm
             request ->
                 request
                     .index(formIndexName)
-                    .query(q -> q.term(termQuery))
+                    .query(q -> q.ids(idQuery))
                     .sort(s -> s.field(sorting))
                     .source(s -> s.filter(sourceFilter))
                     .size(1),
             FormEntity.class);
     if (response.hits() != null && !response.hits().hits().isEmpty()) {
       final var formEntity = response.hits().hits().getFirst().source();
-      return new CachedFormEntity(formEntity.getBpmnId(), formEntity.getVersion());
+      return new CachedFormEntity(formEntity.getFormId(), formEntity.getVersion());
     } else {
       LOG.debug("Form '{}' not found in OpenSearch", formKey);
       return null;
