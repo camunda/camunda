@@ -12,12 +12,11 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import java.util.Optional;
 
-public class ProcessCacheImpl implements ProcessCache {
+public class ExporterEntityCacheImpl<K, T> implements ExporterEntityCache<K, T> {
 
-  private final LoadingCache<Long, CachedProcessEntity> cache;
+  private final LoadingCache<K, T> cache;
 
-  public ProcessCacheImpl(
-      final long maxSize, final CacheLoader<Long, CachedProcessEntity> cacheLoader) {
+  public ExporterEntityCacheImpl(final long maxSize, final CacheLoader<K, T> cacheLoader) {
     cache =
         Caffeine.newBuilder()
             .maximumSize(maxSize)
@@ -32,18 +31,18 @@ public class ProcessCacheImpl implements ProcessCache {
   }
 
   @Override
-  public Optional<CachedProcessEntity> get(final long processDefinitionKey) {
-    return Optional.ofNullable(cache.get(processDefinitionKey));
+  public Optional<T> get(final K entityKey) {
+    return Optional.ofNullable(cache.get(entityKey));
   }
 
   @Override
-  public void put(final long processDefinitionKey, final CachedProcessEntity processEntity) {
-    cache.put(processDefinitionKey, processEntity);
+  public void put(final K entityKey, final T entity) {
+    cache.put(entityKey, entity);
   }
 
   @Override
-  public void remove(final long processDefinitionKey) {
-    cache.invalidate(processDefinitionKey);
+  public void remove(final K entityKey) {
+    cache.invalidate(entityKey);
   }
 
   @Override

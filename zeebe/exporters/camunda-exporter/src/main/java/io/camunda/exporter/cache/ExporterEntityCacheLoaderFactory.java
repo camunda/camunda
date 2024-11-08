@@ -10,6 +10,6 @@ package io.camunda.exporter.cache;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 
 @FunctionalInterface
-public interface ProcessCacheLoaderFactory {
-  CacheLoader<Long, CachedProcessEntity> create(String processIndexName);
+public interface ExporterEntityCacheLoaderFactory<K, T> {
+  CacheLoader<K, T> create(String indexName);
 }

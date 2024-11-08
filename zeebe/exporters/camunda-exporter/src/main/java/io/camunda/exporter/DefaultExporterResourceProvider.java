@@ -9,8 +9,9 @@ package io.camunda.exporter;
 
 import static java.util.Map.entry;
 
-import io.camunda.exporter.cache.ProcessCacheImpl;
-import io.camunda.exporter.cache.ProcessCacheLoaderFactory;
+import io.camunda.exporter.cache.ExporterEntityCacheImpl;
+import io.camunda.exporter.cache.ExporterEntityCacheLoaderFactory;
+import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.handlers.AuthorizationHandler;
@@ -92,7 +93,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   @Override
   public void init(
       final ExporterConfiguration configuration,
-      final ProcessCacheLoaderFactory processCacheLoaderFactory) {
+      final ExporterEntityCacheLoaderFactory<Long, CachedProcessEntity> processCacheLoaderFactory) {
     final var globalPrefix = configuration.getIndex().getPrefix();
     isElasticsearch =
         ConnectionTypes.from(configuration.getConnect().getType())
@@ -142,7 +143,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new AuthorizationIndex(globalPrefix, isElasticsearch));
 
     final var processCache =
-        new ProcessCacheImpl(
+        new ExporterEntityCacheImpl<Long, CachedProcessEntity>(
             10000,
             processCacheLoaderFactory.create(
                 indexDescriptorsMap.get(ProcessIndex.class).getFullQualifiedName()));

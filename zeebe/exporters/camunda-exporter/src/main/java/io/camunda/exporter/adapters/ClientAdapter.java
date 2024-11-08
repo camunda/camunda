@@ -8,7 +8,7 @@
 package io.camunda.exporter.adapters;
 
 import com.github.benmanes.caffeine.cache.CacheLoader;
-import io.camunda.exporter.cache.CachedProcessEntity;
+import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.schema.SearchEngineClient;
