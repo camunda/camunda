@@ -58,14 +58,14 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   private static final Logger LOG = LoggerFactory.getLogger(OAuthCredentialsProvider.class);
   private final URL authorizationServerUrl;
   private final String payload;
-  private final String endpoint;
+  private final String clientId;
   private final OAuthCredentialsCache credentialsCache;
   private final Duration connectionTimeout;
   private final Duration readTimeout;
 
   OAuthCredentialsProvider(final OAuthCredentialsProviderBuilder builder) {
     authorizationServerUrl = builder.getAuthorizationServer();
-    endpoint = builder.getAudience();
+    clientId = builder.getClientId();
     payload = createParams(builder);
     credentialsCache = new OAuthCredentialsCache(builder.getCredentialsCache());
     connectionTimeout = builder.getConnectTimeout();
@@ -76,7 +76,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   @Override
   public void applyCredentials(final CredentialsApplier applier) throws IOException {
     final ZeebeClientCredentials zeebeClientCredentials =
-        credentialsCache.computeIfMissingOrInvalid(endpoint, this::fetchCredentials);
+        credentialsCache.computeIfMissingOrInvalid(clientId, this::fetchCredentials);
 
     String type = zeebeClientCredentials.getTokenType();
     if (type == null || type.isEmpty()) {
@@ -99,10 +99,10 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
       return statusCode.isUnauthorized()
           && credentialsCache
               .withCache(
-                  endpoint,
+                  clientId,
                   value -> {
                     final ZeebeClientCredentials fetchedCredentials = fetchCredentials();
-                    credentialsCache.put(endpoint, fetchedCredentials).writeCache();
+                    credentialsCache.put(clientId, fetchedCredentials).writeCache();
                     return !fetchedCredentials.equals(value) || !value.isValid();
                   })
               .orElse(false);
