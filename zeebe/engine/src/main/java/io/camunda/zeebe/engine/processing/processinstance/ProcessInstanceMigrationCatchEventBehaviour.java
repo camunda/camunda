@@ -40,7 +40,6 @@ import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -175,18 +174,13 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
           recordCopy.setCompensableActivityId(targetActivityId);
 
           // set the compensation handler id if subscription belongs to an activity with a boundary
-          targetProcessDefinition
-              .getProcess()
-              .getElementById(targetActivityId, ExecutableActivity.class)
-              .getBoundaryEvents()
-              .stream()
-              .filter(event -> event.getEventType() == BpmnEventType.COMPENSATION)
-              .findFirst()
-              .ifPresent(
-                  boundary ->
-                      recordCopy.setCompensationHandlerId(
-                          BufferUtil.bufferAsString(
-                              boundary.getCompensation().getCompensationHandler().getId())));
+          final ExecutableActivity targetElement =
+              targetProcessDefinition
+                  .getProcess()
+                  .getElementById(targetActivityId, ExecutableActivity.class);
+          compensationSubscriptionBehaviour
+              .getCompensationHandlerId(targetElement)
+              .ifPresent(recordCopy::setCompensationHandlerId);
 
           stateWriter.appendFollowUpEvent(
               subscription.getKey(), CompensationSubscriptionIntent.MIGRATED, recordCopy);
@@ -209,8 +203,8 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
                   .getElementById(compensableActivityId, ExecutableActivity.class);
 
           final boolean shouldBeMigrated =
-              shouldCompensationBeMigrated(
-                  sourceElementIdToTargetElementId, compensableActivity, compensableActivityId);
+              sourceElementIdToTargetElementId.containsKey(
+                  BufferUtil.bufferAsString(compensableActivity.getId()));
 
           if (shouldBeMigrated) {
             // We will migrate this mapped catch event, so we don't want to unsubscribe from it.
@@ -227,32 +221,6 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
         });
 
     return compensationSubscriptionsToMigrate;
-  }
-
-  private static boolean shouldCompensationBeMigrated(
-      final Map<String, String> sourceElementIdToTargetElementId,
-      final ExecutableActivity compensableActivity,
-      final String compensableActivityId) {
-    if (compensableActivity.getElementType() == BpmnElementType.SUB_PROCESS) {
-      return sourceElementIdToTargetElementId.containsKey(
-          BufferUtil.bufferAsString(compensableActivity.getId()));
-    } else {
-      // compensable activity is a task
-      final var compensationBoundaryEvent =
-          compensableActivity.getEvents().stream()
-              .filter(event -> event.getEventType() == BpmnEventType.COMPENSATION)
-              .findFirst()
-              .orElseThrow(
-                  () ->
-                      new IllegalStateException(
-                          String.format(
-                              "Expected to find a compensation event for activity '%s' but not found.",
-                              compensableActivityId)));
-      return sourceElementIdToTargetElementId.containsKey(
-              BufferUtil.bufferAsString(compensableActivity.getId()))
-          && sourceElementIdToTargetElementId.containsKey(
-              BufferUtil.bufferAsString(compensationBoundaryEvent.getId()));
-    }
   }
 
   private void migrateSignalEvents(

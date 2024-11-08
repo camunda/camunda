@@ -114,7 +114,7 @@ public class BpmnCompensationSubscriptionBehaviour {
             subscription -> subscription.getRecord().getCompensableActivityScopeKey() == scopeKey);
   }
 
-  private Optional<String> getCompensationHandlerId(final ExecutableActivity element) {
+  public Optional<String> getCompensationHandlerId(final ExecutableActivity element) {
     return element.getBoundaryEvents().stream()
         .map(ExecutableBoundaryEvent::getCompensation)
         .filter(Objects::nonNull)

@@ -94,7 +94,6 @@ public class MigrateCompensationSubscriptionTest {
         .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
         .addMappingInstruction("B", "D")
         .addMappingInstruction("A", "C")
-        .addMappingInstruction("boundary1", "boundary2")
         .migrate();
 
     // then
@@ -196,7 +195,6 @@ public class MigrateCompensationSubscriptionTest {
         .addMappingInstruction("B", "D")
         .addMappingInstruction("subProcess1", "subProcess2")
         .addMappingInstruction("A", "C")
-        .addMappingInstruction("boundary1", "boundary2")
         .migrate();
 
     // then
