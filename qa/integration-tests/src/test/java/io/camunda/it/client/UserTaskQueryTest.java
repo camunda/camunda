@@ -324,7 +324,7 @@ class UserTaskQueryTest {
     // then
     assertThat(problemException.code()).isEqualTo(404);
     assertThat(problemException.details().getDetail())
-        .isEqualTo("User Task with key %d not found".formatted(userTaskKey));
+        .isEqualTo("User task with key %d not found".formatted(userTaskKey));
   }
 
   @Test

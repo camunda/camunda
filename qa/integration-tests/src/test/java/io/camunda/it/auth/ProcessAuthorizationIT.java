@@ -104,7 +104,7 @@ class ProcessAuthorizationIT {
   }
 
   @TestTemplate
-  void getByKeShouldReturnAuthorizedProcessDefinition(
+  void getByKeyShouldReturnAuthorizedProcessDefinition(
       @Authenticated(ADMIN) final ZeebeClient adminClient,
       @Authenticated(RESTRICTED) final ZeebeClient userClient) {
     // given

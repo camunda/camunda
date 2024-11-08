@@ -119,6 +119,15 @@ public record VariableFilter(
       return this;
     }
 
+    public Builder copyFrom(final VariableFilter sourceFilter) {
+      sourceFilter.variableOperations().forEach(this::variableOperations);
+      return scopeKeyOperations(sourceFilter.scopeKeyOperations())
+          .processInstanceKeyOperations(sourceFilter.processInstanceKeyOperations())
+          .variableKeyOperations(sourceFilter.variableKeyOperations())
+          .tenantIds(sourceFilter.tenantIds())
+          .isTruncated(sourceFilter.isTruncated());
+    }
+
     @Override
     public VariableFilter build() {
       return new VariableFilter(

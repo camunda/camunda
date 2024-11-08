@@ -245,7 +245,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, VariableQuery> toUserTaskVariableQuery(
-      final UserTaskVariableSearchQueryRequest request, final List<Long> treePath) {
+      final UserTaskVariableSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.variableSearchQuery().build());
     }
@@ -256,11 +256,8 @@ public final class SearchQueryRequestMapper {
             SortOptionBuilders::variable,
             SearchQueryRequestMapper::applyVariableSortField);
 
-    final var variableFilterBuilder = FilterBuilders.variable();
-    variableFilterBuilder.scopeKeys(treePath);
-
     return buildSearchQuery(
-        variableFilterBuilder.build(), sort, page, SearchQueryBuilders::variableSearchQuery);
+        FilterBuilders.variable().build(), sort, page, SearchQueryBuilders::variableSearchQuery);
   }
 
   public static Either<ProblemDetail, VariableQuery> toVariableQuery(
