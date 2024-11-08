@@ -11,21 +11,22 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.search.filter.RoleFilter;
+import io.camunda.search.filter.TenantFilter;
 import java.util.List;
 
-public class RoleFilterTransformer implements FilterTransformer<RoleFilter> {
+public class TenantFilterTransformer implements FilterTransformer<TenantFilter> {
 
   @Override
-  public SearchQuery toSearchQuery(final RoleFilter filter) {
+  public SearchQuery toSearchQuery(final TenantFilter filter) {
 
     return and(
-        filter.roleKey() == null ? null : term("roleKey", filter.roleKey()),
+        filter.tenantKey() == null ? null : term("tenantKey", filter.tenantKey()),
+        filter.tenantId() == null ? null : term("tenantId", filter.tenantId()),
         filter.name() == null ? null : term("name", filter.name()));
   }
 
   @Override
-  public List<String> toIndices(final RoleFilter filter) {
-    return List.of("identity-role-8.7.0_alias");
+  public List<String> toIndices(final TenantFilter filter) {
+    return List.of("identity-tenant-8.7.0_alias");
   }
 }
