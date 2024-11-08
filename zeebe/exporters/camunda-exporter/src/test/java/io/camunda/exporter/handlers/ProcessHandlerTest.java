@@ -115,6 +115,7 @@ public class ProcessHandlerTest {
             .from(factory.generateObject(ImmutableProcess.class))
             .withProcessDefinitionKey(expectedId)
             .withBpmnProcessId("testProcessId")
+            .withVersionTag("processTag")
             .withResource(Files.readAllBytes(Path.of(resource.getPath())))
             .build();
 
@@ -154,6 +155,7 @@ public class ProcessHandlerTest {
             .from(factory.generateObject(ImmutableProcess.class))
             .withProcessDefinitionKey(expectedId)
             .withBpmnProcessId("testProcessId")
+            .withVersionTag("processTag")
             .withResource(Files.readAllBytes(Path.of(resource.getPath())))
             .build();
 
@@ -192,6 +194,7 @@ public class ProcessHandlerTest {
             .from(factory.generateObject(ImmutableProcess.class))
             .withProcessDefinitionKey(expectedId)
             .withBpmnProcessId("testProcessId")
+            .withVersionTag("processTag")
             .withResource(Files.readAllBytes(Path.of(resource.getPath())))
             .build();
 

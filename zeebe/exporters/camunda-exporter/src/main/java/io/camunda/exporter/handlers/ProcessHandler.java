@@ -87,7 +87,6 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
             entity
                 .setName(processEntity.getName())
                 .setFlowNodes(processEntity.getFlowNodes())
-                .setVersionTag(processEntity.getVersionTag())
                 .setFormId(processEntity.getFormId())
                 .setIsPublic(processEntity.getIsPublic()));
 
