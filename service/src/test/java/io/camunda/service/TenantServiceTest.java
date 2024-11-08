@@ -19,8 +19,14 @@ import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.filter.TenantFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.Authentication;
+import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.security.SecurityContextProvider;
-import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantCreateRequest;
+import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import java.util.List;
 import org.assertj.core.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,14 +36,18 @@ public class TenantServiceTest {
 
   private TenantServices services;
   private TenantSearchClient client;
+  private Authentication authentication;
+  private StubbedBrokerClient stubbedBrokerClient;
 
   @BeforeEach
   public void before() {
+    stubbedBrokerClient = new StubbedBrokerClient();
+    authentication = Authentication.of(builder -> builder.user(1234L).token("auth_token"));
     client = mock(TenantSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
     services =
         new TenantServices(
-            mock(BrokerClient.class), mock(SecurityContextProvider.class), client, null);
+            stubbedBrokerClient, mock(SecurityContextProvider.class), client, authentication);
   }
 
   @Test
@@ -94,5 +104,22 @@ public class TenantServiceTest {
     final var exception =
         assertThrowsExactly(NotFoundException.class, () -> services.getByTenantKey(key));
     assertThat(exception.getMessage()).isEqualTo("Tenant with tenantKey 100 not found");
+  }
+
+  @Test
+  public void shouldCreateTenant() {
+    // given
+    final var tenantDTO = new TenantDTO(100L, "NewTenantName", "NewTenantId");
+
+    // when
+    services.createTenant(tenantDTO);
+
+    // then
+    final BrokerTenantCreateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
+    assertThat(request.getIntent()).isEqualTo(TenantIntent.CREATE);
+    assertThat(request.getValueType()).isEqualTo(ValueType.TENANT);
+    final TenantRecord brokerRequestValue = request.getRequestWriter();
+    assertThat(brokerRequestValue.getName()).isEqualTo(tenantDTO.name());
+    assertThat(brokerRequestValue.getTenantId()).isEqualTo(tenantDTO.tenantId());
   }
 }
