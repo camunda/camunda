@@ -102,7 +102,7 @@ final class CamundaExporterIT {
     exporter.open(exporterController);
 
     // when
-    final Record<UserRecordValue> record = factory.generateRecord(ValueType.USER);
+    final Record<UserRecordValue> record = factory.generateRecord(ValueType.AUTHORIZATION);
     assertThat(exporterController.getPosition()).isEqualTo(-1);
 
     exporter.export(record);
@@ -124,8 +124,8 @@ final class CamundaExporterIT {
     exporter.open(controllerSpy);
 
     // when
-    final var record = factory.generateRecord(ValueType.USER);
-    final var record2 = factory.generateRecord(ValueType.USER);
+    final var record = factory.generateRecord(ValueType.AUTHORIZATION);
+    final var record2 = factory.generateRecord(ValueType.AUTHORIZATION);
 
     exporter.export(record);
     exporter.export(record2);
@@ -153,7 +153,7 @@ final class CamundaExporterIT {
     container.stop();
     Awaitility.await().until(() -> !container.isRunning());
 
-    final Record<UserRecordValue> record = factory.generateRecord(ValueType.USER);
+    final Record<UserRecordValue> record = factory.generateRecord(ValueType.AUTHORIZATION);
 
     assertThatThrownBy(() -> exporter.export(record))
         .isInstanceOf(ExporterException.class)
@@ -165,7 +165,7 @@ final class CamundaExporterIT {
         .setPortBindings(List.of(currentPort + ":9200"));
     container.start();
 
-    final Record<UserRecordValue> record2 = factory.generateRecord(ValueType.USER);
+    final Record<UserRecordValue> record2 = factory.generateRecord(ValueType.AUTHORIZATION);
     exporter.export(record2);
 
     Awaitility.await()
@@ -275,6 +275,8 @@ final class CamundaExporterIT {
     if (container.getDockerImageName().contains(ConnectionTypes.OPENSEARCH.getType())) {
       config.getConnect().setType(ConnectionTypes.OPENSEARCH.getType());
     }
+
+    config.getArchiver().setRolloverEnabled(false);
     return config;
   }
 
