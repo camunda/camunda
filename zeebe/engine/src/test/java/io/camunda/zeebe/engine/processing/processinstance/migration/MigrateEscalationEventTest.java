@@ -17,17 +17,18 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
 public class MigrateEscalationEventTest {
 
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String ESCALATION_CODE_NUMBER = "404";
   private static final String ESCALATION_CODE_NUMBER_2 = "405";
   private static final String ESCALATION_CODE_NUMBER_3 = "406";
   private static final String ESCALATION_CODE_NUMBER_4 = "407";
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
@@ -38,7 +39,7 @@ public class MigrateEscalationEventTest {
     final String targetProcessId = helper.getBpmnProcessId() + "2";
 
     final var deployment =
-        engine
+        ENGINE
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
@@ -74,12 +75,12 @@ public class MigrateEscalationEventTest {
     final long targetProcessDefinitionKey =
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
-    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
     RecordingExporter.jobRecords().withProcessInstanceKey(processInstanceKey).withType("A").await();
 
     // when
-    engine
+    ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -121,7 +122,7 @@ public class MigrateEscalationEventTest {
     // note that the escalation code is changed since the escalation code is a static value set
     // inside the catch event element itself
 
-    engine.job().ofInstance(processInstanceKey).withType("A").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
 
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -141,7 +142,7 @@ public class MigrateEscalationEventTest {
     final String targetProcessId = helper.getBpmnProcessId() + "2";
 
     final var deployment =
-        engine
+        ENGINE
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
@@ -177,12 +178,12 @@ public class MigrateEscalationEventTest {
     final long targetProcessDefinitionKey =
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
-    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
     RecordingExporter.jobRecords().withProcessInstanceKey(processInstanceKey).withType("A").await();
 
     // when
-    engine
+    ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -223,7 +224,7 @@ public class MigrateEscalationEventTest {
     // note that the escalation code is changed since the escalation code is a static value set
     // inside the catch event element itself
 
-    engine.job().ofInstance(processInstanceKey).withType("A").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
 
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -243,7 +244,7 @@ public class MigrateEscalationEventTest {
     final String targetProcessId = helper.getBpmnProcessId() + "2";
 
     final var deployment =
-        engine
+        ENGINE
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
@@ -286,12 +287,12 @@ public class MigrateEscalationEventTest {
     final long targetProcessDefinitionKey =
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
-    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
     RecordingExporter.jobRecords().withProcessInstanceKey(processInstanceKey).withType("A").await();
 
     // when
-    engine
+    ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -333,7 +334,7 @@ public class MigrateEscalationEventTest {
     // note that the escalation codes are changed since the escalation code is a static value set
     // inside the catch event element itself
 
-    engine.job().ofInstance(processInstanceKey).withType("A").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
 
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -353,7 +354,7 @@ public class MigrateEscalationEventTest {
     final String targetProcessId = helper.getBpmnProcessId() + "2";
 
     final var deployment =
-        engine
+        ENGINE
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
@@ -386,12 +387,12 @@ public class MigrateEscalationEventTest {
     final long targetProcessDefinitionKey =
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
-    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
     RecordingExporter.jobRecords().withProcessInstanceKey(processInstanceKey).withType("A").await();
 
     // when
-    engine
+    ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -429,7 +430,7 @@ public class MigrateEscalationEventTest {
         .describedAs("Expect that version number did not change")
         .hasVersion(1);
 
-    engine.job().ofInstance(processInstanceKey).withType("A").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
 
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -449,7 +450,7 @@ public class MigrateEscalationEventTest {
     final String targetProcessId = helper.getBpmnProcessId() + "2";
 
     final var deployment =
-        engine
+        ENGINE
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
@@ -482,12 +483,12 @@ public class MigrateEscalationEventTest {
     final long targetProcessDefinitionKey =
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
-    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
     RecordingExporter.jobRecords().withProcessInstanceKey(processInstanceKey).withType("A").await();
 
     // when
-    engine
+    ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -525,7 +526,7 @@ public class MigrateEscalationEventTest {
         .describedAs("Expect that version number did not change")
         .hasVersion(1);
 
-    engine.job().ofInstance(processInstanceKey).withType("A").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
 
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
