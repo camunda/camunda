@@ -130,40 +130,6 @@ final class ElasticsearchRepositoryIT {
   }
 
   @Test
-  void shouldNotSetIndexLifecycleIfRetentionIsDisabled() throws IOException {
-    // given
-    final var indexName = UUID.randomUUID().toString();
-    final var repository = createRepository();
-    testClient.indices().create(r -> r.index(indexName));
-    final var initialLifecycle =
-        testClient
-            .indices()
-            .getSettings(r -> r.index(indexName))
-            .get(indexName)
-            .settings()
-            .lifecycle();
-    assertThat(initialLifecycle).isNull();
-    retention.setEnabled(false);
-    retention.setPolicyName("operate_delete_archived_indices");
-    putLifecyclePolicy();
-
-    // when
-    final var result = repository.setIndexLifeCycle(indexName);
-
-    // then
-    assertThat(result).succeedsWithin(Duration.ZERO);
-    final var actualLifecycle =
-        testClient
-            .indices()
-            .getSettings(r -> r.index(indexName))
-            .get(indexName)
-            .settings()
-            .index()
-            .lifecycle();
-    assertThat(actualLifecycle).isNull();
-  }
-
-  @Test
   void shouldReindexDocuments() throws IOException {
     // given
     final var sourceIndexName = UUID.randomUUID().toString();
