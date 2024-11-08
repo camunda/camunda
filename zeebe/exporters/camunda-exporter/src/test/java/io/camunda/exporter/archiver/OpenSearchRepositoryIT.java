@@ -9,6 +9,7 @@ package io.camunda.exporter.archiver;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
@@ -28,10 +29,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.http.HttpHost;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
@@ -47,7 +48,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.shaded.org.awaitility.Awaitility;
 
 @SuppressWarnings("resource")
 @Testcontainers
@@ -59,7 +59,8 @@ final class OpenSearchRepositoryIT {
   private static final OpensearchContainer<?> OPENSEARCH =
       TestSearchContainers.createDefaultOpensearchContainer();
 
-  @AutoCloseResource private final RestClientTransport transport = createRestClient();
+  private static final ObjectMapper MAPPER = new ObjectMapper();
+  @AutoCloseResource private final RestClientTransport transport = Mockito.spy(createRestClient());
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final ArchiverConfiguration config = new ArchiverConfiguration();
   private final RetentionConfiguration retention = new RetentionConfiguration();
@@ -102,72 +103,36 @@ final class OpenSearchRepositoryIT {
     final var repository = createRepository();
     testClient.indices().create(r -> r.index(indexName));
 
-    final OpensearchEngineClient engineClient = new OpensearchEngineClient(testClient);
-    final OpenSearchGenericClient genericClient =
-        new OpenSearchGenericClient(testClient._transport(), testClient._transportOptions());
-
     retention.setEnabled(true);
     retention.setPolicyName("operate_delete_archived_indices");
 
     // when
-    createLifeCyclePolicy(engineClient);
+    createLifeCyclePolicy();
     final var result = repository.setIndexLifeCycle(indexName);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
 
     // Takes a while for the policy to be applied
-    Awaitility.await()
-        .atMost(3, TimeUnit.SECONDS)
-        .pollInterval(1, TimeUnit.SECONDS)
-        .until(() -> indexContainsRetentionPolicy(indexName, genericClient));
+    Awaitility.await("until the policy has been visibly applied")
+        .untilAsserted(
+            () -> assertThat(fetchPolicyForIndex(indexName)).isEqualTo(retention.getPolicyName()));
   }
 
   @Test
-  void shouldNotSetIndexLifecycleIfRetentionIsDisabled() throws IOException {
+  void shouldNotSetIndexLifecycleIfRetentionIsDisabled() {
     // given
     final var indexName = UUID.randomUUID().toString();
     final var repository = createRepository();
-    testClient.indices().create(r -> r.index(indexName));
-
-    final OpensearchEngineClient engineClient = new OpensearchEngineClient(testClient);
-    final OpenSearchGenericClient genericClient =
-        new OpenSearchGenericClient(testClient._transport(), testClient._transportOptions());
-
     retention.setEnabled(false);
-    retention.setPolicyName("operate_delete_archived_indices");
 
     // when
-    createLifeCyclePolicy(engineClient);
     final var result = repository.setIndexLifeCycle(indexName);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
-
-    // we query the index lifecycle policy a few times to ensure it's not set
-    // since it takes a while for the policy to be applied.
-    final AtomicInteger attemptCounter = new AtomicInteger(0);
-    Awaitility.await()
-        .atMost(4, TimeUnit.SECONDS)
-        .pollInterval(1, TimeUnit.SECONDS)
-        .until(
-            () -> {
-              attemptCounter.incrementAndGet();
-              return indexContainsRetentionPolicy(indexName, genericClient)
-                  || attemptCounter.get() >= 3;
-            });
-  }
-
-  boolean indexContainsRetentionPolicy(
-      final String indexName, final OpenSearchGenericClient genericClient) {
-    return genericClient
-        .executeAsync(
-            Requests.builder().method("get").endpoint("_plugins/_ism/explain/" + indexName).build())
-        .join()
-        .getBody()
-        .get()
-        .bodyAsString()
-        .contains(retention.getPolicyName());
+    Mockito.verify(transport, Mockito.never())
+        .performRequestAsync(Mockito.any(), Mockito.any(), Mockito.any());
   }
 
   @Test
@@ -300,11 +265,34 @@ final class OpenSearchRepositoryIT {
     }
   }
 
-  void createLifeCyclePolicy(final OpensearchEngineClient engineClient) throws IOException {
+  private void createLifeCyclePolicy() {
+    final var engineClient = new OpensearchEngineClient(testClient);
     try {
       engineClient.putIndexLifeCyclePolicy(retention.getPolicyName(), retention.getMinimumAge());
     } catch (final Exception e) {
       // policy was already created
+    }
+  }
+
+  private String fetchPolicyForIndex(final String indexName) {
+    final var genericClient =
+        new OpenSearchGenericClient(testClient._transport(), testClient._transportOptions());
+    final var request =
+        Requests.builder().method("get").endpoint("_plugins/_ism/explain/" + indexName).build();
+    try {
+      final var response = genericClient.execute(request);
+      final var jsonString = response.getBody().orElseThrow().bodyAsString();
+      final var json = MAPPER.readTree(jsonString);
+      final var index = json.get(indexName);
+      if (index == null) {
+        throw new AssertionError(
+            "Failed to explain non-existent index '%s'; see response: %s"
+                .formatted(indexName, jsonString));
+      }
+
+      return index.findPath("index.plugins.index_state_management.policy_id").asText();
+    } catch (final IOException e) {
+      throw new AssertionError("Failed to fetch policy for index " + indexName, e);
     }
   }
 
