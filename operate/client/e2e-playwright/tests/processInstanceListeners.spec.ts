@@ -32,8 +32,7 @@ test.beforeAll(async ({request}) => {
     .toBe(200);
 });
 
-test.describe.skip('Process Instance Listeners', () => {
-  // TODO: remove .skip when we can use Zeebe SNAPSHOT or 8.6 version for E2E tests
+test.describe('Process Instance Listeners', () => {
   test('Listeners tab button show/hide', async ({
     page,
     processInstancePage,
@@ -58,5 +57,60 @@ test.describe.skip('Process Instance Listeners', () => {
     await processInstancePage.listenersTabButton.click();
 
     await expect(page.getByText('Execution listener')).toBeVisible();
+  });
+
+  test('Listeners list filtered by flow node instance', async ({
+    page,
+    processInstancePage,
+  }) => {
+    const processInstanceKey = initialData.instance.processInstanceKey;
+    processInstancePage.navigateToProcessInstance({id: processInstanceKey});
+
+    // select flow node in diagram, check amount of listeners and add a token to it
+    await processInstancePage.diagram.clickFlowNode('Service Task B');
+    await processInstancePage.listenersTabButton.click();
+    expect(
+      await page
+        .getByRole('row')
+        .filter({hasText: /execution listener/i})
+        .count(),
+    ).toBe(1);
+    await processInstancePage.modifyInstanceButton.click();
+    await page.getByRole('button', {name: 'Continue'}).click();
+    await processInstancePage.diagram.clickFlowNode('Service Task B');
+    await page
+      .getByRole('button', {name: 'Add single flow node instance'})
+      .click();
+    await page.getByRole('button', {name: 'Apply Modifications'}).click();
+    //confirm modal
+    await page.getByRole('button', {name: 'Apply', exact: true}).click();
+
+    // wait for new instance to appear on instance history
+    const instanceHistoryPanel = page.getByTestId('instance-history');
+    await expect
+      .poll(async () => {
+        return instanceHistoryPanel.getByText('Service Task B').count();
+      })
+      .toBe(2);
+
+    // select flow node again, it should have 2 listeners (1 for each instance)
+    await processInstancePage.diagram.clickFlowNode('Service Task B');
+    await processInstancePage.listenersTabButton.click();
+    expect(
+      await page
+        .getByRole('row')
+        .filter({hasText: /execution listener/i})
+        .count(),
+    ).toBe(2);
+
+    // select a flow node instance, check it has only 1 corresponding listener
+    await instanceHistoryPanel.getByText('Service Task B').first().click();
+    await processInstancePage.listenersTabButton.click();
+    expect(
+      await page
+        .getByRole('row')
+        .filter({hasText: /execution listener/i})
+        .count(),
+    ).toBe(1);
   });
 });
