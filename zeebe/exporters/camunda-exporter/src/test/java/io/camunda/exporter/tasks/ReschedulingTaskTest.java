@@ -5,8 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.archiver;
+package io.camunda.exporter.tasks;
 
+import io.camunda.exporter.tasks.archiver.ArchiverJob;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.util.concurrent.CompletableFuture;

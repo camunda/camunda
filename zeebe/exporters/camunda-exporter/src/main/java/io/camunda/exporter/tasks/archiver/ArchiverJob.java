@@ -5,8 +5,16 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.archiver;
+package io.camunda.exporter.tasks.archiver;
 
-import java.util.List;
+import io.camunda.exporter.tasks.BackgroundTask;
+import java.util.concurrent.CompletableFuture;
 
-public record ArchiveBatch(String finishDate, List<String> ids) {}
+public interface ArchiverJob extends BackgroundTask {
+  CompletableFuture<Integer> archiveNextBatch();
+
+  @Override
+  default CompletableFuture<Integer> execute() {
+    return archiveNextBatch();
+  }
+}

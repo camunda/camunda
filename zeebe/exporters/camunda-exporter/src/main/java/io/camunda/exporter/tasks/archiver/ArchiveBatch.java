@@ -5,10 +5,8 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.archiver;
+package io.camunda.exporter.tasks.archiver;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.List;
 
-public interface ArchiverJob {
-  CompletableFuture<Integer> archiveNextBatch();
-}
+public record ArchiveBatch(String finishDate, List<String> ids) {}

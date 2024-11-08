@@ -5,9 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.archiver;
+package io.camunda.exporter.tasks.archiver;
 
-import io.camunda.exporter.archiver.ArchiverRepository.NoopArchiverRepository;
+import io.camunda.exporter.tasks.archiver.ArchiverRepository.NoopArchiverRepository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
