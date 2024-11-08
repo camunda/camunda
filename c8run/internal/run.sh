@@ -116,7 +116,7 @@ if [ "$1" = "start" ] ; then
 
     # turns out not all java installations put the binary in bin/java . so this should be a find command.
     if [ "x$JAVA" == "x" ]; then
-      JAVA=$(find "$JAVA_HOME" -name "java" | head -n 1)
+      JAVA=$(find -L "$JAVA_HOME" -name "java" | head -n 1)
       echo Setting JAVA property to "$JAVA" in "$JAVA_HOME"
     fi
   else
