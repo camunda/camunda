@@ -1907,7 +1907,7 @@ __metadata:
     sass: "npm:^1.77.2"
     sass-loader: "npm:^16.0.0"
     storybook: "npm:^8.1.4"
-    typescript: "npm:5.6.2"
+    typescript: "npm:5.6.3"
   peerDependencies:
     "@carbon/react": ^1.39.0
     react: 17.0.2
@@ -2598,13 +2598,13 @@ __metadata:
   linkType: hard
 
 "@storybook/addon-styling-webpack@npm:^1.0.0":
-  version: 1.0.0
-  resolution: "@storybook/addon-styling-webpack@npm:1.0.0"
+  version: 1.0.1
+  resolution: "@storybook/addon-styling-webpack@npm:1.0.1"
   dependencies:
     "@storybook/node-logger": "npm:^8.0.0-alpha.10"
   peerDependencies:
     webpack: ^5.0.0
-  checksum: 10c0/34f29998305bfc9778f19d349b3237053e5661e4bbb5b7aadc6cad52b355a1123210445eca839087b3921e0a1a0057d09054adeb2d2114db6ea978f5afc4e5c7
+  checksum: 10c0/6b36162fa9c1d2f7a14ca12402dfc7115ae6ca17916291d0298fe60be7e3d04cc1eb7c6a010f7d0cc50fcc7f1af5b3faf85fecfc66456251417f4c7a5e769621
   languageName: node
   linkType: hard
 
@@ -8117,8 +8117,8 @@ __metadata:
   linkType: hard
 
 "sass-loader@npm:^16.0.0":
-  version: 16.0.2
-  resolution: "sass-loader@npm:16.0.2"
+  version: 16.0.3
+  resolution: "sass-loader@npm:16.0.3"
   dependencies:
     neo-async: "npm:^2.6.2"
   peerDependencies:
@@ -8138,7 +8138,7 @@ __metadata:
       optional: true
     webpack:
       optional: true
-  checksum: 10c0/9c5165b44fc6229d8f36fb2af3ebb9d1e3a837bcc80040d3f3fc5793cd2998407e2ed55853c2b342cca2b5e17fa141160198ad034685a95b17126200c320ae11
+  checksum: 10c0/2dc188dd0d5276ed0251eee7f245848ccf9df6ec121227462403f322c17a3dbe100fb60d47968f078e585e4aced452eb7fa1a8e55b415d5de3151fa1bbf2d561
   languageName: node
   linkType: hard
 
@@ -8774,23 +8774,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:5.6.2":
-  version: 5.6.2
-  resolution: "typescript@npm:5.6.2"
+"typescript@npm:5.6.3":
+  version: 5.6.3
+  resolution: "typescript@npm:5.6.3"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 10c0/3ed8297a8c7c56b7fec282532503d1ac795239d06e7c4966b42d4330c6cf433a170b53bcf93a130a7f14ccc5235de5560df4f1045eb7f3550b46ebed16d3c5e5
+  checksum: 10c0/44f61d3fb15c35359bc60399cb8127c30bae554cd555b8e2b46d68fa79d680354b83320ad419ff1b81a0bdf324197b29affe6cc28988cd6a74d4ac60c94f9799
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A5.6.2#optional!builtin<compat/typescript>":
-  version: 5.6.2
-  resolution: "typescript@patch:typescript@npm%3A5.6.2#optional!builtin<compat/typescript>::version=5.6.2&hash=b45daf"
+"typescript@patch:typescript@npm%3A5.6.3#optional!builtin<compat/typescript>":
+  version: 5.6.3
+  resolution: "typescript@patch:typescript@npm%3A5.6.3#optional!builtin<compat/typescript>::version=5.6.3&hash=b45daf"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 10c0/e6c1662e4852e22fe4bbdca471dca3e3edc74f6f1df043135c44a18a7902037023ccb0abdfb754595ca9028df8920f2f8492c00fc3cbb4309079aae8b7de71cd
+  checksum: 10c0/ac8307bb06bbfd08ae7137da740769b7d8c3ee5943188743bb622c621f8ad61d244767480f90fbd840277fbf152d8932aa20c33f867dea1bb5e79b187ca1a92f
   languageName: node
   linkType: hard
 
