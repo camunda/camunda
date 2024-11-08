@@ -10,7 +10,7 @@ package io.camunda.webapps.schema.descriptors.usermanagement.index;
 import io.camunda.webapps.schema.descriptors.usermanagement.UserManagementIndexDescriptor;
 
 public class TenantIndex extends UserManagementIndexDescriptor {
-  public static final String INDEX_NAME = "tenant";
+  public static final String INDEX_NAME = "tenants";
   public static final String INDEX_VERSION = "8.7.0";
 
   public static final String TENANT_KEY = "tenantKey";
