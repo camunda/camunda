@@ -32,6 +32,7 @@ export class ProcessInstance {
   readonly listenersTabButton: Locator;
   readonly metadataModal: Locator;
   readonly modifyInstanceButton: Locator;
+  readonly listenerTypeFilter: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -60,6 +61,7 @@ export class ProcessInstance {
     this.listenersTabButton = page.getByTestId('listeners-tab-button');
     this.metadataModal = this.page.getByRole('dialog', {name: /metadata/i});
     this.modifyInstanceButton = page.getByTestId('enter-modification-mode');
+    this.listenerTypeFilter = page.getByTestId('listener-type-filter');
   }
 
   getEditVariableFieldSelector(variableName: string) {

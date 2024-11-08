@@ -51,6 +51,7 @@ const Listeners: React.FC<Props> = observer(({listeners}) => {
     <Content>
       <Dropdown
         id="listenerTypeFilter"
+        data-testid="listener-type-filter"
         titleText="Listener type"
         label="All listeners"
         hideLabel
