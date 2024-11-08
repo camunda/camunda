@@ -22,8 +22,8 @@ import org.agrona.DirectBuffer;
 public class BrokerAuthorizationPatchRequest extends BrokerExecuteCommand<AuthorizationRecord> {
   private final AuthorizationRecord requestDto = new AuthorizationRecord();
 
-  public BrokerAuthorizationPatchRequest() {
-    super(ValueType.AUTHORIZATION, AuthorizationIntent.ADD_PERMISSION);
+  public BrokerAuthorizationPatchRequest(final AuthorizationIntent intent) {
+    super(ValueType.AUTHORIZATION, intent);
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
   }
 
