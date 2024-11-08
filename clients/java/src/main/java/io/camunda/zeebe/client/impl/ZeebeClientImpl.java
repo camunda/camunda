@@ -46,6 +46,7 @@ import io.camunda.zeebe.client.api.command.FailJobCommandStep1;
 import io.camunda.zeebe.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1;
+import io.camunda.zeebe.client.api.command.RemovePermissionsCommandStep1;
 import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
 import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1;
@@ -108,6 +109,7 @@ import io.camunda.zeebe.client.impl.command.JobUpdateTimeoutCommandImpl;
 import io.camunda.zeebe.client.impl.command.MigrateProcessInstanceCommandImpl;
 import io.camunda.zeebe.client.impl.command.ModifyProcessInstanceCommandImpl;
 import io.camunda.zeebe.client.impl.command.PublishMessageCommandImpl;
+import io.camunda.zeebe.client.impl.command.RemovePermissionsCommandImpl;
 import io.camunda.zeebe.client.impl.command.ResolveIncidentCommandImpl;
 import io.camunda.zeebe.client.impl.command.SetVariablesCommandImpl;
 import io.camunda.zeebe.client.impl.command.StreamJobsCommandImpl;
@@ -696,6 +698,11 @@ public final class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
+  public RemovePermissionsCommandStep1 newRemovePermissionsCommand(final long ownerKey) {
+    return new RemovePermissionsCommandImpl(ownerKey, httpClient, jsonMapper);
+  }
+
+  @Override
   public DecisionRequirementsGetXmlRequest newDecisionRequirementsGetXmlRequest(
       final long decisionRequirementsKey) {
     return new DecisionRequirementsGetXmlRequestImpl(httpClient, decisionRequirementsKey);
@@ -732,6 +739,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
     return new UserTaskVariableQueryImpl(httpClient, jsonMapper, userTaskKey);
   }
 
+  @Override
   public CreateDocumentCommandStep1 newCreateDocumentCommand() {
     return new CreateDocumentCommandImpl(jsonMapper, httpClient, config);
   }

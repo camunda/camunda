@@ -15,53 +15,52 @@
  */
 package io.camunda.zeebe.client.api.command;
 
-import io.camunda.zeebe.client.api.response.AddPermissionsResponse;
+import io.camunda.zeebe.client.api.response.RemovePermissionsResponse;
 import io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum;
 import java.util.List;
 
-public interface AddPermissionsCommandStep1 {
-
+public interface RemovePermissionsCommandStep1 {
   /**
-   * Sets the resource type for which the permissions should be added.
+   * Sets the resource type for which the permissions should be removed.
    *
    * @param resourceType the resource type
    * @return the builder for this command
    */
-  AddPermissionsCommandStep2 resourceType(ResourceTypeEnum resourceType);
+  RemovePermissionsCommandStep2 resourceType(ResourceTypeEnum resourceType);
 
-  interface AddPermissionsCommandStep2 {
+  interface RemovePermissionsCommandStep2 {
 
     /**
-     * Sets the permission type of the permissions that should be added.
+     * Sets the permission type of the permissions that should be removed.
      *
      * @param permissionType the permission type
      * @return the builder for this command
      */
-    AddPermissionsCommandStep3 permission(PermissionTypeEnum permissionType);
+    RemovePermissionsCommandStep3 permission(PermissionTypeEnum permissionType);
   }
 
-  interface AddPermissionsCommandStep3 {
+  interface RemovePermissionsCommandStep3 {
 
     /**
-     * Adds all resourceIds in the list to the add permissions request.
+     * Adds all resourceIds in the list to the remove permissions request.
      *
      * @param resourceIds the list of resource ids
      * @return the builder for this command
      */
-    AddPermissionsCommandStep4 resourceIds(List<String> resourceIds);
+    RemovePermissionsCommandStep4 resourceIds(List<String> resourceIds);
 
     /**
-     * Adds a resourceId to the add permissions request.
+     * Adds a resourceId to the remove permissions request.
      *
      * @param resourceId the resource id
      * @return the builder for this command
      */
-    AddPermissionsCommandStep4 resourceId(String resourceId);
+    RemovePermissionsCommandStep4 resourceId(String resourceId);
   }
 
-  interface AddPermissionsCommandStep4
-      extends AddPermissionsCommandStep2,
-          AddPermissionsCommandStep3,
-          FinalCommandStep<AddPermissionsResponse> {}
+  interface RemovePermissionsCommandStep4
+      extends RemovePermissionsCommandStep2,
+          RemovePermissionsCommandStep3,
+          FinalCommandStep<RemovePermissionsResponse> {}
 }
