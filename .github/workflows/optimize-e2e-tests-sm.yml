@@ -57,10 +57,14 @@ jobs:
           work-dir: ./optimize
 
       - name: Setup Maven
-        uses: ./.github/actions/setup-maven
+        uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: optimize-tests
-          secrets: ${{ toJSON(secrets) }}
+          maven-version: 3.8.6
+          time-zone: Europe/Berlin
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
       - name: Install firefox deps
         run: |
