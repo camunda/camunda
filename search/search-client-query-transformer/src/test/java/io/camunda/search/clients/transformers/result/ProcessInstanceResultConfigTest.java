@@ -20,11 +20,10 @@ public class ProcessInstanceResultConfigTest extends AbstractResultConfigTest {
     final var source =
         transformRequest(
             SearchQueryBuilders.processInstanceSearchQuery(
-                q -> q.resultConfig(r -> r.key().include())));
+                q -> q.resultConfig(r -> r.onlyKey(true))));
 
     // then
     assertThat(source.sourceFilter().includes()).containsExactly("key");
-    assertThat(source.sourceFilter().excludes()).isNull();
   }
 
   @Test
@@ -33,10 +32,9 @@ public class ProcessInstanceResultConfigTest extends AbstractResultConfigTest {
     final var source =
         transformRequest(
             SearchQueryBuilders.processInstanceSearchQuery(
-                q -> q.resultConfig(r -> r.key().exclude())));
+                q -> q.resultConfig(r -> r.onlyKey(false))));
 
     // then
-    assertThat(source.sourceFilter().excludes()).containsExactly("key");
     assertThat(source.sourceFilter().includes()).isNull();
   }
 }

@@ -20,11 +20,10 @@ class DecisionInstanceResultConfigTest extends AbstractResultConfigTest {
     final var source =
         transformRequest(
             SearchQueryBuilders.decisionInstanceSearchQuery(
-                q -> q.resultConfig(r -> r.evaluatedInputs().include())));
+                q -> q.resultConfig(r -> r.includeEvaluatedInputs(true))));
 
     // then
-    assertThat(source.sourceFilter().includes()).containsExactly("evaluatedInputs");
-    assertThat(source.sourceFilter().excludes()).isNull();
+    assertThat(source.sourceFilter().excludes()).containsExactly("evaluatedOutputs");
   }
 
   @Test
@@ -33,26 +32,35 @@ class DecisionInstanceResultConfigTest extends AbstractResultConfigTest {
     final var source =
         transformRequest(
             SearchQueryBuilders.decisionInstanceSearchQuery(
-                q -> q.resultConfig(r -> r.evaluatedOutputs().exclude())));
+                q -> q.resultConfig(r -> r.includeEvaluatedOutputs(true))));
 
     // then
-    assertThat(source.sourceFilter().excludes()).containsExactly("evaluatedOutputs");
-    assertThat(source.sourceFilter().includes()).isNull();
+    assertThat(source.sourceFilter().excludes()).containsExactly("evaluatedInputs");
   }
 
   @Test
-  void shouldSourceConfigExcludeEvaluatedInputsAndEvaluatedOutputs() {
+  void shouldSourceConfigIncludeEvaluatedInputsAndEvaluatedOutputs() {
     // when
     final var source =
         transformRequest(
             SearchQueryBuilders.decisionInstanceSearchQuery(
                 q ->
                     q.resultConfig(
-                        r -> r.evaluatedInputs().exclude().evaluatedOutputs().exclude())));
+                        r -> r.includeEvaluatedInputs(true).includeEvaluatedOutputs(true))));
+
+    // then
+    assertThat(source.sourceFilter().excludes()).isEmpty();
+  }
+
+  @Test
+  void shouldSourceConfigBeDefault() {
+    // when
+    final var source =
+        transformRequest(
+            SearchQueryBuilders.decisionInstanceSearchQuery(q -> q.resultConfig(r -> r)));
 
     // then
     assertThat(source.sourceFilter().excludes())
         .containsExactly("evaluatedInputs", "evaluatedOutputs");
-    assertThat(source.sourceFilter().includes()).isNull();
   }
 }

@@ -60,7 +60,7 @@ public final class DecisionInstanceServices
                 .sort(query.sort())
                 .page(query.page())
                 .resultConfig(
-                    ofNullable(query.resultConfig()).orElseGet(() -> defaultSearchResultConfig())));
+                    ofNullable(query.resultConfig()).orElseGet(this::defaultSearchResultConfig)));
   }
 
   /**
@@ -95,8 +95,20 @@ public final class DecisionInstanceServices
         .searchDecisionInstances(decisionInstanceSearchQuery(fn));
   }
 
+  /**
+   * The default config excludes evaluateInputs and evaluateOutputs fields. To include them, the
+   * user must provide a config like
+   *
+   * <pre>
+   *   {
+   *     "includeEvaluatedInputs": true,
+   *     "includeEvaluatedOutputs": true
+   *   }
+   * </pre>
+   *
+   * @return a default config
+   */
   private DecisionInstanceQueryResultConfig defaultSearchResultConfig() {
-    return DecisionInstanceQueryResultConfig.of(
-        r -> r.evaluatedInputs().exclude().evaluatedOutputs().exclude());
+    return DecisionInstanceQueryResultConfig.of(r -> r);
   }
 }
