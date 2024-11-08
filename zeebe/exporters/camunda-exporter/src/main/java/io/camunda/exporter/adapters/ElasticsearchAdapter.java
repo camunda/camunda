@@ -10,6 +10,7 @@ package io.camunda.exporter.adapters;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import com.github.benmanes.caffeine.cache.CacheLoader;
+import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.cache.form.ElasticSearchFormCacheLoader;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
@@ -26,11 +27,13 @@ import java.io.IOException;
 class ElasticsearchAdapter implements ClientAdapter {
   private final ElasticsearchClient client;
   private final ElasticsearchEngineClient searchEngineClient;
+  private final ElasticsearchExporterEntityCacheProvider entityCacheLoader;
 
   ElasticsearchAdapter(final ExporterConfiguration configuration) {
     final var connector = new ElasticsearchConnector(configuration.getConnect());
     client = connector.createClient();
     searchEngineClient = new ElasticsearchEngineClient(client);
+    entityCacheLoader = new ElasticsearchExporterEntityCacheProvider(client);
   }
 
   @Override
@@ -45,18 +48,27 @@ class ElasticsearchAdapter implements ClientAdapter {
   }
 
   @Override
-  public CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(
-      final String processIndexName) {
-    return new ElasticSearchProcessCacheLoader(client, processIndexName);
-  }
-
-  @Override
-  public CacheLoader<String, CachedFormEntity> getFormCacheLoader(final String formIndexName) {
-    return new ElasticSearchFormCacheLoader(client, formIndexName);
+  public ExporterEntityCacheProvider getExporterEntityCacheProvider() {
+    return entityCacheLoader;
   }
 
   @Override
   public void close() throws IOException {
     client._transport().close();
+  }
+
+  record ElasticsearchExporterEntityCacheProvider(ElasticsearchClient client)
+      implements ExporterEntityCacheProvider {
+
+    @Override
+    public CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(
+        final String processIndexName) {
+      return new ElasticSearchProcessCacheLoader(client, processIndexName);
+    }
+
+    @Override
+    public CacheLoader<String, CachedFormEntity> getFormCacheLoader(final String formIndexName) {
+      return new ElasticSearchFormCacheLoader(client, formIndexName);
+    }
   }
 }
