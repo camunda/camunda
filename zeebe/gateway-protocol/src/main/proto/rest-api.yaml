@@ -4230,6 +4230,17 @@ components:
           description: The variables to complete the job with.
           type: object
           nullable: true
+        result:
+          $ref: "#/components/schemas/JobResult"
+    JobResult:
+      type: object
+      nullable: true
+      description: The result of a completed job
+      properties:
+        denied:
+          type: boolean
+          description: Indicates if worker has denied the reason for the work. Defaults to false.
+          nullable: true
     JobUpdateRequest:
       type: object
       properties:
