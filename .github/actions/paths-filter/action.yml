@@ -1,7 +1,10 @@
 ---
 name: Common paths filter for camunda/camunda
 
-description: Common filters to detect and group changes against a base branch
+description: |
+  Common filters to detect and group changes against a base branch
+  It leverages the `dorny/paths-filter` action to filter paths
+  Said third-party action uses picomatch patterns to filter paths
 
 outputs:
   actionlint:
@@ -28,6 +31,16 @@ outputs:
         github.event_name == 'push' ||
         steps.filter-common.outputs.github-actions-change == 'true' ||
         steps.filter-identity.outputs.identity-frontend-change == 'true'
+      }}
+  operate-backend-changes:
+    description: Output whether Operate backend tests should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.filter-operate.outputs.operate-backend-change == 'true' ||
+        steps.filter-common.outputs.webapps-change == 'true' ||
+        steps.filter-common.outputs.maven-change == 'true'
       }}
   optimize-frontend-changes:
     description: Output whether Optimize frontend tests should be run based on GitHub event and files changed
@@ -158,6 +171,15 @@ runs:
           - 'zeebe/**'
           - 'clients/**'
           - 'Dockerfile'
+
+  - uses: dorny/paths-filter@v3
+    id: filter-operate
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        operate-backend-change:
+          - 'operate/!(client/**)/**'
 
   - uses: dorny/paths-filter@v3
     id: filter-optimize
