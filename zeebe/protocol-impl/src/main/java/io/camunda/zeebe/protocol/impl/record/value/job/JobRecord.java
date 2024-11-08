@@ -132,7 +132,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     elementInstanceKeyProp.setValue(record.getElementInstanceKey());
     tenantIdProp.setValue(record.getTenantId());
     setChangedAttributes(record.getChangedAttributes());
-    resultProp.getValue().setFields(record.getResult());
+    resultProp.getValue().wrap(record.getResult());
   }
 
   public void wrap(final JobRecord record) {
@@ -276,7 +276,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   }
 
   public JobRecord setResult(final JobResult result) {
-    resultProp.getValue().setFields(result);
+    resultProp.getValue().wrap(result);
     return this;
   }
 

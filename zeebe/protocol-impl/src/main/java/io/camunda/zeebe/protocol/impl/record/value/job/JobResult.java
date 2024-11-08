@@ -28,7 +28,7 @@ public class JobResult extends UnpackedObject implements JobResultValue {
   }
 
   /** Sets all properties to current instance from provided user task job data */
-  public void setFields(final JobResult result) {
+  public void wrap(final JobResult result) {
     deniedProp.setValue(result.isDenied());
   }
 
