@@ -86,10 +86,10 @@ if [ $# -eq 0 ]; then
   fi
 
   # start Camunda Run in the foreground
-  exec $runScript start
+  exec "$runScript" start
 
 else
   # start Camunda Run with the passed arguments
-  exec $runScript start "$@"
+  exec "$runScript" start "$@"
 fi
 
