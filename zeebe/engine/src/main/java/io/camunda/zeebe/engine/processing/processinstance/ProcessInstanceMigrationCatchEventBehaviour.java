@@ -174,6 +174,20 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
           recordCopy.setProcessDefinitionKey(targetProcessDefinition.getKey());
           recordCopy.setCompensableActivityId(targetActivityId);
 
+          // set the compensation handler id if subscription belongs to an activity with a boundary
+          targetProcessDefinition
+              .getProcess()
+              .getElementById(targetActivityId, ExecutableActivity.class)
+              .getBoundaryEvents()
+              .stream()
+              .filter(event -> event.getEventType() == BpmnEventType.COMPENSATION)
+              .findFirst()
+              .ifPresent(
+                  boundary ->
+                      recordCopy.setCompensationHandlerId(
+                          BufferUtil.bufferAsString(
+                              boundary.getCompensation().getCompensationHandler().getId())));
+
           stateWriter.appendFollowUpEvent(
               subscription.getKey(), CompensationSubscriptionIntent.MIGRATED, recordCopy);
         });

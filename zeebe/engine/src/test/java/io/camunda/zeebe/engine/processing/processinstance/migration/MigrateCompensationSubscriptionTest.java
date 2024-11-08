@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.processinstance.migration;
 
 import static io.camunda.zeebe.engine.processing.processinstance.migration.MigrationTestUtil.extractProcessDefinitionKeyByProcessId;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -18,7 +19,6 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -99,14 +99,6 @@ public class MigrateCompensationSubscriptionTest {
 
     // then
     Assertions.assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementType(BpmnElementType.PROCESS)
-                .getFirst())
-        .describedAs("Expect that the process instance is migrated")
-        .isNotNull();
-
-    Assertions.assertThat(
             RecordingExporter.compensationSubscriptionRecords()
                 .withIntent(CompensationSubscriptionIntent.MIGRATED)
                 .withProcessInstanceKey(processInstanceKey)
@@ -117,7 +109,7 @@ public class MigrateCompensationSubscriptionTest {
         .describedAs("Expect that the compensable activity is updated")
         .hasCompensableActivityId("C")
         .describedAs("Expect that the compensation handler id is unchanged")
-        .hasCompensationHandlerId("undoA");
+        .hasCompensationHandlerId("undoC");
 
     engine.job().ofInstance(processInstanceKey).withType("B").complete();
 
@@ -125,9 +117,12 @@ public class MigrateCompensationSubscriptionTest {
             RecordingExporter.compensationSubscriptionRecords()
                 .withIntent(CompensationSubscriptionIntent.TRIGGERED)
                 .withProcessInstanceKey(processInstanceKey)
-                .getFirst())
-        .describedAs("Expect that the compensation boundary event in the source is deleted")
-        .isNotNull();
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the compensation subscription can be triggered after migration")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasCompensableActivityId("C")
+        .hasCompensationHandlerId("undoC");
   }
 
   @Test
@@ -205,26 +200,21 @@ public class MigrateCompensationSubscriptionTest {
         .migrate();
 
     // then
-    Assertions.assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementType(BpmnElementType.PROCESS)
-                .getFirst())
-        .describedAs("Expect that the process instance is migrated")
-        .isNotNull();
-
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.compensationSubscriptionRecords()
                 .withIntent(CompensationSubscriptionIntent.MIGRATED)
                 .withProcessInstanceKey(processInstanceKey)
-                .getFirst()
-                .getValue())
-        .describedAs("Expect that the process definition is updated")
-        .hasProcessDefinitionKey(targetProcessDefinitionKey)
-        .describedAs("Expect that the compensable activity is updated")
-        .hasCompensableActivityId("C")
-        .describedAs("Expect that the compensation handler id is unchanged")
-        .hasCompensationHandlerId("undoA");
+                .limit(2))
+        .describedAs("Expect that both compensation subscriptions are migrated")
+        .hasSize(2)
+        .extracting(Record::getValue)
+        .extracting(
+            CompensationSubscriptionRecordValue::getProcessDefinitionKey,
+            CompensationSubscriptionRecordValue::getCompensableActivityId,
+            CompensationSubscriptionRecordValue::getCompensationHandlerId)
+        .containsExactlyInAnyOrder(
+            tuple(targetProcessDefinitionKey, "C", "undoC"),
+            tuple(targetProcessDefinitionKey, "subProcess2", ""));
 
     engine.job().ofInstance(processInstanceKey).withType("B").complete();
 
@@ -233,10 +223,16 @@ public class MigrateCompensationSubscriptionTest {
                 .withIntent(CompensationSubscriptionIntent.TRIGGERED)
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(2))
-        .extracting(Record::getValue)
-        .extracting(CompensationSubscriptionRecordValue::getCompensableActivityId)
+        .describedAs("Expect that both compensation subscriptions are triggered")
         .hasSize(2)
-        .containsExactly("subProcess2", "C");
+        .extracting(Record::getValue)
+        .extracting(
+            CompensationSubscriptionRecordValue::getProcessDefinitionKey,
+            CompensationSubscriptionRecordValue::getCompensableActivityId,
+            CompensationSubscriptionRecordValue::getCompensationHandlerId)
+        .containsExactlyInAnyOrder(
+            tuple(targetProcessDefinitionKey, "C", "undoC"),
+            tuple(targetProcessDefinitionKey, "subProcess2", ""));
   }
 
   @Test
@@ -294,14 +290,6 @@ public class MigrateCompensationSubscriptionTest {
         .migrate();
 
     // then
-    Assertions.assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementType(BpmnElementType.PROCESS)
-                .getFirst())
-        .describedAs("Expect that the process instance is migrated")
-        .isNotNull();
-
     Assertions.assertThat(
             RecordingExporter.compensationSubscriptionRecords()
                 .withIntent(CompensationSubscriptionIntent.DELETED)
@@ -368,14 +356,6 @@ public class MigrateCompensationSubscriptionTest {
         .migrate();
 
     // then
-    Assertions.assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementType(BpmnElementType.PROCESS)
-                .getFirst())
-        .describedAs("Expect that the process instance is migrated")
-        .isNotNull();
-
     engine.job().ofInstance(processInstanceKey).withType("A").complete();
 
     Assertions.assertThat(
@@ -384,14 +364,12 @@ public class MigrateCompensationSubscriptionTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .getFirst()
                 .getValue())
-        .describedAs("Expect that the process definition is updated")
+        .describedAs("Expect that the process definition is the target process definition")
         .hasProcessDefinitionKey(targetProcessDefinitionKey)
-        .describedAs("Expect that the compensable activity is updated")
+        .describedAs("Expect that the compensable activity is the one in the target")
         .hasCompensableActivityId("B")
-        .describedAs("Expect that the compensation handler id is unchanged")
-        .hasCompensationHandlerId("undoB")
-        .describedAs("Expect that the compensation boundary event in the source is created")
-        .isNotNull();
+        .describedAs("Expect that the compensation handler id is the one in the target")
+        .hasCompensationHandlerId("undoB");
 
     engine.job().ofInstance(processInstanceKey).withType("undoB").complete();
 
@@ -403,12 +381,8 @@ public class MigrateCompensationSubscriptionTest {
                 .getValue())
         .describedAs("Expect that the compensation boundary event in the target is completed")
         .hasProcessDefinitionKey(targetProcessDefinitionKey)
-        .describedAs("Expect that the compensable activity is updated")
         .hasCompensableActivityId("B")
-        .describedAs("Expect that the compensation handler id is unchanged")
-        .hasCompensationHandlerId("undoB")
-        .describedAs("Expect that the compensation boundary event in the source is created")
-        .isNotNull();
+        .hasCompensationHandlerId("undoB");
   }
 
   @Test
@@ -475,14 +449,6 @@ public class MigrateCompensationSubscriptionTest {
         .migrate();
 
     // then
-    Assertions.assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementType(BpmnElementType.PROCESS)
-                .getFirst())
-        .describedAs("Expect that the process instance is migrated")
-        .isNotNull();
-
     Assertions.assertThat(
             RecordingExporter.compensationSubscriptionRecords()
                 .withIntent(CompensationSubscriptionIntent.DELETED)
