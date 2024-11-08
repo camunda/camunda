@@ -22,6 +22,12 @@ inputs:
       DockerHub login is automatically disabled for fork PRs.
     required: false
     default: "false"
+  harbor:
+    description: |
+      If enabled, logs into Harbor with a CI account.
+      Harbor login is automatically disabled for fork PRs.
+    required: false
+    default: "false"
   java-distribution:
     description: Java distribution to use
     required: false
@@ -107,7 +113,7 @@ runs:
       # Check if current workflow run is related to a fork PR
       if [[ "${IS_FORK}" == "true" ]]; then
         echo "The current workflow run is related to a fork PR."
-        echo "As a result, Vault secrets cannot be recovered, Camunda Nexus and DockerHub login will be disabled."
+        echo "As a result, Vault secrets cannot be recovered, Camunda Nexus and DockerHub/Harbor login will be disabled."
       fi
 
       # Check if DockerHub and DockerHub-readonly are both enabled
@@ -140,8 +146,8 @@ runs:
       roleId: ${{ inputs.vault-role-id }}
       secretId: ${{ inputs.vault-secret-id }}
       secrets: |
-        secret/data/github.com/organizations/camunda NEXUS_PSW | camunda-nexus-password;
-        secret/data/github.com/organizations/camunda NEXUS_USR | camunda-nexus-username;
+        secret/data/github.com/organizations/camunda NEXUS_PSW | ci-account-password;
+        secret/data/github.com/organizations/camunda NEXUS_USR | ci-account-username;
         ${{ steps.checks.outputs.dockerhub-vault-path }} REGISTRY_HUB_DOCKER_COM_PSW${{ inputs.dockerhub-readonly == 'true' && '_READ_ONLY' || ''}} | dockerhub-token;
         ${{ steps.checks.outputs.dockerhub-vault-path }} REGISTRY_HUB_DOCKER_COM_USR | dockerhub-username;
   - name: Setup Java
@@ -179,8 +185,8 @@ runs:
       CAMUNDA_NEXUS_MAVEN_SERVER: >-
         [{
           "id": "camunda-nexus",
-          "username": "${{ steps.secrets.outputs.camunda-nexus-username }}",
-          "password": "${{ steps.secrets.outputs.camunda-nexus-password }}"
+          "username": "${{ steps.secrets.outputs.ci-account-username }}",
+          "password": "${{ steps.secrets.outputs.ci-account-password }}"
         }]
       EXTRA_MAVEN_MIRRORS: ${{ inputs.maven-mirrors }}
       EXTRA_MAVEN_SERVERS: ${{ inputs.maven-servers }}
@@ -225,7 +231,7 @@ runs:
       sudo rm -rf /etc/localtime
       sudo ln -s /usr/share/zoneinfo/${TZ_IDENTIFIER} /etc/localtime
     shell: bash
-  - name: Login to Docker Hub
+  - name: Logs on to DockerHub
     # DockerHub login is disabled for fork PRs
     if: >-
       steps.checks.outputs.is-fork != 'true' &&
@@ -237,3 +243,13 @@ runs:
     with:
       username: ${{ steps.secrets.outputs.dockerhub-username }}
       password: ${{ steps.secrets.outputs.dockerhub-token }}
+  - name: Logs on to Harbor
+    # Harbor login is disabled for fork PRs
+    if: >-
+      steps.checks.outputs.is-fork != 'true' &&
+      inputs.harbor == 'true'
+    uses: docker/login-action@v3
+    with:
+      registry: registry.camunda.cloud
+      username: ${{ steps.secrets.outputs.ci-account-username }}
+      password: ${{ steps.secrets.outputs.ci-account-password }}

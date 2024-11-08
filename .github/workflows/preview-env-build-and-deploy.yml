@@ -42,6 +42,7 @@ jobs:
       - uses: ./.github/actions/setup-build
         with:
           dockerhub: true
+          harbor: true
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
@@ -51,31 +52,12 @@ jobs:
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
 
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@v3.0.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/github.com/organizations/camunda NEXUS_PSW;
-            secret/data/github.com/organizations/camunda NEXUS_USR;
-
       - name: Set environment variables
         env:
           HEAD_REF: ${{ github.head_ref }}
         run: |
           GIT_COMMIT_HASH=$(git rev-parse $HEAD_REF)
           echo "VERSION=pr-$GIT_COMMIT_HASH" >> $GITHUB_ENV
-
-      - name: Login to Harbor docker registry
-        uses: docker/login-action@v3
-        with:
-          registry: registry.camunda.cloud
-          username: ${{ steps.secrets.outputs.NEXUS_USR }}
-          password: ${{ steps.secrets.outputs.NEXUS_PSW }}
 
       - uses: ./.github/actions/build-platform-docker
         with:

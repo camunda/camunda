@@ -49,18 +49,6 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/infra/ci/common CAMUNDA_NEXUS_PSW;
-            secret/data/products/infra/ci/common CAMUNDA_NEXUS_USR;
-
       - name: Log Input Variables
         run: |
           echo "RELEASE_VERSION: ${{ inputs.RELEASE_VERSION }}"
@@ -73,6 +61,7 @@ jobs:
         uses: ./.github/actions/setup-build
         with:
           dockerhub: true
+          harbor: true
           maven-cache-key-modifier: optimize
           maven-version: 3.8.6
           time-zone: Europe/Berlin
@@ -135,13 +124,6 @@ jobs:
             echo "IS_DRY_RUN=${{ github.event.inputs.IS_DRY_RUN || 'true' }}"
             echo "TAG=${{ github.event.inputs.RELEASE_VERSION || '0.0.0' }}-optimize"
           } >> "$GITHUB_ENV"
-
-      - name: Login to prod Harbor docker registry
-        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3
-        with:
-          registry: registry.camunda.cloud
-          username: ${{ steps.secrets.outputs.CAMUNDA_NEXUS_USR }}
-          password: ${{ steps.secrets.outputs.CAMUNDA_NEXUS_PSW }}
 
       - id: "auth"
         name: "Authenticate to Google Cloud"

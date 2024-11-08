@@ -28,6 +28,7 @@ jobs:
       - name: Setup Maven
         uses: ./.github/actions/setup-build
         with:
+          harbor: true
           java-version: ${{ steps.pom-info.outputs.java_version }}
           maven-cache-key-modifier: optimize-tests
           maven-version: 3.8.6
@@ -35,10 +36,6 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - name: Login to Harbor registry
-        uses: ./.github/actions/login-registry
-        with:
-          secrets: ${{ toJSON(secrets) }}
       - name: Start Elastic
         uses: ./.github/actions/compose
         with:

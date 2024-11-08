@@ -60,17 +60,11 @@ jobs:
           work-dir: ./optimize
 
       #########################################################################
-      # Docker login and image tagging
-      - name: Login to Harbor registry
-        uses: ./.github/actions/login-registry
-        with:
-          secrets: ${{ toJSON(secrets) }}
-
-      #########################################################################
       # Setup and configure Maven
       - name: Setup Maven
         uses: ./.github/actions/setup-build
         with:
+          harbor: true
           maven-cache-key-modifier: optimize
           maven-version: 3.8.6
           time-zone: Europe/Berlin
