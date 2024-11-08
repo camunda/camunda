@@ -13,6 +13,7 @@ import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.FlowNode;
+import io.camunda.zeebe.model.bpmn.instance.Process;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -52,6 +53,21 @@ public class XMLUtil {
     } catch (final Exception e) {
       throw new ExporterException("Error creating SAXParser", e);
     }
+  }
+
+  public Optional<ProcessModelReader> createProcessModelReader(
+      final byte[] byteArray, final String bpmnProcessId) {
+    try {
+      final var is = new ByteArrayInputStream(byteArray);
+      final var bpmnModelInstance = Bpmn.readModelFromStream(is);
+      final var processModelInstance = bpmnModelInstance.getModelElementById(bpmnProcessId);
+      if (processModelInstance instanceof final Process process) {
+        return Optional.of(new ProcessModelReader(process));
+      }
+    } catch (final Exception e) {
+      LOGGER.warn("Unable to parse diagram: " + e.getMessage(), e);
+    }
+    return Optional.empty();
   }
 
   public Optional<ProcessEntity> extractDiagramData(
