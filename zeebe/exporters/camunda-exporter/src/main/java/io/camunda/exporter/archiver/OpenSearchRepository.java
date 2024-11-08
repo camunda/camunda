@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.archiver;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.exporter.archiver.ArchiverRepository.NoopArchiverRepository;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
@@ -41,6 +42,8 @@ import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.reindex.Source;
 import org.opensearch.client.opensearch.core.search.Hit;
+import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
+import org.opensearch.client.opensearch.generic.Requests;
 import org.slf4j.Logger;
 
 public final class OpenSearchRepository extends NoopArchiverRepository {
@@ -59,7 +62,7 @@ public final class OpenSearchRepository extends NoopArchiverRepository {
   private final Executor executor;
   private final CamundaExporterMetrics metrics;
   private final Logger logger;
-
+  private final OpenSearchGenericClient genericClient;
   private final CalendarInterval rolloverInterval;
 
   public OpenSearchRepository(
@@ -82,6 +85,7 @@ public final class OpenSearchRepository extends NoopArchiverRepository {
     this.metrics = metrics;
     this.logger = logger;
 
+    genericClient = new OpenSearchGenericClient(client._transport(), client._transportOptions());
     rolloverInterval = mapCalendarInterval(config.getRolloverInterval());
   }
 
@@ -110,6 +114,37 @@ public final class OpenSearchRepository extends NoopArchiverRepository {
   }
 
   @Override
+  public CompletableFuture<Void> setIndexLifeCycle(final String destinationIndexName) {
+    if (!retention.isEnabled()) {
+      return CompletableFuture.completedFuture(null);
+    }
+
+    final AddPolicyRequestBody value = new AddPolicyRequestBody(retention.getPolicyName());
+    final var request =
+        Requests.builder().method("POST").endpoint("_plugins/_ism/add/" + destinationIndexName);
+
+    return sendRequestAsync(
+            () ->
+                genericClient.executeAsync(
+                    request.json(value, genericClient._transport().jsonpMapper()).build()))
+        .thenComposeAsync(
+            response -> {
+              if (response.getStatus() >= 400) {
+                return CompletableFuture.failedFuture(
+                    new ExporterException(
+                        "Failed to set index lifecycle policy for index: "
+                            + destinationIndexName
+                            + ".\n"
+                            + "Status: "
+                            + response.getStatus()
+                            + ", Reason: "
+                            + response.getReason()));
+              }
+              return CompletableFuture.completedFuture(null);
+            });
+  }
+
+  @Override
   public CompletableFuture<Void> deleteDocuments(
       final String sourceIndexName,
       final String idFieldName,
@@ -128,17 +163,6 @@ public final class OpenSearchRepository extends NoopArchiverRepository {
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverDelete(timer), executor)
         .thenApplyAsync(DeleteByQueryResponse::total, executor)
         .thenApplyAsync(ok -> null, executor);
-  }
-
-  private SearchRequest createFinishedBatchOperationsSearchRequest(final Aggregation aggregation) {
-    final var endDateQ =
-        QueryBuilders.range()
-            .field(BatchOperationTemplate.END_DATE)
-            .lte(JsonData.of(config.getArchivingTimePoint()))
-            .build();
-
-    return createSearchRequest(
-        batchOperationIndex, endDateQ.toQuery(), aggregation, BatchOperationTemplate.END_DATE);
   }
 
   @Override
@@ -165,6 +189,17 @@ public final class OpenSearchRepository extends NoopArchiverRepository {
     return sendRequestAsync(() -> client.reindex(request))
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverReindex(timer), executor)
         .thenApplyAsync(ignored -> null, executor);
+  }
+
+  private SearchRequest createFinishedBatchOperationsSearchRequest(final Aggregation aggregation) {
+    final var endDateQ =
+        QueryBuilders.range()
+            .field(BatchOperationTemplate.END_DATE)
+            .lte(JsonData.of(config.getArchivingTimePoint()))
+            .build();
+
+    return createSearchRequest(
+        batchOperationIndex, endDateQ.toQuery(), aggregation, BatchOperationTemplate.END_DATE);
   }
 
   private ArchiveBatch createArchiveBatch(final SearchResponse<?> search) {
@@ -282,6 +317,8 @@ public final class OpenSearchRepository extends NoopArchiverRepository {
         .size(0)
         .build();
   }
+
+  private record AddPolicyRequestBody(@JsonProperty("policy_id") String policyId) {}
 
   @FunctionalInterface
   private interface RequestSender<T> {
