@@ -87,7 +87,7 @@ public final class BackgroundTaskManager implements CloseableSilently {
       final String exporterId,
       final ExporterConfiguration config,
       final ExporterResourceProvider resourceProvider,
-      final io.camunda.exporter.metrics.CamundaExporterMetrics metrics,
+      final CamundaExporterMetrics metrics,
       final Logger logger) {
     final var threadFactory =
         Thread.ofPlatform()
@@ -112,7 +112,7 @@ public final class BackgroundTaskManager implements CloseableSilently {
   }
 
   private static ProcessInstancesArchiverJob createProcessInstanceJob(
-      final io.camunda.exporter.metrics.CamundaExporterMetrics metrics,
+      final CamundaExporterMetrics metrics,
       final Logger logger,
       final ExporterResourceProvider resourceProvider,
       final ArchiverRepository repository,
@@ -139,7 +139,7 @@ public final class BackgroundTaskManager implements CloseableSilently {
   }
 
   private static BatchOperationArchiverJob createBatchOperationJob(
-      final io.camunda.exporter.metrics.CamundaExporterMetrics metrics,
+      final CamundaExporterMetrics metrics,
       final Logger logger,
       final ExporterResourceProvider resourceProvider,
       final ArchiverRepository repository,
