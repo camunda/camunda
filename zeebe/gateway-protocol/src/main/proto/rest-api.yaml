@@ -5023,16 +5023,16 @@ components:
           type: integer
           format: int32
         limit:
-          description: The number of items to return in one page.
+          description: The maximum number of items to return in one request.
           type: integer
           format: int32
         searchAfter:
-          description: Items to search after.
+          description: Items to search after. Correlates to the `lastSortValues` property of a previous search response.
           type: array
           items:
             type: object
         searchBefore:
-          description: Items to search before.
+          description: Items to search before. Correlates to the `firstSortValues` property of a previous search response.
           type: array
           items:
             type: object
@@ -5062,12 +5062,12 @@ components:
           type: integer
           format: int64
         firstSortValues:
-          description: sjh
+          description: The first items in the results. Correlates to the `searchBefore` field of an ensuing request.
           type: array
           items:
             type: object
         lastSortValues:
-          description: sjh
+          description: The last items in the results.  Correlates to the `searchAfter` field of an ensuing request.
           type: array
           items:
             type: object
@@ -5077,10 +5077,9 @@ components:
       type: object
       properties:
         filter:
-          description: sjh
-          allOf:
-            - $ref: "#/components/schemas/DecisionRequirementsFilterRequest"
+          $ref: "#/components/schemas/DecisionRequirementsFilterRequest"
     DecisionRequirementsFilterRequest:
+      description: Decision requirements search filter.
       type: object
       properties:
         decisionRequirementsKey:
@@ -5106,7 +5105,7 @@ components:
       type: object
       properties:
         items:
-          description: sjh
+          description: The matching decision requirements.
           type: array
           items:
             $ref: "#/components/schemas/DecisionRequirementsItem"
@@ -5198,13 +5197,13 @@ components:
           type: integer
           format: int64
         evaluatedDecisions:
-          description: sjh
+          description: Decisions that were evaluated within the requested decision evaluation.
           type: array
           items:
             $ref: "#/components/schemas/EvaluatedDecisionItem"
     EvaluatedDecisionItem:
       type: object
-      description: List of decisions that were evaluated within the requested decision evaluation.
+      description: A decision that was evaluated.
       properties:
         decisionDefinitionKey:
           description: The unique key identifying the decision which was evaluate.
@@ -5231,18 +5230,18 @@ components:
           description: The tenant ID of the evaluated decision.
           type: string
         matchedRules:
-          description: sjh
+          description: The decision rules that matched within this decision evaluation.
           type: array
           items:
             $ref: "#/components/schemas/MatchedDecisionRuleItem"
         evaluatedInputs:
-          description: sjh
+          description: The decision inputs that were evaluated within this decision evaluation.
           type: array
           items:
             $ref: "#/components/schemas/EvaluatedDecisionInputItem"
     MatchedDecisionRuleItem:
       type: object
-      description: The decision rules that matched within this decision evaluation.
+      description: A decision rule that matched within this decision evaluation.
       properties:
         ruleId:
           description: The ID of the matched rule.
@@ -5252,13 +5251,13 @@ components:
           type: integer
           format: int32
         evaluatedOutputs:
-          description: sjh
+          description: The evaluated decision outputs.
           type: array
           items:
             $ref: "#/components/schemas/EvaluatedDecisionOutputItem"
     EvaluatedDecisionInputItem:
       type: object
-      description: The decision inputs that were evaluated within this decision evaluation.
+      description: A decision input that was evaluated within this decision evaluation.
       properties:
         inputId:
           description: The ID of the evaluated decision input.
@@ -5288,10 +5287,9 @@ components:
       type: object
       properties:
         filter:
-          description: sjh
-          allOf:
-            - $ref: "#/components/schemas/DecisionInstanceFilterRequest"
+          $ref: "#/components/schemas/DecisionInstanceFilterRequest"
     DecisionInstanceFilterRequest:
+      description: Decision instance search filter.
       type: object
       properties:
         decisionInstanceKey:
@@ -5344,7 +5342,7 @@ components:
       type: object
       properties:
         items:
-          description: sjh
+          description: The matching decision instances.
           type: array
           items:
             $ref: "#/components/schemas/DecisionInstanceItem"
@@ -5524,15 +5522,9 @@ components:
           type: string
           description: The ID of the document.
         metadata:
-          description: sjh
-          # sjhsjhsjh -- this is different from the source!
-          #   it needs to use allOf to consume DocumentMetadata.
-          #   I'm not sure why, because the oas spec seems to say applying the $ref without allOf is fine...
-          #   but we did allOf in every other schema for some reason, so this is the only one that failed.
-          type: object
-          allOf:
-            - $ref: "#/components/schemas/DocumentMetadata"
+          $ref: "#/components/schemas/DocumentMetadata"
     DocumentMetadata:
+      description: Information about the document.
       type: object
       properties:
         contentType:
@@ -5579,33 +5571,26 @@ components:
           format: int64
           description: The unique key identifying the deployment.
         deployments:
-          description: sjh
+          description: Items deployed by the request.
           type: array
           items:
             $ref: "#/components/schemas/DeploymentMetadata"
         tenantId:
-          description: sjh
+          description: The tenant ID associated with the deployment.
           type: string
     DeploymentMetadata:
       type: object
       properties:
         processDefinition:
-          description: sjh
-          allOf:
-            - $ref: "#/components/schemas/DeploymentProcess"
+          $ref: "#/components/schemas/DeploymentProcess"
         decisionDefinition:
-          description: sjh
-          allOf:
-            - $ref: "#/components/schemas/DeploymentDecision"
+          $ref: "#/components/schemas/DeploymentDecision"
         decisionRequirements:
-          description: sjh
-          allOf:
-            - $ref: "#/components/schemas/DeploymentDecisionRequirements"
+          $ref: "#/components/schemas/DeploymentDecisionRequirements"
         form:
-          description: sjh
-          allOf:
-            - $ref: "#/components/schemas/DeploymentForm"
+          $ref: "#/components/schemas/DeploymentForm"
     DeploymentProcess:
+      description: A deployed process.
       type: object
       properties:
         processDefinitionId:
@@ -5628,6 +5613,7 @@ components:
           type: string
           description: The tenant ID of the deployed process.
     DeploymentDecision:
+      description: A deployed decision.
       type: object
       properties:
         decisionDefinitionId:
@@ -5660,6 +5646,7 @@ components:
           description: |
             The assigned key of the decision requirements graph that this decision is part of.
     DeploymentDecisionRequirements:
+      description: Deployed decision requirements.
       type: object
       properties:
         decisionRequirementsId:
@@ -5685,6 +5672,7 @@ components:
           type: string
           description: The resource name from which this decision requirements was parsed.
     DeploymentForm:
+      description: A deployed form.
       type: object
       properties:
         formId:
@@ -5820,7 +5808,7 @@ components:
           type: integer
           format: int64
         mappingInstructions:
-          description: sjh
+          description: Element mappings from the source process instance to the target process instance.
           type: array
           items:
             $ref: "#/components/schemas/MigrateProcessInstanceMappingInstruction"
@@ -5852,12 +5840,12 @@ components:
       type: object
       properties:
         activateInstructions:
-          description: sjh
+          description: Instructions describing which elements should be activated in which scopes and which variables should be created.
           type: array
           items:
             $ref: "#/components/schemas/ModifyProcessInstanceActivateInstruction"
         terminateInstructions:
-          description: sjh
+          description: Instructions describing which elements should be terminated.
           type: array
           items:
             $ref: "#/components/schemas/ModifyProcessInstanceTerminateInstruction"
@@ -5871,7 +5859,7 @@ components:
     ModifyProcessInstanceActivateInstruction:
       type: object
       description: |
-        Instructions describing which elements should be activated in which scopes and which variables should be created.
+        Instructions describing an element that should be activated.
       properties:
         elementId:
           description: The ID of the element that should be activated.
@@ -5885,7 +5873,7 @@ components:
           format: int64
           default: -1
         variableInstructions:
-          description: sjh
+          description: Instructions describing which variables should be created.
           type: array
           items:
             $ref: "#/components/schemas/ModifyProcessInstanceVariableInstruction"
