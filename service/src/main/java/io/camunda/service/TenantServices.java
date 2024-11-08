@@ -19,6 +19,7 @@ import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantCreateRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import java.util.concurrent.CompletableFuture;
 
@@ -53,6 +54,13 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
   public CompletableFuture<TenantRecord> createTenant(final TenantDTO request) {
     return sendBrokerRequest(
         new BrokerTenantCreateRequest().setTenantId(request.tenantId()).setName(request.name()));
+  }
+
+  public CompletableFuture<TenantRecord> updateTenant(final TenantDTO request) {
+    return sendBrokerRequest(
+        new BrokerTenantUpdateRequest(request.tenantKey())
+            .setTenantId(request.tenantId())
+            .setName(request.name()));
   }
 
   public TenantEntity getByTenantKey(final Long tenantKey) {
