@@ -16,11 +16,12 @@ import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiverJob;
 import io.camunda.exporter.tasks.archiver.ArchiverRepository;
-import io.camunda.exporter.tasks.archiver.ArchiverRepository.NoopArchiverRepository;
 import io.camunda.exporter.tasks.archiver.BatchOperationArchiverJob;
 import io.camunda.exporter.tasks.archiver.ElasticsearchRepository;
+import io.camunda.exporter.tasks.archiver.OpenSearchRepository;
 import io.camunda.exporter.tasks.archiver.ProcessInstancesArchiverJob;
 import io.camunda.search.connect.es.ElasticsearchConnector;
+import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
@@ -66,7 +67,6 @@ public final class BackgroundTaskManager implements CloseableSilently {
     // we also don't need to wait for the jobs to fully finish, as we should be able to handle
     // partial jobs (e.g. node crash/restart)
     executor.shutdownNow();
-    // TODO: any closed resources used in the jobs should handle cases where it's been closed
     CloseHelper.close(
         error ->
             logger.warn("Failed to close archiver repository for partition {}", partitionId, error),
@@ -190,7 +190,19 @@ public final class BackgroundTaskManager implements CloseableSilently {
             metrics,
             logger);
       }
-      default -> new NoopArchiverRepository();
+      case OPENSEARCH -> {
+        final var connector = new OpensearchConnector(config.getConnect());
+        yield new OpenSearchRepository(
+            partitionId,
+            config.getArchiver(),
+            config.getRetention(),
+            listViewTemplate.getFullQualifiedName(),
+            batchOperationTemplate.getFullQualifiedName(),
+            connector.createAsyncClient(),
+            executor,
+            metrics,
+            logger);
+      }
     };
   }
 
