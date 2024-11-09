@@ -114,7 +114,7 @@ public class FormHandlerTest {
     // then
     assertThat(formEntity.getKey()).isEqualTo(formKey);
     assertThat(formEntity.getVersion()).isEqualTo(formValue.getVersion());
-    assertThat(formEntity.getBpmnId()).isEqualTo(formValue.getFormId());
+    assertThat(formEntity.getFormId()).isEqualTo(formValue.getFormId());
     assertThat(formEntity.getSchema())
         .isEqualTo(new String(formValue.getResource(), StandardCharsets.UTF_8));
     assertThat(formEntity.getTenantId()).isEqualTo(formValue.getTenantId());
@@ -144,7 +144,7 @@ public class FormHandlerTest {
     assertThat(formEntity.getKey()).isEqualTo(formKey);
     assertThat(formEntity.getIsDeleted()).isTrue();
     assertThat(formEntity.getVersion()).isEqualTo(formValue.getVersion());
-    assertThat(formEntity.getBpmnId()).isEqualTo(formValue.getFormId());
+    assertThat(formEntity.getFormId()).isEqualTo(formValue.getFormId());
     assertThat(formEntity.getSchema())
         .isEqualTo(new String(formValue.getResource(), StandardCharsets.UTF_8));
     assertThat(formEntity.getTenantId()).isEqualTo(formValue.getTenantId());

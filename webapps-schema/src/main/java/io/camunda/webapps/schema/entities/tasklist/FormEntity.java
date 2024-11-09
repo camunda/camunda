@@ -7,10 +7,14 @@
  */
 package io.camunda.webapps.schema.entities.tasklist;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Objects;
 
 public class FormEntity extends TasklistEntity<FormEntity> {
-  private String bpmnId;
+
+  @JsonProperty("bpmnId")
+  private String formId;
+
   private String schema;
   private Long version;
   private Boolean isDeleted;
@@ -20,23 +24,23 @@ public class FormEntity extends TasklistEntity<FormEntity> {
   public FormEntity(
       final long key,
       final String tenantId,
-      final String bpmnId,
+      final String formId,
       final String schema,
       final Long version,
       final Boolean isDeleted) {
     super(String.valueOf(key), key, tenantId);
-    this.bpmnId = bpmnId;
+    this.formId = formId;
     this.schema = schema;
     this.version = version;
     this.isDeleted = isDeleted;
   }
 
-  public String getBpmnId() {
-    return bpmnId;
+  public String getFormId() {
+    return formId;
   }
 
-  public FormEntity setBpmnId(final String bpmnId) {
-    this.bpmnId = bpmnId;
+  public FormEntity setFormId(final String formId) {
+    this.formId = formId;
     return this;
   }
 
@@ -69,7 +73,7 @@ public class FormEntity extends TasklistEntity<FormEntity> {
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), bpmnId, schema, version, isDeleted);
+    return Objects.hash(super.hashCode(), formId, schema, version, isDeleted);
   }
 
   @Override
@@ -84,7 +88,7 @@ public class FormEntity extends TasklistEntity<FormEntity> {
       return false;
     }
     final FormEntity that = (FormEntity) o;
-    return Objects.equals(bpmnId, that.bpmnId)
+    return Objects.equals(formId, that.formId)
         && Objects.equals(schema, that.schema)
         && Objects.equals(version, that.version)
         && Objects.equals(isDeleted, that.isDeleted);
@@ -93,8 +97,8 @@ public class FormEntity extends TasklistEntity<FormEntity> {
   @Override
   public String toString() {
     return "FormEntity{"
-        + "bpmnId='"
-        + bpmnId
+        + "formId='"
+        + formId
         + '\''
         + ", schema='"
         + schema
