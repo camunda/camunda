@@ -18,22 +18,8 @@ public class FormEntity extends TasklistEntity<FormEntity> {
   private String schema;
   private Long version;
   private Boolean isDeleted;
-
-  public FormEntity() {}
-
-  public FormEntity(
-      final long key,
-      final String tenantId,
-      final String formId,
-      final String schema,
-      final Long version,
-      final Boolean isDeleted) {
-    super(String.valueOf(key), key, tenantId);
-    this.formId = formId;
-    this.schema = schema;
-    this.version = version;
-    this.isDeleted = isDeleted;
-  }
+  private String processDefinitionId;
+  private boolean embedded;
 
   public String getFormId() {
     return formId;
@@ -68,6 +54,24 @@ public class FormEntity extends TasklistEntity<FormEntity> {
 
   public FormEntity setIsDeleted(final Boolean deleted) {
     isDeleted = deleted;
+    return this;
+  }
+
+  public String getProcessDefinitionId() {
+    return processDefinitionId;
+  }
+
+  public FormEntity setProcessDefinitionId(final String processDefinitionId) {
+    this.processDefinitionId = processDefinitionId;
+    return this;
+  }
+
+  public boolean getEmbedded() {
+    return embedded;
+  }
+
+  public FormEntity setEmbedded(final boolean embedded) {
+    this.embedded = embedded;
     return this;
   }
 

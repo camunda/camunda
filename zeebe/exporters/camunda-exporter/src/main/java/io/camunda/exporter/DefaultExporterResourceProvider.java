@@ -17,6 +17,7 @@ import io.camunda.exporter.handlers.AuthorizationHandler;
 import io.camunda.exporter.handlers.DecisionEvaluationHandler;
 import io.camunda.exporter.handlers.DecisionHandler;
 import io.camunda.exporter.handlers.DecisionRequirementsHandler;
+import io.camunda.exporter.handlers.EmbeddedFormHandler;
 import io.camunda.exporter.handlers.EventFromIncidentHandler;
 import io.camunda.exporter.handlers.EventFromJobHandler;
 import io.camunda.exporter.handlers.EventFromProcessInstanceHandler;
@@ -192,6 +193,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptorsMap.get(MetricIndex.class).getFullQualifiedName()),
             new TaskCompletedMetricHandler(
                 indexDescriptorsMap.get(TasklistMetricIndex.class).getFullQualifiedName()),
+            new EmbeddedFormHandler(
+                indexDescriptorsMap.get(FormIndex.class).getFullQualifiedName(), new XMLUtil()),
             new FormHandler(indexDescriptorsMap.get(FormIndex.class).getFullQualifiedName()),
             new EventFromIncidentHandler(
                 templateDescriptorsMap.get(EventTemplate.class).getFullQualifiedName(), false),

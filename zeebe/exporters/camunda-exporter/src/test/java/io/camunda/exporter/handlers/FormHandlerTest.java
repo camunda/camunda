@@ -119,6 +119,8 @@ public class FormHandlerTest {
         .isEqualTo(new String(formValue.getResource(), StandardCharsets.UTF_8));
     assertThat(formEntity.getTenantId()).isEqualTo(formValue.getTenantId());
     assertThat(formEntity.getIsDeleted()).isFalse();
+    assertThat(formEntity.getEmbedded()).isFalse();
+    assertThat(formEntity.getProcessDefinitionId()).isNull();
   }
 
   @Test
@@ -148,6 +150,8 @@ public class FormHandlerTest {
     assertThat(formEntity.getSchema())
         .isEqualTo(new String(formValue.getResource(), StandardCharsets.UTF_8));
     assertThat(formEntity.getTenantId()).isEqualTo(formValue.getTenantId());
+    assertThat(formEntity.getEmbedded()).isFalse();
+    assertThat(formEntity.getProcessDefinitionId()).isNull();
   }
 
   private String formJsonResource() {
