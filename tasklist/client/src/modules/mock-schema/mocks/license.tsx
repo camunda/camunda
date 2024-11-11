@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {addDays} from 'date-fns';
 import type {License} from 'modules/types';
 
 const validLicense: License = {
@@ -36,14 +37,11 @@ const commercialExpired: License = {
   expiresAt: new Date().toISOString(),
 };
 
-const date = new Date();
-date.setUTCDate(date.getUTCDate() + 1); // add one day
-
 const validNonCommercial = {
   validLicense: true,
   licenseType: 'production',
   isCommercial: false,
-  expiresAt: date.toISOString(),
+  expiresAt: addDays(new Date(), 1).toISOString(),
 };
 
 export {
