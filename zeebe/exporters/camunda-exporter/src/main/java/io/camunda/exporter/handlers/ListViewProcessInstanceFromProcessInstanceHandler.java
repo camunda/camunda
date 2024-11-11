@@ -20,6 +20,7 @@ import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForLis
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import java.time.Instant;
@@ -40,9 +41,9 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ListViewProcessInstanceFromProcessInstanceHandler.class);
 
-  private static final Set<String> PI_AND_AI_START_STATES = Set.of(ELEMENT_ACTIVATING.name());
-  private static final Set<String> PI_AND_AI_FINISH_STATES =
-      Set.of(ELEMENT_COMPLETED.name(), ELEMENT_TERMINATED.name());
+  private static final Set<Intent> PI_AND_AI_START_STATES = Set.of(ELEMENT_ACTIVATING);
+  private static final Set<Intent> PI_AND_AI_FINISH_STATES =
+      Set.of(ELEMENT_COMPLETED, ELEMENT_TERMINATED);
 
   private final boolean concurrencyMode;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
@@ -71,10 +72,10 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
   public boolean handlesRecord(final Record<ProcessInstanceRecordValue> record) {
     final var recordValue = record.getValue();
     if (isProcessEvent(recordValue)) {
-      final var intent = record.getIntent().name();
+      final var intent = record.getIntent();
       return PI_AND_AI_START_STATES.contains(intent)
           || PI_AND_AI_FINISH_STATES.contains(intent)
-          || ELEMENT_MIGRATED.name().equals(intent);
+          || ELEMENT_MIGRATED.equals(intent);
     }
     return false;
   }
@@ -95,7 +96,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
       final ProcessInstanceForListViewEntity piEntity) {
 
     final var recordValue = record.getValue();
-    final var intentStr = record.getIntent().name();
+    final var intent = record.getIntent();
 
     piEntity
         .setId(String.valueOf(recordValue.getProcessInstanceKey()))
@@ -115,15 +116,15 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
         OffsetDateTime.ofInstant(Instant.ofEpochMilli(record.getTimestamp()), ZoneOffset.UTC);
     final boolean isRootProcessInstance =
         recordValue.getParentProcessInstanceKey() == EMPTY_PARENT_PROCESS_INSTANCE_ID;
-    if (intentStr.equals(ELEMENT_COMPLETED.name()) || intentStr.equals(ELEMENT_TERMINATED.name())) {
+    if (intent.equals(ELEMENT_COMPLETED) || intent.equals(ELEMENT_TERMINATED)) {
       incrementFinishedCount();
       piEntity.setEndDate(timestamp);
-      if (intentStr.equals(ELEMENT_TERMINATED.name())) {
+      if (intent.equals(ELEMENT_TERMINATED)) {
         piEntity.setState(ProcessInstanceState.CANCELED);
       } else {
         piEntity.setState(ProcessInstanceState.COMPLETED);
       }
-    } else if (intentStr.equals(ELEMENT_ACTIVATING.name())) {
+    } else if (intent.equals(ELEMENT_ACTIVATING)) {
       piEntity.setStartDate(timestamp).setState(ProcessInstanceState.ACTIVE);
       // default tree path that may be updated later by Incident record handler:
       // PI_<processInstanceKey>
@@ -189,14 +190,6 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
       return false;
     }
     return bpmnElementType.equals(type);
-  }
-
-  private boolean isProcessInstanceTerminated(final Record<ProcessInstanceRecordValue> record) {
-    return record.getIntent() == ELEMENT_TERMINATED;
-  }
-
-  private boolean isProcessInstanceMigrated(final Record<ProcessInstanceRecordValue> record) {
-    return record.getIntent() == ELEMENT_MIGRATED;
   }
 
   protected String getProcessInstanceScript() {

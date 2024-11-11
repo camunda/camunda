@@ -53,7 +53,7 @@ public class ListViewProcessInstanceFromIncidentHandler
 
   @Override
   public boolean handlesRecord(final Record<IncidentRecordValue> record) {
-    return record.getIntent().name().equals(CREATED.name());
+    return record.getIntent().equals(CREATED);
   }
 
   @Override

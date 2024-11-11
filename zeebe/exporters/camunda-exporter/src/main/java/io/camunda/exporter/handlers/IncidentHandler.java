@@ -52,8 +52,8 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
 
   @Override
   public boolean handlesRecord(final Record<IncidentRecordValue> record) {
-    final String intentStr = record.getIntent().name();
-    return !intentStr.equals(IncidentIntent.RESOLVED.toString());
+    final var intent = record.getIntent();
+    return !intent.equals(IncidentIntent.RESOLVED);
   }
 
   @Override

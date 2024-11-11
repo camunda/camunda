@@ -54,7 +54,7 @@ public class UserTaskCompletionVariableHandler
 
   @Override
   public boolean handlesRecord(final Record<UserTaskRecordValue> record) {
-    return UserTaskIntent.COMPLETED.name().equals(record.getIntent().name())
+    return UserTaskIntent.COMPLETED.equals(record.getIntent())
         && record.getValue().getVariables() != null
         && !record.getValue().getVariables().isEmpty();
   }
