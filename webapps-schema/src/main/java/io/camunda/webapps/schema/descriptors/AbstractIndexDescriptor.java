@@ -15,6 +15,8 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
       SCHEMA_FOLDER_OPENSEARCH + "/index/%s-%s.json";
   public static final String SCHEMA_CREATE_INDEX_JSON_ELASTICSEARCH =
       SCHEMA_FOLDER_ELASTICSEARCH + "/index/%s-%s.json";
+  public static final String FULL_QUALIFIED_INDEX_NAME_PATTERN = "%s%s-%s-%s_";
+  public static final String ALL_VERSIONS_INDEX_NAME_PATTERN = "%s%s-%s-\\d.*";
 
   protected String indexPrefix;
   protected boolean isElasticsearch;
@@ -27,7 +29,11 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
   @Override
   public String getFullQualifiedName() {
     return String.format(
-        "%s%s-%s-%s_", formattedIndexPrefix(), getComponentName(), getIndexName(), getVersion());
+        FULL_QUALIFIED_INDEX_NAME_PATTERN,
+        formattedIndexPrefix(),
+        getComponentName(),
+        getIndexName(),
+        getVersion());
   }
 
   @Override
@@ -45,7 +51,10 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
   @Override
   public String getAllVersionsIndexNameRegexPattern() {
     return String.format(
-        "%s%s-%s-\\d.*", formattedIndexPrefix(), getComponentName(), getIndexName());
+        ALL_VERSIONS_INDEX_NAME_PATTERN,
+        formattedIndexPrefix(),
+        getComponentName(),
+        getIndexName());
   }
 
   @Override

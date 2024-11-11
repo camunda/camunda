@@ -7,6 +7,8 @@
  */
 package io.camunda.tasklist.es;
 
+import static io.camunda.tasklist.schema.indices.AbstractIndexDescriptor.formatAllVersionsIndexNameRegexPattern;
+import static io.camunda.tasklist.schema.indices.AbstractIndexDescriptor.formatTasklistIndexPattern;
 import static io.camunda.tasklist.util.CollectionUtil.map;
 
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
@@ -43,12 +45,13 @@ public class IndexSchemaValidatorElasticSearch extends IndexSchemaValidatorUtil
   @Autowired RetryElasticsearchClient retryElasticsearchClient;
 
   private Set<String> getAllIndexNamesForIndex(final String index) {
-    final String indexPattern = String.format("%s-%s*", getIndexPrefix(), index);
+    final String indexPattern = formatTasklistIndexPattern(getIndexPrefix());
     LOGGER.debug("Getting all indices for {}", indexPattern);
     final Set<String> indexNames = retryElasticsearchClient.getIndexNames(indexPattern);
     // since we have indices with similar names, we need to additionally filter index names
     // e.g. task and task-variable
-    final String patternWithVersion = String.format("%s-%s-\\d.*", getIndexPrefix(), index);
+    final String patternWithVersion =
+        formatAllVersionsIndexNameRegexPattern(getIndexPrefix(), index);
     return indexNames.stream()
         .filter(n -> n.matches(patternWithVersion))
         .collect(Collectors.toSet());

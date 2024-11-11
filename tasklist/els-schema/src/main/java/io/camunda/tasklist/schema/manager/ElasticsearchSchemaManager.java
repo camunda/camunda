@@ -7,6 +7,9 @@
  */
 package io.camunda.tasklist.schema.manager;
 
+import static io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor.formatIndexPrefix;
+import static io.camunda.webapps.schema.descriptors.ComponentNames.TASK_LIST;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
@@ -165,7 +168,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
 
   private String settingsTemplateName() {
     final TasklistElasticsearchProperties elsConfig = tasklistProperties.getElasticsearch();
-    return String.format("%s_template", elsConfig.getIndexPrefix());
+    return String.format("%s%s_template", formatIndexPrefix(elsConfig.getIndexPrefix()), TASK_LIST);
   }
 
   private Settings getIndexSettings() {
