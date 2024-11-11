@@ -18,10 +18,12 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerRoleEntityRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerRoleUpdateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.role.BrokerRoleCreateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.role.BrokerRoleDeleteRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -76,5 +78,19 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
 
   public CompletableFuture<RoleRecord> deleteRole(final long roleKey) {
     return sendBrokerRequest(new BrokerRoleDeleteRequest(roleKey));
+  }
+
+  public void addMember(final Long roleKey, final EntityType entityType, final long entityKey) {
+    sendBrokerRequest(
+        BrokerRoleEntityRequest.createAddRequest()
+            .setRoleKey(roleKey)
+            .setEntity(entityType, entityKey));
+  }
+
+  public void removeMember(final Long roleKey, final EntityType entityType, final long entityKey) {
+    sendBrokerRequest(
+        BrokerRoleEntityRequest.createRemoveRequest()
+            .setRoleKey(roleKey)
+            .setEntity(entityType, entityKey));
   }
 }
