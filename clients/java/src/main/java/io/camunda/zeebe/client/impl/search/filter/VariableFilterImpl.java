@@ -36,19 +36,19 @@ public class VariableFilterImpl extends TypedSearchRequestPropertyProvider<Varia
 
   @Override
   public VariableFilter variableKey(final Long key) {
-    filter.setVariableKey(key);
+    filter.setVariableKey(FilterUtil.longFilterProperty(key));
     return this;
   }
 
   @Override
   public VariableFilter value(final String value) {
-    filter.setValue(value);
+    filter.setValue(FilterUtil.stringFilterProperty(value));
     return this;
   }
 
   @Override
   public VariableFilter name(final String name) {
-    filter.setName(name);
+    filter.setName(FilterUtil.stringFilterProperty(name));
     return this;
   }
 

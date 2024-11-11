@@ -50,7 +50,7 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserT
 
   @Override
   public UserTaskFilter assignee(final String assignee) {
-    filter.setAssignee(assignee);
+    filter.setAssignee(FilterUtil.stringFilterProperty(assignee));
     return this;
   }
 
@@ -74,13 +74,13 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserT
 
   @Override
   public UserTaskFilter candidateGroup(final String candidateGroup) {
-    filter.setCandidateGroup(candidateGroup);
+    filter.setCandidateGroup(FilterUtil.stringFilterProperty(candidateGroup));
     return this;
   }
 
   @Override
   public UserTaskFilter candidateUser(final String candidateUser) {
-    filter.setCandidateUser(candidateUser);
+    filter.setCandidateUser(FilterUtil.stringFilterProperty(candidateUser));
     return this;
   }
 

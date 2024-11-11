@@ -13,7 +13,6 @@ import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.filter.FilterBuilders;
-import io.camunda.search.filter.Operation;
 import org.junit.jupiter.api.Test;
 
 public class VariableQueryTransformerTest extends AbstractTransformerTest {
@@ -96,8 +95,7 @@ public class VariableQueryTransformerTest extends AbstractTransformerTest {
   @Test
   public void shouldQueryByVariableNameAndValue() {
     // given
-    final var testValue = Operation.<Object>eq("testValue");
-    final var filter = FilterBuilders.variable((f) -> f.variableOperations("test", testValue));
+    final var filter = FilterBuilders.variable((f) -> f.names("test").values("testValue"));
 
     // when
     final var searchRequest = transformQuery(filter);

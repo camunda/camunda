@@ -22,6 +22,7 @@ import io.camunda.zeebe.client.protocol.rest.IntegerFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.LongFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateEnum;
+import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateFilterProperty;
 
 public class ProcessInstanceFilterImpl
     extends TypedSearchRequestPropertyProvider<ProcessInstanceFilterRequest>
@@ -48,13 +49,13 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter processDefinitionId(final String processDefinitionId) {
-    filter.processDefinitionId(processDefinitionId);
+    filter.processDefinitionId(FilterUtil.stringFilterProperty(processDefinitionId));
     return this;
   }
 
   @Override
   public ProcessInstanceFilter processDefinitionName(final String processDefinitionName) {
-    filter.setProcessDefinitionName(processDefinitionName);
+    filter.setProcessDefinitionName(FilterUtil.stringFilterProperty(processDefinitionName));
     return this;
   }
 
@@ -74,7 +75,8 @@ public class ProcessInstanceFilterImpl
   @Override
   public ProcessInstanceFilter processDefinitionVersionTag(
       final String processDefinitionVersionTag) {
-    filter.setProcessDefinitionVersionTag(processDefinitionVersionTag);
+    filter.setProcessDefinitionVersionTag(
+        FilterUtil.stringFilterProperty(processDefinitionVersionTag));
     return this;
   }
 
@@ -118,7 +120,7 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter treePath(final String treePath) {
-    filter.setTreePath(treePath);
+    filter.setTreePath(FilterUtil.stringFilterProperty(treePath));
     return this;
   }
 
@@ -136,7 +138,14 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter state(final String state) {
-    filter.setState((state == null) ? null : ProcessInstanceStateEnum.fromValue(state));
+    if (state != null) {
+      final ProcessInstanceStateFilterProperty stateFilter =
+          new ProcessInstanceStateFilterProperty();
+      stateFilter.$eq(ProcessInstanceStateEnum.fromValue(state));
+      filter.setState(stateFilter);
+    } else {
+      filter.setState(null);
+    }
     return this;
   }
 
@@ -148,7 +157,7 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter tenantId(final String tenantId) {
-    filter.setTenantId(tenantId);
+    filter.setTenantId(FilterUtil.stringFilterProperty(tenantId));
     return this;
   }
 

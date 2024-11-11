@@ -59,7 +59,7 @@ public class VariableValueFilterIT {
     final var randomizedVariable = prepareRandomVariablesAndReturnOne(testApplication);
 
     // and an eq value filter
-    final Operation<Object> operation = Operation.eq(randomizedVariable.value());
+    final Operation<String> operation = Operation.eq(randomizedVariable.value());
 
     // when we search for it, we should find one
     searchAndAssertVariableValueFilter(
@@ -76,7 +76,7 @@ public class VariableValueFilterIT {
         prepareRandomVariablesAndReturnOne(testApplication, varName, "42");
 
     // and an eq value filter
-    final Operation<Object> operation = Operation.eq(42);
+    final Operation<String> operation = Operation.eq("42");
 
     // when we search for it, we should find one
     searchAndAssertVariableValueFilter(
@@ -93,7 +93,7 @@ public class VariableValueFilterIT {
         prepareRandomVariablesAndReturnOne(testApplication, varName, "true");
 
     // and an eq value filter
-    final Operation<Object> operation = Operation.eq(true);
+    final Operation<String> operation = Operation.eq("true");
 
     // when we search for it, we should find one
     searchAndAssertVariableValueFilter(
@@ -114,7 +114,7 @@ public class VariableValueFilterIT {
     createAndSaveVariable(rdbmsService, randomizedVariable);
 
     // and a neq value filter
-    final Operation<Object> operation = Operation.neq("DEFINITELY NOT");
+    final Operation<String> operation = Operation.neq("DEFINITELY NOT");
 
     // when we search for it, we should find one
     searchAndAssertVariableValueFilter(rdbmsService, randomizedVariable, varName, operation);
@@ -130,23 +130,7 @@ public class VariableValueFilterIT {
         prepareRandomVariablesAndReturnOne(testApplication, varName, "42000");
 
     // and a gt value filter
-    final Operation<Object> operation = Operation.gt(40000);
-
-    // when we search for it, we should find one
-    searchAndAssertVariableValueFilter(rdbmsService, randomizedVariable, varName, operation);
-  }
-
-  @TestTemplate
-  public void shouldFindVariableWithNameAndGtStringValue(
-      final CamundaRdbmsTestApplication testApplication) {
-    // given 21 variables
-    final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final String varName = "var-name-" + nextStringId();
-    final var randomizedVariable =
-        prepareRandomVariablesAndReturnOne(testApplication, varName, "42000");
-
-    // and a gt value filter
-    final Operation<Object> operation = Operation.gt("40000");
+    final Operation<String> operation = Operation.gt("40000");
 
     // when we search for it, we should find one
     searchAndAssertVariableValueFilter(rdbmsService, randomizedVariable, varName, operation);
@@ -162,23 +146,7 @@ public class VariableValueFilterIT {
         prepareRandomVariablesAndReturnOne(testApplication, varName, "42000");
 
     // and a gte value filter
-    final Operation<Object> operation = Operation.gte(42000);
-
-    // when we search for it, we should find one
-    searchAndAssertVariableValueFilter(rdbmsService, randomizedVariable, varName, operation);
-  }
-
-  @TestTemplate
-  public void shouldFindVariableWithNameAndGteStringValue(
-      final CamundaRdbmsTestApplication testApplication) {
-    // given 21 variables
-    final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final String varName = "var-name-" + nextStringId();
-    final var randomizedVariable =
-        prepareRandomVariablesAndReturnOne(testApplication, varName, "42000");
-
-    // and a gte value filter
-    final Operation<Object> operation = Operation.gte("42000");
+    final Operation<String> operation = Operation.gte("42000");
 
     // when we search for it, we should find one
     searchAndAssertVariableValueFilter(rdbmsService, randomizedVariable, varName, operation);
@@ -194,23 +162,7 @@ public class VariableValueFilterIT {
         prepareRandomVariablesAndReturnOne(testApplication, varName, "-42000");
 
     // and a lt value filter
-    final Operation<Object> operation = Operation.lt(-40000);
-
-    // when we search for it, we should find one
-    searchAndAssertVariableValueFilter(rdbmsService, randomizedVariable, varName, operation);
-  }
-
-  @TestTemplate
-  public void shouldFindVariableWithNameAndLtStringValue(
-      final CamundaRdbmsTestApplication testApplication) {
-    // given 21 variables
-    final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final String varName = "var-name-" + nextStringId();
-    final var randomizedVariable =
-        prepareRandomVariablesAndReturnOne(testApplication, varName, "-42000");
-
-    // and a lt value filter
-    final Operation<Object> operation = Operation.lt("-40000");
+    final Operation<String> operation = Operation.lt("-40000");
 
     // when we search for it, we should find one
     searchAndAssertVariableValueFilter(rdbmsService, randomizedVariable, varName, operation);
@@ -226,23 +178,7 @@ public class VariableValueFilterIT {
         prepareRandomVariablesAndReturnOne(testApplication, varName, "-42000");
 
     // and a lte value filter
-    final Operation<Object> operation = Operation.lte(-42000);
-
-    // when we search for it, we should find one
-    searchAndAssertVariableValueFilter(rdbmsService, randomizedVariable, varName, operation);
-  }
-
-  @TestTemplate
-  public void shouldFindVariableWithNameAndLteStringValue(
-      final CamundaRdbmsTestApplication testApplication) {
-    // given 21 variables
-    final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final String varName = "var-name-" + nextStringId();
-    final var randomizedVariable =
-        prepareRandomVariablesAndReturnOne(testApplication, varName, "-42000");
-
-    // and a lte value filter
-    final Operation<Object> operation = Operation.lte("-42000");
+    final Operation<String> operation = Operation.lte("-42000");
 
     // when we search for it, we should find one
     searchAndAssertVariableValueFilter(rdbmsService, randomizedVariable, varName, operation);
@@ -264,8 +200,7 @@ public class VariableValueFilterIT {
     final var variableFilter =
         new VariableFilter.Builder()
             .scopeKeys(randomizedVariable.scopeKey())
-            .variable(randomizedVariable.name())
-            .variable("not there")
+            .names(randomizedVariable.name(), "not there")
             .build();
 
     // when we search for it, we should find one
@@ -297,8 +232,8 @@ public class VariableValueFilterIT {
     // and two name with value filters
     final var variableFilter =
         new VariableFilter.Builder()
-            .variableOperations(varName, Operation.eq(randomizedVariable.value()))
-            .variableOperations("not there", Operation.eq("no"))
+            .names(varName, "not there")
+            .values(randomizedVariable.value(), "no")
             .build();
 
     // when we search for it, we should find one
@@ -321,7 +256,7 @@ public class VariableValueFilterIT {
       final RdbmsService rdbmsService,
       final VariableDbModel variableDbModel,
       final String variableName,
-      final Operation<Object> operation) {
+      final Operation<String> operation) {
     searchAndAssertVariableValueFilters(
         rdbmsService, variableDbModel, variableName, List.of(operation));
   }
@@ -330,13 +265,11 @@ public class VariableValueFilterIT {
       final RdbmsService rdbmsService,
       final VariableDbModel variableDbModel,
       final String variableName,
-      final List<Operation<Object>> operations) {
-    final VariableFilter variableFilter;
-    if (operations == null) {
-      variableFilter = new VariableFilter.Builder().variable(variableName).build();
-    } else {
-      variableFilter =
-          new VariableFilter.Builder().variableOperations(variableName, operations).build();
+      final List<Operation<String>> operations) {
+
+    final var builder = new VariableFilter.Builder().names(variableName);
+    if (operations != null) {
+      builder.valueOperations(operations).build();
     }
 
     final var searchResult =
@@ -344,7 +277,7 @@ public class VariableValueFilterIT {
             .getVariableReader()
             .search(
                 new VariableQuery(
-                    variableFilter,
+                    builder.build(),
                     VariableSort.of(b -> b),
                     SearchQueryPage.of(b -> b.from(0).size(5))));
 

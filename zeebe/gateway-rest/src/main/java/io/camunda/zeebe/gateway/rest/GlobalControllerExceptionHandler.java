@@ -10,11 +10,13 @@ package io.camunda.zeebe.gateway.rest;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.util.Objects;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestController;
@@ -53,6 +55,17 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
 
     return super.createProblemDetail(
         ex, status, detail, detailMessageCode, detailMessageArguments, request);
+  }
+
+  @Override
+  protected ResponseEntity<Object> handleExceptionInternal(
+      @NonNull final Exception ex,
+      final Object body,
+      @NonNull final HttpHeaders headers,
+      @NonNull final HttpStatusCode statusCode,
+      @NonNull final WebRequest request) {
+    Loggers.REST_LOGGER.debug(ex.getMessage(), ex);
+    return super.handleExceptionInternal(ex, body, headers, statusCode, request);
   }
 
   private boolean isRequestBodyMissing(final Exception ex) {

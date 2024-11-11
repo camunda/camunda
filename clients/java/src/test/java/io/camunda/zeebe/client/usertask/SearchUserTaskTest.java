@@ -48,7 +48,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
     // then
     final UserTaskSearchQueryRequest request =
         gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
-    assertThat(request.getFilter().getAssignee()).isEqualTo("demo");
+    assertThat(request.getFilter().getAssignee().get$Eq()).isEqualTo("demo");
   }
 
   @Test
@@ -92,7 +92,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
     // then
     final UserTaskSearchQueryRequest request =
         gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
-    assertThat(request.getFilter().getCandidateGroup()).isEqualTo("group1");
+    assertThat(request.getFilter().getCandidateGroup().get$Eq()).isEqualTo("group1");
   }
 
   @Test
@@ -103,7 +103,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
     // then
     final UserTaskSearchQueryRequest request =
         gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
-    assertThat(request.getFilter().getCandidateUser()).isEqualTo("user1");
+    assertThat(request.getFilter().getCandidateUser().get$Eq()).isEqualTo("user1");
   }
 
   @Test

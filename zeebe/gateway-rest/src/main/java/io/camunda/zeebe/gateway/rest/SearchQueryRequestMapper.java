@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
+import static io.camunda.zeebe.gateway.rest.util.AdvancedSearchFilterUtil.mapToOperations;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_SEARCH_BEFORE_AND_AFTER;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_SORT_FIELD_MUST_NOT_BE_NULL;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOWN_SORT_BY;
@@ -204,7 +205,7 @@ public final class SearchQueryRequestMapper {
           .ifPresent(builder::evaluationDateOperations);
       ofNullable(filter.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
       ofNullable(filter.getDecisionDefinitionKey())
-          .map(AdvancedSearchFilterUtil::mapBasicLongFilter)
+          .map(mapToOperations(Long.class))
           .ifPresent(builder::decisionDefinitionKeyOperations);
       ofNullable(filter.getDecisionDefinitionId()).ifPresent(builder::decisionDefinitionIds);
       ofNullable(filter.getDecisionDefinitionName()).ifPresent(builder::decisionDefinitionNames);
@@ -302,22 +303,22 @@ public final class SearchQueryRequestMapper {
     final var builder = FilterBuilders.variable();
 
     ofNullable(filter.getProcessInstanceKey())
-        .map(AdvancedSearchFilterUtil::mapLongFilter)
+        .map(mapToOperations(Long.class))
         .ifPresent(builder::processInstanceKeyOperations);
     ofNullable(filter.getScopeKey())
-        .map(AdvancedSearchFilterUtil::mapLongFilter)
+        .map(mapToOperations(Long.class))
         .ifPresent(builder::scopeKeyOperations);
-    ofNullable(filter.getVariableKey()).ifPresent(builder::variableKeys);
+    ofNullable(filter.getVariableKey())
+        .map(mapToOperations(Long.class))
+        .ifPresent(builder::variableKeyOperations);
     ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     ofNullable(filter.getIsTruncated()).ifPresent(builder::isTruncated);
-
-    if (filter.getName() != null) {
-      if (filter.getValue() != null) {
-        builder.variableOperations(filter.getName(), Operation.eq(filter.getValue()));
-      } else {
-        builder.variableOperations(filter.getName(), Operation.exists(true));
-      }
-    }
+    ofNullable(filter.getName())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::nameOperations);
+    ofNullable(filter.getValue())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::valueOperations);
 
     return builder.build();
   }
@@ -381,31 +382,31 @@ public final class SearchQueryRequestMapper {
 
     if (filter != null) {
       ofNullable(filter.getProcessInstanceKey())
-          .map(AdvancedSearchFilterUtil::mapLongFilter)
+          .map(mapToOperations(Long.class))
           .ifPresent(builder::processInstanceKeyOperations);
       ofNullable(filter.getProcessDefinitionId())
-          .map(AdvancedSearchFilterUtil::mapToOperation)
+          .map(mapToOperations(String.class))
           .ifPresent(builder::processDefinitionIdOperations);
       ofNullable(filter.getProcessDefinitionName())
-          .map(AdvancedSearchFilterUtil::mapToOperation)
+          .map(mapToOperations(String.class))
           .ifPresent(builder::processDefinitionNameOperations);
       ofNullable(filter.getProcessDefinitionVersion())
-          .map(AdvancedSearchFilterUtil::mapIntegerFilter)
+          .map(mapToOperations(Integer.class))
           .ifPresent(builder::processDefinitionVersionOperations);
       ofNullable(filter.getProcessDefinitionVersionTag())
-          .map(AdvancedSearchFilterUtil::mapToOperation)
+          .map(mapToOperations(String.class))
           .ifPresent(builder::processDefinitionVersionTagOperations);
       ofNullable(filter.getProcessDefinitionKey())
-          .map(AdvancedSearchFilterUtil::mapLongFilter)
+          .map(mapToOperations(Long.class))
           .ifPresent(builder::processDefinitionKeyOperations);
       ofNullable(filter.getParentProcessInstanceKey())
-          .map(AdvancedSearchFilterUtil::mapLongFilter)
+          .map(mapToOperations(Long.class))
           .ifPresent(builder::parentProcessInstanceKeyOperations);
       ofNullable(filter.getParentFlowNodeInstanceKey())
-          .map(AdvancedSearchFilterUtil::mapLongFilter)
+          .map(mapToOperations(Long.class))
           .ifPresent(builder::parentFlowNodeInstanceKeyOperations);
       ofNullable(filter.getTreePath())
-          .map(AdvancedSearchFilterUtil::mapToOperation)
+          .map(mapToOperations(String.class))
           .ifPresent(builder::treePathOperations);
       ofNullable(filter.getStartDate())
           .map(SearchQueryRequestMapper::toOffsetDateTime)
@@ -416,11 +417,11 @@ public final class SearchQueryRequestMapper {
           .map(f -> List.of(Operation.gte(f), Operation.lt(f)))
           .ifPresent(builder::endDateOperations);
       ofNullable(filter.getState())
-          .map(ProcessInstanceStateEnum::getValue)
-          .ifPresent(builder::states);
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::stateOperations);
       ofNullable(filter.getHasIncident()).ifPresent(builder::hasIncident);
       ofNullable(filter.getTenantId())
-          .map(AdvancedSearchFilterUtil::mapToOperation)
+          .map(mapToOperations(String.class))
           .ifPresent(builder::tenantIdOperations);
     }
 
@@ -503,12 +504,18 @@ public final class SearchQueryRequestMapper {
                   .ifPresent(builder::states);
               Optional.ofNullable(f.getProcessDefinitionId()).ifPresent(builder::bpmnProcessIds);
               Optional.ofNullable(f.getElementId()).ifPresent(builder::elementIds);
-              Optional.ofNullable(f.getAssignee()).ifPresent(builder::assignees);
+              Optional.ofNullable(f.getAssignee())
+                  .map(mapToOperations(String.class))
+                  .ifPresent(builder::assigneeOperations);
               Optional.ofNullable(f.getPriority())
-                  .map(AdvancedSearchFilterUtil::mapIntegerFilter)
+                  .map(mapToOperations(Integer.class))
                   .ifPresent(builder::priorityOperations);
-              Optional.ofNullable(f.getCandidateGroup()).ifPresent(builder::candidateGroups);
-              Optional.ofNullable(f.getCandidateUser()).ifPresent(builder::candidateUsers);
+              Optional.ofNullable(f.getCandidateGroup())
+                  .map(mapToOperations(String.class))
+                  .ifPresent(builder::candidateGroupOperations);
+              Optional.ofNullable(f.getCandidateUser())
+                  .map(mapToOperations(String.class))
+                  .ifPresent(builder::candidateUserOperations);
               Optional.ofNullable(f.getProcessDefinitionKey())
                   .ifPresent(builder::processDefinitionKeys);
               Optional.ofNullable(f.getProcessInstanceKey())

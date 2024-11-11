@@ -44,7 +44,7 @@ public class SearchVariableTest extends ClientRestTest {
     // then
     final VariableSearchQueryRequest request =
         gatewayService.getLastRequest(VariableSearchQueryRequest.class);
-    assertThat(request.getFilter().getValue()).isEqualTo("demo");
+    assertThat(request.getFilter().getValue().get$Eq()).isEqualTo("demo");
   }
 
   @Test
@@ -55,7 +55,7 @@ public class SearchVariableTest extends ClientRestTest {
     // then
     final VariableSearchQueryRequest request =
         gatewayService.getLastRequest(VariableSearchQueryRequest.class);
-    assertThat(request.getFilter().getName()).isEqualTo("demo");
+    assertThat(request.getFilter().getName().get$Eq()).isEqualTo("demo");
   }
 
   @Test
@@ -129,6 +129,6 @@ public class SearchVariableTest extends ClientRestTest {
     // then
     final VariableSearchQueryRequest request =
         gatewayService.getLastRequest(VariableSearchQueryRequest.class);
-    assertThat(request.getFilter().getVariableKey()).isEqualTo(1);
+    assertThat(request.getFilter().getVariableKey().get$Eq()).isEqualTo(1);
   }
 }
