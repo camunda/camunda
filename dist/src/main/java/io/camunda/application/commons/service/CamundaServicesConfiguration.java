@@ -44,6 +44,7 @@ import io.camunda.service.MappingServices;
 import io.camunda.service.MessageServices;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.ProcessInstanceServices;
+import io.camunda.service.ProcessTestServices;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.SignalServices;
@@ -285,5 +286,11 @@ public class CamundaServicesConfiguration {
   public AuthorizationChecker authorizationChecker(
       final AuthorizationSearchClient authorizationSearchClient) {
     return new AuthorizationChecker(authorizationSearchClient);
+  }
+
+  @Bean
+  public ProcessTestServices processTestServices(
+      final BrokerClient brokerClient, final SecurityContextProvider securityContextProvider) {
+    return new ProcessTestServices(brokerClient, securityContextProvider, null);
   }
 }
