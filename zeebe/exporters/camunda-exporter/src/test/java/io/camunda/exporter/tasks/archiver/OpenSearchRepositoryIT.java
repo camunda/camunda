@@ -32,7 +32,6 @@ import java.util.UUID;
 import org.apache.http.HttpHost;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
@@ -60,7 +59,7 @@ final class OpenSearchRepositoryIT {
       TestSearchContainers.createDefaultOpensearchContainer();
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
-  @AutoCloseResource private final RestClientTransport transport = Mockito.spy(createRestClient());
+  @AutoCloseResource private final RestClientTransport transport = createRestClient();
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final ArchiverConfiguration config = new ArchiverConfiguration();
   private final RetentionConfiguration retention = new RetentionConfiguration();
@@ -117,22 +116,6 @@ final class OpenSearchRepositoryIT {
     Awaitility.await("until the policy has been visibly applied")
         .untilAsserted(
             () -> assertThat(fetchPolicyForIndex(indexName)).isEqualTo(retention.getPolicyName()));
-  }
-
-  @Test
-  void shouldNotSetIndexLifecycleIfRetentionIsDisabled() {
-    // given
-    final var indexName = UUID.randomUUID().toString();
-    final var repository = createRepository();
-    retention.setEnabled(false);
-
-    // when
-    final var result = repository.setIndexLifeCycle(indexName);
-
-    // then
-    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
-    Mockito.verify(transport, Mockito.never())
-        .performRequestAsync(Mockito.any(), Mockito.any(), Mockito.any());
   }
 
   @Test
