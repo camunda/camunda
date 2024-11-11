@@ -240,7 +240,6 @@ public class ExporterConfiguration {
 
   public static class ArchiverConfiguration {
     private boolean rolloverEnabled = true;
-    private String rolloverDateFormat = "yyyy-MM-dd";
     private String elsRolloverDateFormat = "date";
     private String rolloverInterval = "1d";
     private int rolloverBatchSize = 100;
@@ -253,14 +252,6 @@ public class ExporterConfiguration {
 
     public void setRolloverEnabled(final boolean rolloverEnabled) {
       this.rolloverEnabled = rolloverEnabled;
-    }
-
-    public String getRolloverDateFormat() {
-      return rolloverDateFormat;
-    }
-
-    public void setRolloverDateFormat(final String rolloverDateFormat) {
-      this.rolloverDateFormat = rolloverDateFormat;
     }
 
     public String getElsRolloverDateFormat() {
@@ -312,8 +303,6 @@ public class ExporterConfiguration {
       return "RetentionConfiguration{"
           + "rolloverEnabled="
           + rolloverEnabled
-          + ", rolloverDateFormat='"
-          + rolloverDateFormat
           + '\''
           + ", elsRolloverDateFormat='"
           + elsRolloverDateFormat
@@ -322,7 +311,7 @@ public class ExporterConfiguration {
           + rolloverInterval
           + '\''
           + ", rolloverBatchSize='"
-          + rolloverDateFormat
+          + rolloverBatchSize
           + '\''
           + ", waitPeriodBeforeArchiving='"
           + waitPeriodBeforeArchiving

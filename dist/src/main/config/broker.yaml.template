@@ -901,7 +901,6 @@
         #
         #   archiver:
         #     enabled: true
-        #     rolloverDateFormat: "yyyy-MM-dd"
         #     elsRolloverDateFormat: "date"
         #     rolloverInterval: "1d"
         #     rolloverBatchSize: 100

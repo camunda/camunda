@@ -8,8 +8,6 @@
 package io.camunda.exporter.config;
 
 import io.camunda.zeebe.exporter.api.ExporterException;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
@@ -70,17 +68,6 @@ public final class ConfigValidator {
           String.format(
               "CamundaExporter retention minimumAge '%s' must match pattern '%s', but didn't.",
               minimumAge, PATTERN_MIN_AGE_FORMAT));
-    }
-
-    final String rolloverDateFormat = configuration.getArchiver().getRolloverDateFormat();
-    try {
-      DateTimeFormatter.ofPattern(rolloverDateFormat).withZone(ZoneId.systemDefault());
-    } catch (final IllegalArgumentException e) {
-      throw new ExporterException(
-          "CamundaExporter rolloverDateFormat "
-              + rolloverDateFormat
-              + "is not a valid DateTimeFormatter pattern: "
-              + e);
     }
 
     final String rolloverInterval = configuration.getArchiver().getRolloverInterval();
