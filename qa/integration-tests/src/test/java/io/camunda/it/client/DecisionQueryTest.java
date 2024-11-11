@@ -22,6 +22,7 @@ import io.camunda.zeebe.client.api.search.response.DecisionDefinitionType;
 import io.camunda.zeebe.client.api.search.response.DecisionInstance;
 import io.camunda.zeebe.client.api.search.response.DecisionInstanceState;
 import io.camunda.zeebe.client.impl.search.response.DecisionDefinitionImpl;
+import io.camunda.zeebe.client.protocol.rest.BasicLongFilterProperty;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.io.IOException;
@@ -527,6 +528,26 @@ class DecisionQueryTest {
         zeebeClient
             .newDecisionInstanceQuery()
             .filter(f -> f.decisionDefinitionKey(decisionKey))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().get(0).getDecisionDefinitionKey()).isEqualTo(decisionKey);
+    assertThat(result.items().get(0).getDecisionInstanceKey())
+        .isEqualTo(EVALUATED_DECISIONS.get(0).getDecisionInstanceKey());
+  }
+
+  @Test
+  public void shouldRetrieveDecisionInstanceByDecisionKeyFilterIn() {
+    // when
+    final long decisionKey = DEPLOYED_DECISIONS.get(0).getDecisionKey();
+    final BasicLongFilterProperty filter = new BasicLongFilterProperty();
+    filter.set$In(List.of(Long.MAX_VALUE, decisionKey));
+    final var result =
+        zeebeClient
+            .newDecisionInstanceQuery()
+            .filter(f -> f.decisionDefinitionKey(filter))
             .send()
             .join();
 

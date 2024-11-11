@@ -19,10 +19,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.api.search.response.DecisionDefinitionType;
 import io.camunda.zeebe.client.api.search.response.DecisionInstanceState;
+import io.camunda.zeebe.client.protocol.rest.BasicLongFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionTypeEnum;
+import io.camunda.zeebe.client.protocol.rest.DecisionInstanceFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.DecisionInstanceSearchQueryRequest;
 import io.camunda.zeebe.client.protocol.rest.DecisionInstanceStateEnum;
 import io.camunda.zeebe.client.util.ClientRestTest;
+import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
 class SearchDecisionInstanceTest extends ClientRestTest {
@@ -69,11 +72,32 @@ class SearchDecisionInstanceTest extends ClientRestTest {
         .isEqualTo(DecisionDefinitionTypeEnum.DECISION_TABLE);
     assertThat(request.getFilter().getProcessDefinitionKey()).isEqualTo(2L);
     assertThat(request.getFilter().getProcessInstanceKey()).isEqualTo(3L);
-    assertThat(request.getFilter().getDecisionDefinitionKey()).isEqualTo(4L);
+    assertThat(request.getFilter().getDecisionDefinitionKey().get$Eq()).isEqualTo(4L);
     assertThat(request.getFilter().getDecisionDefinitionId()).isEqualTo("ddi");
     assertThat(request.getFilter().getDecisionDefinitionName()).isEqualTo("ddm");
     assertThat(request.getFilter().getDecisionDefinitionVersion()).isEqualTo(5);
     assertThat(request.getFilter().getTenantId()).isEqualTo("t");
+  }
+
+  @Test
+  void shouldSearchDecisionInstanceByDecisionDefinitionKeyLongProperty() {
+    // when
+    final BasicLongFilterProperty filterProperty = new BasicLongFilterProperty();
+    filterProperty.$in(Arrays.asList(1L, 10L));
+    client
+        .newDecisionInstanceQuery()
+        .filter(f -> f.decisionDefinitionKey(filterProperty))
+        .send()
+        .join();
+
+    // then
+    final DecisionInstanceSearchQueryRequest request =
+        gatewayService.getLastRequest(DecisionInstanceSearchQueryRequest.class);
+    final DecisionInstanceFilterRequest filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    final BasicLongFilterProperty decisionDefinitionKey = filter.getDecisionDefinitionKey();
+    assertThat(decisionDefinitionKey).isNotNull();
+    assertThat(decisionDefinitionKey.get$In()).isEqualTo(Arrays.asList(1L, 10L));
   }
 
   @Test

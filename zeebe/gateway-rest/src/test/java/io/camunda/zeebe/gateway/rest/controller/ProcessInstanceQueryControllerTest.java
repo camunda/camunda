@@ -13,25 +13,34 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.ProcessInstanceServices;
+import io.camunda.zeebe.gateway.rest.JacksonConfig;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 
 @WebMvcTest(
     value = ProcessInstanceQueryController.class,
     properties = "camunda.rest.query.enabled=true")
+@Import(JacksonConfig.class)
 public class ProcessInstanceQueryControllerTest extends RestControllerTest {
 
   private static final String PROCESS_INSTANCES_SEARCH_URL = "/v2/process-instances/search";
@@ -51,7 +60,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           "PI_1/PI_2",
           OffsetDateTime.parse("2024-01-01T00:00:00Z"),
           null,
-          ProcessInstanceEntity.ProcessInstanceState.ACTIVE,
+          ProcessInstanceState.ACTIVE,
           false,
           "tenant");
 
@@ -426,5 +435,67 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
 
     // Verify that the service was called with the invalid key
     verify(processInstanceServices).getByKey(invalidProcesInstanceKey);
+  }
+
+  private static Stream<Arguments> provideAdvancedSearchParameters() {
+    final var streamBuilder = Stream.<Arguments>builder();
+
+    longOperationTestCases(
+        streamBuilder,
+        "processInstanceKey",
+        ops -> new ProcessInstanceFilter.Builder().processInstanceKeyOperations(ops).build());
+    longOperationTestCases(
+        streamBuilder,
+        "processDefinitionKey",
+        ops -> new ProcessInstanceFilter.Builder().processDefinitionKeyOperations(ops).build());
+    longOperationTestCases(
+        streamBuilder,
+        "parentProcessInstanceKey",
+        ops -> new ProcessInstanceFilter.Builder().parentProcessInstanceKeyOperations(ops).build());
+    longOperationTestCases(
+        streamBuilder,
+        "parentFlowNodeInstanceKey",
+        ops ->
+            new ProcessInstanceFilter.Builder().parentFlowNodeInstanceKeyOperations(ops).build());
+    integerOperationTestCases(
+        streamBuilder,
+        "processDefinitionVersion",
+        ops -> new ProcessInstanceFilter.Builder().processDefinitionVersionOperations(ops).build());
+
+    return streamBuilder.build();
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideAdvancedSearchParameters")
+  void shouldSearchProcessInstancesWithAdvancedFilter(
+      final String filterString, final ProcessInstanceFilter filter) {
+    // given
+    final var request =
+        """
+            {
+                "filter": %s
+            }"""
+            .formatted(filterString);
+    System.out.println("request = " + request);
+    when(processInstanceServices.search(any(ProcessInstanceQuery.class)))
+        .thenReturn(SEARCH_QUERY_RESULT);
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE);
+
+    verify(processInstanceServices)
+        .search(new ProcessInstanceQuery.Builder().filter(filter).build());
   }
 }
