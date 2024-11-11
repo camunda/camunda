@@ -40,7 +40,10 @@ final class RecordIndexRouterTest {
     final var currentVersion = VersionUtil.getVersionLowerCase();
     final var record =
         recordFactory.generateRecord(
-            b -> b.withValueType(valueType).withTimestamp(timestamp.toEpochMilli()));
+            b ->
+                b.withValueType(valueType)
+                    .withTimestamp(timestamp.toEpochMilli())
+                    .withBrokerVersion(currentVersion));
 
     // when
     final var index = router.indexFor(record);
