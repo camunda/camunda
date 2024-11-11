@@ -39,8 +39,9 @@ jobs:
         id: auth-saas
         uses: google-github-actions/auth@v2
         with:
+          token_format: 'access_token'
           workload_identity_provider: 'projects/618877442292/locations/global/workloadIdentityPools/github/providers/camunda'
-          service_account: 'github-actions@camunda-saas-registry.iam.gserviceaccount.com'
+          service_account: 'github-actions-zeebe-io@camunda-saas-registry.iam.gserviceaccount.com'
       - name: Setup BuildKit
         uses: docker/setup-buildx-action@v3
       - name: Login to SaaS image registry
@@ -102,7 +103,7 @@ jobs:
           variables=$(echo "${{ inputs.variables }}" | envsubst)
           ./zbctl create instance ${{ inputs.processId }} --variables "$variables"
         env:
-          IMAGE: ${{ steps.build-zeebe-docker.outputs.image }}
+          IMAGE: zeebe-io/zeebe:${{ steps.image-tag.outputs.image-tag }}
           ZEEBE_CLIENT_SECRET: ${{ steps.secrets.outputs.TESTBENCH_PROD_CLIENT_SECRET }}
           ZEEBE_ADDRESS: ${{ steps.secrets.outputs.TESTBENCH_PROD_CONTACT_POINT }}
           ZEEBE_AUTHORIZATION_SERVER_URL: 'https://login.cloud.camunda.io/oauth/token'
