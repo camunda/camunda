@@ -1895,47 +1895,6 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /users:
-    post:
-      tags:
-        - User
-      operationId: createUser
-      summary: Create user
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UserRequest"
-        required: true
-      responses:
-        "202":
-          description: |
-            The user was created successfully.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/UserCreateResponse"
-        "400":
-          description: |
-            The user could not be created.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          description: |
-            The request to create a user was denied.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-
   /messages/publication:
     post:
       tags:
@@ -2200,6 +2159,47 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
 
+  /users:
+    post:
+      tags:
+        - User
+      operationId: createUser
+      summary: Create user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRequest"
+        required: true
+      responses:
+        "202":
+          description: |
+            The user was created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserCreateResponse"
+        "400":
+          description: |
+            Unable to create the user.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: |
+            The request to create a user was denied.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /users/search:
     post:
       tags:
@@ -2283,6 +2283,40 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+
+  /users/{userKey}:
+    delete:
+        tags:
+            - User
+        operationId: deleteUser
+        summary: Delete user
+        description: |
+            Deletes a user.
+        parameters:
+            - name: userKey
+              in: path
+              required: true
+              description: The key of the user to delete.
+              schema:
+                  type: integer
+                  format: int64
+        responses:
+            "204":
+              description: The user was deleted successfully.
+            "400":
+              description: The provided data is not valid.
+              content:
+                application/problem+json:
+                  schema:
+                    $ref: "#/components/schemas/ProblemDetail"
+            "404":
+              description: The user is not found.
+              content:
+                application/problem+json:
+                  schema:
+                    $ref: "#/components/schemas/ProblemDetail"
+            "500":
+              $ref: "#/components/responses/InternalServerError"
 
   /incidents/search:
     post:
