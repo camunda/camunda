@@ -11,6 +11,7 @@ import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserType;
@@ -66,7 +67,9 @@ public final class AuthorizationCheckBehavior {
 
     final var userKey = getUserKey(request);
     if (userKey.isPresent()) {
-      authorizedResourceIdentifiers = getUserAuthorizedResourceIdentifiers(userKey.get(), request);
+      authorizedResourceIdentifiers =
+          getUserAuthorizedResourceIdentifiers(
+              userKey.get(), request.getResourceType(), request.getPermissionType());
     }
 
     // Check if authorizations contain a resource identifier that matches the required resource
@@ -89,11 +92,29 @@ public final class AuthorizationCheckBehavior {
       return Collections.emptySet();
     }
 
-    return getUserAuthorizedResourceIdentifiers(userKey.get(), request);
+    return getUserAuthorizedResourceIdentifiers(
+        userKey.get(), request.getResourceType(), request.getPermissionType());
+  }
+
+  public Set<String> getAuthorizedResourceIdentifiers(
+      final long ownerKey,
+      final AuthorizationOwnerType ownerType,
+      final AuthorizationResourceType resourceType,
+      final PermissionType permissionType) {
+    return switch (ownerType) {
+      case USER -> getUserAuthorizedResourceIdentifiers(ownerKey, resourceType, permissionType);
+      case ROLE ->
+          getRoleAuthorizedResourceIdentifiers(List.of(ownerKey), resourceType, permissionType);
+      // TODO add MAPPING
+      // TODO add GROUP
+      default -> Collections.emptySet();
+    };
   }
 
   private Set<String> getUserAuthorizedResourceIdentifiers(
-      final long userKey, final AuthorizationRequest request) {
+      final long userKey,
+      final AuthorizationResourceType resourceType,
+      final PermissionType permissionType) {
     final var userOptional = userState.getUser(userKey);
     if (userOptional.isEmpty()) {
       return Collections.emptySet();
@@ -108,11 +129,10 @@ public final class AuthorizationCheckBehavior {
 
     // Get resource identifiers for this user
     final var userAuthorizedResourceIdentifiers =
-        authorizationState.getResourceIdentifiers(
-            userKey, request.getResourceType(), request.getPermissionType());
+        authorizationState.getResourceIdentifiers(userKey, resourceType, permissionType);
     // Get resource identifiers for the user's roles
     final var roleAuthorizedResourceIdentifiers =
-        getRoleAuthorizedResourceIdentifiers(user.getRoleKeysList(), request);
+        getRoleAuthorizedResourceIdentifiers(user.getRoleKeysList(), resourceType, permissionType);
 
     return Stream.concat(
             userAuthorizedResourceIdentifiers.stream(), roleAuthorizedResourceIdentifiers.stream())
@@ -120,13 +140,14 @@ public final class AuthorizationCheckBehavior {
   }
 
   private Set<String> getRoleAuthorizedResourceIdentifiers(
-      final List<Long> roleKeys, final AuthorizationRequest request) {
+      final List<Long> roleKeys,
+      final AuthorizationResourceType resourceType,
+      final PermissionType permissionType) {
     return roleKeys.stream()
         .flatMap(
             roleKey ->
                 authorizationState
-                    .getResourceIdentifiers(
-                        roleKey, request.getResourceType(), request.getPermissionType())
+                    .getResourceIdentifiers(roleKey, resourceType, permissionType)
                     .stream())
         .collect(Collectors.toSet());
   }

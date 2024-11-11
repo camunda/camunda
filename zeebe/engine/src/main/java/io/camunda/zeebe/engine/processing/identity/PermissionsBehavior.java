@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.PermissionValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -24,6 +25,8 @@ public class PermissionsBehavior {
 
   public static final String OWNER_NOT_FOUND_MESSAGE =
       "Expected to find owner with key: '%d', but none was found";
+  public static final String PERMISSION_ALREADY_EXISTS_MESSAGE =
+      "Expected to add '%s' permission for resource '%s' and resource identifiers '%s', but this permission for resource identifiers '%s' already exist";
 
   private final AuthorizationState authorizationState;
   private final AuthorizationCheckBehavior authCheckBehavior;
@@ -66,5 +69,32 @@ public class PermissionsBehavior {
                 Either.left(
                     new Rejection(
                         RejectionType.NOT_FOUND, OWNER_NOT_FOUND_MESSAGE.formatted(ownerKey))));
+  }
+
+  public Either<Rejection, AuthorizationRecord> permissionAlreadyExists(
+      final AuthorizationRecord record) {
+    for (final PermissionValue permission : record.getPermissions()) {
+      final var addedResourceIds = permission.getResourceIds();
+      final var duplicateResourceIds =
+          authCheckBehavior.getAuthorizedResourceIdentifiers(
+              record.getOwnerKey(),
+              record.getOwnerType(),
+              record.getResourceType(),
+              permission.getPermissionType());
+      duplicateResourceIds.retainAll(addedResourceIds);
+
+      if (!duplicateResourceIds.isEmpty()) {
+        return Either.left(
+            new Rejection(
+                RejectionType.ALREADY_EXISTS,
+                PERMISSION_ALREADY_EXISTS_MESSAGE.formatted(
+                    permission.getPermissionType(),
+                    record.getResourceType(),
+                    addedResourceIds,
+                    duplicateResourceIds)));
+      }
+    }
+
+    return Either.right(record);
   }
 }
