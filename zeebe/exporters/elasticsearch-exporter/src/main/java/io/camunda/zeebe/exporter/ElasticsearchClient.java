@@ -175,6 +175,17 @@ class ElasticsearchClient implements AutoCloseable {
     return putIndexTemplate(templateName, template);
   }
 
+  public boolean putIndexTemplate(final ValueType valueType, final String version) {
+    final String templateName = indexRouter.indexPrefixForValueType(valueType, version);
+    final Template template =
+        templateReader.readIndexTemplate(
+            valueType,
+            indexRouter.searchPatternForValueType(valueType, version),
+            indexRouter.aliasNameForValueType(valueType));
+
+    return putIndexTemplate(templateName, template);
+  }
+
   /**
    * Creates or updates the component template on the target Elasticsearch. The template is read
    * from {@link TemplateReader#readComponentTemplate()}.

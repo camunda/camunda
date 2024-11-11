@@ -79,6 +79,10 @@ final class RecordIndexRouter {
         + "*";
   }
 
+  String searchPatternForValueType(final ValueType valueType, final String version) {
+    return indexPrefixForValueType(valueType, version) + INDEX_DELIMITER + "*";
+  }
+
   /**
    * Returns the routing for this record. The routing field of a document controls to which shard it
    * will be assigned.

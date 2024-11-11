@@ -8,6 +8,7 @@
 package io.camunda.zeebe.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 import co.elastic.clients.elasticsearch.core.GetResponse;
@@ -29,12 +30,15 @@ import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.camunda.zeebe.util.VersionUtil;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.agrona.CloseHelper;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
@@ -373,6 +377,68 @@ final class ElasticsearchExporterIT {
     private void configureExporter(final boolean retentionEnabled) {
       config.retention.setEnabled(retentionEnabled);
       exporter.configure(exporterTestContext);
+    }
+
+    @Test
+    void shouldExportToCorrectIndexWithElasticsearchNotReachable() throws IOException {
+
+      // given
+      final var currentPort = CONTAINER.getFirstMappedPort();
+      CONTAINER.stop();
+      Awaitility.await().until(() -> !CONTAINER.isRunning());
+
+      final var record = factory.generateRecord(r -> r.withBrokerVersion("8.6.0"));
+
+      try (final var mockVersion =
+          Mockito.mockStatic(VersionUtil.class, Mockito.CALLS_REAL_METHODS)) {
+        mockVersion.when(VersionUtil::getVersionLowerCase).thenReturn("8.6.0");
+        configureExporter(false);
+
+        assertThatThrownBy(() -> export(record));
+      }
+
+      CONTAINER
+          .withEnv("discovery.type", "single-node")
+          .setPortBindings(List.of(currentPort + ":9200"));
+      CONTAINER.start();
+      Awaitility.await().until(CONTAINER::isRunning);
+
+      // when
+      final var record2 = factory.generateRecord(r -> r.withBrokerVersion("8.7.0"));
+      try (final var mockVersion =
+          Mockito.mockStatic(VersionUtil.class, Mockito.CALLS_REAL_METHODS)) {
+        mockVersion.when(VersionUtil::getVersionLowerCase).thenReturn("8.7.0");
+        configureExporter(false);
+
+        export(record);
+        export(record2);
+      }
+
+      // then
+
+      // If the templates are not created then the dynamically created indices will not have an
+      // alias versus with a template as the template defines an alias.
+      final var firstRecordIndexName = indexRouter.indexFor(record);
+      final var firstRecordIndexAliases =
+          testClient
+              .getEsClient()
+              .indices()
+              .get(r -> r.index(firstRecordIndexName))
+              .result()
+              .get(firstRecordIndexName)
+              .aliases();
+      assertThat(firstRecordIndexAliases.size()).isEqualTo(1);
+
+      final var secondRecordIndexName = indexRouter.indexFor(record2);
+      final var secondRecordIndexAliases =
+          testClient
+              .getEsClient()
+              .indices()
+              .get(r -> r.index(secondRecordIndexName))
+              .result()
+              .get(secondRecordIndexName)
+              .aliases();
+      assertThat(secondRecordIndexAliases.size()).isEqualTo(1);
     }
 
     private void assertIndexSettingsHasLifecyclePolicy(
