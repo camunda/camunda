@@ -18,7 +18,7 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.prometheus.PrometheusMeterRegistry;
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -73,11 +73,12 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.brokerClient = brokerClient;
     this.shutdownHelper = shutdownHelper;
     this.meterRegistry = meterRegistry;
+    meterRegistry.throwExceptionOnRegistrationFailure();
   }
 
   @Bean
   public ExporterRepository exporterRepository(
-      @Autowired(required = false) List<ExporterDescriptor> exporterDescriptors) {
+      @Autowired(required = false) final List<ExporterDescriptor> exporterDescriptors) {
     if (exporterDescriptors != null && !exporterDescriptors.isEmpty()) {
       LOGGER.info("Create ExporterRepository with predefined exporter descriptors.");
       return new ExporterRepository(exporterDescriptors);

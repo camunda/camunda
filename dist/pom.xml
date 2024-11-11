@@ -435,6 +435,10 @@
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-registry-prometheus-simpleclient</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-registry-prometheus</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>org.springframework</groupId>
@@ -755,6 +759,7 @@
             <dependency>io.camunda:camunda-exporter</dependency>
             <dependency>io.camunda:zeebe-elasticsearch-exporter</dependency>
             <dependency>io.camunda:zeebe-opensearch-exporter</dependency>
+            <dependency>io.micrometer:micrometer-registry-prometheus-simpleclient</dependency>
 
             <!-- Needed for Spring Actuators, and REST API -->
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
