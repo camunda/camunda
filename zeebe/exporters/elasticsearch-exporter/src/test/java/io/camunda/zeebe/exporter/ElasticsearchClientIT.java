@@ -86,7 +86,11 @@ final class ElasticsearchClientIT {
     // given - a record with a negative timestamp will not be indexed because its field in ES is a
     // date, which must be a positive number of milliseconds since the UNIX epoch
     final var invalidRecord =
-        recordFactory.generateRecord(ValueType.VARIABLE, b -> b.withTimestamp(Long.MIN_VALUE));
+        recordFactory.generateRecord(
+            ValueType.VARIABLE,
+            b ->
+                b.withTimestamp(Long.MIN_VALUE)
+                    .withBrokerVersion(VersionUtil.getVersionLowerCase()));
     client.index(invalidRecord, new RecordSequence(PARTITION_ID, 1));
     client.putComponentTemplate();
     client.putIndexTemplate(ValueType.VARIABLE);

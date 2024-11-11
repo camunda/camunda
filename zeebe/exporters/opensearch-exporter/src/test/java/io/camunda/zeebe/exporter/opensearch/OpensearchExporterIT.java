@@ -111,7 +111,9 @@ final class OpensearchExporterIT {
   @MethodSource("io.camunda.zeebe.exporter.opensearch.TestSupport#provideValueTypes")
   void shouldExportRecord(final ValueType valueType) {
     // given
-    final var record = factory.generateRecord(valueType);
+    final var record =
+        factory.generateRecord(
+            valueType, r -> r.withBrokerVersion(VersionUtil.getVersionLowerCase()));
 
     // when
     export(record);
@@ -141,7 +143,10 @@ final class OpensearchExporterIT {
             .withCustomHeaders(Map.of("x", "1", "x.y", "2"))
             .build();
     final Record<JobRecordValue> record =
-        factory.generateRecord(ValueType.JOB, builder -> builder.withValue(value));
+        factory.generateRecord(
+            ValueType.JOB,
+            builder ->
+                builder.withValue(value).withBrokerVersion(VersionUtil.getVersionLowerCase()));
 
     // when
     export(record);
@@ -167,7 +172,10 @@ final class OpensearchExporterIT {
             .withJobKeys(Collections.singleton(1L))
             .build();
     final Record<JobBatchRecordValue> record =
-        factory.generateRecord(ValueType.JOB_BATCH, builder -> builder.withValue(value));
+        factory.generateRecord(
+            ValueType.JOB_BATCH,
+            builder ->
+                builder.withValue(value).withBrokerVersion(VersionUtil.getVersionLowerCase()));
 
     // when
     export(record);
@@ -186,7 +194,9 @@ final class OpensearchExporterIT {
         "no template is created because the exporter is configured filter out records of this type");
 
     // given
-    final var record = factory.generateRecord(valueType);
+    final var record =
+        factory.generateRecord(
+            valueType, r -> r.withBrokerVersion(VersionUtil.getVersionLowerCase()));
     final var expectedIndexTemplateName =
         indexRouter.indexPrefixForValueType(valueType, VersionUtil.getVersionLowerCase());
 
@@ -206,7 +216,8 @@ final class OpensearchExporterIT {
   @Test
   void shouldPutComponentTemplate() {
     // given
-    final var record = factory.generateRecord();
+    final var record =
+        factory.generateRecord(r -> r.withBrokerVersion(VersionUtil.getVersionLowerCase()));
 
     // when - export a single record to enforce installing all index templatesWrapper
     export(record);
@@ -224,7 +235,8 @@ final class OpensearchExporterIT {
   @Test
   void shouldCreateIndexStateManagementPolicy() {
     // given
-    final var record = factory.generateRecord();
+    final var record =
+        factory.generateRecord(r -> r.withBrokerVersion(VersionUtil.getVersionLowerCase()));
 
     // when - export a single record to enforce creating the policy
     export(record);
@@ -270,7 +282,8 @@ final class OpensearchExporterIT {
     final var initialMinimumAge = "100d";
     assertThat(initialMinimumAge).isNotEqualTo(config.retention.getMinimumAge());
     testClient.putIndexStateManagementPolicy(initialMinimumAge);
-    final var record = factory.generateRecord();
+    final var record =
+        factory.generateRecord(r -> r.withBrokerVersion(VersionUtil.getVersionLowerCase()));
 
     // when - export a single record to enforce creating the policy
     export(record);
@@ -288,7 +301,8 @@ final class OpensearchExporterIT {
     final var initialMinimumAge = "100d";
     assertThat(initialMinimumAge).isNotEqualTo(config.retention.getMinimumAge());
     testClient.putIndexStateManagementPolicy(initialMinimumAge);
-    final var record = factory.generateRecord();
+    final var record =
+        factory.generateRecord(r -> r.withBrokerVersion(VersionUtil.getVersionLowerCase()));
 
     // when - export a single record to enforce deletion the policy
     configureExporter(false);
@@ -321,7 +335,9 @@ final class OpensearchExporterIT {
     void shouldAddIndexLifecycleSettingsToExistingIndicesOnRerunWhenRetentionIsEnabled() {
       // given
       configureExporter(false);
-      final var record1 = factory.generateRecord(ValueType.JOB);
+      final var record1 =
+          factory.generateRecord(
+              ValueType.JOB, r -> r.withBrokerVersion(VersionUtil.getVersionLowerCase()));
 
       // when
       export(record1);
@@ -339,7 +355,9 @@ final class OpensearchExporterIT {
       /* Tests when retention is later enabled all indices should have lifecycle policy */
       // given
       configureExporter(true);
-      final var record2 = factory.generateRecord(ValueType.JOB);
+      final var record2 =
+          factory.generateRecord(
+              ValueType.JOB, r -> r.withBrokerVersion(VersionUtil.getVersionLowerCase()));
 
       // when
       export(record2);
@@ -366,7 +384,9 @@ final class OpensearchExporterIT {
     void shouldRemoveIndexLifecycleSettingsFromExistingIndicesOnRerunWhenRetentionIsDisabled() {
       // given
       configureExporter(true);
-      final var record1 = factory.generateRecord(ValueType.JOB);
+      final var record1 =
+          factory.generateRecord(
+              ValueType.JOB, r -> r.withBrokerVersion(VersionUtil.getVersionLowerCase()));
 
       // when
       export(record1);
@@ -384,7 +404,9 @@ final class OpensearchExporterIT {
       /* Tests when retention is later disabled all indices should not have a lifecycle policy */
       // given
       configureExporter(false);
-      final var record2 = factory.generateRecord(ValueType.JOB);
+      final var record2 =
+          factory.generateRecord(
+              ValueType.JOB, r -> r.withBrokerVersion(VersionUtil.getVersionLowerCase()));
 
       // when
       export(record2);
@@ -416,14 +438,18 @@ final class OpensearchExporterIT {
       // using 490 here as we will export one more record after (1 main shard, 1 replica)
       final int limit = 490;
       for (int i = 0; i < limit; i++) {
-        final var record = factory.generateRecord(ValueType.JOB);
+        final var record =
+            factory.generateRecord(
+                ValueType.JOB, r -> r.withBrokerVersion(VersionUtil.getVersionLowerCase()));
         records.add(record);
         export(record);
       }
 
       // when
       configureExporter(true);
-      final var record2 = factory.generateRecord(ValueType.JOB);
+      final var record2 =
+          factory.generateRecord(
+              ValueType.JOB, r -> r.withBrokerVersion(VersionUtil.getVersionLowerCase()));
 
       await("New record is exported, and existing indices are updated")
           .atMost(Duration.ofSeconds(30))

@@ -40,7 +40,10 @@ final class RecordIndexRouterTest {
     final var valueType = ValueType.VARIABLE;
     final var record =
         recordFactory.generateRecord(
-            b -> b.withValueType(valueType).withTimestamp(timestamp.toEpochMilli()));
+            b ->
+                b.withValueType(valueType)
+                    .withTimestamp(timestamp.toEpochMilli())
+                    .withBrokerVersion(VersionUtil.getVersionLowerCase()));
 
     // when
     final var index = router.indexFor(record);
@@ -60,7 +63,10 @@ final class RecordIndexRouterTest {
     final var valueType = ValueType.VARIABLE;
     final var record =
         recordFactory.generateRecord(
-            b -> b.withValueType(valueType).withTimestamp(timestamp.toEpochMilli()));
+            b ->
+                b.withValueType(valueType)
+                    .withTimestamp(timestamp.toEpochMilli())
+                    .withBrokerVersion(VersionUtil.getVersionLowerCase()));
 
     // when
     final var index = router.indexFor(record);
