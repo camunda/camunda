@@ -80,7 +80,6 @@ public class OpenSearchOperation {
   }
 
   protected String getIndex(final ObjectBuilderBase builder) {
-    // todo will be refactored in the OPT-7352
     try {
       final Field indexField = builder.getClass().getDeclaredField(INDEX_FIELD);
       indexField.setAccessible(true);

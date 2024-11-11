@@ -17,6 +17,7 @@ import org.opensearch.client.opensearch.tasks.GetTasksResponse;
 import org.opensearch.client.opensearch.tasks.Info;
 
 public class OpenSearchTaskOperations extends OpenSearchRetryOperation {
+
   public OpenSearchTaskOperations(
       final OpenSearchClient openSearchClient, final OptimizeIndexNameService indexNameService) {
     super(openSearchClient, indexNameService);
@@ -31,22 +32,6 @@ public class OpenSearchTaskOperations extends OpenSearchRetryOperation {
     return safe(() -> super.task(id), e -> defaultTaskErrorMessage(id));
   }
 
-  public GetTasksResponse taskWithRetries(final String id) {
-    return executeWithGivenRetries(
-        1,
-        "Get task information for " + id,
-        () -> {
-          try {
-            final GetTasksResponse response = super.task(id);
-            return response;
-          } catch (final ConnectionClosedException e) {
-            System.out.println("Failed will retry for Task ID " + id);
-            return null;
-          }
-        },
-        Objects::isNull);
-  }
-
   @Override
   public Map<String, Info> tasksWithActions(final List<String> actions) {
     return safe(
@@ -54,5 +39,20 @@ public class OpenSearchTaskOperations extends OpenSearchRetryOperation {
         e ->
             defaultTaskErrorMessage(
                 String.format("Failed to fetch tasksWithActions for actions %s", actions)));
+  }
+
+  public GetTasksResponse taskWithRetries(final String id) {
+    return executeWithGivenRetries(
+        1,
+        "Get task information for " + id,
+        () -> {
+          try {
+            return super.task(id);
+          } catch (final ConnectionClosedException e) {
+            System.out.println("Failed will retry for Task ID " + id);
+            return null;
+          }
+        },
+        Objects::isNull);
   }
 }

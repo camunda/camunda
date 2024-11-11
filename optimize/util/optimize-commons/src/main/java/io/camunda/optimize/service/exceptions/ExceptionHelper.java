@@ -13,31 +13,6 @@ import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.slf4j.Logger;
 
 public class ExceptionHelper {
-  // TODO to be removed or used with OPT-7352
-  //  static <R> R withPersistenceException(Supplier<R> supplier) throws PersistenceException {
-  //    try {
-  //      return supplier.get();
-  //    } catch (Exception e) {
-  //      throw new PersistenceException(e.getMessage(), e.getCause());
-  //    }
-  //  }
-  //
-  //  static <R> R withPersistenceException(Supplier<R> supplier, String errorMessage) throws
-  // PersistenceException {
-  //    try {
-  //      return supplier.get();
-  //    } catch (Exception e) {
-  //      throw new PersistenceException(errorMessage, e);
-  //    }
-  //  }
-  //
-  //  static <R> R withOptimizeRuntimeException(ExceptionSupplier<R> supplier) throws Exception {
-  //    try {
-  //      return supplier.get();
-  //    } catch (Exception e) {
-  //      throw new Exception(e.getMessage(), e.getCause()); //TODO
-  //    }
-  //  }
 
   public static <R> R withIOException(final ExceptionSupplier<R> supplier) throws IOException {
     try {

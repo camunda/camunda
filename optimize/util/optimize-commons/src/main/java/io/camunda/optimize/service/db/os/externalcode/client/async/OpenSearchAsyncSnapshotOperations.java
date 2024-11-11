@@ -17,12 +17,8 @@ import org.opensearch.client.opensearch.snapshot.CreateSnapshotResponse;
 import org.opensearch.client.opensearch.snapshot.DeleteSnapshotRequest;
 import org.opensearch.client.opensearch.snapshot.DeleteSnapshotRequest.Builder;
 import org.opensearch.client.opensearch.snapshot.DeleteSnapshotResponse;
-import org.slf4j.Logger;
 
 public class OpenSearchAsyncSnapshotOperations extends OpenSearchAsyncOperation {
-
-  private static final Logger LOG =
-      org.slf4j.LoggerFactory.getLogger(OpenSearchAsyncSnapshotOperations.class);
 
   public OpenSearchAsyncSnapshotOperations(
       final OptimizeIndexNameService indexNameService,
@@ -57,7 +53,7 @@ public class OpenSearchAsyncSnapshotOperations extends OpenSearchAsyncOperation 
     return safe(() -> openSearchAsyncClient.snapshot().create(request), errorMessageSupplier);
   }
 
-  public static class SnaphotStatus {
+  public static class SnapshotStatus {
 
     public static final String FAILED = "FAILED";
     public static final String IN_PROGRESS = "IN_PROGRESS";
