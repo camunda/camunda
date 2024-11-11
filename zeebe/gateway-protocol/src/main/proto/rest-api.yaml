@@ -50,6 +50,7 @@ tags:
   - name: Usage metrics
   - name: User task
   - name: Variable
+  - name: Process tests
 
 paths:
   /topology:
@@ -3915,6 +3916,40 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+
+  /process-tests/execute:
+    post:
+      tags:
+        - ProcessTests
+      operationId: executeProcessTests
+      summary: Executes process tests
+      description: |
+        Executes the given process tests and returns the result.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProcessTestExecuteRequest"
+      responses:
+        "200":
+          description: The test cases were executed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProcessTestExecuteResponse"
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: Internal server error.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
 
 components:
   schemas:
@@ -7961,6 +7996,80 @@ components:
         formKey:
           description: The key of the form.
           type: string
+
+    ProcessTestExecuteRequest:
+      type: object
+      properties:
+        testResources:
+          description: Thr test resources.
+          type: array
+          items:
+            $ref: "#/components/schemas/DeploymentResource"
+        testCases:
+          description: The test cases.
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessTestCase"
+    DeploymentResource:
+      type: object
+      properties:
+        resource:
+          description: The resource content.
+          type: string
+        resourceName:
+          description: The resource name.
+          type: string
+    ProcessTestCase:
+      type: object
+      properties:
+        name:
+          description: The name of the test case.
+          type: string
+        instructions:
+          description: The test instructions.
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessTestInstruction"
+    ProcessTestInstruction:
+      type: object
+      properties:
+        type:
+          description: The type of the instruction.
+          type: string
+        name:
+          description: The name of the instruction.
+          type: string
+        arguments:
+          description: The arguments of the instruction.
+          type: object
+          additionalProperties: true
+    ProcessTestExecuteResponse:
+      description: The execution result of the process test.
+      type: object
+      properties:
+        testCases:
+          description: The test cases.
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessTestCaseResult"
+    ProcessTestCaseResult:
+      type: object
+      properties:
+        name:
+          description: The name of the test case.
+          type: string
+        instructions:
+          description: The test instructions.
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessTestInstruction"
+        successful:
+          description: If the test case was executed successfully.
+          type: boolean
+        failureMessage:
+          description: The failure message if the test case failed.
+          type: string
+
   responses:
     InternalServerError:
       description: >

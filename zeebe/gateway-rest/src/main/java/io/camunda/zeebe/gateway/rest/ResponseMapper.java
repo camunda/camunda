@@ -22,6 +22,7 @@ import io.camunda.document.api.DocumentError.StoreDoesNotExist;
 import io.camunda.document.api.DocumentLink;
 import io.camunda.service.DocumentServices.DocumentErrorResponse;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
+import io.camunda.service.processtest.TestSpecificationResult;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResult;
 import io.camunda.zeebe.gateway.protocol.rest.ActivatedJob;
@@ -48,6 +49,8 @@ import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateResponse;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessTestCaseResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessTestExecuteResponse;
 import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastResponse;
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateResponse;
 import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateResponse;
@@ -550,6 +553,25 @@ public final class ResponseMapper {
                     .inputName(evaluatedInputValue.getInputName())
                     .inputValue(evaluatedInputValue.getInputValue()))
         .toList();
+  }
+
+  public static ResponseEntity<Object> toProcessTestExecuteResponse(
+      final TestSpecificationResult result) {
+
+    final ProcessTestExecuteResponse response = new ProcessTestExecuteResponse();
+
+    final List<ProcessTestCaseResult> processTestCaseResults =
+        result.testResults().stream()
+            .map(
+                testCaseResult ->
+                    new ProcessTestCaseResult()
+                        .name(testCaseResult.testCase().name())
+                        .successful(testCaseResult.success())
+                        .failureMessage(testCaseResult.failureMessage()))
+            .toList();
+    response.setTestCases(processTestCaseResults);
+
+    return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
   static class RestJobActivationResult implements JobActivationResult<JobActivationResponse> {

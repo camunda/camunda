@@ -55,6 +55,13 @@ import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.UserServices.UserDTO;
+import io.camunda.service.processtest.actions.CompleteJobAction;
+import io.camunda.service.processtest.actions.CreateProcessInstanceAction;
+import io.camunda.service.processtest.dsl.TestCase;
+import io.camunda.service.processtest.dsl.TestInstruction;
+import io.camunda.service.processtest.dsl.TestResource;
+import io.camunda.service.processtest.dsl.TestSpecification;
+import io.camunda.service.processtest.verifications.ProcessInstanceCompletedVerification;
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest;
@@ -81,6 +88,8 @@ import io.camunda.zeebe.gateway.protocol.rest.ModifyProcessInstanceActivateInstr
 import io.camunda.zeebe.gateway.protocol.rest.ModifyProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessTestExecuteRequest;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessTestInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.SetVariableRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
@@ -783,6 +792,67 @@ public class RequestMapper {
               return mappedInstruction;
             })
         .toList();
+  }
+
+  public static Either<ProblemDetail, TestSpecification> toProcessTestSpecification(
+      final ProcessTestExecuteRequest request) {
+    return getResult(
+        Optional.empty(),
+        () -> {
+          final List<TestResource> testResources =
+              request.getTestResources().stream()
+                  .map(
+                      resource ->
+                          new TestResource(resource.getResourceName(), resource.getResource()))
+                  .toList();
+
+          final List<TestCase> testCases =
+              request.getTestCases().stream()
+                  .map(
+                      testCase -> {
+                        final List<TestInstruction> instructions =
+                            testCase.getInstructions().stream()
+                                .map(RequestMapper::toTestInstruction)
+                                .toList();
+                        return new TestCase(testCase.getName(), instructions);
+                      })
+                  .toList();
+
+          return new TestSpecification(testResources, testCases);
+        });
+  }
+
+  private static TestInstruction toTestInstruction(final ProcessTestInstruction instruction) {
+    final Map<String, Object> arguments = instruction.getArguments();
+
+    return switch (instruction.getType()) {
+      case "action" ->
+          switch (instruction.getName()) {
+            case "create-process-instance" ->
+                new CreateProcessInstanceAction(
+                    (String) arguments.get("processId"),
+                    (String) arguments.get("variables"),
+                    (String) arguments.get("processInstanceAlias"));
+            case "complete-job" ->
+                new CompleteJobAction(
+                    (String) arguments.get("jobType"), (String) arguments.get("variables"));
+            default ->
+                throw new IllegalArgumentException("Unknown action: " + instruction.getName());
+          };
+      case "verification" ->
+          switch (instruction.getName()) {
+            case "process-instance-completed" ->
+                new ProcessInstanceCompletedVerification(
+                    (String) arguments.get("processInstanceAlias"));
+            default ->
+                throw new IllegalArgumentException(
+                    "Unknown verification: " + instruction.getName());
+          };
+      default ->
+          throw new IllegalArgumentException(
+              "Unknown instruction '%s' with type '%s'"
+                  .formatted(instruction.getName(), instruction.getType()));
+    };
   }
 
   private static <R> Map<String, Object> getMapOrEmpty(
