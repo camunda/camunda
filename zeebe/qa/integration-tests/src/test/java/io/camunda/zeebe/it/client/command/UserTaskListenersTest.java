@@ -83,6 +83,35 @@ public class UserTaskListenersTest {
         });
   }
 
+  @Test
+  void shouldAssignUserTaskAfterCompletingAssignmentTaskListener() {
+    // given
+    final var action = "my_assign_action";
+    final var userTaskKey =
+        resourcesHelper.createSingleUserTask(
+            t -> t.zeebeTaskListener(l -> l.assignment().type("my_listener")));
+
+    final JobHandler completeJobHandler =
+        (jobClient, job) -> client.newCompleteCommand(job).send().join();
+    client.newWorker().jobType("my_listener").handler(completeJobHandler).open();
+
+    // when: invoke complete user task command
+    final var assignUserTaskFuture =
+        client.newUserTaskAssignCommand(userTaskKey).assignee("demo_user").action(action).send();
+
+    // wait for successful `ASSIGN` user task command completion
+    assertThatCode(assignUserTaskFuture::join).doesNotThrowAnyException();
+
+    // then
+    ZeebeAssertHelper.assertUserTaskAssigned(
+        userTaskKey,
+        (userTask) -> {
+          assertThat(userTask.getAssignee()).isEqualTo("demo_user");
+          assertThat(userTask.getVariables()).isEmpty();
+          assertThat(userTask.getAction()).isEqualTo(action);
+        });
+  }
+
   /**
    * This test verifies the behavior when attempting to complete a Task Listener job with variables
    * while awaiting the result of the completion command.

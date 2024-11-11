@@ -20,6 +20,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
@@ -105,7 +106,7 @@ public class TaskListenerTest {
                 .limit(r -> r.getIntent() == UserTaskIntent.COMPLETED))
         .extracting(Record::getIntent)
         .describedAs(
-            "Ensure that `COMPLETE_TASK_LISTENER` events were triggered between user task `COMPLETING` and `COMPLETED` events")
+            "Ensure that `COMPLETE_TASK_LISTENER` commands were triggered between user task `COMPLETING` and `COMPLETED` events")
         .containsSubsequence(
             UserTaskIntent.COMPLETING,
             UserTaskIntent.COMPLETE_TASK_LISTENER,
@@ -127,6 +128,69 @@ public class TaskListenerTest {
             });
 
     assertThatProcessInstanceCompleted(processInstanceKey);
+  }
+
+  @Test
+  public void shouldAssignUserTaskAfterAllAssignmentTaskListenersAreExecuted() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.assignment,
+                LISTENER_TYPE,
+                LISTENER_TYPE + "_2",
+                LISTENER_TYPE + "_3"));
+
+    // when
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .withVariable("foo_var", "bar")
+        .withAssignee("me")
+        .withAction("my_assign_action")
+        .assign();
+    completeJobs(processInstanceKey, LISTENER_TYPE, LISTENER_TYPE + "_2", LISTENER_TYPE + "_3");
+
+    // then
+    assertThat(
+            RecordingExporter.jobRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withJobKind(JobKind.TASK_LISTENER)
+                .withJobListenerEventType(JobListenerEventType.ASSIGNMENT)
+                .withIntent(JobIntent.COMPLETED)
+                .limit(3))
+        .extracting(Record::getValue)
+        .extracting(JobRecordValue::getType)
+        .describedAs("Verify that all task listeners were completed in the correct sequence")
+        .containsExactly(LISTENER_TYPE, LISTENER_TYPE + "_2", LISTENER_TYPE + "_3");
+
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == UserTaskIntent.ASSIGNED))
+        .extracting(Record::getIntent)
+        .describedAs(
+            "Ensure that `COMPLETE_TASK_LISTENER` commands were triggered between user task `ASSIGNING` and `ASSIGNED` events")
+        .containsSubsequence(
+            UserTaskIntent.ASSIGNING,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.ASSIGNED);
+
+    assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst())
+        .extracting(Record::getValue)
+        .describedAs(
+            "Check that the assigned user task contains the correct `action` and `variables` provided with `ASSIGN` command")
+        .satisfies(
+            recordValue -> {
+              assertThat(recordValue.getAssignee()).isEqualTo("me");
+              assertThat(recordValue.getAction()).isEqualTo("my_assign_action");
+              assertThat(recordValue.getVariables()).isEmpty();
+            });
   }
 
   @Test
@@ -758,10 +822,16 @@ public class TaskListenerTest {
   }
 
   private BpmnModelInstance createProcessWithCompleteTaskListeners(final String... listenerTypes) {
+    return createUserTaskWithTaskListeners(ZeebeTaskListenerEventType.complete, listenerTypes);
+  }
+
+  private BpmnModelInstance createUserTaskWithTaskListeners(
+      final ZeebeTaskListenerEventType listenerType, final String... listenerTypes) {
     return createProcessWithZeebeUserTask(
         taskBuilder -> {
           Stream.of(listenerTypes)
-              .forEach(type -> taskBuilder.zeebeTaskListener(l -> l.complete().type(type)));
+              .forEach(
+                  type -> taskBuilder.zeebeTaskListener(l -> l.eventType(listenerType).type(type)));
           return taskBuilder;
         });
   }
