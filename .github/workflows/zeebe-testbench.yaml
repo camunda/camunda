@@ -40,7 +40,7 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: 'projects/618877442292/locations/global/workloadIdentityPools/github/providers/camunda'
-          service_account: 'github-actions@camunda-saas-registry.iam.gserviceaccount.com'
+          service_account: 'github-actions-zeebe-io@camunda-saas-registry.iam.gserviceaccount.com'
       - name: Setup BuildKit
         uses: docker/setup-buildx-action@v3
       - name: Login to SaaS image registry
