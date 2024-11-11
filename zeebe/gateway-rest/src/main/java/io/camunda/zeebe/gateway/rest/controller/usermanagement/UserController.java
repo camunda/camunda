@@ -10,7 +10,9 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
+import io.camunda.zeebe.gateway.rest.RequestMapper.UpdateUserRequest;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
@@ -19,6 +21,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -57,5 +60,23 @@ public class UserController {
         () ->
             userServices.withAuthentication(RequestMapper.getAuthentication()).createUser(request),
         ResponseMapper::toUserCreateResponse);
+  }
+
+  @PatchMapping(
+      path = "/{userKey}",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  public CompletableFuture<ResponseEntity<Object>> updateUser(
+      @PathVariable final long userKey, @RequestBody final UserUpdateRequest userUpdateRequest) {
+    return RequestMapper.toUserUpdateRequest(userUpdateRequest, userKey)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateUser);
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> updateUser(final UpdateUserRequest request) {
+    return RequestMapper.executeServiceMethodWithNoContentResult(
+        () ->
+            userServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .updateUser(request.userKey(), request.name()));
   }
 }

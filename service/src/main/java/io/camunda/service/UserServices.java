@@ -69,6 +69,10 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
             .setPassword(request.password()));
   }
 
+  public CompletableFuture<UserRecord> updateUser(final long userKey, final String name) {
+    return updateUser(new UserDTO(userKey, null, name, null, null));
+  }
+
   public CompletableFuture<UserRecord> deleteUser(final long userKey) {
     return sendBrokerRequest(new BrokerUserDeleteRequest().setUserKey(userKey).setUsername(""));
   }
