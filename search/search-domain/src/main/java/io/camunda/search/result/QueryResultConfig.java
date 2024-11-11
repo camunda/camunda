@@ -7,40 +7,4 @@
  */
 package io.camunda.search.result;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public interface QueryResultConfig {
-
-  List<FieldFilter> getFieldFilters();
-
-  abstract class AbstractBuilder<T> {
-
-    protected final List<FieldFilter> fieldFilters = new ArrayList<>();
-
-    protected FieldFilter currentFieldFilter;
-
-    protected abstract T self();
-
-    protected T addInclusion(final boolean include) {
-      if (currentFieldFilter != null) {
-        final var field = currentFieldFilter.field();
-        final var newFieldFilter = new FieldFilter(field, include);
-        fieldFilters.add(newFieldFilter);
-        currentFieldFilter = null;
-      }
-      // else if not set, then noop
-      return self();
-    }
-
-    public T include() {
-      return addInclusion(true);
-    }
-
-    public T exclude() {
-      return addInclusion(false);
-    }
-  }
-
-  record FieldFilter(String field, Boolean include) {}
-}
+public interface QueryResultConfig {}

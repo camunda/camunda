@@ -27,7 +27,9 @@ import io.camunda.search.clients.transformers.filter.VariableFilterTransformer;
 import io.camunda.search.clients.transformers.filter.VariableValueFilterTransformer;
 import io.camunda.search.clients.transformers.query.SearchQueryResultTransformer;
 import io.camunda.search.clients.transformers.query.TypedSearchQueryTransformer;
-import io.camunda.search.clients.transformers.result.ResultConfigTransformer;
+import io.camunda.search.clients.transformers.result.DecisionInstanceResultConfigTransformer;
+import io.camunda.search.clients.transformers.result.DecisionRequirementsResultConfigTransformer;
+import io.camunda.search.clients.transformers.result.ProcessInstanceResultConfigTransformer;
 import io.camunda.search.clients.transformers.sort.FieldSortingTransformer;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.ComparableValueFilter;
@@ -59,7 +61,9 @@ import io.camunda.search.query.TypedSearchQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
-import io.camunda.search.result.QueryResultConfig;
+import io.camunda.search.result.DecisionInstanceQueryResultConfig;
+import io.camunda.search.result.DecisionRequirementsQueryResultConfig;
+import io.camunda.search.result.ProcessInstanceQueryResultConfig;
 import io.camunda.search.sort.FlowNodeInstanceSort;
 import io.camunda.search.sort.SortOption;
 import java.util.HashMap;
@@ -139,6 +143,12 @@ public final class ServiceTransformers {
     mappers.put(ProcessDefinitionFilter.class, new ProcessDefinitionFilterTransformer(mappers));
 
     // result config -> source config
-    mappers.put(QueryResultConfig.class, new ResultConfigTransformer());
+    mappers.put(
+        DecisionInstanceQueryResultConfig.class, new DecisionInstanceResultConfigTransformer());
+    mappers.put(
+        DecisionRequirementsQueryResultConfig.class,
+        new DecisionRequirementsResultConfigTransformer());
+    mappers.put(
+        ProcessInstanceQueryResultConfig.class, new ProcessInstanceResultConfigTransformer());
   }
 }
