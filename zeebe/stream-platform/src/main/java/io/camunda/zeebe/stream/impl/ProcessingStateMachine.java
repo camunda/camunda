@@ -149,6 +149,7 @@ public final class ProcessingStateMachine {
   private long writtenPosition = StreamProcessor.UNSET_POSITION;
   private long lastSuccessfulProcessedRecordPosition = StreamProcessor.UNSET_POSITION;
   private long lastWrittenPosition = StreamProcessor.UNSET_POSITION;
+  private int lastProcessedCommandIndex = -1;
   private int onErrorRetries;
   // Used for processing duration metrics
   private Histogram.Timer processingTimer;
@@ -294,7 +295,6 @@ public final class ProcessingStateMachine {
         processingMetrics.observeCommandCount(processedCommandsCount);
       }
 
-      finalizeCommandProcessing();
       writeRecords();
     } catch (final RecoverableException recoverableException) {
       // recoverable
@@ -340,8 +340,8 @@ public final class ProcessingStateMachine {
    *
    * <p>Should be called after processing or error handling is done.
    */
-  private void finalizeCommandProcessing() {
-    lastProcessedPositionState.markAsProcessed(typedCommand.getPosition());
+  private void finalizeCommandProcessing(final long commandPosition) {
+    lastProcessedPositionState.markAsProcessed(commandPosition);
     processedCommandsCount = 0;
   }
 
@@ -356,7 +356,6 @@ public final class ProcessingStateMachine {
     final var processingResultBuilder =
         new BufferedProcessingResultBuilder(
             logStreamWriter::canWriteEvents, initialCommand.getOperationReference());
-    final var currentSourceIndex = -1;
     var lastProcessingResultSize = 0;
 
     // It might be that we reached the batch size limit during processing a command.
@@ -374,6 +373,7 @@ public final class ProcessingStateMachine {
     while (!pendingCommands.isEmpty() && processedCommandsCount < currentProcessingBatchLimit) {
       final var indexedCommand = pendingCommands.removeFirst();
       final var command = indexedCommand.command();
+      lastProcessedCommandIndex = indexedCommand.index;
 
       currentProcessor =
           recordProcessors.stream()
@@ -388,7 +388,7 @@ public final class ProcessingStateMachine {
           collectBatchProcessingStepResult(
               currentProcessingResult,
               lastProcessingResultSize,
-              // +1 since we already need include the current command in the calculation
+              // +1 since we need to include the current command in the calculation
               pendingCommands.size() + processedCommandsCount + 1,
               currentProcessingBatchLimit);
 
@@ -575,7 +575,6 @@ public final class ProcessingStateMachine {
     pendingWrites = currentProcessingResult.getRecordBatch().entries();
     pendingResponses = currentProcessingResult.getProcessingResponse().stream().toList();
 
-    finalizeCommandProcessing();
     writeRecords();
   }
 
@@ -592,10 +591,6 @@ public final class ProcessingStateMachine {
                   processingException, typedCommand, processingResultBuilder);
           pendingWrites = currentProcessingResult.getRecordBatch().entries();
           pendingResponses = currentProcessingResult.getProcessingResponse().stream().toList();
-          // we need to mark the command as processed, even if the processing failed
-          // otherwise we might replay the events, which have been written during
-          // #onProcessingError again on restart
-          finalizeCommandProcessing();
         });
   }
 
@@ -648,6 +643,10 @@ public final class ProcessingStateMachine {
             // We write various type of records. The positions are always increasing and
             // incremented by 1 for one record (even in a batch), so we can count the amount
             // of written records via the lastWritten and now written position.
+            final var lastProcessedCommandPosition =
+                writtenPosition - pendingWrites.size() + lastProcessedCommandIndex + 1;
+            finalizeCommandProcessing(lastProcessedCommandPosition);
+
             final var amount = writtenPosition - lastWrittenPosition;
             metrics.recordsWritten(amount);
             updateState();
